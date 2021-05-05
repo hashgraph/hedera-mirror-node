@@ -45,60 +45,6 @@ image:
 
 imagePullSecrets: []
 
-labels: {}
-
-# Spring boot probes are started after Flyway migration, must correct this to prevent unnecessary restarts
-livenessProbe: null
-#  httpGet:
-#    path: /actuator/health/liveness
-#    port: http
-#  initialDelaySeconds: 60
-#  periodSeconds: 30
-#  timeoutSeconds: 2
-
-nameOverride: ""
-
-networkPolicy:
-  enabled: false
-
-nodeSelector: {}
-
-podDisruptionBudget:
-  enabled: false
-  # maxUnavailable: 0
-  # minAvailable: 1
-
-podMonitor:
-  enabled: false
-  interval: 30s
-
-podSecurityContext:
-  fsGroup: 1000
-
-priorityClassName: ""
-
-rbac:
-  enabled: true
-
-readinessProbe:
-  httpGet:
-    path: /actuator/health/readiness
-    port: http
-  initialDelaySeconds: 60
-  timeoutSeconds: 2
-
-replicas: 1
-
-resources:
-  limits:
-    cpu: 1.8
-    memory: 3072Mi
-  requests:
-    cpu: 200m
-    memory: 512Mi
-
-revisionHistoryLimit: 3
-
 inhibitRules:
   enabled: true
   StopImporterAlertsWhenPodsAreDown:
@@ -121,7 +67,6 @@ inhibitRules:
         targetMatch:
           - name: alertType
             value: importer
-
 
 # Cloud Rules
   CloudAlertsNoConsensus:
@@ -257,8 +202,8 @@ inhibitRules:
           - name: type
             value: BALANCE
         targetMatch:
-            - name: alertname
-              value: ImporterBalanceStreamFallenBehind
+          - name: alertname
+            value: ImporterBalanceStreamFallenBehind
 
   ParseErrorsAndNoConsensusRecord:
     enabled: true
@@ -274,7 +219,6 @@ inhibitRules:
             regex: true
             value: (ImporterRecordStreamFallenBehind|ImporterNoTransactions)
 
-
   ErrorsInhibitLogs:
     enabled: true
     matches:
@@ -286,6 +230,60 @@ inhibitRules:
           - name: alertname
             regex: true
             value: (ImporterRecordStreamFallenBehind|ImporterNoTransactions)
+
+labels: {}
+
+# Spring boot probes are started after Flyway migration, must correct this to prevent unnecessary restarts
+livenessProbe: null
+#  httpGet:
+#    path: /actuator/health/liveness
+#    port: http
+#  initialDelaySeconds: 60
+#  periodSeconds: 30
+#  timeoutSeconds: 2
+
+nameOverride: ""
+
+networkPolicy:
+  enabled: false
+
+nodeSelector: {}
+
+podDisruptionBudget:
+  enabled: false
+  # maxUnavailable: 0
+  # minAvailable: 1
+
+podMonitor:
+  enabled: false
+  interval: 30s
+
+podSecurityContext:
+  fsGroup: 1000
+
+priorityClassName: ""
+
+rbac:
+  enabled: true
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 60
+  timeoutSeconds: 2
+
+replicas: 1
+
+resources:
+  limits:
+    cpu: 1.8
+    memory: 3072Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+revisionHistoryLimit: 3
 
 prometheusRules:
   enabled: false

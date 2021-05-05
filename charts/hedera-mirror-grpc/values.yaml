@@ -301,5 +301,3 @@ volumes:
       secretName: '{{ include "hedera-mirror-grpc.fullname" . }}'
   tmp:
     emptyDir: {}
-
-
