@@ -87,6 +87,20 @@ podSecurityContext:
 
 priorityClassName: ""
 
+inhibitRules:
+  enabled: true
+  StopImporterAlertsWhenPodsAreUp:
+      enabled: true
+      matches:
+        - sourceMatch:
+          - name: alertname
+            value: RestNoPodsReady
+          targetMatch:
+          - name: service
+            value: rest
+          - name: noPods
+            value: stop
+
 prometheusRules:
   enabled: false
   RestErrors:
@@ -98,6 +112,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      service: rest
+      noPods: stop
 
   RestHighCPU:
     annotations:
@@ -108,6 +124,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      service: rest
+      noPods: stop
 
   RestNoRequests:
     annotations:
@@ -118,6 +136,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: warning
+      service: rest
+      noPods: stop
 
   RestSlowResponse:
     annotations:
@@ -128,6 +148,21 @@ prometheusRules:
     for: 1m
     labels:
       severity: warning
+      service: rest
+      noPods: stop
+
+  RestNoPodsReady:
+    annotations:
+      description: "No importer instances are currently running.  "
+      summary: No importer instances running
+    enabled: true
+    expr: kube_pod_container_status_ready{container="importer"} < 1
+    for: 5s
+    labels:
+      severity: critical
+      service: rest
+      noPods: continue
+
 
 readinessProbe:
   httpGet:
