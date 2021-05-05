@@ -11,8 +11,8 @@ hedera:
         username: mirror_rosetta
       online: true
       network: DEMO
+      nodes: { }
       nodeVersion: 0
-      nodes: {}
       port: 5700
       realm: 0
       shard: 0
