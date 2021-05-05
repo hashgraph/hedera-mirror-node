@@ -24,6 +24,7 @@ $$ language plpgsql;
 select set_integer_now_func('account_balance', 'latest_consensus_timestamp');
 select set_integer_now_func('account_balance_file', 'latest_consensus_timestamp');
 select set_integer_now_func('address_book_entry', 'latest_consensus_timestamp');
+select set_integer_now_func('address_book_service_endpoint', 'latest_consensus_timestamp');
 select set_integer_now_func('contract_result', 'latest_consensus_timestamp');
 select set_integer_now_func('crypto_transfer', 'latest_consensus_timestamp');
 select set_integer_now_func('event_file', 'latest_consensus_timestamp');
@@ -47,7 +48,10 @@ alter table account_balance_file
 -- address_book skipped as update (end_consensus_timestamp) on compressed chunk is not allowed
 
 alter table address_book_entry
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, memo');
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_id');
+
+alter table address_book_service_endpoint
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_id, ip_address_v4, port');
 
 alter table contract_result
     set (timescaledb.compress);
