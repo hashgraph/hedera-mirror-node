@@ -3,7 +3,7 @@
 # and run the services using supervisord
 
 # --------------------------  Clone Repository  -------------------------- #
-FROM ubuntu:18.04 as cloner
+FROM ubuntu:20.04 as cloner
 RUN apt-get update && apt-get install -y git
 ARG GIT_BRANCH=master
 RUN git clone https://github.com/hashgraph/hedera-mirror-node.git
@@ -27,17 +27,17 @@ RUN cd hedera-mirror-node && ./mvnw --batch-mode --no-transfer-progress --show-v
 # --------------------------- Runner Container --------------------------- #
 # ######################################################################## #
 
-FROM ubuntu:18.04 as runner
+FROM ubuntu:20.04 as runner
 
 # ---------------------- Install Deps & PosgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
-RUN apt-get update && apt-get install -y gnupg
+RUN apt-get update && apt-get install -y gnupg lsb-release
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
 
 # Add PostgreSQL's repository. It contains the most recent stable release
 #  of PostgreSQL.
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 
 # Install PostgreSQL 9.6, supervisor, git and openjdk-11
 ARG DEBIAN_FRONTEND=noninteractive
