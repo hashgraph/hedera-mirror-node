@@ -109,14 +109,14 @@ inhibitRules:
             value: grpc
 
   StopGrpcLogAlertOnHighErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: GrpcHighCPU
-          targetMatch:
-            - name: alertname
-              value: GrpcErrors
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: GrpcHighCPU
+        targetMatch:
+          - name: alertname
+            value: GrpcErrors
 
 prometheusRules:
   enabled: false
