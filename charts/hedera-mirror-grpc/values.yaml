@@ -85,6 +85,39 @@ podSecurityContext:
 
 priorityClassName: ""
 
+inhibitRules:
+  enabled: true
+  StopGrpcAlertsWhenPodsDown:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            value: GrpcNoPodsReady
+        targetMatch:
+          - name: service
+            value: grpc
+
+  StopGrpcAlertsWhenResourcesHigh:
+    enabled: true
+    matches:
+      - sourceMatch:
+          - name: alertname
+            regex: true
+            value: (GrpcHighCPU|GrpcHighMemory|GrpcHighFileDescriptors|GrpcHighDBConnections)
+        targetMatch:
+          - name: service
+            value: grpc
+
+  StopGrpcLogAlertOnHighErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: GrpcHighCPU
+          targetMatch:
+            - name: alertname
+              value: GrpcErrors
+
 prometheusRules:
   enabled: false
   GrpcErrors:
@@ -96,6 +129,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      service: grpc
+      noPods: stop
 
   GrpcHighCPU:
     annotations:
@@ -106,6 +141,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      service: grpc
+      noPods: stop
 
   GrpcHighDBConnections:
     annotations:
@@ -116,6 +153,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      service: grpc
+      noPods: stop
 
   GrpcHighFileDescriptors:
     annotations:
@@ -126,6 +165,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      service: grpc
+      noPods: stop
 
   GrpcHighLatency:
     annotations:
@@ -136,6 +177,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      service: grpc
+      noPods: stop
 
   GrpcHighMemory:
     annotations:
@@ -146,6 +189,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      service: grpc
+      noPods: stop
 
   GrpcLog4j2Errors:
     annotations:
@@ -156,6 +201,8 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+      service: grpc
+      noPods: stop
 
   GrpcNoSubscribers:
     annotations:
@@ -166,6 +213,22 @@ prometheusRules:
     for: 5m
     labels:
       severity: warning
+      service: grpc
+      noPods: stop
+
+
+  GrpcNoPodsReady:
+    annotations:
+      description: "No grpc instances are currently running.  "
+      summary: No grpc instances running
+    enabled: true
+    expr: kube_pod_container_status_ready{container="grpc"} < 1
+    for: 5s
+    labels:
+      severity: critical
+      service: grpc
+      noPods: continue
+
 
 rbac:
   enabled: true
@@ -238,3 +301,5 @@ volumes:
       secretName: '{{ include "hedera-mirror-grpc.fullname" . }}'
   tmp:
     emptyDir: {}
+
+
