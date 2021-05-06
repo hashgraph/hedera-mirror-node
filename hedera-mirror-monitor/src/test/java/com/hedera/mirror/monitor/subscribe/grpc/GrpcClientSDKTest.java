@@ -122,7 +122,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofSeconds(2L));
+                .verify(Duration.ofSeconds(5L));
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(HashMultiset.create(), GrpcSubscription::getErrors);
