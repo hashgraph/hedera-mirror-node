@@ -94,7 +94,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(HashMultiset.create(), GrpcSubscription::getErrors)
@@ -110,7 +110,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(HashMultiset.create(), GrpcSubscription::getErrors);
@@ -120,7 +120,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(HashMultiset.create(), GrpcSubscription::getErrors);
@@ -160,7 +160,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .thenCancel()
-                .verify(Duration.ofSeconds(1L));
+                .verify(Duration.ofSeconds(2L));
     }
 
     @Test
@@ -170,7 +170,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectError(IllegalStateException.class)
-                .verify(Duration.ofSeconds(1L));
+                .verify(Duration.ofSeconds(2L));
     }
 
     @Disabled("Need to fix SDK to call error handler for non-retryable errors")
@@ -180,7 +180,7 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectError(StatusRuntimeException.class)
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(0L, GrpcSubscription::getCount)
                 .extracting(GrpcSubscription::getErrors)
@@ -194,7 +194,7 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectComplete()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(0L, GrpcSubscription::getCount)
                 .returns(HashMultiset.create(), GrpcSubscription::getErrors)
@@ -209,7 +209,7 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectError(Error.class)
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
     }
 
     private ConsensusTopicResponse response(Long sequenceNumber) {
