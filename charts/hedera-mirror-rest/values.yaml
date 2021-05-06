@@ -73,7 +73,7 @@ ingress:
 
 inhibitRules:
   enabled: true
-  StopRestAlertsWhenPodsDown:
+  InhibitRestAlertsWhenPodsDown:
     enabled: true
     matches:
       - sourceMatch:
@@ -83,7 +83,7 @@ inhibitRules:
           - name: service
             value: rest
 
-  StopRestAlertsWhenResourcesHigh:
+  InhibitRestAlertsWhenResourcesLow:
     enabled: true
     matches:
       - sourceMatch:
@@ -93,7 +93,7 @@ inhibitRules:
           - name: service
             value: rest
 
-  StopSlowResponseAlertsOnHighErrors:
+  InhibitSlowResponseAlertsOnHighErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -131,7 +131,6 @@ prometheusRules:
     labels:
       severity: critical
       service: rest
-      noPods: stop
 
   RestHighCPU:
     annotations:
@@ -143,7 +142,6 @@ prometheusRules:
     labels:
       severity: critical
       service: rest
-      noPods: stop
 
   RestNoRequests:
     annotations:
@@ -155,7 +153,6 @@ prometheusRules:
     labels:
       severity: warning
       service: rest
-      noPods: stop
 
   RestSlowResponse:
     annotations:
@@ -167,7 +164,6 @@ prometheusRules:
     labels:
       severity: warning
       service: rest
-      noPods: stop
 
   RestNoPodsReady:
     annotations:
@@ -175,12 +171,10 @@ prometheusRules:
       summary: No rest instances running
     enabled: true
     expr: kube_pod_container_status_ready{container="rest"} < 1
-    for: 5s
+    for: 30s
     labels:
       severity: critical
       service: rest
-      noPods: continue
-
 
 readinessProbe:
   httpGet:

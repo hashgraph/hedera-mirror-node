@@ -130,7 +130,6 @@ prometheusRules:
     labels:
       severity: critical
       service: grpc
-      noPods: stop
 
   GrpcHighCPU:
     annotations:
@@ -142,7 +141,6 @@ prometheusRules:
     labels:
       severity: critical
       service: grpc
-      noPods: stop
 
   GrpcHighDBConnections:
     annotations:
@@ -154,7 +152,6 @@ prometheusRules:
     labels:
       severity: critical
       service: grpc
-      noPods: stop
 
   GrpcHighFileDescriptors:
     annotations:
@@ -166,7 +163,6 @@ prometheusRules:
     labels:
       severity: critical
       service: grpc
-      noPods: stop
 
   GrpcHighLatency:
     annotations:
@@ -178,7 +174,6 @@ prometheusRules:
     labels:
       severity: critical
       service: grpc
-      noPods: stop
 
   GrpcHighMemory:
     annotations:
@@ -190,7 +185,6 @@ prometheusRules:
     labels:
       severity: critical
       service: grpc
-      noPods: stop
 
   GrpcLog4j2Errors:
     annotations:
@@ -202,7 +196,6 @@ prometheusRules:
     labels:
       severity: critical
       service: grpc
-      noPods: stop
 
   GrpcNoSubscribers:
     annotations:
@@ -214,8 +207,6 @@ prometheusRules:
     labels:
       severity: warning
       service: grpc
-      noPods: stop
-
 
   GrpcNoPodsReady:
     annotations:
@@ -223,12 +214,10 @@ prometheusRules:
       summary: No grpc instances running
     enabled: true
     expr: kube_pod_container_status_ready{container="grpc"} < 1
-    for: 5s
+    for: 30s
     labels:
       severity: critical
       service: grpc
-      noPods: continue
-
 
 rbac:
   enabled: true

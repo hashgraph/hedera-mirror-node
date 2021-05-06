@@ -141,7 +141,7 @@ prometheus:
     alertmanagerSpec:
       alertmanagerConfigSelector:
         matchLabels:
-          alertmanagerConfig: hedera
+          app.kubernetes.io/part-of: hedera-mirror-node
       priorityClassName: low
       resources:
         limits:
@@ -151,7 +151,6 @@ prometheus:
           cpu: 30m
           memory: 30Mi
     config:
-      inhibit_rules: []
       receivers:
         - name: 'null'
       route:

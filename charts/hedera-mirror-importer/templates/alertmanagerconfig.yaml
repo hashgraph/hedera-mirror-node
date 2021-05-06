@@ -2,7 +2,7 @@
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
-  name: config-example
+  name: {{ include "hedera-mirror-importer.fullname" . }}
   labels:
     {{ include "hedera-mirror-importer.labels" . | nindent 4 }}
     alertmanagerConfig: hedera

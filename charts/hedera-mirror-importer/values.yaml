@@ -47,7 +47,7 @@ imagePullSecrets: []
 
 inhibitRules:
   enabled: true
-  StopImporterAlertsWhenPodsAreDown:
+  InhibitImporterAlertsWhenPodsAreDown:
     enabled: true
     matches:
       - sourceMatch:
@@ -56,8 +56,12 @@ inhibitRules:
         targetMatch:
           - name: service
             value: importer
+        equal:
+          - namespace
+          - pod
 
-  StopImporterAlertsWhenResourcesAreFull:
+
+  InhibitImporterAlertsWhenResourcesAreLow:
     enabled: true
     matches:
       - sourceMatch:
@@ -67,9 +71,11 @@ inhibitRules:
         targetMatch:
           - name: alertType
             value: importer
+        equal:
+          - namespace
+          - pod
 
-# Cloud Rules
-  CloudAlertsNoConsensus:
+  InhibitConsensusAlertsOnCloudErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -81,8 +87,10 @@ inhibitRules:
             value: ImporterNoConsensus
         equal:
           - type
+          - namespace
+          - pod
 
-  CloudAlertsRecord:
+  InhibitRecordStreamAlertsOnCloudErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -95,8 +103,11 @@ inhibitRules:
           - name: alertname
             regex: true
             value: (ImporterRecordStreamFallenBehind, ImporterNoTransactions)
+        equal:
+          - namespace
+          - pod
 
-  CloudAlertsBalance:
+  InhibitBalanceStreamAlertsOnCloudErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -108,8 +119,11 @@ inhibitRules:
         targetMatch:
           - name: alertname
             value: ImporterBalanceStreamFallenBehind
+        equal:
+          - namespace
+          - pod
 
-  CloudErrorsInhibitsLatency:
+  InhibitCloudLatencyAlertsOnCloudErrorAlerts:
     enabled: true
     matches:
       - sourceMatch:
@@ -120,10 +134,10 @@ inhibitRules:
             value: ImporterCloudStorageLatency
         equal:
           - type
+          - namespace
+          - pod
 
-# Parse Latency balance rules
-
-  ParseLatencyBalance:
+  InhibitBalanceStreamFallenBehindOnParseLatency:
     enabled: true
     matches:
       - sourceMatch:
@@ -132,9 +146,11 @@ inhibitRules:
         targetMatch:
           - name: alertname
             value: ImporterBalanceStreamFallenBehind
+        equal:
+          - namespace
+          - pod
 
-
-  ParseLatencyRecord:
+  InhibitRecordStreamFallenBehindOnParseLatency:
     enabled: true
     matches:
       - sourceMatch:
@@ -144,8 +160,11 @@ inhibitRules:
           - name: alertname
             regex: true
             value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
+        equal:
+          - namespace
+          - pod
 
-  StreamCloseInterval:
+  InhibitNoTransactionsOnStreamCloseInterval:
     enabled: true
     matches:
       - sourceMatch:
@@ -154,8 +173,11 @@ inhibitRules:
         targetMatch:
           - name: alertname
             value: ImporterNoTransactions
+        equal:
+          - namespace
+          - pod
 
-  SignatureVerificationRecord:
+  InhibitRecordStreamAlertsOnVerificationErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -167,8 +189,11 @@ inhibitRules:
           - name: alertname
             regex: true
             value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
+        equal:
+          - namespace
+          - pod
 
-  SignatureVerificationBalance:
+  InhibitBalanceStreamAlertsOnVerificationErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -179,8 +204,11 @@ inhibitRules:
         targetMatch:
           - name: alertname
             value: (ImporterBalanceStreamFallenBehind)
+        equal:
+          - namespace
+          - pod
 
-  SignatureVerification:
+  InhibitNoConsensusOnVerificationErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -191,8 +219,10 @@ inhibitRules:
             value: ImporterNoConsensus
         equal:
           - type
+          - namespace
+          - pod
 
-  ParseErrorsAndNoConsensusBalance:
+  InhibitBalanceStreamFallenBehindOnParseAndConsensusErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -204,8 +234,11 @@ inhibitRules:
         targetMatch:
           - name: alertname
             value: ImporterBalanceStreamFallenBehind
+        equal:
+          - namespace
+          - pod
 
-  ParseErrorsAndNoConsensusRecord:
+  InhibitRecordStreamFallenBehindAndNoTransactionsOnParseAndConsensusErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -218,8 +251,11 @@ inhibitRules:
           - name: alertname
             regex: true
             value: (ImporterRecordStreamFallenBehind|ImporterNoTransactions)
+        equal:
+          - namespace
+          - pod
 
-  ErrorsInhibitLogs:
+  InhibitLogAlertsOnErrors:
     enabled: true
     matches:
       - sourceMatch:
@@ -228,8 +264,10 @@ inhibitRules:
             value: (ImporterCloudStorageErrors|ImporterFileVerificationErrors|ImporterParseErrors)
         targetMatch:
           - name: alertname
-            regex: true
-            value: (ImporterRecordStreamFallenBehind|ImporterNoTransactions)
+            value: ImporterLog4j2Errors
+        equal:
+          - namespace
+          - pod
 
 labels: {}
 
@@ -277,11 +315,11 @@ replicas: 1
 
 resources:
   limits:
-    cpu: 1.8
-    memory: 3072Mi
+    cpu: 100m
+    memory: 500Mi
   requests:
-    cpu: 200m
-    memory: 512Mi
+    cpu: 50m
+    memory: 64Mi
 
 revisionHistoryLimit: 3
 
@@ -297,8 +335,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: latency
-      record: balance
 
   ImporterBalanceStreamFallenBehind:
     annotations:
@@ -310,8 +346,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: fallBehind
-      record: balance
 
   ImporterCloudStorageErrors:
     annotations:
@@ -323,7 +357,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: cloud
 
   ImporterCloudStorageLatency:
     annotations:
@@ -335,7 +368,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: cloud
 
   ImporterFileVerificationErrors:
     annotations:
@@ -347,7 +379,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: verification
 
   ImporterHighCPU:
     annotations:
@@ -359,8 +390,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      noPods: stop
-      type: resources
 
   ImporterHighDBConnections:
     annotations:
@@ -372,7 +401,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: resources
 
   ImporterHighFileDescriptors:
     annotations:
@@ -384,7 +412,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: resources
 
   ImporterHighMemory:
     annotations:
@@ -396,7 +423,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: resources
 
   ImporterLog4j2Errors:
     annotations:
@@ -408,7 +434,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: logs
 
   ImporterNoConsensus:
     annotations:
@@ -420,7 +445,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: consensus
 
   ImporterNoTransactions:
     annotations:
@@ -432,7 +456,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      type: noTransactions
 
   ImporterParseErrors:
     annotations:
@@ -444,7 +467,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      noPods: stop
 
   ImporterPublishLatency:
     annotations:
@@ -456,7 +478,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      noPods: stop
 
   ImporterRecordParseLatency:
     annotations:
@@ -468,7 +489,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      noPods: stop
 
   ImporterRecordStreamFallenBehind:
     annotations:
@@ -480,7 +500,6 @@ prometheusRules:
     labels:
       severity: critical
       service: importer
-      noPods: stop
 
   ImporterStreamCloseInterval:
     annotations:
@@ -492,20 +511,17 @@ prometheusRules:
     labels:
       severity: warning
       service: importer
-      noPods: stop
-
 
   ImporterNoPodsReady:
     annotations:
-      description: "No importer instances are currently running.  "
-      summary: No importer instances running
+      description: "No importer instances are currently ready in {{ $labels.namespace }}"
+      summary: No importer instances are ready
     enabled: true
     expr: kube_pod_container_status_ready{container="importer"} < 1
-    for: 5s
+    for: 30s
     labels:
       severity: critical
       service: importer
-      noPods: continue
 
 securityContext:
   capabilities:
