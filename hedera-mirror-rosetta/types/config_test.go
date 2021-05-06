@@ -28,7 +28,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNodeMap_UnmarshalYAML(t *testing.T) {
+const (
+	nodeEndpoint1 string = "10.0.0.1:50211"
+	nodeEndpoint2 string = "10.0.0.2:50211"
+	nodeEndpoint3 string = "10.0.0.3:50211"
+)
+
+var (
+	nodeAccountId1 = hedera.AccountID{Account: 3}
+	nodeAccountId2 = hedera.AccountID{Account: 4}
+	nodeAccountId3 = hedera.AccountID{Account: 5}
+)
+
+func TestNodeMapUnmarshalYAML(t *testing.T) {
 	var tests = []struct {
 		name          string
 		mockUnmarshal func(interface{}) error
@@ -43,16 +55,16 @@ func TestNodeMap_UnmarshalYAML(t *testing.T) {
 					return errors.New("invalid input type")
 				}
 
-				(*result)["10.0.0.1:50211"] = "0.0.3"
-				(*result)["10.0.0.2:50211"] = "0.0.4"
-				(*result)["10.0.0.3:50211"] = "0.0.5"
+				(*result)[nodeEndpoint1] = nodeAccountId1.String()
+				(*result)[nodeEndpoint2] = nodeAccountId2.String()
+				(*result)[nodeEndpoint3] = nodeAccountId3.String()
 
 				return nil
 			},
 			expected: NodeMap{
-				"10.0.0.1:50211": hedera.AccountID{Account: 3},
-				"10.0.0.2:50211": hedera.AccountID{Account: 4},
-				"10.0.0.3:50211": hedera.AccountID{Account: 5},
+				nodeEndpoint1: nodeAccountId1,
+				nodeEndpoint2: nodeAccountId2,
+				nodeEndpoint3: nodeAccountId3,
 			},
 			wantErr: false,
 		},
@@ -72,9 +84,9 @@ func TestNodeMap_UnmarshalYAML(t *testing.T) {
 					return errors.New("invalid input type")
 				}
 
-				(*result)["10.0.0.1:50211"] = "0.a.3"
-				(*result)["10.0.0.2:50211"] = "x"
-				(*result)["10.0.0.3:50211"] = "10"
+				(*result)[nodeEndpoint1] = "0.a.3"
+				(*result)[nodeEndpoint2] = "x"
+				(*result)[nodeEndpoint3] = "10"
 
 				return nil
 			},
