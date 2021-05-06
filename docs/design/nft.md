@@ -115,14 +115,14 @@ Need information on file format. Effectively envision:
 - Update `/api/v1/transactions` response to add nft transfers
 
 ```json
-    {
+{
   "transactions": [
     {
       "consensus_timestamp": "1234567890.000000001",
       "charged_tx_fee": 7,
       "max_fee": "33",
       "memo_base64": null,
-      "name": "TOKENTRANSFER",
+      "name": "CRYPTOTRANSFER",
       "node": "0.0.3",
       "result": "SUCCESS",
       "token_transfers": [
@@ -145,7 +145,7 @@ Need information on file format. Effectively envision:
           "token_id": "0.0.90000"
         },
         {
-          "fungible": true,
+          "fungible": false,
           "receiver_account_id": "0.0.121",
           "sender_account_id": "0.0.122",
           "serial_number": 124,
@@ -225,7 +225,7 @@ Need information on file format. Effectively envision:
 - Update `/api/v1/balances` response to add NFTs to the tokens list, with serial numbers instead of balance.
 
 ```json
-    {
+{
   "timestamp": "0.000002345",
   "balances": [
     {
@@ -326,7 +326,7 @@ Add optional filters
 - Update `/api/v1/tokens/{id}` response to show NFTs by adding the `fungible` field and the `serial_numbers` list.
 
 ```json
-    {
+{
   "admin_key": {
     "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
