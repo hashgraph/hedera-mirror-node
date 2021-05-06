@@ -34,13 +34,10 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -50,11 +47,9 @@ import com.hedera.hashgraph.sdk.proto.TopicID;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusServiceGrpc;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusTopicResponse;
-import com.hedera.mirror.monitor.MonitorApplication;
+import com.hedera.mirror.monitor.expression.MonitorIntegrationTest;
 
-@Log4j2
-@SpringBootTest(classes = MonitorApplication.class)
-class GrpcClientSDKTest {
+class GrpcClientSDKTest extends MonitorIntegrationTest {
 
     private static final Instant START_TIME = Instant.now();
 
@@ -120,7 +115,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofSeconds(2L));
+                .verify(Duration.ofSeconds(5L));
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(HashMultiset.create(), GrpcSubscription::getErrors);
@@ -170,7 +165,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectError(IllegalStateException.class)
-                .verify(Duration.ofSeconds(2L));
+                .verify(Duration.ofSeconds(5L));
     }
 
     @Disabled("Need to fix SDK to call error handler for non-retryable errors")
@@ -235,11 +230,10 @@ class GrpcClientSDKTest {
 
         private Flux<ConsensusTopicResponse> responses = Flux.empty();
         private ConsensusTopicQuery.Builder request = ConsensusTopicQuery.newBuilder()
-                .setLimit(properties.getLimit())
                 .setConsensusEndTime(toTimestamp(properties.getEndTime()))
                 .setConsensusStartTime(toTimestamp(properties.getStartTime()))
-                .setTopicID(TopicID.newBuilder().setTopicNum(Long
-                        .parseLong(StringUtils.split(properties.getTopicId(), '.')[2])).build());
+                .setLimit(properties.getLimit())
+                .setTopicID(TopicID.newBuilder().setTopicNum(1000).build());
 
         @Override
         public void subscribeTopic(ConsensusTopicQuery consensusTopicQuery,
@@ -249,7 +243,7 @@ class GrpcClientSDKTest {
             responses.doOnComplete(streamObserver::onCompleted)
                     .doOnError(streamObserver::onError)
                     .doOnNext(streamObserver::onNext)
-                    .doOnNext(t -> log.info("Next: {}", t))
+                    .doOnNext(t -> log.trace("Next: {}", t))
                     .subscribe();
         }
     }

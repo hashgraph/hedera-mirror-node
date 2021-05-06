@@ -110,6 +110,7 @@ class GrpcSubscription implements Subscription {
 
     @Override
     public String toString() {
-        return getProperties().getName() + '#' + getId();
+        String name = getProperties().getName();
+        return getProperties().getSubscribers() <= 1 ? name : name + '#' + getId();
     }
 }
