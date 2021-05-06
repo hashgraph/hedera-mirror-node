@@ -69,10 +69,11 @@ class GrpcClientSDKTest {
         properties.setName(testInfo.getDisplayName());
         properties.setTopicId("0.0.1000");
         subscription = new GrpcSubscription(1, properties);
-        consensusServiceStub = new ConsensusServiceStub();
         MonitorProperties monitorProperties = new MonitorProperties();
         monitorProperties.getMirrorNode().getGrpc().setHost("127.0.0.1");
         grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
+
+        consensusServiceStub = new ConsensusServiceStub();
         server = ServerBuilder.forPort(5600)
                 .addService(consensusServiceStub)
                 .build()
@@ -121,7 +122,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofSeconds(5L));
+                .verify(Duration.ofSeconds(2L));
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(HashMultiset.create(), GrpcSubscription::getErrors);
@@ -171,7 +172,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectError(IllegalStateException.class)
-                .verify(Duration.ofSeconds(5L));
+                .verify(Duration.ofSeconds(2L));
     }
 
     @Disabled("Need to fix SDK to call error handler for non-retryable errors")
