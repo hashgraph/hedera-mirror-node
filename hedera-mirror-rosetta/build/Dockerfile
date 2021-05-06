@@ -2,25 +2,17 @@
 # Importer, Rosetta and PostgreSQL into one image
 # and run the services using supervisord
 
-# --------------------------  Clone Repository  -------------------------- #
-FROM ubuntu:20.04 as cloner
-RUN apt-get update && apt-get install -y git
-ARG GIT_BRANCH=master
-RUN git clone https://github.com/hashgraph/hedera-mirror-node.git
-RUN cd hedera-mirror-node && git checkout "${GIT_BRANCH}"
-
 # ------------------------------  Rosetta  ------------------------------- #
 FROM golang:1.16 as rosetta-builder
-WORKDIR /tmp
-COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
-WORKDIR /tmp/hedera-mirror-node/hedera-mirror-rosetta
+COPY hedera-mirror-rosetta /hedera-mirror-rosetta
+WORKDIR /hedera-mirror-rosetta
 RUN go build -o rosetta-executable ./cmd
 
 # ---------------------------- Importer ----------------------------- #
 FROM openjdk:11.0 as java-builder
 
 RUN apt-get update
-COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
+COPY . ./hedera-mirror-node
 RUN cd hedera-mirror-node && ./mvnw --batch-mode --no-transfer-progress --show-version clean package -DskipTests -pl hedera-mirror-importer
 
 # ######################################################################## #
@@ -54,15 +46,14 @@ RUN ln -s /data/db/main /var/lib/postgresql/9.6/main
 
 # ---------------------------  Supervisord  --------------------------- #
 
-# Copy the repository from the Cloner stage
-COPY --from=cloner /hedera-mirror-node ./hedera-mirror-node
+COPY hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql /scripts/init_v1.sql
 USER postgres
 
 # Init db script
 RUN /etc/init.d/postgresql start &&\
     createdb mirror_node &&\
     psql --command "create user mirror_node with SUPERUSER password 'mirror_node_pass'" &&\
-    PGPASSWORD=mirror_node_pass psql -d mirror_node -U mirror_node -h 127.0.0.1 -f /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql
+    PGPASSWORD=mirror_node_pass psql -d mirror_node -U mirror_node -h 127.0.0.1 -f /scripts/init_v1.sql
 
 RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
 # Allow PG Admin access
@@ -70,20 +61,17 @@ RUN echo "host    all             all             172.17.0.1/16           trust"
 
 USER root
 
-# Create Volume importer directory
-RUN mkdir -p /data/data
-RUN ln -s /data/data /hedera-mirror-node
-
 # Copy the Rosetta Executable from the Rosetta Builder stage
 WORKDIR /var/rosetta
-COPY --from=rosetta-builder /tmp/hedera-mirror-node/hedera-mirror-rosetta/rosetta-executable .
-COPY --from=rosetta-builder /tmp/hedera-mirror-node/hedera-mirror-rosetta/config/application.yml ./config/application.yml
+COPY --from=rosetta-builder /hedera-mirror-rosetta/rosetta-executable .
+COPY --from=rosetta-builder /hedera-mirror-rosetta/config/application.yml ./config/application.yml
 
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer
 COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-*exec.jar ./hedera-mirror-importer.jar
 
-WORKDIR /hedera-mirror-node/hedera-mirror-rosetta/build
+COPY hedera-mirror-rosetta/build /build
+WORKDIR /build
 
 # Expose the ports (DB)(Rosetta)
 EXPOSE 5432 5700

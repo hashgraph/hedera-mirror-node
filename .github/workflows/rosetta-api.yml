@@ -49,16 +49,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set tag
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: echo "branch=${{ github.ref }}" >> $GITHUB_ENV
-
-      - name: Set branch
-        if: "!startsWith(github.ref, 'refs/tags/v')"
-        run: echo "branch=${{ github.head_ref }}" >> $GITHUB_ENV
-
       - name: Build Mirror Node All-in-One
-        run: docker build --tag="${MODULE}" --build-arg GIT_BRANCH="${{ env.branch }}" build/
+        run: docker build --tag="${MODULE}" -f build/Dockerfile ..
 
       - name: Run Mirror Node
         run: docker run -d -p 5700:5700 "${MODULE}"
