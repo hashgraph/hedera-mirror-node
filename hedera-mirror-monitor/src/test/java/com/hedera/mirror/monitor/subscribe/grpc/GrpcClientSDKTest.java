@@ -32,12 +32,13 @@ import io.grpc.stub.StreamObserver;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import javax.annotation.Resource;
 import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
@@ -47,27 +48,31 @@ import com.hedera.hashgraph.sdk.proto.TopicID;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusServiceGrpc;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusTopicResponse;
-import com.hedera.mirror.monitor.expression.MonitorIntegrationTest;
+import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 
-class GrpcClientSDKTest extends MonitorIntegrationTest {
+@Log4j2
+class GrpcClientSDKTest {
 
     private static final Instant START_TIME = Instant.now();
 
-    @Resource
-    private GrpcClientSDK grpcClientSDK;
-
     private ConsensusServiceStub consensusServiceStub;
+    private GrpcClientSDK grpcClientSDK;
     private GrpcSubscriberProperties properties;
     private Server server;
     private GrpcSubscription subscription;
 
     @BeforeEach
-    void setup() throws Exception {
+    void setup(TestInfo testInfo) throws Exception {
+        log.info("Executing: {}", testInfo.getDisplayName());
         properties = new GrpcSubscriberProperties();
-        properties.setName("Test");
+        properties.setName(testInfo.getDisplayName());
         properties.setTopicId("0.0.1000");
         subscription = new GrpcSubscription(1, properties);
         consensusServiceStub = new ConsensusServiceStub();
+        MonitorProperties monitorProperties = new MonitorProperties();
+        monitorProperties.getMirrorNode().getGrpc().setHost("127.0.0.1");
+        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
         server = ServerBuilder.forPort(5600)
                 .addService(consensusServiceStub)
                 .build()
@@ -76,6 +81,7 @@ class GrpcClientSDKTest extends MonitorIntegrationTest {
 
     @AfterEach
     void teardown() throws Exception {
+        grpcClientSDK.close();
         if (server != null) {
             server.shutdown();
             server.awaitTermination();
