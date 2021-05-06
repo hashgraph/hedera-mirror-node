@@ -62,7 +62,7 @@ type Rosetta struct {
 	ApiVersion  string  `yaml:"apiVersion" env:"HEDERA_MIRROR_ROSETTA_API_VERSION"`
 	Db          Db      `yaml:"db"`
 	Network     string  `yaml:"network" env:"HEDERA_MIRROR_ROSETTA_NETWORK"`
-	Nodes       NodeMap `yaml:"network" env:"HEDERA_MIRROR_ROSETTA_NODES"`
+	Nodes       NodeMap `yaml:"nodes" env:"HEDERA_MIRROR_ROSETTA_NODES"`
 	NodeVersion string  `yaml:"nodeVersion" env:"HEDERA_MIRROR_ROSETTA_NODE_VERSION"`
 	Online      bool    `yaml:"online" env:"HEDERA_MIRROR_ROSETTA_ONLINE"`
 	Port        string  `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_PORT"`
