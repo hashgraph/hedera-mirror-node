@@ -97,6 +97,6 @@ class MonitorConfiguration {
                 .onErrorContinue((t, r) -> log.error("Unexpected error during subscribe: ", t))
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .doOnSubscribe(s -> log.info("Starting subscribe flow"))
-                .subscribe(subscribeMetrics::record);
+                .subscribe(subscribeMetrics::onNext);
     }
 }

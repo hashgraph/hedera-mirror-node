@@ -63,8 +63,8 @@ class SubscribeMetricsTest {
         TestSubscription subscription = new TestSubscription();
         SubscribeResponse response1 = response(subscription);
         SubscribeResponse response2 = response(subscription);
-        subscribeMetrics.record(response1);
-        subscribeMetrics.record(response2);
+        subscribeMetrics.onNext(response1);
+        subscribeMetrics.onNext(response2);
 
         assertThat(meterRegistry.find(METRIC_DURATION).timeGauges())
                 .hasSize(1)
@@ -79,7 +79,7 @@ class SubscribeMetricsTest {
     void recordE2E() {
         TestSubscription subscription = new TestSubscription();
         SubscribeResponse response1 = response(subscription);
-        subscribeMetrics.record(response1);
+        subscribeMetrics.onNext(response1);
 
         assertThat(meterRegistry.find(METRIC_E2E).timers())
                 .hasSize(1)
@@ -93,7 +93,7 @@ class SubscribeMetricsTest {
 
         subscription.setCount(subscription.getCount() + 1);
         SubscribeResponse response2 = response(subscription);
-        subscribeMetrics.record(response2);
+        subscribeMetrics.onNext(response2);
 
         assertThat(meterRegistry.find(METRIC_E2E).timers())
                 .hasSize(1)

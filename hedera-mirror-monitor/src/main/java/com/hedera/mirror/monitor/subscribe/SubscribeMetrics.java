@@ -61,7 +61,7 @@ public class SubscribeMetrics {
                 .scheduleWithFixedDelay(this::status, frequency, frequency, TimeUnit.MILLISECONDS);
     }
 
-    public void record(SubscribeResponse response) {
+    public void onNext(SubscribeResponse response) {
         log.trace("Got response: {}", response);
         Subscription subscription = response.getSubscription();
         Instant publishedTimestamp = response.getPublishedTimestamp();
