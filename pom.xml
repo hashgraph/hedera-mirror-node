@@ -54,13 +54,13 @@
     </parent>
 
     <properties>
-        <dependency-check.version>6.1.5</dependency-check.version>
-        <disruptor.version>3.4.3</disruptor.version> <!-- Used for asynchronous logging -->
+        <dependency-check.version>6.1.6</dependency-check.version>
+        <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.35.0</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.0.6</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.0.7</embedded.testcontainers.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.37.0</grpc.version>
@@ -148,7 +148,7 @@
                 <plugin>
                     <groupId>com.googlecode.maven-download-plugin</groupId>
                     <artifactId>download-maven-plugin</artifactId>
-                    <version>1.6.2</version>
+                    <version>1.6.3</version>
                     <executions>
                         <execution>
                             <id>download-antlr-source</id>
