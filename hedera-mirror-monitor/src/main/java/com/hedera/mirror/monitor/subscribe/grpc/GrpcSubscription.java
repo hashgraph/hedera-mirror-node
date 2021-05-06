@@ -93,7 +93,7 @@ class GrpcSubscription implements Subscription {
         last.ifPresent(topicMessage -> {
             long expected = topicMessage.sequenceNumber + 1;
             if (topicResponse.sequenceNumber != expected) {
-                log.warn("Expected sequence number {} but received {}", expected, topicResponse.sequenceNumber);
+                throw new IllegalStateException("Expected sequence number " + expected + " but received " + topicResponse.sequenceNumber);
             }
         });
 

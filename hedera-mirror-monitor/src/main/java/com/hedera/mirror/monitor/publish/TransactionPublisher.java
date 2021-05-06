@@ -64,13 +64,15 @@ public class TransactionPublisher {
 
     @PreDestroy
     public void close() {
-        log.info("Closing {} clients", clients.get().size());
+        if (publishProperties.isEnabled()) {
+            log.info("Closing {} clients", clients.get().size());
 
-        for (Client client : clients.get()) {
-            try {
-                client.close();
-            } catch (Exception e) {
-                // Ignore
+            for (Client client : clients.get()) {
+                try {
+                    client.close();
+                } catch (Exception e) {
+                    // Ignore
+                }
             }
         }
     }

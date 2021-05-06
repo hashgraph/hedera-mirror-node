@@ -41,7 +41,7 @@ import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 
 @ExtendWith(MockitoExtension.class)
-public class GrpcSubscriberTest {
+class GrpcSubscriberTest {
 
     private final ExpressionConverter expressionConverter = p -> p;
     private final SubscribeProperties subscribeProperties = new SubscribeProperties();
@@ -137,7 +137,7 @@ public class GrpcSubscriberTest {
     }
 
     @Test
-    void clientError() {
+    void nonRetryableError() {
         when(grpcClient.subscribe(any())).thenReturn(Flux.error(new StatusRuntimeException(Status.INVALID_ARGUMENT)));
         grpcSubscriber.subscribe()
                 .as(StepVerifier::create)

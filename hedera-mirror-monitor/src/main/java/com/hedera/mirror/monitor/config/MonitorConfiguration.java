@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.Disposable;
@@ -63,6 +64,7 @@ class MonitorConfiguration {
      * @return the subscribed flux
      */
     @Bean
+    @ConditionalOnProperty(value = "hedera.mirror.monitor.publish.enabled", havingValue = "true", matchIfMissing = true)
     Disposable publish() {
         return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
                 .flatMapIterable(Function.identity())
@@ -85,6 +87,8 @@ class MonitorConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(value = "hedera.mirror.monitor.subscribe.enabled", havingValue = "true",
+            matchIfMissing = true)
     Disposable subscribe(MirrorSubscriber mirrorSubscriber, SubscribeMetrics subscribeMetrics) {
         return mirrorSubscriber.subscribe()
                 .publishOn(Schedulers.parallel())

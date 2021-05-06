@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 
-public class SubscribeMetricsTest {
+class SubscribeMetricsTest {
 
     private MeterRegistry meterRegistry;
     private SubscribeProperties subscribeProperties;

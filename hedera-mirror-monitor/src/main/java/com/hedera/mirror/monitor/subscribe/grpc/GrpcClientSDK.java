@@ -65,8 +65,10 @@ class GrpcClientSDK implements GrpcClient {
     @Override
     public Flux<SubscribeResponse> subscribe(GrpcSubscription subscription) {
         int clientIndex = secureRandom.nextInt(subscribeProperties.getClients());
-        log.info("Starting subscription to client {}: {}", clientIndex, subscription);
-        return clients.elementAt(clientIndex).flatMapMany(client -> subscribeToClient(client, subscription));
+        log.info("Starting {} subscription to client {}", subscription, clientIndex);
+        return clients.elementAt(clientIndex)
+                .flatMapMany(client -> subscribeToClient(client, subscription))
+                .doFinally(s -> log.info("Stopping {} subscription to client {}", subscription, clientIndex));
     }
 
     private Flux<SubscribeResponse> subscribeToClient(Client client, GrpcSubscription subscription) {
@@ -101,8 +103,8 @@ class GrpcClientSDK implements GrpcClient {
     }
 
     @PreDestroy
-    private void close() {
-        log.warn("Closing {} clients", clients.count());
+    void close() {
+        log.warn("Closing {} clients", subscribeProperties.getClients());
         clients.subscribe(client -> {
             try {
                 client.close();
