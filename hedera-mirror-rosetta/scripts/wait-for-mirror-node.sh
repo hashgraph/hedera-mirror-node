@@ -1,7 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-if [[ "${CI}" = "true" ]]; then
+CI=${CI:-false}
+
+if [[ "$CI" = "true" ]]; then
     sleep 30
 else
     sleep 5
