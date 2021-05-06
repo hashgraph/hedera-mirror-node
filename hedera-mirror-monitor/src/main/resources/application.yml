@@ -24,7 +24,7 @@ logging:
     root: warn
     #org.springframework.web.reactive.function.client: trace
     com.hedera.datagenerator: info
-    com.hedera.mirror.monitor: trace
+    com.hedera.mirror.monitor: info
 management:
   endpoints:
     web:
