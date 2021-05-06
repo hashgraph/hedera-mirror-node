@@ -46,13 +46,13 @@ func (n *NodeMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	*n = make(NodeMap, len(nodes))
-	for address, nodeAccountIdStr := range nodes {
+	for endpoint, nodeAccountIdStr := range nodes {
 		nodeAccountId, err := hedera.AccountIDFromString(nodeAccountIdStr)
 		if err != nil {
 			return err
 		}
 
-		(*n)[address] = nodeAccountId
+		(*n)[endpoint] = nodeAccountId
 	}
 
 	return nil
