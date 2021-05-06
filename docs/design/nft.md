@@ -461,21 +461,21 @@ Optional Filters
   "transactions": [
     {
       "consensus_timestamp": "1618591023.997420022",
-      "transaction_id": "0.0.19789-1618805680-742097949",
-      "transaction_type": "TOKENBURN"
+      "id": "0.0.19789-1618805680-742097949",
+      "type": "TOKENBURN"
     },
     {
       "consensus_timestamp": "1618591023.997420021",
+      "id": "0.0.19789-1618805680-742097948",
       "receiver_account_id": "0.0.11",
       "sender_account_id": "0.0.10",
-      "transaction_id": "0.0.19789-1618805680-742097948",
-      "transaction_type": "CRYPTOTRANSFER"
+      "type": "CRYPTOTRANSFER"
     },
     {
       "consensus_timestamp": "1618591023.997420020",
-      "transaction_id": "0.0.19789-1618805680-742097947",
-      "transaction_type": "TOKENMINT",
-      "treasury_account_id": "0.0.5"
+      "id": "0.0.19789-1618805680-742097947",
+      "treasury_account_id": "0.0.5",
+      "type": "TOKENMINT"
     }
   ],
   "links": {
