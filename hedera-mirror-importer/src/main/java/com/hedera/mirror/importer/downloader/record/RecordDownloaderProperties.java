@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader.record;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -45,6 +46,10 @@ public class RecordDownloaderProperties implements DownloaderProperties {
 
     @Min(1)
     private int batchSize = 40;
+
+    @Max(1)
+    @Min(0)
+    private double consensusRatio = 0.333;
 
     private boolean enabled = true;
 

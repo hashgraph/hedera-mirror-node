@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.downloader;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -57,10 +59,14 @@ class NodeSignatureVerifierTest {
     private static PublicKey publicKey;
 
     private static final EntityId nodeId = new EntityId(0L, 0L, 3L, EntityTypeEnum.ACCOUNT.getId());
+    private static final MeterRegistry meterRegistry = new LoggingMeterRegistry();
     private Signature signer;
 
     @Mock
     private AddressBookService addressBookService;
+
+    @Mock
+    private DownloaderProperties downloaderProperties;
 
     @Mock
     private AddressBook currentAddressBook;
@@ -76,7 +82,7 @@ class NodeSignatureVerifierTest {
 
     @BeforeEach
     void setup() throws GeneralSecurityException {
-        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
+        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService, downloaderProperties, meterRegistry);
         signer = Signature.getInstance("SHA384withRSA", "SunRsaSign");
         signer.initSign(privateKey);
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
@@ -174,7 +180,8 @@ class NodeSignatureVerifierTest {
                 null, null);
         fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityTypeEnum.ACCOUNT.getId()));
 
-        nodeSignatureVerifier.verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode5));
+        nodeSignatureVerifier
+                .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode5));
     }
 
     @Test

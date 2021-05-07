@@ -31,6 +31,8 @@ public interface DownloaderProperties {
 
     CommonDownloaderProperties getCommon();
 
+    double getConsensusRatio();
+
     MirrorProperties getMirrorProperties();
 
     /**

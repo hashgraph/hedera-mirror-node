@@ -23,32 +23,55 @@ package com.hedera.mirror.importer.downloader;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
 @Named
 @Log4j2
-@RequiredArgsConstructor
 public class NodeSignatureVerifier {
 
     private final AddressBookService addressBookService;
+    private final DownloaderProperties downloaderProperties;
 
-    private static boolean canReachConsensus(long actualNodes, long expectedNodes) {
-        return actualNodes >= Math.ceil(expectedNodes / 3.0);
+    // Metrics
+    private final MeterRegistry meterRegistry;
+    private final Counter.Builder missingNodeSignatureFileMetric;
+    private final Counter.Builder signatureVerificationMetric;
+
+    public NodeSignatureVerifier(AddressBookService addressBookService, DownloaderProperties downloaderProperties,
+                                 MeterRegistry meterRegistry) {
+        this.addressBookService = addressBookService;
+        this.downloaderProperties = downloaderProperties;
+        this.meterRegistry = meterRegistry;
+
+        String streamType = downloaderProperties.getStreamType().toString();
+        missingNodeSignatureFileMetric = Counter.builder("hedera.mirror.download.signature.missing")
+                .description("The number of signatures verified from a particular node")
+                .tag("type", streamType);
+        signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
+                .description("The number of signatures verified from a particular node")
+                .tag("type", streamType);
+    }
+
+    private static boolean canReachConsensus(long actualNodes, long expectedNodes, double consensusRatio) {
+        return actualNodes >= Math.ceil(expectedNodes * consensusRatio);
     }
 
     /**
@@ -75,7 +98,7 @@ public class NodeSignatureVerifier {
 
         long sigFileCount = signatures.size();
         long nodeCount = nodeAccountIDPubKeyMap.size();
-        if (!canReachConsensus(sigFileCount, nodeCount)) {
+        if (!canReachConsensus(sigFileCount, nodeCount, downloaderProperties.getConsensusRatio())) {
             throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
                     sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures,
                     nodeAccountIDPubKeyMap));
@@ -91,7 +114,7 @@ public class NodeSignatureVerifier {
         for (String key : signatureHashMap.keySet()) {
             Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
 
-            if (canReachConsensus(validatedSignatures.size(), nodeCount)) {
+            if (canReachConsensus(validatedSignatures.size(), nodeCount, downloaderProperties.getConsensusRatio())) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
             }
@@ -159,11 +182,29 @@ public class NodeSignatureVerifier {
                 .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
                         Collectors.mapping(FileStreamSignature::getNodeAccountIdString, Collectors
                                 .toCollection(TreeSet::new))));
-        Set<String> seenNodes = signatures.stream().map(FileStreamSignature::getNodeAccountIdString)
-                .collect(Collectors.toSet());
+
+        Set<String> seenNodes = new HashSet<>();
+        signatures.forEach(signature -> {
+            seenNodes.add(signature.getNodeAccountId().entityIdToString());
+            EntityId nodeAccountId = signature.getNodeAccountId();
+            signatureVerificationMetric.tag("nodeAccount", nodeAccountId.getEntityNum().toString())
+                    .tag("realm", nodeAccountId.getRealmNum().toString())
+                    .tag("shard", nodeAccountId.getShardNum().toString())
+                    .tag("status", signature.getStatus().toString())
+                    .register(meterRegistry)
+                    .increment();
+        });
+
         Set<String> missingNodes = new TreeSet<>(Sets.difference(nodeAccountIDPubKeyMap.keySet(), seenNodes));
         statusMap.put("MISSING", missingNodes);
         statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
+
+        missingNodes.forEach(nodeAccountId -> {
+            missingNodeSignatureFileMetric.tag("nodeAccount", nodeAccountId)
+                    .register(meterRegistry)
+                    .increment();
+        });
+
         return statusMap;
     }
 }
