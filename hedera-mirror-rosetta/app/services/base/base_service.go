@@ -26,7 +26,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 // BaseService - Struct implementing common functionalities used by more than 1 service
@@ -54,7 +54,7 @@ func (c *BaseService) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) 
 		h := hex.SafeRemoveHexPrefix(*bIdentifier.Hash)
 		return c.blockRepo.FindByHash(h)
 	} else {
-		log.Printf(`An error occurred while retrieving Block with Index [%d] and Hash [%v]. Should not happen.`, bIdentifier.Index, bIdentifier.Hash)
+		log.Errorf("An error occurred while retrieving Block with Index [%d] and Hash [%v]. Should not happen.", bIdentifier.Index, bIdentifier.Hash)
 		return nil, errors.Errors[errors.InternalServerError]
 	}
 }

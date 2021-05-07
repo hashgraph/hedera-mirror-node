@@ -25,7 +25,6 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
-	"log"
 	"math/big"
 	"sort"
 	"strconv"
@@ -41,6 +40,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/hashgraph/hedera-sdk-go/v2/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 // ConstructionAPIService implements the server.ConstructionAPIServicer interface.
@@ -297,7 +297,7 @@ func (c *ConstructionAPIService) handleCryptoTransferPreProcess(operations []*rT
 func (c *ConstructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	index, err := rand.Int(rand.Reader, c.nodeAccountIdsLen)
 	if err != nil {
-		log.Printf("failed to get a random number, use 0 instead: %s", err)
+		log.Errorf("Failed to get a random number, use 0 instead: %s", err)
 		return c.nodeAccountIds[0]
 	}
 
@@ -311,7 +311,7 @@ func NewConstructionAPIService(network string, nodes types.NodeMap) (server.Cons
 
 	// there is no live demo network, it's only used to run rosetta test, so replace it with testnet
 	if network == "demo" {
-		log.Printf("Use testnet instead of demo")
+		log.Info("Use testnet instead of demo")
 		network = "testnet"
 	}
 

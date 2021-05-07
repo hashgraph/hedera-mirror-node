@@ -22,7 +22,6 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -32,6 +31,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -65,7 +65,7 @@ func LoadConfig() (*types.Config, error) {
 
 func getConfig(config *types.Config, path string) bool {
 	if _, err := os.Stat(path); err != nil {
-		log.Printf("Failed to locate the config file %s: %s", path, err)
+		log.Errorf("Failed to locate the config file %s: %s", path, err)
 		return false
 	}
 
@@ -74,17 +74,17 @@ func getConfig(config *types.Config, path string) bool {
 	// Disable gosec since we want to support loading config via env variable like SPRING_CONFIG_ADDITIONAL_LOCATION
 	yamlFile, err := ioutil.ReadFile(filename) // #nosec
 	if err != nil {
-		log.Printf("Failed to read the config file %s: %s", filename, err)
+		log.Errorf("Failed to read the config file %s: %s", filename, err)
 		return false
 	}
 
 	err = yaml.Unmarshal(yamlFile, config)
 	if err != nil {
-		log.Printf("Failed to unmarshal the yaml config file %s: %s", filename, err)
+		log.Errorf("Failed to unmarshal the yaml config file %s: %s", filename, err)
 		return false
 	}
 
-	log.Printf("Loaded external config file: %s\n", path)
+	log.Infof("Loaded external config file: %s", path)
 	return true
 }
 

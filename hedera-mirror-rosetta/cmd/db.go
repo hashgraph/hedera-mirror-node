@@ -22,11 +22,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	log "github.com/sirupsen/logrus"
 )
 
 // Establish connection to the Postgres Database
@@ -36,7 +36,7 @@ func connectToDb(dbConfig types.Db) *gorm.DB {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Successfully connected to Database")
+	log.Info("Successfully connected to Database")
 
 	return db
 }

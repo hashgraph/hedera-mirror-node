@@ -61,6 +61,7 @@ func (n *NodeMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 type Rosetta struct {
 	ApiVersion  string  `yaml:"apiVersion" env:"HEDERA_MIRROR_ROSETTA_API_VERSION"`
 	Db          Db      `yaml:"db"`
+	Log         Log     `yaml:"log"`
 	Network     string  `yaml:"network" env:"HEDERA_MIRROR_ROSETTA_NETWORK"`
 	Nodes       NodeMap `yaml:"nodes" env:"HEDERA_MIRROR_ROSETTA_NODES"`
 	NodeVersion string  `yaml:"nodeVersion" env:"HEDERA_MIRROR_ROSETTA_NODE_VERSION"`
@@ -77,4 +78,8 @@ type Db struct {
 	Password string `yaml:"password" env:"HEDERA_MIRROR_ROSETTA_DB_PASSWORD"`
 	Port     uint16 `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_DB_PORT"`
 	Username string `yaml:"username" env:"HEDERA_MIRROR_ROSETTA_DB_USERNAME"`
+}
+
+type Log struct {
+	Level string `yaml:"level"`
 }

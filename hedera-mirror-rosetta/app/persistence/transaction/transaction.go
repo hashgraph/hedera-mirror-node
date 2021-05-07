@@ -22,19 +22,18 @@ package transaction
 
 import (
 	"encoding/hex"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
-
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -254,12 +253,12 @@ func (tr *TransactionRepository) retrieveTransactionTypesAndStatuses() *rTypes.E
 	rArray := tr.retrieveTransactionResults()
 
 	if len(typesArray) == 0 {
-		log.Println("No Transaction Types were found in the database.")
+		log.Warn("No Transaction Types were found in the database.")
 		return errors.Errors[errors.OperationTypesNotFound]
 	}
 
 	if len(rArray) == 0 {
-		log.Println("No Transaction Results were found in the database.")
+		log.Warn("No Transaction Results were found in the database.")
 		return errors.Errors[errors.OperationStatusesNotFound]
 	}
 
@@ -281,7 +280,7 @@ func (tr *TransactionRepository) retrieveTransactionTypesAndStatuses() *rTypes.E
 func constructAccount(encodedID int64) (*types.Account, *rTypes.Error) {
 	acc, err := types.NewAccountFromEncodedID(encodedID)
 	if err != nil {
-		log.Printf(errors.CreateAccountDbIdFailed, encodedID)
+		log.Errorf(errors.CreateAccountDbIdFailed, encodedID)
 		return nil, errors.Errors[errors.InternalServerError]
 	}
 	return acc, nil

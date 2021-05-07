@@ -22,7 +22,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -43,12 +42,33 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
-// NewBlockchainOnlineRouter creates a Mux http.Handler from a collection
+func configLogger(level string) {
+	var err error
+	var logLevel log.Level
+
+	if logLevel, err = log.ParseLevel(strings.ToLower(level)); err != nil {
+		// if invalid, default to info
+		logLevel = log.InfoLevel
+	}
+
+	log.SetLevel(logLevel)
+	log.SetOutput(os.Stdout)
+	log.SetFormatter(&prefixed.TextFormatter{
+		DisableColors:   true,
+		ForceFormatting: true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02T15:04:05.000-0700",
+	})
+}
+
+// newBlockchainOnlineRouter creates a Mux http.Handler from a collection
 // of server controllers, serving "online" mode.
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#online-mode-endpoints
-func NewBlockchainOnlineRouter(network *rTypes.NetworkIdentifier, nodes types.NodeMap, asserter *asserter.Asserter, version *rTypes.Version, dbClient *gorm.DB) (http.Handler, error) {
+func newBlockchainOnlineRouter(network *rTypes.NetworkIdentifier, nodes types.NodeMap, asserter *asserter.Asserter, version *rTypes.Version, dbClient *gorm.DB) (http.Handler, error) {
 	blockRepo := block.NewBlockRepository(dbClient)
 	transactionRepo := transaction.NewTransactionRepository(dbClient)
 	accountRepo := account.NewAccountRepository(dbClient)
@@ -77,10 +97,10 @@ func NewBlockchainOnlineRouter(network *rTypes.NetworkIdentifier, nodes types.No
 	return server.NewRouter(networkAPIController, blockAPIController, mempoolAPIController, constructionAPIController, accountAPIController), nil
 }
 
-// NewBlockchainOfflineRouter creates a Mux http.Handler from a collection
+// newBlockchainOfflineRouter creates a Mux http.Handler from a collection
 // of server controllers, serving "offline" mode.
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#offline-mode-endpoints
-func NewBlockchainOfflineRouter(network string, nodes types.NodeMap, asserter *asserter.Asserter) (http.Handler, error) {
+func newBlockchainOfflineRouter(network string, nodes types.NodeMap, asserter *asserter.Asserter) (http.Handler, error) {
 	constructionAPIService, err := constructionService.NewConstructionAPIService(network, nodes)
 	if err != nil {
 		return nil, err
@@ -91,24 +111,28 @@ func NewBlockchainOfflineRouter(network string, nodes types.NodeMap, asserter *a
 }
 
 func main() {
+	configLogger("info")
+
 	configuration, err := LoadConfig()
 	if err != nil {
-		log.Printf("Failed to load config: %s", err)
-		os.Exit(1)
+		log.Fatalf("Failed to load config: %s", err)
 	}
+
+	rosettaConfig := &configuration.Hedera.Mirror.Rosetta
+	configLogger(rosettaConfig.Log.Level)
 
 	network := &rTypes.NetworkIdentifier{
 		Blockchain: config.Blockchain,
-		Network:    strings.ToLower(configuration.Hedera.Mirror.Rosetta.Network),
+		Network:    strings.ToLower(rosettaConfig.Network),
 		SubNetworkIdentifier: &rTypes.SubNetworkIdentifier{
-			Network: fmt.Sprintf("shard %s realm %s", configuration.Hedera.Mirror.Rosetta.Shard, configuration.Hedera.Mirror.Rosetta.Realm),
+			Network: fmt.Sprintf("shard %s realm %s", rosettaConfig.Shard, rosettaConfig.Realm),
 		},
 	}
 
 	version := &rTypes.Version{
-		RosettaVersion:    configuration.Hedera.Mirror.Rosetta.ApiVersion,
-		NodeVersion:       configuration.Hedera.Mirror.Rosetta.NodeVersion,
-		MiddlewareVersion: &configuration.Hedera.Mirror.Rosetta.Version,
+		RosettaVersion:    rosettaConfig.ApiVersion,
+		NodeVersion:       rosettaConfig.NodeVersion,
+		MiddlewareVersion: &rosettaConfig.Version,
 	}
 
 	asserter, err := asserter.NewServer(
@@ -117,36 +141,32 @@ func main() {
 		[]*rTypes.NetworkIdentifier{network},
 	)
 	if err != nil {
-		log.Printf("%s", err)
-		os.Exit(1)
+		log.Fatalf("%s", err)
 	}
 
 	var router http.Handler
-	nodes := configuration.Hedera.Mirror.Rosetta.Nodes
 
-	if configuration.Hedera.Mirror.Rosetta.Online {
-		dbClient := connectToDb(configuration.Hedera.Mirror.Rosetta.Db)
+	if rosettaConfig.Online {
+		dbClient := connectToDb(rosettaConfig.Db)
 		defer dbClient.Close()
 
-		router, err = NewBlockchainOnlineRouter(network, nodes, asserter, version, dbClient)
+		router, err = newBlockchainOnlineRouter(network, rosettaConfig.Nodes, asserter, version, dbClient)
 		if err != nil {
-			log.Printf("%s", err)
-			os.Exit(1)
+			log.Fatalf("%s", err)
 		}
 
-		log.Printf("Serving Rosetta API in ONLINE mode")
+		log.Info("Serving Rosetta API in ONLINE mode")
 	} else {
-		router, err = NewBlockchainOfflineRouter(network.Network, nodes, asserter)
+		router, err = newBlockchainOfflineRouter(network.Network, rosettaConfig.Nodes, asserter)
 		if err != nil {
-			log.Printf("%s", err)
-			os.Exit(1)
+			log.Fatalf("%s", err)
 		}
 
-		log.Printf("Serving Rosetta API in OFFLINE mode")
+		log.Info("Serving Rosetta API in OFFLINE mode")
 	}
 
 	loggedRouter := server.LoggerMiddleware(router)
 	corsRouter := server.CorsMiddleware(loggedRouter)
-	log.Printf("Listening on port %d\n", configuration.Hedera.Mirror.Rosetta.Port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", configuration.Hedera.Mirror.Rosetta.Port), corsRouter))
+	log.Infof("Listening on port %d\n", rosettaConfig.Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", rosettaConfig.Port), corsRouter))
 }

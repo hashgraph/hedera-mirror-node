@@ -9,6 +9,8 @@ hedera:
         password: mirror_rosetta_pass
         port: 5432
         username: mirror_rosetta
+      log:
+        level: info
       network: DEMO
       nodes: {}
       nodeVersion: 0
