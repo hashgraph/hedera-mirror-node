@@ -152,6 +152,8 @@ github.com/gorilla/websocket v1.4.1-0.20190629185528-ae1634f6a989/go.mod h1:E7qH
 github.com/graph-gophers/graphql-go v0.0.0-20191115155744-f33e81362277/go.mod h1:9CQHMSxwO4MprSdzoIEobiHpoLtHm77vfxsvsIN5Vuc=
 github.com/hashgraph/hedera-sdk-go/v2 v2.1.5 h1:mO86QwkRp5ORpn1tQJmH3atrYgjmf01Zuu8RE5bhUH8=
 github.com/hashgraph/hedera-sdk-go/v2 v2.1.5/go.mod h1:uAsirNJ5vIr7OA/ofhgQQQYIHGlfpjiQADesfEVQs9Y=
+github.com/hashgraph/hedera-sdk-go/v2 v2.1.6-0.20210506233146-1386b584158e h1:+zeRVkVVIb91V8mZc0E5AUkeTM7L15gihx6s0LqRoWg=
+github.com/hashgraph/hedera-sdk-go/v2 v2.1.6-0.20210506233146-1386b584158e/go.mod h1:uAsirNJ5vIr7OA/ofhgQQQYIHGlfpjiQADesfEVQs9Y=
 github.com/hashicorp/golang-lru v0.5.4/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/holiman/uint256 v1.1.1/go.mod h1:y4ga/t+u+Xwd7CpDgZESaRcWy0I7XMlTMA25ApIH5Jw=

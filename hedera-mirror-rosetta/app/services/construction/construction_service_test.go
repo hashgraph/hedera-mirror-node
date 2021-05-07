@@ -377,9 +377,7 @@ func TestConstructionDerive(t *testing.T) {
 
 func TestConstructionHash(t *testing.T) {
 	// given:
-	// todo: SDK doubles the size of 384-bit hash by first hex encoding then converting it to []byte, need to
-	// update the test case once SDK fixes the issue
-	expectedHash := "0x633337316230306632353439303030346330316237643530333530616563616361663735363963613536343935353436356161326234386661666436386464613566376632373734363561356631623836326634333865363330633330363438"
+	expectedHash := "0xc371b00f25490004c01b7d50350aecacaf7569ca564955465aa2b48fafd68dda5f7f277465a5f1b862f438e630c30648"
 	exampleConstructionHashRequest := dummyConstructionHashRequest(validSignedTransaction)
 	expectedConstructHashResponse := &types.TransactionIdentifierResponse{
 		TransactionIdentifier: &types.TransactionIdentifier{Hash: expectedHash},
