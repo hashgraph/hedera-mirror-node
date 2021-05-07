@@ -29,7 +29,8 @@ jobs:
           restore-keys: ${{ runner.os }}-go-
 
       - name: Maven verify
-        run: ../mvnw ${MAVEN_CLI_OPTS} verify
+        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
+        working-directory: .
         env:
           GOPATH: ~/go
 
