@@ -21,13 +21,13 @@
 package block
 
 import (
-	"log"
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -128,7 +128,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectRecordFileByIndex, index + startingIndex).Find(rf).RecordNotFound() {
+	if br.dbClient.Raw(selectRecordFileByIndex, index+startingIndex).Find(rf).RecordNotFound() {
 		return nil, errors.Errors[errors.BlockNotFound]
 	}
 
@@ -255,7 +255,7 @@ func (br *BlockRepository) getRecordFilesStartingIndex() (int64, *rTypes.Error) 
 		br.recordFileStartingIndex = &startingIndex
 	})
 
-	log.Printf(`Fetched Record Files starting index: %d`, *br.recordFileStartingIndex)
+	log.Infof("Fetched Record Files starting index: %d", *br.recordFileStartingIndex)
 
 	return *br.recordFileStartingIndex, nil
 }

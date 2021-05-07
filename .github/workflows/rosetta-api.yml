@@ -31,6 +31,8 @@ jobs:
       - name: Maven verify
         run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
         working-directory: .
+        env:
+          GOPATH: ~/go
 
       - name: Upload coverage report
         run: bash <(curl -s https://codecov.io/bash)
@@ -67,21 +69,16 @@ jobs:
       GO111MODULE: on
     steps:
       - uses: actions/checkout@v2
-
-      - uses: actions/setup-go@v2
-        name: Setup GO Env
         with:
-          go-version: '1.16'
+          path: tmp
 
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - name: Install Gosec
-        run: go get github.com/securego/gosec/v2/cmd/gosec
+      - name: Copy hedera-mirror-rosetta to workspace root
+        working-directory: .
+        run: |
+          cp -r tmp/hedera-mirror-rosetta/* .
+          rm -fr tmp
 
       - name: Run Gosec Security Scanner
-        run: gosec ./...
+        uses: securego/gosec@master
+        with:
+          args: ./...

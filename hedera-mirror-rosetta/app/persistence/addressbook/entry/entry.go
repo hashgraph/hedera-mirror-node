@@ -25,7 +25,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/jinzhu/gorm"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -86,7 +86,7 @@ func (aber *AddressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
 	acc, err := types.AccountFromString(abe.Memo)
 	if err != nil {
-		log.Printf(errors.CreateAccountDbIdFailed, abe.Memo)
+		log.Errorf(errors.CreateAccountDbIdFailed, abe.Memo)
 		return nil, errors.Errors[errors.InternalServerError]
 	}
 	return acc, nil
