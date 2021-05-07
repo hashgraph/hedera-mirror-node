@@ -50,6 +50,11 @@ var Errors = map[string]*types.Error{
 	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 121, false),
 	TransactionNotFound:            New(TransactionNotFound, 122, true),
 	EmptyOperations:                New(EmptyOperations, 123, true),
+	TransactionInvalidType:         New(TransactionInvalidType, 124, false),
+	TransactionNotSigned:           New(TransactionNotSigned, 125, false),
+	TransactionHashFailed:          New(TransactionHashFailed, 126, false),
+	TransactionFreezeFailed:        New(TransactionFreezeFailed, 127, false),
+	TransactionSignatureFailed:     New(TransactionSignatureFailed, 128, false),
 	InternalServerError:            New(InternalServerError, 500, true),
 }
 
@@ -79,6 +84,11 @@ const (
 	TransactionUnmarshallingFailed string = "Transaction unmarshalling failed"
 	TransactionSubmissionFailed    string = "Transaction submission failed"
 	TransactionNotFound            string = "Transaction not found"
+	TransactionInvalidType         string = "Transaction invalid type"
+	TransactionNotSigned           string = "Transaction not signed"
+	TransactionHashFailed          string = "Transaction hash failed"
+	TransactionFreezeFailed        string = "Transaction freeze failed"
+	TransactionSignatureFailed     string = "Transaction signature error"
 	InternalServerError            string = "Internal Server Error"
 )
 
