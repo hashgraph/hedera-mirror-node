@@ -63,7 +63,7 @@ public class NodeSignatureVerifier {
 
         String streamType = downloaderProperties.getStreamType().toString();
         missingNodeSignatureFileMetric = Counter.builder("hedera.mirror.download.signature.missing")
-                .description("The number of signatures verified from a particular node")
+                .description("The number of nodes whose signatures are missing from the consensus process")
                 .tag("type", streamType);
         signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
