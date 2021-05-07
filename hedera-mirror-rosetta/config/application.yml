@@ -9,10 +9,10 @@ hedera:
         password: mirror_rosetta_pass
         port: 5432
         username: mirror_rosetta
-      online: true
       network: DEMO
       nodes: {}
       nodeVersion: 0
+      online: true
       port: 5700
       realm: 0
       shard: 0

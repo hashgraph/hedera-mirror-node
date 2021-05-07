@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/coinbase/rosetta-sdk-go/asserter"
@@ -90,7 +91,11 @@ func NewBlockchainOfflineRouter(network string, nodes types.NodeMap, asserter *a
 }
 
 func main() {
-	configuration := LoadConfig()
+	configuration, err := LoadConfig()
+	if err != nil {
+		log.Printf("Failed to load config: %s", err)
+		os.Exit(1)
+	}
 
 	network := &rTypes.NetworkIdentifier{
 		Blockchain: config.Blockchain,
@@ -112,7 +117,8 @@ func main() {
 		[]*rTypes.NetworkIdentifier{network},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%s", err)
+		os.Exit(1)
 	}
 
 	var router http.Handler
@@ -124,14 +130,16 @@ func main() {
 
 		router, err = NewBlockchainOnlineRouter(network, nodes, asserter, version, dbClient)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("%s", err)
+			os.Exit(1)
 		}
 
 		log.Printf("Serving Rosetta API in ONLINE mode")
 	} else {
 		router, err = NewBlockchainOfflineRouter(network.Network, nodes, asserter)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("%s", err)
+			os.Exit(1)
 		}
 
 		log.Printf("Serving Rosetta API in OFFLINE mode")
@@ -139,6 +147,6 @@ func main() {
 
 	loggedRouter := server.LoggerMiddleware(router)
 	corsRouter := server.CorsMiddleware(loggedRouter)
-	log.Printf("Listening on port %s\n", configuration.Hedera.Mirror.Rosetta.Port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", configuration.Hedera.Mirror.Rosetta.Port), corsRouter))
+	log.Printf("Listening on port %d\n", configuration.Hedera.Mirror.Rosetta.Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", configuration.Hedera.Mirror.Rosetta.Port), corsRouter))
 }

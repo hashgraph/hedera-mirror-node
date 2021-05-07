@@ -41,24 +41,32 @@ const (
 )
 
 // LoadConfig loads configuration from yaml files and env variables
-func LoadConfig() *types.Config {
+func LoadConfig() (*types.Config, error) {
 	var config types.Config
-	getConfig(&config, defaultConfigFile)
+
+	if !getConfig(&config, defaultConfigFile) {
+		return nil, errors.New("failed to load the default config file: " + defaultConfigFile)
+	}
+
 	getConfig(&config, mainConfigFile)
-	getConfig(&config, os.Getenv("HEDERA_MIRROR_ROSETTA_API_CONFIG"))
+
+	if envConfigFile, ok := os.LookupEnv("HEDERA_MIRROR_ROSETTA_API_CONFIG"); ok {
+		getConfig(&config, envConfigFile)
+	}
 
 	if err := env.ParseWithFuncs(&config, map[reflect.Type]env.ParserFunc{
 		reflect.TypeOf(types.NodeMap{}): parseNodesFromEnv,
 	}); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &config
+	return &config, nil
 }
 
-func getConfig(config *types.Config, path string) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return
+func getConfig(config *types.Config, path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		log.Printf("Failed to locate the config file %s: %s", path, err)
+		return false
 	}
 
 	filename, _ := filepath.Abs(path)
@@ -66,15 +74,18 @@ func getConfig(config *types.Config, path string) {
 	// Disable gosec since we want to support loading config via env variable like SPRING_CONFIG_ADDITIONAL_LOCATION
 	yamlFile, err := ioutil.ReadFile(filename) // #nosec
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Failed to read the config file %s: %s", filename, err)
+		return false
 	}
 
 	err = yaml.Unmarshal(yamlFile, config)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Failed to unmarshal the yaml config file %s: %s", filename, err)
+		return false
 	}
 
 	log.Printf("Loaded external config file: %s\n", path)
+	return true
 }
 
 func parseNodesFromEnv(v string) (interface{}, error) {

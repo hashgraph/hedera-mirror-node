@@ -21,12 +21,25 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestLoadDefaultConfig(t *testing.T) {
+	wd, _ := os.Getwd()
+	// change to project root so to load the default config
+	os.Chdir("../")
+	defer os.Chdir(wd)
+
+	config, err := LoadConfig()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+}
 
 func TestParseNodesFromEnv(t *testing.T) {
 	var tests = []struct {

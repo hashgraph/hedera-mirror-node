@@ -223,7 +223,7 @@ func TestNewConstructionAPIService(t *testing.T) {
 		},
 		{
 			name:                  "Demo",
-			network:               "testnet",
+			network:               "demo",
 			nodes:                 types2.NodeMap{},
 			expectedHederaNetwork: getHederaNetworkByName("testnet"),
 			wantErr:               false,
