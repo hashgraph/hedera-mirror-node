@@ -21,9 +21,13 @@
 'use strict';
 
 const fs = require('fs');
+const log4js = require('log4js');
 const os = require('os');
 const path = require('path');
 const yaml = require('js-yaml');
+const zlib = require('zlib');
+
+global.logger = log4js.getLogger();
 
 let tempDir;
 const custom = {
@@ -51,6 +55,37 @@ const custom = {
     },
   },
 };
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+beforeAll(async () => {
+  const sampleDirectory = fs.readdirSync(path.join(__dirname, '../sample'));
+  sampleDirectory.map((file) => {
+    const unCompressedFileName = file.replace('.gz', '');
+    const unCompressedFilePath = path.join(__dirname, '../sample', unCompressedFileName);
+    let unCompressedFileExists = fs.existsSync(unCompressedFilePath);
+
+    // skip decompression if non gzip file or if decompressed file already exists
+    if (file.indexOf('.gz') <= 0 || unCompressedFileExists) {
+      return;
+    }
+
+    const compressedFilePath = path.join(__dirname, '../sample', file);
+    const compressedFile = fs.createReadStream(compressedFilePath);
+    const unCompressedFile = fs.createWriteStream(unCompressedFilePath);
+    const ungzip = zlib.createUnzip();
+    compressedFile.pipe(ungzip).pipe(unCompressedFile);
+
+    unCompressedFileExists = fs.existsSync(unCompressedFilePath);
+    if (unCompressedFileExists) {
+      logger.info(`Successfully extracted ${unCompressedFilePath}`);
+    } else {
+      logger.info(`Unable to gunzip ${compressedFilePath}, file exists: ${fs.existsSync(compressedFilePath)}`);
+    }
+  });
+
+  await sleep(1000); // wait a second to allow files to get picked up by tests
+});
 
 beforeEach(() => {
   jest.resetModules();
