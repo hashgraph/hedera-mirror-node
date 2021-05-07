@@ -38,7 +38,7 @@ class AddressBook {
   }
 
   parseAddressBookBuffer(addressBookBuffer) {
-    const addressBook = proto.NodeAddressBook.decode(addressBookBuffer);
+    const addressBook = proto.AddressBook.decode(addressBookBuffer);
     logger.info(`${addressBook.nodeAddress.length} node(s) found in address book`);
     this.nodeList = addressBook.nodeAddress;
   }
