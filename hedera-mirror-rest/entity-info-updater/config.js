@@ -31,7 +31,7 @@ let loaded = false;
 
 const loadYaml = () => {
   try {
-    const configPath = process.env.CONFIG_PATH || `${__dirname}/config`;
+    const configPath = process.env.CONFIG_PATH || path.join(__dirname, 'config');
     const configFile = path.join(configPath, process.env.CONFIG_NAME || `application.yml`);
     config = yaml.load(fs.readFileSync(configFile, 'utf-8'));
     logger.info(`Loaded configurations from source: ${configFile}`);

@@ -21,6 +21,7 @@
 'use strict';
 
 // external libraries
+const _ = require('lodash');
 const {AccountBalanceQuery, AccountId, AccountInfo, AccountInfoQuery, Client, PrivateKey} = require('@hashgraph/sdk');
 const log4js = require('log4js');
 
@@ -44,9 +45,9 @@ const getAccountInfo = async (accountId) => {
   logger.trace(`Retrieve account info for ${accountId}`);
   let accountInfo;
   try {
-    if (config.sdkClient.useCache && networkEntityCache[accountId.toString()] !== undefined) {
+    if (config.sdkClient.useCache && networkEntityCache[`${accountId}`] !== undefined) {
       accountInfo = AccountInfo.fromBytes(Buffer.from(networkEntityCache[accountId.toString()]));
-      logger.trace(`Retrieved ${accountId.toString()} from cache`);
+      logger.trace(`Retrieved ${accountId} from cache`);
     } else {
       accountInfo = await new AccountInfoQuery().setAccountId(accountId).execute(client);
     }
@@ -118,7 +119,7 @@ if (!clientConfigured) {
   }
 
   restoreNetworkEntityCache();
-  if (config.sdkClient.useCache === true && networkEntityCache !== {}) {
+  if (config.sdkClient.useCache && !_.isEmpty(networkEntityCache)) {
     logger.info(
       "SDK network calls will pull from local cache as 'hedera.mirror.entityUpdate.sdkClient.useCache' is set to true and valid cache exists"
     );

@@ -66,7 +66,7 @@ const handleUpdateEntities = async (entitiesToUpdate) => {
 };
 
 const runUpdater = async () => {
-  const migrationStart = process.hrtime();
+  const migrationStart = process.hrtime.bigint();
 
   // get entity objects from CSV
   const entitiesToValidate = utils.readEntityCSVFileSync();
@@ -74,7 +74,7 @@ const runUpdater = async () => {
   // get updated list of entities based on csv ids and update existing db entities with correct values
   return getUpdateList(entitiesToValidate).then(async (entitiesToUpdate) => {
     const updateCount = await handleUpdateEntities(entitiesToUpdate);
-    const elapsedTime = process.hrtime(migrationStart);
+    const elapsedTime = process.hrtime.bigint() - migrationStart;
     logger.info(
       `entity-info-update migration completed in ${utils.getElapsedTimeString(
         elapsedTime
@@ -84,7 +84,7 @@ const runUpdater = async () => {
   });
 };
 
-console.log(runUpdater());
+runUpdater();
 
 module.exports = {
   runUpdater,

@@ -43,7 +43,7 @@ const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
 const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
 
 // sample location details
-const entityCachePath = process.env.ENTITY_CACHE_PATH || `${__dirname}/sample`;
+const entityCachePath = process.env.ENTITY_CACHE_PATH || path.join(__dirname, 'sample');
 const dbCacheFileName = process.env.DB_ENTITY_CACHE_FILE || `dbEntityCache.json`;
 const networkCacheFileName = process.env.NETWORK_ENTITY_CACHE_FILE || `networkEntityCache.json`;
 
@@ -60,7 +60,7 @@ const constructEntity = (index, headerRow, entityRow) => {
 
 const readEntityCSVFileSync = () => {
   logger.info(`Parsing csv entity file ...`);
-  const csvStart = process.hrtime();
+  const csvStart = process.hrtime.bigint();
   const entities = [];
 
   const data = fs.readFileSync(config.filePath, 'utf-8');
@@ -82,7 +82,7 @@ const readEntityCSVFileSync = () => {
     entities.push(constructEntity(i, headers, fileContent[i]));
   }
 
-  const elapsedTime = process.hrtime(csvStart);
+  const elapsedTime = process.hrtime.bigint() - csvStart;
   logger.info(
     `${entities.length} entities were extracted from ${config.filePath} in ${getElapsedTimeString(elapsedTime)}`
   );
@@ -179,7 +179,7 @@ const getBufferAndEd25519HexFromKey = (key) => {
 };
 
 const getElapsedTimeString = (elapsedTime) => {
-  return `${elapsedTime[0]} s ${elapsedTime[1] / 1000000} ms`;
+  return `${Math.floor(Number(elapsedTime) / 1000000000)} s ${(Number(elapsedTime) % 1000000000) / 1000000} ms`;
 };
 
 /**

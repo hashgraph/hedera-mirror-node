@@ -21,6 +21,7 @@
 'use strict';
 
 // external libraries
+const _ = require('lodash');
 const log4js = require('log4js');
 
 // local
@@ -100,7 +101,7 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
   // compare keys as buffers
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
   const dbKey = dbEntity.key === null ? Buffer.from('') : dbEntity.key;
-  if (Buffer.compare(dbKey, protoBuffer) !== 0) {
+  if (dbKey === null || Buffer.compare(dbKey, protoBuffer) !== 0) {
     updateEntity.public_key = ed25519Hex;
     updateEntity.key = protoBuffer;
     updateNeeded = true;
@@ -219,7 +220,7 @@ const printBalanceSpent = (startBalance, endBalance) => {
  */
 const getUpdateList = async (csvEntities) => {
   logger.info(`Validating ${csvEntities.length} entities against db and network entries ...`);
-  const mergeStart = process.hrtime();
+  const mergeStart = process.hrtime.bigint();
   let updateList = [];
   if (!csvEntities || csvEntities.length === 0) {
     return updateList;
@@ -228,7 +229,7 @@ const getUpdateList = async (csvEntities) => {
   const startBalance = await networkEntityService.getAccountBalance();
 
   updateList = await batchGetVerifiedEntities(csvEntities);
-  const elapsedTime = process.hrtime(mergeStart);
+  const elapsedTime = process.hrtime.bigint() - mergeStart;
 
   logger.info(
     `${csvEntities.length} entities were retrieved and compared in ${utils.getElapsedTimeString(elapsedTime)},
@@ -261,20 +262,19 @@ const updateStaleDBEntities = async (entitiesToUpdate) => {
   }
 
   logger.info(`Updating ${entitiesToUpdate.length} stale db entries with updated information ...`);
-  const updateStart = process.hrtime();
+  const updateStart = process.hrtime.bigint();
   let updateCount = entitiesToUpdate.length;
   try {
     await dbEntityService.getClientConnection();
     await dbEntityService.beginTransaction();
     const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
-    const elapsedTime = process.hrtime(updateStart);
+    const elapsedTime = process.hrtime.bigint() - updateStart;
     await dbEntityService.commitTransaction();
 
     logger.info(`Updated ${updatedList.length} entities in ${utils.getElapsedTimeString(elapsedTime)}`);
   } catch (e) {
     await dbEntityService.rollbackTransaction();
     logger.debug(`Error updating entities in db. Rolled back updates, error: ${e}. ${e.stack}`);
-    updateCount = -1;
     throw e;
   } finally {
     await dbEntityService.releaseClientConnection();
@@ -283,6 +283,6 @@ const updateStaleDBEntities = async (entitiesToUpdate) => {
 };
 
 module.exports = {
-  updateStaleDBEntities,
   getUpdateList,
+  updateStaleDBEntities,
 };

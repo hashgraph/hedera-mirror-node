@@ -21,6 +21,7 @@
 'use strict';
 
 // external libraries
+const _ = require('lodash');
 const log4js = require('log4js');
 const Pool = require('pg-pool');
 
@@ -41,7 +42,7 @@ let client;
 let dbEntityCache = {};
 
 const getClientConnection = async () => {
-  if (config.db.useCache === false) {
+  if (!config.db.useCache) {
     client = await pool.connect();
   }
 
@@ -49,7 +50,7 @@ const getClientConnection = async () => {
 };
 
 const beginTransaction = async () => {
-  if (config.db.useCache === false) {
+  if (!config.db.useCache) {
     await client.query('begin');
   }
 
@@ -57,7 +58,7 @@ const beginTransaction = async () => {
 };
 
 const commitTransaction = async () => {
-  if (config.db.useCache === false) {
+  if (!config.db.useCache) {
     await client.query('commit');
   }
 
@@ -65,7 +66,7 @@ const commitTransaction = async () => {
 };
 
 const rollbackTransaction = async () => {
-  if (config.db.useCache === false) {
+  if (!config.db.useCache) {
     await client.query('rollback');
   }
 
@@ -73,7 +74,7 @@ const rollbackTransaction = async () => {
 };
 
 const releaseClientConnection = async () => {
-  if (config.db.useCache === false) {
+  if (!config.db.useCache) {
     await client.release();
   }
 
@@ -183,7 +184,7 @@ const restoreDbEntityCache = () => {
 };
 
 restoreDbEntityCache();
-if (config.db.useCache === true && dbEntityCache !== {}) {
+if (config.db.useCache && !_.isEmpty(dbEntityCache)) {
   logger.info(
     "SDK network calls will pull from local cache as 'hedera.mirror.entityUpdate.db.useCache' is set to true and valid cache exists"
   );
