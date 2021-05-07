@@ -58,6 +58,7 @@ class GrpcClientSDKTest {
 
     private ConsensusServiceStub consensusServiceStub;
     private GrpcClientSDK grpcClientSDK;
+    private MonitorProperties monitorProperties;
     private GrpcSubscriberProperties properties;
     private Server server;
     private GrpcSubscription subscription;
@@ -69,7 +70,7 @@ class GrpcClientSDKTest {
         properties.setName(testInfo.getDisplayName());
         properties.setTopicId("0.0.1000");
         subscription = new GrpcSubscription(1, properties);
-        MonitorProperties monitorProperties = new MonitorProperties();
+        monitorProperties = new MonitorProperties();
         monitorProperties.getMirrorNode().getGrpc().setHost("127.0.0.1");
         grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
 
@@ -96,7 +97,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofSeconds(2L));
+                .verify(Duration.ofSeconds(5L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(Map.of(), GrpcSubscription::getErrors)
@@ -116,6 +117,9 @@ class GrpcClientSDKTest {
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(Map.of(), GrpcSubscription::getErrors);
+
+        grpcClientSDK.close();
+        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
 
         GrpcSubscription subscription2 = new GrpcSubscription(2, properties);
         grpcClientSDK.subscribe(subscription2)
@@ -139,6 +143,9 @@ class GrpcClientSDKTest {
                 .expectNextCount(1L)
                 .thenCancel()
                 .verify(Duration.ofSeconds(2L));
+
+        grpcClientSDK.close();
+        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
 
         Timestamp consensusTimestamp = response1.getConsensusTimestamp();
         consensusServiceStub.getRequest()
