@@ -27,6 +27,7 @@ const {KeyList, PublicKey} = require('@hashgraph/sdk');
 const _ = require('lodash');
 const fs = require('fs');
 const log4js = require('log4js');
+const path = require('path');
 
 // local
 const config = require('./config');
@@ -41,6 +42,11 @@ const longMaxValue = 9223372036854775807n;
 const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
 const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
 
+// sample location details
+const entityCachePath = process.env.ENTITY_CACHE_PATH || path.join(__dirname, 'sample');
+const dbCacheFileName = process.env.DB_ENTITY_CACHE_FILE || `dbEntityCache.json`;
+const networkCacheFileName = process.env.NETWORK_ENTITY_CACHE_FILE || `networkEntityCache.json`;
+
 const constructEntity = (index, headerRow, entityRow) => {
   const entityObj = {};
   const splitEntityRow = Array.from(entityRow.split(',')).filter((x) => x != null);
@@ -54,7 +60,7 @@ const constructEntity = (index, headerRow, entityRow) => {
 
 const readEntityCSVFileSync = () => {
   logger.info(`Parsing csv entity file ...`);
-  const csvStart = process.hrtime();
+  const csvStart = process.hrtime.bigint();
   const entities = [];
 
   const data = fs.readFileSync(config.filePath, 'utf-8');
@@ -76,7 +82,7 @@ const readEntityCSVFileSync = () => {
     entities.push(constructEntity(i, headers, fileContent[i]));
   }
 
-  const elapsedTime = process.hrtime(csvStart);
+  const elapsedTime = process.hrtime.bigint() - csvStart;
   logger.info(
     `${entities.length} entities were extracted from ${config.filePath} in ${getElapsedTimeString(elapsedTime)}`
   );
@@ -90,7 +96,14 @@ const readEntityCSVFileSync = () => {
  * @return {BigInt} ns Nanoseconds since epoch
  */
 const timestampToNs = (sec, ns) => {
-  const finalNs = BigInt(sec.toString()) * BigInt(1e9) + BigInt(ns.toString());
+  let finalNs = 0;
+
+  try {
+    finalNs = BigInt(sec.toString()) * BigInt(1e9) + BigInt(ns.toString());
+  } catch (e) {
+    logger.warn(`Error parsing sec: ${JSON.stringify(sec)}, ns: ${JSON.stringify(ns)} to timestamp`);
+    throw e;
+  }
 
   // handle the equivalent long overflow case that the java importer accommodates
   if (finalNs < longMinValue) {
@@ -148,7 +161,8 @@ const getProtoAndEd25519HexFromKeyList = (key) => {
 
   // only keyLists of length one have an applicable ed25519Hex
   let ed25519Hex = null;
-  if (key._keys.length === 1) {
+  // some complex keys are nested, ensure top level key is the applicable ed25519Hex
+  if (key._keys.length === 1 && key._keys[0]._keyData !== undefined) {
     ed25519Hex = key._keys[0].toString();
   }
 
@@ -165,7 +179,7 @@ const getBufferAndEd25519HexFromKey = (key) => {
 };
 
 const getElapsedTimeString = (elapsedTime) => {
-  return `${elapsedTime[0]} s ${elapsedTime[1] / 1000000} ms`;
+  return `${Math.floor(Number(elapsedTime) / 1000000000)} s ${(Number(elapsedTime) % 1000000000) / 1000000} ms`;
 };
 
 /**
@@ -185,10 +199,22 @@ const getEntityId = (entityIdStr) => {
   return (BigInt(parts[2]) + BigInt(parts[1]) * realmOffset + BigInt(parts[0]) * shardOffset).toString();
 };
 
+const getNetworkEntityCache = () => {
+  const pathString = path.join(entityCachePath, networkCacheFileName);
+  return fs.existsSync(pathString) ? JSON.parse(fs.readFileSync(pathString, 'utf-8')) : {};
+};
+
+const getDbEntityCache = () => {
+  const pathString = path.join(entityCachePath, dbCacheFileName);
+  return fs.existsSync(pathString) ? JSON.parse(fs.readFileSync(pathString, 'utf-8')) : {};
+};
+
 module.exports = {
   getBufferAndEd25519HexFromKey,
   getElapsedTimeString,
+  getDbEntityCache,
   getEntityId,
+  getNetworkEntityCache,
   readEntityCSVFileSync,
   timestampToNs,
 };

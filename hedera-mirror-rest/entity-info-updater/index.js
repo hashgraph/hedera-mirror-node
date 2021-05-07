@@ -62,17 +62,30 @@ const getUpdateList = async (entities) => {
 };
 
 const handleUpdateEntities = async (entitiesToUpdate) => {
-  await entityUpdateHandler.updateStaleDBEntities(entitiesToUpdate);
+  return await entityUpdateHandler.updateStaleDBEntities(entitiesToUpdate);
 };
 
-const migrationStart = process.hrtime();
+const runUpdater = async () => {
+  const migrationStart = process.hrtime.bigint();
 
-// get entity objects from CSV
-const entitiesToValidate = utils.readEntityCSVFileSync();
+  // get entity objects from CSV
+  const entitiesToValidate = utils.readEntityCSVFileSync();
 
-// get updated list of entities based on csv ids and update existing db entities with correct values
-getUpdateList(entitiesToValidate).then(async (entitiesToUpdate) => {
-  await handleUpdateEntities(entitiesToUpdate);
-  const elapsedTime = process.hrtime(migrationStart);
-  logger.info(`entity-info-update migration completed in ${utils.getElapsedTimeString(elapsedTime)}`);
-});
+  // get updated list of entities based on csv ids and update existing db entities with correct values
+  return getUpdateList(entitiesToValidate).then(async (entitiesToUpdate) => {
+    const updateCount = await handleUpdateEntities(entitiesToUpdate);
+    const elapsedTime = process.hrtime.bigint() - migrationStart;
+    logger.info(
+      `entity-info-update migration completed in ${utils.getElapsedTimeString(
+        elapsedTime
+      )} updating ${updateCount} entities`
+    );
+    return updateCount;
+  });
+};
+
+runUpdater();
+
+module.exports = {
+  runUpdater,
+};

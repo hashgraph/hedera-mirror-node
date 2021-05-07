@@ -21,6 +21,7 @@
 'use strict';
 
 // external libraries
+const _ = require('lodash');
 const log4js = require('log4js');
 
 // local
@@ -99,12 +100,13 @@ const getUpdatedEntity = (dbEntity, networkEntity) => {
 
   // compare keys as buffers
   const {protoBuffer, ed25519Hex} = utils.getBufferAndEd25519HexFromKey(networkEntity.key);
-  if (Buffer.compare(dbEntity.key, protoBuffer) !== 0) {
+  const dbKey = dbEntity.key === null ? Buffer.from('') : dbEntity.key;
+  if (dbKey === null || Buffer.compare(dbKey, protoBuffer) !== 0) {
     updateEntity.public_key = ed25519Hex;
     updateEntity.key = protoBuffer;
     updateNeeded = true;
     updateCriteriaCount.key += 1;
-    logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbEntity.key}, network: ${protoBuffer}`);
+    logger.trace(`key mismatch on ${dbEntity.id}, db: ${dbKey}, network: ${protoBuffer}`);
   }
 
   // compare memos as strings
@@ -185,9 +187,12 @@ const batchGetVerifiedEntities = async (csvEntities) => {
   let updateList = [];
   for (let i = 0; i < batchedEntities.length; i++) {
     try {
+      await dbEntityService.getClientConnection();
       updateList = updateList.concat((await Promise.all(batchedEntities[i].map(getVerifiedEntity))).filter((x) => !!x));
     } catch (e) {
-      logger.debug(`Error batch retrieving accounts from network, error: ${e}`);
+      logger.debug(`Error batch retrieving accounts from network, error: ${e}. ${e.stack}`);
+    } finally {
+      await dbEntityService.releaseClientConnection();
     }
   }
 
@@ -214,8 +219,8 @@ const printBalanceSpent = (startBalance, endBalance) => {
  * @returns {Promise<unknown[]|[]>}
  */
 const getUpdateList = async (csvEntities) => {
-  logger.info(`Validating entities against db and network entries ...`);
-  const mergeStart = process.hrtime();
+  logger.info(`Validating ${csvEntities.length} entities against db and network entries ...`);
+  const mergeStart = process.hrtime.bigint();
   let updateList = [];
   if (!csvEntities || csvEntities.length === 0) {
     return updateList;
@@ -224,7 +229,7 @@ const getUpdateList = async (csvEntities) => {
   const startBalance = await networkEntityService.getAccountBalance();
 
   updateList = await batchGetVerifiedEntities(csvEntities);
-  const elapsedTime = process.hrtime(mergeStart);
+  const elapsedTime = process.hrtime.bigint() - mergeStart;
 
   logger.info(
     `${csvEntities.length} entities were retrieved and compared in ${utils.getElapsedTimeString(elapsedTime)},
@@ -253,18 +258,31 @@ const getUpdateList = async (csvEntities) => {
 const updateStaleDBEntities = async (entitiesToUpdate) => {
   if (!entitiesToUpdate || entitiesToUpdate.length === 0) {
     logger.info(`No entities to update, skipping update`);
-    return;
+    return 0;
   }
 
   logger.info(`Updating ${entitiesToUpdate.length} stale db entries with updated information ...`);
-  const updateStart = process.hrtime();
-  const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
-  const elapsedTime = process.hrtime(updateStart);
+  const updateStart = process.hrtime.bigint();
+  let updateCount = entitiesToUpdate.length;
+  try {
+    await dbEntityService.getClientConnection();
+    await dbEntityService.beginTransaction();
+    const updatedList = await Promise.all(entitiesToUpdate.map(dbEntityService.updateEntity));
+    const elapsedTime = process.hrtime.bigint() - updateStart;
+    await dbEntityService.commitTransaction();
 
-  logger.info(`Updated ${updatedList.length} entities in ${utils.getElapsedTimeString(elapsedTime)}`);
+    logger.info(`Updated ${updatedList.length} entities in ${utils.getElapsedTimeString(elapsedTime)}`);
+  } catch (e) {
+    await dbEntityService.rollbackTransaction();
+    logger.debug(`Error updating entities in db. Rolled back updates, error: ${e}. ${e.stack}`);
+    throw e;
+  } finally {
+    await dbEntityService.releaseClientConnection();
+    return updateCount;
+  }
 };
 
 module.exports = {
-  updateStaleDBEntities,
   getUpdateList,
+  updateStaleDBEntities,
 };
