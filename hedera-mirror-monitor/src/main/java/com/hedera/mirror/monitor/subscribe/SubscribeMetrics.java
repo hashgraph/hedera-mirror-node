@@ -27,18 +27,16 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.math3.util.Precision;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Log4j2
 @Named
+@RequiredArgsConstructor
 public class SubscribeMetrics {
 
     static final String METRIC_DURATION = "hedera.mirror.monitor.subscribe.duration";
@@ -47,22 +45,13 @@ public class SubscribeMetrics {
     static final String TAG_SUBSCRIBER = "subscriber";
     static final String TAG_TYPE = "type";
 
-    private final Map<Subscription, TimeGauge> durationMetrics;
-    private final Map<Subscription, Timer> latencyMetrics;
+    private final Map<Subscription, TimeGauge> durationMetrics = new ConcurrentHashMap<>();
+    private final Map<Subscription, Timer> latencyMetrics = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
-    private final ScheduledFuture<?> statusThread;
-
-    SubscribeMetrics(MeterRegistry meterRegistry, SubscribeProperties subscribeProperties) {
-        this.durationMetrics = new ConcurrentHashMap<>();
-        this.latencyMetrics = new ConcurrentHashMap<>();
-        this.meterRegistry = meterRegistry;
-        long frequency = subscribeProperties.getStatusFrequency().toMillis();
-        this.statusThread = Executors.newSingleThreadScheduledExecutor()
-                .scheduleWithFixedDelay(this::status, frequency, frequency, TimeUnit.MILLISECONDS);
-    }
+    private final SubscribeProperties subscribeProperties;
 
     public void onNext(SubscribeResponse response) {
-        log.trace("Got response: {}", response);
+        log.trace("Response: {}", response);
         Subscription subscription = response.getSubscription();
         Instant publishedTimestamp = response.getPublishedTimestamp();
         durationMetrics.computeIfAbsent(subscription, this::newDurationGauge);
@@ -71,11 +60,6 @@ public class SubscribeMetrics {
             Duration latency = Duration.between(publishedTimestamp, response.getReceivedTimestamp());
             latencyMetrics.computeIfAbsent(subscription, this::newLatencyTimer).record(latency);
         }
-    }
-
-    @PreDestroy
-    void close() {
-        statusThread.cancel(true);
     }
 
     private TimeGauge newDurationGauge(Subscription subscription) {
@@ -97,17 +81,18 @@ public class SubscribeMetrics {
                 .register(meterRegistry);
     }
 
-    private void status() {
-        durationMetrics.keySet().forEach(this::status);
+    @Scheduled(fixedDelayString = "${hedera.mirror.monitor.subscribe.statusFrequency:10000}")
+    public void status() {
+        if (subscribeProperties.isEnabled()) {
+            durationMetrics.keySet().forEach(this::status);
+        }
     }
 
     private void status(Subscription subscription) {
-        long count = subscription.getCount();
         Stopwatch stopwatch = subscription.getStopwatch();
-        long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        double rate = Precision.round(elapsed > 0 ? (1_000_000.0 * count) / elapsed : 0.0, 1);
-        Map<String, Integer> errorCounts = new TreeMap<>();
-        subscription.getErrors().forEachEntry(errorCounts::put);
-        log.info("{}: {} transactions in {} at {}/s. Errors: {}", subscription, count, stopwatch, rate, errorCounts);
+        if (stopwatch.isRunning()) {
+            log.info("{}: {} transactions in {} at {}/s. Errors: {}", subscription,
+                    subscription.getCount(), stopwatch, subscription.getRate(), subscription.getErrors());
+        }
     }
 }

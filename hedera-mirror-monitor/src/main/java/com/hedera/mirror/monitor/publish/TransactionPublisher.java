@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -52,7 +52,7 @@ import com.hedera.mirror.monitor.NodeProperties;
 @Log4j2
 @Named
 @RequiredArgsConstructor
-public class TransactionPublisher {
+public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
@@ -61,10 +61,11 @@ public class TransactionPublisher {
     private final Supplier<List<AccountId>> nodeAccountIds = Suppliers.memoize(this::getNodeAccountIds);
     private final AtomicInteger counter = new AtomicInteger(0);
     private final SecureRandom secureRandom = new SecureRandom();
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    @PreDestroy
+    @Override
     public void close() {
-        if (publishProperties.isEnabled()) {
+        if (initialized.get()) {
             log.info("Closing {} clients", clients.get().size());
 
             for (Client client : clients.get()) {
@@ -148,6 +149,7 @@ public class TransactionPublisher {
             validatedClients.add(client);
         }
 
+        initialized.set(true);
         return validatedClients;
     }
 

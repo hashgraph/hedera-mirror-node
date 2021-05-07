@@ -21,7 +21,7 @@ package com.hedera.mirror.monitor.subscribe;
  */
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Multiset;
+import java.util.Map;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 
@@ -29,11 +29,13 @@ public interface Subscription {
 
     long getCount();
 
-    Multiset<String> getErrors();
+    Map<String, Integer> getErrors();
 
     int getId();
 
     <T extends AbstractSubscriberProperties> T getProperties();
+
+    double getRate();
 
     Stopwatch getStopwatch();
 

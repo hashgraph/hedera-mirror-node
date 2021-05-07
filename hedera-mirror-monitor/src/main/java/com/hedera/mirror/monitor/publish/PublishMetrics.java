@@ -156,17 +156,12 @@ public class PublishMetrics {
 
         long count = counter.get();
         long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        double averageRate = getRate(count, elapsed);
-        long instantCount = count - lastCount.get();
-        long instantElapsed = elapsed - lastElapsed.get();
+        long instantCount = count - lastCount.getAndSet(count);
+        long instantElapsed = elapsed - lastElapsed.getAndSet(elapsed);
         double instantRate = getRate(instantCount, instantElapsed);
         Map<String, Integer> errorCounts = new HashMap<>();
         errors.forEachEntry((k, v) -> errorCounts.put(k, v));
-        log.info("Published {} transactions in {} at {}/s, {} transactions in last {} s at {}/s. Errors: {}",
-                count, stopwatch, averageRate, instantCount, toSeconds(instantElapsed), instantRate, errorCounts);
-
-        lastCount.set(count);
-        lastElapsed.set(elapsed);
+        log.info("Published {} transactions in {} at {}/s. Errors: {}", count, stopwatch, instantRate, errorCounts);
     }
 
     private double getRate(long count, long elapsedMicros) {

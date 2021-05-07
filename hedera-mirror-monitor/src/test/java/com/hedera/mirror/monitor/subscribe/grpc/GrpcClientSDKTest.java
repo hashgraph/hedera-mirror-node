@@ -22,7 +22,6 @@ package com.hedera.mirror.monitor.subscribe.grpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.HashMultiset;
 import com.google.protobuf.ByteString;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -32,6 +31,7 @@ import io.grpc.stub.StreamObserver;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
@@ -99,7 +99,7 @@ class GrpcClientSDKTest {
                 .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
-                .returns(HashMultiset.create(), GrpcSubscription::getErrors)
+                .returns(Map.of(), GrpcSubscription::getErrors)
                 .extracting(GrpcSubscription::getStopwatch)
                 .matches(s -> s.isRunning());
         assertThat(subscription.getLast()).get().matches(p -> p.sequenceNumber == 2L);
@@ -115,7 +115,7 @@ class GrpcClientSDKTest {
                 .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
-                .returns(HashMultiset.create(), GrpcSubscription::getErrors);
+                .returns(Map.of(), GrpcSubscription::getErrors);
 
         GrpcSubscription subscription2 = new GrpcSubscription(2, properties);
         grpcClientSDK.subscribe(subscription2)
@@ -125,7 +125,7 @@ class GrpcClientSDKTest {
                 .verify(Duration.ofSeconds(5L));
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
-                .returns(HashMultiset.create(), GrpcSubscription::getErrors);
+                .returns(Map.of(), GrpcSubscription::getErrors);
     }
 
     @Test
@@ -149,10 +149,10 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .thenCancel()
-                .verify(Duration.ofSeconds(2L));
+                .verify(Duration.ofSeconds(5L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
-                .returns(HashMultiset.create(), GrpcSubscription::getErrors);
+                .returns(Map.of(), GrpcSubscription::getErrors);
     }
 
     @Test
@@ -170,8 +170,8 @@ class GrpcClientSDKTest {
         consensusServiceStub.setResponses(Flux.just(response(1L), response(3L)));
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectError(IllegalStateException.class)
+                .expectNextCount(2L)
+                .thenCancel()
                 .verify(Duration.ofSeconds(2L));
     }
 
@@ -186,7 +186,7 @@ class GrpcClientSDKTest {
         assertThat(subscription)
                 .returns(0L, GrpcSubscription::getCount)
                 .extracting(GrpcSubscription::getErrors)
-                .matches(ms -> ms.count(Status.INTERNAL.toString()) == 1);
+                .matches(ms -> ms.get(Status.INTERNAL.toString()) == 1);
     }
 
     @Disabled("Need to fix SDK to expose a completion callback")
@@ -199,7 +199,7 @@ class GrpcClientSDKTest {
                 .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(0L, GrpcSubscription::getCount)
-                .returns(HashMultiset.create(), GrpcSubscription::getErrors)
+                .returns(Map.of(), GrpcSubscription::getErrors)
                 .extracting(GrpcSubscription::getStopwatch)
                 .matches(s -> !s.isRunning());
     }

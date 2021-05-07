@@ -63,7 +63,7 @@ class MonitorConfiguration {
      *
      * @return the subscribed flux
      */
-    @Bean
+    @Bean(destroyMethod = "dispose")
     @ConditionalOnProperty(value = "hedera.mirror.monitor.publish.enabled", havingValue = "true", matchIfMissing = true)
     Disposable publish() {
         return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
@@ -86,12 +86,11 @@ class MonitorConfiguration {
                 .subscribe(subscriber::onPublish);
     }
 
-    @Bean
+    @Bean(destroyMethod = "dispose")
     @ConditionalOnProperty(value = "hedera.mirror.monitor.subscribe.enabled", havingValue = "true",
             matchIfMissing = true)
     Disposable subscribe(MirrorSubscriber mirrorSubscriber, SubscribeMetrics subscribeMetrics) {
         return mirrorSubscriber.subscribe()
-                .publishOn(Schedulers.parallel())
                 .name("subscribe")
                 .metrics()
                 .onErrorContinue((t, r) -> log.error("Unexpected error during subscribe: ", t))

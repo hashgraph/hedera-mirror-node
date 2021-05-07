@@ -24,7 +24,7 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 
-public interface GrpcClient {
+public interface GrpcClient extends AutoCloseable {
 
     Flux<SubscribeResponse> subscribe(GrpcSubscription subscription);
 }

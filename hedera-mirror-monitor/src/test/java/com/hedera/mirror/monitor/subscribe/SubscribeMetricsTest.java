@@ -29,11 +29,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,7 +106,7 @@ class SubscribeMetricsTest {
                 .returns(subscription.getType().toString(), t -> t.getId().getTag(TAG_TYPE));
     }
 
-    private SubscribeResponse response(TestSubscription subscription) {
+    private SubscribeResponse response(Subscription subscription) {
         Instant timestamp = Instant.now().minusSeconds(5L);
         return SubscribeResponse.builder()
                 .publishedTimestamp(timestamp)
@@ -120,9 +120,10 @@ class SubscribeMetricsTest {
     private class TestSubscription implements Subscription {
 
         private long count = 1;
-        private Multiset<String> errors = HashMultiset.create();
+        private Map<String, Integer> errors = new HashMap<>();
         private int id = 1;
         private AbstractSubscriberProperties properties = SubscribeMetricsTest.this.properties;
+        private double rate = 1.0;
         private Stopwatch stopwatch = Stopwatch.createStarted(new MockTicker()).stop();
         private TransactionType type = TransactionType.CONSENSUS_SUBMIT_MESSAGE;
     }

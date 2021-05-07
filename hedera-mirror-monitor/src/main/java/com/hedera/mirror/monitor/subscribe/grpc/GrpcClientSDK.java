@@ -25,12 +25,12 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.hashgraph.sdk.Client;
@@ -79,6 +79,7 @@ class GrpcClientSDK implements GrpcClient {
         SubscriptionHandle subscriptionHandle = topicMessageQuery.subscribe(client, sink::tryEmitNext);
 
         return sink.asFlux()
+                .publishOn(Schedulers.parallel())
                 .doFinally(s -> subscriptionHandle.unsubscribe())
                 .doOnComplete(subscription::onComplete)
                 .doOnError(subscription::onError)
@@ -102,8 +103,8 @@ class GrpcClientSDK implements GrpcClient {
                 .build();
     }
 
-    @PreDestroy
-    void close() {
+    @Override
+    public void close() {
         log.warn("Closing {} clients", subscribeProperties.getClients());
         clients.subscribe(client -> {
             try {

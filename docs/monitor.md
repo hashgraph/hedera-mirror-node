@@ -164,15 +164,23 @@ messages. Below is an example of both types:
 
 ```yaml
 subscribe:
+  clients: 4
   grpc:
     - name: HCS Subscribe
       enabled: true
+      subscribers: 10
       topicId: ${topic.ping}
   rest:
     - name: REST
       enabled: false
       samplePercent: 1.0
 ```
+
+For performance testing subscribers, the `hedera.mirror.monitor.subscribe.clients` property should be adjusted higher to
+control the pool of client connections to the server. Since the communication is asynchronous, a number between 1-10
+should suffice. Additionally, the
+`hedera.mirror.monitor.subscribe.grpc.subscribers` property can be adjusted to increase the number of concurrent
+subscribers for that scenario.
 
 ## Dashboard & Metrics
 

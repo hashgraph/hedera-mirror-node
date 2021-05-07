@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
@@ -48,7 +47,6 @@ public class CompositeSubscriber implements Subscriber {
     final Supplier<List<Subscriber>> subscribers = Suppliers.memoize(this::subscribers);
 
     @Override
-    @PreDestroy
     public void close() {
         subscribers.get().forEach(Subscriber::close);
     }
