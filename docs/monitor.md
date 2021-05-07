@@ -104,7 +104,7 @@ By default all required signatures will be provided. However, this can be modifi
 setting `hedera.mirror.monitor.publish.scenarios.properties.signatoryCount` to be a number greater than 0 but smaller
 than `hedera.mirror.monitor.publish.scenarios.properties.totalSignatoryCount`
 To execute a scheduled scenario set the `hedera.mirror.monitor.publish.scenarios` properties similar to the following
-example
+example.
 
 ```yaml
 publish:

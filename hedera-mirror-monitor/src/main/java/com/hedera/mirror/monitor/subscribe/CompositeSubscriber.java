@@ -34,6 +34,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.subscribe.rest.RestSubscriber;
+import com.hedera.mirror.monitor.subscribe.rest.RestSubscriberProperties;
 
 @Named
 @Primary
@@ -44,11 +45,11 @@ public class CompositeSubscriber implements Subscriber {
     private final SubscribeProperties subscribeProperties;
     private final MeterRegistry meterRegistry;
     private final WebClient.Builder webClientBuilder;
-    final Supplier<List<Subscriber>> subscribers = Suppliers.memoize(this::subscribers);
+    final Supplier<List<RestSubscriber>> subscribers = Suppliers.memoize(this::subscribers);
 
     @Override
     public void close() {
-        subscribers.get().forEach(Subscriber::close);
+        subscribers.get().forEach(RestSubscriber::close);
     }
 
     @Override
@@ -56,14 +57,14 @@ public class CompositeSubscriber implements Subscriber {
         subscribers.get().forEach(s -> s.onPublish(response));
     }
 
-    private List<Subscriber> subscribers() {
+    private List<RestSubscriber> subscribers() {
         if (!subscribeProperties.isEnabled()) {
             return Collections.emptyList();
         }
 
         return subscribeProperties.getRest()
                 .stream()
-                .filter(AbstractSubscriberProperties::isEnabled)
+                .filter(RestSubscriberProperties::isEnabled)
                 .map(p -> new RestSubscriber(meterRegistry, monitorProperties, p, webClientBuilder))
                 .collect(Collectors.toList());
     }
