@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  */
 
 import java.security.SecureRandom;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
@@ -81,10 +80,7 @@ class GrpcClientSDK implements GrpcClient {
 
         return sink.asFlux()
                 .publishOn(Schedulers.parallel())
-                .doFinally(s -> {
-                    log.info("Unsubscribing");
-                    subscriptionHandle.unsubscribe();
-                })
+                .doFinally(s -> subscriptionHandle.unsubscribe())
                 .doOnComplete(subscription::onComplete)
                 .doOnError(subscription::onError)
                 .doOnNext(subscription::onNext)
@@ -112,8 +108,7 @@ class GrpcClientSDK implements GrpcClient {
         log.warn("Closing {} clients", subscribeProperties.getClients());
         clients.subscribe(client -> {
             try {
-                client.close(Duration.ofSeconds(2L));
-                log.warn("Closed client {}", client);
+                client.close();
             } catch (Exception e) {
                 // Ignore
             }

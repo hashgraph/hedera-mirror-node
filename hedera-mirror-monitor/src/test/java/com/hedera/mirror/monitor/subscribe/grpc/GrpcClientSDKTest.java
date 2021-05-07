@@ -90,6 +90,12 @@ class GrpcClientSDKTest {
         }
     }
 
+    // Shouldn't be necessary, but the SDK doesn't like being called multiple times in CI
+    private void restartClient() {
+        grpcClientSDK.close();
+        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
+    }
+
     @Test
     void subscribe() {
         consensusServiceStub.setResponses(Flux.just(response(1L), response(2L)));
@@ -118,8 +124,7 @@ class GrpcClientSDKTest {
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(Map.of(), GrpcSubscription::getErrors);
 
-        grpcClientSDK.close();
-        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
+        restartClient();
 
         GrpcSubscription subscription2 = new GrpcSubscription(2, properties);
         grpcClientSDK.subscribe(subscription2)
@@ -144,8 +149,7 @@ class GrpcClientSDKTest {
                 .thenCancel()
                 .verify(Duration.ofSeconds(2L));
 
-        grpcClientSDK.close();
-        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
+        restartClient();
 
         Timestamp consensusTimestamp = response1.getConsensusTimestamp();
         consensusServiceStub.getRequest()
@@ -252,8 +256,8 @@ class GrpcClientSDKTest {
         @Override
         public void subscribeTopic(ConsensusTopicQuery consensusTopicQuery,
                                    StreamObserver<ConsensusTopicResponse> streamObserver) {
-            assertThat(consensusTopicQuery).isEqualTo(request.build());
             log.debug("subscribeTopic: {}", consensusTopicQuery);
+            assertThat(consensusTopicQuery).isEqualTo(request.build());
             responses.doOnComplete(streamObserver::onCompleted)
                     .doOnError(streamObserver::onError)
                     .doOnNext(streamObserver::onNext)
