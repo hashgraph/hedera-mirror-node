@@ -45,6 +45,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
     private byte[] metadataHash;
     private byte[] metadataHashSignature;
+    private StreamType streamType;
 
     @Override
     public int compareTo(FileStreamSignature other) {

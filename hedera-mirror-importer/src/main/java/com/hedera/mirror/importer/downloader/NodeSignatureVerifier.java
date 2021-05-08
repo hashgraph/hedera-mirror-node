@@ -48,26 +48,24 @@ import com.hedera.mirror.importer.exception.SignatureVerificationException;
 public class NodeSignatureVerifier {
 
     private final AddressBookService addressBookService;
-    private final DownloaderProperties downloaderProperties;
+    private final CommonDownloaderProperties commonDownloaderProperties;
 
     // Metrics
     private final MeterRegistry meterRegistry;
     private final Counter.Builder missingNodeSignatureFileMetric;
     private final Counter.Builder signatureVerificationMetric;
 
-    public NodeSignatureVerifier(AddressBookService addressBookService, DownloaderProperties downloaderProperties,
+    public NodeSignatureVerifier(AddressBookService addressBookService,
+                                 CommonDownloaderProperties commonDownloaderProperties,
                                  MeterRegistry meterRegistry) {
         this.addressBookService = addressBookService;
-        this.downloaderProperties = downloaderProperties;
+        this.commonDownloaderProperties = commonDownloaderProperties;
         this.meterRegistry = meterRegistry;
 
-        String streamType = downloaderProperties.getStreamType().toString();
         missingNodeSignatureFileMetric = Counter.builder("hedera.mirror.download.signature.missing")
-                .description("The number of nodes whose signatures are missing from the consensus process")
-                .tag("type", streamType);
+                .description("The number of nodes whose signatures are missing from the consensus process");
         signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
-                .description("The number of signatures verified from a particular node")
-                .tag("type", streamType);
+                .description("The number of signatures verified from a particular node");
     }
 
     private static boolean canReachConsensus(long actualNodes, long expectedNodes, double consensusRatio) {
@@ -98,7 +96,7 @@ public class NodeSignatureVerifier {
 
         long sigFileCount = signatures.size();
         long nodeCount = nodeAccountIDPubKeyMap.size();
-        if (!canReachConsensus(sigFileCount, nodeCount, downloaderProperties.getConsensusRatio())) {
+        if (!canReachConsensus(sigFileCount, nodeCount, commonDownloaderProperties.getConsensusRatio())) {
             throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
                     sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures,
                     nodeAccountIDPubKeyMap));
@@ -114,7 +112,8 @@ public class NodeSignatureVerifier {
         for (String key : signatureHashMap.keySet()) {
             Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
 
-            if (canReachConsensus(validatedSignatures.size(), nodeCount, downloaderProperties.getConsensusRatio())) {
+            if (canReachConsensus(validatedSignatures.size(), nodeCount, commonDownloaderProperties
+                    .getConsensusRatio())) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
             }
@@ -191,6 +190,7 @@ public class NodeSignatureVerifier {
                     .tag("realm", nodeAccountId.getRealmNum().toString())
                     .tag("shard", nodeAccountId.getShardNum().toString())
                     .tag("status", signature.getStatus().toString())
+                    .tag("type", signature.getStreamType().toString())
                     .register(meterRegistry)
                     .increment();
         });
@@ -199,8 +199,10 @@ public class NodeSignatureVerifier {
         statusMap.put("MISSING", missingNodes);
         statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
 
+        String streamType = signatures.stream().map(FileStreamSignature::getStreamType).findFirst().toString();
         missingNodes.forEach(nodeAccountId -> {
             missingNodeSignatureFileMetric.tag("nodeAccount", nodeAccountId)
+                    .tag("type", streamType)
                     .register(meterRegistry)
                     .increment();
         });

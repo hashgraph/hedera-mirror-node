@@ -50,6 +50,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,7 +67,7 @@ class NodeSignatureVerifierTest {
     private AddressBookService addressBookService;
 
     @Mock
-    private DownloaderProperties downloaderProperties;
+    private CommonDownloaderProperties commonDownloaderProperties;
 
     @Mock
     private AddressBook currentAddressBook;
@@ -82,13 +83,15 @@ class NodeSignatureVerifierTest {
 
     @BeforeEach
     void setup() throws GeneralSecurityException {
-        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService, downloaderProperties, meterRegistry);
+        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService, commonDownloaderProperties,
+                meterRegistry);
         signer = Signature.getInstance("SHA384withRSA", "SunRsaSign");
         signer.initSign(privateKey);
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333);
     }
 
     @Test
@@ -266,6 +269,7 @@ class NodeSignatureVerifierTest {
         fileStreamSignature.setFilename("");
         fileStreamSignature.setNodeAccountId(nodeId);
         fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
+        fileStreamSignature.setStreamType(StreamType.RECORD);
         return fileStreamSignature;
     }
 
