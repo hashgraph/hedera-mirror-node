@@ -200,12 +200,10 @@ public class NodeSignatureVerifier {
         statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
 
         String streamType = signatures.stream().map(FileStreamSignature::getStreamType).findFirst().toString();
-        missingNodes.forEach(nodeAccountId -> {
-            missingNodeSignatureFileMetric.tag("nodeAccount", nodeAccountId)
-                    .tag("type", streamType)
-                    .register(meterRegistry)
-                    .increment();
-        });
+        missingNodes.forEach(nodeAccountId -> missingNodeSignatureFileMetric.tag("nodeAccount", nodeAccountId)
+                .tag("type", streamType)
+                .register(meterRegistry)
+                .increment());
 
         return statusMap;
     }

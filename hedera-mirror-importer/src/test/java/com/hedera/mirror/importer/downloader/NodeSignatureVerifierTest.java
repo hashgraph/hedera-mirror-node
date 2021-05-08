@@ -83,7 +83,9 @@ class NodeSignatureVerifierTest {
 
     @BeforeEach
     void setup() throws GeneralSecurityException {
-        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService, commonDownloaderProperties,
+        nodeSignatureVerifier = new NodeSignatureVerifier(
+                addressBookService,
+                commonDownloaderProperties,
                 meterRegistry);
         signer = Signature.getInstance("SHA384withRSA", "SunRsaSign");
         signer.initSign(privateKey);
