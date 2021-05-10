@@ -40,7 +40,7 @@ alertmanager:
             - pod
 
 
-    InhibitP2HAlertWhenHighPublishLatency:
+    InhibitHandleLatencyAlertWhenHighPublishLatency:
       enabled: true
       matches:
         - sourceMatch:
