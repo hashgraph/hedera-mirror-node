@@ -1,4 +1,4 @@
-{{- if .Values.inhibitRules.enabled -}}
+{{- if .Values.alertmanager.inhibitRules.enabled -}}
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
