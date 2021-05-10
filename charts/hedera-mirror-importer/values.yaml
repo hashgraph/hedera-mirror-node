@@ -19,8 +19,8 @@ alertmanager:
               regex: true
               value: (ImporterNoPodsReady|ImporterHighCPU|ImporterHighMemory|ImporterHighFileDescriptors|ImporterHighDBConnections)
           targetMatch:
-            - name: alertType
-              value: importer
+            - name: application
+              value: hedera-mirror-importer
           equal:
             - namespace
             - pod
@@ -321,7 +321,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterBalanceStreamFallenBehind:
     annotations:
@@ -332,7 +332,7 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterCloudStorageErrors:
     annotations:
@@ -343,7 +343,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterCloudStorageLatency:
     annotations:
@@ -354,7 +354,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterFileVerificationErrors:
     annotations:
@@ -365,7 +365,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterHighCPU:
     annotations:
@@ -376,7 +376,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterHighDBConnections:
     annotations:
@@ -387,7 +387,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterHighFileDescriptors:
     annotations:
@@ -398,7 +398,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterHighMemory:
     annotations:
@@ -409,7 +409,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterLog4j2Errors:
     annotations:
@@ -420,7 +420,7 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterNoConsensus:
     annotations:
@@ -431,7 +431,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterNoPodsReady:
     annotations:
@@ -442,7 +442,7 @@ prometheusRules:
     for: 30s
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterNoTransactions:
     annotations:
@@ -453,7 +453,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterParseErrors:
     annotations:
@@ -464,7 +464,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterPublishLatency:
     annotations:
@@ -475,7 +475,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterRecordParseLatency:
     annotations:
@@ -486,7 +486,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterRecordStreamFallenBehind:
     annotations:
@@ -497,7 +497,7 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
-      service: importer
+      application: hedera-mirror-importer
 
   ImporterStreamCloseInterval:
     annotations:
@@ -508,7 +508,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: warning
-      service: importer
+      application: hedera-mirror-importer
 
 securityContext:
   capabilities:

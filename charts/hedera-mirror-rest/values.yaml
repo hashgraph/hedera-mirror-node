@@ -19,8 +19,8 @@ alertmanager:
               regex: true
               value: (RestNoPodsReady|RestHighCPU)
           targetMatch:
-            - name: service
-              value: rest
+            - name: application
+              value: hedera-mirror-rest
           equal:
             - namespace
             - pod
@@ -32,8 +32,8 @@ alertmanager:
             - name: alertname
               value:
           targetMatch:
-            - name: service
-              value: rest
+            - name: application
+              value: hedera-mirror-rest
           equal:
             - namespace
             - pod
@@ -46,7 +46,7 @@ alertmanager:
               value: RestErrors
           targetMatch:
             - name: alertname
-              value: rest
+              value: hedera-mirror-rest
           equal:
             - namespace
             - pod
@@ -141,7 +141,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      service: rest
+      application: hedera-mirror-rest
 
   RestHighCPU:
     annotations:
@@ -152,7 +152,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: rest
+      application: hedera-mirror-rest
 
   RestNoPodsReady:
     annotations:
@@ -163,7 +163,7 @@ prometheusRules:
     for: 30s
     labels:
       severity: critical
-      service: rest
+      application: hedera-mirror-rest
 
   RestNoRequests:
     annotations:
@@ -174,7 +174,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: warning
-      service: rest
+      application: hedera-mirror-rest
 
   RestSlowResponse:
     annotations:
@@ -185,7 +185,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: warning
-      service: rest
+      application: hedera-mirror-rest
 
 readinessProbe:
   httpGet:

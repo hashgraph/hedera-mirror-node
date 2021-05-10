@@ -19,8 +19,8 @@ alertmanager:
               regex: true
               value: (GrpcNoPodsReady|GrpcHighCPU|GrpcHighMemory|GrpcHighFileDescriptors|GrpcHighDBConnections)
           targetMatch:
-            - name: service
-              value: grpc
+            - name: application
+              value: hedera-mirror-grpc
           equal:
             - namespace
             - pod
@@ -126,7 +126,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcHighCPU:
     annotations:
@@ -137,7 +137,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcHighDBConnections:
     annotations:
@@ -148,7 +148,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcHighFileDescriptors:
     annotations:
@@ -159,7 +159,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcHighLatency:
     annotations:
@@ -170,7 +170,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcHighMemory:
     annotations:
@@ -181,7 +181,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcLog4j2Errors:
     annotations:
@@ -192,7 +192,7 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcNoPodsReady:
     annotations:
@@ -203,7 +203,7 @@ prometheusRules:
     for: 30s
     labels:
       severity: critical
-      service: grpc
+      application: hedera-mirror-grpc
 
   GrpcNoSubscribers:
     annotations:
@@ -214,7 +214,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: warning
-      service: grpc
+      application: hedera-mirror-grpc
 
 rbac:
   enabled: true
