@@ -8,7 +8,7 @@ metadata:
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 spec:
   inhibitRules:
-    {{- range $name, $rule := omit .Values.inhibitRules "enabled" }}
+    {{- range $name, $rule := omit .Values.alertmanager.inhibitRules "enabled" }}
       {{- if $rule.enabled }}
         {{- $rule.matches | toYaml | nindent 4}}
       {{- end }}

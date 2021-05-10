@@ -8,6 +8,40 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: grpc
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+    StopGrpcAlertsWhenPodsDown:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: GrpcNoPodsReady
+          targetMatch:
+            - name: service
+              value: grpc
+
+    StopGrpcAlertsWhenResourcesHigh:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (GrpcHighCPU|GrpcHighMemory|GrpcHighFileDescriptors|GrpcHighDBConnections)
+          targetMatch:
+            - name: service
+              value: grpc
+
+    StopGrpcLogAlertOnHighErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: GrpcHighCPU
+          targetMatch:
+            - name: alertname
+              value: GrpcErrors
+
 annotations: {}
 
 config: {}
@@ -84,39 +118,6 @@ podSecurityContext:
   fsGroup: 1000
 
 priorityClassName: ""
-
-inhibitRules:
-  enabled: false
-  StopGrpcAlertsWhenPodsDown:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: GrpcNoPodsReady
-        targetMatch:
-          - name: service
-            value: grpc
-
-  StopGrpcAlertsWhenResourcesHigh:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (GrpcHighCPU|GrpcHighMemory|GrpcHighFileDescriptors|GrpcHighDBConnections)
-        targetMatch:
-          - name: service
-            value: grpc
-
-  StopGrpcLogAlertOnHighErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: GrpcHighCPU
-        targetMatch:
-          - name: alertname
-            value: GrpcErrors
 
 prometheusRules:
   enabled: false

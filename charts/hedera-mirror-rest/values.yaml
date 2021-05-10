@@ -8,6 +8,39 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: rest
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitRestAlertsWhenPodsDown:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: RestNoPodsReady
+          targetMatch:
+            - name: service
+              value: rest
+
+    InhibitRestAlertsWhenResourcesLow:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: RestHighCPU
+          targetMatch:
+            - name: service
+              value: rest
+
+    InhibitSlowResponseAlertsOnHighErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: RestErrors
+          targetMatch:
+            - name: alertname
+              value: rest
+
 annotations: {}
 
 config:
@@ -70,38 +103,6 @@ ingress:
   tls:
     enabled: false
     secretName: ""
-
-inhibitRules:
-  enabled: false
-  InhibitRestAlertsWhenPodsDown:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: RestNoPodsReady
-        targetMatch:
-          - name: service
-            value: rest
-
-  InhibitRestAlertsWhenResourcesLow:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: RestHighCPU
-        targetMatch:
-          - name: service
-            value: rest
-
-  InhibitSlowResponseAlertsOnHighErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: RestErrors
-        targetMatch:
-          - name: alertname
-            value: rest
 
 labels: {}
 

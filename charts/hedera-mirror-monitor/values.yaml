@@ -8,6 +8,62 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: monitor
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitMonitorAlertsWhenPodsDown:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorNoPodsReady
+          targetMatch:
+            - name: service
+              value: monitor
+
+    InhibitMonitorAlertsWhenResourcesLow:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
+          targetMatch:
+            - name: service
+              value: monitor
+
+    InhibitPublishStoppedAlertOnHighErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishErrors
+          targetMatch:
+            - name: alertname
+              value: MonitorPublishStopped
+          equal:
+            - scenario
+
+    InhibitLogAlertOnHighPublishErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishErrors
+          targetMatch:
+            - name: alertname
+              value: MonitorLog4j2Errors
+
+    StopP2HAlertOnHighPublishLatency:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishLatency
+          targetMatch:
+            - name: alertname
+              value: MonitorPublishToHandleLatency
+
 annotations: {}
 
 config:
@@ -45,61 +101,6 @@ image:
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
-
-inhibitRules:
-  enabled: false
-  InhibitMonitorAlertsWhenPodsDown:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: MonitorNoPodsReady
-        targetMatch:
-          - name: service
-            value: monitor
-
-  InhibitMonitorAlertsWhenResourcesLow:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
-        targetMatch:
-          - name: service
-            value: monitor
-
-  InhibitPublishStoppedAlertOnHighErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: MonitorPublishErrors
-        targetMatch:
-          - name: alertname
-            value: MonitorPublishStopped
-        equal:
-          - scenario
-
-  InhibitLogAlertOnHighPublishErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: MonitorPublishErrors
-        targetMatch:
-          - name: alertname
-            value: MonitorLog4j2Errors
-
-  StopP2HAlertOnHighPublishLatency:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: MonitorPublishLatency
-        targetMatch:
-          - name: alertname
-            value: MonitorPublishToHandleLatency
 
 labels: {}
 

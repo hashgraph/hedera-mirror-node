@@ -8,6 +8,231 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: importer
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitImporterAlertsWhenPodsAreDown:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterNoPodsReady
+          targetMatch:
+            - name: service
+              value: importer
+          equal:
+            - namespace
+            - pod
+
+
+    InhibitImporterAlertsWhenResourcesAreLow:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterHighCPU|ImporterHighMemory|ImporterHighFileDescriptors|ImporterHighDBConnections)
+          targetMatch:
+            - name: alertType
+              value: importer
+          equal:
+            - namespace
+            - pod
+
+    InhibitConsensusAlertsOnCloudErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
+          targetMatch:
+            - name: alertname
+              value: ImporterNoConsensus
+          equal:
+            - type
+            - namespace
+            - pod
+
+    InhibitRecordStreamAlertsOnCloudErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
+            - name: type
+              value: RECORD
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterRecordStreamFallenBehind, ImporterNoTransactions)
+          equal:
+            - namespace
+            - pod
+
+    InhibitBalanceStreamAlertsOnCloudErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
+            - name: type
+              value: BALANCE
+          targetMatch:
+            - name: alertname
+              value: ImporterBalanceStreamFallenBehind
+          equal:
+            - namespace
+            - pod
+
+    InhibitCloudLatencyAlertsOnCloudErrorAlerts:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterCloudStorageErrors
+          targetMatch:
+            - name: alertname
+              value: ImporterCloudStorageLatency
+          equal:
+            - type
+            - namespace
+            - pod
+
+    InhibitBalanceStreamFallenBehindOnParseLatency:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterBalanceParseLatency
+          targetMatch:
+            - name: alertname
+              value: ImporterBalanceStreamFallenBehind
+          equal:
+            - namespace
+            - pod
+
+    InhibitRecordStreamFallenBehindOnParseLatency:
+      enabled: true
+      matches:
+        - sourceMatch:
+          - name: alertname
+            value: ImporterRecordeParseLatency
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
+          equal:
+            - namespace
+            - pod
+
+    InhibitNoTransactionsOnStreamCloseInterval:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterStreamCloseInterval
+          targetMatch:
+            - name: alertname
+              value: ImporterNoTransactions
+          equal:
+            - namespace
+            - pod
+
+    InhibitRecordStreamAlertsOnVerificationErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterFileVerificationErrors
+            - name: type
+              value: RECORD
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
+          equal:
+            - namespace
+            - pod
+
+    InhibitBalanceStreamAlertsOnVerificationErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterFileVerificationErrors
+            - name: type
+              value: BALANCE
+          targetMatch:
+            - name: alertname
+              value: (ImporterBalanceStreamFallenBehind)
+          equal:
+            - namespace
+            - pod
+
+    InhibitNoConsensusOnVerificationErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterFileVerificationErrors
+          targetMatch:
+            - name: alertname
+              value: ImporterNoConsensus
+          equal:
+            - type
+            - namespace
+            - pod
+
+    InhibitBalanceStreamFallenBehindOnParseAndConsensusErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterParseErrors|ImporterNoConsensus)
+            - name: type
+              value: BALANCE
+          targetMatch:
+            - name: alertname
+              value: ImporterBalanceStreamFallenBehind
+          equal:
+            - namespace
+            - pod
+
+    InhibitRecordStreamFallenBehindAndNoTransactionsOnParseAndConsensusErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterParseErrors|ImporterNoConsensus)
+            - name: type
+              value: RECORD
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterRecordStreamFallenBehind|ImporterNoTransactions)
+          equal:
+            - namespace
+            - pod
+
+    InhibitLogAlertsOnErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterCloudStorageErrors|ImporterFileVerificationErrors|ImporterParseErrors)
+          targetMatch:
+            - name: alertname
+              value: ImporterLog4j2Errors
+          equal:
+            - namespace
+            - pod
+
 annotations: {}
 
 config:
@@ -44,230 +269,6 @@ image:
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
-
-inhibitRules:
-  enabled: false
-  InhibitImporterAlertsWhenPodsAreDown:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: ImporterNoPodsReady
-        targetMatch:
-          - name: service
-            value: importer
-        equal:
-          - namespace
-          - pod
-
-
-  InhibitImporterAlertsWhenResourcesAreLow:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterHighCPU|ImporterHighMemory|ImporterHighFileDescriptors|ImporterHighDBConnections)
-        targetMatch:
-          - name: alertType
-            value: importer
-        equal:
-          - namespace
-          - pod
-
-  InhibitConsensusAlertsOnCloudErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-        targetMatch:
-          - name: alertname
-            value: ImporterNoConsensus
-        equal:
-          - type
-          - namespace
-          - pod
-
-  InhibitRecordStreamAlertsOnCloudErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-          - name: type
-            value: RECORD
-        targetMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterRecordStreamFallenBehind, ImporterNoTransactions)
-        equal:
-          - namespace
-          - pod
-
-  InhibitBalanceStreamAlertsOnCloudErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-          - name: type
-            value: BALANCE
-        targetMatch:
-          - name: alertname
-            value: ImporterBalanceStreamFallenBehind
-        equal:
-          - namespace
-          - pod
-
-  InhibitCloudLatencyAlertsOnCloudErrorAlerts:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: ImporterCloudStorageErrors
-        targetMatch:
-          - name: alertname
-            value: ImporterCloudStorageLatency
-        equal:
-          - type
-          - namespace
-          - pod
-
-  InhibitBalanceStreamFallenBehindOnParseLatency:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: ImporterBalanceParseLatency
-        targetMatch:
-          - name: alertname
-            value: ImporterBalanceStreamFallenBehind
-        equal:
-          - namespace
-          - pod
-
-  InhibitRecordStreamFallenBehindOnParseLatency:
-    enabled: true
-    matches:
-      - sourceMatch:
-        - name: alertname
-          value: ImporterRecordeParseLatency
-        targetMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
-        equal:
-          - namespace
-          - pod
-
-  InhibitNoTransactionsOnStreamCloseInterval:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: ImporterStreamCloseInterval
-        targetMatch:
-          - name: alertname
-            value: ImporterNoTransactions
-        equal:
-          - namespace
-          - pod
-
-  InhibitRecordStreamAlertsOnVerificationErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: ImporterFileVerificationErrors
-          - name: type
-            value: RECORD
-        targetMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
-        equal:
-          - namespace
-          - pod
-
-  InhibitBalanceStreamAlertsOnVerificationErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: ImporterFileVerificationErrors
-          - name: type
-            value: BALANCE
-        targetMatch:
-          - name: alertname
-            value: (ImporterBalanceStreamFallenBehind)
-        equal:
-          - namespace
-          - pod
-
-  InhibitNoConsensusOnVerificationErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            value: ImporterFileVerificationErrors
-        targetMatch:
-          - name: alertname
-            value: ImporterNoConsensus
-        equal:
-          - type
-          - namespace
-          - pod
-
-  InhibitBalanceStreamFallenBehindOnParseAndConsensusErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterParseErrors|ImporterNoConsensus)
-          - name: type
-            value: BALANCE
-        targetMatch:
-          - name: alertname
-            value: ImporterBalanceStreamFallenBehind
-        equal:
-          - namespace
-          - pod
-
-  InhibitRecordStreamFallenBehindAndNoTransactionsOnParseAndConsensusErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterParseErrors|ImporterNoConsensus)
-          - name: type
-            value: RECORD
-        targetMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterRecordStreamFallenBehind|ImporterNoTransactions)
-        equal:
-          - namespace
-          - pod
-
-  InhibitLogAlertsOnErrors:
-    enabled: true
-    matches:
-      - sourceMatch:
-          - name: alertname
-            regex: true
-            value: (ImporterCloudStorageErrors|ImporterFileVerificationErrors|ImporterParseErrors)
-        targetMatch:
-          - name: alertname
-            value: ImporterLog4j2Errors
-        equal:
-          - namespace
-          - pod
 
 labels: {}
 
