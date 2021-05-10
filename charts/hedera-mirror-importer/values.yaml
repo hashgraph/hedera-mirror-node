@@ -158,15 +158,15 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitNoConsensusWhenVerificationErrors:
+    InhibitVerificationErrorsWhenNoConsensus:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              value: ImporterFileVerificationErrors
+              value: ImporterNoConsensus
           targetMatch:
             - name: alertname
-              value: ImporterNoConsensus
+              value: ImporterFileVerificationErrors
           equal:
             - type
             - namespace

@@ -39,7 +39,6 @@ alertmanager:
             - namespace
             - pod
 
-
     InhibitHandleLatencyAlertWhenHighPublishLatency:
       enabled: true
       matches:
@@ -49,6 +48,19 @@ alertmanager:
           targetMatch:
             - name: alertname
               value: MonitorPublishToHandleLatency
+          equal:
+            - namespace
+            - pod
+
+    InhibitPublishAlertsWhenPublishStopped:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishStopped
+          targetMatch:
+            - name: mode
+              value: publish
           equal:
             - namespace
             - pod
@@ -168,6 +180,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
+      mode: publish
 
   MonitorPublishLatency:
     annotations:
@@ -179,6 +192,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
+      mode: publish
 
   MonitorPublishStopped:
     annotations:
@@ -190,6 +204,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
+      mode: publish
 
   MonitorPublishToHandleLatency:
     annotations:
@@ -201,6 +216,7 @@ prometheusRules:
     labels:
       severity: warning
       application: hedera-mirror-monitor
+      mode: publish
 
   MonitorSubscribeLatency:
     annotations:
