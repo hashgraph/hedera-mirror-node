@@ -26,21 +26,6 @@ alertmanager:
             - namespace
             - pod
 
-
-    InhibitPublishStoppedAlertWhenHighErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: MonitorPublishErrors
-          targetMatch:
-            - name: alertname
-              value: MonitorPublishStopped
-          equal:
-            - scenario
-            - namespace
-            - pod
-
     InhibitLogAlertWhenHighPublishErrors:
       enabled: true
       matches:
@@ -55,7 +40,7 @@ alertmanager:
             - pod
 
 
-    StopP2HAlertWhenHighPublishLatency:
+    InhibitP2HAlertWhenHighPublishLatency:
       enabled: true
       matches:
         - sourceMatch:

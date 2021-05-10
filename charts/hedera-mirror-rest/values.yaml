@@ -46,7 +46,7 @@ alertmanager:
               value: RestErrors
           targetMatch:
             - name: alertname
-              value: hedera-mirror-rest
+              value: RestSlowResponse
           equal:
             - namespace
             - pod
