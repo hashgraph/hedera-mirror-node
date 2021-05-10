@@ -11,27 +11,34 @@ affinity:
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitRestAlertsWhenPodsDown:
+    InhibitRestAlertsWhenPodErrors:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              value: RestNoPodsReady
+              regex: true
+              value: (RestNoPodsReady|RestHighCPU)
           targetMatch:
             - name: service
               value: rest
+          equal:
+            - namespace
+            - pod
 
     InhibitRestAlertsWhenResourcesLow:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              value: RestHighCPU
+              value:
           targetMatch:
             - name: service
               value: rest
+          equal:
+            - namespace
+            - pod
 
-    InhibitSlowResponseAlertsOnHighErrors:
+    InhibitSlowResponseAlertsWhenHighErrors:
       enabled: true
       matches:
         - sourceMatch:
@@ -40,6 +47,9 @@ alertmanager:
           targetMatch:
             - name: alertname
               value: rest
+          equal:
+            - namespace
+            - pod
 
 annotations: {}
 
@@ -144,6 +154,17 @@ prometheusRules:
       severity: critical
       service: rest
 
+  RestNoPodsReady:
+    annotations:
+      description: "No rest instances are currently running in {{ $labels.namespace }}//{{ $labels.pod }}"
+      summary: No rest instances running
+    enabled: true
+    expr: sum(kube_pod_container_status_ready{container="rest"}) by (namespace, pod) < 1
+    for: 30s
+    labels:
+      severity: critical
+      service: rest
+
   RestNoRequests:
     annotations:
       description: "REST API has not seen any requests to {{ $labels.namespace }}/{{ $labels.pod }} for 5m"
@@ -166,17 +187,6 @@ prometheusRules:
       severity: warning
       service: rest
 
-  RestNoPodsReady:
-    annotations:
-      description: "No rest instances are currently running.  "
-      summary: No rest instances running
-    enabled: true
-    expr: kube_pod_container_status_ready{container="rest"} < 1
-    for: 30s
-    labels:
-      severity: critical
-      service: rest
-
 readinessProbe:
   httpGet:
     path: /health/readiness
@@ -189,11 +199,11 @@ readinessProbe:
 
 resources:
   limits:
-    cpu: 500m
-    memory: 128Mi
+    cpu: 1.8
+    memory: 3072Mi
   requests:
-    cpu: 20m
-    memory: 32Mi
+    cpu: 200m
+    memory: 512Mi
 
 revisionHistoryLimit: 3
 

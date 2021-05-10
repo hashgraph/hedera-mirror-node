@@ -11,28 +11,23 @@ affinity:
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitMonitorAlertsWhenPodsDown:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: MonitorNoPodsReady
-          targetMatch:
-            - name: service
-              value: monitor
 
-    InhibitMonitorAlertsWhenResourcesLow:
+    InhibitMonitorAlertsWhenPodErrors:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
               regex: true
-              value: (MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
+              value: (MonitorNoPodsReady|MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
           targetMatch:
             - name: service
               value: monitor
+          equal:
+            - namespace
+            - pod
 
-    InhibitPublishStoppedAlertOnHighErrors:
+
+    InhibitPublishStoppedAlertWhenHighErrors:
       enabled: true
       matches:
         - sourceMatch:
@@ -43,8 +38,10 @@ alertmanager:
               value: MonitorPublishStopped
           equal:
             - scenario
+            - namespace
+            - pod
 
-    InhibitLogAlertOnHighPublishErrors:
+    InhibitLogAlertWhenHighPublishErrors:
       enabled: true
       matches:
         - sourceMatch:
@@ -53,8 +50,12 @@ alertmanager:
           targetMatch:
             - name: alertname
               value: MonitorLog4j2Errors
+          equal:
+            - namespace
+            - pod
 
-    StopP2HAlertOnHighPublishLatency:
+
+    StopP2HAlertWhenHighPublishLatency:
       enabled: true
       matches:
         - sourceMatch:
@@ -63,6 +64,9 @@ alertmanager:
           targetMatch:
             - name: alertname
               value: MonitorPublishToHandleLatency
+          equal:
+            - namespace
+            - pod
 
 annotations: {}
 
@@ -158,6 +162,17 @@ prometheusRules:
       severity: critical
       service: monitor
 
+  MonitorNoPodsReady:
+    annotations:
+      description: "No monitor instances are currently running in {{ $labels.namespace }}//{{ $labels.pod }}"
+      summary: No monitor instances running
+    enabled: true
+    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace, pod) < 1
+    for: 30s
+    labels:
+      severity: critical
+      service: monitor
+
   MonitorPublishErrors:
     annotations:
       description: "Averaging {{ $value | humanizePercentage }} error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}"
@@ -220,17 +235,6 @@ prometheusRules:
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) <= 0
     for: 2m
-    labels:
-      severity: critical
-      service: monitor
-
-  MonitorNoPodsReady:
-    annotations:
-      description: "No monitor instances are currently running in {{ $labels.namespace }}"
-      summary: No monitor instances running
-    enabled: true
-    expr: kube_pod_container_status_ready{container="monitor"} < 1
-    for: 30s
     labels:
       severity: critical
       service: monitor
