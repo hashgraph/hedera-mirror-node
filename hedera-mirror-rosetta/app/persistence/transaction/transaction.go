@@ -170,13 +170,19 @@ func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.T
 }
 
 // FindByHashInBlock retrieves a transaction by Hash
-func (tr *TransactionRepository) FindByHashInBlock(hashStr string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error) {
+func (tr *TransactionRepository) FindByHashInBlock(
+	hashStr string,
+	consensusStart int64,
+	consensusEnd int64,
+) (*types.Transaction, *rTypes.Error) {
 	var transactions []transaction
 	transactionHash, err := hex.DecodeString(hexUtils.SafeRemoveHexPrefix(hashStr))
 	if err != nil {
 		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
 	}
-	tr.dbClient.Raw(whereTransactionsByHashAndConsensusTimestamps, transactionHash, consensusStart, consensusEnd).Find(&transactions)
+	tr.dbClient.
+		Raw(whereTransactionsByHashAndConsensusTimestamps, transactionHash, consensusStart, consensusEnd).
+		Find(&transactions)
 
 	if len(transactions) == 0 {
 		return nil, errors.Errors[errors.TransactionNotFound]
@@ -208,7 +214,10 @@ func (tr *TransactionRepository) retrieveTransactionResults() []transactionResul
 	return tResults
 }
 
-func (tr *TransactionRepository) constructTransaction(sameHashTransactions []transaction) (*types.Transaction, *rTypes.Error) {
+func (tr *TransactionRepository) constructTransaction(sameHashTransactions []transaction) (
+	*types.Transaction,
+	*rTypes.Error,
+) {
 	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
 
 	transactionsMap := make(map[int64]transaction)
@@ -227,7 +236,10 @@ func (tr *TransactionRepository) constructTransaction(sameHashTransactions []tra
 	return tResult, nil
 }
 
-func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.CryptoTransfer, transactionsMap map[int64]transaction) ([]*types.Operation, *rTypes.Error) {
+func (tr *TransactionRepository) constructOperations(
+	cryptoTransfers []dbTypes.CryptoTransfer,
+	transactionsMap map[int64]transaction,
+) ([]*types.Operation, *rTypes.Error) {
 	transactionTypes, err := tr.Types()
 	if err != nil {
 		return nil, err
@@ -243,7 +255,13 @@ func (tr *TransactionRepository) constructOperations(cryptoTransfers []dbTypes.C
 		}
 		operationType := transactionTypes[transactionsMap[ct.ConsensusTimestamp].Type]
 		operationStatus := transactionStatuses[transactionsMap[ct.ConsensusTimestamp].Result]
-		operations[i] = &types.Operation{Index: int64(i), Type: operationType, Status: operationStatus, Account: a, Amount: &types.Amount{Value: ct.Amount}}
+		operations[i] = &types.Operation{
+			Index:   int64(i),
+			Type:    operationType,
+			Status:  operationStatus,
+			Account: a,
+			Amount:  &types.Amount{Value: ct.Amount},
+		}
 	}
 	return operations, nil
 }

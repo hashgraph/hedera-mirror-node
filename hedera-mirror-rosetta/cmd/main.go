@@ -68,7 +68,13 @@ func configLogger(level string) {
 // newBlockchainOnlineRouter creates a Mux http.Handler from a collection
 // of server controllers, serving "online" mode.
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#online-mode-endpoints
-func newBlockchainOnlineRouter(network *rTypes.NetworkIdentifier, nodes types.NodeMap, asserter *asserter.Asserter, version *rTypes.Version, dbClient *gorm.DB) (http.Handler, error) {
+func newBlockchainOnlineRouter(
+	network *rTypes.NetworkIdentifier,
+	nodes types.NodeMap,
+	asserter *asserter.Asserter,
+	version *rTypes.Version,
+	dbClient *gorm.DB,
+) (http.Handler, error) {
 	blockRepo := block.NewBlockRepository(dbClient)
 	transactionRepo := transaction.NewTransactionRepository(dbClient)
 	accountRepo := account.NewAccountRepository(dbClient)
@@ -94,13 +100,23 @@ func newBlockchainOnlineRouter(network *rTypes.NetworkIdentifier, nodes types.No
 	accountAPIService := accountService.NewAccountAPIService(baseService, accountRepo)
 	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
 
-	return server.NewRouter(networkAPIController, blockAPIController, mempoolAPIController, constructionAPIController, accountAPIController), nil
+	return server.NewRouter(
+		networkAPIController,
+		blockAPIController,
+		mempoolAPIController,
+		constructionAPIController,
+		accountAPIController,
+	), nil
 }
 
 // newBlockchainOfflineRouter creates a Mux http.Handler from a collection
 // of server controllers, serving "offline" mode.
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#offline-mode-endpoints
-func newBlockchainOfflineRouter(network string, nodes types.NodeMap, asserter *asserter.Asserter) (http.Handler, error) {
+func newBlockchainOfflineRouter(
+	network string,
+	nodes types.NodeMap,
+	asserter *asserter.Asserter,
+) (http.Handler, error) {
 	constructionAPIService, err := constructionService.NewConstructionAPIService(network, nodes)
 	if err != nil {
 		return nil, err
@@ -139,6 +155,8 @@ func main() {
 		[]string{config.OperationTypeCryptoTransfer},
 		true,
 		[]*rTypes.NetworkIdentifier{network},
+		nil,
+		false,
 	)
 	if err != nil {
 		log.Fatalf("%s", err)

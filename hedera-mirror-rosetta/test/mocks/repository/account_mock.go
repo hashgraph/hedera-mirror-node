@@ -30,7 +30,10 @@ type MockAccountRepository struct {
 	mock.Mock
 }
 
-func (m *MockAccountRepository) RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (*types.Amount, *rTypes.Error) {
+func (m *MockAccountRepository) RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (
+	*types.Amount,
+	*rTypes.Error,
+) {
 	args := m.Called()
 	return args.Get(0).(*types.Amount), args.Get(1).(*rTypes.Error)
 }

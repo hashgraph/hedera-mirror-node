@@ -30,7 +30,11 @@ type MockTransactionRepository struct {
 	mock.Mock
 }
 
-func (m *MockTransactionRepository) FindByHashInBlock(identifier string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error) {
+func (m *MockTransactionRepository) FindByHashInBlock(
+	identifier string,
+	consensusStart int64,
+	consensusEnd int64,
+) (*types.Transaction, *rTypes.Error) {
 	args := m.Called()
 	return args.Get(0).(*types.Transaction), args.Get(1).(*rTypes.Error)
 }

@@ -67,7 +67,8 @@ type AccountRepository struct {
 	dbClient *gorm.DB
 }
 
-// NewAccountRepository creates an instance of a TransactionRepository struct. Populates the transaction types and statuses on init
+// NewAccountRepository creates an instance of a TransactionRepository struct. Populates the transaction types and
+// statuses on init
 func NewAccountRepository(dbClient *gorm.DB) *AccountRepository {
 	return &AccountRepository{
 		dbClient: dbClient,
@@ -76,7 +77,10 @@ func NewAccountRepository(dbClient *gorm.DB) *AccountRepository {
 
 // RetrieveBalanceAtBlock returns the balance of the account at a given block (provided by consensusEnd timestamp).
 // balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
-func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (*types.Amount, *rTypes.Error) {
+func (ar *AccountRepository) RetrieveBalanceAtBlock(
+	addressStr string,
+	consensusEnd int64,
+) (*types.Amount, *rTypes.Error) {
 	acc, err := types.AccountFromString(addressStr)
 	if err != nil {
 		return nil, err

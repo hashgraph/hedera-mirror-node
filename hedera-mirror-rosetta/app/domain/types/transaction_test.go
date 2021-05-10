@@ -50,6 +50,7 @@ func exampleTransaction() *Transaction {
 }
 
 func expectedTransaction() *types.Transaction {
+	status := "pending"
 	return &types.Transaction{
 		TransactionIdentifier: &types.TransactionIdentifier{Hash: "somehash"},
 		Operations: []*types.Operation{
@@ -60,7 +61,7 @@ func expectedTransaction() *types.Transaction {
 				},
 				RelatedOperations: []*types.OperationIdentifier{},
 				Type:              "transfer",
-				Status:            "pending",
+				Status:            &status,
 				Account: &types.AccountIdentifier{
 					Address:    "0.0.0",
 					SubAccount: nil,

@@ -90,7 +90,12 @@ func TestNewAccountAPIService(t *testing.T) {
 	repository.Setup()
 	assert.IsType(t, &AccountAPIService{}, getSubject())
 	assert.Equal(t, baseService(), getSubject().BaseService, "BaseService was not populated correctly")
-	assert.Equal(t, repository.MAccountRepository, getSubject().accountRepo, "AccountsRepository was not populated correctly")
+	assert.Equal(
+		t,
+		repository.MAccountRepository,
+		getSubject().accountRepo,
+		"AccountsRepository was not populated correctly",
+	)
 }
 
 func TestAccountBalance(t *testing.T) {
@@ -118,7 +123,7 @@ func TestAccountBalanceWithBlockIdentifier(t *testing.T) {
 	// when:
 	actualResult, e := getSubject().AccountBalance(nil, request(true))
 
-	//then:
+	// then:
 	assert.Equal(t, expectedAccountBalanceResponse(), actualResult)
 	assert.Nil(t, e)
 	repository.MBlockRepository.AssertNotCalled(t, "RetrieveLatest")
@@ -162,7 +167,7 @@ func TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails(t *testing.T) {
 	// when:
 	actualResult, e := getSubject().AccountBalance(nil, request(true))
 
-	//then:
+	// then:
 	assert.Nil(t, actualResult)
 	assert.IsType(t, &rTypes.Error{}, e)
 }

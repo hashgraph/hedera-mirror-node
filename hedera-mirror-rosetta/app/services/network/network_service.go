@@ -40,7 +40,10 @@ type NetworkAPIService struct {
 }
 
 // NetworkList implements the /network/list endpoint.
-func (n *NetworkAPIService) NetworkList(ctx context.Context, request *types.MetadataRequest) (*types.NetworkListResponse, *types.Error) {
+func (n *NetworkAPIService) NetworkList(
+	ctx context.Context,
+	request *types.MetadataRequest,
+) (*types.NetworkListResponse, *types.Error) {
 	return &types.NetworkListResponse{
 		NetworkIdentifiers: []*types.NetworkIdentifier{
 			n.network,
@@ -49,7 +52,10 @@ func (n *NetworkAPIService) NetworkList(ctx context.Context, request *types.Meta
 }
 
 // NetworkOptions implements the /network/options endpoint.
-func (n *NetworkAPIService) NetworkOptions(ctx context.Context, request *types.NetworkRequest) (*types.NetworkOptionsResponse, *types.Error) {
+func (n *NetworkAPIService) NetworkOptions(
+	ctx context.Context,
+	request *types.NetworkRequest,
+) (*types.NetworkOptionsResponse, *types.Error) {
 	operationTypes, err := n.TypesAsArray()
 	if err != nil {
 		return nil, err
@@ -80,7 +86,10 @@ func (n *NetworkAPIService) NetworkOptions(ctx context.Context, request *types.N
 }
 
 // NetworkStatus implements the /network/status endpoint.
-func (n *NetworkAPIService) NetworkStatus(ctx context.Context, request *types.NetworkRequest) (*types.NetworkStatusResponse, *types.Error) {
+func (n *NetworkAPIService) NetworkStatus(
+	ctx context.Context,
+	request *types.NetworkRequest,
+) (*types.NetworkStatusResponse, *types.Error) {
 	genesisBlock, err := n.RetrieveGenesis()
 	if err != nil {
 		return nil, err
@@ -111,9 +120,11 @@ func (n *NetworkAPIService) NetworkStatus(ctx context.Context, request *types.Ne
 }
 
 // NewNetworkAPIService creates a new instance of a NetworkAPIService.
-func NewNetworkAPIService(commons base.BaseService,
+func NewNetworkAPIService(
+	commons base.BaseService,
 	addressBookEntryRepo repositories.AddressBookEntryRepository,
-	network *types.NetworkIdentifier, version *types.Version) server.NetworkAPIServicer {
+	network *types.NetworkIdentifier, version *types.Version,
+) server.NetworkAPIServicer {
 	return &NetworkAPIService{
 		BaseService:          commons,
 		addressBookEntryRepo: addressBookEntryRepo,

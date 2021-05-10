@@ -51,7 +51,10 @@ type ConstructionAPIService struct {
 }
 
 // ConstructionCombine implements the /construction/combine endpoint.
-func (c *ConstructionAPIService) ConstructionCombine(ctx context.Context, request *rTypes.ConstructionCombineRequest) (*rTypes.ConstructionCombineResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionCombine(
+	ctx context.Context,
+	request *rTypes.ConstructionCombineRequest,
+) (*rTypes.ConstructionCombineResponse, *rTypes.Error) {
 	if len(request.Signatures) != 1 {
 		return nil, errors.Errors[errors.MultipleSignaturesPresent]
 	}
@@ -89,12 +92,18 @@ func (c *ConstructionAPIService) ConstructionCombine(ctx context.Context, reques
 }
 
 // ConstructionDerive implements the /construction/derive endpoint.
-func (c *ConstructionAPIService) ConstructionDerive(ctx context.Context, request *rTypes.ConstructionDeriveRequest) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionDerive(
+	ctx context.Context,
+	request *rTypes.ConstructionDeriveRequest,
+) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
 	return nil, errors.Errors[errors.NotImplemented]
 }
 
 // ConstructionHash implements the /construction/hash endpoint.
-func (c *ConstructionAPIService) ConstructionHash(ctx context.Context, request *rTypes.ConstructionHashRequest) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionHash(
+	ctx context.Context,
+	request *rTypes.ConstructionHashRequest,
+) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
 	signedTransaction, rErr := unmarshallTransactionFromHexString(request.SignedTransaction)
 	if rErr != nil {
 		return nil, rErr
@@ -114,14 +123,20 @@ func (c *ConstructionAPIService) ConstructionHash(ctx context.Context, request *
 }
 
 // ConstructionMetadata implements the /construction/metadata endpoint.
-func (c *ConstructionAPIService) ConstructionMetadata(ctx context.Context, request *rTypes.ConstructionMetadataRequest) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionMetadata(
+	ctx context.Context,
+	request *rTypes.ConstructionMetadataRequest,
+) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
 	return &rTypes.ConstructionMetadataResponse{
 		Metadata: make(map[string]interface{}),
 	}, nil
 }
 
 // ConstructionParse implements the /construction/parse endpoint.
-func (c *ConstructionAPIService) ConstructionParse(ctx context.Context, request *rTypes.ConstructionParseRequest) (*rTypes.ConstructionParseResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionParse(
+	ctx context.Context,
+	request *rTypes.ConstructionParseRequest,
+) (*rTypes.ConstructionParseResponse, *rTypes.Error) {
 	transaction, rErr := unmarshallTransactionFromHexString(request.Transaction)
 	if rErr != nil {
 		return nil, rErr
@@ -182,17 +197,26 @@ func (c *ConstructionAPIService) ConstructionParse(ctx context.Context, request 
 }
 
 // ConstructionPayloads implements the /construction/payloads endpoint.
-func (c *ConstructionAPIService) ConstructionPayloads(ctx context.Context, request *rTypes.ConstructionPayloadsRequest) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionPayloads(
+	ctx context.Context,
+	request *rTypes.ConstructionPayloadsRequest,
+) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
 	return c.handleCryptoTransferPayload(request.Operations)
 }
 
 // ConstructionPreprocess implements the /construction/preprocess endpoint.
-func (c *ConstructionAPIService) ConstructionPreprocess(ctx context.Context, request *rTypes.ConstructionPreprocessRequest) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionPreprocess(
+	ctx context.Context,
+	request *rTypes.ConstructionPreprocessRequest,
+) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
 	return c.handleCryptoTransferPreProcess(request.Operations)
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.
-func (c *ConstructionAPIService) ConstructionSubmit(ctx context.Context, request *rTypes.ConstructionSubmitRequest) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) ConstructionSubmit(
+	ctx context.Context,
+	request *rTypes.ConstructionSubmitRequest,
+) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
 	transaction, rErr := unmarshallTransactionFromHexString(request.SignedTransaction)
 	if rErr != nil {
 		return nil, rErr
@@ -217,7 +241,10 @@ func (c *ConstructionAPIService) ConstructionSubmit(ctx context.Context, request
 }
 
 // handleCryptoTransferPayload handles the parse of all Rosetta Operations to a hedera.Transaction.
-func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rTypes.Operation) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rTypes.Operation) (
+	*rTypes.ConstructionPayloadsResponse,
+	*rTypes.Error,
+) {
 	err1 := validator.ValidateOperationsSum(operations)
 	if err1 != nil {
 		return nil, err1
@@ -283,7 +310,10 @@ func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rType
 }
 
 // handleCryptoTransferPreProcess validates all Rosetta Operations.
-func (c *ConstructionAPIService) handleCryptoTransferPreProcess(operations []*rTypes.Operation) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
+func (c *ConstructionAPIService) handleCryptoTransferPreProcess(operations []*rTypes.Operation) (
+	*rTypes.ConstructionPreprocessResponse,
+	*rTypes.Error,
+) {
 	err := validator.ValidateOperationsSum(operations)
 	if err != nil {
 		return nil, err

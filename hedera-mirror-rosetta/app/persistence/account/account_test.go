@@ -155,13 +155,15 @@ func TestShouldSuccessRetrieveBalanceAtBlock(t *testing.T) {
 		WithArgs(dbAccountBalance.AccountId, consensusTimestamp).
 		WillReturnRows(
 			sqlmock.NewRows(columns).
-				AddRow(dbAccountBalanceRow...))
+				AddRow(dbAccountBalanceRow...),
+		)
 
 	mock.ExpectQuery(regexp.QuoteMeta(balanceChangeBetween)).
 		WithArgs(dbAccountBalance.ConsensusTimestamp, consensusTimestamp, dbAccountBalance.AccountId).
 		WillReturnRows(
 			sqlmock.NewRows(balanceChangeColumns).
-				AddRow(dbBalanceChangeRow...))
+				AddRow(dbBalanceChangeRow...),
+		)
 
 	// when
 	result, err := abr.RetrieveBalanceAtBlock(accountString, consensusTimestamp)
@@ -189,7 +191,8 @@ func TestShouldSuccessRetrieveBalanceAtBlockWithNoSnapshotsBeforeThat(t *testing
 		WithArgs(dbAccountBalance.ConsensusTimestamp, consensusTimestamp, dbAccountBalance.AccountId).
 		WillReturnRows(
 			sqlmock.NewRows(balanceChangeColumns).
-				AddRow(dbBalanceChangeRow...))
+				AddRow(dbBalanceChangeRow...),
+		)
 
 	// when
 	result, err := abr.RetrieveBalanceAtBlock(accountString, consensusTimestamp)

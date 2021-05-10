@@ -41,7 +41,7 @@ func (t *Operation) ToRosetta() *rTypes.Operation {
 		},
 		RelatedOperations: []*rTypes.OperationIdentifier{},
 		Type:              t.Type,
-		Status:            t.Status,
+		Status:            &t.Status,
 		Account:           t.Account.ToRosetta(),
 		Amount:            t.Amount.ToRosetta(),
 	}

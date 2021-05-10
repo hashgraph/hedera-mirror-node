@@ -509,7 +509,11 @@ func TestConstructionPayloads(t *testing.T) {
 	// then:
 	// here we do not assert the whole response object to equal the expected one, because invocation of this method appends a unique timestamp to the result, thus making the signed TX and Bytes unique and non-assertable.
 	assert.Len(t, expectedPayloadsResponse.Payloads, 1)
-	assert.Equal(t, expectedPayloadsResponse.Payloads[0].AccountIdentifier.Address, res.Payloads[0].AccountIdentifier.Address)
+	assert.Equal(
+		t,
+		expectedPayloadsResponse.Payloads[0].AccountIdentifier.Address,
+		res.Payloads[0].AccountIdentifier.Address,
+	)
 	assert.Nil(t, e)
 }
 
