@@ -53,8 +53,8 @@ class ConfigurableTransactionGeneratorTest {
     @BeforeEach
     void init() {
         properties = new ScenarioProperties();
-        properties.setReceipt(1);
-        properties.setRecord(1);
+        properties.setReceiptPercent(1);
+        properties.setRecordPercent(1);
         properties.setName("test");
         properties.setProperties(Map.of("topicId", TOPIC_ID));
         properties.setTps(100_000);
@@ -121,7 +121,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void receiptDisabled() {
-        properties.setReceipt(0);
+        properties.setReceiptPercent(0);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isReceipt)
@@ -131,7 +131,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void receiptEnabled() {
-        properties.setReceipt(1);
+        properties.setReceiptPercent(1);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isReceipt)
@@ -141,7 +141,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void receiptPercent() {
-        properties.setReceipt(0.1);
+        properties.setReceiptPercent(0.1);
         Multiset<Boolean> receipts = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
@@ -151,12 +151,12 @@ class ConfigurableTransactionGeneratorTest {
         assertThat((double) receipts.count(true) / SAMPLE_SIZE)
                 .isNotNegative()
                 .isNotZero()
-                .isCloseTo(properties.getReceipt(), within(properties.getReceipt() * 0.2));
+                .isCloseTo(properties.getReceiptPercent(), within(properties.getReceiptPercent() * 0.2));
     }
 
     @Test
     void recordDisabled() {
-        properties.setRecord(0);
+        properties.setRecordPercent(0);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isRecord)
@@ -166,7 +166,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void recordEnabled() {
-        properties.setRecord(1);
+        properties.setRecordPercent(1);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
                     .extracting(PublishRequest::isRecord)
@@ -176,7 +176,7 @@ class ConfigurableTransactionGeneratorTest {
 
     @Test
     void recordPercent() {
-        properties.setRecord(0.75);
+        properties.setRecordPercent(0.75);
         Multiset<Boolean> records = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
@@ -186,7 +186,7 @@ class ConfigurableTransactionGeneratorTest {
         assertThat((double) records.count(true) / SAMPLE_SIZE)
                 .isNotNegative()
                 .isNotZero()
-                .isCloseTo(properties.getRecord(), within(properties.getRecord() * 0.2));
+                .isCloseTo(properties.getRecordPercent(), within(properties.getRecordPercent() * 0.2));
     }
 
     @Test

@@ -21,18 +21,14 @@ package com.hedera.mirror.monitor.subscribe;
  */
 
 import java.time.Instant;
-import javax.annotation.Nullable;
-import javax.validation.constraints.NotBlank;
-import lombok.Data;
-import org.springframework.validation.annotation.Validated;
+import lombok.Builder;
+import lombok.Value;
 
-@Data
-@Validated
-public class GrpcSubscriberProperties extends AbstractSubscriberProperties {
-
-    @Nullable
-    private Instant startTime;
-
-    @NotBlank
-    private String topicId;
+@Builder
+@Value
+public class SubscribeResponse {
+    private final Instant consensusTimestamp;
+    private final Instant publishedTimestamp;
+    private final Instant receivedTimestamp;
+    private final Subscription subscription;
 }

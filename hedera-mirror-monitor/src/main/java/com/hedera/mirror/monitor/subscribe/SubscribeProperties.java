@@ -20,17 +20,28 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+
+import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
+import com.hedera.mirror.monitor.subscribe.rest.RestSubscriberProperties;
 
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.monitor.subscribe")
 public class SubscribeProperties {
+
+    @Min(1)
+    @Max(1024)
+    private int clients = 1;
 
     private boolean enabled = true;
 
@@ -39,4 +50,8 @@ public class SubscribeProperties {
 
     @NotNull
     private List<RestSubscriberProperties> rest = new ArrayList<>();
+
+    @DurationMin(seconds = 1L)
+    @NotNull
+    protected Duration statusFrequency = Duration.ofSeconds(10L);
 }

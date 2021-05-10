@@ -20,22 +20,30 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
+import static com.hedera.mirror.monitor.subscribe.AbstractSubscriber.METRIC_DURATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.monitor.MirrorNodeProperties;
 import com.hedera.mirror.monitor.MonitorProperties;
+import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.subscribe.rest.RestSubscriber;
+import com.hedera.mirror.monitor.subscribe.rest.RestSubscriberProperties;
 
 class CompositeSubscriberTest {
 
     private MonitorProperties monitorProperties;
     private SubscribeProperties subscribeProperties;
-    private GrpcSubscriberProperties grpcSubscriberProperties;
     private RestSubscriberProperties restSubscriberProperties;
     private MeterRegistry meterRegistry;
     private WebClient.Builder webClient;
@@ -51,37 +59,35 @@ class CompositeSubscriberTest {
         subscribeProperties = new SubscribeProperties();
         meterRegistry = new SimpleMeterRegistry();
         webClient = WebClient.builder();
-        compositeSubscriber = new CompositeSubscriber(p -> p, monitorProperties, subscribeProperties, meterRegistry,
-                webClient);
+        compositeSubscriber = new CompositeSubscriber(monitorProperties, subscribeProperties, meterRegistry, webClient);
 
-        grpcSubscriberProperties = new GrpcSubscriberProperties();
-        grpcSubscriberProperties.setName("grpc");
-        grpcSubscriberProperties.setTopicId("0.0.1000");
         restSubscriberProperties = new RestSubscriberProperties();
         restSubscriberProperties.setName("rest");
-        subscribeProperties.getGrpc().add(grpcSubscriberProperties);
         subscribeProperties.getRest().add(restSubscriberProperties);
     }
 
     @Test
+    void close() {
+        compositeSubscriber.close();
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isEmpty();
+    }
+
+    @Test
+    void onPublish() {
+        PublishResponse response = PublishResponse.builder()
+                .request(PublishRequest.builder()
+                        .timestamp(Instant.now())
+                        .type(TransactionType.CONSENSUS_SUBMIT_MESSAGE)
+                        .build())
+                .timestamp(Instant.now())
+                .transactionId(TransactionId.withValidStart(AccountId.fromString("0.0.1000"), Instant.ofEpochSecond(1)))
+                .build();
+        compositeSubscriber.onPublish(response);
+        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).hasSize(1);
+    }
+
+    @Test
     void allEnabled() {
-        assertThat(compositeSubscriber.subscribers.get())
-                .hasSize(2)
-                .hasAtLeastOneElementOfType(GrpcSubscriber.class)
-                .hasAtLeastOneElementOfType(RestSubscriber.class);
-    }
-
-    @Test
-    void restDisabled() {
-        restSubscriberProperties.setEnabled(false);
-        assertThat(compositeSubscriber.subscribers.get())
-                .hasSize(1)
-                .hasAtLeastOneElementOfType(GrpcSubscriber.class);
-    }
-
-    @Test
-    void grpcDisabled() {
-        grpcSubscriberProperties.setEnabled(false);
         assertThat(compositeSubscriber.subscribers.get())
                 .hasSize(1)
                 .hasAtLeastOneElementOfType(RestSubscriber.class);
@@ -89,7 +95,6 @@ class CompositeSubscriberTest {
 
     @Test
     void allDisabled() {
-        grpcSubscriberProperties.setEnabled(false);
         restSubscriberProperties.setEnabled(false);
         assertThat(compositeSubscriber.subscribers.get()).isEmpty();
     }

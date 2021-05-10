@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.subscribe.rest;
 
 /*-
  * ‌
@@ -21,63 +21,29 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
 
 @Data
 @Validated
-public class ScenarioProperties {
+public class RestSubscriberProperties extends AbstractSubscriberProperties {
 
     @NotNull
-    @DurationMin(seconds = 30)
-    private Duration duration = Duration.ofNanos(Long.MAX_VALUE);
-
-    private boolean enabled = true;
-
-    @Min(0)
-    private long limit = 0;
-
-    private boolean logResponse = false;
-
-    @Min(1)
-    private int maxAttempts = 1;
-
-    @NotBlank
-    private String name;
-
-    @NotNull
-    private Map<String, String> properties = new LinkedHashMap<>();
+    @DurationMin(millis = 500)
+    private Duration timeout = Duration.ofSeconds(2);
 
     @Min(0)
     @Max(1)
-    private double receiptPercent = 0.0;
+    private double samplePercent = 1.0;
 
-    @Min(0)
-    @Max(1)
-    private double recordPercent = 0.0;
-
-    @NotNull
-    @DurationMin(seconds = 1)
-    private Duration timeout = Duration.ofSeconds(10);
-
-    @Min(0)
-    private double tps = 1.0;
-
-    @NotNull
-    private TransactionType type;
-
+    @Override
     public long getLimit() {
         return limit > 0 ? limit : Long.MAX_VALUE;
     }
 }
-
-

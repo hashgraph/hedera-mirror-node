@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor.subscribe.grpc;
 
 /*-
  * ‌
@@ -20,25 +20,25 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
 import java.time.Instant;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.springframework.validation.annotation.Validated;
 
-@Log4j2
-@UtilityClass
-public class Utility {
+import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
 
-    public static Instant getTimestamp(byte[] message) {
-        if (message == null || message.length < Long.BYTES) {
-            return null;
-        }
+@Data
+@Validated
+public class GrpcSubscriberProperties extends AbstractSubscriberProperties {
 
-        Long timestamp = Longs.fromByteArray(message);
-        return timestamp != null ? Instant.ofEpochMilli(timestamp) : null;
-    }
+    @NotNull
+    private Instant startTime = Instant.now();
 
-    public static String getMemo(String message) {
-        return System.currentTimeMillis() + "_" + message + " at " + Instant.now();
+    @NotBlank
+    private String topicId;
+
+    public Instant getEndTime() {
+        return startTime.plus(duration);
     }
 }
