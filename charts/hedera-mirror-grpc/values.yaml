@@ -30,10 +30,10 @@ alertmanager:
       matches:
         - sourceMatch:
             - name: alertname
-              value: GrpcHighCPU
+              value: GrpcErrors
           targetMatch:
             - name: alertname
-              value: GrpcErrors
+              value: GrpcLog4j2Errors
           equal:
             - namespace
             - pod
