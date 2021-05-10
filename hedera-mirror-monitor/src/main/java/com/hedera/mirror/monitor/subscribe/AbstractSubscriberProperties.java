@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.subscribe;
  */
 
 import java.time.Duration;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -47,9 +48,14 @@ public abstract class AbstractSubscriberProperties {
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
+    @Deprecated
     @DurationMin(seconds = 1L)
     @NotNull
     protected Duration statusFrequency = Duration.ofSeconds(10L);
+
+    @Min(1)
+    @Max(1024)
+    protected int subscribers = 1;
 
     @Data
     @Validated

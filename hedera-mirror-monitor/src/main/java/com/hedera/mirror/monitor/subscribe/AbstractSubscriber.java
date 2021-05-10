@@ -41,11 +41,10 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 
 public abstract class AbstractSubscriber<P extends AbstractSubscriberProperties> implements Subscriber {
 
-    static final String METRIC_DURATION = "hedera.mirror.monitor.subscribe.duration";
-    static final String METRIC_E2E = "hedera.mirror.monitor.subscribe.e2e";
+    public static final String METRIC_DURATION = "hedera.mirror.monitor.subscribe.duration";
+    public static final String METRIC_E2E = "hedera.mirror.monitor.subscribe.e2e";
 
     protected final Logger log = LogManager.getLogger(getClass());
-
     protected final AtomicLong counter;
     protected final Multiset<String> errors;
     protected final Stopwatch stopwatch;

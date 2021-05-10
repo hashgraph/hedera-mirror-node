@@ -29,10 +29,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -51,7 +52,7 @@ import com.hedera.mirror.monitor.NodeProperties;
 @Log4j2
 @Named
 @RequiredArgsConstructor
-public class TransactionPublisher {
+public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
@@ -60,16 +61,19 @@ public class TransactionPublisher {
     private final Supplier<List<AccountId>> nodeAccountIds = Suppliers.memoize(this::getNodeAccountIds);
     private final AtomicInteger counter = new AtomicInteger(0);
     private final SecureRandom secureRandom = new SecureRandom();
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    @PreDestroy
+    @Override
     public void close() {
-        log.info("Closing {} clients", clients.get().size());
+        if (initialized.get()) {
+            log.info("Closing {} clients", clients.get().size());
 
-        for (Client client : clients.get()) {
-            try {
-                client.close();
-            } catch (Exception e) {
-                // Ignore
+            for (Client client : clients.get()) {
+                try {
+                    client.close();
+                } catch (Exception e) {
+                    // Ignore
+                }
             }
         }
     }
@@ -145,6 +149,7 @@ public class TransactionPublisher {
             validatedClients.add(client);
         }
 
+        initialized.set(true);
         return validatedClients;
     }
 
@@ -167,7 +172,7 @@ public class TransactionPublisher {
                 }
             }
         } catch (Exception e) {
-            //
+            log.warn("Error validating nodes: {}", e.getMessage());
         }
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
@@ -184,6 +189,8 @@ public class TransactionPublisher {
                     .execute(client, Duration.ofSeconds(10L));
             log.info("Validated node: {}", node);
             valid = true;
+        } catch (TimeoutException e) {
+            log.warn("Unable to validate node {}: Timed out", node);
         } catch (Exception e) {
             log.warn("Unable to validate node {}: ", node, e);
         }
