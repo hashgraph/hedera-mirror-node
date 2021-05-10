@@ -3,6 +3,8 @@ grpc:
   ingress:
     middleware:
       enabled: true
+  inhibitRules:
+      enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true
@@ -10,6 +12,8 @@ grpc:
     enabled: true
 
 importer:
+  inhibitRules:
+    enabled: true
   podMonitor:
     enabled: true
   priorityClassName: high
@@ -17,6 +21,8 @@ importer:
     enabled: true
 
 monitor:
+  inhibitRules:
+    enabled: true
   podMonitor:
     enabled: true
   priorityClassName: medium
@@ -47,6 +53,8 @@ rest:
   ingress:
     middleware:
       enabled: true
+  inhibitRules:
+    enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true

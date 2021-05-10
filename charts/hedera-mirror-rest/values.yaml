@@ -72,7 +72,7 @@ ingress:
     secretName: ""
 
 inhibitRules:
-  enabled: true
+  enabled: false
   InhibitRestAlertsWhenPodsDown:
     enabled: true
     matches:

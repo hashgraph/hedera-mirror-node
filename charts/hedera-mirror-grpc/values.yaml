@@ -86,7 +86,7 @@ podSecurityContext:
 priorityClassName: ""
 
 inhibitRules:
-  enabled: true
+  enabled: false
   StopGrpcAlertsWhenPodsDown:
     enabled: true
     matches:

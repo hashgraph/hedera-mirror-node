@@ -47,7 +47,7 @@ image:
 imagePullSecrets: []
 
 inhibitRules:
-  enabled: true
+  enabled: false
   InhibitMonitorAlertsWhenPodsDown:
     enabled: true
     matches:
