@@ -12,16 +12,15 @@ alertmanager:
   inhibitRules:
     enabled: false
 
-    InhibitMonitorAlertsWhenPodErrors:
+    InhibitHandleLatencyAlertWhenHighPublishLatency:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              regex: true
-              value: (MonitorNoPodsReady|MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
+              value: MonitorPublishLatency
           targetMatch:
-            - name: application
-              value: hedera-mirror-monitor
+            - name: alertname
+              value: MonitorPublishToHandleLatency
           equal:
             - namespace
             - pod
@@ -39,15 +38,16 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitHandleLatencyAlertWhenHighPublishLatency:
+    InhibitMonitorAlertsWhenPodErrors:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              value: MonitorPublishLatency
+              regex: true
+              value: (MonitorNoPodsReady|MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
           targetMatch:
-            - name: alertname
-              value: MonitorPublishToHandleLatency
+            - name: application
+              value: hedera-mirror-monitor
           equal:
             - namespace
             - pod

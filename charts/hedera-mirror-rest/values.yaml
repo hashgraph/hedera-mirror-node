@@ -11,7 +11,7 @@ affinity:
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitRestAlertsWhenPodErrors:
+    InhibitRestAlertsWhenPodIssues:
       enabled: true
       matches:
         - sourceMatch:
@@ -21,32 +21,6 @@ alertmanager:
           targetMatch:
             - name: application
               value: hedera-mirror-rest
-          equal:
-            - namespace
-            - pod
-
-    InhibitRestAlertsWhenResourcesLow:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value:
-          targetMatch:
-            - name: application
-              value: hedera-mirror-rest
-          equal:
-            - namespace
-            - pod
-
-    InhibitSlowResponseAlertsWhenHighErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: RestErrors
-          targetMatch:
-            - name: alertname
-              value: RestSlowResponse
           equal:
             - namespace
             - pod

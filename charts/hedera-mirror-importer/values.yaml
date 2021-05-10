@@ -11,51 +11,6 @@ affinity:
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitImporterAlertsWhenPodIssues:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterNoPodsReady|ImporterHighCPU|ImporterHighMemory|ImporterHighFileDescriptors|ImporterHighDBConnections)
-          targetMatch:
-            - name: application
-              value: hedera-mirror-importer
-          equal:
-            - namespace
-            - pod
-
-    InhibitConsensusAlertsWhenCloudErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-          targetMatch:
-            - name: alertname
-              value: ImporterNoConsensus
-          equal:
-            - type
-            - namespace
-            - pod
-
-    InhibitRecordStreamAlertsWhenCloudErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-            - name: type
-              value: RECORD
-          targetMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterRecordStreamFallenBehind, ImporterNoTransactions)
-          equal:
-            - namespace
-            - pod
 
     InhibitBalanceStreamAlertsWhenCloudErrors:
       enabled: true
@@ -66,6 +21,51 @@ alertmanager:
               value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
             - name: type
               value: BALANCE
+          targetMatch:
+            - name: alertname
+              value: ImporterBalanceStreamFallenBehind
+          equal:
+            - namespace
+            - pod
+
+    InhibitBalanceStreamAlertsWhenVerificationErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterFileVerificationErrors
+            - name: type
+              value: BALANCE
+          targetMatch:
+            - name: alertname
+              value: (ImporterBalanceStreamFallenBehind)
+          equal:
+            - namespace
+            - pod
+            -
+
+    InhibitBalanceStreamFallenBehindWhenParseAndConsensusErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterParseErrors|ImporterNoConsensus)
+            - name: type
+              value: BALANCE
+          targetMatch:
+            - name: alertname
+              value: ImporterBalanceStreamFallenBehind
+          equal:
+            - namespace
+            - pod
+
+    InhibitBalanceStreamFallenBehindWhenParseLatency:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterBalanceParseLatency
           targetMatch:
             - name: alertname
               value: ImporterBalanceStreamFallenBehind
@@ -87,29 +87,45 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitBalanceStreamFallenBehindWhenParseLatency:
+    InhibitConsensusAlertsWhenCloudErrors:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              value: ImporterBalanceParseLatency
+              regex: true
+              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
           targetMatch:
             - name: alertname
-              value: ImporterBalanceStreamFallenBehind
+              value: ImporterNoConsensus
+          equal:
+            - type
+            - namespace
+            - pod
+
+    InhibitImporterAlertsWhenPodIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterNoPodsReady|ImporterHighCPU|ImporterHighMemory|ImporterHighFileDescriptors|ImporterHighDBConnections)
+          targetMatch:
+            - name: application
+              value: hedera-mirror-importer
           equal:
             - namespace
             - pod
 
-    InhibitRecordStreamFallenBehindWhenParseLatency:
+    InhibitLogAlertsWhenErrors:
       enabled: true
       matches:
         - sourceMatch:
-          - name: alertname
-            value: ImporterRecordeParseLatency
-          targetMatch:
             - name: alertname
               regex: true
-              value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
+              value: (ImporterCloudStorageErrors|ImporterFileVerificationErrors|ImporterParseErrors)
+          targetMatch:
+            - name: alertname
+              value: ImporterLog4j2Errors
           equal:
             - namespace
             - pod
@@ -127,6 +143,23 @@ alertmanager:
             - namespace
             - pod
 
+    InhibitRecordStreamAlertsWhenCloudErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
+            - name: type
+              value: RECORD
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterRecordStreamFallenBehind, ImporterNoTransactions)
+          equal:
+            - namespace
+            - pod
+
     InhibitRecordStreamAlertsWhenVerificationErrors:
       enabled: true
       matches:
@@ -139,51 +172,6 @@ alertmanager:
             - name: alertname
               regex: true
               value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
-          equal:
-            - namespace
-            - pod
-
-    InhibitBalanceStreamAlertsWhenVerificationErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: ImporterFileVerificationErrors
-            - name: type
-              value: BALANCE
-          targetMatch:
-            - name: alertname
-              value: (ImporterBalanceStreamFallenBehind)
-          equal:
-            - namespace
-            - pod
-
-    InhibitVerificationErrorsWhenNoConsensus:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: ImporterNoConsensus
-          targetMatch:
-            - name: alertname
-              value: ImporterFileVerificationErrors
-          equal:
-            - type
-            - namespace
-            - pod
-
-    InhibitBalanceStreamFallenBehindWhenParseAndConsensusErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterParseErrors|ImporterNoConsensus)
-            - name: type
-              value: BALANCE
-          targetMatch:
-            - name: alertname
-              value: ImporterBalanceStreamFallenBehind
           equal:
             - namespace
             - pod
@@ -205,17 +193,31 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitLogAlertsWhenErrors:
+    InhibitRecordStreamFallenBehindWhenParseLatency:
+      enabled: true
+      matches:
+        - sourceMatch:
+          - name: alertname
+            value: ImporterRecordeParseLatency
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
+          equal:
+            - namespace
+            - pod
+
+    InhibitVerificationErrorsWhenNoConsensus:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              regex: true
-              value: (ImporterCloudStorageErrors|ImporterFileVerificationErrors|ImporterParseErrors)
+              value: ImporterNoConsensus
           targetMatch:
             - name: alertname
-              value: ImporterLog4j2Errors
+              value: ImporterFileVerificationErrors
           equal:
+            - type
             - namespace
             - pod
 
