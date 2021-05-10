@@ -22,9 +22,7 @@ package com.hedera.mirror.monitor.subscribe;
 
 import com.hedera.mirror.monitor.publish.PublishResponse;
 
-public interface Subscriber {
-
-    void close();
+public interface Subscriber extends AutoCloseable {
 
     void onPublish(PublishResponse response);
 }

@@ -5,10 +5,9 @@ hedera:
         scenarios:
           - name: HCS Pinger
             enabled: true
-            logResponse: true
             properties:
               topicId: ${topic.ping}
-            record: 1.0
+            recordPercent: 1.0
             tps: 0.1
             type: CONSENSUS_SUBMIT_MESSAGE
       subscribe:

@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe;
+package com.hedera.mirror.monitor.subscribe.rest;
 
 /*-
  * ‌
@@ -37,14 +37,15 @@ import reactor.util.retry.RetryBackoffSpec;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.subscribe.AbstractSubscriber;
 
 public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties> {
 
     private final Sinks.Many<PublishResponse> sink;
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    RestSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
-                   RestSubscriberProperties properties, WebClient.Builder webClientBuilder) {
+    public RestSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
+                          RestSubscriberProperties properties, WebClient.Builder webClientBuilder) {
         super(meterRegistry, properties);
 
         String url = monitorProperties.getMirrorNode().getRest().getBaseUrl();

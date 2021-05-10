@@ -20,28 +20,24 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import java.time.Duration;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
-import org.springframework.validation.annotation.Validated;
+import com.google.common.base.Stopwatch;
+import java.util.Map;
 
-@Data
-@Validated
-public class RestSubscriberProperties extends AbstractSubscriberProperties {
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
 
-    @NotNull
-    @DurationMin(millis = 500)
-    private Duration timeout = Duration.ofSeconds(2);
+public interface Subscription {
 
-    @Min(0)
-    @Max(1)
-    private double samplePercent = 1.0;
+    long getCount();
 
-    @Override
-    public long getLimit() {
-        return limit > 0 ? limit : Long.MAX_VALUE;
-    }
+    Map<String, Integer> getErrors();
+
+    int getId();
+
+    <T extends AbstractSubscriberProperties> T getProperties();
+
+    double getRate();
+
+    Stopwatch getStopwatch();
+
+    TransactionType getType();
 }

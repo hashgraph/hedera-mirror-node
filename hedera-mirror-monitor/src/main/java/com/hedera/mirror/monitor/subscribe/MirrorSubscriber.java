@@ -1,4 +1,4 @@
-package com.hedera.datagenerator.common;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,25 +20,8 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Flux;
 
-@Log4j2
-@UtilityClass
-public class Utility {
-
-    public static Instant getTimestamp(byte[] message) {
-        if (message == null || message.length < Long.BYTES) {
-            return null;
-        }
-
-        Long timestamp = Longs.fromByteArray(message);
-        return timestamp != null ? Instant.ofEpochMilli(timestamp) : null;
-    }
-
-    public static String getMemo(String message) {
-        return System.currentTimeMillis() + "_" + message + " at " + Instant.now();
-    }
+public interface MirrorSubscriber {
+    Flux<SubscribeResponse> subscribe();
 }
