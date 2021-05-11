@@ -1,0 +1,15 @@
+{{- if .Values.tests.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.fullname" . }}-test
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  containers:
+    - name: {{ include "hedera-mirror.fullname" . }}-test
+      {{- omit .Values.test "enabled" | toYaml | nindent 3 }}
+      command:
+        - /bin/bash
+        - -ec
+        -
