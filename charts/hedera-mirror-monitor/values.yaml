@@ -38,7 +38,7 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitMonitorAlertsWhenPodIssues:
+    InhibitAllWhenPodIssues:
       enabled: true
       matches:
         - sourceMatch:
@@ -161,7 +161,7 @@ prometheusRules:
 
   MonitorNoPodsReady:
     annotations:
-      description: "No monitor instances are currently running in {{ $labels.namespace }}//{{ $labels.pod }}"
+      description: "No monitor instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: No monitor instances running
     enabled: true
     expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace, pod) < 1

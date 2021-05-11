@@ -11,7 +11,7 @@ affinity:
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitRestAlertsWhenPodIssues:
+    InhibitAllWhenPodIssues:
       enabled: true
       matches:
         - sourceMatch:
@@ -130,7 +130,7 @@ prometheusRules:
 
   RestNoPodsReady:
     annotations:
-      description: "No REST API instances are currently running in {{ $labels.namespace }}//{{ $labels.pod }}"
+      description: "No REST API instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: No rest instances running
     enabled: true
     expr: sum(kube_pod_container_status_ready{container="rest"}) by (namespace, pod) < 1

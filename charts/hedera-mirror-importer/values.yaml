@@ -38,7 +38,7 @@ alertmanager:
               value: BALANCE
           targetMatch:
             - name: alertname
-              value: (ImporterBalanceStreamFallenBehind)
+              value: ImporterBalanceStreamFallenBehind
           equal:
             - namespace
             - pod
@@ -101,7 +101,7 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitImporterAlertsWhenPodIssues:
+    InhibitAllWhenPodIssues:
       enabled: true
       matches:
         - sourceMatch:
@@ -436,7 +436,7 @@ prometheusRules:
 
   ImporterNoPodsReady:
     annotations:
-      description: "No importer instances are currently ready in {{ $labels.namespace }}//{{ $labels.pod }}"
+      description: "No importer instances are currently ready in {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: No importer instances are ready
     enabled: true
     expr: sum(kube_pod_container_status_ready{container="importer"}) by (namespace, pod) < 1

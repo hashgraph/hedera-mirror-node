@@ -11,7 +11,7 @@ affinity:
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitGrpcAlertsWhenPodIssues:
+    InhibitAllWhenPodIssues:
       enabled: true
       matches:
         - sourceMatch:
@@ -196,7 +196,7 @@ prometheusRules:
 
   GrpcNoPodsReady:
     annotations:
-      description: "No grpc instances are currently running in {{ $labels.namespace }}//{{ $labels.pod }}"
+      description: "No grpc instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: No grpc instances running
     enabled: true
     expr: sum(kube_pod_container_status_ready{container="grpc"}) by (namespace, pod) < 1
