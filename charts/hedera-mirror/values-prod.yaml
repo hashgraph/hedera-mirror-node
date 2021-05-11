@@ -1,9 +1,10 @@
 # These values are production values used in combination with the hedera-mirror-common chart
 grpc:
+  alertmanager:
+    inhibitRules:
+      enabled: true
   ingress:
     middleware:
-      enabled: true
-  inhibitRules:
       enabled: true
   priorityClassName: medium
   prometheusRules:
@@ -12,8 +13,9 @@ grpc:
     enabled: true
 
 importer:
-  inhibitRules:
-    enabled: true
+  alertmanager:
+    inhibitRules:
+      enabled: true
   podMonitor:
     enabled: true
   priorityClassName: high
@@ -21,8 +23,9 @@ importer:
     enabled: true
 
 monitor:
-  inhibitRules:
-    enabled: true
+  alertmanager:
+    inhibitRules:
+      enabled: true
   podMonitor:
     enabled: true
   priorityClassName: medium
@@ -50,11 +53,12 @@ redis:
     priorityClassName: critical
 
 rest:
+  alertmanager:
+    inhibitRules:
+      enabled: true
   ingress:
     middleware:
       enabled: true
-  inhibitRules:
-    enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true

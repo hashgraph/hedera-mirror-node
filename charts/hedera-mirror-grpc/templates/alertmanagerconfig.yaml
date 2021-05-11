@@ -3,14 +3,13 @@ apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: {{ include "hedera-mirror-grpc.fullname" . }}
-  labels:
-    {{ include "hedera-mirror-grpc.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-grpc.labels" . | nindent 4 }}
   namespace: {{ include "hedera-mirror-grpc.namespace" . }}
 spec:
   inhibitRules:
     {{- range $name, $rule := omit .Values.alertmanager.inhibitRules "enabled" }}
       {{- if $rule.enabled }}
-        {{- $rule.matches | toYaml | nindent 4}}
+        {{- $rule.matches | toYaml | nindent 4 }}
       {{- end }}
     {{- end }}
 {{- end -}}

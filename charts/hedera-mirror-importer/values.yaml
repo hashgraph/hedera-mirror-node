@@ -42,7 +42,6 @@ alertmanager:
           equal:
             - namespace
             - pod
-            -
 
     InhibitBalanceStreamFallenBehindWhenParseAndConsensusErrors:
       enabled: true
@@ -304,11 +303,11 @@ replicas: 1
 
 resources:
   limits:
-    cpu: 100m
-    memory: 500Mi
+    cpu: 1.8
+    memory: 3072Mi
   requests:
-    cpu: 50m
-    memory: 64Mi
+    cpu: 200m
+    memory: 512Mi
 
 revisionHistoryLimit: 3
 
