@@ -21,7 +21,7 @@ the mirror node can be updated to add support for NFTs.
 
 - Update `t_transaction_results` with new response codes
 
-- Add to `token` table fields `tokenType` (enum, values FUNGIBLE and NON_FUNGIBLE) and `maxSupply` (long)
+- Add to `token` table fields `token_type` (enum, values FUNGIBLE and NON_FUNGIBLE) and `max_supply` (long)
   - Default values will be `true` and max long.
 
 - Add a new `nft` table
@@ -279,7 +279,7 @@ Need information on file format. Effectively envision:
 
 #### List Tokens
 
-- Update `/api/v1/tokens` response to show NFTs by adding the `tokenType` field.
+- Update `/api/v1/tokens` response to show NFTs by adding the `token_type` field.
 
 ```json
 {
@@ -287,7 +287,7 @@ Need information on file format. Effectively envision:
     {
       "token_id": "0.0.1000",
       "symbol": "F",
-      "tokenType": FUNGIBLE,
+      "token_type": "FUNGIBLE",
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -296,7 +296,7 @@ Need information on file format. Effectively envision:
     {
       "token_id": "0.0.10001",
       "symbol": "N",
-      "tokenType": NON_FUNGIBLE,
+      "token_type": "NON_FUNGIBLE",
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -314,7 +314,7 @@ Add optional filters
 
 #### Get Token by id
 
-- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `tokenType` field.
+- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `token_type` field.
 
 ```json
 {
@@ -331,7 +331,6 @@ Add optional filters
     "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
   },
-  "tokenType": NON_FUNGIBLE,
   "initial_supply": "2",
   "kyc_key": {
     "_type": "ProtobufEncoded",
@@ -345,6 +344,7 @@ Add optional filters
   },
   "symbol": "FOOCOIN",
   "token_id": "0.15.3",
+  "token_type": "NON_FUNGIBLE",
   "total_supply": "2",
   "treasury_account": "0.15.10",
   "wipe_key": {
