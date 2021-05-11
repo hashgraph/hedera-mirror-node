@@ -34,14 +34,14 @@ $ helm upgrade --install "${RELEASE}" charts/hedera-mirror
 At most one Importer pod can be run at time due to the potential to cause data inconsistencies. All other modules
 support scaling up to more than one replica.
 
-### PostgreSQL
+### TimescaleDB
 
 In an effort to increase performance and reduce storage costs, the mirror node is switching to
-[TimescaleDB](https://docs.timescale.com/latest/main) by default. To deploy the mirror node chart using PostgreSQL
-instead of TimescaleDB:
+[TimescaleDB](https://docs.timescale.com/latest/main) by default. To deploy the mirror node chart using TimescaleDB
+instead of PostgreSQL:
 
 ```shell
-$ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enabled=true --set timescaledb.enabled=false
+$ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enabled=false --set timescaledb.enabled=true
 ```
 
 ### Address Book
