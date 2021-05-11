@@ -423,7 +423,9 @@ Add optional filters
   "nfts": [
     {
       "created_timestamp": "1610682445.003266000",
+      "deleted": true,
       "memo": "This is a test NFT",
+      "modified_timestamp": "1610682445.003266001",
       "serial_number": 124
     }
   ],
@@ -435,9 +437,10 @@ Add optional filters
 
 Optional Filters
 
-- `/api/v1/nfts?serialNumber=gt:0.0.1001` - All serial numbers in range
-- `/api/v1/nfts?order=desc` - All NFTs in descending order of `serial_number`
+- `/api/v1/nfts?deleted=false` - All serial numbers that have not been deleted.
 - `/api/v1/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
+- `/api/v1/nfts?order=desc` - All NFTs in descending order of `serial_number`
+- `/api/v1/nfts?serialNumber=gt:0.0.1001` - All serial numbers in range
 
 #### Get NFT by id
 
@@ -446,7 +449,9 @@ Optional Filters
 ```json
 {
   "created_timestamp": "1610682445.003266000",
+  "deleted": false,
   "memo": "This is a test NFT",
+  "modified_timestamp": null,
   "serial_number": 124
 }
 ```
