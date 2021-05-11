@@ -173,11 +173,11 @@ readinessProbe:
 
 resources:
   limits:
-    cpu: 1.8
-    memory: 3072Mi
+    cpu: 500m
+    memory: 128Mi
   requests:
-    cpu: 200m
-    memory: 512Mi
+    cpu: 20m
+    memory: 32Mi
 
 revisionHistoryLimit: 3
 
