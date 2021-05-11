@@ -21,20 +21,20 @@ the mirror node can be updated to add support for NFTs.
 
 - Update `t_transaction_results` with new response codes
 
-- Add to `token` table fields `fungible` (boolean) and `maxSupply` (long)
-  - Default values will be `true` and `null` (null `maxSupply` will represent an infinite amount of tokens are possible)
+- Add to `token` table fields `tokenType` (enum, values FUNGIBLE and NON_FUNGIBLE) and `maxSupply` (long)
+  - Default values will be `true` and max long.
 
 - Add a new `nft` table
 
 ```sql
 create table if not exists nft
 (
-  created_timestamp     bigint  primary key not null,
-  deleted               boolean             not null,
-  modified_timestamp    bigint              not null,
-  memo                  text    default ''  not null,
-  serial_number         bigint              not null,
-  token_id              bigint              not null
+  created_timestamp     bigint  primary key     not null,
+  deleted               boolean default false   not null,
+  modified_timestamp    bigint                  not null,
+  memo                  text    default ''      not null,
+  serial_number         bigint                  not null,
+  token_id              bigint                  not null
 );
 
 ```
@@ -99,12 +99,13 @@ Need information on file format. Effectively envision:
 #### Entity Record Item Listener
 
 - If transaction is successful, persist any NFT Transfers.
-- `insertTokenCreate()` must be updated to set `fungible` and `maxSupply`
+- `insertTokenCreate()` must be updated to set `tokenType` and `maxSupply`
 - `insertTokenMint()` must be updated to handle the new field `amountOrMemo` create and persist the `NFTs` if the memo
   is set.
 - `insertTokenBurn` must be updated to handle the new field `amountOrSerialNumbers` and mark the `NFTs` as deleted if
   the `serialNumbers` list is set.
-- `insertTokenDelete` must be added to mark the `NFTs` as deleted if the `fungible` field is false for the token.
+- `insertTokenDelete` must be added to mark the `NFTs` as deleted if the `tokenType` field is NON_FUNGIBLE for the
+  token.
 - `insertTokenWipe` must be must be updated to handle the new field `amountOrSerialNumbers` and mark the `NFTs` as
   deleted if the `serialNumbers` list is set.
 
@@ -112,7 +113,7 @@ Need information on file format. Effectively envision:
 
 #### Get Transaction
 
-- Update `/api/v1/transactions` response to add nft transfers
+- Update `/api/v1/transactions` and `/api/v1/transactions/{id}` response to add nft_transfers
 
 ```json
 {
@@ -123,33 +124,31 @@ Need information on file format. Effectively envision:
       "max_fee": "33",
       "memo_base64": null,
       "name": "CRYPTOTRANSFER",
+      "nft_transfers": [
+        {
+          "receiver_account_id": "0.0.121",
+          "sender_account_id": "0.0.122",
+          "serial_number": 124,
+          "token_id": "0.0.123"
+        }
+      ],
       "node": "0.0.3",
       "result": "SUCCESS",
       "token_transfers": [
         {
           "account": "0.0.200",
           "amount": 200,
-          "fungible": true,
           "token_id": "0.0.90000"
         },
         {
           "account": "0.0.300",
           "amount": -1200,
-          "fungible": true,
           "token_id": "0.0.90000"
         },
         {
           "account": "0.0.400",
           "amount": 1000,
-          "fungible": true,
           "token_id": "0.0.90000"
-        },
-        {
-          "fungible": false,
-          "receiver_account_id": "0.0.121",
-          "sender_account_id": "0.0.122",
-          "serial_number": 124,
-          "token_id": "0.0.123"
         }
       ],
       "transaction_hash": "aGFzaA==",
@@ -177,7 +176,7 @@ Need information on file format. Effectively envision:
 
 #### Get Accounts
 
-- Update `/api/v1/accounts` response to add NFTs to the tokens list, with serial numbers instead of balance.
+- Update `/api/v1/accounts` and `/api/v1/accounts/{id}` response to add nfts list.
 
 ```json
 {
@@ -190,25 +189,24 @@ Need information on file format. Effectively envision:
         "deleted": false,
         "expiry_timestamp": null,
         "key": null,
-        "timestamp": "0.000002345",
-        "tokens": [
-          {
-            "balance": 80,
-            "fungible": true,
-            "token_id": "0.15.3"
-          },
-          {
-            "balance": 50,
-            "fungible": true,
-            "token_id": "0.2.5"
-          },
+        "nfts": [
           {
             "token_id": "0.2.9",
-            "fungible": false,
             "serial_numbers": [
               210,
               211
             ]
+          }
+        ],
+        "timestamp": "0.000002345",
+        "tokens": [
+          {
+            "balance": 80,
+            "token_id": "0.15.3"
+          },
+          {
+            "balance": 50,
+            "token_id": "0.2.5"
           }
         ]
       }
@@ -222,7 +220,7 @@ Need information on file format. Effectively envision:
 
 #### Get Balances
 
-- Update `/api/v1/balances` response to add NFTs to the tokens list, with serial numbers instead of balance.
+- Update `/api/v1/balances` and `/api/v1/balances/{id}` response to add nfts list
 
 ```json
 {
@@ -236,42 +234,41 @@ Need information on file format. Effectively envision:
     {
       "account": "0.0.10",
       "balance": 100,
-      "tokens": [
+      "nfts": [
         {
-          "balance": 80,
-          "fungible": true,
-          "token_id": "0.15.3"
-        },
-        {
-          "fungible": false,
           "serial_numbers": [
             210,
             211
           ],
           "token_id": "0.2.9"
         }
+      ],
+      "tokens": [
+        {
+          "balance": 80,
+          "token_id": "0.15.3"
+        }
       ]
     },
     {
       "account": "0.0.13",
       "balance": 100,
-      "tokens": [
+      "nfts": [
         {
-          "balance": 80,
-          "fungible": true,
-          "token_id": "0.15.3"
-        },
-        {
-          "balance": 50,
-          "fungible": true,
-          "token_id": "0.2.4"
-        },
-        {
-          "fungible": false,
           "serial_numbers": [
             157
           ],
           "token_id": "0.15.6"
+        }
+      ],
+      "tokens": [
+        {
+          "balance": 80,
+          "token_id": "0.15.3"
+        },
+        {
+          "balance": 50,
+          "token_id": "0.2.4"
         }
       ]
     }
@@ -284,7 +281,7 @@ Need information on file format. Effectively envision:
 
 #### List Tokens
 
-- Update `/api/v1/tokens` response to show NFTs by adding the `fungible` field and the `serial_numbers` list.
+- Update `/api/v1/tokens` response to show NFTs by adding the `tokenType` field.
 
 ```json
 {
@@ -292,7 +289,7 @@ Need information on file format. Effectively envision:
     {
       "token_id": "0.0.1000",
       "symbol": "F",
-      "fungible": true,
+      "tokenType": FUNGIBLE,
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -301,11 +298,7 @@ Need information on file format. Effectively envision:
     {
       "token_id": "0.0.10001",
       "symbol": "N",
-      "fungible": false,
-      "serial_numbers": [
-        1002,
-        1003
-      ],
+      "tokenType": NON_FUNGIBLE,
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -317,13 +310,13 @@ Need information on file format. Effectively envision:
 
 Add optional filters
 
-- `/api/v1/tokens?type=fungible` - All fungible tokens (other values are `nft` and `both` (default))
+- `/api/v1/tokens?type=fungible` - All fungible tokens (other values are `non_fungible` and `both` (default))
 - `/api/v1/tokens?serial.number=1001` - All tokens that contain a serial number `1001` (implied that `type` will
   be `nft`)
 
 #### Get Token by id
 
-- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `fungible` field and the `serial_numbers` list.
+- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `tokenType` field.
 
 ```json
 {
@@ -340,7 +333,7 @@ Add optional filters
     "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
   },
-  "fungible": false,
+  "tokenType": NON_FUNGIBLE,
   "initial_supply": "2",
   "kyc_key": {
     "_type": "ProtobufEncoded",
@@ -348,16 +341,6 @@ Add optional filters
   },
   "max_supply": "10",
   "name": "FOO COIN TOKEN",
-  "nfts": [
-    {
-      "serial_number": 1002,
-      "memo": "This is a test NFT"
-    },
-    {
-      "serial_number": 1003,
-      "memo": "This is another test NFT"
-    }
-  ],
   "supply_key": {
     "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
@@ -508,22 +491,23 @@ Optional Filters
   - Update the `token` expression logic to set the new fields (`tokenType` and `maxSupply`).
 
 - Update the `TransactionSuppliers`
-  - `TokenCreateTransactionSupplier` will need a boolean `fungible` attribute and a long `maxSupply` attribute.
+  - `TokenCreateTransactionSupplier` will need an enum `tokenType` attribute (with values FUNGIBLE and NON_FUNGIBLE) and
+    a long `maxSupply` attribute.
     - Some fields will now have stricter requirements now, such as for NFTs `decimals` has to be 0, as
       does `initialSupply`. We could simply abide by the user config values, regardless of if they are valid, but most
-      likely we should have logic to enforce those requirements based on the `fungible` flag.
-  - `TokenMintTransactionSupplier` will need a boolean `fungible` attribute, as well as a String `memo` attribute. The
+      likely we should have logic to enforce those requirements based on the `tokenType`.
+  - `TokenMintTransactionSupplier` will need an enum `tokenType` attribute, as well as a String `memo` attribute. The
     supplier should only set `amount` for fungible tokens, and only `memo` for NFTs
-    - Alternatively, the `fungible` flag can be removed, and the supplier just sets whichever of `memo` or `amount` is
-      set, but this relies on users configuring things correctly.
-  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need a boolean `fungible` attribute, and it
+    - Alternatively, the `tokenType` can be removed, and the supplier just sets whichever of `memo` or `amount` is set,
+      but this relies on users configuring things correctly.
+  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need a enum `tokenType` attribute, and it
     will need to set the `serialNumbers` list for NFTs (hardcoded based on the `initialSupply` value used in
     the `ExpressionConverter`)
     - The list could be configurable using the compound expression mentioned earlier if desired.
 
 - Add support for transfering NFTs in `CryptoTransferTransactionSupplier`.
-  - Add a new `fungible` boolean attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to
-    use the `amount` attribute or the `serial numbers` list.
+  - Add a new `tokenType` enun attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to use
+    the `amount` attribute or the `serial numbers` list.
   - Because a serial number can only be transferred once out of a given account (unless it is transferred back), custom
     logic will be needed for performant NFT transfers.
     - One approach would be to have the supplier swap the sender and receiver each time to transfer the NFT back and
