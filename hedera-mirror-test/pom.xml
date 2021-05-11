@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <artifactId>hedera-mirror-test</artifactId>
-    <description>Cross module system and performance tests for the Hedera Mirror Node</description>
+    <description>Cross module system tests for the Hedera Mirror Node</description>
     <modelVersion>4.0.0</modelVersion>
     <name>Hedera Mirror Node Test</name>
     <packaging>jar</packaging>
@@ -16,10 +16,6 @@
     </parent>
 
     <properties>
-        <jmeter.test>E2E_Subscribe_Only.jmx</jmeter.test>
-        <jmeter.subscribeThreadCount></jmeter.subscribeThreadCount>
-        <jmeter.publishThreadCount></jmeter.publishThreadCount>
-        <jmeter.propertiesDirectory>${project.basedir}/src/test/jmeter</jmeter.propertiesDirectory>
         <cucumber.version>6.10.3</cucumber.version>
         <cucumber-reporting.version>4.0.102</cucumber-reporting.version>
         <skipTests>true</skipTests>
@@ -109,19 +105,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Manually added for license and dependency reference in deployed containers-->
-        <dependency>
-            <groupId>org.apache.jmeter</groupId>
-            <artifactId>ApacheJMeter_core</artifactId>
-            <version>${jmeter.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.jmeter</groupId>
-            <artifactId>ApacheJMeter_java</artifactId>
-            <version>${jmeter.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -240,61 +223,5 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>performance-tests</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.lazerycode.jmeter</groupId>
-                        <artifactId>jmeter-maven-plugin</artifactId>
-                        <version>3.3.0</version>
-                        <executions>
-                            <execution>
-                                <phase>integration-test</phase>
-                                <goals>
-                                    <goal>configure</goal>
-                                    <goal>jmeter</goal>
-                                    <goal>results</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <generateReports>true</generateReports>
-                            <errorRateThresholdInPercent>0</errorRateThresholdInPercent>
-                            <excludedArtifacts>
-                                <excludedArtifact>ch.qos.logback:logback-classic</excludedArtifact>
-                                <excludedArtifact>log4j:log4j</excludedArtifact>
-                                <excludedArtifact>org.apache.logging.log4j:log4j-to-slf4j</excludedArtifact>
-                            </excludedArtifacts>
-                            <jmeterExtensions>
-                                <jmeterExtension>io.perfmark:perfmark-api:0.20.1</jmeterExtension>
-                                <jmeterExtension>io.opencensus:opencensus-api:0.24.0</jmeterExtension>
-                                <jmeterExtension>com.hedera:hedera-mirror-grpc:${release.version}</jmeterExtension>
-                                <jmeterExtension>com.hedera:hedera-mirror-grpc:jar:tests:${release.version}
-                                </jmeterExtension>
-                                <jmeterExtension>com.google.guava:guava:29.0-jre</jmeterExtension>
-                            </jmeterExtensions>
-                            <jMeterProcessJVMSettings>
-                                <xms>2056</xms>
-                                <xmx>2056</xmx>
-                                <arguments>
-                                    <argument>-XX:MaxMetaspaceSize=256m</argument>
-                                    <argument>-server</argument>
-                                </arguments>
-                            </jMeterProcessJVMSettings>
-                            <selectedConfiguration>default</selectedConfiguration>
-                            <testFilesIncluded>${jmeter.test}</testFilesIncluded>
-                            <propertiesUser>
-                                <subscribeThreadCount>${jmeter.subscribeThreadCount}</subscribeThreadCount>
-                                <publishThreadCount>${jmeter.publishThreadCount}</publishThreadCount>
-                            </propertiesUser>
-                            <skipTests>false</skipTests>
-                            <propertiesFilesDirectory>${jmeter.propertiesDirectory}</propertiesFilesDirectory>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
-
 </project>

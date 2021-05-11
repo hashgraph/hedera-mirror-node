@@ -1,18 +1,22 @@
-# Containerizes hedera-mirror-node tests that can be run against various endpoints
 FROM adoptopenjdk:11-jdk-hotspot
 
-WORKDIR /usr/etc/hedera-mirror-node
-COPY . .
-
-ENV testProfile acceptance
 ENV cucumberFlags "@balancecheck"
-ENV subscribeThreadCount 30
-ENV jmeterTestPlan E2E_Subscribe_Only.jmx
-ENV jmeterPropsDirectory "/usr/etc/hedera-mirror-test"
-ENV publishThreadCount 1
+WORKDIR /usr/etc/hedera-mirror-node
 
-# ensure all maven dependecies are placed ahead of test run
-RUN ./mvnw install -DskipTests -Djib.skip -Ddocker.skip -Dskip.npm --no-transfer-progress \
-    --batch-mode -pl hedera-mirror-test --also-make
+COPY .mvn/ .mvn/
+COPY mvnw .
+COPY pom.xml .
+COPY hedera-mirror-datagenerator/pom.xml hedera-mirror-datagenerator/pom.xml
+COPY hedera-mirror-grpc/pom.xml hedera-mirror-grpc/pom.xml
+COPY hedera-mirror-importer/pom.xml hedera-mirror-importer/pom.xml
+COPY hedera-mirror-monitor/pom.xml hedera-mirror-monitor/pom.xml
+COPY hedera-mirror-protobuf/pom.xml hedera-mirror-protobuf/pom.xml
+COPY hedera-mirror-rest/pom.xml hedera-mirror-rest/pom.xml
+COPY hedera-mirror-rosetta/pom.xml hedera-mirror-rosetta/pom.xml
+COPY hedera-mirror-test/ hedera-mirror-test/
 
-ENTRYPOINT hedera-mirror-test/src/main/resources/run-tests.sh
+# Ensure all maven dependecies are placed ahead of test run
+RUN ./mvnw clean integration-test -pl hedera-mirror-test --also-make -P=acceptance-tests -Dcucumber.filter.tags=none \
+  --no-transfer-progress --batch-mode
+
+ENTRYPOINT ./mvnw integration-test -pl hedera-mirror-test -P=acceptance-tests -Dcucumber.filter.tags=${cucumberFlags} -e
