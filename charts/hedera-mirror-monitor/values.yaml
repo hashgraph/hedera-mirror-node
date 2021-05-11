@@ -38,7 +38,7 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitMonitorAlertsWhenPodErrors:
+    InhibitMonitorAlertsWhenPodIssues:
       enabled: true
       matches:
         - sourceMatch:
