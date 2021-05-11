@@ -435,7 +435,7 @@ Add optional filters
 
 Optional Filters
 
-- `/api/v1/nfts?serial.number=gt:0.0.1001` - All serial numbers in range
+- `/api/v1/nfts?serialNumber=gt:0.0.1001` - All serial numbers in range
 - `/api/v1/nfts?order=desc` - All NFTs in descending order of `serial_number`
 - `/api/v1/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
 
