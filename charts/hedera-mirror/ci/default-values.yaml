@@ -1,2 +1,7 @@
+# CT generates release names that are too long for postgresql-ha, so we override it here
+db:
+  host: p
 monitor:
   enabled: false
+postgresql:
+  fullnameOverride: p-postgres
