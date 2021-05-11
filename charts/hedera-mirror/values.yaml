@@ -76,7 +76,7 @@ networkPolicy:
   enabled: false
 
 postgresql:
-  enabled: false
+  enabled: true
   metrics:
     enabled: false
     resources:
@@ -239,7 +239,7 @@ rest:
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
 timescaledb:
-  enabled: true
+  enabled: false
   image:
     pullPolicy: IfNotPresent
     repository: timescale/timescaledb-ha
