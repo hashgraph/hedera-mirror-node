@@ -39,37 +39,35 @@ create table if not exists nft
 
 ```
 
-- Add a unique constraint to `nft` for `token_id`, `serial_number`, and `created_timestamp`, desc
+- Add a unique constraint to `nft` for `token_id` and `serial_number`, desc
 
 - Add a new `nft_transfer` table
 
 ```sql
 create table if not exists nft_transfer
 (
-  consensus_timestamp   bigint  not null,
-  receiver_account_id   bigint  not null,
-  sender_account_id     bigint  not null,
-  serial_number         bigint  not null,
-  token_id              bigint  not null
+  consensus_timestamp               bigint  not null,
+  nft_created_consensus_timestamp   bigint  not null
+  receiver_account_id               bigint  not null,
+  sender_account_id                 bigint  not null,
 );
 ```
 
-- Add a unique constraint to `nft_transfer` for `token_id`, `serial_number` and `consensus_timestamp`, desc
+- Add a unique constraint to `nft_transfer` for `consensus_timestamp` and `nft_created_consensus_timestamp`, desc
 
 - Add a new `nft_balance` table
 
 ```sql
 create table if not exists nft_balance
 (
-  account_id          bigint    not null,
-  consensus_timestamp bigint    not null,
-  serial_number       bigint    not null,
-  token_id            bigint    not null
+  account_id                        bigint  not null,
+  consensus_timestamp               bigint  not null,
+  nft_created_consensus_timestamp   bigint  not null
 );
 ```
 
-- Add a unique constraint to `nft_balance` for `token_id`, `serial_number`, `account_id`, and `consensus_timestamp`,
-  desc
+- Add a unique constraint to `nft_balance` for `account_id`,`consensus_timestamp`,
+  and ``nft_created_consensus_timestamp``, desc
 
 ### Importer
 
@@ -102,12 +100,12 @@ Need information on file format. Effectively envision:
 - `insertTokenCreate()` must be updated to set `tokenType` and `maxSupply`
 - `insertTokenMint()` must be updated to handle the new field `amountOrMemo` create and persist the `NFTs` if the memo
   is set.
-- `insertTokenBurn` must be updated to handle the new field `amountOrSerialNumbers` and mark the `NFTs` as deleted if
-  the `serialNumbers` list is set.
-- `insertTokenDelete` must be added to mark the `NFTs` as deleted if the `tokenType` field is NON_FUNGIBLE for the
-  token.
-- `insertTokenWipe` must be must be updated to handle the new field `amountOrSerialNumbers` and mark the `NFTs` as
-  deleted if the `serialNumbers` list is set.
+- `insertTokenBurn` must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deleted, and
+  update `modifiedTimestamp` if the `serialNumbers` list is set.
+- `insertTokenDelete` must be added to mark the `NFTs` as deleted and update `modifiedTimestamp` if the `tokenType`
+  field is NON_FUNGIBLE for the token.
+- `insertTokenWipe` must be must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deletedm
+  and update `modifiedTimestamp` if the `serialNumbers` list is set.
 
 ### REST API
 
