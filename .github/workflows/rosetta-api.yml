@@ -133,6 +133,9 @@ jobs:
             validate-construction.json > /tmp/validate-construction.json
           mv /tmp/validate-construction.json validate-construction.json
 
+          account=$(jq -r '.construction.prefunded_accounts[0].account_identifier.address' validate-construction.json)
+          echo "ACCOUNT=$account" >> $GITHUB_ENV
+
       - name: Set Importer StartDate
         run: |
           startdate=$(date --date='15 minutes ago' -Iseconds -u)
@@ -151,7 +154,7 @@ jobs:
         run: ./scripts/wait-for-mirror-node.sh
 
       - name: Run CLI Validation
-        run: ./scripts/validation/run-validation.sh testnet
+        run: ./scripts/validation/run-validation.sh testnet $ACCOUNT
 
   gosec:
     runs-on: ubuntu-latest
