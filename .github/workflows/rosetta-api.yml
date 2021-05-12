@@ -125,11 +125,11 @@ jobs:
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application.yml
 
-      - name: Construciton Test Prefunded Accounts
+      - name: Construction Test Prefunded Accounts
         run: |
           echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json
           cd ./scripts/validation/testnet/
-          jq --slurpfile accounts /tmp/accounts.json ".construction.prefunded_accounts=$accounts" \
+          jq --slurpfile accounts /tmp/accounts.json '.construction.prefunded_accounts=$accounts[0]' \
             validate-construction.json > /tmp/validate-construction.json
           mv /tmp/validate-construction.json validate-construction.json
 
