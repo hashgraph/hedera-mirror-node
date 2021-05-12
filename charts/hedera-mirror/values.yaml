@@ -1,3 +1,33 @@
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitGrpcAndMonitorHighLatencyWhenImporterHighLatencyOrNoPods:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterRecordStreamFallenBehind|ImporterCloudStorageLatency|ImporterRecordParseLatency|ImporterStreamCloseInterval|ImporterNoPodsReady)
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (GrpcHighLatency|MonitorSubscribeLatency)
+          equal:
+            - namespace
+
+    InhibitMonitorNoTransactionsWhenImporterNoTransactionsOrNoPods:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterNoTransactions|ImporterNoPodsReady)
+          targetMatch:
+            - name: alertname
+              value: MonitorSubscribeStopped
+          equal:
+            - namespace
+
 applicationResource:
   enabled: false
   partnerId: ""

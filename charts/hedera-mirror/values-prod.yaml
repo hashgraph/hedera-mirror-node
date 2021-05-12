@@ -1,4 +1,8 @@
 # These values are production values used in combination with the hedera-mirror-common chart
+alertmanager:
+  inhibitRules:
+    enabled: true
+
 grpc:
   alertmanager:
     inhibitRules:
