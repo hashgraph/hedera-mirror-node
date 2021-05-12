@@ -129,7 +129,7 @@ jobs:
         run: |
           echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json
           cd ./scripts/validation/testnet/
-          jq --slurpfile accounts accounts.json ".construction.prefunded_accounts=$accounts" \
+          jq --slurpfile accounts /tmp/accounts.json ".construction.prefunded_accounts=$accounts" \
             validate-construction.json > /tmp/validate-construction.json
           mv /tmp/validate-construction.json validate-construction.json
 
