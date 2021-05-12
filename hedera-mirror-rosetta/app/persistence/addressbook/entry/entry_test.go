@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -163,7 +162,7 @@ func TestShouldFailReturnPeerId(t *testing.T) {
 
 	// then
 	assert.Nil(t, result)
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
 }
 
@@ -178,7 +177,7 @@ func TestShouldFailReturnPeerIdNegative(t *testing.T) {
 
 	// then
 	assert.Nil(t, result)
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
 }
 

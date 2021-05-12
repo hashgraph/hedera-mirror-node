@@ -26,7 +26,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
@@ -114,7 +113,7 @@ func TestShouldFailFindByIndexNoAccountBalances(t *testing.T) {
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
 
@@ -134,7 +133,7 @@ func TestShouldFailFindByHashNoAccountBalances(t *testing.T) {
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
 
@@ -176,7 +175,7 @@ func TestShouldFailFindByIdentifierNoAccountBalances(t *testing.T) {
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
 
@@ -293,7 +292,7 @@ func TestShouldFailRetrieveGenesisNoAccountBalances(t *testing.T) {
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
 
@@ -388,7 +387,7 @@ func TestShouldFailRetrieveLatestNoAccountBalances(t *testing.T) {
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
 
@@ -590,7 +589,7 @@ func TestShouldFailGetRecordFilesStartingIndex(t *testing.T) {
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Zero(t, result)
-	assert.IsType(t, errors.Errors[errors.NodeIsStarting], err)
+	assert.NotNil(t, err)
 }
 
 func TestShouldSuccessReturnRecordFileTableName(t *testing.T) {

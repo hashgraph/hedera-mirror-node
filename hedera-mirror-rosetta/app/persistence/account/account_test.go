@@ -22,7 +22,6 @@ package account
 
 import (
 	"github.com/DATA-DOG/go-sqlmock"
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
@@ -79,7 +78,7 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidAddress(t *testing.T) {
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
-	assert.IsType(t, rTypes.Error{}, *err)
+	assert.NotNil(t, err)
 }
 
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidAddressNegative(t *testing.T) {

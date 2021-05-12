@@ -148,8 +148,8 @@ func TestNetworkOptions(t *testing.T) {
 	// then:
 	assert.Equal(t, expectedResult.Version, res.Version)
 	assert.Equal(t, expectedResult.Allow.HistoricalBalanceLookup, res.Allow.HistoricalBalanceLookup)
-	assert.Equal(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
-	assert.Equal(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
+	assert.ElementsMatch(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
+	assert.ElementsMatch(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
 	assert.ElementsMatch(t, expectedResult.Allow.Errors, res.Allow.Errors)
 	assert.Nil(t, e)
 }
@@ -164,7 +164,7 @@ func TestNetworkOptionsThrowsWhenStatusesFails(t *testing.T) {
 	res, e := getSubject().NetworkOptions(nil, nil)
 
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }
 
 func TestNetworkOptionsThrowsWhenTypesAsArrayFails(t *testing.T) {
@@ -176,7 +176,7 @@ func TestNetworkOptionsThrowsWhenTypesAsArrayFails(t *testing.T) {
 	res, e := getSubject().NetworkOptions(nil, nil)
 
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 	repository.MTransactionRepository.AssertNotCalled(t, "Results")
 }
 
@@ -220,7 +220,7 @@ func TestNetworkStatusThrowsWhenRetrieveGenesisFails(t *testing.T) {
 
 	// then
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }
 
 func TestNetworkStatusThrowsWhenRetrieveLatestFails(t *testing.T) {
@@ -234,7 +234,7 @@ func TestNetworkStatusThrowsWhenRetrieveLatestFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }
 
 func TestNetworkStatusThrowsWhenEntriesFail(t *testing.T) {
@@ -249,5 +249,5 @@ func TestNetworkStatusThrowsWhenEntriesFail(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }
