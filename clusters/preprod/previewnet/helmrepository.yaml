@@ -2,6 +2,7 @@ apiVersion: source.toolkit.fluxcd.io/v1beta1
 kind: HelmRepository
 metadata:
   name: hedera-mirror-node
+  namespace: previewnet
 spec:
   interval: 5m
   url: https://hashgraph.github.io/hedera-mirror-node/charts
