@@ -1,0 +1,42 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: mainnet
+spec:
+  chart:
+    spec:
+      chart: hedera-mirror
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      valuesFiles:
+        - values.yaml
+        - values-prod.yaml
+      version: '0.20.0-rc1'
+  dependsOn:
+    - name: mirror
+      namespace: common
+  install:
+    crds: CreateReplace
+  interval: 90s
+  test:
+    enable: true
+    timeout: 5m
+  timeout: 10m
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 20
+  valuesFrom:
+    - kind: Secret
+      name: mirror
+  values:
+    importer:
+      env:
+        HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
+    monitor:
+      env:
+        HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
+

@@ -24,15 +24,16 @@ kubeseal --controller-namespace=flux-system --controller-name=sealed-secrets -o 
 
 ```bash
 export GITHUB_TOKEN=...
+export CONTEXT=preprod
 brew install fluxcd/tap/flux
 flux check --pre
-flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch=deploy-flux2 --team=hedera-mirror-node --context=preprod --path=clusters/preprod --private=false
+flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch=deploy-flux2 --team=hedera-mirror-node --context="${CONTEXT}" --path="clusters/${CONTEXT}" --private=false
 ```
 
 ### Upgrade
 
 ```bash
 brew upgrade
-flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch=deploy-flux2 --team=hedera-mirror-node --context=preprod --path=clusters/preprod
+flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch=deploy-flux2 --team=hedera-mirror-node --context="${CONTEXT}" --path="clusters/${CONTEXT}" --private=false
 ```
 
