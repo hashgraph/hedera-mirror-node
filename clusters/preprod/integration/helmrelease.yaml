@@ -42,8 +42,6 @@ spec:
             importer:
               initialAddressBook: "/etc/secrets/addressbook.bin"
               network: OTHER
-      env:
-        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
       volumeMounts:
         custom:
           mountPath: /etc/secrets
@@ -55,15 +53,6 @@ spec:
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
-        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
-      volumeMounts:
-        custom:
-          mountPath: /etc/secrets
-      volumes:
-        custom:
-          secret:
-            defaultMode: 420
-            secretName: mirror-monitor-custom
     rest:
       test:
         checkRecent: false
