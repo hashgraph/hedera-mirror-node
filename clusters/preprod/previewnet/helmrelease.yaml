@@ -36,25 +36,7 @@ spec:
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
-        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
-      volumeMounts:
-        custom:
-          mountPath: /etc/secrets
-      volumes:
-        custom:
-          secret:
-            defaultMode: 420
-            secretName: mirror-importer-custom
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
-        SPRING_CONFIG_IMPORT: "file:/etc/secrets/application.yaml"
-      volumeMounts:
-        custom:
-          mountPath: /etc/secrets
-      volumes:
-        custom:
-          secret:
-            defaultMode: 420
-            secretName: mirror-monitor-custom
 
