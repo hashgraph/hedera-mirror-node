@@ -31,7 +31,6 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	protobuf "github.com/golang/protobuf/proto"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	hexutils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
@@ -41,6 +40,7 @@ import (
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/hashgraph/hedera-sdk-go/v2/proto"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/encoding/prototext"
 )
 
 // ConstructionAPIService implements the server.ConstructionAPIServicer interface.
@@ -373,7 +373,7 @@ func NewConstructionAPIService(network string, nodes types.NodeMap) (server.Cons
 
 func getFrozenTransactionBodyBytes(transaction *hedera.TransferTransaction) ([]byte, *rTypes.Error) {
 	signedTransaction := proto.SignedTransaction{}
-	if err := protobuf.UnmarshalText(transaction.String(), &signedTransaction); err != nil {
+	if err := prototext.Unmarshal([]byte(transaction.String()), &signedTransaction); err != nil {
 		return nil, errors.Errors[errors.TransactionUnmarshallingFailed]
 	}
 
