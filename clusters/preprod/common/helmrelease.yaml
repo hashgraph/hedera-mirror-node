@@ -23,10 +23,6 @@ spec:
       name: mirror
   values:
     prometheus:
-      alertmanager:
-        alertmanagerSpec:
-          secrets:
-            - mirror-alertmanager
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "integration", "previewnet"]
