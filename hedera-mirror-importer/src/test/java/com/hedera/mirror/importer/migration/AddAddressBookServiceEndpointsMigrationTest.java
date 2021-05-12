@@ -305,6 +305,56 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .isEmpty();
     }
 
+    @Test
+    void verifyAddressBookWithValidIpAndInvalidPortMigration() throws IOException {
+        long consensusTimestamp = 1;
+        AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
+                .nodeCertHash("nodeCertHash".getBytes())
+                .publicKey("rsa+public/key");
+
+        List<Long> nodeIds = List.of(0L, 1L, 2L, 3L);
+        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIds.size());
+        insertAddressBookEntry(
+                builder.memo(baseAccountId + (nodeIds.get(0) + nodeAccountOffset))
+                        .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(0)))
+                        .build(), "127.0.0.1", null);
+        insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(1) + nodeAccountOffset))
+                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(1)))
+                .build(), "127.0.0.2", null);
+        insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(2) + nodeAccountOffset))
+                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(2)))
+                .build(), "127.0.0.3", null);
+        insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(3) + nodeAccountOffset))
+                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(3)))
+                .build(), "127.0.0.4", null);
+
+        runMigration();
+
+        IterableAssert<AddressBookEntry> listAssert =
+                assertThat(addressBookEntryRepository
+                        .findAll())
+                        .isNotEmpty()
+                        .hasSize(nodeIds.size());
+
+        listAssert.extracting(AddressBookEntry::getId).extracting(AddressBookEntry.Id::getNodeId)
+                .containsExactlyInAnyOrderElementsOf(nodeIds);
+        listAssert.extracting(AddressBookEntry::getNodeAccountId)
+                .containsExactlyInAnyOrder(
+                        EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset), EntityTypeEnum.ACCOUNT),
+                        EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset), EntityTypeEnum.ACCOUNT),
+                        EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset), EntityTypeEnum.ACCOUNT),
+                        EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset), EntityTypeEnum.ACCOUNT));
+
+        assertThat(addressBookServiceEndpointRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(nodeIds.size())
+                .extracting(AddressBookServiceEndpoint::getId)
+                .extracting(AddressBookServiceEndpoint.Id::getNodeId)
+                .extracting(EntityId::getId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L, 3L);
+    }
+
     private List<AddressBookEntry> getAndSaveAddressBookEntries(boolean deprecatedIp, long consensusTimestamp,
                                                                 int nodeCount, int endPointCount) {
         List<AddressBookEntry> addressBookEntries = new ArrayList<>();
@@ -388,7 +438,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
      * @param ip               service endpoint ip
      * @param port             service endpoint  port
      */
-    private void insertAddressBookEntry(AddressBookEntry addressBookEntry, String ip, int port) {
+    private void insertAddressBookEntry(AddressBookEntry addressBookEntry, String ip, Integer port) {
         Long nodeAccountId = EntityId.isEmpty(addressBookEntry.getNodeAccountId()) ? null :
                 addressBookEntry.getNodeAccountId().getId();
         jdbcOperations
