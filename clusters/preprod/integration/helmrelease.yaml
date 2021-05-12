@@ -34,7 +34,7 @@ spec:
   values:
     global:
       image:
-        tag: master-becbfd867311c7c255b0164f0b9e661e99cfdb0b
+        tag: master-847069e0a228109fd2783214ce5022fcdb1d59da
     importer:
       config:
         hedera:
