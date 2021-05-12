@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -39,6 +40,7 @@ import lombok.extern.log4j.Log4j2;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
@@ -52,6 +54,7 @@ public class NodeSignatureVerifier {
 
     // Metrics
     private final MeterRegistry meterRegistry;
+    private final Map<EntityId, Counter> metricMap = new ConcurrentHashMap<>();
     private final Counter.Builder missingNodeSignatureFileMetric;
     private final Counter.Builder signatureVerificationMetric;
 
@@ -68,8 +71,8 @@ public class NodeSignatureVerifier {
                 .description("The number of signatures verified from a particular node");
     }
 
-    private static boolean canReachConsensus(long actualNodes, long expectedNodes, double consensusRatio) {
-        return actualNodes >= Math.ceil(expectedNodes * consensusRatio);
+    private boolean canReachConsensus(long actualNodes, long expectedNodes) {
+        return actualNodes >= Math.ceil(expectedNodes * commonDownloaderProperties.getConsensusRatio());
     }
 
     /**
@@ -96,10 +99,14 @@ public class NodeSignatureVerifier {
 
         long sigFileCount = signatures.size();
         long nodeCount = nodeAccountIDPubKeyMap.size();
-        if (!canReachConsensus(sigFileCount, nodeCount, commonDownloaderProperties.getConsensusRatio())) {
-            throw new SignatureVerificationException("Require at least 1/3 signature files to reach consensus, got " +
-                    sigFileCount + " out of " + nodeCount + " for file " + filename + ": " + statusMap(signatures,
-                    nodeAccountIDPubKeyMap));
+        if (!canReachConsensus(sigFileCount, nodeCount)) {
+            throw new SignatureVerificationException(String.format(
+                    "Requires at least %s of signature files to reach consensus, got %d out of %d for file %s: %s",
+                    String.format("%.03f", commonDownloaderProperties.getConsensusRatio()),
+                    sigFileCount,
+                    nodeCount,
+                    filename,
+                    statusMap(signatures, nodeAccountIDPubKeyMap)));
         }
 
         for (FileStreamSignature fileStreamSignature : signatures) {
@@ -112,8 +119,7 @@ public class NodeSignatureVerifier {
         for (String key : signatureHashMap.keySet()) {
             Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
 
-            if (canReachConsensus(validatedSignatures.size(), nodeCount, commonDownloaderProperties
-                    .getConsensusRatio())) {
+            if (canReachConsensus(validatedSignatures.size(), nodeCount)) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(SignatureStatus.CONSENSUS_REACHED));
             }
@@ -125,6 +131,9 @@ public class NodeSignatureVerifier {
         } else if (consensusCount > 0) {
             log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
                     statusMap(signatures, nodeAccountIDPubKeyMap));
+            return;
+        } else if (commonDownloaderProperties.getConsensusRatio() == 0) {
+            log.debug("Signature file {} does not require consensus, skipping verification", filename);
             return;
         }
 
@@ -175,34 +184,43 @@ public class NodeSignatureVerifier {
         return false;
     }
 
-    private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures, Map<String,
+    private Map<String, Collection<EntityId>> statusMap(Collection<FileStreamSignature> signatures, Map<String,
             PublicKey> nodeAccountIDPubKeyMap) {
-        Map<String, Collection<String>> statusMap = signatures.stream()
+        Map<String, Collection<EntityId>> statusMap = signatures.stream()
                 .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
-                        Collectors.mapping(FileStreamSignature::getNodeAccountIdString, Collectors
+                        Collectors.mapping(FileStreamSignature::getNodeAccountId, Collectors
                                 .toCollection(TreeSet::new))));
 
-        Set<String> seenNodes = new HashSet<>();
+        Set<EntityId> seenNodes = new HashSet<>();
         signatures.forEach(signature -> {
-            seenNodes.add(signature.getNodeAccountId().entityIdToString());
+            seenNodes.add(signature.getNodeAccountId());
             EntityId nodeAccountId = signature.getNodeAccountId();
-            signatureVerificationMetric.tag("nodeAccount", nodeAccountId.getEntityNum().toString())
+
+            metricMap.computeIfAbsent(nodeAccountId, n -> signatureVerificationMetric
+                    .tag("nodeAccount", nodeAccountId.getEntityNum().toString())
                     .tag("realm", nodeAccountId.getRealmNum().toString())
                     .tag("shard", nodeAccountId.getShardNum().toString())
                     .tag("status", signature.getStatus().toString())
                     .tag("type", signature.getStreamType().toString())
-                    .register(meterRegistry)
+                    .register(meterRegistry))
                     .increment();
         });
 
-        Set<String> missingNodes = new TreeSet<>(Sets.difference(nodeAccountIDPubKeyMap.keySet(), seenNodes));
+        Set<EntityId> missingNodes = new TreeSet<>(Sets.difference(
+                nodeAccountIDPubKeyMap.keySet().stream().map(x -> EntityId.of(x, EntityTypeEnum.ACCOUNT))
+                        .collect(Collectors.toSet()),
+                seenNodes));
         statusMap.put("MISSING", missingNodes);
         statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
 
         String streamType = signatures.stream().map(FileStreamSignature::getStreamType).findFirst().toString();
-        missingNodes.forEach(nodeAccountId -> missingNodeSignatureFileMetric.tag("nodeAccount", nodeAccountId)
-                .tag("type", streamType)
-                .register(meterRegistry)
+        missingNodes.forEach(nodeAccountId -> metricMap
+                .computeIfAbsent(nodeAccountId, n -> missingNodeSignatureFileMetric
+                        .tag("nodeAccount", n.getEntityNum().toString())
+                        .tag("realm", nodeAccountId.getRealmNum().toString())
+                        .tag("shard", nodeAccountId.getShardNum().toString())
+                        .tag("type", streamType)
+                        .register(meterRegistry))
                 .increment());
 
         return statusMap;

@@ -93,7 +93,7 @@ class NodeSignatureVerifierTest {
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333f);
     }
 
     @Test
@@ -160,7 +160,29 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Require at least 1/3 signature files to reach consensus"));
+        assertTrue(e.getMessage().contains("Requires at least 0.333 of signature files to reach consensus"));
+    }
+
+    @Test
+    void testNoConsensusRequired() throws GeneralSecurityException {
+        Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.6", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.7", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.8", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.9", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
+
+        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0f);
+
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHashSignature = signHash(fileHash);
+
+        // only 1 node node necessary
+        nodeSignatureVerifier.verify(List.of());
     }
 
     @Test
@@ -187,6 +209,34 @@ class NodeSignatureVerifierTest {
 
         nodeSignatureVerifier
                 .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode5));
+    }
+
+    @Test
+    void testVerifiedWithFullConsensusRequired() throws GeneralSecurityException {
+        Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
+        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1f);
+
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHashSignature = signHash(fileHash);
+
+        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature(fileHash, fileHashSignature,
+                null, null);
+        fileStreamSignatureNode3.setNodeAccountId(new EntityId(0L, 0L, 3L, EntityTypeEnum.ACCOUNT.getId()));
+
+        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(fileHash, fileHashSignature,
+                null, null);
+        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityTypeEnum.ACCOUNT.getId()));
+
+        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature(fileHash, fileHashSignature,
+                null, null);
+        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityTypeEnum.ACCOUNT.getId()));
+
+        nodeSignatureVerifier
+                .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
     }
 
     @Test

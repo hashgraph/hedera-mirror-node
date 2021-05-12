@@ -307,7 +307,7 @@ public abstract class Downloader<T extends StreamFile> {
         StreamFileData streamFileData = new StreamFileData(streamFilename, pendingDownload.getBytes());
         FileStreamSignature fileStreamSignature = signatureFileReader.read(streamFileData);
         fileStreamSignature.setNodeAccountId(nodeAccountId);
-        fileStreamSignature.setStreamType(pendingDownload.getStreamFilename().getStreamType());
+        fileStreamSignature.setStreamType(streamType);
         return Optional.of(fileStreamSignature);
     }
 
