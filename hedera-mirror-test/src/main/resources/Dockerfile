@@ -5,7 +5,7 @@ WORKDIR /usr/etc/hedera-mirror-node
 COPY . .
 
 ENV testProfile acceptance
-ENV cucumberFlags "@BalanceCheck"
+ENV cucumberFlags "@balancecheck"
 ENV subscribeThreadCount 30
 ENV jmeterTestPlan E2E_Subscribe_Only.jmx
 ENV jmeterPropsDirectory "/usr/etc/hedera-mirror-test"
