@@ -53,7 +53,7 @@ func (m *MockTransactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
 	return args.Get(0).([]string), args.Get(1).(*rTypes.Error)
 }
 
-func (m *MockTransactionRepository) Statuses() (map[int]string, *rTypes.Error) {
+func (m *MockTransactionRepository) Results() (map[int]string, *rTypes.Error) {
 	args := m.Called()
 	return args.Get(0).(map[int]string), args.Get(1).(*rTypes.Error)
 }

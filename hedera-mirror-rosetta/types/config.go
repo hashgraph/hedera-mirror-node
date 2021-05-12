@@ -81,5 +81,5 @@ type Db struct {
 }
 
 type Log struct {
-	Level string `yaml:"level"`
+	Level string `yaml:"level" env:"HEDERA_MIRROR_ROSETTA_LOG_LEVEL"`
 }

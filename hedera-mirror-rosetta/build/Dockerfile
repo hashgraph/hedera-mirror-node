@@ -69,6 +69,7 @@ COPY --from=rosetta-builder /hedera-mirror-rosetta/config/application.yml ./conf
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer
 COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-*exec.jar ./hedera-mirror-importer.jar
+ENV HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_NONFEETRANSFERS=true
 
 COPY hedera-mirror-rosetta/build /build
 WORKDIR /build

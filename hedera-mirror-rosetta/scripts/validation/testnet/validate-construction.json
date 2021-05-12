@@ -1,0 +1,25 @@
+{
+  "network": {
+    "blockchain": "Hedera",
+    "network": "testnet",
+    "sub_network_identifier": {
+      "network": "shard 0 realm 0"
+    }
+  },
+  "retry_elapsed_time": 5,
+  "online_url": "http://localhost:5700",
+  "data_directory": "",
+  "http_timeout": 20,
+  "tip_delay": 10,
+  "construction": {
+    "broadcast_limit": 1,
+    "clear_broadcasts": true,
+    "constructor_dsl_file": "testnet.ros",
+    "end_conditions": {
+      "transfer": 10
+    },
+    "offline_url": "http://localhost:5700",
+    "prefunded_accounts": [],
+    "stale_depth": 20
+  }
+}

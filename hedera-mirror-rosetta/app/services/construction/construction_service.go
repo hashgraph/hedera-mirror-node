@@ -155,8 +155,11 @@ func (c *ConstructionAPIService) ConstructionParse(
 		return accountIds[i].String() < accountIds[j].String()
 	})
 
+	var signers []*rTypes.AccountIdentifier
+
 	for i, accountId := range accountIds {
-		operations = append(operations, &rTypes.Operation{
+		amount := transfers[accountId].AsTinybar()
+		operation := &rTypes.Operation{
 			OperationIdentifier: &rTypes.OperationIdentifier{
 				Index: int64(i),
 			},
@@ -165,34 +168,21 @@ func (c *ConstructionAPIService) ConstructionParse(
 				Address: accountId.String(),
 			},
 			Amount: &rTypes.Amount{
-				Value:    strconv.FormatInt(transfers[accountId].AsTinybar(), 10),
+				Value:    strconv.FormatInt(amount, 10),
 				Currency: config.CurrencyHbar,
 			},
-		})
-	}
-
-	var accountIdentifiers []*rTypes.AccountIdentifier
-
-	if request.Signed {
-		allNodeSignaturePairs, err := transaction.GetSignatures()
-		if err != nil {
-			return nil, errors.Errors[errors.TransactionSignatureFailed]
 		}
 
-		for _, nodeSignaturePair := range allNodeSignaturePairs {
-			for pubKey := range nodeSignaturePair {
-				accountIdentifiers = append(accountIdentifiers, &rTypes.AccountIdentifier{
-					Address: hex.EncodeToString(pubKey.Bytes()),
-				})
-			}
+		operations = append(operations, operation)
 
-			break
+		if request.Signed && amount < 0 {
+			signers = append(signers, operation.Account)
 		}
 	}
 
 	return &rTypes.ConstructionParseResponse{
 		Operations:               operations,
-		AccountIdentifierSigners: accountIdentifiers,
+		AccountIdentifierSigners: signers,
 	}, nil
 }
 
@@ -209,7 +199,37 @@ func (c *ConstructionAPIService) ConstructionPreprocess(
 	ctx context.Context,
 	request *rTypes.ConstructionPreprocessRequest,
 ) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
-	return c.handleCryptoTransferPreProcess(request.Operations)
+	err := validator.ValidateOperationsSum(request.Operations)
+	if err != nil {
+		return nil, err
+	}
+
+	var sender hedera.AccountID
+
+	for _, operation := range request.Operations {
+		amount, err := parse.ToInt64(operation.Amount.Value)
+		if err != nil {
+			return nil, errors.Errors[errors.InvalidAmount]
+		}
+
+		if amount > 0 {
+			continue
+		}
+
+		sender, err = hedera.AccountIDFromString(operation.Account.Address)
+		if err != nil {
+			return nil, errors.Errors[errors.InvalidAccount]
+		}
+	}
+
+	return &rTypes.ConstructionPreprocessResponse{
+		Options: make(map[string]interface{}),
+		RequiredPublicKeys: []*rTypes.AccountIdentifier{
+			{
+				Address: sender.String(),
+			},
+		},
+	}, nil
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.
@@ -229,6 +249,7 @@ func (c *ConstructionAPIService) ConstructionSubmit(
 
 	_, err = transaction.Execute(c.hederaClient)
 	if err != nil {
+		log.Errorf("Failed to execute transaction %s: %s", transaction.GetTransactionID(), err)
 		return nil, errors.Errors[errors.TransactionSubmissionFailed]
 	}
 
@@ -304,23 +325,9 @@ func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rType
 			AccountIdentifier: &rTypes.AccountIdentifier{
 				Address: sender.String(),
 			},
-			Bytes: frozenBodyBytes,
+			Bytes:         frozenBodyBytes,
+			SignatureType: rTypes.Ed25519,
 		}},
-	}, nil
-}
-
-// handleCryptoTransferPreProcess validates all Rosetta Operations.
-func (c *ConstructionAPIService) handleCryptoTransferPreProcess(operations []*rTypes.Operation) (
-	*rTypes.ConstructionPreprocessResponse,
-	*rTypes.Error,
-) {
-	err := validator.ValidateOperationsSum(operations)
-	if err != nil {
-		return nil, err
-	}
-
-	return &rTypes.ConstructionPreprocessResponse{
-		Options: make(map[string]interface{}),
 	}, nil
 }
 

@@ -90,8 +90,8 @@ func (c *BaseService) FindBetween(start int64, end int64) ([]*types.Transaction,
 	return c.transactionRepo.FindBetween(start, end)
 }
 
-func (c *BaseService) Statuses() (map[int]string, *rTypes.Error) {
-	return c.transactionRepo.Statuses()
+func (c *BaseService) Results() (map[int]string, *rTypes.Error) {
+	return c.transactionRepo.Results()
 }
 
 func (c *BaseService) TypesAsArray() ([]string, *rTypes.Error) {

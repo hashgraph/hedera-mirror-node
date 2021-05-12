@@ -39,7 +39,7 @@ var Errors = map[string]*types.Error{
 	MultipleSignaturesPresent:      New(MultipleSignaturesPresent, 110, false),
 	NodeIsStarting:                 New(NodeIsStarting, 111, true),
 	NotImplemented:                 New(NotImplemented, 112, false),
-	OperationStatusesNotFound:      New(OperationStatusesNotFound, 113, true),
+	OperationResultsNotFound:       New(OperationResultsNotFound, 113, true),
 	OperationTypesNotFound:         New(OperationTypesNotFound, 114, true),
 	StartMustNotBeAfterEnd:         New(StartMustNotBeAfterEnd, 115, false),
 	TransactionBuildFailed:         New(TransactionBuildFailed, 116, false),
@@ -54,7 +54,6 @@ var Errors = map[string]*types.Error{
 	TransactionNotSigned:           New(TransactionNotSigned, 125, false),
 	TransactionHashFailed:          New(TransactionHashFailed, 126, false),
 	TransactionFreezeFailed:        New(TransactionFreezeFailed, 127, false),
-	TransactionSignatureFailed:     New(TransactionSignatureFailed, 128, false),
 	InternalServerError:            New(InternalServerError, 500, true),
 }
 
@@ -74,7 +73,7 @@ const (
 	MultipleSignaturesPresent      string = "Only one signature must be present"
 	NodeIsStarting                 string = "Node is starting"
 	NotImplemented                 string = "Not implemented"
-	OperationStatusesNotFound      string = "Operation Statuses not found"
+	OperationResultsNotFound       string = "Operation Results not found"
 	OperationTypesNotFound         string = "Operation Types not found"
 	StartMustNotBeAfterEnd         string = "Start must not be after end"
 	TransactionBuildFailed         string = "Transaction build failed"
@@ -88,7 +87,6 @@ const (
 	TransactionNotSigned           string = "Transaction not signed"
 	TransactionHashFailed          string = "Transaction hash failed"
 	TransactionFreezeFailed        string = "Transaction freeze failed"
-	TransactionSignatureFailed     string = "Transaction signature error"
 	InternalServerError            string = "Internal Server Error"
 )
 

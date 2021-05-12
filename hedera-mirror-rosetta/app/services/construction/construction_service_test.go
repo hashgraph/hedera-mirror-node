@@ -449,7 +449,7 @@ func TestConstructionParseSigned(t *testing.T) {
 		},
 		AccountIdentifierSigners: []*types.AccountIdentifier{
 			{
-				Address: publicKey,
+				Address: DefaultCryptoAccountId1,
 			},
 		},
 	}
@@ -497,7 +497,8 @@ func TestConstructionPayloads(t *testing.T) {
 				AccountIdentifier: &types.AccountIdentifier{
 					Address: DefaultCryptoAccountId1,
 				},
-				Bytes: expectedNilBytes,
+				Bytes:         expectedNilBytes,
+				SignatureType: types.Ed25519,
 			},
 		},
 	}
@@ -614,6 +615,11 @@ func TestConstructionPreprocess(t *testing.T) {
 	// given:
 	expectedResult := &types.ConstructionPreprocessResponse{
 		Options: make(map[string]interface{}),
+		RequiredPublicKeys: []*types.AccountIdentifier{
+			{
+				Address: DefaultCryptoAccountId1,
+			},
+		},
 	}
 
 	// when:

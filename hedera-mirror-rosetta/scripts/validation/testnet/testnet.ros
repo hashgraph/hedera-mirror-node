@@ -1,0 +1,47 @@
+transfer(10){
+  transfer{
+    transfer.network = {"network":"testnet", "blockchain":"Hedera", "sub_network_identifier": {"network": "shard 0 realm 0"}};
+    currency = {"symbol":"HBAR", "decimals":8, "metadata": {"issuer": "Hedera"}};
+
+    // at least 1000 hbars
+    sender = find_balance({
+      "minimum_balance":{
+        "value": "100000000000",
+        "currency": {{currency}}
+      }
+    });
+    recipient = find_balance({
+      "not_account_identifier": [{{sender.account_identifier}}],
+      "minimum_balance":{
+        "value": "1",
+        "currency": {{currency}}
+      }
+    });
+
+    recipient_amount = random_number({"minimum": "1000000", "maximum": "2000000"}); // between 0.01 and 0.02 hbar
+    print_message({"recipient_amount":{{recipient_amount}}});
+
+    sender_amount = 0 - {{recipient_amount}};
+    transfer.confirmation_depth = "1";
+    transfer.operations = [
+      {
+        "operation_identifier":{"index":0},
+        "type":"CRYPTOTRANSFER",
+        "account":{{sender.account_identifier}},
+        "amount":{
+          "value":{{sender_amount}},
+          "currency":{{currency}}
+        }
+      },
+      {
+        "operation_identifier":{"index":1},
+        "type":"CRYPTOTRANSFER",
+        "account":{{recipient.account_identifier}},
+        "amount":{
+          "value":{{recipient_amount}},
+          "currency":{{currency}}
+        }
+      }
+    ];
+  }
+}

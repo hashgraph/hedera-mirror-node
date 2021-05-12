@@ -351,13 +351,13 @@ func TestFindBetweenThrows(t *testing.T) {
 func TestStatuses(t *testing.T) {
 	// given:
 	repository.Setup()
-	repository.MTransactionRepository.On("Statuses").Return(
+	repository.MTransactionRepository.On("Results").Return(
 		exampleMap,
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().Statuses()
+	res, e := getSubject().Results()
 
 	// then:
 	assert.Nil(t, e)
@@ -367,13 +367,13 @@ func TestStatuses(t *testing.T) {
 func TestStatusesThrows(t *testing.T) {
 	// given:
 	repository.Setup()
-	repository.MTransactionRepository.On("Statuses").Return(
+	repository.MTransactionRepository.On("Results").Return(
 		nilMap,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().Statuses()
+	res, e := getSubject().Results()
 
 	// then:
 	assert.Nil(t, res)

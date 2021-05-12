@@ -123,6 +123,10 @@ func TestNetworkOptions(t *testing.T) {
 			OperationStatuses: []*rTypes.OperationStatus{
 				{
 					Status:     "Pending",
+					Successful: false,
+				},
+				{
+					Status:     "Success",
 					Successful: true,
 				},
 			},
@@ -133,7 +137,9 @@ func TestNetworkOptions(t *testing.T) {
 	}
 
 	repository.Setup()
-	repository.MTransactionRepository.On("Statuses").Return(map[int]string{1: "Pending"}, repository.NilError)
+	repository.MTransactionRepository.
+		On("Results").
+		Return(map[int]string{1: "Pending", 22: "Success"}, repository.NilError)
 	repository.MTransactionRepository.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
 
 	// when:
@@ -152,7 +158,7 @@ func TestNetworkOptionsThrowsWhenStatusesFails(t *testing.T) {
 	var nilStatuses map[int]string = nil
 	repository.Setup()
 	repository.MTransactionRepository.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
-	repository.MTransactionRepository.On("Statuses").Return(nilStatuses, &rTypes.Error{})
+	repository.MTransactionRepository.On("Results").Return(nilStatuses, &rTypes.Error{})
 
 	// when:
 	res, e := getSubject().NetworkOptions(nil, nil)
@@ -171,7 +177,7 @@ func TestNetworkOptionsThrowsWhenTypesAsArrayFails(t *testing.T) {
 
 	assert.Nil(t, res)
 	assert.IsType(t, &rTypes.Error{}, e)
-	repository.MTransactionRepository.AssertNotCalled(t, "Statuses")
+	repository.MTransactionRepository.AssertNotCalled(t, "Results")
 }
 
 func TestNetworkStatus(t *testing.T) {

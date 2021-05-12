@@ -26,6 +26,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories/addressbook/entry"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/transaction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
@@ -60,17 +61,16 @@ func (n *NetworkAPIService) NetworkOptions(
 	if err != nil {
 		return nil, err
 	}
-	statuses, err := n.Statuses()
+	results, err := n.Results()
 	if err != nil {
 		return nil, err
 	}
 
-	statusesArray := maphelper.GetStringValuesFromIntStringMap(statuses)
-	operationStatuses := make([]*types.OperationStatus, 0, len(statusesArray))
-	for _, v := range statusesArray {
+	operationStatuses := make([]*types.OperationStatus, 0, len(results))
+	for value, description := range results {
 		operationStatuses = append(operationStatuses, &types.OperationStatus{
-			Status:     v,
-			Successful: true,
+			Status:     description,
+			Successful: transaction.IsTransactionResultSuccessful(value),
 		})
 	}
 
