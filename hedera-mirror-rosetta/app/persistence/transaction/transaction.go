@@ -49,10 +49,10 @@ const (
                                           WHERE consensus_ns >= $1 AND consensus_ns <= $2`
 	whereCryptoTransferConsensusTimestampInTimestampsAsc string = `SELECT * FROM crypto_transfer
                                                                    WHERE consensus_timestamp IN ($1)
-  																   ORDER BY consensus_timestamp`
+                                                                   ORDER BY consensus_timestamp`
 	whereNonFeeTransferConsensusTimestampInTimestampsAsc string = `SELECT * FROM non_fee_transfer
-                                                  				   WHERE consensus_timestamp IN ($1)
- 																   ORDER BY consensus_timestamp`
+                                                                   WHERE consensus_timestamp IN ($1)
+                                                                   ORDER BY consensus_timestamp`
 	whereTransactionsByHashAndConsensusTimestamps string = `SELECT * FROM transaction
                                                             WHERE transaction_hash = $1
                                                             AND consensus_ns BETWEEN $2 AND $3`
