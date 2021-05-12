@@ -345,14 +345,20 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                         EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset), EntityTypeEnum.ACCOUNT),
                         EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset), EntityTypeEnum.ACCOUNT));
 
-        assertThat(addressBookServiceEndpointRepository
-                .findAll())
-                .isNotEmpty()
-                .hasSize(nodeIds.size())
-                .extracting(AddressBookServiceEndpoint::getId)
+        IterableAssert<AddressBookServiceEndpoint> serviceListAssert =
+                assertThat(addressBookServiceEndpointRepository
+                        .findAll())
+                        .isNotEmpty()
+                        .hasSize(nodeIds.size());
+
+        serviceListAssert.extracting(AddressBookServiceEndpoint::getId)
                 .extracting(AddressBookServiceEndpoint.Id::getNodeId)
                 .extracting(EntityId::getId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L, 3L);
+
+        serviceListAssert.extracting(AddressBookServiceEndpoint::getId)
+                .extracting(AddressBookServiceEndpoint.Id::getPort)
+                .containsExactlyInAnyOrder(0, 0, 0, 0);
     }
 
     private List<AddressBookEntry> getAndSaveAddressBookEntries(boolean deprecatedIp, long consensusTimestamp,
