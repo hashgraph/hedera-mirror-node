@@ -141,14 +141,14 @@ var (
 			Amount:  &types.Amount{Value: 5},
 		},
 	}
-	tRepoTypes = map[int]string{
-		12: "CRYPTODELETE",
-		14: "CRYPTOTRANSFER",
-	}
-	tRepoStatuses = map[int]string{
+	tRepoResults = map[int]string{
 		1:  "INVALID_TRANSACTION",
 		11: "DUPLICATE_TRANSACTION",
 		22: resultSuccess,
+	}
+	tRepoTypes = map[int]string{
+		12: "CRYPTODELETE",
+		14: "CRYPTOTRANSFER",
 	}
 	tRepoTypesAsArray = []string{"CRYPTODELETE", "CRYPTOTRANSFER"}
 )
@@ -312,7 +312,7 @@ func TestShouldFailFindHashInBlockInvalidHash(t *testing.T) {
 	assert.Equal(t, errors.Errors[errors.InvalidTransactionIdentifier], err)
 }
 
-func TestShouldFailConstructTransactionDueToNoStatuses(t *testing.T) {
+func TestShouldFailConstructTransactionDueToNoResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
 	defer tr.dbClient.DB().Close()
@@ -863,7 +863,7 @@ func TestShouldFailConstructionOperationsInvalidTransferEntityId(t *testing.T) {
 	}
 }
 
-func TestShouldFailConstructionOperationsDueToStatusesError(t *testing.T) {
+func TestShouldFailConstructionOperationsDueToResultsError(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
 	defer tr.dbClient.DB().Close()
@@ -938,7 +938,7 @@ func TestShouldSuccessFindNonFeeTransfers(t *testing.T) {
 	assert.Equal(t, dbNonFeeTransfers, result)
 }
 
-func TestShouldSuccessReturnStatuses(t *testing.T) {
+func TestShouldSuccessReturnResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
 	defer tr.dbClient.DB().Close()
@@ -951,16 +951,16 @@ func TestShouldSuccessReturnStatuses(t *testing.T) {
 		WillReturnRows(rows)
 
 	// when
-	result, err := tr.Results()
+	results, err := tr.Results()
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, err)
 
-	assert.Equal(t, tRepoStatuses, result)
+	assert.Equal(t, tRepoResults, results)
 }
 
-func TestShouldFailReturnStatuses(t *testing.T) {
+func TestShouldFailReturnResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
 	defer tr.dbClient.DB().Close()
@@ -972,11 +972,11 @@ func TestShouldFailReturnStatuses(t *testing.T) {
 		WillReturnRows(willReturnRows(transactionResultColumns))
 
 	// when
-	result, err := tr.Results()
+	results, err := tr.Results()
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
+	assert.Nil(t, results)
 	assert.NotNil(t, err)
 }
 
@@ -1064,7 +1064,7 @@ func TestShouldSuccessReturnTypes(t *testing.T) {
 	assert.Equal(t, tRepoTypes, result)
 }
 
-func TestShouldSuccessSaveTransactionTypesAndStatuses(t *testing.T) {
+func TestShouldSuccessSaveTransactionTypesAndResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
 	defer tr.dbClient.DB().Close()
@@ -1083,11 +1083,11 @@ func TestShouldSuccessSaveTransactionTypesAndStatuses(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
 
-	assert.Equal(t, tRepoStatuses, tr.results)
+	assert.Equal(t, tRepoResults, tr.results)
 	assert.Equal(t, tRepoTypes, tr.types)
 }
 
-func TestShouldFailReturnTransactionTypesAndStatusesDueToNoResults(t *testing.T) {
+func TestShouldFailReturnTransactionTypesAndResultsDueToNoResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
 	defer tr.dbClient.DB().Close()
@@ -1106,7 +1106,7 @@ func TestShouldFailReturnTransactionTypesAndStatusesDueToNoResults(t *testing.T)
 	assert.Equal(t, errors.Errors[errors.OperationResultsNotFound], result)
 }
 
-func TestShouldFailReturnTransactionTypesAndStatusesDueToNoTypes(t *testing.T) {
+func TestShouldFailReturnTransactionTypesAndResultsDueToNoTypes(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
 	defer tr.dbClient.DB().Close()

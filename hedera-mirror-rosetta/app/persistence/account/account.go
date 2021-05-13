@@ -68,7 +68,7 @@ type AccountRepository struct {
 }
 
 // NewAccountRepository creates an instance of a TransactionRepository struct. Populates the transaction types and
-// statuses on init
+// results on init
 func NewAccountRepository(dbClient *gorm.DB) *AccountRepository {
 	return &AccountRepository{
 		dbClient: dbClient,
