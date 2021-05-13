@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.20.0-rc1'
+      version: '0.20.0-rc2'
   dependsOn:
     - name: mirror
       namespace: common
@@ -33,6 +33,8 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    db:
+      schema: public
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
@@ -43,10 +45,5 @@ spec:
     postgresql:
       enabled: false
     redis:
-      cluster:
-        slaveCount: 0
-      sentinel:
-        enabled: true
-    timescaledb:
       enabled: false
 
