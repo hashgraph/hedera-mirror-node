@@ -63,11 +63,6 @@ public class NodeSignatureVerifier {
         this.addressBookService = addressBookService;
         this.commonDownloaderProperties = commonDownloaderProperties;
         this.meterRegistry = meterRegistry;
-
-        missingNodeSignatureFileMetric = Counter.builder("hedera.mirror.download.signature.missing")
-                .description("The number of nodes whose signatures are missing from the consensus process");
-        signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
-                .description("The number of signatures verified from a particular node");
     }
 
     private boolean canReachConsensus(long actualNodes, long expectedNodes) {
