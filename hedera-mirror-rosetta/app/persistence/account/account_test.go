@@ -152,17 +152,11 @@ func TestShouldSuccessRetrieveBalanceAtBlock(t *testing.T) {
 
 	mock.ExpectQuery(regexp.QuoteMeta(latestBalanceBeforeConsensus)).
 		WithArgs(dbAccountBalance.AccountId, consensusTimestamp).
-		WillReturnRows(
-			sqlmock.NewRows(columns).
-				AddRow(dbAccountBalanceRow...),
-		)
+		WillReturnRows(sqlmock.NewRows(columns).AddRow(dbAccountBalanceRow...))
 
 	mock.ExpectQuery(regexp.QuoteMeta(balanceChangeBetween)).
 		WithArgs(dbAccountBalance.ConsensusTimestamp, consensusTimestamp, dbAccountBalance.AccountId).
-		WillReturnRows(
-			sqlmock.NewRows(balanceChangeColumns).
-				AddRow(dbBalanceChangeRow...),
-		)
+		WillReturnRows(sqlmock.NewRows(balanceChangeColumns).AddRow(dbBalanceChangeRow...))
 
 	// when
 	result, err := abr.RetrieveBalanceAtBlock(accountString, consensusTimestamp)
@@ -188,10 +182,7 @@ func TestShouldSuccessRetrieveBalanceAtBlockWithNoSnapshotsBeforeThat(t *testing
 
 	mock.ExpectQuery(regexp.QuoteMeta(balanceChangeBetween)).
 		WithArgs(dbAccountBalance.ConsensusTimestamp, consensusTimestamp, dbAccountBalance.AccountId).
-		WillReturnRows(
-			sqlmock.NewRows(balanceChangeColumns).
-				AddRow(dbBalanceChangeRow...),
-		)
+		WillReturnRows(sqlmock.NewRows(balanceChangeColumns).AddRow(dbBalanceChangeRow...))
 
 	// when
 	result, err := abr.RetrieveBalanceAtBlock(accountString, consensusTimestamp)

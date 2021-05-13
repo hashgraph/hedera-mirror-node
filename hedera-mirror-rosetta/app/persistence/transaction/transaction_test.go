@@ -788,28 +788,26 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(
-			tt.name, func(t *testing.T) {
-				// given
-				tr, mock := setupRepository(t)
-				defer tr.dbClient.DB().Close()
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			tr, mock := setupRepository(t)
+			defer tr.dbClient.DB().Close()
 
-				mock.ExpectQuery(regexp.QuoteMeta(selectTransactionTypes)).
-					WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
-				mock.ExpectQuery(regexp.QuoteMeta(selectTransactionResults)).
-					WillReturnRows(willReturnRows(transactionResultColumns, dbTransactionResults))
+			mock.ExpectQuery(regexp.QuoteMeta(selectTransactionTypes)).
+				WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
+			mock.ExpectQuery(regexp.QuoteMeta(selectTransactionResults)).
+				WillReturnRows(willReturnRows(transactionResultColumns, dbTransactionResults))
 
-				// when
-				actual, err := tr.constructOperations(tt.cryptoTransfers, tt.nonFeeTransfers, tt.transactions)
+			// when
+			actual, err := tr.constructOperations(tt.cryptoTransfers, tt.nonFeeTransfers, tt.transactions)
 
-				// then
-				assert.NoError(t, mock.ExpectationsWereMet())
-				assert.Nil(t, err)
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, err)
 
-				assertOperationIndexes(t, actual)
-				assert.ElementsMatch(t, tt.expected, actual)
-			},
-		)
+			assertOperationIndexes(t, actual)
+			assert.ElementsMatch(t, tt.expected, actual)
+		})
 	}
 }
 
@@ -842,28 +840,26 @@ func TestShouldFailConstructionOperationsInvalidTransferEntityId(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(
-			tt.name, func(t *testing.T) {
-				// given
-				tr, mock := setupRepository(t)
-				defer tr.dbClient.DB().Close()
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			tr, mock := setupRepository(t)
+			defer tr.dbClient.DB().Close()
 
-				rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-				mock.ExpectQuery(regexp.QuoteMeta(selectTransactionTypes)).
-					WillReturnRows(rows)
-				rows = willReturnRows(transactionResultColumns, dbTransactionResults)
-				mock.ExpectQuery(regexp.QuoteMeta(selectTransactionResults)).
-					WillReturnRows(rows)
+			rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
+			mock.ExpectQuery(regexp.QuoteMeta(selectTransactionTypes)).
+				WillReturnRows(rows)
+			rows = willReturnRows(transactionResultColumns, dbTransactionResults)
+			mock.ExpectQuery(regexp.QuoteMeta(selectTransactionResults)).
+				WillReturnRows(rows)
 
-				// when
-				result, err := tr.constructOperations(tt.cryptoTransfers, tt.nonFeeTransfers, mapTransactions)
+			// when
+			result, err := tr.constructOperations(tt.cryptoTransfers, tt.nonFeeTransfers, mapTransactions)
 
-				// then
-				assert.NoError(t, mock.ExpectationsWereMet())
-				assert.Nil(t, result)
-				assert.NotNil(t, err)
-			},
-		)
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, result)
+			assert.NotNil(t, err)
+		})
 	}
 }
 

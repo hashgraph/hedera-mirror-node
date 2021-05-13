@@ -122,10 +122,7 @@ func TestShouldFailReturnEntriesDueToInvalidDbData(t *testing.T) {
 	}
 
 	mock.ExpectQuery(latestAddressBookEntries).
-		WillReturnRows(
-			sqlmock.NewRows(columns).
-				AddRow(mocks.GetFieldsValuesAsDriverValue(invalidData)...),
-		)
+		WillReturnRows(sqlmock.NewRows(columns).AddRow(mocks.GetFieldsValuesAsDriverValue(invalidData)...))
 
 	// when
 	result, err := aber.Entries()

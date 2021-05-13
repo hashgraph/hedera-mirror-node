@@ -67,9 +67,9 @@ func (n *NetworkAPIService) NetworkOptions(
 	}
 
 	operationStatuses := make([]*types.OperationStatus, 0, len(results))
-	for value, description := range results {
+	for value, name := range results {
 		operationStatuses = append(operationStatuses, &types.OperationStatus{
-			Status:     description,
+			Status:     name,
 			Successful: transaction.IsTransactionResultSuccessful(value),
 		})
 	}
