@@ -19,7 +19,7 @@ create table if not exists address_book_service_endpoint
     consensus_timestamp bigint      not null,
     ip_address_v4       varchar(15) not null,
     node_id             bigint      not null,
-    port                integer     not null
+    port                integer     default -1 not null
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
@@ -31,7 +31,7 @@ alter table address_book_service_endpoint
 insert into address_book_service_endpoint (consensus_timestamp, ip_address_v4, port, node_id)
 select consensus_timestamp,
        ip,
-       port,
+       case when port is null then -1 else port end,
        node_id
 from address_book_entry
 where node_id is not null
