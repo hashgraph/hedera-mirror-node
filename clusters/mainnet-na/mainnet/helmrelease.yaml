@@ -47,4 +47,6 @@ spec:
         slaveCount: 0
       sentinel:
         enabled: true
+    timescaledb:
+      enabled: false
 
