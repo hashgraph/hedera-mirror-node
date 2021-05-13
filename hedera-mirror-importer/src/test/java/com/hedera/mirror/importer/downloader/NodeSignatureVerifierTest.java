@@ -160,11 +160,11 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Requires at least 0.333 of signature files to reach consensus"));
+        assertTrue(e.getMessage().contains("Insufficient downloaded signature file count, requires at least 0.333"));
     }
 
     @Test
-    void testNoConsensusRequired() throws GeneralSecurityException {
+    void testNoConsensusRequiredWithVerifiedSignatureFiles() throws GeneralSecurityException {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
@@ -181,12 +181,51 @@ class NodeSignatureVerifierTest {
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);
 
+        FileStreamSignature fileStreamSignatureNode = buildFileStreamSignature(fileHash, fileHashSignature,
+                null, null);
+
         // only 1 node node necessary
-        nodeSignatureVerifier.verify(List.of());
+        nodeSignatureVerifier.verify(List.of(fileStreamSignatureNode));
+    }
+
+    @Test
+    void testNoConsensusRequiredWithNoVerifiedSignatureFiles() throws GeneralSecurityException {
+        Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.6", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.7", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.8", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.9", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
+
+        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0f);
+
+        Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
+                .verify(List.of()));
+        assertTrue(e.getMessage().contains("Signature verification failed for file"));
     }
 
     @Test
     void testVerifiedWithOneThirdConsensus() throws GeneralSecurityException {
+        Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
+        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+
+        byte[] fileHash = TestUtils.generateRandomByteArray(48);
+        byte[] fileHashSignature = signHash(fileHash);
+
+        nodeSignatureVerifier
+                .verify(Arrays.asList(buildFileStreamSignature(fileHash, fileHashSignature,
+                        null, null)));
+    }
+
+    @Test
+    void testVerifiedWithOneThirdConsensusWithMissingSignatures() throws GeneralSecurityException {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
@@ -205,10 +244,10 @@ class NodeSignatureVerifierTest {
         fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityTypeEnum.ACCOUNT.getId()));
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature(fileHash, null,
                 null, null);
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityTypeEnum.ACCOUNT.getId()));
+        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityTypeEnum.ACCOUNT.getId()));
 
         nodeSignatureVerifier
-                .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode5));
+                .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
     }
 
     @Test

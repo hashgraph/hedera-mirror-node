@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
@@ -54,9 +55,7 @@ public class NodeSignatureVerifier {
 
     // Metrics
     private final MeterRegistry meterRegistry;
-    private final Map<EntityId, Counter> metricMap = new ConcurrentHashMap<>();
-    private final Counter.Builder missingNodeSignatureFileMetric;
-    private final Counter.Builder signatureVerificationMetric;
+    private final Map<EntityId, Counter> nodeSignatureStatusMetricMap = new ConcurrentHashMap<>();
 
     public NodeSignatureVerifier(AddressBookService addressBookService,
                                  CommonDownloaderProperties commonDownloaderProperties,
@@ -101,8 +100,9 @@ public class NodeSignatureVerifier {
         long nodeCount = nodeAccountIDPubKeyMap.size();
         if (!canReachConsensus(sigFileCount, nodeCount)) {
             throw new SignatureVerificationException(String.format(
-                    "Requires at least %s of signature files to reach consensus, got %d out of %d for file %s: %s",
-                    String.format("%.03f", commonDownloaderProperties.getConsensusRatio()),
+                    "Insufficient downloaded signature file count, requires at least %.03f to reach consensus, got %d" +
+                            " out of %d for file %s: %s",
+                    commonDownloaderProperties.getConsensusRatio(),
                     sigFileCount,
                     nodeCount,
                     filename,
@@ -132,7 +132,7 @@ public class NodeSignatureVerifier {
             log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
                     statusMap(signatures, nodeAccountIDPubKeyMap));
             return;
-        } else if (commonDownloaderProperties.getConsensusRatio() == 0) {
+        } else if (commonDownloaderProperties.getConsensusRatio() == 0 && signatureHashMap.size() > 0) {
             log.debug("Signature file {} does not require consensus, skipping verification", filename);
             return;
         }
@@ -194,35 +194,36 @@ public class NodeSignatureVerifier {
         Set<EntityId> seenNodes = new HashSet<>();
         signatures.forEach(signature -> {
             seenNodes.add(signature.getNodeAccountId());
-            EntityId nodeAccountId = signature.getNodeAccountId();
-
-            metricMap.computeIfAbsent(nodeAccountId, n -> signatureVerificationMetric
-                    .tag("nodeAccount", nodeAccountId.getEntityNum().toString())
-                    .tag("realm", nodeAccountId.getRealmNum().toString())
-                    .tag("shard", nodeAccountId.getShardNum().toString())
-                    .tag("status", signature.getStatus().toString())
-                    .tag("type", signature.getStreamType().toString())
-                    .register(meterRegistry))
-                    .increment();
         });
 
         Set<EntityId> missingNodes = new TreeSet<>(Sets.difference(
                 nodeAccountIDPubKeyMap.keySet().stream().map(x -> EntityId.of(x, EntityTypeEnum.ACCOUNT))
                         .collect(Collectors.toSet()),
                 seenNodes));
-        statusMap.put("MISSING", missingNodes);
-        statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
+        statusMap.put(SignatureStatus.NOT_FOUND.toString(), missingNodes);
 
-        String streamType = signatures.stream().map(FileStreamSignature::getStreamType).findFirst().toString();
-        missingNodes.forEach(nodeAccountId -> metricMap
-                .computeIfAbsent(nodeAccountId, n -> missingNodeSignatureFileMetric
-                        .tag("nodeAccount", n.getEntityNum().toString())
-                        .tag("realm", nodeAccountId.getRealmNum().toString())
-                        .tag("shard", nodeAccountId.getShardNum().toString())
-                        .tag("type", streamType)
-                        .register(meterRegistry))
-                .increment());
+        String streamType = CollectionUtils.isEmpty(signatures) ? "unknown" :
+                signatures.stream().map(FileStreamSignature::getStreamType).findFirst().toString();
+        for (Map.Entry<String, Collection<EntityId>> entry : statusMap.entrySet()) {
+            entry.getValue().forEach(nodeAccountId -> {
+                Counter counter = nodeSignatureStatusMetricMap.computeIfAbsent(
+                        nodeAccountId,
+                        n -> newStatusMetric(nodeAccountId, streamType, entry.getKey()));
+                counter.increment();
+            });
+        }
 
         return statusMap;
+    }
+
+    private Counter newStatusMetric(EntityId entityId, String streamType, String status) {
+        return Counter.builder("hedera.mirror.download.signature.verification")
+                .description("The number of signatures verified from a particular node")
+                .tag("nodeAccount", entityId.getEntityNum().toString())
+                .tag("realm", entityId.getRealmNum().toString())
+                .tag("shard", entityId.getShardNum().toString())
+                .tag("type", streamType)
+                .tag("status", status)
+                .register(meterRegistry);
     }
 }

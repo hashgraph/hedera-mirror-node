@@ -249,7 +249,7 @@ Alerts: Low-Priority PagerDuty Alert during business hours only Response: Requir
 | `Missing signature for file`                                                                | LOW              |                                 |
 | `Error saving file in database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Failed downloading`                                                                        | NONE             | HIGH (if 30 entries in 1 min)   |
-| `File could not be verified by at least 1/3 of nodes | NONE | HIGH (if 30 entries in 1 min) |
+| `Insufficient downloaded signature file count, requires at least`                           | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Signature verification failed`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Unable to connect to database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Unable to fetch entity types`                                                              | NONE             | HIGH (if 30 entries in 1 min)   |
