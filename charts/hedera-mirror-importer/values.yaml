@@ -162,13 +162,13 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitRecordStreamFallenBehindAndNoTransactionsWhenParseAndConsensusErrors:
+    InhibitRecordStreamFallenBehindAndNoTransactionsWhenParseErrors:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
               regex: true
-              value: (ImporterParseErrors|ImporterNoConsensus)
+              value: (ImporterParseErrors)
             - name: type
               value: RECORD
           targetMatch:
