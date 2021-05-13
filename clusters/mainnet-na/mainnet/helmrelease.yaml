@@ -43,5 +43,8 @@ spec:
     postgresql:
       enabled: false
     redis:
-      enabled: false
+      cluster:
+        slaveCount: 0
+      sentinel:
+        enabled: true
 
