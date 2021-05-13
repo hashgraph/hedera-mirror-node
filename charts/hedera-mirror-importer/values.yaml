@@ -12,22 +12,6 @@ alertmanager:
   inhibitRules:
     enabled: false
 
-    InhibitBalanceStreamAlertsWhenCloudErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-            - name: type
-              value: BALANCE
-          targetMatch:
-            - name: alertname
-              value: ImporterBalanceStreamFallenBehind
-          equal:
-            - namespace
-            - pod
-
     InhibitBalanceStreamAlertsWhenVerificationErrors:
       enabled: true
       matches:
@@ -86,7 +70,7 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitConsensusAlertsWhenCloudErrors:
+    InhibitStreamAlertsWhenCloudErrors:
       enabled: true
       matches:
         - sourceMatch:
@@ -95,7 +79,8 @@ alertmanager:
               value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
           targetMatch:
             - name: alertname
-              value: ImporterNoConsensus
+              regex: true
+              value: (ImporterNoConsensus|ImporterBalanceStreamFallenBehind|ImporterRecordStreamFallenBehind|ImporterNoTransactions)
           equal:
             - type
             - namespace
@@ -125,23 +110,6 @@ alertmanager:
           targetMatch:
             - name: alertname
               value: ImporterLog4j2Errors
-          equal:
-            - namespace
-            - pod
-
-    InhibitRecordStreamAlertsWhenCloudErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-            - name: type
-              value: RECORD
-          targetMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterRecordStreamFallenBehind, ImporterNoTransactions)
           equal:
             - namespace
             - pod
@@ -296,6 +264,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      type: BALANCE
 
   ImporterBalanceStreamFallenBehind:
     annotations:
@@ -307,6 +276,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      type: BALANCE
 
   ImporterCloudStorageErrors:
     annotations:
@@ -428,6 +398,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      type: RECORD
 
   ImporterParseErrors:
     annotations:
@@ -461,6 +432,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      type: RECORD
 
   ImporterRecordStreamFallenBehind:
     annotations:
@@ -472,6 +444,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      type: RECORD
 
   ImporterStreamCloseInterval:
     annotations:
@@ -483,6 +456,7 @@ prometheusRules:
     labels:
       severity: warning
       application: hedera-mirror-importer
+      type: RECORD
 
 securityContext:
   capabilities:
