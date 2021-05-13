@@ -129,19 +129,6 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitNoTransactionsWhenStreamCloseInterval:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: ImporterStreamCloseInterval
-          targetMatch:
-            - name: alertname
-              value: ImporterNoTransactions
-          equal:
-            - namespace
-            - pod
-
     InhibitRecordStreamAlertsWhenCloudErrors:
       enabled: true
       matches:
