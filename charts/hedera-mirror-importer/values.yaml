@@ -179,20 +179,6 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitRecordStreamFallenBehindWhenParseLatency:
-      enabled: true
-      matches:
-        - sourceMatch:
-          - name: alertname
-            value: ImporterRecordeParseLatency
-          targetMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
-          equal:
-            - namespace
-            - pod
-
     InhibitVerificationErrorsWhenNoConsensus:
       enabled: true
       matches:
