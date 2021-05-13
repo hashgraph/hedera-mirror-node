@@ -111,6 +111,11 @@ public class NodeSignatureVerifier {
             }
         }
 
+        if (commonDownloaderProperties.getConsensusRatio() == 0 && signatureHashMap.size() > 0) {
+            log.debug("Signature file {} does not require consensus, skipping consensus check", filename);
+            return;
+        }
+
         for (String key : signatureHashMap.keySet()) {
             Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
 
@@ -126,9 +131,6 @@ public class NodeSignatureVerifier {
         } else if (consensusCount > 0) {
             log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
                     statusMap(signatures, nodeAccountIDPubKeyMap));
-            return;
-        } else if (commonDownloaderProperties.getConsensusRatio() == 0 && signatureHashMap.size() > 0) {
-            log.debug("Signature file {} does not require consensus, skipping verification", filename);
             return;
         }
 
@@ -187,9 +189,7 @@ public class NodeSignatureVerifier {
                                 .toCollection(TreeSet::new))));
 
         Set<EntityId> seenNodes = new HashSet<>();
-        signatures.forEach(signature -> {
-            seenNodes.add(signature.getNodeAccountId());
-        });
+        signatures.forEach(signature -> seenNodes.add(signature.getNodeAccountId()));
 
         Set<EntityId> missingNodes = new TreeSet<>(Sets.difference(
                 nodeAccountIDPubKeyMap.keySet().stream().map(x -> EntityId.of(x, EntityTypeEnum.ACCOUNT))

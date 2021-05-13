@@ -99,7 +99,7 @@ Following is list of error messages and how to begin handling issues when they a
 
   - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next morning).
 
-- `File could not be verified by at least 1/3 of nodes`
+- `Insufficient downloaded signature file count, requires at least`
   This can happen if
 
   1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
