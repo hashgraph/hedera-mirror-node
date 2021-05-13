@@ -320,13 +320,13 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                         .build(), "127.0.0.1", null);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(1) + nodeAccountOffset))
                 .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(1)))
-                .build(), "127.0.0.2", null);
+                .build(), "127.0.0.2", 0);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(2) + nodeAccountOffset))
                 .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(2)))
                 .build(), "127.0.0.3", null);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(3) + nodeAccountOffset))
                 .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(3)))
-                .build(), "127.0.0.4", null);
+                .build(), "127.0.0.4", 50211);
 
         runMigration();
 
@@ -358,7 +358,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
 
         serviceListAssert.extracting(AddressBookServiceEndpoint::getId)
                 .extracting(AddressBookServiceEndpoint.Id::getPort)
-                .containsExactlyInAnyOrder(0, 0, 0, 0);
+                .containsExactlyInAnyOrder(-1, 0, -1, 50211);
     }
 
     private List<AddressBookEntry> getAndSaveAddressBookEntries(boolean deprecatedIp, long consensusTimestamp,

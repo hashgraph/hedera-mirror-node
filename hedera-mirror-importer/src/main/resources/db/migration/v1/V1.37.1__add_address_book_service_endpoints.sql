@@ -31,7 +31,7 @@ alter table address_book_service_endpoint
 insert into address_book_service_endpoint (consensus_timestamp, ip_address_v4, port, node_id)
 select consensus_timestamp,
        ip,
-       case when port is null then 0 else port end,
+       case when port is null then -1 else port end,
        node_id
 from address_book_entry
 where node_id is not null
