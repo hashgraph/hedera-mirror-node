@@ -265,7 +265,7 @@ Need information on file format. Effectively envision:
 
 #### List Tokens
 
-- Update `/api/v1/tokens` response to show NFTs by adding the `token_type` field.
+- Update `/api/v1/tokens` response to show NFTs by adding the `type` field.
 
 ```json
 {
@@ -273,7 +273,7 @@ Need information on file format. Effectively envision:
     {
       "token_id": "0.0.1000",
       "symbol": "F",
-      "token_type": "FUNGIBLE",
+      "type": "FUNGIBLE",
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -282,7 +282,7 @@ Need information on file format. Effectively envision:
     {
       "token_id": "0.0.10001",
       "symbol": "N",
-      "token_type": "NON_FUNGIBLE",
+      "type": "NON_FUNGIBLE",
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -300,7 +300,7 @@ Add optional filters
 
 #### Get Token by id
 
-- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `token_type` field.
+- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `type` field.
 
 ```json
 {
@@ -330,7 +330,7 @@ Add optional filters
   },
   "symbol": "FOOCOIN",
   "token_id": "0.15.3",
-  "token_type": "NON_FUNGIBLE",
+  "type": "NON_FUNGIBLE",
   "total_supply": "2",
   "treasury_account": "0.15.10",
   "wipe_key": {
