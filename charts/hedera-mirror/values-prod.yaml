@@ -36,12 +36,13 @@ postgresql:
     replicaCount: 2
 
 redis:
-  cluster:
-    slaveCount: 3
   metrics:
     enabled: true
-  slave:
+    sentinel:
+      enabled: true
+  replica:
     priorityClassName: critical
+    replicaCount: 3
 
 rest:
   ingress:
