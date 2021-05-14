@@ -16,8 +16,7 @@ alertmanager:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertType
-              regex: true
+            - name: area
               value: resource
           targetMatch:
             - name: application
@@ -62,8 +61,6 @@ alertmanager:
             - name: area
               regex: true
               value: (parser|downloader)
-            - name: type
-              value: BALANCE
           targetMatch:
             - name: metric
               value: e2eLatency
@@ -78,7 +75,7 @@ alertmanager:
       enabled: true
       matches:
         - sourceMatch:
-            - name: name
+            - name: area
               value: cloud
           targetMatch:
             - name: metric
