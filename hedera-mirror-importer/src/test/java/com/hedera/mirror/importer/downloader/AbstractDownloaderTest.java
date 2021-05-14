@@ -200,7 +200,10 @@ public abstract class AbstractDownloaderTest {
 
         signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
                 new SignatureFileReaderV5());
-        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService);
+        nodeSignatureVerifier = new NodeSignatureVerifier(
+                addressBookService,
+                downloaderProperties.getCommon(),
+                meterRegistry);
         downloader = getDownloader();
         streamType = downloaderProperties.getStreamType();
 
