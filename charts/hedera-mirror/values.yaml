@@ -92,16 +92,7 @@ postgresql:
   persistence:
     size: 500Gi
   pgpool:
-    adminPassword: password
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/component: pgpool
+    adminPassword: ""  # Randomly generated if left blank
     extraEnvVars:
       - name: PGPOOL_POSTGRES_CUSTOM_PASSWORDS
         valueFrom:
@@ -113,6 +104,7 @@ postgresql:
           secretKeyRef:
             name: mirror-passwords
             key: PGPOOL_POSTGRES_CUSTOM_USERS
+    podAntiAffinityPreset: soft
     podLabels:
       role: db
     pdb:
@@ -128,21 +120,13 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.1.0-debian-10-r74
+    tag: 13.2.0-debian-10-r83
   postgresql:
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/component: postgresql
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
     initdbScriptsSecret: db-init
     password: ""  # Randomly generated if left blank
+    podAntiAffinityPreset: soft
     replicaCount: 1
     repmgrPassword: ""  # Randomly generated if left blank
     resources:
@@ -157,13 +141,12 @@ postgresql:
     enabled: true
 
 redis:
-  cluster:
-    slaveCount: 1
+  auth:
+    existingSecret: mirror-redis
+    existingSecretPasswordKey: SPRING_REDIS_PASSWORD
+    password: ""  # Randomly generated if left blank
   enabled: true
-  existingSecret: mirror-redis
-  existingSecretPasswordKey: SPRING_REDIS_PASSWORD
   host: "{{ .Release.Name }}-redis"
-  password: ""  # Randomly generated if left blank
   metrics:
     resources:
       limits:
@@ -174,11 +157,23 @@ redis:
         memory: 25Mi
     serviceMonitor:
       enabled: true
-  podDisruptionBudget:
-    enabled: true
-  securityContext:
-    runAsGroup: 1001
-    runAsUser: 1001
+  pdb:
+    create: true
+  rbac:
+    create: true
+  replica:
+    podAntiAffinityPreset: soft
+    podSecurityContext:
+      runAsGroup: 1001
+      runAsUser: 1001
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 1500m
+        memory: 1000Mi
+      requests:
+        cpu: 250m
+        memory: 500Mi
   sentinel:
     enabled: true
     masterSet: mirror
@@ -191,25 +186,6 @@ redis:
         memory: 25Mi
   serviceAccount:
     create: true
-  slave:  # Both master and slave are configured via slave property when sentinel is enabled
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  app: redis
-    resources:
-      limits:
-        cpu: 1500m
-        memory: 1000Mi
-      requests:
-        cpu: 250m
-        memory: 500Mi
-    statefulset:
-      updateStrategy: RollingUpdate
 
 rest:
   db:
@@ -242,7 +218,6 @@ timescaledb:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    repository: timescale/timescaledb-ha
     tag: pg13-ts2.2-latest
   loadBalancer:
     enabled: false

@@ -1,69 +1,49 @@
 -- Change the values below if you are not installing via Docker
 
-\set db_name 'mirror_node'
-\set db_create 'create database mirror_node'
-\set db_user 'mirror_node'
-\set db_password 'mirror_node_pass'
-\set db_owner 'mirror_node'
-\set grpc_user 'mirror_grpc'
-\set grpc_password 'mirror_grpc_pass'
-\set rosetta_user 'mirror_rosetta'
-\set rosetta_password 'mirror_rosetta_pass'
+\set dbHost '127.0.0.1'
+\set dbPort '5432'
+\set dbName 'mirror_node'
+\set dbSchema 'public'
+\set grpcPassword 'mirror_grpc_pass'
+\set grpcUsername 'mirror_grpc'
+\set importerPassword 'mirror_importer_pass'
+\set importerUsername 'mirror_importer'
+\set ownerPassword 'mirror_node_pass'
+\set ownerUsername 'mirror_node'
+\set rosettaPassword 'mirror_rosetta_pass'
+\set rosettaUsername 'mirror_rosetta'
 
-create function init_create_user(user_name text, user_pass text) returns void as
-$$
-begin
-    if not exists(select from pg_catalog.pg_roles where rolname = user_name) then
-        execute format(
-                'create user %I with
-                    createrole
-                    password %L'
-            , user_name
-            , user_pass
-            );
-        raise notice 'Created user "%" with create role', user_name;
-    else
-        raise notice 'User "%" already exists, not creating it', user_name;
-    end if;
-end
-$$ language plpgsql;
+create user :ownerUsername with createrole login password :'ownerPassword';
+grant :ownerUsername to postgres;
+create database :dbName with owner :ownerUsername;
+create extension if not exists pg_stat_statements;
 
-create function init_user(user_name text, user_pass text) returns void as
-$$
-begin
-    if not exists(select from pg_catalog.pg_roles where rolname = user_name) then
-        execute format(
-                'create user %I with
-                    login
-                    password %L'
-            , user_name
-            , user_pass
-            );
-        raise notice 'Created user "%"', user_name;
-    else
-        raise notice 'User "%" already exists, not creating it', user_name;
-    end if;
-end
-$$ language plpgsql;
+-- Create roles
+create role readonly;
+create role readwrite in role readonly;
 
-select :'db_create'
-where not exists(select from pg_database where datname = :'db_name')
-\gexec
+-- Create users
+create user :grpcUsername with login password :'grpcPassword' in role readonly;
+create user :importerUsername with login password :'importerPassword' in role readwrite;
+create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
 
-select init_create_user(:'db_user', :'db_password');
-select init_user(:'grpc_user', :'grpc_password');
-select init_user(:'rosetta_user', :'rosetta_password');
+-- Create schema
+\connect postgresql://:ownerUsername::ownerPassword@:dbHost::dbPort/:dbName
+create schema if not exists :dbSchema authorization :ownerUsername;
+revoke all privileges on schema :dbSchema from public;
+grant usage on schema :dbSchema to public;
+grant create on schema :dbSchema to :ownerUsername;
 
-grant connect on database :db_name to :grpc_user;
+-- Grant readonly privileges
+grant connect on database :dbName to readonly;
+grant select on all tables in schema :dbSchema to readonly;
+grant select on all sequences in schema :dbSchema to readonly;
+grant usage on schema :dbSchema to readonly;
+alter default privileges in schema :dbSchema grant select on tables to readonly;
+alter default privileges in schema :dbSchema grant select on sequences to readonly;
 
-grant connect on database :db_name to :rosetta_user;
-
-\c :db_name
-
-alter default privileges in schema public grant select on tables to :grpc_user;
-
-grant select on all tables in schema public to :grpc_user;
-
-alter default privileges in schema public grant select on tables to :rosetta_user;
-
-grant select on all tables in schema public to :rosetta_user;
+-- Grant readwrite privileges
+grant insert, update on all tables in schema :dbSchema to readwrite;
+grant usage on all sequences in schema :dbSchema to readwrite;
+alter default privileges in schema :dbSchema grant insert, update on tables to readwrite;
+alter default privileges in schema :dbSchema grant usage on sequences to readwrite;
