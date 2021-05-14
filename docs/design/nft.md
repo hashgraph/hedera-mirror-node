@@ -346,6 +346,8 @@ Add optional filters
 #### List NFTs
 
 - GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
+  - NFTs should only display if the token have not been deleted (`token.delted` == false). Otherwise, display empty list
+  - This endpoint should return a 404 if the token is not of type `NON-FUNGIBLE`
 
 ```json
 {
