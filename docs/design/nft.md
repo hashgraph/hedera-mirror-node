@@ -21,7 +21,8 @@ the mirror node can be updated to add support for NFTs.
 
 - Update `t_transaction_results` with new response codes
 
-- Add to `token` table fields `token_type` (enum, values FUNGIBLE and NON_FUNGIBLE) and `max_supply` (long)
+- Add to `token` table fields `token_type` (enum, values FUNGIBLE and NON_FUNGIBLE) and `max_supply` (long),
+  respectively.
   - Default values will be `true` and max long.
 
 - Add a new `nft` table
@@ -54,20 +55,6 @@ create table if not exists nft_transfer
 ```
 
 - Add a unique constraint to `nft_transfer` for `consensus_timestamp` and `nft_created_consensus_timestamp`, desc
-
-- Add a new `nft_balance` table
-
-```sql
-create table if not exists nft_balance
-(
-  account_id                        bigint  not null,
-  consensus_timestamp               bigint  not null,
-  nft_created_consensus_timestamp   bigint  not null
-);
-```
-
-- Add a unique constraint to `nft_balance` for `account_id`,`consensus_timestamp`,
-  and ``nft_created_consensus_timestamp``, desc
 
 ### Importer
 
@@ -309,7 +296,7 @@ Need information on file format. Effectively envision:
 Add optional filters
 
 - `/api/v1/tokens?type=fungible` - All fungible tokens (other values are `non_fungible` and `both` (default))
-- `/api/v1/tokens?serial.number=1001` - All tokens that contain a serial number `1001` (implied that `type` will
+- `/api/v1/tokens?serialNumber=1001` - All tokens that contain a serial number `1001` (implied that `type` will
   be `nft`)
 
 #### Get Token by id
