@@ -58,8 +58,8 @@ alertmanager:
             - name: alertname
               value: MonitorPublishStopped
           targetMatch:
-            - name: area
-              value: publisher
+            - name: mode
+              value: publish
           equal:
             - namespace
             - pod
@@ -182,7 +182,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
-      area: publisher
+      mode: publish
 
   MonitorPublishLatency:
     annotations:
@@ -194,7 +194,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
-      area: publisher
+      mode: publish
 
   MonitorPublishStopped:
     annotations:
@@ -206,7 +206,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
-      area: publisher
+      mode: publish
 
   MonitorPublishToHandleLatency:
     annotations:
@@ -218,7 +218,7 @@ prometheusRules:
     labels:
       severity: warning
       application: hedera-mirror-monitor
-      area: publisher
+      mode: publish
 
   MonitorSubscribeLatency:
     annotations:

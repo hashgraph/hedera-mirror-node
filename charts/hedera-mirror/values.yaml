@@ -5,9 +5,8 @@ alertmanager:
       enabled: true
       matches:
         - sourceMatch:
-            - name: area
-              regex: true
-              value: (cloud|downloader|parser)
+            - name: application
+              value: hedera-mirror-importer
             - name: type
               value: RECORD
           targetMatch:

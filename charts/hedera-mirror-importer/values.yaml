@@ -39,48 +39,46 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitLogAlertsWhenErrors:
+    InhibitFallenBehindOrNoTransactionsAlertsWhenParseOrVerificationErrors:
       enabled: true
       matches:
         - sourceMatch:
-            - name: metric
-              value: error
-          targetMatch:
-            - name: area
-              value: log
-          equal:
-            - namespace
-            - pod
-
-    InhibitParserLatencyAlertsWhenParserOrDownloaderErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: metric
-              value: error
-            - name: area
+            - name: alertname
               regex: true
-              value: (parser|downloader)
+              value: (ImporterFileVerificationErrors|ImporterParseErrors)
           targetMatch:
-            - name: metric
-              value: e2eLatency
-            - name: area
-              value: parser
+            - name: alertname
+              regex: true
+              value: (Importer[a-zA-Z]+FallenBehind|ImporterNoTransactions)
           equal:
             - namespace
             - pod
             - type
 
-    InhibitStreamConsensusAndFallenBehindAlertsWhenCloudErrors:
+    InhibitLogAlertsWhenErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: Importer[a-zA-Z]+Errors
+          targetMatch:
+            - name: alertname
+              value: ImporterLog4j2Errors
+          equal:
+            - namespace
+            - pod
+
+    InhibitStreamAlertsWhenCloudErrors:
       enabled: true
       matches:
         - sourceMatch:
             - name: area
               value: cloud
           targetMatch:
-            - name: metric
+            - name: alertname
               regex: true
-              value: (e2eLatency|consensus)
+              value: (ImporterNo[a-zA-Z]+|Importer[a-zA-Z]+FallenBehind)
           equal:
             - type
             - namespace
@@ -205,7 +203,6 @@ prometheusRules:
       application: hedera-mirror-importer
       type: BALANCE
       area: parser
-      metric: parseLatency
 
   ImporterBalanceStreamFallenBehind:
     annotations:
@@ -219,7 +216,6 @@ prometheusRules:
       application: hedera-mirror-importer
       type: BALANCE
       area: parser
-      metric: e2eLatency
 
   ImporterCloudStorageErrors:
     annotations:
@@ -256,7 +252,6 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       area: downloader
-      metric: error
 
   ImporterHighCPU:
     annotations:
@@ -329,7 +324,6 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       area: downloader
-      metric: consensus
 
   ImporterNoPodsReady:
     annotations:
@@ -355,7 +349,6 @@ prometheusRules:
       application: hedera-mirror-importer
       type: RECORD
       area: parser
-      metric: e2eLatency
 
   ImporterParseErrors:
     annotations:
@@ -368,7 +361,6 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       area: parser
-      metric: error
 
   ImporterPublishLatency:
     annotations:
@@ -381,7 +373,6 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       area: publisher
-      metric: publishLatency
 
   ImporterRecordParseLatency:
     annotations:
@@ -395,7 +386,6 @@ prometheusRules:
       application: hedera-mirror-importer
       type: RECORD
       area: parser
-      metric: parseLatency
 
   ImporterRecordStreamFallenBehind:
     annotations:
@@ -409,7 +399,6 @@ prometheusRules:
       application: hedera-mirror-importer
       type: RECORD
       area: parser
-      metric: e2eLatency
 
   ImporterStreamCloseInterval:
     annotations:
@@ -423,7 +412,6 @@ prometheusRules:
       application: hedera-mirror-importer
       type: RECORD
       area: downloader
-      metric: closeInterval
 
 securityContext:
   capabilities:
