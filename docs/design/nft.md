@@ -21,7 +21,7 @@ the mirror node can be updated to add support for NFTs.
 
 - Update `t_transaction_results` with new response codes
 
-- Add to `token` table fields `token_type` (enum, values FUNGIBLE and NON_FUNGIBLE) and `max_supply` (long),
+- Add to `token` table fields `token_type` (enum, values `FUNGIBLE` and `NON_FUNGIBLE`) and `max_supply` (bigint),
   respectively.
   - Default values will be `true` and max long.
 
@@ -405,7 +405,6 @@ Add optional filters
 
 Optional Filters
 
-- `/api/v1/nfts?deleted=false` - All serial numbers that have not been deleted.
 - `/api/v1/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
 - `/api/v1/nfts?order=desc` - All NFTs in descending order of `serial_number`
 - `/api/v1/nfts?serialNumber=gt:0.0.1001` - All serial numbers in range
