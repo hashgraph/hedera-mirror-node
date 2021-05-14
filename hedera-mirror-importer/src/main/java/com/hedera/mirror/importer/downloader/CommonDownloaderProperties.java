@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -45,6 +46,10 @@ public class CommonDownloaderProperties {
     public String getBucketName() {
         return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
     }
+
+    @Max(1)
+    @Min(0)
+    private float consensusRatio = 0.333f;
 
     @NotNull
     private CloudProvider cloudProvider = CloudProvider.S3;

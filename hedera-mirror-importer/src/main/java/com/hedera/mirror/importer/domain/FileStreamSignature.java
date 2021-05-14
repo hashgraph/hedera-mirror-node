@@ -45,6 +45,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
     private byte[] metadataHash;
     private byte[] metadataHashSignature;
+    private StreamType streamType;
 
     @Override
     public int compareTo(FileStreamSignature other) {
@@ -64,9 +65,10 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     }
 
     public enum SignatureStatus {
-        DOWNLOADED,        // Signature has been downloaded and parsed but not verified
-        VERIFIED,          // Signature has been verified against the node's public key
-        CONSENSUS_REACHED  // At least 1/3 of all nodes have been verified
+        DOWNLOADED,         // Signature has been downloaded and parsed but not verified
+        VERIFIED,           // Signature has been verified against the node's public key
+        CONSENSUS_REACHED,  // Signature verification consensus reached by a node count greater than the consensusRatio
+        NOT_FOUND,          // Signature for given node was not found for download
     }
 
     @Getter
