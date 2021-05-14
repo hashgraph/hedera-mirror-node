@@ -32,7 +32,7 @@ create table if not exists nft
   created_timestamp     bigint  primary key     not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
-  memo                  text    default ''      not null,
+  memo                  text    default ''      not null,+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   serial_number         bigint                  not null,
   token_id              bigint                  not null
 );
@@ -62,18 +62,6 @@ create table if not exists nft_transfer
 - Add new fields to `Token` domain object from schema changes
 - Add an `Nft` domain object with the same fields as the schema.
 - Add an `NftTransfer` domain object with the same fields as the schema.
-- Add an `NftBalance` domain object with the same fields as the schema.
-- Add `NftBalance` list to `AccountBalances` domain object
-
-#### Balance Parsing
-
-Need information on file format. Effectively envision:
-
-- Update `ProtoBalanceFileReader` to handle new NFT balance list
-  - If the NFT balance list is added to the CSV version (see [questions](#outstanding-questions-and-concerns)), add
-    support for new CSV `BalanceFileReader` based on new format
-  - Add `NftBalance` to the `AccountBalance` object as they are read.
-- Update `AccountBalanceFileParser` to persist the `NftBalance`
 
 #### Entity Listener
 
