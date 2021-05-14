@@ -447,13 +447,13 @@ Optional Filters
     supplier should only set `amount` for fungible tokens, and only `memo` for NFTs
     - Alternatively, the `tokenType` can be removed, and the supplier just sets whichever of `memo` or `amount` is set,
       but this relies on users configuring things correctly.
-  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need a enum `tokenType` attribute, and it
+  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need an enum `tokenType` attribute, and it
     will need to set the `serialNumbers` list for NFTs (hardcoded based on the `initialSupply` value used in
     the `ExpressionConverter`)
     - The list could be configurable using the compound expression mentioned earlier if desired.
 
 - Add support for transfering NFTs in `CryptoTransferTransactionSupplier`.
-  - Add a new `tokenType` enun attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to use
+  - Add a new `tokenType` enum attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to use
     the `amount` attribute or the `serial numbers` list.
   - Because a serial number can only be transferred once out of a given account (unless it is transferred back), custom
     logic will be needed for performant NFT transfers.
@@ -478,7 +478,7 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 - Associate the token to an account
 - Transfer the serial number to the account.
 - Verify response codes and data from `/tokens`, `/tokens/{id}/nfts`,
-  `/tokens/{id}/nfts/{serialNumber}/transactions`, `/balances`, and `/transactions`,
+  `/tokens/{id}/nfts/{serialNumber}/transactions`, and `/transactions`,
 
 2. NFT Burn/Wipe/Delete flow
 
@@ -489,8 +489,19 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 - Wipe the serial number from the account.
 - Burn a serial number from the treasury account.
 - Delete the token
-- Verify response codes and data from `/tokens`, `/balances`, `/tokens/{id}/nfts`,
+- Verify response codes and data from `/tokens`, `/tokens/{id}/nfts`,
   `/tokens/{id}/nfts/{serialNumber}/transactions`, and `/transactions`
+
+3. Scheduled NFT transfer flow
+
+- Create a token with type `NON-FUNGIBLE`
+- Mint a serial number
+- Create an account with receiverSigRequired=true
+- Associate the token to an account
+- Create a schedule of CRYTOTRANSFER to transfer the serial number
+- Submit a ScheduleSign from the receiving account
+- Verify response codes and data from /tokens, /tokens/{id}/nfts, /tokens/{id}/nfts/{serialNumber}/transactions,
+  /schedules/{id}, and /transactions
 
 # Outstanding Questions and Concerns:
 
