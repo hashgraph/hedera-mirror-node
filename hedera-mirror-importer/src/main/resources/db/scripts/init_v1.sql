@@ -1,5 +1,7 @@
 -- Change the values below if you are not installing via Docker
 
+\set dbHost '127.0.0.1'
+\set dbPort '5432'
 \set dbName 'mirror_node'
 \set dbSchema 'public'
 \set grpcPassword 'mirror_grpc_pass'
@@ -8,8 +10,8 @@
 \set importerUsername 'mirror_importer'
 \set ownerPassword 'mirror_node_pass'
 \set ownerUsername 'mirror_node'
-\set rosettaUsername 'mirror_rosetta'
 \set rosettaPassword 'mirror_rosetta_pass'
+\set rosettaUsername 'mirror_rosetta'
 
 create user :ownerUsername with createrole login password :'ownerPassword';
 grant :ownerUsername to postgres;
@@ -26,7 +28,7 @@ create user :importerUsername with login password :'importerPassword' in role re
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
 
 -- Create schema
-\connect :dbName
+\connect postgresql://:ownerUsername::ownerPassword@:dbHost::dbPort/:dbName
 create schema if not exists :dbSchema authorization :ownerUsername;
 revoke all privileges on schema :dbSchema from public;
 grant usage on schema :dbSchema to public;
