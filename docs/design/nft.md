@@ -187,7 +187,7 @@ create table if not exists nft_transfer
 
 #### Get Balances
 
-- Update `/api/v1/balances` and `/api/v1/balances/{id}` response to add `nft_token_ids` list
+- Update `/api/v1/balances` response to add `nft_token_ids` list
   - `nft_token_ids` should only show token_ids where the token was not deleted, and the account has at least one nft
     belonging to that token that has not been deleted (token.deleted | nft.deleted == false)
 
