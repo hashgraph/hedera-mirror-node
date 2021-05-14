@@ -99,7 +99,7 @@ Following is list of error messages and how to begin handling issues when they a
 
   - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next morning).
 
-- `File could not be verified by at least 1/3 of nodes`
+- `Insufficient downloaded signature file count, requires at least`
   This can happen if
 
   1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
@@ -249,7 +249,7 @@ Alerts: Low-Priority PagerDuty Alert during business hours only Response: Requir
 | `Missing signature for file`                                                                | LOW              |                                 |
 | `Error saving file in database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Failed downloading`                                                                        | NONE             | HIGH (if 30 entries in 1 min)   |
-| `File could not be verified by at least 1/3 of nodes | NONE | HIGH (if 30 entries in 1 min) |
+| `Insufficient downloaded signature file count, requires at least`                           | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Signature verification failed`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Unable to connect to database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
 | `Unable to fetch entity types`                                                              | NONE             | HIGH (if 30 entries in 1 min)   |

@@ -29,7 +29,6 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.TreeMultimap;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.nio.file.Path;
@@ -99,7 +98,6 @@ public abstract class Downloader<T extends StreamFile> {
     private final MeterRegistry meterRegistry;
     private final Timer cloudStorageLatencyMetric;
     private final Timer downloadLatencyMetric;
-    private final Counter.Builder signatureVerificationMetric;
     private final Timer streamCloseMetric;
     private final Timer.Builder streamVerificationMetric;
 
@@ -137,10 +135,6 @@ public abstract class Downloader<T extends StreamFile> {
                         "and the time at which the file was downloaded and verified")
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
-
-        signatureVerificationMetric = Counter.builder("hedera.mirror.download.signature.verification")
-                .description("The number of signatures verified from a particular node")
-                .tag("type", streamType.toString());
 
         streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
                 .description("The difference between the consensus time of the last and first transaction in the " +
@@ -313,6 +307,7 @@ public abstract class Downloader<T extends StreamFile> {
         StreamFileData streamFileData = new StreamFileData(streamFilename, pendingDownload.getBytes());
         FileStreamSignature fileStreamSignature = signatureFileReader.read(streamFileData);
         fileStreamSignature.setNodeAccountId(nodeAccountId);
+        fileStreamSignature.setStreamType(streamType);
         return Optional.of(fileStreamSignature);
     }
 
@@ -395,16 +390,6 @@ public abstract class Downloader<T extends StreamFile> {
                     continue;
                 }
                 throw ex;
-            } finally {
-                for (FileStreamSignature signature : signatures) {
-                    EntityId nodeAccountId = signature.getNodeAccountId();
-                    signatureVerificationMetric.tag("nodeAccount", nodeAccountId.getEntityNum().toString())
-                            .tag("realm", nodeAccountId.getRealmNum().toString())
-                            .tag("shard", nodeAccountId.getShardNum().toString())
-                            .tag("status", signature.getStatus().toString())
-                            .register(meterRegistry)
-                            .increment();
-                }
             }
 
             for (FileStreamSignature signature : signatures) {
