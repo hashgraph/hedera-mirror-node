@@ -90,8 +90,8 @@ Need information on file format. Effectively envision:
   update `modifiedTimestamp` if the `serialNumbers` list is set.
 - `insertTokenDelete` must be added to mark the `NFTs` as deleted and update `modifiedTimestamp` if the `tokenType`
   field is NON_FUNGIBLE for the token.
-- `insertTokenWipe` must be must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deletedm
-  and update `modifiedTimestamp` if the `serialNumbers` list is set.
+- `insertTokenWipe` must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deleted and
+  update `modifiedTimestamp` if the `serialNumbers` list is set.
 
 ### REST API
 
