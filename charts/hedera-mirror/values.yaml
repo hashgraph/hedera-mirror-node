@@ -1,13 +1,29 @@
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitGrpcAndMonitorHighLatencyWhenImporterHighLatencyOrNoPods:
+    InhibitGrpcAndMonitorHighLatencyWhenImporterRecordFileIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              regex: true
+              value: (cloud|downloader|parser)
+            - name: type
+              value: RECORD
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (GrpcHighLatency|MonitorSubscribeLatency)
+          equal:
+            - namespace
+
+
+InhibitGrpcAndMonitorHighLatencyWhenImporterHighLatencyOrNoPods:
       enabled: true
       matches:
         - sourceMatch:
             - name: alertname
-              regex: true
-              value: (ImporterRecordStreamFallenBehind|ImporterCloudStorageLatency|ImporterRecordParseLatency|ImporterStreamCloseInterval|ImporterNoPodsReady)
+              value: ImporterNoPodsReady
           targetMatch:
             - name: alertname
               regex: true

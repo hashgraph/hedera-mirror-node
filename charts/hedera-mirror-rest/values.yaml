@@ -15,9 +15,8 @@ alertmanager:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (RestNoPodsReady|RestHighCPU)
+            - name: area
+              value: resource
           targetMatch:
             - name: application
               value: hedera-mirror-rest
@@ -127,6 +126,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-rest
+      area: resource
 
   RestNoPodsReady:
     annotations:
@@ -138,6 +138,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-rest
+      area: resource
 
   RestNoRequests:
     annotations:

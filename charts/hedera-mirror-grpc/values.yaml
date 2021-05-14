@@ -15,9 +15,8 @@ alertmanager:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (GrpcNoPodsReady|GrpcHighCPU|GrpcHighMemory|GrpcHighFileDescriptors|GrpcHighDBConnections)
+            - name: area
+              value: resource
           targetMatch:
             - name: application
               value: hedera-mirror-grpc
@@ -138,6 +137,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-grpc
+      area: resource
 
   GrpcHighDBConnections:
     annotations:
@@ -149,6 +149,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-grpc
+      area: resource
 
   GrpcHighFileDescriptors:
     annotations:
@@ -160,6 +161,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-grpc
+      area: resource
 
   GrpcHighLatency:
     annotations:
@@ -182,6 +184,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-grpc
+      area: resource
 
   GrpcLog4j2Errors:
     annotations:
@@ -204,6 +207,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-grpc
+      area: resource
 
   GrpcNoSubscribers:
     annotations:

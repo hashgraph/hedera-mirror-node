@@ -42,9 +42,8 @@ alertmanager:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (MonitorNoPodsReady|MonitorHighCPU|MonitorHighMemory|MonitorHighFileDescriptors|MonitorHighDBConnections)
+            - name: area
+              value: resource
           targetMatch:
             - name: application
               value: hedera-mirror-monitor
@@ -59,8 +58,8 @@ alertmanager:
             - name: alertname
               value: MonitorPublishStopped
           targetMatch:
-            - name: mode
-              value: publish
+            - name: area
+              value: publisher
           equal:
             - namespace
             - pod
@@ -136,6 +135,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
+      area: resource
 
   MonitorHighMemory:
     annotations:
@@ -147,6 +147,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
+      area: resource
 
   MonitorLog4j2Errors:
     annotations:
@@ -169,6 +170,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
+      area: resource
 
   MonitorPublishErrors:
     annotations:
@@ -180,7 +182,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
-      mode: publish
+      area: publisher
 
   MonitorPublishLatency:
     annotations:
@@ -192,7 +194,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
-      mode: publish
+      area: publisher
 
   MonitorPublishStopped:
     annotations:
@@ -204,7 +206,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-monitor
-      mode: publish
+      area: publisher
 
   MonitorPublishToHandleLatency:
     annotations:
@@ -216,7 +218,7 @@ prometheusRules:
     labels:
       severity: warning
       application: hedera-mirror-monitor
-      mode: publish
+      area: publisher
 
   MonitorSubscribeLatency:
     annotations:
