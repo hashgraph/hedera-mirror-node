@@ -343,30 +343,10 @@ Add optional filters
   "timestamp": "0.000002345",
   "balances": [
     {
-      "account": "0.15.10",
-      "nfts": [
-        {
-          "serial_number": 1002,
-          "memo": "This is a test NFT"
-        },
-        {
-          "serial_number": 1003,
-          "memo": "This is another test NFT"
-        }
-      ]
+      "account": "0.15.10"
     },
     {
-      "account": "0.15.9",
-      "nfts": [
-        {
-          "serial_number": 1004,
-          "memo": "This is a third test NFT"
-        },
-        {
-          "serial_number": 1005,
-          "memo": "This is a fourth test NFT"
-        }
-      ]
+      "account": "0.15.9"
     }
   ],
   "links": {
