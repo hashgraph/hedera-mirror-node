@@ -12,46 +12,16 @@ alertmanager:
   inhibitRules:
     enabled: false
 
-    InhibitBalanceStreamAlertsWhenVerificationErrors:
+    InhibitAllWhenPodIssues:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertname
-              value: ImporterFileVerificationErrors
-            - name: type
-              value: BALANCE
-          targetMatch:
-            - name: alertname
-              value: ImporterBalanceStreamFallenBehind
-          equal:
-            - namespace
-            - pod
-
-    InhibitBalanceStreamFallenBehindWhenParseErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
+            - name: alertType
               regex: true
-              value: (ImporterParseErrors)
-            - name: type
-              value: BALANCE
+              value: resource
           targetMatch:
-            - name: alertname
-              value: ImporterBalanceStreamFallenBehind
-          equal:
-            - namespace
-            - pod
-
-    InhibitBalanceStreamFallenBehindWhenParseLatency:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: ImporterBalanceParseLatency
-          targetMatch:
-            - name: alertname
-              value: ImporterBalanceStreamFallenBehind
+            - name: application
+              value: hedera-mirror-importer
           equal:
             - namespace
             - pod
@@ -70,80 +40,52 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitStreamAlertsWhenCloudErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterCloudStorageErrors|ImporterCloudStorageLatency)
-          targetMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterNoConsensus|ImporterBalanceStreamFallenBehind|ImporterRecordStreamFallenBehind|ImporterNoTransactions)
-          equal:
-            - type
-            - namespace
-            - pod
-
-    InhibitAllWhenPodIssues:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterNoPodsReady|ImporterHighCPU|ImporterHighMemory|ImporterHighFileDescriptors|ImporterHighDBConnections)
-          targetMatch:
-            - name: application
-              value: hedera-mirror-importer
-          equal:
-            - namespace
-            - pod
-
     InhibitLogAlertsWhenErrors:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterCloudStorageErrors|ImporterFileVerificationErrors|ImporterParseErrors)
+            - name: metric
+              value: error
           targetMatch:
-            - name: alertname
-              value: ImporterLog4j2Errors
+            - name: area
+              value: log
           equal:
             - namespace
             - pod
 
-    InhibitRecordStreamAlertsWhenVerificationErrors:
+    InhibitParserLatencyAlertsWhenParserOrDownloaderErrors:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertname
-              value: ImporterFileVerificationErrors
-            - name: type
-              value: RECORD
-          targetMatch:
-            - name: alertname
+            - name: metric
+              value: error
+            - name: area
               regex: true
-              value: (ImporterNoTransactions|ImporterRecordStreamFallenBehind)
+              value: (parser|downloader)
+            - name: type
+              value: BALANCE
+          targetMatch:
+            - name: metric
+              value: e2eLatency
+            - name: area
+              value: parser
           equal:
             - namespace
             - pod
+            - type
 
-    InhibitRecordStreamFallenBehindAndNoTransactionsWhenParseErrors:
+    InhibitStreamAlertsWhenCloudErrors:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterParseErrors)
-            - name: type
-              value: RECORD
+            - name: alertType
+              value: cloud
           targetMatch:
-            - name: alertname
+            - name: metric
               regex: true
-              value: (ImporterRecordStreamFallenBehind|ImporterNoTransactions)
+              value: (e2eLatency|consensus)
           equal:
+            - type
             - namespace
             - pod
 
@@ -265,6 +207,8 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       type: BALANCE
+      area: parser
+      metric: parseLatency
 
   ImporterBalanceStreamFallenBehind:
     annotations:
@@ -277,6 +221,8 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       type: BALANCE
+      area: parser
+      metric: e2eLatency
 
   ImporterCloudStorageErrors:
     annotations:
@@ -288,6 +234,8 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: cloud
+      metric: error
 
   ImporterCloudStorageLatency:
     annotations:
@@ -299,6 +247,8 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: cloud
+      metric: cloudLatency
 
   ImporterFileVerificationErrors:
     annotations:
@@ -310,6 +260,8 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: downloader
+      metric: error
 
   ImporterHighCPU:
     annotations:
@@ -321,6 +273,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: resource
 
   ImporterHighDBConnections:
     annotations:
@@ -332,6 +285,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: resource
 
   ImporterHighFileDescriptors:
     annotations:
@@ -343,6 +297,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: resource
 
   ImporterHighMemory:
     annotations:
@@ -354,6 +309,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: resource
 
   ImporterLog4j2Errors:
     annotations:
@@ -365,6 +321,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: log
 
   ImporterNoConsensus:
     annotations:
@@ -376,6 +333,8 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: downloader
+      metric: consensus
 
   ImporterNoPodsReady:
     annotations:
@@ -387,6 +346,7 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: resource
 
   ImporterNoTransactions:
     annotations:
@@ -399,6 +359,8 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       type: RECORD
+      area: parser
+      metric: e2eLatency
 
   ImporterParseErrors:
     annotations:
@@ -410,6 +372,8 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: parser
+      metric: error
 
   ImporterPublishLatency:
     annotations:
@@ -421,6 +385,8 @@ prometheusRules:
     labels:
       severity: critical
       application: hedera-mirror-importer
+      area: publisher
+      metric: publishLatency
 
   ImporterRecordParseLatency:
     annotations:
@@ -433,6 +399,8 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       type: RECORD
+      area: parser
+      metric: parseLatency
 
   ImporterRecordStreamFallenBehind:
     annotations:
@@ -445,6 +413,8 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       type: RECORD
+      area: parser
+      metric: e2eLatency
 
   ImporterStreamCloseInterval:
     annotations:
@@ -457,6 +427,8 @@ prometheusRules:
       severity: warning
       application: hedera-mirror-importer
       type: RECORD
+      area: downloader
+      metric: closeInterval
 
 securityContext:
   capabilities:
