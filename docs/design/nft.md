@@ -294,9 +294,7 @@ Need information on file format. Effectively envision:
 
 Add optional filters
 
-- `/api/v1/tokens?type=fungible` - All fungible tokens (other values are `non_fungible` and `both` (default))
-- `/api/v1/tokens?serialNumber=1001` - All tokens that contain a serial number `1001` (implied that `type` will
-  be `nft`)
+- `/api/v1/tokens?type=FUNGIBLE` - All fungible tokens (other values are `NON_FUNGIBLE` and `ALL` (default))
 
 #### Get Token by id
 
