@@ -16,8 +16,7 @@ alertmanager:
           equal:
             - namespace
 
-
-InhibitGrpcAndMonitorHighLatencyWhenImporterHighLatencyOrNoPods:
+    InhibitGrpcAndMonitorHighLatencyWhenImporterHighLatencyOrNoPods:
       enabled: true
       matches:
         - sourceMatch:
