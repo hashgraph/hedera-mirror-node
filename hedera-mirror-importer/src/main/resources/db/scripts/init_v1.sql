@@ -28,8 +28,9 @@ create user :rosettaUsername with login password :'rosettaPassword' in role read
 -- Create schema
 \connect :dbName
 create schema if not exists :dbSchema authorization :ownerUsername;
+revoke all privileges on schema :dbSchema from public;
 grant usage on schema :dbSchema to public;
-revoke create on schema :dbSchema from readonly;
+grant create on schema :dbSchema to :ownerUsername;
 
 -- Grant readonly privileges
 grant connect on database :dbName to readonly;
