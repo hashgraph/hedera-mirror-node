@@ -14,9 +14,6 @@ function main() {
     export HEDERA_MIRROR_ROSETTA_NETWORK=$NETWORK
   fi
 
-  # Disable Redis because gRPC process is not run within this execution
-  export HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_REDIS_ENABLED=false
-
   case $MODE in
     "offline")
       run_offline_mode

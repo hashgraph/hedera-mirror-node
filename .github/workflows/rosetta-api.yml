@@ -45,82 +45,15 @@ jobs:
           path: ./**/*.tgz
           if-no-files-found: error
 
-  image:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build Mirror Node All-in-One and Push
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: hedera-mirror-rosetta/build/Dockerfile
-          tags: ${{ env.MODULE }}:latest
-          outputs: type=docker,dest=/tmp/test-image.tar
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-image
-          path: /tmp/test-image.tar
-
-  validate_data:
-    runs-on: ubuntu-latest
-    needs: image
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: test-image
-          path: /tmp
-
-      - name: Load Docker image
-        run: |
-          docker load --input /tmp/test-image.tar
-          docker image ls -a
-
-      - name: Run Mirror Node
-        run: docker run -d -p 5700:5700 "${MODULE}:latest"
-
-      - name: Wait for Mirror Node to start syncing
-        run: ./scripts/wait-for-mirror-node.sh
-
-      - name: Run CLI Validation
-        run: ./scripts/validation/run-validation.sh
-
-  validate_construction:
-    runs-on: ubuntu-latest
-    needs: image
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: test-image
-          path: /tmp
-
-      - name: Load Docker image
-        run: |
-          docker load --input /tmp/test-image.tar
-          docker image ls -a
+      - name: Build Mirror Node All-in-One
+        run: docker build --tag="${MODULE}" -f build/Dockerfile ..
 
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application.yml
@@ -133,9 +66,6 @@ jobs:
             validate-construction.json > /tmp/validate-construction.json
           mv /tmp/validate-construction.json validate-construction.json
 
-          account=$(jq -r '.construction.prefunded_accounts[0].account_identifier.address' validate-construction.json)
-          echo "ACCOUNT=$account" >> $GITHUB_ENV
-
       - name: Set Importer StartDate
         run: |
           startdate=$(date --date='15 minutes ago' -Iseconds -u)
@@ -145,16 +75,30 @@ jobs:
 
       - name: Run Mirror Node
         run: |
-          docker run -d -e HEDERA_MIRROR_ROSETTA_NETWORK=testnet \
-            -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
+          docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
+            -e NETWORK=testnet \
             -v /tmp/application.yml:/var/importer/application.yml \
-            -p 5700:5700 "${MODULE}:latest"
+            -p 5432:5432 -p 5700:5700 "${MODULE}"
 
       - name: Wait for Mirror Node to start syncing
         run: ./scripts/wait-for-mirror-node.sh
 
-      - name: Run CLI Validation
-        run: ./scripts/validation/run-validation.sh testnet $ACCOUNT
+      - name: Get Genesis Account Balances
+        run: ./scripts/validation/get-genesis-balance.sh testnet
+
+      - name: Run Rosetta CLI Validation
+        working-directory: ./hedera-mirror-rosetta/scripts/validation
+        run: |
+          echo "Installing Rosetta CLI"
+          curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/master/scripts/install.sh | sh -s -- -b .
+
+          ./run-validation.sh testnet construction > /tmp/construction-validation.log 2>&1 &
+          pid=$!
+
+          ./run-validation.sh testnet data && code=0 || code=$?
+          [[ $code -eq 0 ]] && { wait $pid || code=$?; }
+          cat /tmp/construction-validation.log
+          exit $code
 
   gosec:
     runs-on: ubuntu-latest
@@ -175,13 +119,3 @@ jobs:
         uses: securego/gosec@master
         with:
           args: ./...
-
-  cleanup:
-    runs-on: ubuntu-latest
-    needs: [validate_data, validate_construction]
-    if: always()
-    steps:
-      - uses: geekyeggo/delete-artifact@v1
-        with:
-          name: test-image
-          failOnError: false
