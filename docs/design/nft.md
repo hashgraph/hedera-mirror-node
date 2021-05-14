@@ -48,13 +48,13 @@ create table if not exists nft
 create table if not exists nft_transfer
 (
   consensus_timestamp               bigint  not null,
-  nft_created_consensus_timestamp   bigint  not null
+  nft_timestamp   bigint  not null
   receiver_account_id               bigint  not null,
   sender_account_id                 bigint  not null,
 );
 ```
 
-- Add a unique constraint to `nft_transfer` for `consensus_timestamp` and `nft_created_consensus_timestamp`, desc
+- Add a unique constraint to `nft_transfer` for `consensus_timestamp` and `nft_timestamp`, desc
 
 ### Importer
 
