@@ -88,8 +88,6 @@ Need information on file format. Effectively envision:
   is set.
 - `insertTokenBurn` must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deleted, and
   update `modifiedTimestamp` if the `serialNumbers` list is set.
-- `insertTokenDelete` must be added to mark the `NFTs` as deleted and update `modifiedTimestamp` if the `tokenType`
-  field is NON_FUNGIBLE for the token.
 - `insertTokenWipe` must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deleted and
   update `modifiedTimestamp` if the `serialNumbers` list is set.
 
@@ -160,7 +158,9 @@ Need information on file format. Effectively envision:
 
 #### Get Accounts
 
-- Update `/api/v1/accounts` and `/api/v1/accounts/{id}` response to add nfts list.
+- Update `/api/v1/accounts` and `/api/v1/accounts/{id}` response to add `nft_token_ids`
+  - `nft_token_ids` should only show token_ids where the token was not deleted, and the account has at least one nft
+    belonging to that token that has not been deleted (token.deleted | nft.deleted == false)
 
 ```json
 {
@@ -173,14 +173,9 @@ Need information on file format. Effectively envision:
         "deleted": false,
         "expiry_timestamp": null,
         "key": null,
-        "nfts": [
-          {
-            "token_id": "0.2.9",
-            "serial_numbers": [
-              210,
-              211
-            ]
-          }
+        "nft_token_ids": [
+          "0.2.9",
+          "0.2.10"
         ],
         "timestamp": "0.000002345",
         "tokens": [
@@ -204,7 +199,9 @@ Need information on file format. Effectively envision:
 
 #### Get Balances
 
-- Update `/api/v1/balances` and `/api/v1/balances/{id}` response to add nfts list
+- Update `/api/v1/balances` and `/api/v1/balances/{id}` response to add `nft_token_ids` list
+  - `nft_token_ids` should only show token_ids where the token was not deleted, and the account has at least one nft
+    belonging to that token that has not been deleted (token.deleted | nft.deleted == false)
 
 ```json
 {
@@ -218,14 +215,9 @@ Need information on file format. Effectively envision:
     {
       "account": "0.0.10",
       "balance": 100,
-      "nfts": [
-        {
-          "serial_numbers": [
-            210,
-            211
-          ],
-          "token_id": "0.2.9"
-        }
+      "nft_token_ids": [
+        "0.2.9",
+        "0.2.10"
       ],
       "tokens": [
         {
@@ -340,7 +332,11 @@ Add optional filters
 
 ### Token Supply distribution
 
-- Update `/api/v1/tokens/{id}/balances` response to show `serial_numbers` when the token is an NftType token.
+- Update `/api/v1/tokens/{id}/balances` response to only show `account` when the token is an NftType token.\
+  - Having a list of serial_numbers could cause too much bloat
+  - Balances should only display if the token have not been deleted (`token.delted` == false)
+    - An account balance should only be listed if the account has at least one nft that has not been
+      deleted. (`nft.deleted` == false)
 
 ```json
     {
