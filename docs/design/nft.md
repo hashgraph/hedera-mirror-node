@@ -47,10 +47,10 @@ create table if not exists nft
 ```sql
 create table if not exists nft_transfer
 (
-  consensus_timestamp               bigint  not null,
-  nft_timestamp   bigint  not null
-  receiver_account_id               bigint  not null,
-  sender_account_id                 bigint  not null,
+  consensus_timestamp   bigint  not null,
+  nft_timestamp         bigint  not null,
+  receiver_account_id   bigint  not null,
+  sender_account_id     bigint  not null,
 );
 ```
 
