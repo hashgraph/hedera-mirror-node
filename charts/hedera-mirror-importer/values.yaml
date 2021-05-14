@@ -39,22 +39,6 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitFallenBehindOrNoTransactionsAlertsWhenParseOrVerificationErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              regex: true
-              value: (ImporterFileVerificationErrors|ImporterParseErrors)
-          targetMatch:
-            - name: alertname
-              regex: true
-              value: (Importer[a-zA-Z]+FallenBehind|ImporterNoTransactions)
-          equal:
-            - namespace
-            - pod
-            - type
-
     InhibitLogAlertsWhenErrors:
       enabled: true
       matches:
@@ -69,6 +53,21 @@ alertmanager:
             - namespace
             - pod
 
+    InhibitParserLatencyAlertsWhenParseOrVerificationErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterFileVerificationErrors|ImporterParseErrors)
+          targetMatch:
+            - name: area
+              value: parser
+          equal:
+            - namespace
+            - pod
+            - type
+
     InhibitStreamAlertsWhenCloudErrors:
       enabled: true
       matches:
@@ -76,9 +75,9 @@ alertmanager:
             - name: area
               value: cloud
           targetMatch:
-            - name: alertname
+            - name: area
               regex: true
-              value: (ImporterNo[a-zA-Z]+|Importer[a-zA-Z]+FallenBehind)
+              value: (parser|downloader)
           equal:
             - type
             - namespace
