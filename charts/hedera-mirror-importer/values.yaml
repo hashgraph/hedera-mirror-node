@@ -78,7 +78,7 @@ alertmanager:
       enabled: true
       matches:
         - sourceMatch:
-            - name: alertType
+            - name: name
               value: cloud
           targetMatch:
             - name: metric
@@ -235,7 +235,6 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       area: cloud
-      metric: error
 
   ImporterCloudStorageLatency:
     annotations:
@@ -248,7 +247,6 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       area: cloud
-      metric: cloudLatency
 
   ImporterFileVerificationErrors:
     annotations:
