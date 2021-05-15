@@ -25,6 +25,7 @@ import java.time.Duration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMax;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
@@ -49,6 +50,10 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     @Min(1)
     protected int queueCapacity = 10;
+
+    @DurationMax(minutes = 35L)
+    @DurationMin(seconds = 0)
+    protected Duration thresholdWindow;
 
     @NotNull
     protected RetryProperties retry = new RetryProperties();

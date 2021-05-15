@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import java.time.Duration;
 import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -41,6 +42,7 @@ public class BalanceParserProperties extends AbstractParserProperties {
     public BalanceParserProperties(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
         retry.setMaxAttempts(3);
+        setThresholdWindow(Duration.ofMinutes(35));
     }
 
     @Min(1)
