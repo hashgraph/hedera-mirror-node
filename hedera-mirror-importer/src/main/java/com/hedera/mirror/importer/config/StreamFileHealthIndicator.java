@@ -29,13 +29,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 
+import com.hedera.mirror.importer.MirrorProperties;
+
 @RequiredArgsConstructor
 public class StreamFileHealthIndicator implements HealthIndicator {
     public static final String STREAM_FILE_PARSE_DURATION = "hedera.mirror.parse.duration";
 
     private final MeterRegistry meterRegistry;
     private final String streamType;
-    private final Duration statusCheckDurationWindow;
+    private final Duration streamFileStatusCheckWindow;
+    private final MirrorProperties mirrorProperties;
 
     private final AtomicLong lastCount = new AtomicLong(0);
     private final Instant lastCheck = Instant.now();
@@ -43,20 +46,21 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
     @Override
     public Health health() {
+        Instant currentInstant = Instant.now();
         Search searchTimer = meterRegistry.find(STREAM_FILE_PARSE_DURATION).tag("type", streamType);
         long currentCount = searchTimer.timer().count();
-        if (currentCount == 0 || Instant.now().isBefore(lastCheck.plus(statusCheckDurationWindow))) {
+        if (currentCount == 0 || currentInstant.isBefore(lastCheck.plus(streamFileStatusCheckWindow))) {
             return lastHealthStatus;
         }
 
-//        Health.Builder currentHealth = currentCount > lastCount.getAndSet(currentCount) ? Health.up() : Health.down();
-//        ScheduledExecutorService parsingStatusCheckScheduler = Executors.newSingleThreadScheduledExecutor();
-//        parsingStatusCheckScheduler = Executors.newSingleThreadScheduledExecutor();
-//        parsingStatusCheckScheduler.scheduleAtFixedRate(() -> {
-//            result.printProgress();
-//        }, 0, messageListener.getStatusPrintIntervalMinutes(), TimeUnit.MINUTES);
+        Health health = currentCount > lastCount.getAndSet(currentCount) ? Health.up().build() : Health.down().build();
+        // consider demo bucket and cases where endTime has been passed
+        if (health == Health.down().build() &&
+                (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO ||
+                        mirrorProperties.getEndDate().isBefore(currentInstant))) {
+            health = Health.up().build();
+        }
 
-//        return currentHealth.build();
-        return currentCount > lastCount.getAndSet(currentCount) ? Health.up().build() : Health.down().build();
+        return health;
     }
 }

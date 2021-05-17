@@ -44,6 +44,8 @@ management:
   endpoint:
     health:
       group:
+        connectivity:
+          include: db
         liveness:
           include: ping, streamFileActivity
         readiness:

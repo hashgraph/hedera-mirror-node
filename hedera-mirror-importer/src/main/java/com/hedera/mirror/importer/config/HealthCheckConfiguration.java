@@ -29,6 +29,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.parser.event.EventParserProperties;
@@ -39,57 +40,42 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 public class HealthCheckConfiguration {
     private final BalanceParserProperties balanceParserProperties;
     private final EventParserProperties eventParserProperties;
+    private final MirrorProperties mirrorProperties;
     private final RecordParserProperties recordParserProperties;
-
-//    public static final String STREAM_TYPE_BALANCE = "BALANCE";
-//    public static final String STREAM_TYPE_EVENT = "EVENT";
-//    public static final String STREAM_TYPE_RECORD = "RECORD";
-//
-//    @Bean(STREAM_TYPE_BALANCE)
-//    HealthIndicator balanceStreamHealthIndicator(MeterRegistry meterRegistry) {
-//        return new StreamFileHealthIndicator(meterRegistry, STREAM_TYPE_BALANCE, Duration.ofMinutes(30));
-//    }
-//
-//    @Bean(STREAM_TYPE_EVENT)
-//    HealthIndicator eventStreamHealthIndicator(MeterRegistry meterRegistry) {
-//        return new StreamFileHealthIndicator(meterRegistry, STREAM_TYPE_EVENT, Duration.ofMinutes(0));
-//    }
-//
-//    @Bean(STREAM_TYPE_RECORD)
-//    HealthIndicator recordStreamHealthIndicator(MeterRegistry meterRegistry) {
-//        return new StreamFileHealthIndicator(meterRegistry, STREAM_TYPE_RECORD, Duration.ofMinutes(5));
-//    }
 
     @Bean
     CompositeHealthContributor streamFileActivity(MeterRegistry meterRegistry) {
 
         Map<String, HealthIndicator> healthIndicators = new LinkedHashMap<>();
 
-        if (balanceParserProperties.getThresholdWindow() != null) {
+        if (balanceParserProperties.getStreamFileStatusCheckWindow() != null) {
             healthIndicators.put(
                     StreamType.BALANCE.toString(),
                     new StreamFileHealthIndicator(
                             meterRegistry,
                             StreamType.BALANCE.toString(),
-                            balanceParserProperties.getThresholdWindow()));
+                            balanceParserProperties.getStreamFileStatusCheckWindow(),
+                            mirrorProperties));
         }
 
-        if (eventParserProperties.getThresholdWindow() != null) {
+        if (eventParserProperties.getStreamFileStatusCheckWindow() != null) {
             healthIndicators.put(
                     StreamType.EVENT.toString(),
                     new StreamFileHealthIndicator(
                             meterRegistry,
                             StreamType.EVENT.toString(),
-                            eventParserProperties.getThresholdWindow()));
+                            eventParserProperties.getStreamFileStatusCheckWindow(),
+                            mirrorProperties));
         }
 
-        if (recordParserProperties.getThresholdWindow() != null) {
+        if (recordParserProperties.getStreamFileStatusCheckWindow() != null) {
             healthIndicators.put(
                     StreamType.RECORD.toString(),
                     new StreamFileHealthIndicator(
                             meterRegistry,
                             StreamType.RECORD.toString(),
-                            recordParserProperties.getThresholdWindow()));
+                            recordParserProperties.getStreamFileStatusCheckWindow(),
+                            mirrorProperties));
         }
 
         return CompositeHealthContributor.fromMap(healthIndicators);
