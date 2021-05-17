@@ -21,7 +21,7 @@ case $network in
     ;;
 esac
 
-if (./rosetta-cli 2>&1 | grep -q 'CLI for the Rosetta API'); then
+if (./rosetta-cli 2>&1 | grep 'CLI for the Rosetta API' > /dev/null); then
     echo "Rosetta CLI already installed. Skipping installation"
 else
     echo "Installing Rosetta CLI"
