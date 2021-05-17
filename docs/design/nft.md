@@ -51,10 +51,12 @@ create table if not exists nft_transfer
   nft_timestamp         bigint  not null,
   receiver_account_id   bigint  not null,
   sender_account_id     bigint  not null,
+  serial_number         bigint  not null,
+  token_id              bigint  not null
 );
 ```
 
-- Add a unique constraint to `nft_transfer` for `consensus_timestamp` and `nft_timestamp`, desc
+- Add a unique constraint to `nft_transfer` for `consensus_timestamp`, `token_id`, and `serial_number`, desc
 
 ### Importer
 
@@ -437,9 +439,6 @@ Optional Filters
       customizable.
       - Only one NFT can be minted per transaction, so to reduce startup time this number should be low, possibly just
         one.
-    - Alternatively, a second, compound expression could be added, such as `nft.1.serialNo.1`, that would indicate the
-      need to mint a serial number for `nft.1` (after the creation of `nft.1`). This would require more work to refactor
-      the `ExpressionConverter`, but it would allow for more customization.
   - Update the `token` expression logic to set the new fields (`tokenType` and `maxSupply`).
 
 - Update the `TransactionSuppliers`
