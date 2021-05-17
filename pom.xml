@@ -71,7 +71,6 @@
         <java.version>11</java.version>
         <javax.version>1</javax.version>
         <jib.version>3.0.0</jib.version>
-        <jmeter.version>5.4.1</jmeter.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.8.24</msgpack.version>
         <protobuf.version>3.17.0</protobuf.version>
@@ -462,11 +461,13 @@
                                     <file>pom.xml</file>
                                     <replacements>
                                         <replacement>
-                                            <token><![CDATA[(?<=<release.version>)[0-9a-zA-Z.-]+(?=</release.version>)]]></token>
+                                            <token>
+                                                <![CDATA[(?<=<release.version>)[0-9a-zA-Z.-]+(?=</release.version>)]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>
-                                            <token><![CDATA[(?<=<release.chartVersion>)[0-9a-zA-Z.-]+(?=</release.chartVersion>)]]></token>
+                                            <token>
+                                                <![CDATA[(?<=<release.chartVersion>)[0-9a-zA-Z.-]+(?=</release.chartVersion>)]]></token>
                                             <value>${release.chartVersion}</value>
                                         </replacement>
                                     </replacements>
@@ -512,7 +513,6 @@
                                         <include>hedera-mirror-rest/package*.json</include>
                                         <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                         <include>hedera-mirror-rosetta/config/application*.yml</include>
-                                        <include>hedera-mirror-test/src/test/resources/k8s/*.yml</include>
                                     </includes>
                                     <replacements>
                                         <replacement>
