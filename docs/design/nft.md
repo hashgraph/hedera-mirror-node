@@ -224,35 +224,16 @@ Add optional filters
 
 ### Token Supply distribution
 
-- Update `/api/v1/tokens/{id}/balances` response to only show `account` when the token is an NftType token.
-  - Having a list of serial_numbers could cause too much bloat
-  - Balances should only display if the token has not been deleted (e.g. `token.deleted` is false)
-    - An account balance should only be listed if the account has at least one nft that has not been
-      deleted (`nft.deleted` == false).
-
-```json
-    {
-  "timestamp": "0.000002345",
-  "balances": [
-    {
-      "account": "0.15.10"
-    },
-    {
-      "account": "0.15.9"
-    }
-  ],
-  "links": {
-    "next": null
-  }
-}
-```
+- Update `/api/v1/tokens/{id}/balances` response to return an error code 404 for `NON_FUNGIBLE` tokens that indicates
+  users should go to `/api/v1/tokens/{id}/nfts`.
 
 #### List NFTs
 
 - GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
   - NFTs should only display if the token has not been deleted (e.g. `token.deleted` is false) Otherwise, display empty
     list
-  - This endpoint should return a 404 if the token is not of type `NON-FUNGIBLE`
+  - This endpoint should return a 404 if the token is not of type `NON-FUNGIBLE` with a message that indicates users
+    should go to `/api/v1/tokens/{id}/balances`.
 
 ```json
 {
