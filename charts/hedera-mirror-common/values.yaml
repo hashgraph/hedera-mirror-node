@@ -139,6 +139,9 @@ prometheus-adapter:
 prometheus:
   alertmanager:
     alertmanagerSpec:
+      alertmanagerConfigSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: hedera-mirror-node
       priorityClassName: low
       resources:
         limits:

@@ -8,6 +8,95 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: importer
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+
+    InhibitAllWhenPodIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              value: resource
+          targetMatch:
+            - name: application
+              value: hedera-mirror-importer
+          equal:
+            - namespace
+            - pod
+
+    InhibitCloudLatencyAlertsWhenCloudError:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterCloudStorageErrors
+          targetMatch:
+            - name: alertname
+              value: ImporterCloudStorageLatency
+          equal:
+            - type
+            - namespace
+            - pod
+
+    InhibitLogAlertsWhenErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: Importer[a-zA-Z]+Errors
+          targetMatch:
+            - name: alertname
+              value: ImporterLog4j2Errors
+          equal:
+            - namespace
+            - pod
+
+    InhibitParserLatencyAlertsWhenParseOrVerificationErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterFileVerificationErrors|ImporterParseErrors)
+          targetMatch:
+            - name: area
+              value: parser
+          equal:
+            - namespace
+            - pod
+            - type
+
+    InhibitStreamAlertsWhenCloudErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              value: cloud
+          targetMatch:
+            - name: area
+              regex: true
+              value: (parser|downloader)
+          equal:
+            - type
+            - namespace
+            - pod
+
+    InhibitVerificationErrorsWhenNoConsensus:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterNoConsensus
+          targetMatch:
+            - name: alertname
+              value: ImporterFileVerificationErrors
+          equal:
+            - type
+            - namespace
+            - pod
+
 annotations: {}
 
 config:
@@ -110,6 +199,9 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      type: BALANCE
+      area: parser
 
   ImporterBalanceStreamFallenBehind:
     annotations:
@@ -120,6 +212,9 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      type: BALANCE
+      area: parser
 
   ImporterCloudStorageErrors:
     annotations:
@@ -130,6 +225,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: cloud
 
   ImporterCloudStorageLatency:
     annotations:
@@ -140,6 +237,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: cloud
 
   ImporterFileVerificationErrors:
     annotations:
@@ -150,6 +249,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: downloader
 
   ImporterHighCPU:
     annotations:
@@ -160,6 +261,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: resource
 
   ImporterHighDBConnections:
     annotations:
@@ -170,6 +273,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: resource
 
   ImporterHighFileDescriptors:
     annotations:
@@ -180,6 +285,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: resource
 
   ImporterHighMemory:
     annotations:
@@ -190,6 +297,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: resource
 
   ImporterLog4j2Errors:
     annotations:
@@ -200,6 +309,8 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: log
 
   ImporterNoConsensus:
     annotations:
@@ -210,6 +321,20 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: downloader
+
+  ImporterNoPodsReady:
+    annotations:
+      description: "No importer instances are currently ready in {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: No importer instances are ready
+    enabled: true
+    expr: sum(kube_pod_container_status_ready{container="importer"}) by (namespace, pod) < 1
+    for: 30s
+    labels:
+      severity: critical
+      application: hedera-mirror-importer
+      area: resource
 
   ImporterNoTransactions:
     annotations:
@@ -220,6 +345,9 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      type: RECORD
+      area: parser
 
   ImporterParseErrors:
     annotations:
@@ -230,6 +358,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: parser
 
   ImporterPublishLatency:
     annotations:
@@ -240,6 +370,8 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      area: publisher
 
   ImporterRecordParseLatency:
     annotations:
@@ -250,6 +382,9 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      type: RECORD
+      area: parser
 
   ImporterRecordStreamFallenBehind:
     annotations:
@@ -260,6 +395,9 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+      application: hedera-mirror-importer
+      type: RECORD
+      area: parser
 
   ImporterStreamCloseInterval:
     annotations:
@@ -270,6 +408,9 @@ prometheusRules:
     for: 1m
     labels:
       severity: warning
+      application: hedera-mirror-importer
+      type: RECORD
+      area: downloader
 
 securityContext:
   capabilities:

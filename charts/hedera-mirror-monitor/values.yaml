@@ -8,6 +8,62 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: monitor
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+
+    InhibitHandleLatencyAlertWhenHighPublishLatency:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishLatency
+          targetMatch:
+            - name: alertname
+              value: MonitorPublishToHandleLatency
+          equal:
+            - namespace
+            - pod
+
+    InhibitLogAlertWhenHighPublishErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishErrors
+          targetMatch:
+            - name: alertname
+              value: MonitorLog4j2Errors
+          equal:
+            - namespace
+            - pod
+
+    InhibitAllWhenPodIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              value: resource
+          targetMatch:
+            - name: application
+              value: hedera-mirror-monitor
+          equal:
+            - namespace
+            - pod
+
+    InhibitPublishAlertsWhenPublishStopped:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishStopped
+          targetMatch:
+            - name: mode
+              value: publish
+          equal:
+            - namespace
+            - pod
+
 annotations: {}
 
 config:
@@ -78,6 +134,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
+      area: resource
 
   MonitorHighMemory:
     annotations:
@@ -88,6 +146,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
+      area: resource
 
   MonitorLog4j2Errors:
     annotations:
@@ -98,6 +158,19 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
+
+  MonitorNoPodsReady:
+    annotations:
+      description: "No monitor instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: No monitor instances running
+    enabled: true
+    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace, pod) < 1
+    for: 30s
+    labels:
+      severity: critical
+      application: hedera-mirror-monitor
+      area: resource
 
   MonitorPublishErrors:
     annotations:
@@ -108,6 +181,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
+      mode: publish
 
   MonitorPublishLatency:
     annotations:
@@ -118,6 +193,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
+      mode: publish
 
   MonitorPublishStopped:
     annotations:
@@ -128,6 +205,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
+      mode: publish
 
   MonitorPublishToHandleLatency:
     annotations:
@@ -138,6 +217,8 @@ prometheusRules:
     for: 2m
     labels:
       severity: warning
+      application: hedera-mirror-monitor
+      mode: publish
 
   MonitorSubscribeLatency:
     annotations:
@@ -148,6 +229,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
 
   MonitorSubscribeStopped:
     annotations:
@@ -158,6 +240,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-monitor
 
 rbac:
   enabled: true

@@ -8,6 +8,22 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: rest
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitAllWhenPodIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              value: resource
+          targetMatch:
+            - name: application
+              value: hedera-mirror-rest
+          equal:
+            - namespace
+            - pod
+
 annotations: {}
 
 config:
@@ -98,6 +114,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      application: hedera-mirror-rest
 
   RestHighCPU:
     annotations:
@@ -108,6 +125,20 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-rest
+      area: resource
+
+  RestNoPodsReady:
+    annotations:
+      description: "No REST API instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: No rest instances running
+    enabled: true
+    expr: sum(kube_pod_container_status_ready{container="rest"}) by (namespace, pod) < 1
+    for: 30s
+    labels:
+      severity: critical
+      application: hedera-mirror-rest
+      area: resource
 
   RestNoRequests:
     annotations:
@@ -118,6 +149,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: warning
+      application: hedera-mirror-rest
 
   RestSlowResponse:
     annotations:
@@ -128,6 +160,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: warning
+      application: hedera-mirror-rest
 
 readinessProbe:
   httpGet:
