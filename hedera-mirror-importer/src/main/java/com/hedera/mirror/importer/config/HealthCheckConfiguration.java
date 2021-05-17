@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.config;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.search.Search;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -45,15 +46,14 @@ public class HealthCheckConfiguration {
 
     @Bean
     CompositeHealthContributor streamFileActivity(MeterRegistry meterRegistry) {
-
+        Search searchTimer = meterRegistry.find("hedera.mirror.parse.duration");
         Map<String, HealthIndicator> healthIndicators = new LinkedHashMap<>();
 
         if (balanceParserProperties.getStreamFileStatusCheckWindow() != null) {
             healthIndicators.put(
                     StreamType.BALANCE.toString(),
                     new StreamFileHealthIndicator(
-                            meterRegistry,
-                            StreamType.BALANCE.toString(),
+                            searchTimer.tag("type", StreamType.BALANCE.toString()).timer(),
                             balanceParserProperties.getStreamFileStatusCheckWindow(),
                             mirrorProperties.getEndDate()));
         }
@@ -62,8 +62,7 @@ public class HealthCheckConfiguration {
             healthIndicators.put(
                     StreamType.EVENT.toString(),
                     new StreamFileHealthIndicator(
-                            meterRegistry,
-                            StreamType.EVENT.toString(),
+                            searchTimer.tag("type", StreamType.EVENT.toString()).timer(),
                             eventParserProperties.getStreamFileStatusCheckWindow(),
                             mirrorProperties.getEndDate()));
         }
@@ -72,8 +71,7 @@ public class HealthCheckConfiguration {
             healthIndicators.put(
                     StreamType.RECORD.toString(),
                     new StreamFileHealthIndicator(
-                            meterRegistry,
-                            StreamType.RECORD.toString(),
+                            searchTimer.tag("type", StreamType.RECORD.toString()).timer(),
                             recordParserProperties.getStreamFileStatusCheckWindow(),
                             mirrorProperties.getEndDate()));
         }

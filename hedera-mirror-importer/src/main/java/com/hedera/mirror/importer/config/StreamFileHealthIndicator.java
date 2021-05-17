@@ -20,8 +20,7 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.search.Search;
+import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,12 +30,10 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 
 @RequiredArgsConstructor
 public class StreamFileHealthIndicator implements HealthIndicator {
-    public static final String STREAM_FILE_PARSE_DURATION = "hedera.mirror.parse.duration";
     public static final Health HEALTH_DOWN = Health.down().build();
     public static final Health HEALTH_UP = Health.up().build();
 
-    private final MeterRegistry meterRegistry;
-    private final String streamType;
+    private final Timer streamFileParseDurationTimer;
     private final Duration streamFileStatusCheckWindow;
     private final Instant endDate;
 
@@ -47,18 +44,21 @@ public class StreamFileHealthIndicator implements HealthIndicator {
     @Override
     public Health health() {
         Instant currentInstant = Instant.now();
-        Search searchTimer = meterRegistry.find(STREAM_FILE_PARSE_DURATION).tag("type", streamType);
-        long currentCount = searchTimer.timer().count();
+        long currentCount = streamFileParseDurationTimer.count();
 
         Health health = currentCount > lastCount.getAndSet(currentCount) ? HEALTH_UP : HEALTH_DOWN;
-        if (health == HEALTH_DOWN && currentInstant.isBefore(lastCheck.plus(streamFileStatusCheckWindow))) {
+
+        // handle down but in window of allowance
+        if (health == HEALTH_DOWN) {
             // consider case where endTime has been passed
             if (endDate.isBefore(currentInstant)) {
                 return HEALTH_UP;
             }
 
-            // return cached value while in window
-            return lastHealthStatus;
+            if (currentInstant.isBefore(lastCheck.plus(streamFileStatusCheckWindow))) {
+                // return cached value while in window
+                return lastHealthStatus;
+            }
         }
 
         lastHealthStatus = health;
