@@ -53,7 +53,7 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     @DurationMax(minutes = 35L)
     @DurationMin(seconds = 0)
-    protected Duration thresholdWindow;
+    protected Duration streamFileStatusCheckWindow;
 
     @NotNull
     protected RetryProperties retry = new RetryProperties();

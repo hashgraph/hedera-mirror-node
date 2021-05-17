@@ -55,7 +55,7 @@ public class HealthCheckConfiguration {
                             meterRegistry,
                             StreamType.BALANCE.toString(),
                             balanceParserProperties.getStreamFileStatusCheckWindow(),
-                            mirrorProperties));
+                            mirrorProperties.getEndDate()));
         }
 
         if (eventParserProperties.getStreamFileStatusCheckWindow() != null) {
@@ -65,7 +65,7 @@ public class HealthCheckConfiguration {
                             meterRegistry,
                             StreamType.EVENT.toString(),
                             eventParserProperties.getStreamFileStatusCheckWindow(),
-                            mirrorProperties));
+                            mirrorProperties.getEndDate()));
         }
 
         if (recordParserProperties.getStreamFileStatusCheckWindow() != null) {
@@ -75,7 +75,7 @@ public class HealthCheckConfiguration {
                             meterRegistry,
                             StreamType.RECORD.toString(),
                             recordParserProperties.getStreamFileStatusCheckWindow(),
-                            mirrorProperties));
+                            mirrorProperties.getEndDate()));
         }
 
         return CompositeHealthContributor.fromMap(healthIndicators);

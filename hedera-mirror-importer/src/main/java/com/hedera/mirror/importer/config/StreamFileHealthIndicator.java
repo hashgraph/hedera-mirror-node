@@ -29,38 +29,41 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 
-import com.hedera.mirror.importer.MirrorProperties;
-
 @RequiredArgsConstructor
 public class StreamFileHealthIndicator implements HealthIndicator {
     public static final String STREAM_FILE_PARSE_DURATION = "hedera.mirror.parse.duration";
+    public static final Health HEALTH_DOWN = Health.down().build();
+    public static final Health HEALTH_UP = Health.up().build();
 
     private final MeterRegistry meterRegistry;
     private final String streamType;
     private final Duration streamFileStatusCheckWindow;
-    private final MirrorProperties mirrorProperties;
+    private final Instant endDate;
 
     private final AtomicLong lastCount = new AtomicLong(0);
-    private final Instant lastCheck = Instant.now();
-    private final Health lastHealthStatus = Health.unknown().build(); // unknown until at least 1 stream file is parsed
+    private Instant lastCheck = Instant.now();
+    private Health lastHealthStatus = Health.unknown().build(); // unknown until at least 1 stream file is parsed
 
     @Override
     public Health health() {
         Instant currentInstant = Instant.now();
         Search searchTimer = meterRegistry.find(STREAM_FILE_PARSE_DURATION).tag("type", streamType);
         long currentCount = searchTimer.timer().count();
-        if (currentCount == 0 || currentInstant.isBefore(lastCheck.plus(streamFileStatusCheckWindow))) {
+
+        Health health = currentCount > lastCount.getAndSet(currentCount) ? HEALTH_UP : HEALTH_DOWN;
+        if (health == HEALTH_DOWN && currentInstant.isBefore(lastCheck.plus(streamFileStatusCheckWindow))) {
+            // consider case where endTime has been passed
+            if (endDate.isBefore(currentInstant)) {
+                return HEALTH_UP;
+            }
+
+            // return cached value while in window
             return lastHealthStatus;
         }
 
-        Health health = currentCount > lastCount.getAndSet(currentCount) ? Health.up().build() : Health.down().build();
-        // consider demo bucket and cases where endTime has been passed
-        if (health == Health.down().build() &&
-                (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO ||
-                        mirrorProperties.getEndDate().isBefore(currentInstant))) {
-            health = Health.up().build();
-        }
-
+        lastHealthStatus = health;
+        lastCount.set(currentCount);
+        lastCheck = currentInstant;
         return health;
     }
 }

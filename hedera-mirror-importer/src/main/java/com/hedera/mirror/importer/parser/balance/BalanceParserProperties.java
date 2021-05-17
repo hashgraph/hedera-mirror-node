@@ -42,7 +42,7 @@ public class BalanceParserProperties extends AbstractParserProperties {
     public BalanceParserProperties(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
         retry.setMaxAttempts(3);
-        setThresholdWindow(Duration.ofMinutes(35));
+        setStreamFileStatusCheckWindow(Duration.ofMinutes(38)); // 2.5 times expected stream upload
     }
 
     @Min(1)
