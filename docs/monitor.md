@@ -79,17 +79,20 @@ available as properties. Only `topicId` doesn't have a default and will be requi
 specifies some of those properties:
 
 ```yaml
-publish:
-  scenarios:
-    - name: HCS Pinger
-      properties:
-        maxTransactionFee: 1000000
-        message: Hello world!
-        retry: true
-        topicId: 0.0.1000
-      recordPercent: 1.0
-      tps: 0.1
-      type: CONSENSUS_SUBMIT_MESSAGE
+hedera:
+  mirror:
+    monitor:
+      publish:
+        scenarios:
+          - name: HCS Pinger
+            properties:
+              maxTransactionFee: 1000000
+              message: Hello world!
+              retry: true
+              topicId: 0.0.1000
+            recordPercent: 1.0
+            tps: 0.1
+            type: CONSENSUS_SUBMIT_MESSAGE
 ```
 
 #### Scheduled Transactions
@@ -107,16 +110,19 @@ To execute a scheduled scenario set the `hedera.mirror.monitor.publish.scenarios
 example.
 
 ```yaml
-publish:
-  scenarios:
-    - name: Scheduled Crypto Create
-      properties:
-        nodeAccountId: 0.0.3
-        operatorAccountId: 0.0.1018
-        receiverSignatureRequired: true
-        signatoryCount: 4
-        totalSignatoryCount: 5
-      type: SCHEDULE_CREATE
+hedera:
+  mirror:
+    monitor:
+      publish:
+        scenarios:
+          - name: Scheduled Crypto Create
+            properties:
+              nodeAccountId: 0.0.3
+              operatorAccountId: 0.0.1018
+              receiverSignatureRequired: true
+              signatoryCount: 4
+              totalSignatoryCount: 5
+            type: SCHEDULE_CREATE
 ```
 
 ### Expression Syntax
@@ -134,22 +140,26 @@ The following example uses the expression syntax to create the sender and recipi
 same entities are created once and reused in both the token associate and the token transfer transaction.
 
 ```yaml
-scenarios:
-  - name: HTS associate
-    limit: 1
-    properties:
-      accountId: ${account.them}
-      tokenId: ${token.foobar}
-    tps: 1
-    type: TOKEN_ASSOCIATE
-  - name: HTS transfer
-    properties:
-      recipientAccountId: ${account.them}
-      senderAccountId: ${account.me}
-      tokenId: ${token.foobar}
-      transferType: BOTH
-    tps: 1
-    type: CRYPTO_TRANSFER
+hedera:
+  mirror:
+    monitor:
+      publish:
+        scenarios:
+          - name: HTS associate
+            limit: 1
+            properties:
+              accountId: ${account.them}
+              tokenId: ${token.foobar}
+            tps: 1
+            type: TOKEN_ASSOCIATE
+          - name: HTS transfer
+          properties:
+            recipientAccountId: ${account.them}
+            senderAccountId: ${account.me}
+            tokenId: ${token.foobar}
+            transferType: BOTH
+          tps: 1
+          type: CRYPTO_TRANSFER
 ```
 
 ### Subscribe
@@ -163,17 +173,20 @@ For gRPC, `topicId` is required and controls which topic should be registered fo
 messages. Below is an example of both types:
 
 ```yaml
-subscribe:
-  clients: 4
-  grpc:
-    - name: HCS Subscribe
-      enabled: true
-      subscribers: 10
-      topicId: ${topic.ping}
-  rest:
-    - name: REST
-      enabled: false
-      samplePercent: 1.0
+hedera:
+  mirror:
+    monitor:
+      subscribe:
+        clients: 4
+        grpc:
+          - name: HCS Subscribe
+            enabled: true
+            subscribers: 10
+            topicId: ${topic.ping}
+        rest:
+          - name: REST
+            enabled: false
+            samplePercent: 1.0
 ```
 
 For performance testing subscribers, the `hedera.mirror.monitor.subscribe.clients` property should be adjusted higher to
