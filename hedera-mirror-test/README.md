@@ -5,15 +5,14 @@ This module covers the end-to-end (E2E) testing strategy employed by the mirror 
 ## Overview
 
 In an effort to quickly confirm product capability during deployment windows, we desire to have E2E tests that would
-allow us to confirm functionality on core scenarios that spanned the main and mirror networks. HCS specifically is a key
-scenario where transactions are submitted to the main network, the mirror node importer ingests these to the database,
-and the client subscribes to the mirror node gRCP API to receives messages in consensus order.
-
-HTS is another key scenario where transactions are submitted to the main network, the mirror node importer ingests these
-to the DB, and the mirror node REST API is periodically invoked to verify transactions. This E2E suite gives us the
-ability to execute scenarios as regular clients would and gain the required confidence during deployment.
+allow us to confirm functionality for core scenarios that span the main and mirror networks. In general, the acceptance
+tests will submit transactions to the mainnet scenario where transactions are submitted to the main network, the mirror
+node importer ingests these to the database, and the client subscribes to either the mirror node gRPC or REST API to
+receive results.
 
 To achieve this the tests utilize the [Hedera Java SDK](https://github.com/hashgraph/hedera-sdk-java) under the hood.
+This E2E suite gives us the ability to execute scenarios as regular clients would and gain the required confidence
+during deployment.
 
 ## Cucumber
 
@@ -54,7 +53,7 @@ under `hedera.mirror.test.acceptance` include:
 - `emitBackgroundMessages` - Flag to set if background messages should be emitted. For operations use in non-production
   `environments.
 - `existingTopicNum` - A pre-existing default topic number that can be used when no topicId is specified in a test. Used
-  initially by `@SubscribeOnly` test.
+  initially by `@subscribeonly` test.
 - `maxTinyBarTransactionFee` - The maximum transaction fee you're willing to pay on a transaction.
 - `messageTimeout` - The number of seconds to wait on messages representing transactions (default is 20).
 - `mirrorNodeAddress` - The mirror node grpc server endpoint including IP address and port. Refer to
@@ -78,7 +77,7 @@ under `hedera.mirror.test.acceptance` include:
 (Recommended) Options can be set by creating your own configuration file with the above properties. This allows for
 multiple files per env. The following command will help to point out which file to use:
 
-`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance" -Dspring.config.name=application-testnet`
+`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance" -Dspring.config.name=application-testnet`
 
 Options can also be set through the command line as follows
 
@@ -115,24 +114,24 @@ hedera:
 
 #### Feature Tags
 
-Tags: Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @Sanity tag
+Tags: Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @sanity tag
 are run. To run a different set of files different tags can be specified
 
 Acceptance test cases
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Acceptance"`
+`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
 
 All cases
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@FullSuite"`
+`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@fullsuite"`
 
 Negative cases
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Negative"`
+`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@negative"`
 
 Edge cases
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@Edge"`
+`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@edge"`
 
 Other (search for @? tags within the .feature files for further tags)
 
