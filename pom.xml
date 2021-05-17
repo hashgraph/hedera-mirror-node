@@ -73,7 +73,7 @@
         <jib.version>3.0.0</jib.version>
         <jmeter.version>5.4.1</jmeter.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
-        <msgpack.version>0.8.22</msgpack.version>
+        <msgpack.version>0.8.24</msgpack.version>
         <protobuf.version>3.17.0</protobuf.version>
         <release.version>0.34.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.21.0-SNAPSHOT</release.chartVersion>
