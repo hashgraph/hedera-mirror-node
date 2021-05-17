@@ -8,6 +8,35 @@ affinity:
             matchLabels:
               app.kubernetes.io/component: grpc
 
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitAllWhenPodIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              value: resource
+          targetMatch:
+            - name: application
+              value: hedera-mirror-grpc
+          equal:
+            - namespace
+            - pod
+
+    InhibitGrpcLogAlertWhenHighErrors:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: GrpcErrors
+          targetMatch:
+            - name: alertname
+              value: GrpcLog4j2Errors
+          equal:
+            - namespace
+            - pod
+
 annotations: {}
 
 config: {}
@@ -96,6 +125,7 @@ prometheusRules:
     for: 2m
     labels:
       severity: critical
+      application: hedera-mirror-grpc
 
   GrpcHighCPU:
     annotations:
@@ -106,6 +136,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-grpc
+      area: resource
 
   GrpcHighDBConnections:
     annotations:
@@ -116,6 +148,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-grpc
+      area: resource
 
   GrpcHighFileDescriptors:
     annotations:
@@ -126,6 +160,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-grpc
+      area: resource
 
   GrpcHighLatency:
     annotations:
@@ -136,6 +172,7 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
+      application: hedera-mirror-grpc
 
   GrpcHighMemory:
     annotations:
@@ -146,6 +183,8 @@ prometheusRules:
     for: 5m
     labels:
       severity: critical
+      application: hedera-mirror-grpc
+      area: resource
 
   GrpcLog4j2Errors:
     annotations:
@@ -156,6 +195,19 @@ prometheusRules:
     for: 3m
     labels:
       severity: critical
+      application: hedera-mirror-grpc
+
+  GrpcNoPodsReady:
+    annotations:
+      description: "No grpc instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: No grpc instances running
+    enabled: true
+    expr: sum(kube_pod_container_status_ready{container="grpc"}) by (namespace, pod) < 1
+    for: 30s
+    labels:
+      severity: critical
+      application: hedera-mirror-grpc
+      area: resource
 
   GrpcNoSubscribers:
     annotations:
@@ -166,6 +218,7 @@ prometheusRules:
     for: 5m
     labels:
       severity: warning
+      application: hedera-mirror-grpc
 
 rbac:
   enabled: true

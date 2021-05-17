@@ -1,0 +1,15 @@
+{{- if .Values.alertmanager.inhibitRules.enabled -}}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: {{ include "hedera-mirror.fullname" . }}
+  labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  namespace: {{ include "hedera-mirror.namespace" . }}
+spec:
+  inhibitRules:
+    {{- range $name, $rule := omit .Values.alertmanager.inhibitRules "enabled" }}
+      {{- if $rule.enabled }}
+        {{- $rule.matches | toYaml | nindent 4 }}
+      {{- end }}
+    {{- end }}
+{{- end -}}

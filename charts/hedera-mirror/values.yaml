@@ -1,3 +1,47 @@
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitGrpcAndMonitorHighLatencyWhenImporterRecordFileIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: application
+              value: hedera-mirror-importer
+            - name: type
+              value: RECORD
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (GrpcHighLatency|MonitorSubscribeLatency)
+          equal:
+            - namespace
+
+    InhibitGrpcAndMonitorHighLatencyWhenImporterHighLatencyOrNoPods:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: ImporterNoPodsReady
+          targetMatch:
+            - name: alertname
+              regex: true
+              value: (GrpcHighLatency|MonitorSubscribeLatency)
+          equal:
+            - namespace
+
+    InhibitMonitorNoTransactionsWhenImporterNoTransactionsOrNoPods:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              regex: true
+              value: (ImporterNoTransactions|ImporterNoPodsReady)
+          targetMatch:
+            - name: alertname
+              value: MonitorSubscribeStopped
+          equal:
+            - namespace
+
 applicationResource:
   enabled: false
   partnerId: ""
