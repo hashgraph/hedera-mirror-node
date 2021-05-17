@@ -321,11 +321,11 @@ Add optional filters
 
 ### Token Supply distribution
 
-- Update `/api/v1/tokens/{id}/balances` response to only show `account` when the token is an NftType token.\
+- Update `/api/v1/tokens/{id}/balances` response to only show `account` when the token is an NftType token.
   - Having a list of serial_numbers could cause too much bloat
-  - Balances should only display if the token have not been deleted (`token.delted` == false)
+  - Balances should only display if the token has not been deleted (e.g. `token.deleted` is false)
     - An account balance should only be listed if the account has at least one nft that has not been
-      deleted. (`nft.deleted` == false)
+      deleted (`nft.deleted` == false).
 
 ```json
     {
@@ -347,7 +347,8 @@ Add optional filters
 #### List NFTs
 
 - GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
-  - NFTs should only display if the token have not been deleted (`token.delted` == false). Otherwise, display empty list
+  - NFTs should only display if the token has not been deleted (e.g. `token.deleted` is false) Otherwise, display empty
+    list
   - This endpoint should return a 404 if the token is not of type `NON-FUNGIBLE`
 
 ```json
