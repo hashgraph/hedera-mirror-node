@@ -4,7 +4,7 @@ This module covers the end-to-end (E2E) testing strategy employed by the mirror 
 
 ## Overview
 
-In an effort to quickly confirm product capability during deployment windows, we desire to have E2E tests that would
+In an effort to quickly confirm product capability during deployment windows, we desire to have E2E tests that will
 allow us to confirm functionality for core scenarios that span the main and mirror networks. In general, the acceptance
 tests will submit transactions to the mainnet scenario where transactions are submitted to the main network, the mirror
 node importer ingests these to the database, and the client subscribes to either the mirror node gRPC or REST API to
@@ -16,11 +16,11 @@ during deployment.
 
 ## Cucumber
 
-A [BDD](https://cucumber.io/docs/bdd/) approach is desired for our E2E test strategy as it ensures we closely track
-valid customer scenarios. Cucumber is one framework that provides tools to follow this methodology. One benefit being
-that tests can be written in human-readable text. This allows developers, project managers and quality assurance to
-formulate tests that are connected to code to run valid customer scenarios. [Cucumber](https://cucumber.io) uses the
-Gherkin plain language parser to describe tests.
+Our E2E tests use the [Cucumber](https://cucumber.io) framework, which allows them to be written in
+a [BDD](https://cucumber.io/docs/bdd/) approach that ensures we closely track valid customer scenarios. The framework
+allows tests to be written in a human-readable text format by way of the Gherkin plain language parser, which gives
+developers, project managers, and quality assurance the ability to write easy-to-read scenarios that connect to more
+complex code underneath.
 
 ### Requirements
 
@@ -114,7 +114,7 @@ hedera:
 
 #### Feature Tags
 
-Tags: Tags allow you to filter which cucumber scenarios and files are run. By default tests marked with the @sanity tag
+Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the @sanity tag
 are run. To run a different set of files different tags can be specified
 
 Acceptance test cases
