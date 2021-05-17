@@ -53,7 +53,10 @@ public class HealthCheckConfiguration {
             healthIndicators.put(
                     StreamType.BALANCE.toString(),
                     new StreamFileHealthIndicator(
-                            searchTimer.tag("type", StreamType.BALANCE.toString()).timer(),
+                            searchTimer
+                                    .tag("type", StreamType.BALANCE.toString())
+                                    .tag("success", "true")
+                                    .timer(),
                             balanceParserProperties.getStreamFileStatusCheckWindow(),
                             mirrorProperties.getEndDate()));
         }
@@ -62,7 +65,10 @@ public class HealthCheckConfiguration {
             healthIndicators.put(
                     StreamType.EVENT.toString(),
                     new StreamFileHealthIndicator(
-                            searchTimer.tag("type", StreamType.EVENT.toString()).timer(),
+                            searchTimer
+                                    .tag("type", StreamType.EVENT.toString())
+                                    .tag("success", "true")
+                                    .timer(),
                             eventParserProperties.getStreamFileStatusCheckWindow(),
                             mirrorProperties.getEndDate()));
         }
@@ -71,7 +77,10 @@ public class HealthCheckConfiguration {
             healthIndicators.put(
                     StreamType.RECORD.toString(),
                     new StreamFileHealthIndicator(
-                            searchTimer.tag("type", StreamType.RECORD.toString()).timer(),
+                            searchTimer
+                                    .tag("type", StreamType.RECORD.toString())
+                                    .tag("success", "true")
+                                    .timer(),
                             recordParserProperties.getStreamFileStatusCheckWindow(),
                             mirrorProperties.getEndDate()));
         }

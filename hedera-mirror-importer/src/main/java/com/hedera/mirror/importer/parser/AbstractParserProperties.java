@@ -51,7 +51,7 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @Min(1)
     protected int queueCapacity = 10;
 
-    @DurationMax(minutes = 35L)
+    @DurationMax(minutes = 45L)
     @DurationMin(seconds = 0)
     protected Duration streamFileStatusCheckWindow;
 
