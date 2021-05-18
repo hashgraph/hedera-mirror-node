@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.20.0-rc2'
+      version: '0.20.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -38,15 +38,10 @@ spec:
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
-        HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
-        SPRING_REDIS_SENTINEL_MASTER: ""
-        SPRING_REDIS_SENTINEL_NODES: ""
-        SPRING_REDIS_SENTINEL_PASSWORD: ""
+        #HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
     postgresql:
-      enabled: false
-    redis:
       enabled: false
 
