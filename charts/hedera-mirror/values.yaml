@@ -137,6 +137,7 @@ postgresql:
     size: 500Gi
   pgpool:
     adminPassword: ""  # Randomly generated if left blank
+    existingSecret: mirror-passwords
     extraEnvVars:
       - name: PGPOOL_POSTGRES_CUSTOM_PASSWORDS
         valueFrom:
