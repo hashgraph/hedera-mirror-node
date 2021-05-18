@@ -184,6 +184,6 @@ func main() {
 
 	loggedRouter := server.LoggerMiddleware(router)
 	corsRouter := server.CorsMiddleware(loggedRouter)
-	log.Infof("Listening on port %d\n", rosettaConfig.Port)
+	log.Infof("Listening on port %d", rosettaConfig.Port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", rosettaConfig.Port), corsRouter))
 }

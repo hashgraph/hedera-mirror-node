@@ -100,7 +100,7 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(
 		sql.Named("account_id", entityID),
 		sql.Named("timestamp", consensusEnd),
 	).
-		Find(&ab)
+		First(&ab)
 	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		ab.Balance = 0
 	}

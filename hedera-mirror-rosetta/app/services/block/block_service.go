@@ -22,10 +22,12 @@ package block
 
 import (
 	"context"
+	"fmt"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	log "github.com/sirupsen/logrus"
 )
 
 // BlockAPIService implements the server.BlockAPIServicer interface.
@@ -47,6 +49,17 @@ func (s *BlockAPIService) Block(
 ) (*rTypes.BlockResponse, *rTypes.Error) {
 	block, err := s.RetrieveBlock(request.BlockIdentifier)
 	if err != nil {
+		index := "(nil)"
+		if request.BlockIdentifier.Index != nil {
+			index = fmt.Sprintf("%d", *request.BlockIdentifier.Index)
+		}
+
+		hash := "(nil)"
+		if request.BlockIdentifier.Hash != nil {
+			hash = fmt.Sprintf("%s", *request.BlockIdentifier.Hash)
+		}
+		log.Errorf("Failed to retrieve block with identifier (index - %s, hash - \"%s\"), err %s",
+			index, hash, err.Message)
 		return nil, err
 	}
 
