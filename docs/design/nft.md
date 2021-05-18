@@ -50,7 +50,6 @@ create table if not exists nft
 create table if not exists nft_transfer
 (
   consensus_timestamp   bigint  not null,
-  nft_timestamp         bigint  not null,
   receiver_account_id   bigint  not null,
   sender_account_id     bigint  not null,
   serial_number         bigint  not null,
@@ -226,16 +225,16 @@ Add optional filters
 
 ### Token Supply distribution
 
-- Update `/api/v1/tokens/{id}/balances` response to return an error code 404 for `NON_FUNGIBLE` tokens that indicates
+- Update `/api/v1/tokens/{id}/balances` response to return an error code 409 for `NON_FUNGIBLE` tokens that indicates
   users should go to `/api/v1/tokens/{id}/nfts`.
 
 #### List NFTs
 
 - GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
   - NFTs should only display if the token has not been deleted (e.g. `token.deleted` is false) Otherwise, display empty
-    list
-  - This endpoint should return a 404 if the token is not of type `NON-FUNGIBLE` with a message that indicates users
-    should go to `/api/v1/tokens/{id}/balances`.
+    list.
+  - This endpoint should return a 409 for `FUNGIBLE` tokens with a message that indicates users should go
+    to `/api/v1/tokens/{id}/balances`.
 
 ```json
 {
