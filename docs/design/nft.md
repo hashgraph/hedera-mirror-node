@@ -7,14 +7,14 @@ the mirror node can be updated to add support for NFTs.
 
 ## Goals
 
-- Support whole and singleton NFTs
+- Support whole, singleton, and fractional NFTs
 - Ingest NFT transactions and persist to the database
 - Expose NFT info and transfers via REST APIs
 - Monitor NFTs
 
 ## Non Goals
 
-- Support fractional and hybrid NFTs (NFTs with a fungible child token to represent a fungible component)
+- Support hybrid NFTs (NFTs with a fungible child token to represent a fungible component)
 - Provide an NFT gRPC API
 
 ## Architecture
