@@ -27,7 +27,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -112,6 +111,40 @@ func TestNetworkList(t *testing.T) {
 
 func TestNetworkOptions(t *testing.T) {
 	// given:
+	expectedErrors := []*rTypes.Error{
+		errors.ErrAccountNotFound,
+		errors.ErrBlockNotFound,
+		errors.ErrInvalidAccount,
+		errors.ErrInvalidAmount,
+		errors.ErrInvalidOperationsAmount,
+		errors.ErrInvalidOperationsTotalAmount,
+		errors.ErrInvalidPublicKey,
+		errors.ErrInvalidSignatureVerification,
+		errors.ErrInvalidTransactionIdentifier,
+		errors.ErrMultipleOperationTypesPresent,
+		errors.ErrMultipleSignaturesPresent,
+		errors.ErrNodeIsStarting,
+		errors.ErrNotImplemented,
+		errors.ErrOperationResultsNotFound,
+		errors.ErrOperationTypesNotFound,
+		errors.ErrStartMustNotBeAfterEnd,
+		errors.ErrTransactionBuildFailed,
+		errors.ErrTransactionDecodeFailed,
+		errors.ErrTransactionRecordFetchFailed,
+		errors.ErrTransactionMarshallingFailed,
+		errors.ErrTransactionUnmarshallingFailed,
+		errors.ErrTransactionSubmissionFailed,
+		errors.ErrTransactionNotFound,
+		errors.ErrEmptyOperations,
+		errors.ErrTransactionInvalidType,
+		errors.ErrTransactionNotSigned,
+		errors.ErrTransactionHashFailed,
+		errors.ErrTransactionFreezeFailed,
+		errors.ErrInvalidArgument,
+		errors.ErrDatabaseError,
+		errors.ErrInternalServerError,
+	}
+
 	expectedResult := &rTypes.NetworkOptionsResponse{
 		Version: &rTypes.Version{
 			RosettaVersion:    "1",
@@ -131,7 +164,7 @@ func TestNetworkOptions(t *testing.T) {
 				},
 			},
 			OperationTypes:          []string{"Transfer"},
-			Errors:                  maphelper.GetErrorValuesFromStringErrorMap(errors.Errors),
+			Errors:                  expectedErrors,
 			HistoricalBalanceLookup: true,
 		},
 	}

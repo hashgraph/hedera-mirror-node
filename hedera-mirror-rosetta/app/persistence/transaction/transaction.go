@@ -161,7 +161,7 @@ func (tr *TransactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
 // FindBetween retrieves all Transactions between the provided start and end timestamp
 func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
 	if start > end {
-		return nil, errors.Errors[errors.StartMustNotBeAfterEnd]
+		return nil, errors.ErrStartMustNotBeAfterEnd
 	}
 	var transactions []transaction
 	tr.dbClient.Raw(whereClauseBetweenConsensus, sql.Named("start", start), sql.Named("end", end)).Find(&transactions)
@@ -191,7 +191,7 @@ func (tr *TransactionRepository) FindByHashInBlock(
 	var transactions []transaction
 	transactionHash, err := hex.DecodeString(hexUtils.SafeRemoveHexPrefix(hashStr))
 	if err != nil {
-		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
+		return nil, errors.ErrInvalidTransactionIdentifier
 	}
 	tr.dbClient.
 		Raw(
@@ -203,7 +203,7 @@ func (tr *TransactionRepository) FindByHashInBlock(
 		Find(&transactions)
 
 	if len(transactions) == 0 {
-		return nil, errors.Errors[errors.TransactionNotFound]
+		return nil, errors.ErrTransactionNotFound
 	}
 
 	transaction, err1 := tr.constructTransaction(transactions)
@@ -291,12 +291,12 @@ func (tr *TransactionRepository) retrieveTransactionTypesAndResults() *rTypes.Er
 
 	if len(typeArray) == 0 {
 		log.Warn("No Transaction Types were found in the database.")
-		return errors.Errors[errors.OperationTypesNotFound]
+		return errors.ErrOperationTypesNotFound
 	}
 
 	if len(resultArray) == 0 {
 		log.Warn("No Transaction Results were found in the database.")
-		return errors.Errors[errors.OperationResultsNotFound]
+		return errors.ErrOperationResultsNotFound
 	}
 
 	tr.once.Do(func() {
@@ -322,7 +322,7 @@ func constructAccount(encodedID int64) (*types.Account, *rTypes.Error) {
 	acc, err := types.NewAccountFromEncodedID(encodedID)
 	if err != nil {
 		log.Errorf(errors.CreateAccountDbIdFailed, encodedID)
-		return nil, errors.Errors[errors.InternalServerError]
+		return nil, errors.ErrInternalServerError
 	}
 	return acc, nil
 }

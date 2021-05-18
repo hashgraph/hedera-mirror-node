@@ -29,7 +29,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/transaction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 )
 
 // NetworkAPIService implements the server.NetworkAPIServicer interface.
@@ -79,7 +78,7 @@ func (n *NetworkAPIService) NetworkOptions(
 		Allow: &types.Allow{
 			OperationStatuses:       operationStatuses,
 			OperationTypes:          operationTypes,
-			Errors:                  maphelper.GetErrorValuesFromStringErrorMap(errors.Errors),
+			Errors:                  errors.Errors,
 			HistoricalBalanceLookup: true,
 		},
 	}, nil

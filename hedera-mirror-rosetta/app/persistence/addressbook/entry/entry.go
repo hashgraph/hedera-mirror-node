@@ -87,7 +87,7 @@ func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
 	acc, err := types.AccountFromString(abe.Memo)
 	if err != nil {
 		log.Errorf(errors.CreateAccountDbIdFailed, abe.Memo)
-		return nil, errors.Errors[errors.InternalServerError]
+		return nil, errors.ErrInternalServerError
 	}
 	return acc, nil
 }

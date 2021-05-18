@@ -128,7 +128,7 @@ func TestShouldSuccessFindByIndexNegativeIndex(t *testing.T) {
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InvalidArgument], err)
+	assert.Equal(t, errors.ErrInvalidArgument, err)
 }
 
 func TestShouldFailFindByIndexNoRecordFile(t *testing.T) {
@@ -140,12 +140,12 @@ func TestShouldFailFindByIndexNoRecordFile(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.BlockNotFound],
+			expected: errors.ErrBlockNotFound,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -178,12 +178,12 @@ func TestShouldFailFindByIndexNoGenesisRecordFile(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.NodeIsStarting],
+			expected: errors.ErrNodeIsStarting,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -255,7 +255,7 @@ func TestShouldFailFindByHasEmptyHash(t *testing.T) {
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InvalidArgument], err)
+	assert.Equal(t, errors.ErrInvalidArgument, err)
 }
 
 func TestShouldFailFindByHashNoGenesisRecordFile(t *testing.T) {
@@ -267,12 +267,12 @@ func TestShouldFailFindByHashNoGenesisRecordFile(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.NodeIsStarting],
+			expected: errors.ErrNodeIsStarting,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -369,7 +369,7 @@ func TestShouldFailFindByIdentifierInvalidArgument(t *testing.T) {
 			// then
 			assert.NoError(t, mock.ExpectationsWereMet())
 			assert.Nil(t, result)
-			assert.Equal(t, errors.Errors[errors.InvalidArgument], err)
+			assert.Equal(t, errors.ErrInvalidArgument, err)
 		})
 	}
 }
@@ -383,12 +383,12 @@ func TestShouldFailFindByIdentifierNoGenesisRecordFile(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.NodeIsStarting],
+			expected: errors.ErrNodeIsStarting,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -429,7 +429,7 @@ func TestShouldFailFindByIdentifierMismatchIndices(t *testing.T) {
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
+	assert.Equal(t, errors.ErrBlockNotFound, err)
 	assert.Nil(t, result)
 }
 
@@ -459,40 +459,6 @@ func TestShouldSuccessRetrieveGenesis(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestShouldFailRetrieveGenesisNoRecordFile(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.NodeIsStarting],
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
-		},
-	}
-
-	for _, tt := range tests {
-		// given
-		br, mock := setupRepository(t)
-
-		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
-
-		// when
-		result, err := br.RetrieveGenesis()
-
-		// then
-		assert.NoError(t, mock.ExpectationsWereMet())
-		assert.Nil(t, result)
-		assert.Equal(t, tt.expected, err)
-	}
-}
-
 func TestShouldFailRetrieveGenesisNoGenesisRecordFile(t *testing.T) {
 	var tests = []struct {
 		name     string
@@ -502,12 +468,12 @@ func TestShouldFailRetrieveGenesisNoGenesisRecordFile(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.NodeIsStarting],
+			expected: errors.ErrNodeIsStarting,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -562,12 +528,12 @@ func TestShouldFailRetrieveLatestRecordFileNotFound(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.BlockNotFound],
+			expected: errors.ErrBlockNotFound,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -599,12 +565,12 @@ func TestShouldFailRetrieveLatestNoGenesisRecordFile(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.NodeIsStarting],
+			expected: errors.ErrNodeIsStarting,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -650,12 +616,12 @@ func TestShouldFailFindRecordFileByHashNoRecordFound(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.BlockNotFound],
+			expected: errors.ErrBlockNotFound,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 
@@ -725,12 +691,12 @@ func TestShouldFailGetGenesis(t *testing.T) {
 		{
 			name:     "DbRecordNotFound",
 			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.Errors[errors.NodeIsStarting],
+			expected: errors.ErrNodeIsStarting,
 		},
 		{
 			name:     "OtherDbError",
 			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.Errors[errors.DatabaseError],
+			expected: errors.ErrDatabaseError,
 		},
 	}
 

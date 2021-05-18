@@ -144,7 +144,7 @@ func NewBlockRepository(dbClient *gorm.DB) *BlockRepository {
 // FindByIndex retrieves a block by given Index
 func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
 	if index < 0 {
-		return nil, hErrors.Errors[hErrors.InvalidArgument]
+		return nil, hErrors.ErrInvalidArgument
 	}
 
 	if _, err := br.getGenesisRecordFile(); err != nil {
@@ -156,12 +156,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 	if index == br.genesisRecordFileIndex {
 		rf = br.genesisRecordFile
 	} else if err := br.dbClient.Raw(selectRecordFileByIndex, sql.Named("index", index)).First(rf).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, hErrors.Errors[hErrors.BlockNotFound]
-		}
-
-		log.Errorf("%s: %s", hErrors.DatabaseError, err)
-		return nil, hErrors.Errors[hErrors.DatabaseError]
+		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
@@ -170,7 +165,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 // FindByHash retrieves a block by a given Hash
 func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
 	if hash == "" {
-		return nil, hErrors.Errors[hErrors.InvalidArgument]
+		return nil, hErrors.ErrInvalidArgument
 	}
 
 	if _, err := br.getGenesisRecordFile(); err != nil {
@@ -183,7 +178,7 @@ func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error)
 // FindByIdentifier retrieves a block by Index && Hash
 func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
 	if index < 0 || hash == "" {
-		return nil, hErrors.Errors[hErrors.InvalidArgument]
+		return nil, hErrors.ErrInvalidArgument
 	}
 
 	if _, err := br.getGenesisRecordFile(); err != nil {
@@ -196,7 +191,7 @@ func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 	}
 
 	if block.Index != index {
-		return nil, hErrors.Errors[hErrors.BlockNotFound]
+		return nil, hErrors.ErrBlockNotFound
 	}
 
 	return block, nil
@@ -219,12 +214,7 @@ func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 
 	rf := &recordFile{}
 	if err := br.dbClient.Raw(selectLatestWithIndex).First(rf).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, hErrors.Errors[hErrors.BlockNotFound]
-		}
-
-		log.Errorf("%s: %s", hErrors.DatabaseError, err)
-		return nil, hErrors.Errors[hErrors.DatabaseError]
+		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
@@ -235,12 +225,7 @@ func (br *BlockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.E
 	if hash == br.genesisRecordFile.Hash {
 		rf = br.genesisRecordFile
 	} else if err := br.dbClient.Raw(selectByHashWithIndex, sql.Named("hash", hash)).First(rf).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, hErrors.Errors[hErrors.BlockNotFound]
-		}
-
-		log.Errorf("%s: %s", hErrors.DatabaseError, err)
-		return nil, hErrors.Errors[hErrors.DatabaseError]
+		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
@@ -253,12 +238,7 @@ func (br *BlockRepository) getGenesisRecordFile() (*recordFile, *rTypes.Error) {
 
 	rf := &recordFile{}
 	if err := br.dbClient.Raw(selectGenesis).First(rf).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, hErrors.Errors[hErrors.NodeIsStarting]
-		}
-
-		log.Errorf("%s: %s", hErrors.DatabaseError, err)
-		return nil, hErrors.Errors[hErrors.DatabaseError]
+		return nil, handleDatabaseError(err, hErrors.ErrNodeIsStarting)
 	}
 
 	br.once.Do(func() {
@@ -268,4 +248,13 @@ func (br *BlockRepository) getGenesisRecordFile() (*recordFile, *rTypes.Error) {
 
 	log.Infof("Fetched genesis record file, index - %d", rf.Index)
 	return br.genesisRecordFile, nil
+}
+
+func handleDatabaseError(err error, recordNotFoundErr *rTypes.Error) *rTypes.Error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return recordNotFoundErr
+	}
+
+	log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, err)
+	return hErrors.ErrDatabaseError
 }

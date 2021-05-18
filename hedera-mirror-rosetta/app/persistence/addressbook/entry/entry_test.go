@@ -129,7 +129,7 @@ func TestShouldFailReturnEntriesDueToInvalidDbData(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
+	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
 func TestShouldSuccessReturnPeerId(t *testing.T) {
@@ -158,7 +158,7 @@ func TestShouldFailReturnPeerId(t *testing.T) {
 	// then
 	assert.Nil(t, result)
 	assert.NotNil(t, err)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
+	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
 func TestShouldFailReturnPeerIdNegative(t *testing.T) {
@@ -173,7 +173,7 @@ func TestShouldFailReturnPeerIdNegative(t *testing.T) {
 	// then
 	assert.Nil(t, result)
 	assert.NotNil(t, err)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
+	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
 func setupRepository(t *testing.T) (*AddressBookEntryRepository, []string, sqlmock.Sqlmock) {

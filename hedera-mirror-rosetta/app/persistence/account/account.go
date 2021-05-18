@@ -90,7 +90,7 @@ func (ar *AccountRepository) RetrieveBalanceAtBlock(
 	}
 	entityID, err1 := acc.ComputeEncodedID()
 	if err1 != nil {
-		return nil, hErrors.Errors[hErrors.InvalidAccount]
+		return nil, hErrors.ErrInvalidAccount
 	}
 
 	// gets the most recent balance before block

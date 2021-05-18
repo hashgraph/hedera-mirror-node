@@ -62,7 +62,7 @@ func (c *BaseService) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) 
 			bIdentifier.Index,
 			bIdentifier.Hash,
 		)
-		return nil, errors.Errors[errors.InternalServerError]
+		return nil, errors.ErrInternalServerError
 	}
 }
 

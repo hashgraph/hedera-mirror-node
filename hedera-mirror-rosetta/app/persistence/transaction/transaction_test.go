@@ -213,7 +213,7 @@ func TestShouldFailFindBetweenEndBeforeStart(t *testing.T) {
 
 	// then
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.StartMustNotBeAfterEnd], err)
+	assert.Equal(t, errors.ErrStartMustNotBeAfterEnd, err)
 }
 
 func TestShouldSuccessFindHashInBlock(t *testing.T) {
@@ -284,7 +284,7 @@ func TestShouldFailFindHashInBlockNoReturnTransactions(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.TransactionNotFound], err)
+	assert.Equal(t, errors.ErrTransactionNotFound, err)
 }
 
 func TestShouldFailFindHashInBlockInvalidHash(t *testing.T) {
@@ -296,7 +296,7 @@ func TestShouldFailFindHashInBlockInvalidHash(t *testing.T) {
 
 	// then
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InvalidTransactionIdentifier], err)
+	assert.Equal(t, errors.ErrInvalidTransactionIdentifier, err)
 }
 
 func TestShouldFailConstructTransactionDueToNoResults(t *testing.T) {
@@ -1036,7 +1036,7 @@ func TestShouldFailReturnTransactionTypesAndResultsDueToNoResults(t *testing.T) 
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.OperationResultsNotFound], result)
+	assert.Equal(t, errors.ErrOperationResultsNotFound, result)
 }
 
 func TestShouldFailReturnTransactionTypesAndResultsDueToNoTypes(t *testing.T) {
@@ -1050,7 +1050,7 @@ func TestShouldFailReturnTransactionTypesAndResultsDueToNoTypes(t *testing.T) {
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.OperationTypesNotFound], result)
+	assert.Equal(t, errors.ErrOperationTypesNotFound, result)
 }
 
 func TestShouldSuccessReturnTransactionResults(t *testing.T) {
@@ -1131,7 +1131,7 @@ func TestShouldSuccessIntsToString(t *testing.T) {
 
 func TestShouldFailConstructAccount(t *testing.T) {
 	data := int64(-1)
-	expected := errors.Errors[errors.InternalServerError]
+	expected := errors.ErrInternalServerError
 
 	result, err := constructAccount(data)
 

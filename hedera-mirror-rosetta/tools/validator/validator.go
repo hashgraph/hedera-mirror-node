@@ -28,20 +28,20 @@ import (
 
 func ValidateOperationsSum(operations []*types.Operation) *types.Error {
 	if len(operations) == 0 {
-		return errors.Errors[errors.EmptyOperations]
+		return errors.ErrEmptyOperations
 	}
 	var sum int64 = 0
 
 	for _, operation := range operations {
 		amount, err := parse.ToInt64(operation.Amount.Value)
 		if err != nil || amount == 0 {
-			return errors.Errors[errors.InvalidAmount]
+			return errors.ErrInvalidAmount
 		}
 		sum += amount
 	}
 
 	if sum != 0 {
-		return errors.Errors[errors.InvalidOperationsTotalAmount]
+		return errors.ErrInvalidOperationsTotalAmount
 	}
 
 	return nil

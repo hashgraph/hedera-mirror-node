@@ -90,7 +90,7 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidAddressNegative(t *testing.
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InvalidAccount], err)
+	assert.Equal(t, errors.ErrInvalidAccount, err)
 }
 
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidShardComputation(t *testing.T) {
@@ -104,7 +104,7 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidShardComputation(t *testing
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InvalidAccount], err)
+	assert.Equal(t, errors.ErrInvalidAccount, err)
 }
 
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidRealmComputation(t *testing.T) {
@@ -118,7 +118,7 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidRealmComputation(t *testing
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InvalidAccount], err)
+	assert.Equal(t, errors.ErrInvalidAccount, err)
 }
 
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidEntityComputation(t *testing.T) {
@@ -132,7 +132,7 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidEntityComputation(t *testin
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InvalidAccount], err)
+	assert.Equal(t, errors.ErrInvalidAccount, err)
 }
 
 func TestShouldSuccessRetrieveBalanceAtBlock(t *testing.T) {

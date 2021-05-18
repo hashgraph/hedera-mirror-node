@@ -49,5 +49,5 @@ func (m *MempoolAPIService) MempoolTransaction(
 	ctx context.Context,
 	request *rTypes.MempoolTransactionRequest,
 ) (*rTypes.MempoolTransactionResponse, *rTypes.Error) {
-	return nil, errors.Errors[errors.TransactionNotFound]
+	return nil, errors.ErrTransactionNotFound
 }

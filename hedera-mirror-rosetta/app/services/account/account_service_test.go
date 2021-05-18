@@ -179,5 +179,5 @@ func TestAccountCoins(t *testing.T) {
 
 	// then:
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.NotImplemented], err)
+	assert.Equal(t, errors.ErrNotImplemented, err)
 }

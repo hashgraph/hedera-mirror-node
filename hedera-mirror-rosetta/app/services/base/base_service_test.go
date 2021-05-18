@@ -89,7 +89,7 @@ func TestRetrieveBlockThrowsNoIdentifiers(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], e)
+	assert.Equal(t, errors.ErrInternalServerError, e)
 }
 
 func TestRetrieveBlockFindByIdentifier(t *testing.T) {

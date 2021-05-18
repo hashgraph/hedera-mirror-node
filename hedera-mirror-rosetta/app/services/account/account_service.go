@@ -79,5 +79,5 @@ func (a *AccountAPIService) AccountCoins(
 	ctx context.Context,
 	request *rTypes.AccountCoinsRequest,
 ) (*rTypes.AccountCoinsResponse, *rTypes.Error) {
-	return nil, errors.Errors[errors.NotImplemented]
+	return nil, errors.ErrNotImplemented
 }

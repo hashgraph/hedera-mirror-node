@@ -56,7 +56,7 @@ func (c *ConstructionAPIService) ConstructionCombine(
 	request *rTypes.ConstructionCombineRequest,
 ) (*rTypes.ConstructionCombineResponse, *rTypes.Error) {
 	if len(request.Signatures) != 1 {
-		return nil, errors.Errors[errors.MultipleSignaturesPresent]
+		return nil, errors.ErrMultipleSignaturesPresent
 	}
 
 	unsignedTransaction, rErr := unmarshallTransactionFromHexString(request.UnsignedTransaction)
@@ -74,16 +74,16 @@ func (c *ConstructionAPIService) ConstructionCombine(
 
 	pubKey, err := hedera.PublicKeyFromBytes(signature.PublicKey.Bytes)
 	if err != nil {
-		return nil, errors.Errors[errors.InvalidPublicKey]
+		return nil, errors.ErrInvalidPublicKey
 	}
 
 	if !ed25519.Verify(pubKey.Bytes(), frozenBodyBytes, signatureBytes) {
-		return nil, errors.Errors[errors.InvalidSignatureVerification]
+		return nil, errors.ErrInvalidSignatureVerification
 	}
 
 	transactionBytes, err := unsignedTransaction.AddSignature(pubKey, signatureBytes).ToBytes()
 	if err != nil {
-		return nil, errors.Errors[errors.TransactionMarshallingFailed]
+		return nil, errors.ErrTransactionMarshallingFailed
 	}
 
 	return &rTypes.ConstructionCombineResponse{
@@ -96,7 +96,7 @@ func (c *ConstructionAPIService) ConstructionDerive(
 	ctx context.Context,
 	request *rTypes.ConstructionDeriveRequest,
 ) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
-	return nil, errors.Errors[errors.NotImplemented]
+	return nil, errors.ErrNotImplemented
 }
 
 // ConstructionHash implements the /construction/hash endpoint.
@@ -111,7 +111,7 @@ func (c *ConstructionAPIService) ConstructionHash(
 
 	hash, err := signedTransaction.GetTransactionHash()
 	if err != nil {
-		return nil, errors.Errors[errors.TransactionHashFailed]
+		return nil, errors.ErrTransactionHashFailed
 	}
 
 	return &rTypes.TransactionIdentifierResponse{
@@ -209,7 +209,7 @@ func (c *ConstructionAPIService) ConstructionPreprocess(
 	for _, operation := range request.Operations {
 		amount, err := parse.ToInt64(operation.Amount.Value)
 		if err != nil {
-			return nil, errors.Errors[errors.InvalidAmount]
+			return nil, errors.ErrInvalidAmount
 		}
 
 		if amount > 0 {
@@ -218,7 +218,7 @@ func (c *ConstructionAPIService) ConstructionPreprocess(
 
 		sender, err = hedera.AccountIDFromString(operation.Account.Address)
 		if err != nil {
-			return nil, errors.Errors[errors.InvalidAccount]
+			return nil, errors.ErrInvalidAccount
 		}
 	}
 
@@ -244,13 +244,13 @@ func (c *ConstructionAPIService) ConstructionSubmit(
 
 	hash, err := transaction.GetTransactionHash()
 	if err != nil {
-		return nil, errors.Errors[errors.TransactionHashFailed]
+		return nil, errors.ErrTransactionHashFailed
 	}
 
 	_, err = transaction.Execute(c.hederaClient)
 	if err != nil {
 		log.Errorf("Failed to execute transaction %s: %s", transaction.GetTransactionID(), err)
-		return nil, errors.Errors[errors.TransactionSubmissionFailed]
+		return nil, errors.ErrTransactionSubmissionFailed
 	}
 
 	return &rTypes.TransactionIdentifierResponse{
@@ -278,12 +278,12 @@ func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rType
 	for _, operation := range operations {
 		account, err := hedera.AccountIDFromString(operation.Account.Address)
 		if err != nil {
-			return nil, errors.Errors[errors.InvalidAccount]
+			return nil, errors.ErrInvalidAccount
 		}
 
 		amount, err := parse.ToInt64(operation.Amount.Value)
 		if err != nil {
-			return nil, errors.Errors[errors.InvalidAmount]
+			return nil, errors.ErrInvalidAmount
 		}
 
 		transferTransaction.AddHbarTransfer(account, hedera.HbarFromTinybar(amount))
@@ -306,12 +306,12 @@ func (c *ConstructionAPIService) handleCryptoTransferPayload(operations []*rType
 		SetNodeAccountIDs([]hedera.AccountID{c.getRandomNodeAccountId()}).
 		Freeze()
 	if err != nil {
-		return nil, errors.Errors[errors.TransactionFreezeFailed]
+		return nil, errors.ErrTransactionFreezeFailed
 	}
 
 	transactionBytes, err := transferTransaction.ToBytes()
 	if err != nil {
-		return nil, errors.Errors[errors.TransactionMarshallingFailed]
+		return nil, errors.ErrTransactionMarshallingFailed
 	}
 
 	frozenBodyBytes, rErr := getFrozenTransactionBodyBytes(transferTransaction)
@@ -374,7 +374,7 @@ func NewConstructionAPIService(network string, nodes types.NodeMap) (server.Cons
 func getFrozenTransactionBodyBytes(transaction *hedera.TransferTransaction) ([]byte, *rTypes.Error) {
 	signedTransaction := proto.SignedTransaction{}
 	if err := prototext.Unmarshal([]byte(transaction.String()), &signedTransaction); err != nil {
-		return nil, errors.Errors[errors.TransactionUnmarshallingFailed]
+		return nil, errors.ErrTransactionUnmarshallingFailed
 	}
 
 	return signedTransaction.BodyBytes, nil
@@ -383,17 +383,17 @@ func getFrozenTransactionBodyBytes(transaction *hedera.TransferTransaction) ([]b
 func unmarshallTransactionFromHexString(transactionString string) (*hedera.TransferTransaction, *rTypes.Error) {
 	transactionBytes, err := hex.DecodeString(hexutils.SafeRemoveHexPrefix(transactionString))
 	if err != nil {
-		return nil, errors.Errors[errors.TransactionDecodeFailed]
+		return nil, errors.ErrTransactionDecodeFailed
 	}
 
 	transaction, err := hedera.TransactionFromBytes(transactionBytes)
 	if err != nil {
-		return nil, errors.Errors[errors.TransactionUnmarshallingFailed]
+		return nil, errors.ErrTransactionUnmarshallingFailed
 	}
 
 	transferTransaction, ok := transaction.(hedera.TransferTransaction)
 	if !ok {
-		return nil, errors.Errors[errors.TransactionInvalidType]
+		return nil, errors.ErrTransactionInvalidType
 	}
 
 	return &transferTransaction, nil
