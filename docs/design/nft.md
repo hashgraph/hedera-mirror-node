@@ -34,7 +34,7 @@ create table if not exists nft
   account_id            bigint                  not null
   created_timestamp     bigint  primary key     not null,
   deleted               boolean default false   not null,
-  modified_timestamp    bigint,
+  modified_timestamp    bigint                  not null,
   memo                  text    default ''      not null,
   serial_number         bigint                  not null,
   token_id              bigint                  not null
@@ -273,7 +273,7 @@ Optional Filters
   "created_timestamp": "1610682445.003266000",
   "deleted": false,
   "memo": "This is a test NFT",
-  "modified_timestamp": null,
+  "modified_timestamp": "1610682445.003266000",
   "serial_number": 124
 }
 ```
