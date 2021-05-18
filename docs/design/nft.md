@@ -233,6 +233,7 @@ Add optional filters
 - GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
   - NFTs should only display if the token has not been deleted (e.g. `token.deleted` is false) Otherwise, display empty
     list.
+  - `account_id` should not display when the NFT has been deleted.
   - This endpoint should return a 409 for `FUNGIBLE` tokens with a message that indicates users should go
     to `/api/v1/tokens/{id}/balances`.
 
@@ -242,7 +243,7 @@ Add optional filters
     {
       "account_id": "0.0.111",
       "created_timestamp": "1610682445.003266000",
-      "deleted": true,
+      "deleted": false,
       "memo": "This is a test NFT",
       "modified_timestamp": "1610682445.003266001",
       "serial_number": 124
@@ -264,6 +265,7 @@ Optional Filters
 #### Get NFT by id
 
 - GET `/api/v1/tokens/{id}/nfts/{serialNumber}` will show information about an individual NFT.
+  - `account_id` should not display when the NFT or Token has been deleted.
 
 ```json
 {
