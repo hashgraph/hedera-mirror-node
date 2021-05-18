@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.config;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.search.Search;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,6 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.parser.event.EventParserProperties;
@@ -41,48 +39,34 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 public class HealthCheckConfiguration {
     private final BalanceParserProperties balanceParserProperties;
     private final EventParserProperties eventParserProperties;
-    private final MirrorProperties mirrorProperties;
     private final RecordParserProperties recordParserProperties;
 
     @Bean
     CompositeHealthContributor streamFileActivity(MeterRegistry meterRegistry) {
-        Search searchTimer = meterRegistry.find("hedera.mirror.parse.duration");
         Map<String, HealthIndicator> healthIndicators = new LinkedHashMap<>();
 
-        if (balanceParserProperties.getStreamFileStatusCheckWindow() != null) {
+        if (balanceParserProperties.getStreamFileStatusCheckBuffer() != null) {
             healthIndicators.put(
                     StreamType.BALANCE.toString(),
                     new StreamFileHealthIndicator(
-                            searchTimer
-                                    .tag("type", StreamType.BALANCE.toString())
-                                    .tag("success", "true")
-                                    .timer(),
-                            balanceParserProperties.getStreamFileStatusCheckWindow(),
-                            mirrorProperties.getEndDate()));
+                            balanceParserProperties,
+                            meterRegistry));
         }
 
-        if (eventParserProperties.getStreamFileStatusCheckWindow() != null) {
+        if (eventParserProperties.getStreamFileStatusCheckBuffer() != null) {
             healthIndicators.put(
                     StreamType.EVENT.toString(),
                     new StreamFileHealthIndicator(
-                            searchTimer
-                                    .tag("type", StreamType.EVENT.toString())
-                                    .tag("success", "true")
-                                    .timer(),
-                            eventParserProperties.getStreamFileStatusCheckWindow(),
-                            mirrorProperties.getEndDate()));
+                            eventParserProperties,
+                            meterRegistry));
         }
 
-        if (recordParserProperties.getStreamFileStatusCheckWindow() != null) {
+        if (recordParserProperties.getStreamFileStatusCheckBuffer() != null) {
             healthIndicators.put(
                     StreamType.RECORD.toString(),
                     new StreamFileHealthIndicator(
-                            searchTimer
-                                    .tag("type", StreamType.RECORD.toString())
-                                    .tag("success", "true")
-                                    .timer(),
-                            recordParserProperties.getStreamFileStatusCheckWindow(),
-                            mirrorProperties.getEndDate()));
+                            recordParserProperties,
+                            meterRegistry));
         }
 
         return CompositeHealthContributor.fromMap(healthIndicators);

@@ -20,50 +20,135 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.search.Search;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicLong;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.actuate.health.Status;
 
-@RequiredArgsConstructor
+import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.parser.AbstractParserProperties;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.parser.event.EventParserProperties;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+
 public class StreamFileHealthIndicator implements HealthIndicator {
-    public static final Health HEALTH_DOWN = Health.down().build();
-    public static final Health HEALTH_UP = Health.up().build();
+    private static final String COUNT_KEY = "count";
+    private static final String LAST_CHECK_KEY = "lastCheck";
+    private static final String REASON_KEY = "reason";
 
-    private final Timer streamFileParseDurationTimer;
-    private final Duration streamFileStatusCheckWindow;
+    private final boolean enabled;
     private final Instant endDate;
+    private final MeterRegistry meterRegistry;
+    private final Duration streamFileStatusCheckBuffer;
+    private final StreamType streamType;
+    private final AtomicReference<Health> lastHealthStatus = new AtomicReference(Health
+            .unknown()
+            .withDetail(COUNT_KEY, 0L)
+            .withDetail(LAST_CHECK_KEY, Instant.now())
+            .withDetail(REASON_KEY, "Starting up, no files parsed yet")
+            .build()); // unknown until at least 1 stream file is parsed
 
-    private final AtomicLong lastCount = new AtomicLong(0);
-    private Instant lastCheck = Instant.now();
-    private Health lastHealthStatus = Health.unknown().build(); // unknown until at least 1 stream file is parsed
+    public StreamFileHealthIndicator(AbstractParserProperties abstractParserProperties, MeterRegistry meterRegistry) {
+        enabled = abstractParserProperties.isEnabled();
+        this.meterRegistry = meterRegistry;
+        streamType = abstractParserProperties.getStreamType();
+        switch (streamType) {
+            case BALANCE:
+                BalanceParserProperties balanceParserProperties = (BalanceParserProperties) abstractParserProperties;
+                endDate = balanceParserProperties.getMirrorProperties().getEndDate();
+                streamFileStatusCheckBuffer = balanceParserProperties.getStreamFileStatusCheckBuffer();
+                break;
+            case EVENT:
+                EventParserProperties eventParserProperties = (EventParserProperties) abstractParserProperties;
+                endDate = eventParserProperties.getMirrorProperties().getEndDate();
+                streamFileStatusCheckBuffer = eventParserProperties.getStreamFileStatusCheckBuffer();
+                break;
+            case RECORD:
+                RecordParserProperties recordParserProperties = (RecordParserProperties) abstractParserProperties;
+                endDate = recordParserProperties.getMirrorProperties().getEndDate();
+                streamFileStatusCheckBuffer = recordParserProperties.getStreamFileStatusCheckBuffer();
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
 
     @Override
     public Health health() {
         Instant currentInstant = Instant.now();
+
+        // consider case where parsing is disabled
+        if (!enabled) {
+            return Health
+                    .unknown()
+                    .withDetail(REASON_KEY, String.format("%s parsing is disabled", streamType))
+                    .build();
+        }
+
+        // consider case where endTime has been passed
+        if (endDate.isBefore(currentInstant)) {
+            return Health
+                    .up()
+                    .withDetail(
+                            REASON_KEY,
+                            String.format("EndDate: %s has passed, no stream files are no longer expected", endDate))
+                    .build();
+        }
+
+        Search searchTimer = meterRegistry.find("hedera.mirror.stream.close.latency");
+        Timer streamFileParseDurationTimer = searchTimer
+                .tag("type", streamType.toString())
+                .tag("success", "true")
+                .timer();
         long currentCount = streamFileParseDurationTimer.count();
 
-        Health health = currentCount > lastCount.getAndSet(currentCount) ? HEALTH_UP : HEALTH_DOWN;
+        Map<String, Object> healthStatusDetails = lastHealthStatus.get().getDetails();
+        long lastCount = (Long) healthStatusDetails.get(COUNT_KEY);
+        Health health = currentCount > lastCount ?
+                getHealthUp(streamFileParseDurationTimer, currentInstant) :
+                getHealthDown(streamFileParseDurationTimer, currentInstant);
 
         // handle down but in window of allowance
-        if (health == HEALTH_DOWN) {
-            // consider case where endTime has been passed
-            if (endDate.isBefore(currentInstant)) {
-                return HEALTH_UP;
-            }
-
-            if (currentInstant.isBefore(lastCheck.plus(streamFileStatusCheckWindow))) {
+        if (health.getStatus() == Status.DOWN) {
+            long mean = (long) streamFileParseDurationTimer.mean(TimeUnit.MILLISECONDS);
+            Instant lastCheck = (Instant) healthStatusDetails.get(LAST_CHECK_KEY);
+            if (currentInstant.isBefore(lastCheck.plusMillis(mean).plus(streamFileStatusCheckBuffer))) {
                 // return cached value while in window
-                return lastHealthStatus;
+                return lastHealthStatus.get();
             }
         }
 
-        lastHealthStatus = health;
-        lastCount.set(currentCount);
-        lastCheck = currentInstant;
+        lastHealthStatus.set(health);
+
         return health;
+    }
+
+    private Health getHealthDown(Timer streamFileParseDurationTimer, Instant currentInstant) {
+        Health.Builder healthBuilder = Health
+                .down()
+                .withDetail(REASON_KEY, String
+                        .format("No new stream stream files have been parsed since: %s", currentInstant));
+
+        return getHealth(healthBuilder, streamFileParseDurationTimer, currentInstant);
+    }
+
+    private Health getHealthUp(Timer streamFileParseDurationTimer, Instant currentInstant) {
+        return getHealth(Health.up(), streamFileParseDurationTimer, currentInstant);
+    }
+
+    private Health getHealth(Health.Builder healthBuilder, Timer streamFileParseDurationTimer, Instant currentInstant) {
+        return healthBuilder
+                .withDetail(COUNT_KEY, streamFileParseDurationTimer.count())
+                .withDetail(LAST_CHECK_KEY, currentInstant)
+                .withDetail("max", streamFileParseDurationTimer.max(TimeUnit.MILLISECONDS))
+                .withDetail("mean", streamFileParseDurationTimer.mean(TimeUnit.MILLISECONDS))
+                .build();
     }
 }

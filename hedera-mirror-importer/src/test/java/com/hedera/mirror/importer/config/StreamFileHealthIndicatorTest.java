@@ -21,9 +21,14 @@ package com.hedera.mirror.importer.config;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.search.Search;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,49 +37,77 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.Status;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @ExtendWith(MockitoExtension.class)
-public class StreamFileHealthIndicatorTest {
-    public static final Health HEALTH_DOWN = Health.down().build();
-    public static final Health HEALTH_UP = Health.up().build();
-    public static final Health HEALTH_UNKNOWN = Health.unknown().build();
-
-    @Mock
+class StreamFileHealthIndicatorTest {
+    @Mock(lenient = true)
     private Timer streamFileParseDurationTimer;
+
+    @Mock(lenient = true)
+    private MeterRegistry meterRegistry;
 
     private StreamFileHealthIndicator streamFileHealthIndicator;
 
     private RecordParserProperties recordParserProperties;
 
+    private MirrorProperties mirrorProperties;
+
     @BeforeEach
     void setUp() {
+
         doReturn(0L).when(streamFileParseDurationTimer).count();
-        recordParserProperties = new RecordParserProperties(new MirrorProperties());
+
+        Search searchTimer = mock(Search.class, withSettings().lenient());
+        doReturn(searchTimer).when(searchTimer).tag(anyString(), anyString());
+        doReturn(streamFileParseDurationTimer).when(searchTimer).timer();
+
+        doReturn(searchTimer).when(meterRegistry).find(anyString());
+
+        mirrorProperties = new MirrorProperties();
+        mirrorProperties.setEndDate(Instant.MAX);
+        recordParserProperties = new RecordParserProperties(mirrorProperties);
+
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                streamFileParseDurationTimer,
-                recordParserProperties.getStreamFileStatusCheckWindow(),
-                Instant.MAX);
+                recordParserProperties,
+                meterRegistry);
+    }
+
+    @Test
+    void startUpParsingDisabled() {
+        recordParserProperties.setEnabled(false);
+        streamFileHealthIndicator = new StreamFileHealthIndicator(
+                recordParserProperties,
+                meterRegistry);
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get("reason")).contains("parsing is disabled");
     }
 
     @Test
     void startUpNoStreamFilesBeforeWindow() {
         Health health = streamFileHealthIndicator.health();
-        assertThat(health).isEqualTo(HEALTH_UNKNOWN);
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get("reason")).contains("Starting up, no files parsed yet");
     }
 
     @Test
     void startUpNoStreamFilesAfterWindow() {
         // set window time to smaller value
+        recordParserProperties.setStreamFileStatusCheckBuffer(Duration.ofSeconds(-10L));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                streamFileParseDurationTimer,
-                Duration.ofSeconds(-10L), // force end of window to before now
-                Instant.MAX);
+                recordParserProperties, // force end of window to before now
+                meterRegistry);
 
         Health health = streamFileHealthIndicator.health();
-        assertThat(health).isEqualTo(HEALTH_DOWN);
+        assertThat(health.getStatus()).isEqualTo(Status.DOWN);
+        assertThat((String) health.getDetails().get("reason"))
+                .contains("No new stream stream files have been parsed since:");
+        assertThat((Long) health.getDetails().get("count")).isEqualTo(0);
     }
 
     @Test
@@ -85,7 +118,7 @@ public class StreamFileHealthIndicatorTest {
         doReturn(1L).when(streamFileParseDurationTimer).count();
 
         Health health = streamFileHealthIndicator.health();
-        assertThat(health).isEqualTo(HEALTH_UP);
+        assertThat(health.getStatus()).isEqualTo(Status.UP);
     }
 
     @Test
@@ -98,15 +131,15 @@ public class StreamFileHealthIndicatorTest {
         streamFileHealthIndicator.health(); // up
 
         Health health = streamFileHealthIndicator.health(); // count unchanged
-        assertThat(health).isEqualTo(HEALTH_UP); // cache should be returned
+        assertThat(health.getStatus()).isEqualTo(Status.UP); // cache should be returned
     }
 
     @Test
     void noNewStreamFilesAfterWindow() {
+        recordParserProperties.setStreamFileStatusCheckBuffer(Duration.ofSeconds(-10L));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                streamFileParseDurationTimer,
-                Duration.ofSeconds(-10L), // force end of window to before now
-                Instant.MAX);
+                recordParserProperties, // force end of window to before now
+                meterRegistry);
 
         streamFileHealthIndicator.health(); // unknown
 
@@ -116,15 +149,19 @@ public class StreamFileHealthIndicatorTest {
         streamFileHealthIndicator.health(); // up
 
         Health health = streamFileHealthIndicator.health(); // count unchanged
-        assertThat(health).isEqualTo(HEALTH_DOWN); // cache should not be returned
+        assertThat(health.getStatus()).isEqualTo(Status.DOWN); // cache should not be returned
+        assertThat((String) health.getDetails().get("reason"))
+                .contains("No new stream stream files have been parsed since:");
+        assertThat((Long) health.getDetails().get("count")).isEqualTo(1);
     }
 
     @Test
     void noNewStreamFilesAfterWindowAndEndTime() {
+        mirrorProperties.setEndDate(Instant.now().minusSeconds(60));
+        recordParserProperties = new RecordParserProperties(mirrorProperties);
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                streamFileParseDurationTimer,
-                Duration.ofSeconds(10L), // force end of window to before now
-                Instant.now());
+                recordParserProperties, // force end of window to before now
+                meterRegistry);
 
         streamFileHealthIndicator.health(); // unknown
 
@@ -134,15 +171,15 @@ public class StreamFileHealthIndicatorTest {
         streamFileHealthIndicator.health(); // up
 
         Health health = streamFileHealthIndicator.health(); // count unchanged
-        assertThat(health).isEqualTo(HEALTH_UP); // cache should not be returned
+        assertThat(health.getStatus()).isEqualTo(Status.UP); // cache should not be returned
     }
 
     @Test
     void recoverWhenNewStreamFiles() {
+        recordParserProperties.setStreamFileStatusCheckBuffer(Duration.ofSeconds(-10L));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                streamFileParseDurationTimer,
-                Duration.ofSeconds(-10L), // force end of window to before now
-                Instant.MAX);
+                recordParserProperties, // force end of window to before now
+                meterRegistry);
 
         streamFileHealthIndicator.health(); // unknown
 
@@ -152,11 +189,14 @@ public class StreamFileHealthIndicatorTest {
         streamFileHealthIndicator.health(); // up
 
         Health health = streamFileHealthIndicator.health(); // count unchanged
-        assertThat(health).isEqualTo(HEALTH_DOWN); // cache should not be returned
+        assertThat(health.getStatus()).isEqualTo(Status.DOWN); // cache should not be returned
+        assertThat((String) health.getDetails().get("reason"))
+                .contains("No new stream stream files have been parsed since:");
+        assertThat((Long) health.getDetails().get("count")).isEqualTo(1);
 
         doReturn(2L).when(streamFileParseDurationTimer).count();
 
         health = streamFileHealthIndicator.health(); // count incremented
-        assertThat(health).isEqualTo(HEALTH_UP);
+        assertThat(health.getStatus()).isEqualTo(Status.UP);
     }
 }
