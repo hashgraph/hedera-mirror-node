@@ -123,7 +123,8 @@ func (n *NetworkAPIService) NetworkStatus(
 func NewNetworkAPIService(
 	commons base.BaseService,
 	addressBookEntryRepo repositories.AddressBookEntryRepository,
-	network *types.NetworkIdentifier, version *types.Version,
+	network *types.NetworkIdentifier,
+	version *types.Version,
 ) server.NetworkAPIServicer {
 	return &NetworkAPIService{
 		BaseService:          commons,
