@@ -20,14 +20,29 @@
 
 package common
 
+const (
+	tableNameCryptoTransfer = "crypto_transfer"
+	tableNameNonFeeTransfer = "non_fee_transfer"
+)
+
 type CryptoTransfer struct {
 	Amount             int64 `gorm:"type:bigint"`
 	ConsensusTimestamp int64 `gorm:"type:bigint"`
 	EntityID           int64 `gorm:"type:bigint"`
 }
 
+// TableName - Set table name of the CryptoTransfer to be `crypto_transfer`
+func (CryptoTransfer) TableName() string {
+	return tableNameCryptoTransfer
+}
+
 type NonFeeTransfer struct {
 	Amount             int64 `gorm:"type:bigint"`
 	ConsensusTimestamp int64 `gorm:"type:bigint"`
 	EntityID           int64 `gorm:"type:bigint"`
+}
+
+// TableName - Set table name of the NonFeeTransfer to be `account_balance`
+func (NonFeeTransfer) TableName() string {
+	return tableNameNonFeeTransfer
 }

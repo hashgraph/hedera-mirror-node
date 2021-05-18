@@ -33,9 +33,6 @@ parent_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P)"
 
 echo "localhost:5432:mirror_node:mirror_rosetta:mirror_rosetta_pass" > ~/.pgpass && chmod 0600 ~/.pgpass
 
-echo "Wait 30s for transactions"
-sleep 30
-
 SECONDS=0
 while [[ $SECONDS -lt 120 ]];
 do
