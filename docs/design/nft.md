@@ -34,7 +34,7 @@ create table if not exists nft
   account_id            bigint                  not null
   created_timestamp     bigint  primary key     not null,
   deleted               boolean default false   not null,
-  modified_timestamp    bigint                  not null,
+  modified_timestamp    bigint,
   memo                  text    default ''      not null,
   serial_number         bigint                  not null,
   token_id              bigint                  not null
