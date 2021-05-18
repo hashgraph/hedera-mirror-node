@@ -21,6 +21,7 @@
 package transaction
 
 import (
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -33,8 +34,8 @@ import (
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
-	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -46,16 +47,16 @@ const (
 
 const (
 	whereClauseBetweenConsensus string = `SELECT * FROM transaction
-                                          WHERE consensus_ns >= $1 AND consensus_ns <= $2`
+                                          WHERE consensus_ns >= @start AND consensus_ns <= @end`
 	whereCryptoTransferConsensusTimestampInTimestampsAsc string = `SELECT * FROM crypto_transfer
-                                                                   WHERE consensus_timestamp IN ($1)
+                                                                   WHERE consensus_timestamp IN (@timestamps)
                                                                    ORDER BY consensus_timestamp`
 	whereNonFeeTransferConsensusTimestampInTimestampsAsc string = `SELECT * FROM non_fee_transfer
-                                                                   WHERE consensus_timestamp IN ($1)
+                                                                   WHERE consensus_timestamp IN (@timestamps)
                                                                    ORDER BY consensus_timestamp`
 	whereTransactionsByHashAndConsensusTimestamps string = `SELECT * FROM transaction
-                                                            WHERE transaction_hash = $1
-                                                            AND consensus_ns BETWEEN $2 AND $3`
+                                                            WHERE transaction_hash = @hash
+                                                            AND consensus_ns BETWEEN @start AND @end`
 	selectTransactionResults string = "SELECT * FROM t_transaction_results"
 	selectTransactionTypes   string = "SELECT * FROM t_transaction_types"
 )
@@ -163,7 +164,7 @@ func (tr *TransactionRepository) FindBetween(start int64, end int64) ([]*types.T
 		return nil, errors.Errors[errors.StartMustNotBeAfterEnd]
 	}
 	var transactions []transaction
-	tr.dbClient.Raw(whereClauseBetweenConsensus, start, end).Find(&transactions)
+	tr.dbClient.Raw(whereClauseBetweenConsensus, sql.Named("start", start), sql.Named("end", end)).Find(&transactions)
 
 	sameHashMap := make(map[string][]transaction)
 	for _, t := range transactions {
@@ -193,7 +194,12 @@ func (tr *TransactionRepository) FindByHashInBlock(
 		return nil, errors.Errors[errors.InvalidTransactionIdentifier]
 	}
 	tr.dbClient.
-		Raw(whereTransactionsByHashAndConsensusTimestamps, transactionHash, consensusStart, consensusEnd).
+		Raw(
+			whereTransactionsByHashAndConsensusTimestamps,
+			sql.Named("hash", transactionHash),
+			sql.Named("start", consensusStart),
+			sql.Named("end", consensusEnd),
+		).
 		Find(&transactions)
 
 	if len(transactions) == 0 {
@@ -221,7 +227,7 @@ func (tr *TransactionRepository) findNonFeeTransfersAsc(timestamps []int64) []db
 
 func (tr *TransactionRepository) findTransfersAsc(query string, timestamps []int64, out interface{}) {
 	timestampsStr := intsToString(timestamps)
-	tr.dbClient.Raw(query, timestampsStr).Find(out)
+	tr.dbClient.Raw(query, sql.Named("timestamps", timestampsStr)).Find(out)
 }
 
 func (tr *TransactionRepository) retrieveTransactionTypes() []transactionType {

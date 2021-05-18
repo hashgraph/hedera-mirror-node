@@ -21,29 +21,77 @@
 package mocks
 
 import (
+	"fmt"
+	"reflect"
+	"regexp"
+	"strings"
+	"testing"
+
 	"database/sql/driver"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/gorm"
-	"reflect"
-	"testing"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
+
+var sqlNamedParamRe = regexp.MustCompile(`(@[^ ,)"'\n]*)`)
+
+// replaces named parameter to indexed format $1, $2, ...
+var queryMatcher sqlmock.QueryMatcher = sqlmock.QueryMatcherFunc(func(expectedSQL, actualSQL string) error {
+	namedParams := sqlNamedParamRe.FindAllString(expectedSQL, -1)
+
+	index := 1
+	namedIndexes := make(map[string]string)
+	for _, name := range namedParams {
+		if _, ok := namedIndexes[name]; !ok {
+			namedIndexes[name] = fmt.Sprintf("$%d", index)
+			index++
+		}
+	}
+
+	for name, indexStr := range namedIndexes {
+		expectedSQL = strings.ReplaceAll(expectedSQL, name, indexStr)
+	}
+
+	return sqlmock.QueryMatcherRegexp.Match(regexp.QuoteMeta(expectedSQL), actualSQL)
+})
+
+// Cleanup closes the underlying database connection
+func Cleanup(db *gorm.DB) {
+	sqlDb, err := db.DB()
+	if err != nil {
+		return
+	}
+
+	if err := sqlDb.Close(); err != nil {
+		log.Errorf("Failed to close mock sql connection: %s", err)
+	}
+}
 
 // DatabaseMock returns a mocked gorm.DB connection and Sqlmock for mocking actual queries
 func DatabaseMock(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(queryMatcher))
 	if err != nil {
 		t.Errorf("Error: '%s'", err)
 	}
 
-	gdb, err := gorm.Open("postgres", db)
+	dialector := postgres.New(postgres.Config{
+		Conn:                 db,
+		DriverName:           "postgres",
+		DSN:                  "sqlmock_db_0",
+		PreferSimpleProtocol: true,
+	})
+	gdb, err := gorm.Open(dialector, &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
 	if err != nil {
 		t.Errorf("Error: '%s'", err)
 	}
 	return gdb, mock
 }
 
-// GetFieldsToSnakeCase returns an array of snake-cased fields names
+// GetFieldsNamesToSnakeCase returns an array of snake-cased fields names
 func GetFieldsNamesToSnakeCase(v interface{}) []string {
 	fields := getFieldsNames(v)
 	for i := 0; i < len(fields); i++ {

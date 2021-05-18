@@ -22,11 +22,12 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 // Establish connection to the Postgres Database
@@ -39,11 +40,20 @@ func connectToDb(dbConfig types.Db) *gorm.DB {
 		dbConfig.Name,
 		dbConfig.Password,
 	)
-	db, err := gorm.Open("postgres", connectionStr)
+	db, err := gorm.Open(postgres.Open(connectionStr), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Info("Successfully connected to Database")
+
+	sqlDb, err := db.DB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sqlDb.SetMaxIdleConns(dbConfig.Pool.MaxIdleConns)
+	sqlDb.SetConnMaxLifetime(time.Duration(dbConfig.Pool.MaxLifetime) * time.Minute)
+	sqlDb.SetMaxOpenConns(dbConfig.Pool.MaxOpenConns)
 
 	return db
 }

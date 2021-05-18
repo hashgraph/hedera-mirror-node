@@ -41,9 +41,9 @@ import (
 	networkService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/network"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
-	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+	"gorm.io/gorm"
 )
 
 func configLogger(level string) {
@@ -166,7 +166,6 @@ func main() {
 
 	if rosettaConfig.Online {
 		dbClient := connectToDb(rosettaConfig.Db)
-		defer dbClient.Close()
 
 		router, err = newBlockchainOnlineRouter(network, rosettaConfig.Nodes, asserter, version, dbClient)
 		if err != nil {

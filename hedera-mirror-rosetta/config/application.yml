@@ -7,6 +7,10 @@ hedera:
         host: 127.0.0.1
         name: mirror_node
         password: mirror_rosetta_pass
+        pool:
+          maxIdleConns: 20
+          maxLifetime: 30
+          maxOpenConns: 100
         port: 5432
         username: mirror_rosetta
       log:

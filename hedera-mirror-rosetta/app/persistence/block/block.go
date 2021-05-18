@@ -21,13 +21,15 @@
 package block
 
 import (
+	"database/sql"
+	"errors"
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/jinzhu/gorm"
+	herrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -52,7 +54,7 @@ const (
                                            index,
                                            prev_hash
                                     FROM record_file
-                                    WHERE hash = $1`
+                                    WHERE hash = @hash`
 
 	// selectGenesis - Selects the first block whose consensus_end is after the genesis account balance
 	// timestamp. Return the record file with adjusted consensus start
@@ -78,7 +80,7 @@ const (
                                              index,
                                              prev_hash
                                       FROM record_file
-                                      WHERE index = $1`
+                                      WHERE index = @index`
 )
 
 type recordFile struct {
@@ -142,7 +144,7 @@ func NewBlockRepository(dbClient *gorm.DB) *BlockRepository {
 // FindByIndex retrieves a block by given Index
 func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
 	if index < 0 {
-		return nil, errors.Errors[errors.InvalidArgument]
+		return nil, herrors.Errors[herrors.InvalidArgument]
 	}
 
 	if _, err := br.getGenesisRecordFile(); err != nil {
@@ -153,13 +155,13 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 	index += br.genesisRecordFileIndex
 	if index == br.genesisRecordFileIndex {
 		rf = br.genesisRecordFile
-	} else if err := br.dbClient.Raw(selectRecordFileByIndex, index).Find(rf).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, errors.Errors[errors.BlockNotFound]
+	} else if err := br.dbClient.Raw(selectRecordFileByIndex, sql.Named("index", index)).Find(rf).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, herrors.Errors[herrors.BlockNotFound]
 		}
 
-		log.Errorf("%s: %s", errors.DatabaseError, err)
-		return nil, errors.Errors[errors.DatabaseError]
+		log.Errorf("%s: %s", herrors.DatabaseError, err)
+		return nil, herrors.Errors[herrors.DatabaseError]
 	}
 
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
@@ -168,7 +170,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 // FindByHash retrieves a block by a given Hash
 func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
 	if hash == "" {
-		return nil, errors.Errors[errors.InvalidArgument]
+		return nil, herrors.Errors[herrors.InvalidArgument]
 	}
 
 	if _, err := br.getGenesisRecordFile(); err != nil {
@@ -181,7 +183,7 @@ func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error)
 // FindByIdentifier retrieves a block by Index && Hash
 func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
 	if index < 0 || hash == "" {
-		return nil, errors.Errors[errors.InvalidArgument]
+		return nil, herrors.Errors[herrors.InvalidArgument]
 	}
 
 	if _, err := br.getGenesisRecordFile(); err != nil {
@@ -194,7 +196,7 @@ func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 	}
 
 	if block.Index != index {
-		return nil, errors.Errors[errors.BlockNotFound]
+		return nil, herrors.Errors[herrors.BlockNotFound]
 	}
 
 	return block, nil
@@ -217,12 +219,12 @@ func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 
 	rf := &recordFile{}
 	if err := br.dbClient.Raw(selectLatestWithIndex).Scan(rf).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, errors.Errors[errors.BlockNotFound]
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, herrors.Errors[herrors.BlockNotFound]
 		}
 
-		log.Errorf("%s: %s", errors.DatabaseError, err)
-		return nil, errors.Errors[errors.DatabaseError]
+		log.Errorf("%s: %s", herrors.DatabaseError, err)
+		return nil, herrors.Errors[herrors.DatabaseError]
 	}
 
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
@@ -232,13 +234,13 @@ func (br *BlockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.E
 	rf := &recordFile{}
 	if hash == br.genesisRecordFile.Hash {
 		rf = br.genesisRecordFile
-	} else if err := br.dbClient.Raw(selectByHashWithIndex, hash).Scan(rf).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, errors.Errors[errors.BlockNotFound]
+	} else if err := br.dbClient.Raw(selectByHashWithIndex, sql.Named("hash", hash)).Scan(rf).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, herrors.Errors[herrors.BlockNotFound]
 		}
 
-		log.Errorf("%s: %s", errors.DatabaseError, err)
-		return nil, errors.Errors[errors.DatabaseError]
+		log.Errorf("%s: %s", herrors.DatabaseError, err)
+		return nil, herrors.Errors[herrors.DatabaseError]
 	}
 
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
@@ -251,12 +253,12 @@ func (br *BlockRepository) getGenesisRecordFile() (*recordFile, *rTypes.Error) {
 
 	rf := &recordFile{}
 	if err := br.dbClient.Raw(selectGenesis).Scan(rf).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return nil, errors.Errors[errors.NodeIsStarting]
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, herrors.Errors[herrors.NodeIsStarting]
 		}
 
-		log.Errorf("%s: %s", errors.DatabaseError, err)
-		return nil, errors.Errors[errors.DatabaseError]
+		log.Errorf("%s: %s", herrors.DatabaseError, err)
+		return nil, herrors.Errors[herrors.DatabaseError]
 	}
 
 	br.once.Do(func() {

@@ -23,6 +23,7 @@ package account
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
@@ -170,4 +171,13 @@ func TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails(t *testing.T) {
 	// then:
 	assert.Nil(t, actualResult)
 	assert.NotNil(t, e)
+}
+
+func TestAccountCoins(t *testing.T) {
+	// when:
+	result, err := getSubject().AccountCoins(nil, &rTypes.AccountCoinsRequest{})
+
+	// then:
+	assert.Nil(t, result)
+	assert.Equal(t, errors.Errors[errors.NotImplemented], err)
 }

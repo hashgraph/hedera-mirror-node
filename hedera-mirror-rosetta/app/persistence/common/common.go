@@ -21,13 +21,13 @@
 package common
 
 type CryptoTransfer struct {
-	EntityID           int64 `gorm:"type:bigint"`
-	ConsensusTimestamp int64 `gorm:"type:bigint"`
 	Amount             int64 `gorm:"type:bigint"`
+	ConsensusTimestamp int64 `gorm:"type:bigint"`
+	EntityID           int64 `gorm:"type:bigint"`
 }
 
 type NonFeeTransfer struct {
-	EntityID           int64 `gorm:"type:bigint"`
-	ConsensusTimestamp int64 `gorm:"type:bigint"`
 	Amount             int64 `gorm:"type:bigint"`
+	ConsensusTimestamp int64 `gorm:"type:bigint"`
+	EntityID           int64 `gorm:"type:bigint"`
 }
