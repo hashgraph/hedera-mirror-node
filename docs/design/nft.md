@@ -257,7 +257,7 @@ Add optional filters
 
 Optional Filters
 
-- `/api/v1/tokens/{id}/nfts?accountId=gt:0.0.111` - All NFTs belonging to a given account id.
+- `/api/v1/tokens/{id}/nfts?account.id=0.0.111` - All NFTs belonging to a given account id.
 - `/api/v1/tokens/{id}/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
 - `/api/v1/tokens/{id}/nfts?order=desc` - All NFTs in descending order of `serial_number`
 - `/api/v1/tokens/{id}/nfts?serialNumber=gt:0.0.1001` - All serial numbers in range
