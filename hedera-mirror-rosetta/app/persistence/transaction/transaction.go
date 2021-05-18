@@ -90,7 +90,7 @@ type transactionResult struct {
 }
 
 type aggregatedCryptoTransfer struct {
-	account   *types.Account
+	entityId  int64
 	amount    int64
 	timestamp int64
 }
@@ -268,7 +268,7 @@ func (tr *TransactionRepository) constructTransaction(sameHashTransactions []tra
 func (tr *TransactionRepository) constructOperations(
 	cryptoTransfers []dbTypes.CryptoTransfer,
 	nonFeeTransfers []dbTypes.NonFeeTransfer,
-	transactionsMap map[int64]transaction,
+	transactions map[int64]transaction,
 ) ([]*types.Operation, *rTypes.Error) {
 	transactionTypes, err := tr.Types()
 	if err != nil {
@@ -280,71 +280,9 @@ func (tr *TransactionRepository) constructOperations(
 		return nil, err
 	}
 
-	cryptoTransferMap := make(map[string]*aggregatedCryptoTransfer)
-	nonFeeTransferMap := make(map[string]int64)
-	makeTransferKey := func(timestamp int64, account *types.Account) string {
-		return fmt.Sprintf("%d-%s", timestamp, account)
-	}
-
-	operations := make([]*types.Operation, 0, len(cryptoTransfers)+len(nonFeeTransfers))
-	statusSuccess := transactionResults[transactionResultSuccess]
-
-	// the original transfer list from the transaction body
-	for _, nonFeeTransfer := range nonFeeTransfers {
-		account, err := constructAccount(nonFeeTransfer.EntityID)
-		if err != nil {
-			return nil, err
-		}
-
-		operationType := transactionTypes[transactionsMap[nonFeeTransfer.ConsensusTimestamp].Type]
-		operationStatus := transactionResults[transactionsMap[nonFeeTransfer.ConsensusTimestamp].Result]
-		operations = append(operations, &types.Operation{
-			Index:   int64(len(operations)),
-			Type:    operationType,
-			Status:  operationStatus,
-			Account: account,
-			Amount:  &types.Amount{Value: nonFeeTransfer.Amount},
-		})
-
-		// the original transfer list may have multiple entries for one entity, so accumulate it
-		nonFeeTransferMap[makeTransferKey(nonFeeTransfer.ConsensusTimestamp, account)] += nonFeeTransfer.Amount
-	}
-
-	// aggregate crypto transfers
-	for _, cryptoTransfer := range cryptoTransfers {
-		account, err := constructAccount(cryptoTransfer.EntityID)
-		if err != nil {
-			return nil, err
-		}
-
-		key := makeTransferKey(cryptoTransfer.ConsensusTimestamp, account)
-		if aggregated, ok := cryptoTransferMap[key]; ok {
-			aggregated.amount += cryptoTransfer.Amount
-		} else {
-			cryptoTransferMap[key] = &aggregatedCryptoTransfer{
-				account:   account,
-				amount:    cryptoTransfer.Amount,
-				timestamp: cryptoTransfer.ConsensusTimestamp,
-			}
-		}
-	}
-
-	for key, aggregated := range cryptoTransferMap {
-		amount := aggregated.amount - nonFeeTransferMap[key]
-		operationType := transactionTypes[transactionsMap[aggregated.timestamp].Type]
-
-		if amount != 0 {
-			operations = append(operations, &types.Operation{
-				Index:   int64(len(operations)),
-				Type:    operationType,
-				Status:  statusSuccess, // crypto transfer is always successful regardless of transaction result
-				Account: aggregated.account,
-				Amount:  &types.Amount{Value: amount},
-			})
-		}
-	}
-
-	return operations, nil
+	nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
+	adjustedCryptoTransfers := adjustCryptoTransfers(cryptoTransfers, nonFeeTransferMap)
+	return getOperations(nonFeeTransfers, adjustedCryptoTransfers, transactions, transactionResults, transactionTypes)
 }
 
 func (tr *TransactionRepository) retrieveTransactionTypesAndResults() *rTypes.Error {
@@ -395,4 +333,100 @@ func intsToString(ints []int64) string {
 		r[i] = strconv.FormatInt(v, 10)
 	}
 	return strings.Join(r, ",")
+}
+
+func makeTransferKey(timestamp int64, entityId int64) string {
+	return fmt.Sprintf("%d-%d", timestamp, entityId)
+}
+
+func adjustCryptoTransfers(
+	cryptoTransfers []dbTypes.CryptoTransfer,
+	nonFeeTransferMap map[string]int64,
+) []dbTypes.CryptoTransfer {
+	cryptoTransferMap := make(map[string]*aggregatedCryptoTransfer)
+	for _, transfer := range cryptoTransfers {
+		key := makeTransferKey(transfer.ConsensusTimestamp, transfer.EntityID)
+		if aggregated, ok := cryptoTransferMap[key]; ok {
+			aggregated.amount += transfer.Amount
+		} else {
+			cryptoTransferMap[key] = &aggregatedCryptoTransfer{
+				entityId:  transfer.EntityID,
+				amount:    transfer.Amount,
+				timestamp: transfer.ConsensusTimestamp,
+			}
+		}
+	}
+
+	adjusted := make([]dbTypes.CryptoTransfer, 0, len(cryptoTransfers))
+	for key, aggregated := range cryptoTransferMap {
+		amount := aggregated.amount - nonFeeTransferMap[key]
+		if amount != 0 {
+			adjusted = append(adjusted, dbTypes.CryptoTransfer{
+				Amount:             amount,
+				EntityID:           aggregated.entityId,
+				ConsensusTimestamp: aggregated.timestamp,
+			})
+		}
+	}
+
+	return adjusted
+}
+
+func aggregateNonFeeTransfers(nonFeeTransfers []dbTypes.NonFeeTransfer) map[string]int64 {
+	nonFeeTransferMap := make(map[string]int64)
+
+	// the original transfer list from the transaction body
+	for _, transfer := range nonFeeTransfers {
+		// the original transfer list may have multiple entries for one entity, so accumulate it
+		nonFeeTransferMap[makeTransferKey(transfer.ConsensusTimestamp, transfer.EntityID)] += transfer.Amount
+	}
+
+	return nonFeeTransferMap
+}
+
+func getOperations(
+	nonFeeTransfers []dbTypes.NonFeeTransfer,
+	cryptoTransfers []dbTypes.CryptoTransfer,
+	transactionsMap map[int64]transaction,
+	transactionResults map[int]string,
+	transactionTypes map[int]string,
+) ([]*types.Operation, *rTypes.Error) {
+	statusSuccess := transactionResults[transactionResultSuccess]
+	count := len(nonFeeTransfers) + len(cryptoTransfers)
+	operations := make([]*types.Operation, 0, count)
+	transfers := make([]dbTypes.Transfer, 0, count)
+
+	for _, nonFeeTransfer := range nonFeeTransfers {
+		transfers = append(transfers, nonFeeTransfer)
+	}
+
+	for _, cryptoTransfer := range cryptoTransfers {
+		transfers = append(transfers, cryptoTransfer)
+	}
+
+	for _, transfer := range transfers {
+		account, err := constructAccount(transfer.GetEntityID())
+		if err != nil {
+			return nil, err
+		}
+
+		timestamp := transfer.GetConsensusTimestamp()
+		operationType := transactionTypes[transactionsMap[timestamp].Type]
+
+		// crypto transfer is always successful regardless of transaction result
+		operationStatus := statusSuccess
+		if _, ok := transfer.(dbTypes.CryptoTransfer); !ok {
+			operationStatus = transactionResults[transactionsMap[timestamp].Result]
+		}
+
+		operations = append(operations, &types.Operation{
+			Index:   int64(len(operations)),
+			Type:    operationType,
+			Status:  operationStatus,
+			Account: account,
+			Amount:  &types.Amount{Value: transfer.GetAmount()},
+		})
+	}
+
+	return operations, nil
 }
