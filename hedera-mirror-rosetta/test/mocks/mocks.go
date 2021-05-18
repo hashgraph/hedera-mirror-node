@@ -30,7 +30,6 @@ import (
 	"database/sql/driver"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/iancoleman/strcase"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -57,18 +56,6 @@ var queryMatcher sqlmock.QueryMatcher = sqlmock.QueryMatcherFunc(func(expectedSQ
 	return sqlmock.QueryMatcherRegexp.Match(regexp.QuoteMeta(expectedSQL), actualSQL)
 })
 
-// Cleanup closes the underlying database connection
-func Cleanup(db *gorm.DB) {
-	sqlDb, err := db.DB()
-	if err != nil {
-		return
-	}
-
-	if err := sqlDb.Close(); err != nil {
-		log.Errorf("Failed to close mock sql connection: %s", err)
-	}
-}
-
 // DatabaseMock returns a mocked gorm.DB connection and Sqlmock for mocking actual queries
 func DatabaseMock(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(queryMatcher))
@@ -82,9 +69,7 @@ func DatabaseMock(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 		DSN:                  "sqlmock_db_0",
 		PreferSimpleProtocol: true,
 	})
-	gdb, err := gorm.Open(dialector, &gorm.Config{
-		SkipDefaultTransaction: true,
-	})
+	gdb, err := gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
 		t.Errorf("Error: '%s'", err)
 	}

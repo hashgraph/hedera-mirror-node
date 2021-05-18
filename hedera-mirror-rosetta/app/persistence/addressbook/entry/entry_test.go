@@ -85,7 +85,6 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 func TestShouldSuccessReturnAddressBookEntries(t *testing.T) {
 	// given
 	aber, columns, mock := setupRepository(t)
-	defer mocks.Cleanup(aber.dbClient)
 
 	mockedRow := mocks.GetFieldsValuesAsDriverValue(dbAddressBookEntry)
 	mockedRows := sqlmock.NewRows(columns).
@@ -107,7 +106,6 @@ func TestShouldSuccessReturnAddressBookEntries(t *testing.T) {
 func TestShouldFailReturnEntriesDueToInvalidDbData(t *testing.T) {
 	// given
 	aber, columns, mock := setupRepository(t)
-	defer mocks.Cleanup(aber.dbClient)
 
 	invalidData := &addressBookEntry{
 		Id:                 1,

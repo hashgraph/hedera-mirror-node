@@ -32,7 +32,7 @@ import (
 
 // Establish connection to the Postgres Database
 func connectToDb(dbConfig types.Db) *gorm.DB {
-	connectionStr := fmt.Sprintf(
+	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
 		dbConfig.Host,
 		dbConfig.Port,
@@ -40,7 +40,7 @@ func connectToDb(dbConfig types.Db) *gorm.DB {
 		dbConfig.Name,
 		dbConfig.Password,
 	)
-	db, err := gorm.Open(postgres.Open(connectionStr), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}

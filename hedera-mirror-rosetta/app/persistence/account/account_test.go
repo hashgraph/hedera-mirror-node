@@ -68,8 +68,6 @@ func TestShouldSuccessReturnValidRepository(t *testing.T) {
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidAddress(t *testing.T) {
 	// given
 	abr, _, mock := setupRepository(t)
-	defer mocks.Cleanup(abr.dbClient)
-
 	invalidAddressString := "0.0.a"
 
 	// when
@@ -84,8 +82,6 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidAddress(t *testing.T) {
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidAddressNegative(t *testing.T) {
 	// given
 	abr, _, mock := setupRepository(t)
-	defer mocks.Cleanup(abr.dbClient)
-
 	invalidAddressString := "0.0.-2"
 
 	// when
@@ -100,8 +96,6 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidAddressNegative(t *testing.
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidShardComputation(t *testing.T) {
 	// given
 	abr, _, mock := setupRepository(t)
-	defer mocks.Cleanup(abr.dbClient)
-
 	invalidAddressString := "32768.0.0"
 
 	// when
@@ -116,8 +110,6 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidShardComputation(t *testing
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidRealmComputation(t *testing.T) {
 	// given
 	abr, _, mock := setupRepository(t)
-	defer mocks.Cleanup(abr.dbClient)
-
 	invalidAddressString := "0.65536.0"
 
 	// when
@@ -132,8 +124,6 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidRealmComputation(t *testing
 func TestShouldFailRetrieveBalanceAtBlockDueToInvalidEntityComputation(t *testing.T) {
 	// given
 	abr, _, mock := setupRepository(t)
-	defer mocks.Cleanup(abr.dbClient)
-
 	invalidAddressString := "0.0.4294967296"
 
 	// when
@@ -148,7 +138,6 @@ func TestShouldFailRetrieveBalanceAtBlockDueToInvalidEntityComputation(t *testin
 func TestShouldSuccessRetrieveBalanceAtBlock(t *testing.T) {
 	// given
 	abr, columns, mock := setupRepository(t)
-	defer mocks.Cleanup(abr.dbClient)
 
 	mock.ExpectQuery(latestBalanceBeforeConsensus).
 		WithArgs(dbAccountBalance.AccountId, consensusTimestamp).
@@ -171,8 +160,6 @@ func TestShouldSuccessRetrieveBalanceAtBlock(t *testing.T) {
 func TestShouldSuccessRetrieveBalanceAtBlockWithNoSnapshotsBeforeThat(t *testing.T) {
 	// given
 	abr, _, mock := setupRepository(t)
-	defer mocks.Cleanup(abr.dbClient)
-
 	dbAccountBalance.ConsensusTimestamp = 0
 	expectedAmount.Value = dbBalanceChange.Value
 

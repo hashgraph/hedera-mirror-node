@@ -155,8 +155,6 @@ var (
 func TestShouldSuccessFindBetween(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(whereClauseBetweenConsensus).
 		WithArgs(int64(1), int64(2)).
 		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
@@ -183,8 +181,6 @@ func TestShouldSuccessFindBetween(t *testing.T) {
 func TestShouldFailFindBetweenNoTypes(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(whereClauseBetweenConsensus).
 		WithArgs(int64(1), int64(2)).
 		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
@@ -211,7 +207,6 @@ func TestShouldFailFindBetweenNoTypes(t *testing.T) {
 func TestShouldFailFindBetweenEndBeforeStart(t *testing.T) {
 	// given
 	tr, _ := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
 
 	// when
 	result, err := tr.FindBetween(2, 1)
@@ -224,8 +219,6 @@ func TestShouldFailFindBetweenEndBeforeStart(t *testing.T) {
 func TestShouldSuccessFindHashInBlock(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(whereTransactionsByHashAndConsensusTimestamps).
 		WithArgs(hash, int64(1), int64(2)).
 		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
@@ -253,8 +246,6 @@ func TestShouldSuccessFindHashInBlock(t *testing.T) {
 func TestShouldFailFindHashInBlockNoTypes(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(whereTransactionsByHashAndConsensusTimestamps).
 		WithArgs(hash, int64(1), int64(2)).
 		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
@@ -282,8 +273,6 @@ func TestShouldFailFindHashInBlockNoTypes(t *testing.T) {
 func TestShouldFailFindHashInBlockNoReturnTransactions(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(whereTransactionsByHashAndConsensusTimestamps).
 		WithArgs(hash, int64(1), int64(2)).
 		WillReturnRows(willReturnRows(transactionColumns))
@@ -301,7 +290,6 @@ func TestShouldFailFindHashInBlockNoReturnTransactions(t *testing.T) {
 func TestShouldFailFindHashInBlockInvalidHash(t *testing.T) {
 	// given
 	tr, _ := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
 
 	// when
 	result, err := tr.FindByHashInBlock("asd", 1, 2)
@@ -314,8 +302,6 @@ func TestShouldFailFindHashInBlockInvalidHash(t *testing.T) {
 func TestShouldFailConstructTransactionDueToNoResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
 		WithArgs("1,2").
 		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
@@ -340,8 +326,6 @@ func TestShouldFailConstructTransactionDueToNoResults(t *testing.T) {
 func TestShouldSuccessConstructTransaction(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
 		WithArgs("1,2").
 		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
@@ -790,8 +774,6 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			tr, mock := setupRepository(t)
-			defer mocks.Cleanup(tr.dbClient)
-
 			mock.ExpectQuery(selectTransactionTypes).
 				WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
 			mock.ExpectQuery(selectTransactionResults).
@@ -842,8 +824,6 @@ func TestShouldFailConstructionOperationsInvalidTransferEntityId(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			tr, mock := setupRepository(t)
-			defer mocks.Cleanup(tr.dbClient)
-
 			rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 			mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 			rows = willReturnRows(transactionResultColumns, dbTransactionResults)
@@ -863,8 +843,6 @@ func TestShouldFailConstructionOperationsInvalidTransferEntityId(t *testing.T) {
 func TestShouldFailConstructionOperationsDueToResultsError(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
@@ -881,8 +859,6 @@ func TestShouldFailConstructionOperationsDueToResultsError(t *testing.T) {
 func TestShouldFailConstructionOperationsDueToTypesError(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(willReturnRows(transactionTypeColumns))
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
 
@@ -898,8 +874,6 @@ func TestShouldFailConstructionOperationsDueToTypesError(t *testing.T) {
 func TestShouldSuccessFindCryptoTransfers(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(cryptoTransferColumns, dbCryptoTransfers)
 	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
 		WithArgs(strconv.FormatInt(consensusTimestamp, 10)).
@@ -916,8 +890,6 @@ func TestShouldSuccessFindCryptoTransfers(t *testing.T) {
 func TestShouldSuccessFindNonFeeTransfers(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers)
 	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
 		WithArgs(strconv.FormatInt(consensusTimestamp, 10)).
@@ -934,8 +906,6 @@ func TestShouldSuccessFindNonFeeTransfers(t *testing.T) {
 func TestShouldSuccessReturnResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
@@ -954,8 +924,6 @@ func TestShouldSuccessReturnResults(t *testing.T) {
 func TestShouldFailReturnResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
@@ -972,8 +940,6 @@ func TestShouldFailReturnResults(t *testing.T) {
 func TestShouldFailReturnTypes(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
@@ -990,8 +956,6 @@ func TestShouldFailReturnTypes(t *testing.T) {
 func TestShouldFailReturnTypesAsArray(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
@@ -1008,8 +972,6 @@ func TestShouldFailReturnTypesAsArray(t *testing.T) {
 func TestShouldSuccessReturnTypesAsArray(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
@@ -1028,8 +990,6 @@ func TestShouldSuccessReturnTypesAsArray(t *testing.T) {
 func TestShouldSuccessReturnTypes(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
@@ -1048,8 +1008,6 @@ func TestShouldSuccessReturnTypes(t *testing.T) {
 func TestShouldSuccessSaveTransactionTypesAndResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
@@ -1069,8 +1027,6 @@ func TestShouldSuccessSaveTransactionTypesAndResults(t *testing.T) {
 func TestShouldFailReturnTransactionTypesAndResultsDueToNoResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
@@ -1086,8 +1042,6 @@ func TestShouldFailReturnTransactionTypesAndResultsDueToNoResults(t *testing.T) 
 func TestShouldFailReturnTransactionTypesAndResultsDueToNoTypes(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(willReturnRows(transactionTypeColumns))
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
 
@@ -1102,8 +1056,6 @@ func TestShouldFailReturnTransactionTypesAndResultsDueToNoTypes(t *testing.T) {
 func TestShouldSuccessReturnTransactionResults(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionResultColumns, dbTransactionResults)
 	mock.ExpectQuery(selectTransactionResults).WillReturnRows(rows)
 
@@ -1118,8 +1070,6 @@ func TestShouldSuccessReturnTransactionResults(t *testing.T) {
 func TestShouldSuccessReturnTransactionTypes(t *testing.T) {
 	// given
 	tr, mock := setupRepository(t)
-	defer mocks.Cleanup(tr.dbClient)
-
 	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
 	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
 

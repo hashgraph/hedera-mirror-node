@@ -97,8 +97,6 @@ func TestShouldSuccessFindByIndex(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepository(t)
-			defer mocks.Cleanup(br.dbClient)
-
 			mock.ExpectQuery(selectGenesis).
 				WillReturnRows(sqlmock.NewRows(recordFileColumns).
 					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
@@ -123,7 +121,6 @@ func TestShouldSuccessFindByIndex(t *testing.T) {
 func TestShouldSuccessFindByIndexNegativeIndex(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer mocks.Cleanup(br.dbClient)
 
 	// when
 	result, err := br.FindByIndex(-1)
@@ -156,8 +153,6 @@ func TestShouldFailFindByIndexNoRecordFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepository(t)
-			defer mocks.Cleanup(br.dbClient)
-
 			mock.ExpectQuery(selectGenesis).
 				WillReturnRows(sqlmock.NewRows(recordFileColumns).
 					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
@@ -195,8 +190,6 @@ func TestShouldFailFindByIndexNoGenesisRecordFile(t *testing.T) {
 	for _, tt := range tests {
 		// given
 		br, mock := setupRepository(t)
-		defer mocks.Cleanup(br.dbClient)
-
 		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
 		// when
@@ -231,8 +224,6 @@ func TestShouldSuccessFindByHash(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepository(t)
-			defer mocks.Cleanup(br.dbClient)
-
 			mock.ExpectQuery(selectGenesis).
 				WillReturnRows(sqlmock.NewRows(recordFileColumns).
 					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
@@ -257,7 +248,6 @@ func TestShouldSuccessFindByHash(t *testing.T) {
 func TestShouldFailFindByHasEmptyHash(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer mocks.Cleanup(br.dbClient)
 
 	// when
 	result, err := br.FindByHash("")
@@ -290,7 +280,6 @@ func TestShouldFailFindByHashNoGenesisRecordFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepository(t)
-			defer mocks.Cleanup(br.dbClient)
 
 			mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
@@ -330,7 +319,6 @@ func TestShouldSuccessFindByIdentifier(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepository(t)
-			defer mocks.Cleanup(br.dbClient)
 
 			mock.ExpectQuery(selectGenesis).
 				WillReturnRows(sqlmock.NewRows(recordFileColumns).
@@ -374,7 +362,6 @@ func TestShouldFailFindByIdentifierInvalidArgument(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepository(t)
-			defer mocks.Cleanup(br.dbClient)
 
 			// when
 			result, err := br.FindByIdentifier(tt.index, tt.hash)
@@ -408,7 +395,6 @@ func TestShouldFailFindByIdentifierNoGenesisRecordFile(t *testing.T) {
 	for _, tt := range tests {
 		// given
 		br, mock := setupRepository(t)
-		defer mocks.Cleanup(br.dbClient)
 
 		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
@@ -429,7 +415,6 @@ func TestShouldFailFindByIdentifierMismatchIndices(t *testing.T) {
 		Hash:  "0x12345",
 	}
 	br, mock := setupRepository(t)
-	defer mocks.Cleanup(br.dbClient)
 
 	mock.ExpectQuery(selectGenesis).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
@@ -460,7 +445,6 @@ func TestShouldSuccessRetrieveGenesis(t *testing.T) {
 	}
 
 	br, mock := setupRepository(t)
-	defer mocks.Cleanup(br.dbClient)
 
 	mock.ExpectQuery(selectGenesis).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
@@ -496,7 +480,6 @@ func TestShouldFailRetrieveGenesisNoRecordFile(t *testing.T) {
 	for _, tt := range tests {
 		// given
 		br, mock := setupRepository(t)
-		defer mocks.Cleanup(br.dbClient)
 
 		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
@@ -531,7 +514,6 @@ func TestShouldFailRetrieveGenesisNoGenesisRecordFile(t *testing.T) {
 	for _, tt := range tests {
 		// given
 		br, mock := setupRepository(t)
-		defer mocks.Cleanup(br.dbClient)
 
 		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
@@ -555,7 +537,6 @@ func TestShouldSuccessRetrieveLatest(t *testing.T) {
 		dbRecordFile.PrevHash,
 	}
 	br, mock := setupRepository(t)
-	defer mocks.Cleanup(br.dbClient)
 
 	mock.ExpectQuery(selectGenesis).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
@@ -593,7 +574,6 @@ func TestShouldFailRetrieveLatestRecordFileNotFound(t *testing.T) {
 	for _, tt := range tests {
 		// given
 		br, mock := setupRepository(t)
-		defer mocks.Cleanup(br.dbClient)
 
 		mock.ExpectQuery(selectGenesis).
 			WillReturnRows(sqlmock.NewRows(recordFileColumns).
@@ -631,7 +611,6 @@ func TestShouldFailRetrieveLatestNoGenesisRecordFile(t *testing.T) {
 	for _, tt := range tests {
 		// given
 		br, mock := setupRepository(t)
-		defer mocks.Cleanup(br.dbClient)
 
 		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
@@ -648,7 +627,6 @@ func TestShouldFailRetrieveLatestNoGenesisRecordFile(t *testing.T) {
 func TestShouldSuccessFindRecordFileByHash(t *testing.T) {
 	// given
 	br, mock := setupRepositoryWithGenesisRecordFile(t, dbGenesis)
-	defer mocks.Cleanup(br.dbClient)
 
 	mock.ExpectQuery(selectByHashWithIndex).
 		WithArgs(dbRecordFile.Hash).
@@ -685,7 +663,6 @@ func TestShouldFailFindRecordFileByHashNoRecordFound(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepositoryWithGenesisRecordFile(t, dbGenesis)
-			defer mocks.Cleanup(br.dbClient)
 
 			mock.ExpectQuery(selectByHashWithIndex).WithArgs(dbRecordFile.Hash).WillReturnError(tt.dbErr)
 
@@ -703,7 +680,6 @@ func TestShouldFailFindRecordFileByHashNoRecordFound(t *testing.T) {
 func TestShouldSuccessGetGenesisRecordFileRepeatedly(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer mocks.Cleanup(br.dbClient)
 
 	mock.ExpectQuery(selectGenesis).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
@@ -724,7 +700,6 @@ func TestShouldSuccessGetGenesisRecordFileRepeatedly(t *testing.T) {
 func TestShouldSuccessGetGenesisRecordFile(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer mocks.Cleanup(br.dbClient)
 
 	mock.ExpectQuery(selectGenesis).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
@@ -763,7 +738,6 @@ func TestShouldFailGetGenesis(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			br, mock := setupRepository(t)
-			defer mocks.Cleanup(br.dbClient)
 
 			mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
