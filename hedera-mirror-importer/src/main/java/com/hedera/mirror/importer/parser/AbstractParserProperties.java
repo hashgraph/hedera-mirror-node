@@ -47,11 +47,12 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     protected boolean persistBytes = false;
 
+    @DurationMin(seconds = 5)
+    @NotNull
+    protected Duration processingTimeout = Duration.ofSeconds(10L);
+
     @Min(1)
     protected int queueCapacity = 10;
-
-    @DurationMin(seconds = 5)
-    protected Duration streamFileStatusCheckBuffer;
 
     @NotNull
     protected RetryProperties retry = new RetryProperties();

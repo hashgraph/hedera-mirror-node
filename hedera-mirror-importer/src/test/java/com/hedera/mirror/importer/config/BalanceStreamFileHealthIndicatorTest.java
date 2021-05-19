@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.config;
 
 /*-
  * ‌
@@ -20,26 +20,12 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import java.nio.file.Path;
-import java.time.Duration;
+import com.hedera.mirror.importer.parser.AbstractParserProperties;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 
-import com.hedera.mirror.importer.domain.StreamType;
-
-public interface ParserProperties {
-
-    int getBufferSize();
-
-    Path getParsedPath();
-
-    Duration getProcessingTimeout();
-
-    StreamType getStreamType();
-
-    int getQueueCapacity();
-
-    boolean isEnabled();
-
-    boolean isKeepFiles();
-
-    boolean isPersistBytes();
+public class BalanceStreamFileHealthIndicatorTest extends AbstractStreamFileHealthIndicatorTest {
+    @Override
+    public AbstractParserProperties getParserProperties() {
+        return new BalanceParserProperties(mirrorProperties);
+    }
 }

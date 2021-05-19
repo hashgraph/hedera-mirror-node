@@ -21,53 +21,29 @@ package com.hedera.mirror.importer.config;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.LinkedHashMap;
+import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.CompositeHealthContributor;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.parser.event.EventParserProperties;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.parser.ParserProperties;
 
 @Configuration
 @RequiredArgsConstructor
 public class HealthCheckConfiguration {
-    private final BalanceParserProperties balanceParserProperties;
-    private final EventParserProperties eventParserProperties;
-    private final RecordParserProperties recordParserProperties;
+    private final MirrorProperties mirrorProperties;
 
     @Bean
-    CompositeHealthContributor streamFileActivity(MeterRegistry meterRegistry) {
-        Map<String, HealthIndicator> healthIndicators = new LinkedHashMap<>();
-
-        if (balanceParserProperties.getStreamFileStatusCheckBuffer() != null) {
-            healthIndicators.put(
-                    StreamType.BALANCE.toString(),
-                    new StreamFileHealthIndicator(
-                            balanceParserProperties,
-                            meterRegistry));
-        }
-
-        if (eventParserProperties.getStreamFileStatusCheckBuffer() != null) {
-            healthIndicators.put(
-                    StreamType.EVENT.toString(),
-                    new StreamFileHealthIndicator(
-                            eventParserProperties,
-                            meterRegistry));
-        }
-
-        if (recordParserProperties.getStreamFileStatusCheckBuffer() != null) {
-            healthIndicators.put(
-                    StreamType.RECORD.toString(),
-                    new StreamFileHealthIndicator(
-                            recordParserProperties,
-                            meterRegistry));
-        }
+    CompositeHealthContributor streamFileActivity(MeterRegistry meterRegistry,
+                                                  Collection<ParserProperties> parserProperties) {
+        Map<String, HealthIndicator> healthIndicators = parserProperties.stream().collect(Collectors.toMap(
+                k -> k.getStreamType().toString(),
+                v -> new StreamFileHealthIndicator(v, meterRegistry, mirrorProperties)));
 
         return CompositeHealthContributor.fromMap(healthIndicators);
     }

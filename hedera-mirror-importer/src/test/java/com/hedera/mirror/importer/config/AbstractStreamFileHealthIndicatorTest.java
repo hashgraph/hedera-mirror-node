@@ -20,7 +20,10 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_LATENCY_METRIC_NAME;
+import static com.hedera.mirror.importer.parser.StreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -40,54 +43,125 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
 @ExtendWith(MockitoExtension.class)
-class StreamFileHealthIndicatorTest {
+abstract class AbstractStreamFileHealthIndicatorTest {
     private static final String REASON_KEY = "reason";
 
     @Mock(lenient = true)
     private Timer streamFileParseDurationTimer;
 
     @Mock(lenient = true)
+    private Timer streamCloseLatencyDurationTimer;
+
+    @Mock(lenient = true)
+    private Search streamParseDurationSearch;
+
+    @Mock(lenient = true)
     private MeterRegistry meterRegistry;
 
     private StreamFileHealthIndicator streamFileHealthIndicator;
 
-    private RecordParserProperties recordParserProperties;
+    private AbstractParserProperties parserProperties;
 
-    private MirrorProperties mirrorProperties;
+    protected MirrorProperties mirrorProperties;
+
+    abstract AbstractParserProperties getParserProperties();
 
     @BeforeEach
     void setUp() {
 
         doReturn(0L).when(streamFileParseDurationTimer).count();
+        doReturn(0.0).when(streamCloseLatencyDurationTimer).mean(any());
 
-        Search searchTimer = mock(Search.class, withSettings().lenient());
-        doReturn(searchTimer).when(searchTimer).tag(anyString(), anyString());
-        doReturn(streamFileParseDurationTimer).when(searchTimer).timer();
+        Search streamCloseLatencySearch = mock(Search.class, withSettings().lenient());
+        doReturn(streamCloseLatencySearch).when(streamCloseLatencySearch).tag(anyString(), anyString());
+        doReturn(streamParseDurationSearch).when(streamParseDurationSearch).tag(anyString(), anyString());
+        doReturn(streamCloseLatencyDurationTimer).when(streamCloseLatencySearch).timer();
+        doReturn(streamFileParseDurationTimer).when(streamParseDurationSearch).timer();
 
-        doReturn(searchTimer).when(meterRegistry).find(anyString());
+        doReturn(streamParseDurationSearch).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
+        doReturn(streamCloseLatencySearch).when(meterRegistry).find(STREAM_CLOSE_LATENCY_METRIC_NAME);
 
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setEndDate(Instant.MAX);
-        recordParserProperties = new RecordParserProperties(mirrorProperties);
+        parserProperties = getParserProperties();
 
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                recordParserProperties,
-                meterRegistry);
+                getParserProperties(),
+                meterRegistry,
+                mirrorProperties);
     }
 
     @Test
     void startUpParsingDisabled() {
-        recordParserProperties.setEnabled(false);
+        parserProperties.setEnabled(false);
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                recordParserProperties,
-                meterRegistry);
+                parserProperties,
+                meterRegistry,
+                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
         assertThat((String) health.getDetails().get(REASON_KEY)).contains("parsing is disabled");
+    }
+
+    @Test
+    void missingParserDurationTimer() {
+        doReturn(null).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
+        streamFileHealthIndicator = new StreamFileHealthIndicator(
+                parserProperties,
+                meterRegistry,
+                mirrorProperties);
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get(REASON_KEY))
+                .contains(STREAM_PARSE_DURATION_METRIC_NAME + " timer is missing");
+    }
+
+    @Test
+    void missingStreamCloseLatencyTimer() {
+        doReturn(null).when(meterRegistry).find(STREAM_CLOSE_LATENCY_METRIC_NAME);
+        streamFileHealthIndicator = new StreamFileHealthIndicator(
+                parserProperties,
+                meterRegistry,
+                mirrorProperties);
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get(REASON_KEY))
+                .contains(STREAM_CLOSE_LATENCY_METRIC_NAME + " timer is missing");
+    }
+
+    @Test
+    void missingMetricStreamTypeTag() {
+        doReturn(null).when(streamParseDurationSearch).tag("type", parserProperties.getStreamType().toString());
+        streamFileHealthIndicator = new StreamFileHealthIndicator(
+                parserProperties,
+                meterRegistry,
+                mirrorProperties);
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get(REASON_KEY))
+                .contains(STREAM_PARSE_DURATION_METRIC_NAME + " timer is missing");
+    }
+
+    @Test
+    void missingSuccessfulStreamFilesTag() {
+        doReturn(null).when(streamParseDurationSearch)
+                .tag("success", "true");
+        streamFileHealthIndicator = new StreamFileHealthIndicator(
+                parserProperties,
+                meterRegistry,
+                mirrorProperties);
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get(REASON_KEY))
+                .contains(STREAM_PARSE_DURATION_METRIC_NAME + " timer is missing");
     }
 
     @Test
@@ -100,10 +174,11 @@ class StreamFileHealthIndicatorTest {
     @Test
     void startUpNoStreamFilesAfterWindow() {
         // set window time to smaller value
-        recordParserProperties.setStreamFileStatusCheckBuffer(Duration.ofSeconds(-10L));
+        parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                recordParserProperties, // force end of window to before now
-                meterRegistry);
+                parserProperties, // force end of timeout to before now
+                meterRegistry,
+                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.DOWN);
@@ -138,10 +213,11 @@ class StreamFileHealthIndicatorTest {
 
     @Test
     void noNewStreamFilesAfterWindow() {
-        recordParserProperties.setStreamFileStatusCheckBuffer(Duration.ofSeconds(-10L));
+        parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                recordParserProperties, // force end of window to before now
-                meterRegistry);
+                parserProperties, // force end of timeout to before now
+                meterRegistry,
+                mirrorProperties);
 
         streamFileHealthIndicator.health(); // unknown
 
@@ -160,10 +236,11 @@ class StreamFileHealthIndicatorTest {
     @Test
     void noNewStreamFilesAfterWindowAndEndTime() {
         mirrorProperties.setEndDate(Instant.now().minusSeconds(60));
-        recordParserProperties = new RecordParserProperties(mirrorProperties);
+        parserProperties = getParserProperties();
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                recordParserProperties, // force end of window to before now
-                meterRegistry);
+                parserProperties, // force endDate to before now
+                meterRegistry,
+                mirrorProperties);
 
         streamFileHealthIndicator.health(); // unknown
 
@@ -179,10 +256,11 @@ class StreamFileHealthIndicatorTest {
 
     @Test
     void recoverWhenNewStreamFiles() {
-        recordParserProperties.setStreamFileStatusCheckBuffer(Duration.ofSeconds(-10L));
+        parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                recordParserProperties, // force end of window to before now
-                meterRegistry);
+                parserProperties, // force end of timeout to before now
+                meterRegistry,
+                mirrorProperties);
 
         streamFileHealthIndicator.health(); // unknown
 

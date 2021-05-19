@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import java.time.Duration;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -40,7 +39,6 @@ public class RecordParserProperties extends AbstractParserProperties {
 
     public RecordParserProperties(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
-        setStreamFileStatusCheckBuffer(Duration.ofSeconds(10));
     }
 
     @Override
