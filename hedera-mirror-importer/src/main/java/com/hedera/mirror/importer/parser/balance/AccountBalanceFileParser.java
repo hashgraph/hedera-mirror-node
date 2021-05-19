@@ -76,8 +76,8 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
         this.dataSource = dataSource;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
-        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties, null);
-        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties, null);
+        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
+        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
 
         Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
                 .description("The duration in seconds it took to parse the file and store it in the database")
