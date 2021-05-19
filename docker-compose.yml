@@ -17,7 +17,7 @@ services:
       - 5432:5432
 
   grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc:0.34.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-grpc:0.35.0-SNAPSHOT
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
@@ -29,7 +29,7 @@ services:
       - 5600:5600
 
   importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer:0.34.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-importer:0.35.0-SNAPSHOT
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_IMPORTER_DB_HOST: db
@@ -41,7 +41,7 @@ services:
   monitor:
     deploy:
       replicas: 0
-    image: gcr.io/mirrornode/hedera-mirror-monitor:0.34.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-monitor:0.35.0-SNAPSHOT
     restart: unless-stopped
     environment:
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-monitor/
@@ -58,7 +58,7 @@ services:
       - 6379:6379
 
   rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest:0.34.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-rest:0.35.0-SNAPSHOT
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
     restart: unless-stopped
@@ -67,7 +67,7 @@ services:
       - 5551:5551
 
   rosetta:
-    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.34.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.35.0-SNAPSHOT
     environment:
       HEDERA_MIRROR_ROSETTA_DB_HOST: db
     restart: unless-stopped
