@@ -98,7 +98,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                     .up()
                     .withDetail(
                             REASON_KEY,
-                            String.format("EndDate: %s has passed, no stream files are no longer expected", endDate))
+                            String.format("EndDate: %s has passed, stream files are no longer expected", endDate))
                     .build();
         }
 

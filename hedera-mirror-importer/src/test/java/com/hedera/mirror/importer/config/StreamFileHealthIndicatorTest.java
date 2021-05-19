@@ -44,6 +44,8 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @ExtendWith(MockitoExtension.class)
 class StreamFileHealthIndicatorTest {
+    private static final String REASON_KEY = "reason";
+
     @Mock(lenient = true)
     private Timer streamFileParseDurationTimer;
 
@@ -85,14 +87,14 @@ class StreamFileHealthIndicatorTest {
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
-        assertThat((String) health.getDetails().get("reason")).contains("parsing is disabled");
+        assertThat((String) health.getDetails().get(REASON_KEY)).contains("parsing is disabled");
     }
 
     @Test
     void startUpNoStreamFilesBeforeWindow() {
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
-        assertThat((String) health.getDetails().get("reason")).contains("Starting up, no files parsed yet");
+        assertThat((String) health.getDetails().get(REASON_KEY)).contains("Starting up, no files parsed yet");
     }
 
     @Test
@@ -105,7 +107,7 @@ class StreamFileHealthIndicatorTest {
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.DOWN);
-        assertThat((String) health.getDetails().get("reason"))
+        assertThat((String) health.getDetails().get(REASON_KEY))
                 .contains("No new stream stream files have been parsed since:");
         assertThat((Long) health.getDetails().get("count")).isZero();
     }
@@ -150,7 +152,7 @@ class StreamFileHealthIndicatorTest {
 
         Health health = streamFileHealthIndicator.health(); // count unchanged
         assertThat(health.getStatus()).isEqualTo(Status.DOWN); // cache should not be returned
-        assertThat((String) health.getDetails().get("reason"))
+        assertThat((String) health.getDetails().get(REASON_KEY))
                 .contains("No new stream stream files have been parsed since:");
         assertThat((Long) health.getDetails().get("count")).isEqualTo(1);
     }
@@ -172,6 +174,7 @@ class StreamFileHealthIndicatorTest {
 
         Health health = streamFileHealthIndicator.health(); // count unchanged
         assertThat(health.getStatus()).isEqualTo(Status.UP); // cache should not be returned
+        assertThat((String) health.getDetails().get(REASON_KEY)).contains("stream files are no longer expected");
     }
 
     @Test
@@ -190,7 +193,7 @@ class StreamFileHealthIndicatorTest {
 
         Health health = streamFileHealthIndicator.health(); // count unchanged
         assertThat(health.getStatus()).isEqualTo(Status.DOWN); // cache should not be returned
-        assertThat((String) health.getDetails().get("reason"))
+        assertThat((String) health.getDetails().get(REASON_KEY))
                 .contains("No new stream stream files have been parsed since:");
         assertThat((Long) health.getDetails().get("count")).isEqualTo(1);
 
