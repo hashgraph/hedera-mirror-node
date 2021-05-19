@@ -9,13 +9,17 @@
   "retry_elapsed_time": 5,
   "online_url": "http://localhost:5700",
   "data_directory": "",
-  "http_timeout": 20,
+  "http_timeout": 10,
   "tip_delay": 300,
   "data": {
     "reconciliation_disabled": false,
     "inactive_discrepency_search_disabled": false,
     "balance_tracking_disabled": false,
     "bootstrap_balances": "./data_genesis_balances.json",
-    "ignore_reconciliation_error": true
+    "end_conditions": {
+      "reconciliation_coverage": {
+        "coverage": 0.95
+      }
+    }
   }
 }

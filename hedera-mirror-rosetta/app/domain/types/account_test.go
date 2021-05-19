@@ -202,6 +202,6 @@ func TestAccountFromStringThrows(t *testing.T) {
 
 		// then:
 		assert.Equal(t, expectedNil, res)
-		assert.Equal(t, errors.Errors[errors.InvalidAccount], err)
+		assert.Equal(t, errors.ErrInvalidAccount, err)
 	}
 }

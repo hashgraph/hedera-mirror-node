@@ -2,11 +2,15 @@
 hedera:
   mirror:
     rosetta:
-      apiVersion: 1.4.4
+      apiVersion: 1.4.10
       db:
         host: 127.0.0.1
         name: mirror_node
         password: mirror_rosetta_pass
+        pool:
+          maxIdleConnections: 20
+          maxLifetime: 30
+          maxOpenConnections: 100
         port: 5432
         username: mirror_rosetta
       log:

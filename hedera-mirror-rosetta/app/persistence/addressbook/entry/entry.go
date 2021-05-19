@@ -24,8 +24,8 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -87,7 +87,7 @@ func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
 	acc, err := types.AccountFromString(abe.Memo)
 	if err != nil {
 		log.Errorf(errors.CreateAccountDbIdFailed, abe.Memo)
-		return nil, errors.Errors[errors.InternalServerError]
+		return nil, errors.ErrInternalServerError
 	}
 	return acc, nil
 }

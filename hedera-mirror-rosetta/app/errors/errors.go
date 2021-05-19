@@ -24,40 +24,6 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 )
 
-// Errors - map of all Errors that this API can return
-var Errors = map[string]*types.Error{
-	AccountNotFound:                New(AccountNotFound, 100, true),
-	BlockNotFound:                  New(BlockNotFound, 101, true),
-	InvalidAccount:                 New(InvalidAccount, 102, false),
-	InvalidAmount:                  New(InvalidAmount, 103, false),
-	InvalidOperationsAmount:        New(InvalidOperationsAmount, 104, false),
-	InvalidOperationsTotalAmount:   New(InvalidOperationsTotalAmount, 105, false),
-	InvalidPublicKey:               New(InvalidPublicKey, 106, false),
-	InvalidSignatureVerification:   New(InvalidSignatureVerification, 107, false),
-	InvalidTransactionIdentifier:   New(InvalidTransactionIdentifier, 108, false),
-	MultipleOperationTypesPresent:  New(MultipleOperationTypesPresent, 109, false),
-	MultipleSignaturesPresent:      New(MultipleSignaturesPresent, 110, false),
-	NodeIsStarting:                 New(NodeIsStarting, 111, true),
-	NotImplemented:                 New(NotImplemented, 112, false),
-	OperationStatusesNotFound:      New(OperationStatusesNotFound, 113, true),
-	OperationTypesNotFound:         New(OperationTypesNotFound, 114, true),
-	StartMustNotBeAfterEnd:         New(StartMustNotBeAfterEnd, 115, false),
-	TransactionBuildFailed:         New(TransactionBuildFailed, 116, false),
-	TransactionDecodeFailed:        New(TransactionDecodeFailed, 117, false),
-	TransactionRecordFetchFailed:   New(TransactionRecordFetchFailed, 118, false),
-	TransactionMarshallingFailed:   New(TransactionMarshallingFailed, 119, false),
-	TransactionUnmarshallingFailed: New(TransactionUnmarshallingFailed, 120, false),
-	TransactionSubmissionFailed:    New(TransactionSubmissionFailed, 121, false),
-	TransactionNotFound:            New(TransactionNotFound, 122, true),
-	EmptyOperations:                New(EmptyOperations, 123, true),
-	TransactionInvalidType:         New(TransactionInvalidType, 124, false),
-	TransactionNotSigned:           New(TransactionNotSigned, 125, false),
-	TransactionHashFailed:          New(TransactionHashFailed, 126, false),
-	TransactionFreezeFailed:        New(TransactionFreezeFailed, 127, false),
-	TransactionSignatureFailed:     New(TransactionSignatureFailed, 128, false),
-	InternalServerError:            New(InternalServerError, 500, true),
-}
-
 const (
 	AccountNotFound                string = "Account not found"
 	BlockNotFound                  string = "Block not found"
@@ -74,7 +40,7 @@ const (
 	MultipleSignaturesPresent      string = "Only one signature must be present"
 	NodeIsStarting                 string = "Node is starting"
 	NotImplemented                 string = "Not implemented"
-	OperationStatusesNotFound      string = "Operation Statuses not found"
+	OperationResultsNotFound       string = "Operation Results not found"
 	OperationTypesNotFound         string = "Operation Types not found"
 	StartMustNotBeAfterEnd         string = "Start must not be after end"
 	TransactionBuildFailed         string = "Transaction build failed"
@@ -88,15 +54,55 @@ const (
 	TransactionNotSigned           string = "Transaction not signed"
 	TransactionHashFailed          string = "Transaction hash failed"
 	TransactionFreezeFailed        string = "Transaction freeze failed"
-	TransactionSignatureFailed     string = "Transaction signature error"
+	InvalidArgument                string = "Invalid argument"
+	DatabaseError                  string = "Database error"
 	InternalServerError            string = "Internal Server Error"
 )
 
-func New(message string, statusCode int32, retriable bool) *types.Error {
-	return &types.Error{
+var (
+	ErrAccountNotFound                = newError(AccountNotFound, 100, true)
+	ErrBlockNotFound                  = newError(BlockNotFound, 101, true)
+	ErrInvalidAccount                 = newError(InvalidAccount, 102, false)
+	ErrInvalidAmount                  = newError(InvalidAmount, 103, false)
+	ErrInvalidOperationsAmount        = newError(InvalidOperationsAmount, 104, false)
+	ErrInvalidOperationsTotalAmount   = newError(InvalidOperationsTotalAmount, 105, false)
+	ErrInvalidPublicKey               = newError(InvalidPublicKey, 106, false)
+	ErrInvalidSignatureVerification   = newError(InvalidSignatureVerification, 107, false)
+	ErrInvalidTransactionIdentifier   = newError(InvalidTransactionIdentifier, 108, false)
+	ErrMultipleOperationTypesPresent  = newError(MultipleOperationTypesPresent, 109, false)
+	ErrMultipleSignaturesPresent      = newError(MultipleSignaturesPresent, 110, false)
+	ErrNodeIsStarting                 = newError(NodeIsStarting, 111, true)
+	ErrNotImplemented                 = newError(NotImplemented, 112, false)
+	ErrOperationResultsNotFound       = newError(OperationResultsNotFound, 113, true)
+	ErrOperationTypesNotFound         = newError(OperationTypesNotFound, 114, true)
+	ErrStartMustNotBeAfterEnd         = newError(StartMustNotBeAfterEnd, 115, false)
+	ErrTransactionBuildFailed         = newError(TransactionBuildFailed, 116, false)
+	ErrTransactionDecodeFailed        = newError(TransactionDecodeFailed, 117, false)
+	ErrTransactionRecordFetchFailed   = newError(TransactionRecordFetchFailed, 118, false)
+	ErrTransactionMarshallingFailed   = newError(TransactionMarshallingFailed, 119, false)
+	ErrTransactionUnmarshallingFailed = newError(TransactionUnmarshallingFailed, 120, false)
+	ErrTransactionSubmissionFailed    = newError(TransactionSubmissionFailed, 121, false)
+	ErrTransactionNotFound            = newError(TransactionNotFound, 122, true)
+	ErrEmptyOperations                = newError(EmptyOperations, 123, true)
+	ErrTransactionInvalidType         = newError(TransactionInvalidType, 124, false)
+	ErrTransactionNotSigned           = newError(TransactionNotSigned, 125, false)
+	ErrTransactionHashFailed          = newError(TransactionHashFailed, 126, false)
+	ErrTransactionFreezeFailed        = newError(TransactionFreezeFailed, 127, false)
+	ErrInvalidArgument                = newError(InvalidArgument, 128, false)
+	ErrDatabaseError                  = newError(DatabaseError, 129, true)
+	ErrInternalServerError            = newError(InternalServerError, 500, true)
+
+	Errors = make([]*types.Error, 0)
+)
+
+func newError(message string, statusCode int32, retriable bool) *types.Error {
+	err := &types.Error{
 		Message:   message,
 		Code:      statusCode,
 		Retriable: retriable,
 		Details:   nil,
 	}
+	Errors = append(Errors, err)
+
+	return err
 }

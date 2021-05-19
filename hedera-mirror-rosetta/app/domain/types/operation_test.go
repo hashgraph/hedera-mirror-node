@@ -45,6 +45,7 @@ func exampleOperation() *Operation {
 }
 
 func expectedOperation() *types.Operation {
+	status := "pending"
 	return &types.Operation{
 		OperationIdentifier: &types.OperationIdentifier{
 			Index:        1,
@@ -52,7 +53,7 @@ func expectedOperation() *types.Operation {
 		},
 		RelatedOperations: []*types.OperationIdentifier{},
 		Type:              "transfer",
-		Status:            "pending",
+		Status:            &status,
 		Account: &types.AccountIdentifier{
 			Address:    "0.0.0",
 			SubAccount: nil,

@@ -29,7 +29,7 @@ import (
 type TransactionRepository interface {
 	FindByHashInBlock(identifier string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error)
 	FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error)
+	Results() (map[int]string, *rTypes.Error)
 	Types() (map[int]string, *rTypes.Error)
 	TypesAsArray() ([]string, *rTypes.Error)
-	Statuses() (map[int]string, *rTypes.Error)
 }

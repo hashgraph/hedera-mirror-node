@@ -35,13 +35,19 @@ func NewMempoolAPIService() *MempoolAPIService {
 }
 
 // Mempool implements the /mempool endpoint
-func (m *MempoolAPIService) Mempool(ctx context.Context, request *rTypes.NetworkRequest) (*rTypes.MempoolResponse, *rTypes.Error) {
+func (m *MempoolAPIService) Mempool(
+	ctx context.Context,
+	request *rTypes.NetworkRequest,
+) (*rTypes.MempoolResponse, *rTypes.Error) {
 	return &rTypes.MempoolResponse{
 		TransactionIdentifiers: []*rTypes.TransactionIdentifier{},
 	}, nil
 }
 
 // Mempool implements the /mempool/transaction endpoint
-func (m *MempoolAPIService) MempoolTransaction(ctx context.Context, request *rTypes.MempoolTransactionRequest) (*rTypes.MempoolTransactionResponse, *rTypes.Error) {
-	return nil, errors.Errors[errors.TransactionNotFound]
+func (m *MempoolAPIService) MempoolTransaction(
+	ctx context.Context,
+	request *rTypes.MempoolTransactionRequest,
+) (*rTypes.MempoolTransactionResponse, *rTypes.Error) {
+	return nil, errors.ErrTransactionNotFound
 }

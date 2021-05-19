@@ -76,10 +76,17 @@ type Db struct {
 	Host     string `yaml:"host" env:"HEDERA_MIRROR_ROSETTA_DB_HOST"`
 	Name     string `yaml:"name" env:"HEDERA_MIRROR_ROSETTA_DB_NAME"`
 	Password string `yaml:"password" env:"HEDERA_MIRROR_ROSETTA_DB_PASSWORD"`
+	Pool     Pool   `yaml:"pool"`
 	Port     uint16 `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_DB_PORT"`
 	Username string `yaml:"username" env:"HEDERA_MIRROR_ROSETTA_DB_USERNAME"`
 }
 
+type Pool struct {
+	MaxIdleConnections int `yaml:"maxIdleConnections" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_IDLE_CONNECTIONS"`
+	MaxLifetime        int `yaml:"maxLifetime" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_LIFETIME"`
+	MaxOpenConnections int `yaml:"maxOpenConnections" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_OPEN_CONNECTIONS"`
+}
+
 type Log struct {
-	Level string `yaml:"level"`
+	Level string `yaml:"level" env:"HEDERA_MIRROR_ROSETTA_LOG_LEVEL"`
 }

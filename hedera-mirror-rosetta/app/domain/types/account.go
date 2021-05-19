@@ -63,7 +63,7 @@ func (a *Account) ToRosetta() *rTypes.AccountIdentifier {
 func AccountFromString(account string) (*Account, *rTypes.Error) {
 	entityId, err := entityid.FromString(account)
 	if err != nil {
-		return nil, errors.Errors[errors.InvalidAccount]
+		return nil, errors.ErrInvalidAccount
 	}
 	return &Account{*entityId}, nil
 }
