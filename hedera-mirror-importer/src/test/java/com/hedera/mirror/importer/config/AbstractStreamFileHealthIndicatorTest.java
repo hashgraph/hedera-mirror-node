@@ -104,7 +104,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
-        assertThat((String) health.getDetails().get(REASON_KEY)).contains("parsing is disabled");
+        assertThat((String) health.getDetails().get(REASON_KEY)).contains("Parsing is disabled");
     }
 
     @Test
