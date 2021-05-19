@@ -107,7 +107,7 @@ class StreamFileHealthIndicatorTest {
         assertThat(health.getStatus()).isEqualTo(Status.DOWN);
         assertThat((String) health.getDetails().get("reason"))
                 .contains("No new stream stream files have been parsed since:");
-        assertThat((Long) health.getDetails().get("count")).isEqualTo(0);
+        assertThat((Long) health.getDetails().get("count")).isZero();
     }
 
     @Test

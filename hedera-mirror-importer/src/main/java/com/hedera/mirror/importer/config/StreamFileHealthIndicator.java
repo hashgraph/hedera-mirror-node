@@ -48,7 +48,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
     private final MeterRegistry meterRegistry;
     private final Duration streamFileStatusCheckBuffer;
     private final StreamType streamType;
-    private final AtomicReference<Health> lastHealthStatus = new AtomicReference(Health
+    private final AtomicReference<Health> lastHealthStatus = new AtomicReference<>(Health
             .unknown()
             .withDetail(COUNT_KEY, 0L)
             .withDetail(LAST_CHECK_KEY, Instant.now())
