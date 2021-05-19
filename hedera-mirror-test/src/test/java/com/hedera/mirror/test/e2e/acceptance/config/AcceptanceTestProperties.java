@@ -23,17 +23,17 @@ package com.hedera.mirror.test.e2e.acceptance.config;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import javax.inject.Named;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 
-@Component
+@Named
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance")
 @Data
 @Validated

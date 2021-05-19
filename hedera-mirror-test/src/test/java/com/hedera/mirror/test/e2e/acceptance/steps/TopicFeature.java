@@ -22,7 +22,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -36,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -354,7 +352,7 @@ public class TopicFeature {
                             "backgroundMessage".getBytes(StandardCharsets.UTF_8),
                             getSubmitKeys());
                 } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
-                    e.printStackTrace();
+                    log.error("Error publishing to topic", e);
                 }
             }, 0, 1, TimeUnit.SECONDS);
         }
@@ -375,48 +373,5 @@ public class TopicFeature {
 
     private KeyList getSubmitKeys() {
         return submitKey == null ? null : KeyList.of(submitKey);
-    }
-
-    /**
-     * Recover method for retry operations Method parameters of retry method must match this method after exception
-     * parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
-        log.error("Transaction submissions for topic operation failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
-     * method after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, int messageCount) throws PrecheckStatusException {
-        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
-     * method after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
-        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    @After("@TopicMessagesBase or @TopicMessagesFilter")
-    public void closeClients() {
-        log.debug("Closing topic feature clients");
-        mirrorClient.close();
-        topicClient.close();
     }
 }
