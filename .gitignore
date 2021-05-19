@@ -130,6 +130,7 @@ hedera-mirror-rest/.husky/_
 hedera-mirror-rest/check-state-proof/output
 
 # Rosetta
+hedera-mirror-rosetta/cmd/cmd
 hedera-mirror-rosetta/scripts/validation/rosetta-cli
 coverage.txt
 

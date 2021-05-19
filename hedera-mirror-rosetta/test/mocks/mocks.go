@@ -34,10 +34,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var sqlNamedParamRe = regexp.MustCompile(`(@[^ ,)"'\n]*)`)
+var sqlNamedParamRe = regexp.MustCompile(`(@[^ ,)"'\n]+)`)
 
 // replaces named parameter to indexed format $1, $2, ...
-var queryMatcher sqlmock.QueryMatcher = sqlmock.QueryMatcherFunc(func(expectedSQL, actualSQL string) error {
+var queryMatcher = sqlmock.QueryMatcherFunc(func(expectedSQL, actualSQL string) error {
 	namedParams := sqlNamedParamRe.FindAllString(expectedSQL, -1)
 
 	index := 1

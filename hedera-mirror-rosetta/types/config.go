@@ -82,9 +82,9 @@ type Db struct {
 }
 
 type Pool struct {
-	MaxIdleConns int `yaml:"maxIdleConns" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_IDLE_CONNS"`
-	MaxLifetime  int `yaml:"maxLifetime" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_LIFETIME"`
-	MaxOpenConns int `yaml:"maxOpenConns" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_OPEN_CONNS"`
+	MaxIdleConnections int `yaml:"maxIdleConnections" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_IDLE_CONNECTIONS"`
+	MaxLifetime        int `yaml:"maxLifetime" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_LIFETIME"`
+	MaxOpenConnections int `yaml:"maxOpenConnections" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_OPEN_CONNECTIONS"`
 }
 
 type Log struct {

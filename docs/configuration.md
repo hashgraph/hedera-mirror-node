@@ -361,9 +361,9 @@ Name                                                    | Default               
 `hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database
 `hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database
 `hedera.mirror.rosetta.db.password`                     | mirror_rosetta_pass     | The database password the processor uses to connect
-`hedera.mirror.rosetta.db.pool.maxIdleConns`            | 20                      | The maximum number of idle database connections
+`hedera.mirror.rosetta.db.pool.maxIdleConnections`      | 20                      | The maximum number of idle database connections
 `hedera.mirror.rosetta.db.pool.maxLifetime`             | 30                      | The maximum lifetime of a database connection in minutes
-`hedera.mirror.rosetta.db.pool.maxOpenConns`            | 100                     | The maximum number of open database connections
+`hedera.mirror.rosetta.db.pool.maxOpenConnections`      | 100                     | The maximum number of open database connections
 `hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database
 `hedera.mirror.rosetta.db.username`                     | mirror_rosetta          | The username the processor uses to connect to the database
 `hedera.mirror.rosetta.log.level`                       | info                    | The log level

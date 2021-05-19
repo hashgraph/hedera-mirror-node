@@ -51,9 +51,9 @@ func connectToDb(dbConfig types.Db) *gorm.DB {
 		log.Fatal(err)
 	}
 
-	sqlDb.SetMaxIdleConns(dbConfig.Pool.MaxIdleConns)
+	sqlDb.SetMaxIdleConns(dbConfig.Pool.MaxIdleConnections)
 	sqlDb.SetConnMaxLifetime(time.Duration(dbConfig.Pool.MaxLifetime) * time.Minute)
-	sqlDb.SetMaxOpenConns(dbConfig.Pool.MaxOpenConns)
+	sqlDb.SetMaxOpenConns(dbConfig.Pool.MaxOpenConnections)
 
 	return db
 }
