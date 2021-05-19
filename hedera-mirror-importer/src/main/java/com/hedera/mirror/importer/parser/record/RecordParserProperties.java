@@ -40,7 +40,7 @@ public class RecordParserProperties extends AbstractParserProperties {
 
     public RecordParserProperties(MirrorProperties mirrorProperties) {
         this.mirrorProperties = mirrorProperties;
-        setStreamFileStatusCheckWindow(Duration.ofSeconds(5)); // 2.5 times expected stream upload
+        setStreamFileStatusCheckBuffer(Duration.ofSeconds(10));
     }
 
     @Override
