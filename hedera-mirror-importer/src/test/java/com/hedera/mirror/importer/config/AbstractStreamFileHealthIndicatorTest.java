@@ -24,7 +24,7 @@ import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_LATE
 import static com.hedera.mirror.importer.parser.StreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.withSettings;
@@ -76,10 +76,11 @@ abstract class AbstractStreamFileHealthIndicatorTest {
         doReturn(0.0).when(streamCloseLatencyDurationTimer).mean(any());
 
         Search streamCloseLatencySearch = mock(Search.class, withSettings().lenient());
-        doReturn(streamCloseLatencySearch).when(streamCloseLatencySearch).tag(anyString(), anyString());
-        doReturn(streamParseDurationSearch).when(streamParseDurationSearch).tag(anyString(), anyString());
         doReturn(streamCloseLatencyDurationTimer).when(streamCloseLatencySearch).timer();
         doReturn(streamFileParseDurationTimer).when(streamParseDurationSearch).timer();
+
+        doReturn(streamCloseLatencySearch).when(streamCloseLatencySearch).tags(anyIterable());
+        doReturn(streamParseDurationSearch).when(streamParseDurationSearch).tags(anyIterable());
 
         doReturn(streamParseDurationSearch).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
         doReturn(streamCloseLatencySearch).when(meterRegistry).find(STREAM_CLOSE_LATENCY_METRIC_NAME);
@@ -137,7 +138,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void missingMetricStreamTypeTag() {
-        doReturn(null).when(streamParseDurationSearch).tag("type", parserProperties.getStreamType().toString());
+        doReturn(null).when(streamParseDurationSearch).tags(anyIterable());
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties,
                 meterRegistry,
@@ -151,8 +152,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void missingSuccessfulStreamFilesTag() {
-        doReturn(null).when(streamParseDurationSearch)
-                .tag("success", "true");
+        doReturn(null).when(streamParseDurationSearch).tags(anyIterable());
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties,
                 meterRegistry,

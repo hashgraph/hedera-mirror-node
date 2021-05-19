@@ -24,8 +24,8 @@ import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_LATE
 import static com.hedera.mirror.importer.parser.StreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.search.Search;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +35,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
-import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.parser.ParserProperties;
@@ -50,6 +49,18 @@ public class StreamFileHealthIndicator implements HealthIndicator {
     private final ParserProperties parserProperty;
     private final MeterRegistry meterRegistry;
     private final MirrorProperties mirrorProperties;
+    private final Health disabledHealth = Health
+            .unknown()
+            .withDetail(REASON_KEY, "Parsing is disabled")
+            .build();
+    private final Health missingStreamCloseTimerHealth = Health
+            .unknown()
+            .withDetail(REASON_KEY, String.format("%s timer is missing", STREAM_CLOSE_LATENCY_METRIC_NAME))
+            .build();
+    private final Health missingParseDurationTimerHealth = Health
+            .unknown()
+            .withDetail(REASON_KEY, String.format("%s timer is missing", STREAM_PARSE_DURATION_METRIC_NAME))
+            .build();
 
     private final AtomicReference<Health> lastHealthStatus = new AtomicReference<>(Health
             .unknown()
@@ -64,10 +75,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
         // consider case where parsing is disabled
         if (!parserProperty.isEnabled()) {
-            return Health
-                    .unknown()
-                    .withDetail(REASON_KEY, "Parsing is disabled")
-                    .build();
+            return disabledHealth;
         }
 
         // consider case where endTime has been passed
@@ -82,12 +90,13 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                     .build();
         }
 
-        Timer streamParseDurationTimer = getTimer(STREAM_PARSE_DURATION_METRIC_NAME, Map.of("success", "true"));
+        Timer streamParseDurationTimer = getTimer(
+                STREAM_PARSE_DURATION_METRIC_NAME,
+                Tags.of(
+                        "type", parserProperty.getStreamType().toString(),
+                        "success", "true"));
         if (streamParseDurationTimer == null) {
-            return Health
-                    .unknown()
-                    .withDetail(REASON_KEY, String.format("%s timer is missing", STREAM_PARSE_DURATION_METRIC_NAME))
-                    .build();
+            return missingParseDurationTimerHealth;
         }
 
         long currentCount = streamParseDurationTimer.count();
@@ -99,12 +108,11 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
         // handle down but in window of allowance
         if (health.getStatus() == Status.DOWN) {
-            Timer streamCloseLatencyDurationTimer = getTimer(STREAM_CLOSE_LATENCY_METRIC_NAME, Map.of());
+            Timer streamCloseLatencyDurationTimer = getTimer(
+                    STREAM_CLOSE_LATENCY_METRIC_NAME,
+                    Tags.of("type", parserProperty.getStreamType().toString()));
             if (streamCloseLatencyDurationTimer == null) {
-                return Health
-                        .unknown()
-                        .withDetail(REASON_KEY, String.format("%s timer is missing", STREAM_CLOSE_LATENCY_METRIC_NAME))
-                        .build();
+                return missingStreamCloseTimerHealth;
             }
 
             long mean = (long) streamCloseLatencyDurationTimer.mean(TimeUnit.MILLISECONDS);
@@ -142,28 +150,14 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                 .build();
     }
 
-    private Timer getTimer(String metricName, Map<String, String> additionalMetricTags) {
-        Search streamSearch = meterRegistry.find(metricName);
-        if (streamSearch == null) {
-            return null;
-        }
-
+    private Timer getTimer(String metricName, Tags additionalMetricTags) {
         try {
-            streamSearch = meterRegistry.find(metricName).tag("type", parserProperty.getStreamType().toString());
-            Timer streamTimer = streamSearch.timer();
-
-            // apply additional tags
-            if (!CollectionUtils.isEmpty(additionalMetricTags)) {
-                for (Map.Entry<String, String> entry : additionalMetricTags.entrySet()) {
-                    streamSearch = streamSearch.tag(entry.getKey(), entry.getValue());
-                }
-
-                streamTimer = streamSearch.timer();
-            }
-
-            return streamTimer;
+            return meterRegistry
+                    .find(metricName)
+                    .tags(additionalMetricTags)
+                    .timer();
         } catch (Exception ex) {
-            log.trace("metricRegistry missing timer or tags  for '{}'.", metricName, ex);
+            log.trace("metricRegistry missing timer or tags for '{}'.", metricName, ex);
             return null;
         }
     }

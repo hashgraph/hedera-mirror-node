@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -31,15 +32,12 @@ import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
 @Component("recordParserProperties")
 @Data
+@RequiredArgsConstructor
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.parser.record")
 public class RecordParserProperties extends AbstractParserProperties {
 
     private final MirrorProperties mirrorProperties;
-
-    public RecordParserProperties(MirrorProperties mirrorProperties) {
-        this.mirrorProperties = mirrorProperties;
-    }
 
     @Override
     public StreamType getStreamType() {
