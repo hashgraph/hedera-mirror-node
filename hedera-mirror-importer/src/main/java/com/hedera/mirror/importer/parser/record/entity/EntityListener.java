@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
@@ -48,6 +49,9 @@ public interface EntityListener {
     }
 
     default void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
+    }
+
+    default void onEntity(Entity entity) throws ImporterException {
     }
 
     default void onEntityId(EntityId entityId) throws ImporterException {

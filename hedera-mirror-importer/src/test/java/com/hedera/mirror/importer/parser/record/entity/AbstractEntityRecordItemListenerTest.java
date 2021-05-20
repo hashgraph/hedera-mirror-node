@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
@@ -183,11 +184,11 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         recordStreamFileListener.onEnd(recordFile);
     }
 
-    protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
-        Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
+    protected void parseRecordItemsAndCommit(List<RecordItem> recordItems) {
+        Instant instant = Instant.ofEpochSecond(0, recordItems.get(0).getConsensusTimestamp());
         String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-        long consensusStart = recordItems[0].getConsensusTimestamp();
-        long consensusEnd = recordItems[recordItems.length - 1].getConsensusTimestamp();
+        long consensusStart = recordItems.get(0).getConsensusTimestamp();
+        long consensusEnd = recordItems.get(recordItems.size() - 1).getConsensusTimestamp();
         RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);
 
         recordStreamFileListener.onStart();

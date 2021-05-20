@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -229,6 +230,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void onEntityId() throws Exception {
         // given
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
@@ -244,6 +246,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void onEntityIdDuplicates() throws Exception {
         // given
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
@@ -357,9 +360,12 @@ public class SqlEntityListenerTest extends IntegrationTest {
         byte[] pubKeyPrefix2 = "pubKeyPrefix2".getBytes();
         byte[] pubKeyPrefix3 = "pubKeyPrefix3".getBytes();
 
-        TransactionSignature transactionSignature1 = getTransactionSignature(1, entityId1.entityIdToString(), pubKeyPrefix1);
-        TransactionSignature transactionSignature2 = getTransactionSignature(2, entityId2.entityIdToString(), pubKeyPrefix2);
-        TransactionSignature transactionSignature3 = getTransactionSignature(3, entityId3.entityIdToString(), pubKeyPrefix3);
+        TransactionSignature transactionSignature1 = getTransactionSignature(1, entityId1
+                .entityIdToString(), pubKeyPrefix1);
+        TransactionSignature transactionSignature2 = getTransactionSignature(2, entityId2
+                .entityIdToString(), pubKeyPrefix2);
+        TransactionSignature transactionSignature3 = getTransactionSignature(3, entityId3
+                .entityIdToString(), pubKeyPrefix3);
 
         // when
         sqlEntityListener.onTransactionSignature(transactionSignature1);

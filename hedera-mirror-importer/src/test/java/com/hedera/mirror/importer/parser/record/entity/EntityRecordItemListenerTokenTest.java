@@ -403,10 +403,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 wipeTokenTransfer);
 
         // process all record items in a single file
-        parseRecordItemsAndCommit(
+        parseRecordItemsAndCommit(List.of(
                 new RecordItem(createTransaction, createTransactionRecord),
                 new RecordItem(associateTransaction, associateRecord),
-                new RecordItem(wipeTransaction, wipeRecord));
+                new RecordItem(wipeTransaction, wipeRecord)));
 
         // Verify token, tokenAccount and tokenTransfer
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, newTotalSupply);

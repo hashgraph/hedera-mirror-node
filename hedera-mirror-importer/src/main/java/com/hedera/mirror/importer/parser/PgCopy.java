@@ -48,31 +48,42 @@ import com.hedera.mirror.importer.exception.ParserException;
 @Log4j2
 public class PgCopy<T> {
 
-    private final String tableName;
-    private final String sql;
+    protected String tableName;
+    private String sql;
     private final ObjectWriter writer;
     private final Timer insertDurationMetric;
     private final ParserProperties properties;
+    private final String columnsCsv;
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
         this.properties = properties;
-        tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, entityClass.getSimpleName());
+        tableName = CaseFormat.UPPER_CAMEL.to(
+                CaseFormat.LOWER_UNDERSCORE,
+                entityClass.getSimpleName());
         var mapper = new CsvMapper();
         SimpleModule module = new SimpleModule();
         module.addSerializer(byte[].class, new ByteArrayToHexSerializer());
         mapper.registerModule(module);
         var schema = mapper.schemaFor(entityClass);
         writer = mapper.writer(schema);
-        String columnsCsv = Lists.newArrayList(schema.iterator()).stream()
+        columnsCsv = Lists.newArrayList(schema.iterator()).stream()
                 .map(CsvSchema.Column::getName)
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
-        sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv);
+//        sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv);
 
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
                 .tag("table", tableName)
                 .register(meterRegistry);
+    }
+
+    private String getSql() {
+        if (sql == null) {
+            sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv);
+        }
+
+        return sql;
     }
 
     public void copy(Collection<T> items, Connection connection) {
@@ -83,7 +94,7 @@ public class PgCopy<T> {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
+            CopyIn copyIn = pgConnection.getCopyAPI().copyIn(getSql());
 
             try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
                 writer.writeValue(pgCopyOutputStream, items);

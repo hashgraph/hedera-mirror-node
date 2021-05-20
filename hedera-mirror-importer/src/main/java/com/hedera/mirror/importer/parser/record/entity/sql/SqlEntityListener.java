@@ -23,9 +23,12 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -39,6 +42,7 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
@@ -54,6 +58,7 @@ import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.PgCopy;
+import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
@@ -91,6 +96,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<TopicMessage> topicMessagePgCopy;
     private final PgCopy<TokenTransfer> tokenTransferPgCopy;
     private final PgCopy<TransactionSignature> transactionSignaturePgCopy;
+    private final UpsertPgCopy<Entity> entityPgCopy;
+    private final UpsertPgCopy<Entity> missingEntityPgCopy;
 
     // used to optimize inserts into t_entities table so node and treasury ids are not tried for every transaction
     private final Cache entityCache;
@@ -105,6 +112,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<EntityId> entityIds;
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<TransactionSignature> transactionSignatures;
+    private final Map<Long, Entity> entities;
+    private final Map<Long, Entity> missingEntities;
 
     public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
                              DataSource dataSource,
@@ -132,6 +141,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, recordParserProperties);
         tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties);
         transactionSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, recordParserProperties);
+        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, Entity.TEMP_TABLE,
+                Entity.TempToMainUpdateSql);
+        missingEntityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
+                EntityId.TEMP_TABLE,
+                EntityId.TempToMainUpdateSql);
 
         transactions = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -143,6 +157,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         topicMessages = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
+        entities = new HashMap<>();
+        missingEntities = new HashMap<>();
     }
 
     @Override
@@ -169,9 +185,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void cleanup() {
         contractResults.clear();
         cryptoTransfers.clear();
+        entities.clear();
         entityIds.clear();
         fileData.clear();
         liveHashes.clear();
+        missingEntities.clear();
         nonFeeTransfers.clear();
         topicMessages.clear();
         transactions.clear();
@@ -198,7 +216,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             topicMessagePgCopy.copy(topicMessages, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
             transactionSignaturePgCopy.copy(transactionSignatures, connection);
-            persistEntities();
+
+            // set autocommit to false to allow temp table to be seen in upserts
+            connection.setAutoCommit(false);
+            persistEntities(connection);
+            persistEntityIds(connection);
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -219,6 +241,28 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onEntity(Entity entity) throws ImporterException {
+        // entity could experience multiple updates in a single record file, handle updates in memory for this case
+        if (entities.containsKey(entity.getId())) {
+            updateCachedEntity(entity);
+            return;
+        }
+
+        entities.put(entity.getId(), entity);
+    }
+
+    private void updateCachedEntity(Entity newEntity) {
+        Entity cachedEntity = entities.get(newEntity.getId());
+        cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
+        cachedEntity.setDeleted(newEntity.isDeleted());
+        cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
+        cachedEntity.setKey(newEntity.getKey());
+        cachedEntity.setMemo(newEntity.getMemo());
+        cachedEntity.setPublicKey(newEntity.getPublicKey());
+        cachedEntity.setSubmitKey(newEntity.getSubmitKey());
+    }
+
+    @Override
     public void onEntityId(EntityId entityId) throws ImporterException {
         // only insert entities not found in cache
         if (EntityId.isEmpty(entityId) || entityCache.get(entityId.getId()) != null) {
@@ -226,6 +270,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         entityIds.add(entityId);
+        missingEntities.put(entityId.getId(), entityId.toEntity());
     }
 
     @Override
@@ -290,5 +335,22 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             entityCache.put(entityId, null);
         });
         log.info("Inserted {} entities in {}", entityIds.size(), stopwatch);
+    }
+
+    private void persistEntityIds(Connection connection) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        missingEntityPgCopy.createTempTable(connection);
+        missingEntityPgCopy.copy(missingEntities.values(), connection);
+        missingEntityPgCopy.upsertFinalTable(connection);
+
+        log.info("Inserted {} potential missing entityIds in {}", missingEntities.values().size(), stopwatch);
+    }
+
+    private void persistEntities(Connection connection) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        entityPgCopy.createTempTable(connection);
+        entityPgCopy.copy(entities.values(), connection);
+        entityPgCopy.upsertFinalTable(connection);
+        log.info("Inserted {} entities in {}", entities.values().size(), stopwatch);
     }
 }

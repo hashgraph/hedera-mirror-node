@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -43,12 +42,17 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entity;
@@ -58,12 +62,16 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
+@Log4j2
 public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
             .build();
     private static final long[] additionalTransfers = {5000, 6000};
     private static final long[] additionalTransferAmounts = {1001, 1002};
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @BeforeEach
     void before() {
@@ -225,6 +233,43 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 , () -> assertEquals(Utility.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpirationTimestamp())
         );
+    }
+
+    @Test
+//    @Transactional
+    void multiEntityUpdate() throws Exception {
+        int startingAccountNum = 2000;
+        int initialEntityCount = 6000;
+        int updateEntityCount = 3000;
+
+        List<RecordItem> recordItemList = new ArrayList<>();
+        for (int i = startingAccountNum; i < startingAccountNum + initialEntityCount; i++) {
+            recordItemList.add(getCreateAccountRecordItem(i));
+        }
+
+        // insert initialEntityCount new entities
+        Instant startTime = Instant.now();
+        transactionTemplate.executeWithoutResult(status -> parseRecordItemsAndCommit(recordItemList));
+//        parseRecordItemsAndCommit(recordItemList);
+        log.info("Inserting {} ({} -> {}) entities took {} ms", recordItemList.size(), startingAccountNum,
+                startingAccountNum + initialEntityCount,
+                java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
+        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + 3);
+
+        recordItemList.clear();
+        for (int u = startingAccountNum + updateEntityCount; u < initialEntityCount + updateEntityCount; u++) {
+            recordItemList.add(getCreateAccountRecordItem(u));
+        }
+
+        // insert initialEntityCount half existing half new
+        startTime = Instant.now();
+        transactionTemplate.executeWithoutResult(status -> parseRecordItemsAndCommit(recordItemList));
+//        parseRecordItemsAndCommit(recordItemList);
+        log.info("Inserting {} ({} -> {}) entities with {} updates took {} ms", recordItemList.size(),
+                startingAccountNum + updateEntityCount, initialEntityCount + updateEntityCount,
+                updateEntityCount,
+                java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
+        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount - startingAccountNum + 3);
     }
 
     /**
@@ -625,6 +670,15 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 transactionBody, status);
     }
 
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, int status, int accountNum) {
+        return buildTransactionRecord(
+                recordBuilder -> recordBuilder
+                        .getReceiptBuilder()
+                        .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(accountNum)),
+                transactionBody,
+                status);
+    }
+
     private Transaction cryptoCreateTransaction() {
         return buildTransaction(builder -> builder.getCryptoCreateAccountBuilder()
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
@@ -642,16 +696,37 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
     private Transaction cryptoUpdateTransaction() {
         return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
-                .setAccountIDToUpdate(accountId)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(5001L))
-                .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
                 .setKey(keyFromString(KEY))
-                .setMemo(StringValue.of("CryptoUpdateAccount memo"))
-                .setProxyAccountID(PROXY_UPDATE)
-                .setReceiveRecordThreshold(5001L)
-                .setReceiverSigRequired(false)
-                .setSendRecordThreshold(6001L));
+                .setProxyAccountID(PROXY)
+                .setReceiveRecordThreshold(2000L)
+                .setReceiverSigRequired(true)
+                .setSendRecordThreshold(3000L));
     }
+
+    private RecordItem getCreateAccountRecordItem(int accountNum) throws Exception {
+        Transaction createTransaction = cryptoCreateTransaction();
+        TransactionBody createTransactionBody = getTransactionBody(createTransaction);
+        TransactionRecord createRecord = transactionRecord(
+                createTransactionBody,
+                ResponseCodeEnum.SUCCESS.getNumber(),
+                accountNum);
+        return new RecordItem(createTransaction, createRecord);
+    }
+
+    private RecordItem getUpdateAccountRecordItem(int accountNum) throws Exception {
+        Transaction updateTransaction = cryptoUpdateTransaction();
+        TransactionBody updateTransactionBody = getTransactionBody(updateTransaction);
+        TransactionRecord createRecord = transactionRecord(
+                updateTransactionBody,
+                ResponseCodeEnum.SUCCESS.getNumber(),
+                accountNum);
+        return new RecordItem(updateTransaction, createRecord);
+    }
+
+//    private Transaction cryptoUpdateTransaction() {
+//        return cryptoCreateTransaction();
+//    }
 
     private Transaction cryptoDeleteTransaction() {
         return buildTransaction(builder -> builder.getCryptoDeleteBuilder()

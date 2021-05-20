@@ -20,13 +20,16 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Id;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -34,10 +37,17 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @ToString(exclude = {"key", "submitKey"})
 public class Entity {
+    public static final String TEMP_TABLE = "entity_temp";
+    public static final String TempToMainUpdateSql = "insert into entity select * from " + TEMP_TABLE + " on conflict" +
+            " (id) do update set auto_renew_period = excluded.auto_renew_period, deleted = excluded.deleted, " +
+            "expiration_timestamp = excluded.expiration_timestamp, key = excluded.key, memo = excluded.memo, " +
+            "public_key = excluded.public_key, submit_key = excluded.submit_key";
+
     @Id
     private Long id;
 
     @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId autoRenewAccountId;
 
     private Long autoRenewPeriod;
@@ -50,6 +60,8 @@ public class Entity {
 
     private byte[] key;
 
+    //    @Convert(converter = MemoConverter.class)
+//    @JsonSerialize(using = MemoSerializer.class)
     private String memo = "";
 
     private Long modifiedTimestamp;
@@ -57,6 +69,7 @@ public class Entity {
     private Long num;
 
     @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId proxyAccountId;
 
     private String publicKey;
@@ -75,7 +88,7 @@ public class Entity {
     }
 
     public void setMemo(String memo) {
-        this.memo = Utility.sanitize(memo);
+        this.memo = StringUtils.isEmpty(memo) ? "" : Utility.sanitize(memo);
     }
 
     public EntityId toEntityId() {

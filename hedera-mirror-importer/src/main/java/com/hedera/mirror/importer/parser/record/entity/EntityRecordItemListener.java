@@ -448,9 +448,7 @@ public class EntityRecordItemListener implements RecordItemListener {
      */
     private void updateEntity(
             RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId) {
-        // TODO: remove lookup and batch this update with rest of the db operations. Options: upsert.
-        Entity entity = entityRepository.findById(entityId.getId())
-                .orElseGet(entityId::toEntity);
+        Entity entity = entityId.toEntity();
         transactionHandler.updateEntity(entity, recordItem);
         EntityId autoRenewAccount = transactionHandler.getAutoRenewAccount(recordItem);
         if (!EntityId.isEmpty(autoRenewAccount)) {
@@ -464,7 +462,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onEntityId(proxyAccount);
             entity.setProxyAccountId(proxyAccount);
         }
-        entityRepository.save(entity);
+
+        entityListener.onEntity(entity);
     }
 
     private void insertTokenAssociate(RecordItem recordItem) {
@@ -802,7 +801,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
-                                          List<SignaturePair> signaturePairList) {
+                                             List<SignaturePair> signaturePairList) {
         HashSet<ByteString> publicKeyPrefixes = new HashSet<>();
         signaturePairList.forEach(signaturePair -> {
             // currently only Ed25519 signature is supported
