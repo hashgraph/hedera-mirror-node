@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.google.common.collect.ImmutableSortedSet;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
@@ -32,9 +33,10 @@ import lombok.Value;
 @Getter
 public enum StreamType {
 
-    BALANCE(AccountBalanceFile.class, "accountBalances", "balance", "_Balances", List.of("csv", "pb")),
-    EVENT(EventFile.class, "eventsStreams", "events_", "", List.of("evts")),
-    RECORD(RecordFile.class, "recordstreams", "record", "", List.of("rcd"));
+    BALANCE(AccountBalanceFile.class, "accountBalances", "balance", "_Balances", List.of("csv", "pb"),
+            Duration.ofMinutes(15L)),
+    EVENT(EventFile.class, "eventsStreams", "events_", "", List.of("evts"), Duration.ZERO),
+    RECORD(RecordFile.class, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";
 
@@ -47,18 +49,20 @@ public enum StreamType {
     private final SortedSet<Extension> signatureExtensions;
     private final Class<? extends StreamFile> streamFileClass;
     private final String suffix;
+    private final Duration fileCloseInterval;
 
     StreamType(Class<? extends StreamFile> streamFileClass, String path, String nodePrefix, String suffix,
-            List<String> extensions) {
+               List<String> extensions, Duration fileCloseInterval) {
         this.streamFileClass = streamFileClass;
         this.path = path;
         this.nodePrefix = nodePrefix;
         this.suffix = suffix;
+        this.fileCloseInterval = fileCloseInterval;
 
-        this.dataExtensions = IntStream.range(0, extensions.size())
+        dataExtensions = IntStream.range(0, extensions.size())
                 .mapToObj(index -> Extension.of(extensions.get(index), index))
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
-        this.signatureExtensions = this.dataExtensions
+        signatureExtensions = dataExtensions
                 .stream()
                 .map(ext -> Extension.of(ext.getName() + SIGNATURE_SUFFIX, ext.getPriority()))
                 .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));

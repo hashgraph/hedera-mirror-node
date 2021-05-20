@@ -100,25 +100,46 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
         // handle down but in window of allowance
         if (health.getStatus() == Status.DOWN) {
-            Timer streamCloseLatencyDurationTimer = meterRegistry
-                    .find(STREAM_CLOSE_LATENCY_METRIC_NAME)
-                    .tags(Tags.of("type", parserProperty.getStreamType().toString()))
-                    .timer();
-            if (streamCloseLatencyDurationTimer == null) {
-                return missingStreamCloseTimerHealth;
-            }
-
-            long mean = (long) streamCloseLatencyDurationTimer.mean(TimeUnit.MILLISECONDS);
-            Instant lastCheck = (Instant) healthStatusDetails.get(LAST_CHECK_KEY);
-            if (currentInstant.isBefore(lastCheck.plusMillis(mean).plus(parserProperty.getProcessingTimeout()))) {
-                // return cached value while in window
-                return lastHealthStatus.get();
+            Health resolvedHealth = getResolvedHealthWhenNoStreamFilesParsed(healthStatusDetails, currentInstant);
+            if (resolvedHealth != null) {
+                return resolvedHealth;
             }
         }
 
         lastHealthStatus.set(health);
 
         return health;
+    }
+
+    private Instant getStartTime() {
+        return mirrorProperties.getStartDate() == null ?
+                MirrorDateRangePropertiesProcessor.STARTUP_TIME : mirrorProperties.getStartDate();
+    }
+
+    private Health getResolvedHealthWhenNoStreamFilesParsed(Map<String, Object> healthStatusDetails,
+                                                            Instant currentInstant) {
+        Timer streamCloseLatencyDurationTimer = meterRegistry
+                .find(STREAM_CLOSE_LATENCY_METRIC_NAME)
+                .tags(Tags.of("type", parserProperty.getStreamType().toString()))
+                .timer();
+        if (streamCloseLatencyDurationTimer == null) {
+            return missingStreamCloseTimerHealth;
+        }
+
+        long mean = (long) streamCloseLatencyDurationTimer.mean(TimeUnit.MILLISECONDS);
+        if (mean == 0 && currentInstant.isBefore(getStartTime()
+                .plus(parserProperty.getStreamType().getFileCloseInterval()))) {
+            // return cached value on start up before end of first expected file close interval
+            return lastHealthStatus.get();
+        }
+
+        Instant lastCheck = (Instant) healthStatusDetails.get(LAST_CHECK_KEY);
+        if (currentInstant.isBefore(lastCheck.plusMillis(mean).plus(parserProperty.getProcessingTimeout()))) {
+            // return cached value while in window
+            return lastHealthStatus.get();
+        }
+
+        return null;
     }
 
     private static Health getHealthWithReason(Status status, String reason) {

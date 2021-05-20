@@ -32,6 +32,7 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.search.Search;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -141,12 +142,31 @@ abstract class AbstractStreamFileHealthIndicatorTest {
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
         assertThat((String) health.getDetails().get(REASON_KEY)).contains("Starting up, no files parsed yet");
+        assertThat((Long) health.getDetails().get("count")).isZero();
     }
 
     @Test
-    void startUpNoStreamFilesAfterWindow() {
+    void startUpNoStreamFilesAfterWindowBeforeFirstFileClose() {
         // set window time to smaller value
         parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
+        mirrorProperties.setStartDate(Instant.now().plus(1, ChronoUnit.DAYS));
+        streamFileHealthIndicator = new StreamFileHealthIndicator(
+                parserProperties, // force end of timeout to before now
+                meterRegistry,
+                mirrorProperties);
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get(REASON_KEY))
+                .contains("Starting up, no files parsed yet");
+        assertThat((Long) health.getDetails().get("count")).isZero();
+    }
+
+    @Test
+    void startUpNoStreamFilesAfterFirstFileClose() {
+        // set window time to smaller value
+        parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
+        mirrorProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties, // force end of timeout to before now
                 meterRegistry,
@@ -165,6 +185,8 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
         // update counter
         doReturn(1L).when(streamFileParseDurationTimer).count();
+        doReturn((double) parserProperties.getStreamType().getFileCloseInterval().toMillis())
+                .when(streamFileParseDurationTimer).mean(any());
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UP);
@@ -176,6 +198,8 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
         // update counter
         doReturn(1L).when(streamFileParseDurationTimer).count();
+        doReturn((double) parserProperties.getStreamType().getFileCloseInterval().toMillis())
+                .when(streamCloseLatencyDurationTimer).mean(any());
 
         streamFileHealthIndicator.health(); // up
 
@@ -185,7 +209,8 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void noNewStreamFilesAfterWindow() {
-        parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
+        parserProperties.setProcessingTimeout(Duration.ofMinutes(-10L));
+        mirrorProperties.setStartDate(Instant.EPOCH);
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties, // force end of timeout to before now
                 meterRegistry,
@@ -218,6 +243,8 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
         // update counter
         doReturn(1L).when(streamFileParseDurationTimer).count();
+        doReturn((double) parserProperties.getStreamType().getFileCloseInterval().toMillis())
+                .when(streamCloseLatencyDurationTimer).mean(any());
 
         streamFileHealthIndicator.health(); // up
 
@@ -229,6 +256,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     @Test
     void recoverWhenNewStreamFiles() {
         parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
+        mirrorProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties, // force end of timeout to before now
                 meterRegistry,
