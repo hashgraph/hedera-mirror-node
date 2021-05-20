@@ -42,27 +42,20 @@ import com.hedera.mirror.importer.parser.ParserProperties;
 @Log4j2
 @RequiredArgsConstructor
 public class StreamFileHealthIndicator implements HealthIndicator {
+    // health details constants
     private static final String COUNT_KEY = "count";
     private static final String LAST_CHECK_KEY = "lastCheck";
+    private static final String MISSING_TIMER_REASON = " timer is missing";
     private static final String REASON_KEY = "reason";
 
-    private final ParserProperties parserProperty;
-    private final MeterRegistry meterRegistry;
-    private final MirrorProperties mirrorProperties;
-    private final Health parsingDisabledHealth = Health
-            .unknown()
-            .withDetail(REASON_KEY, "Parsing is disabled")
-            .build();
-    private final Health missingParseDurationTimerHealth = Health
-            .unknown()
-            .withDetail(REASON_KEY, String.format("%s timer is missing", STREAM_PARSE_DURATION_METRIC_NAME))
-            .build();
-    private final Health missingStreamCloseTimerHealth = Health
-            .unknown()
-            .withDetail(REASON_KEY, String.format("%s timer is missing", STREAM_CLOSE_LATENCY_METRIC_NAME))
-            .build();
-    private final Health endDataInPastHealth;
-
+    // static Health responses
+    private static final Health parsingDisabledHealth = getHealthWithReason(Status.UNKNOWN, "Parsing is disabled");
+    private static final Health missingParseDurationTimerHealth =
+            getHealthWithReason(Status.UNKNOWN, STREAM_PARSE_DURATION_METRIC_NAME + MISSING_TIMER_REASON);
+    private static final Health missingStreamCloseTimerHealth =
+            getHealthWithReason(Status.UNKNOWN, STREAM_CLOSE_LATENCY_METRIC_NAME + MISSING_TIMER_REASON);
+    private static final Health endDateInPastHealth =
+            getHealthWithReason(Status.UP, "EndDate has passed, stream files are no longer expected");
     private final AtomicReference<Health> lastHealthStatus = new AtomicReference<>(Health
             .unknown()
             .withDetail(COUNT_KEY, 0L)
@@ -70,20 +63,9 @@ public class StreamFileHealthIndicator implements HealthIndicator {
             .withDetail(REASON_KEY, "Starting up, no files parsed yet")
             .build()); // unknown until at least 1 stream file is parsed
 
-    public StreamFileHealthIndicator(ParserProperties parserProperty, MeterRegistry meterRegistry,
-                                     MirrorProperties mirrorProperties) {
-        this.parserProperty = parserProperty;
-        this.meterRegistry = meterRegistry;
-        this.mirrorProperties = mirrorProperties;
-        endDataInPastHealth = Health
-                .up()
-                .withDetail(
-                        REASON_KEY,
-                        String.format(
-                                "EndDate: %s has passed, stream files are no longer expected",
-                                mirrorProperties.getEndDate()))
-                .build();
-    }
+    private final ParserProperties parserProperty;
+    private final MeterRegistry meterRegistry;
+    private final MirrorProperties mirrorProperties;
 
     @Override
     public Health health() {
@@ -96,7 +78,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
         // consider case where endTime has been passed
         if (mirrorProperties.getEndDate().isBefore(currentInstant)) {
-            return endDataInPastHealth;
+            return endDateInPastHealth;
         }
 
         Timer streamParseDurationTimer = meterRegistry
@@ -137,6 +119,13 @@ public class StreamFileHealthIndicator implements HealthIndicator {
         lastHealthStatus.set(health);
 
         return health;
+    }
+
+    private static Health getHealthWithReason(Status status, String reason) {
+        return Health
+                .status(status)
+                .withDetail(REASON_KEY, reason)
+                .build();
     }
 
     private Health getHealthDown(Timer streamFileParseDurationTimer, Instant currentInstant) {
