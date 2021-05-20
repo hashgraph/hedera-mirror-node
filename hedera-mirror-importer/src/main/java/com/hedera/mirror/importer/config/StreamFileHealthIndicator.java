@@ -99,11 +99,12 @@ public class StreamFileHealthIndicator implements HealthIndicator {
             return endDataInPastHealth;
         }
 
-        Timer streamParseDurationTimer = getTimer(
-                STREAM_PARSE_DURATION_METRIC_NAME,
-                Tags.of(
+        Timer streamParseDurationTimer = meterRegistry
+                .find(STREAM_PARSE_DURATION_METRIC_NAME)
+                .tags(Tags.of(
                         "type", parserProperty.getStreamType().toString(),
-                        "success", "true"));
+                        "success", "true"))
+                .timer();
         if (streamParseDurationTimer == null) {
             return missingParseDurationTimerHealth;
         }
@@ -117,9 +118,10 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
         // handle down but in window of allowance
         if (health.getStatus() == Status.DOWN) {
-            Timer streamCloseLatencyDurationTimer = getTimer(
-                    STREAM_CLOSE_LATENCY_METRIC_NAME,
-                    Tags.of("type", parserProperty.getStreamType().toString()));
+            Timer streamCloseLatencyDurationTimer = meterRegistry
+                    .find(STREAM_CLOSE_LATENCY_METRIC_NAME)
+                    .tags(Tags.of("type", parserProperty.getStreamType().toString()))
+                    .timer();
             if (streamCloseLatencyDurationTimer == null) {
                 return missingStreamCloseTimerHealth;
             }
@@ -157,17 +159,5 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                 .withDetail("max", streamFileParseDurationTimer.max(TimeUnit.MILLISECONDS))
                 .withDetail("mean", streamFileParseDurationTimer.mean(TimeUnit.MILLISECONDS))
                 .build();
-    }
-
-    private Timer getTimer(String metricName, Tags additionalMetricTags) {
-        try {
-            return meterRegistry
-                    .find(metricName)
-                    .tags(additionalMetricTags)
-                    .timer();
-        } catch (Exception ex) {
-            log.trace("metricRegistry missing timer or tags for '{}'.", metricName, ex);
-            return null;
-        }
     }
 }

@@ -26,8 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -59,6 +57,9 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     private Search streamParseDurationSearch;
 
     @Mock(lenient = true)
+    private Search streamCloseLatencySearch;
+
+    @Mock(lenient = true)
     private MeterRegistry meterRegistry;
 
     private StreamFileHealthIndicator streamFileHealthIndicator;
@@ -72,18 +73,17 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     @BeforeEach
     void setUp() {
 
-        doReturn(0L).when(streamFileParseDurationTimer).count();
         doReturn(0.0).when(streamCloseLatencyDurationTimer).mean(any());
+        doReturn(0L).when(streamFileParseDurationTimer).count();
 
-        Search streamCloseLatencySearch = mock(Search.class, withSettings().lenient());
         doReturn(streamCloseLatencyDurationTimer).when(streamCloseLatencySearch).timer();
         doReturn(streamFileParseDurationTimer).when(streamParseDurationSearch).timer();
 
         doReturn(streamCloseLatencySearch).when(streamCloseLatencySearch).tags(anyIterable());
         doReturn(streamParseDurationSearch).when(streamParseDurationSearch).tags(anyIterable());
 
-        doReturn(streamParseDurationSearch).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
         doReturn(streamCloseLatencySearch).when(meterRegistry).find(STREAM_CLOSE_LATENCY_METRIC_NAME);
+        doReturn(streamParseDurationSearch).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
 
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setEndDate(Instant.MAX);
@@ -110,7 +110,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void missingParserDurationTimer() {
-        doReturn(null).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
+        doReturn(null).when(streamParseDurationSearch).timer();
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties,
                 meterRegistry,
@@ -124,7 +124,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void missingStreamCloseLatencyTimer() {
-        doReturn(null).when(meterRegistry).find(STREAM_CLOSE_LATENCY_METRIC_NAME);
+        doReturn(null).when(streamCloseLatencySearch).timer();
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties,
                 meterRegistry,
@@ -134,34 +134,6 @@ abstract class AbstractStreamFileHealthIndicatorTest {
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
         assertThat((String) health.getDetails().get(REASON_KEY))
                 .contains(STREAM_CLOSE_LATENCY_METRIC_NAME + " timer is missing");
-    }
-
-    @Test
-    void missingMetricStreamTypeTag() {
-        doReturn(null).when(streamParseDurationSearch).tags(anyIterable());
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
-
-        Health health = streamFileHealthIndicator.health();
-        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
-        assertThat((String) health.getDetails().get(REASON_KEY))
-                .contains(STREAM_PARSE_DURATION_METRIC_NAME + " timer is missing");
-    }
-
-    @Test
-    void missingSuccessfulStreamFilesTag() {
-        doReturn(null).when(streamParseDurationSearch).tags(anyIterable());
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
-
-        Health health = streamFileHealthIndicator.health();
-        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
-        assertThat((String) health.getDetails().get(REASON_KEY))
-                .contains(STREAM_PARSE_DURATION_METRIC_NAME + " timer is missing");
     }
 
     @Test
