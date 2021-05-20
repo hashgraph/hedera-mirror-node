@@ -31,11 +31,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class NodeProperties {
 
-    public NodeProperties(String accountId, String host) {
-        this.accountId = accountId;
-        this.host = host;
-    }
-
     @NotBlank
     private String accountId;
 

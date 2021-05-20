@@ -23,7 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -452,13 +451,5 @@ public class TokenFeature {
         log.error("REST API response verification failed after {} retries w: {}",
                 acceptanceProps.getRestPollingProperties().getMaxAttempts(), t.getMessage());
         throw t;
-    }
-
-    @After("@TokenBase")
-    public void closeClients() {
-        log.debug("Closing token feature clients");
-        accountClient.close();
-        mirrorClient.close();
-        tokenClient.close();
     }
 }

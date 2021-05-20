@@ -25,9 +25,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import lombok.Value;
+import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -54,7 +56,8 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
-@Value
+@Named
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TokenClient extends AbstractNetworkClient {
 
     public TokenClient(SDKClient sdkClient) {
