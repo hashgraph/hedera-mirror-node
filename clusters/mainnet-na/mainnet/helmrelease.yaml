@@ -40,6 +40,24 @@ spec:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_START_DATE: "2021-05-18T20:50:00.000000000Z"
     monitor:
+      config:
+        hedera:
+          mirror:
+            monitor:
+              publish:
+                scenarios:
+                  - name: HCS Pinger
+                    enabled: true
+                    properties:
+                      topicId: 0.0.259933
+                    recordPercent: 1.0
+                    tps: 0.1
+                    type: CONSENSUS_SUBMIT_MESSAGE
+              subscribe:
+                grpc:
+                  - name: HCS Subscribe
+                    enabled: true
+                    topicId: 0.0.259933
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
     postgresql:
