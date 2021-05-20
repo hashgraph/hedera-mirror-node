@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -373,5 +374,41 @@ public class TopicFeature {
 
     private KeyList getSubmitKeys() {
         return submitKey == null ? null : KeyList.of(submitKey);
+    }
+
+    /**
+     * Recover method for retry operations Method parameters of retry method must match this method after exception
+     * parameter
+     *
+     * @param t
+     */
+    @Recover
+    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
+        log.error("Transaction submissions for topic operation failed after retries w: {}", t.getMessage());
+        throw t;
+    }
+
+    /**
+     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
+     * method after exception parameter
+     *
+     * @param t
+     */
+    @Recover
+    public void recover(PrecheckStatusException t, int messageCount) throws PrecheckStatusException {
+        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
+        throw t;
+    }
+
+    /**
+     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
+     * method after exception parameter
+     *
+     * @param t
+     */
+    @Recover
+    public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
+        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
+        throw t;
     }
 }
