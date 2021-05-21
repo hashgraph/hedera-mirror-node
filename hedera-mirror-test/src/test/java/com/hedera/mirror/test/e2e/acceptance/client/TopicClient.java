@@ -29,8 +29,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -48,6 +51,8 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
+@Named
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TopicClient extends AbstractNetworkClient {
     private static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
     private final Map<Long, Instant> recordPublishInstants;
@@ -197,7 +202,7 @@ public class TopicClient extends AbstractNetworkClient {
             recordPublishInstants.put(transactionReceipt.topicSequenceNumber, transactionId
                     .getRecord(client).consensusTimestamp);
         } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
-            e.printStackTrace();
+            log.error("Error publishing to topic", e);
         }
 
         log.trace("Verified message published : '{}' to topicId : {} with sequence number : {}", message, topicId,
