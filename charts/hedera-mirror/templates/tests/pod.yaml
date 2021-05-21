@@ -12,10 +12,16 @@ spec:
     - name: {{ include "hedera-mirror.fullname" . }}-test
       image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag | default .Chart.AppVersion }}"
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
-      envFrom:
-        - secretRef:
-            name: {{ include "hedera-mirror.fullname" . }}-acceptance-test
       env:
         - name: cucumberflags
           value: "{{ .Values.test.cucumberFlags }}"
+      volumeMounts:
+        - name: acceptance-tests
+          mountPath: /usr/lib/hedera-mirror-acceptance-test
+          readOnly: true
+  volumes:
+    - name: acceptance-tests
+      secret:
+        defaultMode: 420
+        secretName: {{ include "hedera-mirror.fullname" . }}-acceptance-test
 {{- end -}}
