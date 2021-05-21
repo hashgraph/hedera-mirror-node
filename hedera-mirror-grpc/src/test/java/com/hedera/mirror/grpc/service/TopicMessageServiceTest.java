@@ -126,7 +126,7 @@ public class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void startTimeAfterNow() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(future)
+                .startTime(Instant.now().plusSeconds(10L))
                 .build();
 
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
