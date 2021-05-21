@@ -17,5 +17,5 @@ spec:
             name: {{ include "hedera-mirror.fullname" . }}-acceptance-test
       env:
         - name: cucumberflags
-          value: "@acceptance"
+          value: "{{ .Values.test.cucumberFlags }}"
 {{- end -}}
