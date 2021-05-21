@@ -35,7 +35,7 @@ public enum StreamType {
 
     BALANCE(AccountBalanceFile.class, "accountBalances", "balance", "_Balances", List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
-    EVENT(EventFile.class, "eventsStreams", "events_", "", List.of("evts"), Duration.ZERO),
+    EVENT(EventFile.class, "eventsStreams", "events_", "", List.of("evts"), Duration.ofSeconds(5L)),
     RECORD(RecordFile.class, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";
