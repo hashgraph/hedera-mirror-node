@@ -12,15 +12,10 @@ spec:
     - name: {{ include "hedera-mirror.fullname" . }}-test
       image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag | default .Chart.AppVersion }}"
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
-      command:
-        - /bin/bash
-        - -ec
-        - ./mvnw clean integration-test -pl hedera-mirror-test -P="acceptance-tests" -Dcucumber.filter.tags=@Acceptance -e
-  terminationGracePeriodSeconds: 5
-  restartPolicy: Never
-  volumes:
-    - name: acceptance-tests
-      secret:
-        defaultMode: 420
-        secretName: {{ include "hedera-mirror-rest.fullname" . }}-acceptance-test
+      envFrom:
+        - secretRef:
+            name: {{ include "hedera-mirror.fullname" . }}-acceptance-test
+      env:
+        - name: cucumberflags
+          value: "@acceptance"
 {{- end -}}

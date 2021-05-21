@@ -259,6 +259,23 @@ rest:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
+test:
+  cucumberFlags: "@acceptance"
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    repository: gcr.io/mirrornode/hedera-mirror-test
+    tag: ""  # Defaults to the chart's app version
+  config:
+    emitBackgroundMessages: false
+    existingTopicNum:
+    network: testnet
+    operatorId:
+    operatorKey:
+  endpoints:
+    mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
+    restBaseUrl: "http://{{ .Release.Name }}-rest/api/v1"
+
 timescaledb:
   enabled: false
   image:
