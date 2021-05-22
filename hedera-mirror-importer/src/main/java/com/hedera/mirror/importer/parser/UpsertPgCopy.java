@@ -35,6 +35,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class UpsertPgCopy<T> extends PgCopy<T> {
 
+    public static final String TEMP_POSTFIX = "_temp";
     private final String finalTableName;
     private final String upsertSql;
 
@@ -44,20 +45,26 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         tableName = CaseFormat.UPPER_CAMEL.to(
                 CaseFormat.LOWER_UNDERSCORE,
                 tempTableName);
-        finalTableName = entityClass.getSimpleName();
+        finalTableName = CaseFormat.UPPER_CAMEL.to(
+                CaseFormat.LOWER_UNDERSCORE,
+                entityClass.getSimpleName());
         this.upsertSql = upsertSql;
     }
 
     public void createTempTable(Connection connection) throws SQLException {
-        connection.prepareStatement("create temporary table " + tableName + " (like entity) on commit drop")
+        // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
+        connection.prepareStatement(
+                String.format("create temporary table %s on commit drop as table %s limit 0", tableName,
+                        finalTableName))
                 .executeUpdate();
-        log.info("Created temp table {}", tableName);
+        log.trace("Created temp table {}", tableName);
     }
 
-    public void upsertFinalTable(Connection connection) throws SQLException {
+    public int upsertFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        int size = connection.prepareStatement(upsertSql).executeUpdate();
-        log.info("Copied {} rows from {} table to {} table in {}", size, tableName, finalTableName, stopwatch);
+        int updateCount = connection.prepareStatement(upsertSql).executeUpdate();
+        log.info("Copied {} rows from {} table to {} table in {}", updateCount, tableName, finalTableName, stopwatch);
+        return updateCount;
     }
 }
 

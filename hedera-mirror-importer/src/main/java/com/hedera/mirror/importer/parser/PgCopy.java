@@ -70,7 +70,6 @@ public class PgCopy<T> {
                 .map(CsvSchema.Column::getName)
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
-//        sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv);
 
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")

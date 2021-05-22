@@ -38,10 +38,13 @@ import com.hedera.mirror.importer.util.Utility;
 @ToString(exclude = {"key", "submitKey"})
 public class Entity {
     public static final String TEMP_TABLE = "entity_temp";
-    public static final String TempToMainUpdateSql = "insert into entity select * from " + TEMP_TABLE + " on conflict" +
-            " (id) do update set auto_renew_period = excluded.auto_renew_period, deleted = excluded.deleted, " +
-            "expiration_timestamp = excluded.expiration_timestamp, key = excluded.key, memo = excluded.memo, " +
-            "public_key = excluded.public_key, submit_key = excluded.submit_key";
+    public static final String TempToMainUpdateSql = "insert into entity select auto_renew_account_id, " +
+            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, " +
+            "coalesce(memo, '') as memo, modified_timestamp, num, public_key, proxy_account_id, realm," +
+            "shard, submit_key, type from " + TEMP_TABLE + " on conflict (id) do update set " +
+            "auto_renew_period = excluded.auto_renew_period, deleted = excluded.deleted, " +
+            "expiration_timestamp = excluded.expiration_timestamp, key = excluded.key, " +
+            "memo = coalesce(excluded.memo, ''), public_key = excluded.public_key, submit_key = excluded.submit_key";
 
     @Id
     private Long id;
@@ -60,8 +63,6 @@ public class Entity {
 
     private byte[] key;
 
-    //    @Convert(converter = MemoConverter.class)
-//    @JsonSerialize(using = MemoSerializer.class)
     private String memo = "";
 
     private Long modifiedTimestamp;

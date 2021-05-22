@@ -236,40 +236,40 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-//    @Transactional
     void multiEntityUpdate() throws Exception {
-        int startingAccountNum = 2000;
+        int startingAccountNum = 3000; // some hard coded tests accounts exist under this range so start above
         int initialEntityCount = 6000;
-        int updateEntityCount = 3000;
-
+        int updateEntityCount = initialEntityCount / 2;
         List<RecordItem> recordItemList = new ArrayList<>();
+
+        // build record list of new crypto accounts
         for (int i = startingAccountNum; i < startingAccountNum + initialEntityCount; i++) {
             recordItemList.add(getCreateAccountRecordItem(i));
         }
 
-        // insert initialEntityCount new entities
+        // insert initialEntityCount of new entities
         Instant startTime = Instant.now();
-        transactionTemplate.executeWithoutResult(status -> parseRecordItemsAndCommit(recordItemList));
-//        parseRecordItemsAndCommit(recordItemList);
+        parseRecordItemsAndCommit(recordItemList);
         log.info("Inserting {} ({} -> {}) entities took {} ms", recordItemList.size(), startingAccountNum,
                 startingAccountNum + initialEntityCount,
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
-        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + 3);
+        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + 4);
 
+        // build list of entities, half new and half existing
         recordItemList.clear();
-        for (int u = startingAccountNum + updateEntityCount; u < initialEntityCount + updateEntityCount; u++) {
+        for (int u = startingAccountNum + updateEntityCount; u < startingAccountNum + initialEntityCount + updateEntityCount; u++) {
             recordItemList.add(getCreateAccountRecordItem(u));
         }
 
-        // insert initialEntityCount half existing half new
+        // insert initialEntityCount entities
         startTime = Instant.now();
-        transactionTemplate.executeWithoutResult(status -> parseRecordItemsAndCommit(recordItemList));
-//        parseRecordItemsAndCommit(recordItemList);
+        parseRecordItemsAndCommit(recordItemList);
         log.info("Inserting {} ({} -> {}) entities with {} updates took {} ms", recordItemList.size(),
                 startingAccountNum + updateEntityCount, initialEntityCount + updateEntityCount,
                 updateEntityCount,
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
-        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount - startingAccountNum + 3);
+
+        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount + 4);
     }
 
     /**

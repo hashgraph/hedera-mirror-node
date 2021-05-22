@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import javax.persistence.Column;
@@ -27,6 +29,7 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -40,9 +43,28 @@ import com.hedera.mirror.importer.util.Utility;
 @Data
 @Entity
 @NoArgsConstructor
+@ToString(exclude = {"freezeKey", "kycKey", "supplyKey", "wipeKey"})
 public class Token {
+    public static final String TEMP_TABLE = "token_temp";
+    public static final String TempToMainUpdateSql = "insert into token select * from " + TEMP_TABLE + " on conflict " +
+            "(token_id) do update set " +
+            "freeze_key = coalesce(excluded.freeze_key, token.freeze_key), " +
+            "freeze_key_ed25519_hex = coalesce(excluded.freeze_key_ed25519_hex, token.freeze_key_ed25519_hex), " +
+            "kyc_key =  coalesce(excluded.kyc_key, token.kyc_key), " +
+            "kyc_key_ed25519_hex =  coalesce(excluded.kyc_key_ed25519_hex, token.kyc_key_ed25519_hex), " +
+            "modified_timestamp = excluded.modified_timestamp, " +
+            "name = excluded.name, " +
+            "supply_key = coalesce(excluded.supply_key, token.supply_key), " +
+            "supply_key_ed25519_hex = coalesce(excluded.supply_key_ed25519_hex, token.supply_key_ed25519_hex), " +
+            "symbol = excluded.symbol, " +
+            "total_supply = case when excluded.total_supply > 0 then excluded.total_supply else token.total_supply " +
+            "end," +
+            "treasury_account_id = excluded.treasury_account_id, " +
+            "wipe_key = coalesce(excluded.wipe_key, token.wipe_key), " +
+            "wipe_key_ed25519_hex = coalesce(excluded.wipe_key_ed25519_hex, token.wipe_key_ed25519_hex)";
 
     @EmbeddedId
+    @JsonUnwrapped
     private Token.Id tokenId;
 
     private long createdTimestamp;
@@ -51,45 +73,38 @@ public class Token {
 
     private boolean freezeDefault;
 
-    @ToString.Exclude
     private byte[] freezeKey;
 
     @Column(name = "freeze_key_ed25519_hex")
-    @ToString.Exclude
     private String freezeKeyEd25519Hex;
 
     private long initialSupply;
 
     private long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
 
-    @ToString.Exclude
     private byte[] kycKey;
 
     @Column(name = "kyc_key_ed25519_hex")
-    @ToString.Exclude
     private String kycKeyEd25519Hex;
 
     private long modifiedTimestamp;
 
     private String name;
 
-    @ToString.Exclude
     private byte[] supplyKey;
 
     @Column(name = "supply_key_ed25519_hex")
-    @ToString.Exclude
     private String supplyKeyEd25519Hex;
 
     private String symbol;
 
     @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId treasuryAccountId;
 
-    @ToString.Exclude
     private byte[] wipeKey;
 
     @Column(name = "wipe_key_ed25519_hex")
-    @ToString.Exclude
     private String wipeKeyEd25519Hex;
 
     public void setInitialSupply(Long initialSupply) {
@@ -126,6 +141,8 @@ public class Token {
      *
      * @return Freeze status code
      */
+    @JsonIgnore
+    @Transient
     public TokenFreezeStatusEnum getNewAccountFreezeStatus() {
         if (freezeKey == null) {
             return TokenFreezeStatusEnum.NOT_APPLICABLE;
@@ -141,6 +158,8 @@ public class Token {
      *
      * @return Kyc status code
      */
+    @JsonIgnore
+    @Transient
     public TokenKycStatusEnum getNewAccountKycStatus() {
         if (kycKey == null) {
             return TokenKycStatusEnum.NOT_APPLICABLE;
