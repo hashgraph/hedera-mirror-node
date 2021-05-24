@@ -25,6 +25,8 @@ spec:
         - name: acceptance-tests
           mountPath: /etc/secrets
           readOnly: true
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 1
   volumes:
     - name: acceptance-tests
       secret:
