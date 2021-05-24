@@ -163,6 +163,23 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     }
 
     @Test
+    void startUpNoNewDownloadedStreamFilesAfterWindowBeforeFileClose() {
+        // file close mean metric will be zero and default fileCLose duration will be used
+        // set window time to smaller value
+        parserProperties.setProcessingTimeout(Duration.ofMillis(1L));
+        streamFileHealthIndicator = new StreamFileHealthIndicator(
+                parserProperties, // force end of timeout to before now
+                meterRegistry,
+                mirrorProperties);
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+        assertThat((String) health.getDetails().get(REASON_KEY))
+                .contains("Starting up, no files parsed yet");
+        assertThat((Long) health.getDetails().get("count")).isZero();
+    }
+
+    @Test
     void startUpNoStreamFilesAfterFirstFileClose() {
         // set window time to smaller value
         parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
@@ -171,6 +188,9 @@ abstract class AbstractStreamFileHealthIndicatorTest {
                 parserProperties, // force end of timeout to before now
                 meterRegistry,
                 mirrorProperties);
+
+        // update fileClose mean otherwise larger default value is used
+        doReturn(1.0).when(streamCloseLatencyDurationTimer).mean(any());
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.DOWN);
@@ -181,49 +201,57 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void newStreamFiles() {
-        streamFileHealthIndicator.health();
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
 
         // update counter
         doReturn(1L).when(streamFileParseDurationTimer).count();
         doReturn((double) parserProperties.getStreamType().getFileCloseInterval().toMillis())
                 .when(streamFileParseDurationTimer).mean(any());
 
-        Health health = streamFileHealthIndicator.health();
+        health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UP);
     }
 
     @Test
     void noNewStreamFilesInWindow() {
-        streamFileHealthIndicator.health(); // unknown
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
 
         // update counter
         doReturn(1L).when(streamFileParseDurationTimer).count();
         doReturn((double) parserProperties.getStreamType().getFileCloseInterval().toMillis())
                 .when(streamCloseLatencyDurationTimer).mean(any());
 
-        streamFileHealthIndicator.health(); // up
+        streamFileHealthIndicator.health();
 
-        Health health = streamFileHealthIndicator.health(); // count unchanged
+        health = streamFileHealthIndicator.health(); // count unchanged
         assertThat(health.getStatus()).isEqualTo(Status.UP); // cache should be returned
     }
 
     @Test
     void noNewStreamFilesAfterWindow() {
-        parserProperties.setProcessingTimeout(Duration.ofMinutes(-10L));
+//        parserProperties.setProcessingTimeout(Duration.ofMinutes(-10L)); // force end of timeout to before now
         mirrorProperties.setStartDate(Instant.EPOCH);
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties, // force end of timeout to before now
+                parserProperties,
                 meterRegistry,
                 mirrorProperties);
 
-        streamFileHealthIndicator.health(); // unknown
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
 
         // update counter
         doReturn(1L).when(streamFileParseDurationTimer).count();
 
-        streamFileHealthIndicator.health(); // up
+        health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UP);
 
-        Health health = streamFileHealthIndicator.health(); // count unchanged
+        // update fileClose mean otherwise larger default value is used
+        doReturn(1.0).when(streamCloseLatencyDurationTimer).mean(any());
+        parserProperties.setProcessingTimeout(Duration.ofMinutes(-10L)); // force end of timeout to before now
+
+        health = streamFileHealthIndicator.health(); // count unchanged
         assertThat(health.getStatus()).isEqualTo(Status.DOWN); // cache should not be returned
         assertThat((String) health.getDetails().get(REASON_KEY))
                 .contains("No new stream stream files have been parsed since:");
@@ -232,44 +260,40 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void noNewStreamFilesAfterWindowAndEndTime() {
-        mirrorProperties.setEndDate(Instant.now().minusSeconds(60));
+        mirrorProperties.setEndDate(Instant.now().minusSeconds(60));  // force endDate to before now
         parserProperties = getParserProperties();
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties, // force endDate to before now
+                parserProperties,
                 meterRegistry,
                 mirrorProperties);
 
-        streamFileHealthIndicator.health(); // unknown
-
-        // update counter
-        doReturn(1L).when(streamFileParseDurationTimer).count();
-        doReturn((double) parserProperties.getStreamType().getFileCloseInterval().toMillis())
-                .when(streamCloseLatencyDurationTimer).mean(any());
-
-        streamFileHealthIndicator.health(); // up
-
-        Health health = streamFileHealthIndicator.health(); // count unchanged
+        Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UP); // cache should not be returned
         assertThat((String) health.getDetails().get(REASON_KEY)).contains("stream files are no longer expected");
     }
 
     @Test
     void recoverWhenNewStreamFiles() {
-        parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
         mirrorProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
         streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties, // force end of timeout to before now
+                parserProperties,
                 meterRegistry,
                 mirrorProperties);
 
-        streamFileHealthIndicator.health(); // unknown
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
 
         // update counter
         doReturn(1L).when(streamFileParseDurationTimer).count();
 
-        streamFileHealthIndicator.health(); // up
+        health = streamFileHealthIndicator.health();
+        assertThat(health.getStatus()).isEqualTo(Status.UP);
 
-        Health health = streamFileHealthIndicator.health(); // count unchanged
+        // update fileClose mean otherwise larger default value is used
+        doReturn(1.0).when(streamCloseLatencyDurationTimer).mean(any());
+        parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L)); // force end of timeout to before now
+
+        health = streamFileHealthIndicator.health(); // count unchanged
         assertThat(health.getStatus()).isEqualTo(Status.DOWN); // cache should not be returned
         assertThat((String) health.getDetails().get(REASON_KEY))
                 .contains("No new stream stream files have been parsed since:");

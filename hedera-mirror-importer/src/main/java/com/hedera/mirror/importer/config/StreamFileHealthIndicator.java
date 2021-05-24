@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
@@ -39,7 +38,6 @@ import org.springframework.boot.actuate.health.Status;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.parser.ParserProperties;
 
-@Log4j2
 @RequiredArgsConstructor
 public class StreamFileHealthIndicator implements HealthIndicator {
     // health details constants
@@ -94,13 +92,14 @@ public class StreamFileHealthIndicator implements HealthIndicator {
         long currentCount = streamParseDurationTimer.count();
         Map<String, Object> healthStatusDetails = lastHealthStatus.get().getDetails();
         long lastCount = (Long) healthStatusDetails.get(COUNT_KEY);
+        Instant lastCheck = (Instant) healthStatusDetails.get(LAST_CHECK_KEY);
         Health health = currentCount > lastCount ?
                 getHealthUp(streamParseDurationTimer, currentInstant) :
-                getHealthDown(streamParseDurationTimer, currentInstant);
+                getHealthDown(streamParseDurationTimer, currentInstant, lastCheck);
 
         // handle down but in window of allowance
         if (health.getStatus() == Status.DOWN) {
-            Health resolvedHealth = getResolvedHealthWhenNoStreamFilesParsed(healthStatusDetails, currentInstant);
+            Health resolvedHealth = getResolvedHealthWhenNoStreamFilesParsed(currentInstant, lastCheck);
             if (resolvedHealth != null) {
                 return resolvedHealth;
             }
@@ -116,8 +115,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                 MirrorDateRangePropertiesProcessor.STARTUP_TIME : mirrorProperties.getStartDate();
     }
 
-    private Health getResolvedHealthWhenNoStreamFilesParsed(Map<String, Object> healthStatusDetails,
-                                                            Instant currentInstant) {
+    private Health getResolvedHealthWhenNoStreamFilesParsed(Instant currentInstant, Instant lastCheck) {
         Timer streamCloseLatencyDurationTimer = meterRegistry
                 .find(STREAM_CLOSE_LATENCY_METRIC_NAME)
                 .tags(Tags.of("type", parserProperty.getStreamType().toString()))
@@ -133,8 +131,8 @@ public class StreamFileHealthIndicator implements HealthIndicator {
             return lastHealthStatus.get();
         }
 
-        Instant lastCheck = (Instant) healthStatusDetails.get(LAST_CHECK_KEY);
-        if (currentInstant.isBefore(lastCheck.plusMillis(mean).plus(parserProperty.getProcessingTimeout()))) {
+        long fileCloseMean = mean == 0 ? parserProperty.getStreamType().getFileCloseInterval().toMillis() : mean;
+        if (currentInstant.isBefore(lastCheck.plusMillis(fileCloseMean).plus(parserProperty.getProcessingTimeout()))) {
             // return cached value while in window
             return lastHealthStatus.get();
         }
@@ -149,11 +147,11 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                 .build();
     }
 
-    private Health getHealthDown(Timer streamFileParseDurationTimer, Instant currentInstant) {
+    private Health getHealthDown(Timer streamFileParseDurationTimer, Instant currentInstant, Instant lastCheck) {
         Health.Builder healthBuilder = Health
                 .down()
                 .withDetail(REASON_KEY, String
-                        .format("No new stream stream files have been parsed since: %s", currentInstant));
+                        .format("No new stream stream files have been parsed since: %s", lastCheck));
 
         return getHealth(healthBuilder, streamFileParseDurationTimer, currentInstant);
     }
@@ -168,6 +166,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                 .withDetail(LAST_CHECK_KEY, currentInstant)
                 .withDetail("max", streamFileParseDurationTimer.max(TimeUnit.MILLISECONDS))
                 .withDetail("mean", streamFileParseDurationTimer.mean(TimeUnit.MILLISECONDS))
+                .withDetail("type", parserProperty.getStreamType().toString())
                 .build();
     }
 }
