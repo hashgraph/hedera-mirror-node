@@ -10,7 +10,7 @@ metadata:
     helm.sh/hook-delete-policy: hook-failed,hook-succeeded
 spec:
   containers:
-    - name: test
+    - name: acceptance-tests
       image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag | default .Chart.AppVersion }}"
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       command:
