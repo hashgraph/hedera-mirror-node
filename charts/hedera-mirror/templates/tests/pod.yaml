@@ -20,7 +20,7 @@ spec:
           cp /etc/secrets/* /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/
           find /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/
           cat /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/*.yml
-          ./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="{{ .Values.test.image.cucumberTags }}"
+          ./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
       volumeMounts:
         - name: acceptance-tests
           mountPath: /etc/secrets
