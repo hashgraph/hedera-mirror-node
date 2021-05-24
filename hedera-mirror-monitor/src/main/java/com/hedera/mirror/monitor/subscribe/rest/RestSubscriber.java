@@ -89,17 +89,17 @@ class RestSubscriber implements MirrorSubscriber {
     }
 
     private Flux<RestSubscription> createSubscriptions() {
-        Collection<RestSubscription> subscriptions = new ArrayList<>();
+        Collection<RestSubscription> subscriptionList = new ArrayList<>();
 
         for (RestSubscriberProperties properties : subscribeProperties.getRest()) {
             if (subscribeProperties.isEnabled() && properties.isEnabled()) {
                 for (int i = 1; i <= properties.getSubscribers(); ++i) {
-                    subscriptions.add(new RestSubscription(i, properties));
+                    subscriptionList.add(new RestSubscription(i, properties));
                 }
             }
         }
 
-        return Flux.fromIterable(subscriptions);
+        return Flux.fromIterable(subscriptionList);
     }
 
     private Flux<SubscribeResponse> clientSubscribe(RestSubscription subscription) {

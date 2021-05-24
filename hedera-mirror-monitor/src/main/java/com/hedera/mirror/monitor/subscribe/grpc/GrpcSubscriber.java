@@ -59,7 +59,7 @@ class GrpcSubscriber implements MirrorSubscriber {
     }
 
     private Flux<GrpcSubscription> createSubscriptions() {
-        Collection<GrpcSubscription> subscriptions = new ArrayList<>();
+        Collection<GrpcSubscription> subscriptionList = new ArrayList<>();
 
         for (GrpcSubscriberProperties properties : subscribeProperties.getGrpc()) {
             if (subscribeProperties.isEnabled() && properties.isEnabled()) {
@@ -67,12 +67,12 @@ class GrpcSubscriber implements MirrorSubscriber {
                 properties.setTopicId(topicId);
 
                 for (int i = 1; i <= properties.getSubscribers(); ++i) {
-                    subscriptions.add(new GrpcSubscription(i, properties));
+                    subscriptionList.add(new GrpcSubscription(i, properties));
                 }
             }
         }
 
-        return Flux.fromIterable(subscriptions);
+        return Flux.fromIterable(subscriptionList);
     }
 
     private Flux<SubscribeResponse> clientSubscribe(GrpcSubscription subscription) {

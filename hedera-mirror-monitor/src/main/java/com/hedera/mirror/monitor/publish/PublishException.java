@@ -26,7 +26,7 @@ import lombok.Getter;
 public class PublishException extends RuntimeException {
 
     private static final long serialVersionUID = 5825147561227266065L;
-    private transient final PublishRequest publishRequest;
+    private final transient PublishRequest publishRequest;
 
     public PublishException(PublishRequest publishRequest, Throwable throwable) {
         super(throwable);

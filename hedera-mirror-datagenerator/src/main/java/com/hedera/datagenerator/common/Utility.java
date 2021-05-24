@@ -21,8 +21,10 @@ package com.hedera.datagenerator.common;
  */
 
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Random;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -33,6 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 public class Utility {
 
     private static final long MILLIS_OFFSET = Duration.ofMinutes(5L).toMillis();
+    private static final Random RANDOM = new SecureRandom();
 
     public static Instant getTimestamp(byte[] bytes) {
         try {
@@ -64,7 +67,7 @@ public class Utility {
         String message = System.currentTimeMillis() + " ";
 
         if (messageSize > message.length()) {
-            message += RandomStringUtils.randomAlphabetic(messageSize - message.length());
+            message += RandomStringUtils.random(messageSize - message.length(), 0, 0, true, false, null, RANDOM);
         }
 
         return message.getBytes(StandardCharsets.US_ASCII);

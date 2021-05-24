@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
+import java.net.InetSocketAddress;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Publisher;
@@ -37,13 +38,13 @@ public class LoggingFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        return chain.filter(exchange).transformDeferred((call) -> doFilter(exchange, call));
+        return chain.filter(exchange).transformDeferred(call -> doFilter(exchange, call));
     }
 
     private Publisher<Void> doFilter(ServerWebExchange exchange, Mono<Void> call) {
         long startTime = System.currentTimeMillis();
-        return call.doOnSuccess((done) -> onSuccess(exchange, startTime))
-                .doOnError((cause) -> onError(exchange, startTime, cause));
+        return call.doOnSuccess(done -> onSuccess(exchange, startTime))
+                .doOnError(cause -> onError(exchange, startTime, cause));
     }
 
     private void onSuccess(ServerWebExchange exchange, long startTime) {
@@ -61,8 +62,9 @@ public class LoggingFilter implements WebFilter {
     }
 
     private String getClient(ServerHttpRequest request) {
-        if (request.getRemoteAddress() != null) {
-            return request.getRemoteAddress().getAddress().toString();
+        InetSocketAddress remoteAddress = request.getRemoteAddress();
+        if (remoteAddress != null && remoteAddress.getAddress() != null) {
+            return remoteAddress.getAddress().toString();
         } else {
             return LOCALHOST;
         }
