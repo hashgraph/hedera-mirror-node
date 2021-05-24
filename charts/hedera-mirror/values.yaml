@@ -260,21 +260,21 @@ rest:
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
 test:
-  enabled: false
   config:
     hedera:
       mirror:
         test:
           acceptance:
             existingTopicNum:
-            network: 
+            # grpc endpoint
+            mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
+            network:
             # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
             operatorId:
             operatorKey:
-            # grpc endpoint
-            mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
             restBaseUrl: "http://{{ .Release.Name }}-rest/api/v1"
   cucumberTags: "@acceptance"
+  enabled: false
   image:
     pullPolicy: IfNotPresent
     repository: gcr.io/mirrornode/hedera-mirror-test
