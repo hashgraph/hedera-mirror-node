@@ -75,14 +75,14 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
 
     @Override
     public double getRate() {
-        long count = getCount();
+        long previousCount = getCount();
         long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        long instantCount = count - lastCount.get();
+        long instantCount = previousCount - lastCount.get();
         long instantElapsed = elapsed - lastElapsed.get();
 
         // Since multiple threads are calling this, only update the statistics periodically
         if (instantElapsed >= UPDATE_INTERVAL) {
-            lastCount.set(count);
+            lastCount.set(previousCount);
             lastElapsed.set(elapsed);
         }
 

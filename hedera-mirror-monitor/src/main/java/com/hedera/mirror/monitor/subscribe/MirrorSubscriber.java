@@ -31,5 +31,5 @@ public interface MirrorSubscriber {
 
     Flux<SubscribeResponse> subscribe();
 
-    <T extends Subscription> Flux<T> subscriptions();
+    <T extends Subscription> Flux<T> getSubscriptions();
 }

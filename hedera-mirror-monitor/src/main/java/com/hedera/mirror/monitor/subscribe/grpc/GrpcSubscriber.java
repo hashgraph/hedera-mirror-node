@@ -46,7 +46,7 @@ class GrpcSubscriber implements MirrorSubscriber {
     private final ExpressionConverter expressionConverter;
     private final GrpcClient grpcClient;
     private final SubscribeProperties subscribeProperties;
-    private final Flux<GrpcSubscription> subscriptions = Flux.defer(() -> getSubscriptions()).cache();
+    private final Flux<GrpcSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
 
     @Override
     public Flux<SubscribeResponse> subscribe() {
@@ -54,11 +54,11 @@ class GrpcSubscriber implements MirrorSubscriber {
     }
 
     @Override
-    public Flux<GrpcSubscription> subscriptions() {
+    public Flux<GrpcSubscription> getSubscriptions() {
         return subscriptions;
     }
 
-    private Flux<GrpcSubscription> getSubscriptions() {
+    private Flux<GrpcSubscription> createSubscriptions() {
         Collection<GrpcSubscription> subscriptions = new ArrayList<>();
 
         for (GrpcSubscriberProperties properties : subscribeProperties.getGrpc()) {

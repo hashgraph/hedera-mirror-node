@@ -50,24 +50,24 @@ class SubscriberController {
     private final MirrorSubscriber mirrorSubscriber;
 
     @GetMapping
-    Flux<Subscription> subscriptions(@RequestParam Optional<SubscriberProtocol> protocol,
-                                     @RequestParam Optional<List<SubscriptionStatus>> status) {
-        return mirrorSubscriber.subscriptions()
-                .filter(s -> protocol.isPresent() ? protocol.get() == s.getProtocol() : true)
-                .filter(s -> status.isPresent() ? status.get().contains(s.getStatus()) : true)
+    public Flux<Subscription> subscriptions(@RequestParam Optional<SubscriberProtocol> protocol,
+                                            @RequestParam Optional<List<SubscriptionStatus>> status) {
+        return mirrorSubscriber.getSubscriptions()
+                .filter(s -> !protocol.isPresent() || protocol.get() == s.getProtocol())
+                .filter(s -> !status.isPresent() || status.get().contains(s.getStatus()))
                 .switchIfEmpty(Mono.error(new NoSuchElementException()));
     }
 
     @GetMapping("/{name}")
-    Flux<Subscription> subscription(@PathVariable String name,
-                                    @RequestParam Optional<List<SubscriptionStatus>> status) {
+    public Flux<Subscription> subscription(@PathVariable String name,
+                                           @RequestParam Optional<List<SubscriptionStatus>> status) {
         return subscriptions(Optional.empty(), status)
                 .filter(subscription -> subscription.getName().equals(name))
                 .switchIfEmpty(Mono.error(new NoSuchElementException()));
     }
 
     @GetMapping("/{name}/{id}")
-    Mono<Subscription> subscription(@PathVariable String name, @PathVariable int id) {
+    public Mono<Subscription> subscription(@PathVariable String name, @PathVariable int id) {
         return subscription(name, Optional.empty())
                 .filter(s -> s.getId() == id)
                 .last();
@@ -76,5 +76,6 @@ class SubscriberController {
     @ResponseStatus(value = HttpStatus.NOT_FOUND, reason = "Not found")
     @ExceptionHandler(NoSuchElementException.class)
     void notFound() {
+        // Error logging is done generically in LoggingFilter
     }
 }

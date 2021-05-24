@@ -107,7 +107,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(2L, Subscription::getCount)
                 .returns(Map.of(), Subscription::getErrors)
@@ -129,7 +129,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(4)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().collectList().block())
+        assertThat(restSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
                 .allSatisfy(s -> assertThat(s).isNotNull()
                         .returns(2L, Subscription::getCount)
@@ -157,14 +157,11 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(4)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().collectList().block())
+        assertThat(restSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
-                .allSatisfy(s -> assertThat(s)
-                        .isNotNull()
+                .allSatisfy(s -> assertThat(s).isNotNull()
                         .returns(2L, Subscription::getCount)
-                        .returns(Map.of(), Subscription::getErrors)
-                        .returns(SubscriberProtocol.REST, Subscription::getProtocol)
-                        .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus))
+                        .returns(Map.of(), Subscription::getErrors))
                 .extracting(Subscription::getName)
                 .doesNotHaveDuplicates();
     }
@@ -180,7 +177,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verifyNoInteractions(exchangeFunction);
-        assertThat(restSubscriber.subscriptions().count().block()).isEqualTo(0L);
+        assertThat(restSubscriber.getSubscriptions().count().block()).isZero();
     }
 
     @Test
@@ -194,7 +191,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verifyNoInteractions(exchangeFunction);
-        assertThat(restSubscriber.subscriptions().count().block()).isEqualTo(0L);
+        assertThat(restSubscriber.getSubscriptions().count().block()).isZero();
     }
 
     @Test
@@ -205,7 +202,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verifyNoInteractions(exchangeFunction);
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(0L, Subscription::getCount)
                 .returns(Map.of(), Subscription::getErrors)
@@ -230,7 +227,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(1500L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(1L, Subscription::getCount)
                 .returns(Map.of(), Subscription::getErrors)
@@ -252,7 +249,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(3L, Subscription::getCount);
     }
@@ -272,7 +269,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(3L, Subscription::getCount);
     }
@@ -290,7 +287,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(0L, Subscription::getCount)
                 .returns(Map.of("500", 1), Subscription::getErrors)
@@ -311,7 +308,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(1L, Subscription::getCount)
                 .returns(Map.of(), Subscription::getErrors)
@@ -333,7 +330,7 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(0L, Subscription::getCount)
                 .returns(Map.of("404", 1), Subscription::getErrors)
@@ -356,14 +353,14 @@ class RestSubscriberTest {
                 .verify(Duration.ofMillis(500L));
 
         verifyNoInteractions(exchangeFunction);
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(0L, Subscription::getCount)
                 .returns(Map.of(), Subscription::getErrors)
                 .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
     }
 
-    @Disabled
+    @Disabled("Still working on fixing")
     @Test
     void middleSamplePercent() {
         restSubscriberProperties.setLimit(1000L);
@@ -380,7 +377,7 @@ class RestSubscriberTest {
 
         verify(exchangeFunction, atLeast(700)).exchange(Mockito.isA(ClientRequest.class));
         verify(exchangeFunction, atMost(800)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(Map.of(), Subscription::getErrors)
                 .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus)
@@ -389,7 +386,7 @@ class RestSubscriberTest {
                 .matches(count -> count >= 700 && count <= 800);
     }
 
-    @Disabled
+    @Disabled("Still working on fixing")
     @Test
     void oneHundredSamplePercent() {
         restSubscriberProperties.setLimit(1000L);
@@ -406,7 +403,7 @@ class RestSubscriberTest {
 
         verify(exchangeFunction, times((int) restSubscriberProperties.getLimit()))
                 .exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.subscriptions().blockFirst())
+        assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(Map.of(), Subscription::getErrors)
                 .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus)

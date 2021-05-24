@@ -78,7 +78,7 @@ class GrpcSubscriberTest {
                 .expectNextCount(2L)
                 .expectComplete()
                 .verify(Duration.ofMillis(500L));
-        assertThat(grpcSubscriber.subscriptions().blockFirst())
+        assertThat(grpcSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(SubscriberProtocol.GRPC, Subscription::getProtocol);
     }
@@ -91,7 +91,7 @@ class GrpcSubscriberTest {
                 .as(StepVerifier::create)
                 .expectNextCount(4L)
                 .verifyComplete();
-        assertThat(grpcSubscriber.subscriptions().collectList().block())
+        assertThat(grpcSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
                 .allSatisfy(s -> assertThat(s).isNotNull()
                         .returns(grpcSubscriberProperties, Subscription::getProperties)
@@ -112,7 +112,7 @@ class GrpcSubscriberTest {
                 .as(StepVerifier::create)
                 .expectNextCount(4L)
                 .verifyComplete();
-        assertThat(grpcSubscriber.subscriptions().collectList().block())
+        assertThat(grpcSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
                 .allSatisfy(s -> assertThat(s).isNotNull()
                         .returns(SubscriberProtocol.GRPC, Subscription::getProtocol))
@@ -129,7 +129,7 @@ class GrpcSubscriberTest {
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(200));
-        assertThat(grpcSubscriber.subscriptions().count().block()).isEqualTo(0L);
+        assertThat(grpcSubscriber.getSubscriptions().count().block()).isZero();
     }
 
     @Test
@@ -141,7 +141,7 @@ class GrpcSubscriberTest {
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(200));
-        assertThat(grpcSubscriber.subscriptions().count().block()).isEqualTo(0L);
+        assertThat(grpcSubscriber.getSubscriptions().count().block()).isZero();
     }
 
     @Test

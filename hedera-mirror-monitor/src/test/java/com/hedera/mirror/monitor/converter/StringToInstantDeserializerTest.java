@@ -25,8 +25,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParser;
 import java.time.Instant;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -53,23 +56,11 @@ class StringToInstantDeserializerTest {
         assertThat(instant).isNull();
     }
 
-    @Test
-    void deserializeEmpty() throws Exception {
-        when(jsonParser.getValueAsString()).thenReturn("");
-        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, null);
-        assertThat(instant).isNull();
-    }
-
-    @Test
-    void deserializeInvalid() throws Exception {
-        when(jsonParser.getValueAsString()).thenReturn("foo.bar");
-        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, null);
-        assertThat(instant).isNull();
-    }
-
-    @Test
-    void deserializeMissing() throws Exception {
-        when(jsonParser.getValueAsString()).thenReturn("1");
+    @DisplayName("Deserialize String to Instant")
+    @ParameterizedTest(name = "with {0}")
+    @ValueSource(strings = {"", "foo.bar", "1"})
+    void deserializeInvalid(String input) throws Exception {
+        when(jsonParser.getValueAsString()).thenReturn(input);
         Instant instant = stringToInstantDeserializer.deserialize(jsonParser, null);
         assertThat(instant).isNull();
     }

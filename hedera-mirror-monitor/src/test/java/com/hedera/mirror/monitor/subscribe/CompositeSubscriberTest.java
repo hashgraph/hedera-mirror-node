@@ -75,10 +75,10 @@ class CompositeSubscriberTest {
     void subscriptions() {
         TestSubscription subscription1 = new TestSubscription();
         TestSubscription subscription2 = new TestSubscription();
-        when(mirrorSubscriber1.subscriptions()).thenReturn(Flux.just(subscription1));
-        when(mirrorSubscriber2.subscriptions()).thenReturn(Flux.just(subscription2));
+        when(mirrorSubscriber1.getSubscriptions()).thenReturn(Flux.just(subscription1));
+        when(mirrorSubscriber2.getSubscriptions()).thenReturn(Flux.just(subscription2));
 
-        compositeSubscriber.subscriptions()
+        compositeSubscriber.getSubscriptions()
                 .as(StepVerifier::create)
                 .expectNext(subscription1, subscription2)
                 .verifyComplete();

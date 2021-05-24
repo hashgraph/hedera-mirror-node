@@ -57,7 +57,7 @@ class RestSubscriber implements MirrorSubscriber {
 
     private final Collection<Sinks.Many<PublishResponse>> sinks;
     private final SubscribeProperties subscribeProperties;
-    private final Flux<RestSubscription> subscriptions = Flux.defer(() -> getSubscriptions()).cache();
+    private final Flux<RestSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
     private final WebClient webClient;
 
     @Autowired
@@ -84,11 +84,11 @@ class RestSubscriber implements MirrorSubscriber {
     }
 
     @Override
-    public Flux<RestSubscription> subscriptions() {
+    public Flux<RestSubscription> getSubscriptions() {
         return subscriptions;
     }
 
-    private Flux<RestSubscription> getSubscriptions() {
+    private Flux<RestSubscription> createSubscriptions() {
         Collection<RestSubscription> subscriptions = new ArrayList<>();
 
         for (RestSubscriberProperties properties : subscribeProperties.getRest()) {

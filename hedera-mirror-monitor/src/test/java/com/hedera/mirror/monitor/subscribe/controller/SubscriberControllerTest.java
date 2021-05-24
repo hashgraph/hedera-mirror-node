@@ -65,7 +65,7 @@ class SubscriberControllerTest {
 
         SubscriberController subscriberController = new SubscriberController(mirrorSubscriber);
         webTestClient = WebTestClient.bindToController(subscriberController).build();
-        when(mirrorSubscriber.subscriptions()).thenReturn(Flux.just(subscription1, subscription2));
+        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscription1, subscription2));
     }
 
     @Test
@@ -125,9 +125,9 @@ class SubscriberControllerTest {
 
     @Test
     void subscriptionsNotFound() {
-        when(mirrorSubscriber.subscriptions()).thenReturn(Flux.empty());
+        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.empty());
         webTestClient.get()
-                .uri("/api/v1/subscriber")
+                .uri("/api/v1/subscriber?protocol=GRPC")
                 .exchange()
                 .expectStatus()
                 .is4xxClientError();
