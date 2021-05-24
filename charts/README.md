@@ -167,7 +167,6 @@ To execute:
 helm test "${RELEASE} " --timeout 10m
 ```
 
-
 ## Using
 
 All of the APIs and dashboards can be accessed via a single IP. To get the load balancer IP:
