@@ -89,7 +89,7 @@ func TestRetrieveBlockThrowsNoIdentifiers(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], e)
+	assert.Equal(t, errors.ErrInternalServerError, e)
 }
 
 func TestRetrieveBlockFindByIdentifier(t *testing.T) {
@@ -121,7 +121,7 @@ func TestRetrieveBlockThrowsFindByIdentifier(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestRetrieveBlockFindByIndex(t *testing.T) {
@@ -153,7 +153,7 @@ func TestRetrieveBlockThrowsFindByIndex(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestRetrieveBlockFindByHash(t *testing.T) {
@@ -185,7 +185,7 @@ func TestRetrieveBlockThrowsFindByHash(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestRetrieveLatest(t *testing.T) {
@@ -217,7 +217,7 @@ func TestRetrieveLatestThrows(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestRetrieveGenesis(t *testing.T) {
@@ -249,7 +249,7 @@ func TestRetrieveGenesisThrows(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestFindByIdentifier(t *testing.T) {
@@ -281,7 +281,7 @@ func TestFindByIdentifierThrows(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestFindByHashInBlock(t *testing.T) {
@@ -313,7 +313,7 @@ func TestFindByHashInBlockThrows(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestFindBetween(t *testing.T) {
@@ -345,19 +345,19 @@ func TestFindBetweenThrows(t *testing.T) {
 
 	// then:
 	assert.Equal(t, []*types.Transaction{}, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestStatuses(t *testing.T) {
 	// given:
 	repository.Setup()
-	repository.MTransactionRepository.On("Statuses").Return(
+	repository.MTransactionRepository.On("Results").Return(
 		exampleMap,
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().Statuses()
+	res, e := getSubject().Results()
 
 	// then:
 	assert.Nil(t, e)
@@ -367,17 +367,17 @@ func TestStatuses(t *testing.T) {
 func TestStatusesThrows(t *testing.T) {
 	// given:
 	repository.Setup()
-	repository.MTransactionRepository.On("Statuses").Return(
+	repository.MTransactionRepository.On("Results").Return(
 		nilMap,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().Statuses()
+	res, e := getSubject().Results()
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }
 
 func TestTypesAsArray(t *testing.T) {
@@ -409,5 +409,5 @@ func TestTypesAsArrayThrows(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, rTypes.Error{}, *e)
+	assert.NotNil(t, e)
 }

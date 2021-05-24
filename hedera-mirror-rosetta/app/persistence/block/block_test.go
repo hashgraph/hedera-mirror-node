@@ -22,7 +22,6 @@ package block
 
 import (
 	"database/sql/driver"
-	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -30,176 +29,383 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
-	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
+)
+
+const (
+	indexZero = int64(0)
 )
 
 var (
-	countColumns                                    = []string{"count"}
-	expectedSkippedRecordFiles                      = int64(123)
-	expectedLatestConsensusTimeStampAccountBalances = int64(42)
-	index                                           = int64(1)
-	selectRecordFileColumns                         = []string{"hash", "consensus_start", "consensus_end", "index", "prev_hash"}
-	recordFileColumns                               = mocks.GetFieldsNamesToSnakeCase(recordFile{})
-	dbRecordFile                                    = &recordFile{
-		ConsensusStart: 1,
-		ConsensusEnd:   2,
-		Hash:           "0x12345",
-		Index:          index + expectedSkippedRecordFiles,
-		PrevHash:       "0x23456",
-	}
+	recordFileColumns       = mocks.GetFieldsNamesToSnakeCase(recordFile{})
+	selectRecordFileColumns = []string{"hash", "consensus_start", "consensus_end", "index", "prev_hash"}
+
 	expectedBlock = &types.Block{
-		Index:               index,
-		Hash:                dbRecordFile.Hash,
 		ConsensusStartNanos: dbRecordFile.ConsensusStart,
 		ConsensusEndNanos:   dbRecordFile.ConsensusEnd,
+		Hash:                dbRecordFile.Hash,
+		Index:               index,
 		ParentHash:          dbRecordFile.PrevHash,
+		ParentIndex:         index - 1,
+	}
+	expectedGenesisBlock = &types.Block{
+		ConsensusStartNanos: dbGenesis.ConsensusStart,
+		ConsensusEndNanos:   dbGenesis.ConsensusEnd,
+		Hash:                dbGenesis.Hash,
+		Index:               0,
+		ParentHash:          dbGenesis.Hash,
+		ParentIndex:         0,
+	}
+
+	index     = int64(1)
+	dbGenesis = &recordFile{
+		ConsensusStart: 100,
+		ConsensusEnd:   199,
+		Hash:           "0x12345",
+		Index:          int64(7),
+		PrevHash:       "0x23456",
+	}
+	dbRecordFile = &recordFile{
+		ConsensusStart: 200,
+		ConsensusEnd:   299,
+		Hash:           "0x200200",
+		Index:          dbGenesis.Index + 1,
+		PrevHash:       "0x12345",
 	}
 )
 
 func TestShouldSuccessFindByIndex(t *testing.T) {
+	var tests = []struct {
+		name     string
+		index    int64
+		expected *types.Block
+	}{
+		{
+			name:     "GenesisBlock",
+			index:    0,
+			expected: expectedGenesisBlock,
+		},
+		{
+			name:     "SecondBlock",
+			index:    1,
+			expected: expectedBlock,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepository(t)
+			mock.ExpectQuery(selectGenesis).
+				WillReturnRows(sqlmock.NewRows(recordFileColumns).
+					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+			if tt.index != 0 {
+				mock.ExpectQuery(selectRecordFileByIndex).
+					WithArgs(dbRecordFile.Index).
+					WillReturnRows(sqlmock.NewRows(recordFileColumns).
+						AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
+			}
+
+			// when
+			result, err := br.FindByIndex(tt.index)
+
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestShouldSuccessFindByIndexNegativeIndex(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
-		WithArgs(dbRecordFile.Index).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
 	// when
-	result, err := br.FindByIndex(index)
+	result, err := br.FindByIndex(-1)
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-	assert.Equal(t, expectedBlock, result)
+	assert.Nil(t, result)
+	assert.Equal(t, errors.ErrInvalidArgument, err)
 }
 
 func TestShouldFailFindByIndexNoRecordFile(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrBlockNotFound,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
-		WillReturnError(gorm.ErrRecordNotFound)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepository(t)
+			mock.ExpectQuery(selectGenesis).
+				WillReturnRows(sqlmock.NewRows(recordFileColumns).
+					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+			mock.ExpectQuery(selectRecordFileByIndex).WillReturnError(tt.dbErr)
 
-	// when
-	result, err := br.FindByIndex(0)
+			// when
+			result, err := br.FindByIndex(1)
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, result)
+			assert.Equal(t, tt.expected, err)
+		})
+	}
 }
 
-func TestShouldFailFindByIndexNoAccountBalances(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+func TestShouldFailFindByIndexNoGenesisRecordFile(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrNodeIsStarting,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
+	for _, tt := range tests {
+		// given
+		br, mock := setupRepository(t)
+		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
-	// when
-	result, err := br.FindByIndex(1)
+		// when
+		result, err := br.FindByIndex(1)
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
-	assert.Nil(t, result)
-}
-
-func TestShouldFailFindByHashNoAccountBalances(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
-
-	// when
-	result, err := br.FindByHash(dbRecordFile.Hash)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
-	assert.Nil(t, result)
+		// then
+		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Nil(t, result)
+		assert.Equal(t, tt.expected, err)
+	}
 }
 
 func TestShouldSuccessFindByHash(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+	var tests = []struct {
+		name     string
+		hash     string
+		expected *types.Block
+	}{
+		{
+			name:     "GenesisBlock",
+			hash:     dbGenesis.Hash,
+			expected: expectedGenesisBlock,
+		},
+		{
+			name:     "SecondBlock",
+			hash:     dbRecordFile.Hash,
+			expected: expectedBlock,
+		},
+	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepository(t)
+			mock.ExpectQuery(selectGenesis).
+				WillReturnRows(sqlmock.NewRows(recordFileColumns).
+					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+			if tt.hash != dbGenesis.Hash {
+				mock.ExpectQuery(selectByHashWithIndex).
+					WithArgs(dbRecordFile.Hash).
+					WillReturnRows(sqlmock.NewRows(recordFileColumns).
+						AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
+			}
 
-	// when
-	result, err := br.FindByHash(dbRecordFile.Hash)
+			// when
+			result, err := br.FindByHash(tt.hash)
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-	assert.Equal(t, expectedBlock, result)
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
-func TestShouldFailFindByIdentifierNoAccountBalances(t *testing.T) {
+func TestShouldFailFindByHasEmptyHash(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
 
 	// when
-	result, err := br.FindByIdentifier(1, dbRecordFile.Hash)
+	result, err := br.FindByHash("")
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
 	assert.Nil(t, result)
+	assert.Equal(t, errors.ErrInvalidArgument, err)
+}
+
+func TestShouldFailFindByHashNoGenesisRecordFile(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrNodeIsStarting,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepository(t)
+
+			mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
+
+			// when
+			result, err := br.FindByHash(dbRecordFile.Hash)
+
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, result)
+			assert.Equal(t, tt.expected, err)
+		})
+	}
 }
 
 func TestShouldSuccessFindByIdentifier(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+	var tests = []struct {
+		name     string
+		hash     string
+		index    int64
+		expected *types.Block
+	}{
+		{
+			name:     "GenesisBlock",
+			hash:     dbGenesis.Hash,
+			index:    0,
+			expected: expectedGenesisBlock,
+		},
+		{
+			name:     "SecondBlock",
+			hash:     dbRecordFile.Hash,
+			index:    1,
+			expected: expectedBlock,
+		},
+	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepository(t)
 
-	// when
-	result, err := br.FindByIdentifier(index, dbRecordFile.Hash)
+			mock.ExpectQuery(selectGenesis).
+				WillReturnRows(sqlmock.NewRows(recordFileColumns).
+					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+			if tt.index != 0 {
+				mock.ExpectQuery(selectByHashWithIndex).
+					WithArgs(dbRecordFile.Hash).
+					WillReturnRows(sqlmock.NewRows(recordFileColumns).
+						AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
+			}
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, expectedBlock, result)
-	assert.Nil(t, err)
+			// when
+			result, err := br.FindByIdentifier(tt.index, tt.hash)
+
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Equal(t, tt.expected, result)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func TestShouldFailFindByIdentifierInvalidArgument(t *testing.T) {
+	var tests = []struct {
+		name  string
+		index int64
+		hash  string
+	}{
+		{
+			name:  "NegativeIndex",
+			index: -1,
+			hash:  "0x12345",
+		},
+		{
+			name:  "EmptyHash",
+			index: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepository(t)
+
+			// when
+			result, err := br.FindByIdentifier(tt.index, tt.hash)
+
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, result)
+			assert.Equal(t, errors.ErrInvalidArgument, err)
+		})
+	}
+}
+
+func TestShouldFailFindByIdentifierNoGenesisRecordFile(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrNodeIsStarting,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
+
+	for _, tt := range tests {
+		// given
+		br, mock := setupRepository(t)
+
+		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
+
+		// when
+		result, err := br.FindByIdentifier(1, dbRecordFile.Hash)
+
+		// then
+		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Nil(t, result)
+		assert.Equal(t, tt.expected, err)
+	}
 }
 
 func TestShouldFailFindByIdentifierMismatchIndices(t *testing.T) {
@@ -209,46 +415,40 @@ func TestShouldFailFindByIdentifierMismatchIndices(t *testing.T) {
 		Hash:  "0x12345",
 	}
 	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
+	mock.ExpectQuery(selectGenesis).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).
+			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+	mock.ExpectQuery(selectByHashWithIndex).
 		WithArgs(dbRecordFile.Hash).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
 			AddRow(mocks.GetFieldsValuesAsDriverValue(mismatchingRecordFileIndex)...))
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 
 	// when
 	result, err := br.FindByIdentifier(index, dbRecordFile.Hash)
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
+	assert.Equal(t, errors.ErrBlockNotFound, err)
 	assert.Nil(t, result)
 }
 
 func TestShouldSuccessRetrieveGenesis(t *testing.T) {
 	// given
-	block := &types.Block{
-		Index:               0,
-		Hash:                dbRecordFile.Hash,
-		ConsensusStartNanos: dbRecordFile.ConsensusStart,
-		ConsensusEndNanos:   dbRecordFile.ConsensusEnd,
+	expected := &types.Block{
+		ConsensusStartNanos: dbGenesis.ConsensusStart,
+		ConsensusEndNanos:   dbGenesis.ConsensusEnd,
+		Hash:                dbGenesis.Hash,
+		Index:               indexZero,
+		ParentHash:          dbGenesis.Hash,
+		ParentIndex:         indexZero,
 	}
 
 	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
-		WithArgs(expectedSkippedRecordFiles).
+	mock.ExpectQuery(selectGenesis).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
+			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
 
 	// when
 	result, err := br.RetrieveGenesis()
@@ -256,45 +456,41 @@ func TestShouldSuccessRetrieveGenesis(t *testing.T) {
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, err)
-	assert.Equal(t, block, result)
+	assert.Equal(t, expected, result)
 }
 
-func TestShouldFailRetrieveGenesisNoRecordFile(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+func TestShouldFailRetrieveGenesisNoGenesisRecordFile(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrNodeIsStarting,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-	mock.ExpectQuery(regexp.QuoteMeta(selectRecordFileByIndex)).
-		WillReturnError(gorm.ErrRecordNotFound)
+	for _, tt := range tests {
+		// given
+		br, mock := setupRepository(t)
 
-	// when
-	result, err := br.RetrieveGenesis()
+		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
-}
+		// when
+		result, err := br.RetrieveGenesis()
 
-func TestShouldFailRetrieveGenesisNoAccountBalances(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
-
-	// when
-	result, err := br.RetrieveGenesis()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
-	assert.Nil(t, result)
+		// then
+		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Nil(t, result)
+		assert.Equal(t, tt.expected, err)
+	}
 }
 
 func TestShouldSuccessRetrieveLatest(t *testing.T) {
@@ -307,14 +503,12 @@ func TestShouldSuccessRetrieveLatest(t *testing.T) {
 		dbRecordFile.PrevHash,
 	}
 	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
+	mock.ExpectQuery(selectGenesis).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).
+			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+	mock.ExpectQuery(selectLatestWithIndex).
 		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
 
 	// when
 	result, err := br.RetrieveLatest()
@@ -325,276 +519,255 @@ func TestShouldSuccessRetrieveLatest(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestShouldFailRetrieveLatestRecordFileHashIsEmpty(t *testing.T) {
-	// given
-	dbSelectRecordFile := []driver.Value{
-		"",
-		dbRecordFile.ConsensusStart,
-		dbRecordFile.ConsensusEnd,
-		dbRecordFile.Index,
-		dbRecordFile.PrevHash,
-	}
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
-		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
-
-	// when
-	result, err := br.RetrieveLatest()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
-	assert.Nil(t, result)
-}
-
 func TestShouldFailRetrieveLatestRecordFileNotFound(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
-		WillReturnError(gorm.ErrRecordNotFound)
-
-	// when
-	result, err := br.RetrieveLatest()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
-	assert.Nil(t, result)
-}
-
-func TestShouldFailRetrieveLatestNoAccountBalances(t *testing.T) {
-	// given
-	dbSelectRecordFile := []driver.Value{
-		dbRecordFile.Hash,
-		dbRecordFile.ConsensusStart,
-		dbRecordFile.ConsensusEnd,
-		dbRecordFile.Index,
-		dbRecordFile.PrevHash,
-	}
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestWithIndex)).
-		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
-
-	// when
-	result, err := br.RetrieveLatest()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.IsType(t, rTypes.Error{}, *err)
-	assert.Nil(t, result)
-}
-
-func TestShouldFailFindRecordFileByHashNegativeBlockIndex(t *testing.T) {
-	// given
-	invalidRecordFile := &recordFile{
-		Index: -1,
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrBlockNotFound,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
 	}
 
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+	for _, tt := range tests {
+		// given
+		br, mock := setupRepository(t)
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(invalidRecordFile)...))
+		mock.ExpectQuery(selectGenesis).
+			WillReturnRows(sqlmock.NewRows(recordFileColumns).
+				AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+		mock.ExpectQuery(selectLatestWithIndex).WillReturnError(tt.dbErr)
 
-	// when
-	result, err := br.findRecordFileByHash(dbRecordFile.Hash)
+		// when
+		result, err := br.RetrieveLatest()
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
-	assert.Nil(t, result)
+		// then
+		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Nil(t, result)
+		assert.Equal(t, tt.expected, err)
+	}
 }
 
-func TestShouldFailFindRecordFileByHashFileHashIsEmpty(t *testing.T) {
-	// given
-	invalidRecordFile := &recordFile{}
+func TestShouldFailRetrieveLatestNoGenesisRecordFile(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrNodeIsStarting,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
 
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+	for _, tt := range tests {
+		// given
+		br, mock := setupRepository(t)
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(invalidRecordFile)...))
+		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
-	// when
-	result, err := br.findRecordFileByHash(dbRecordFile.Hash)
+		// when
+		result, err := br.RetrieveLatest()
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
-	assert.Nil(t, result)
+		// then
+		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Nil(t, result)
+		assert.Equal(t, tt.expected, err)
+	}
 }
 
 func TestShouldSuccessFindRecordFileByHash(t *testing.T) {
 	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+	br, mock := setupRepositoryWithGenesisRecordFile(t, dbGenesis)
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
+	mock.ExpectQuery(selectByHashWithIndex).
 		WithArgs(dbRecordFile.Hash).
 		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
 
 	// when
-	result, err := br.findRecordFileByHash(dbRecordFile.Hash)
+	result, err := br.findBlockByHash(dbRecordFile.Hash)
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Nil(t, err)
-	assert.Equal(t, dbRecordFile, result)
+	assert.Equal(t, expectedBlock, result)
 }
 
 func TestShouldFailFindRecordFileByHashNoRecordFound(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrBlockNotFound,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepositoryWithGenesisRecordFile(t, dbGenesis)
+
+			mock.ExpectQuery(selectByHashWithIndex).WithArgs(dbRecordFile.Hash).WillReturnError(tt.dbErr)
+
+			// when
+			result, err := br.findBlockByHash(dbRecordFile.Hash)
+
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, result)
+			assert.Equal(t, tt.expected, err)
+		})
+	}
+}
+
+func TestShouldSuccessGetGenesisRecordFileRepeatedly(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectByHashWithIndex)).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnError(gorm.ErrRecordNotFound)
+	mock.ExpectQuery(selectGenesis).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).
+			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
 
 	// when
-	result, err := br.findRecordFileByHash(dbRecordFile.Hash)
+	br.getGenesisRecordFile()
+	result, err := br.getGenesisRecordFile()
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.BlockNotFound], err)
-}
-
-func TestShouldSuccessConstructBlockResponse(t *testing.T) {
-	// given
-	rf := &recordFile{
-		Index:          dbRecordFile.Index,
-		ConsensusStart: 1,
-		ConsensusEnd:   2,
-		Hash:           "0x123",
-		PrevHash:       "0x234",
-	}
-	expectedBlock := &types.Block{
-		ConsensusStartNanos: 1,
-		ConsensusEndNanos:   2,
-		Hash:                "0x123",
-		Index:               index,
-		ParentHash:          "0x234",
-		ParentIndex:         index - 1,
-	}
-
-	br, mock := setupRepository(t)
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-
-	// when
-	result, err := br.constructBlockResponse(rf)
-
-	// then
+	assert.Equal(t, dbGenesis, result)
+	assert.Equal(t, dbGenesis, br.genesisRecordFile)
+	assert.Equal(t, dbGenesis.Index, br.genesisRecordFileIndex)
 	assert.Nil(t, err)
-	assert.Equal(t, expectedBlock, result)
 }
 
-func TestShouldSuccessConstructBlockResponseQueryingFirstBlock(t *testing.T) {
-	// given
-	blockIndex := int64(0)
-	rf := &recordFile{
-		Index:          expectedSkippedRecordFiles,
-		Hash:           "0x123",
-		PrevHash:       "0x234",
-		ConsensusStart: 1,
-		ConsensusEnd:   2,
-	}
-	expectedBlock := &types.Block{
-		Index:               blockIndex,
-		Hash:                "0x123",
-		ConsensusStartNanos: 1,
-		ConsensusEndNanos:   2,
-		ParentIndex:         blockIndex,
-		ParentHash:          "0x123",
-	}
-
-	br, mock := setupRepository(t)
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
-
-	// when
-	result, err := br.constructBlockResponse(rf)
-
-	// then
-	assert.Nil(t, err)
-	assert.Equal(t, expectedBlock, result)
-}
-
-func TestShouldSuccessGetRecordFilesStartingIndexRepeatedly(t *testing.T) {
+func TestShouldSuccessGetGenesisRecordFile(t *testing.T) {
 	// given
 	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
+	mock.ExpectQuery(selectGenesis).
+		WillReturnRows(sqlmock.NewRows(recordFileColumns).
+			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
 
 	// when
-	br.getRecordFilesStartingIndex()
-	result, err := br.getRecordFilesStartingIndex()
+	result, err := br.getGenesisRecordFile()
 
 	// then
 	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, expectedSkippedRecordFiles, result)
-	assert.Equal(t, expectedSkippedRecordFiles, *br.recordFileStartingIndex)
+	assert.Equal(t, dbGenesis, result)
+	assert.Equal(t, dbGenesis, br.genesisRecordFile)
+	assert.Equal(t, dbGenesis.Index, br.genesisRecordFileIndex)
 	assert.Nil(t, err)
 }
 
-func TestShouldSuccessGetRecordFilesStartingIndex(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
+func TestShouldFailGetGenesis(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dbErr    error
+		expected *rTypes.Error
+	}{
+		{
+			name:     "DbRecordNotFound",
+			dbErr:    gorm.ErrRecordNotFound,
+			expected: errors.ErrNodeIsStarting,
+		},
+		{
+			name:     "OtherDbError",
+			dbErr:    gorm.ErrInvalidTransaction,
+			expected: errors.ErrDatabaseError,
+		},
+	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedLatestConsensusTimeStampAccountBalances))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			br, mock := setupRepository(t)
 
-	mock.ExpectQuery(regexp.QuoteMeta(selectSkippedRecordFilesCount)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(expectedSkippedRecordFiles))
+			mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
 
-	// when
-	result, err := br.getRecordFilesStartingIndex()
+			// when
+			result, err := br.getGenesisRecordFile()
 
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, expectedSkippedRecordFiles, result)
-	assert.Equal(t, expectedSkippedRecordFiles, *br.recordFileStartingIndex)
-	assert.Nil(t, err)
-}
+			// then
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Nil(t, result)
+			assert.Equal(t, tt.expected, err)
 
-func TestShouldFailGetRecordFilesStartingIndex(t *testing.T) {
-	// given
-	br, mock := setupRepository(t)
-	defer br.dbClient.DB().Close()
-	mock.ExpectQuery(regexp.QuoteMeta(selectLatestConsensusTimestampAccountBalances)).
-		WillReturnRows(sqlmock.NewRows(countColumns).AddRow(0))
-
-	// when
-	result, err := br.getRecordFilesStartingIndex()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Zero(t, result)
-	assert.IsType(t, errors.Errors[errors.NodeIsStarting], err)
+		})
+	}
 }
 
 func TestShouldSuccessReturnRecordFileTableName(t *testing.T) {
-	assert.Equal(t, tableNameRecordFile, recordFile{}.TableName())
+	assert.Equal(t, tableNameRecordFile, (&recordFile{}).TableName())
+}
+
+func TestShouldSuccessReturnBlock(t *testing.T) {
+	rf := &recordFile{
+		ConsensusStart: 100,
+		ConsensusEnd:   199,
+		Hash:           "0x12345",
+		Index:          15,
+		PrevHash:       "0x54321",
+	}
+
+	var tests = []struct {
+		name                   string
+		genesisRecordFileIndex int64
+		expected               *types.Block
+	}{
+		{
+			name:                   "GenesisBlock",
+			genesisRecordFileIndex: rf.Index,
+			expected: &types.Block{
+				ConsensusStartNanos: rf.ConsensusStart,
+				ConsensusEndNanos:   rf.ConsensusEnd,
+				Hash:                rf.Hash,
+				Index:               0,
+				ParentHash:          rf.Hash,
+				ParentIndex:         0,
+			},
+		},
+		{
+			name:                   "NonGenesisBlock",
+			genesisRecordFileIndex: rf.Index - 2,
+			expected: &types.Block{
+				ConsensusStartNanos: rf.ConsensusStart,
+				ConsensusEndNanos:   rf.ConsensusEnd,
+				Hash:                rf.Hash,
+				Index:               2,
+				ParentHash:          rf.PrevHash,
+				ParentIndex:         1,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, rf.ToBlock(tt.genesisRecordFileIndex))
+		})
+	}
 }
 
 func TestShouldSuccessReturnRepository(t *testing.T) {
@@ -610,8 +783,20 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 }
 
 func setupRepository(t *testing.T) (*BlockRepository, sqlmock.Sqlmock) {
+	return setupRepositoryWithGenesisRecordFile(t, nil)
+}
+
+func setupRepositoryWithGenesisRecordFile(
+	t *testing.T,
+	genesisRecordFile *recordFile,
+) (*BlockRepository, sqlmock.Sqlmock) {
 	gormDbClient, mock := mocks.DatabaseMock(t)
 
 	aber := NewBlockRepository(gormDbClient)
+	if genesisRecordFile != nil {
+		aber.genesisRecordFile = genesisRecordFile
+		aber.genesisRecordFileIndex = genesisRecordFile.Index
+	}
+
 	return aber, mock
 }

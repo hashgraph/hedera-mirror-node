@@ -25,6 +25,76 @@ import (
 	"testing"
 )
 
-func TestShouldSuccessReturnCryptoTransferTableName(t *testing.T) {
-	assert.Equal(t, tableNameCryptoTransfer, CryptoTransfer{}.TableName())
+const (
+	amount    int64 = 100
+	timestamp int64 = 200
+	entityID  int64 = 300
+)
+
+func TestShouldReturnValidCryptoTransferTableName(t *testing.T) {
+	assert.Equal(t, "crypto_transfer", CryptoTransfer{}.TableName())
+}
+
+func TestShouldReturnCryptoTransferAmount(t *testing.T) {
+	cryptoTransfer := CryptoTransfer{
+		Amount:             amount,
+		ConsensusTimestamp: timestamp,
+		EntityID:           entityID,
+	}
+
+	assert.Equal(t, amount, cryptoTransfer.GetAmount())
+}
+
+func TestShouldReturnCryptoTransferConsensusTimestamp(t *testing.T) {
+	cryptoTransfer := CryptoTransfer{
+		Amount:             amount,
+		ConsensusTimestamp: timestamp,
+		EntityID:           entityID,
+	}
+
+	assert.Equal(t, timestamp, cryptoTransfer.GetConsensusTimestamp())
+}
+
+func TestShouldReturnCryptoTransferEntityID(t *testing.T) {
+	cryptoTransfer := CryptoTransfer{
+		Amount:             amount,
+		ConsensusTimestamp: timestamp,
+		EntityID:           entityID,
+	}
+
+	assert.Equal(t, entityID, cryptoTransfer.GetEntityID())
+}
+
+func TestShouldReturnValidNonFeeTransferTableName(t *testing.T) {
+	assert.Equal(t, "non_fee_transfer", NonFeeTransfer{}.TableName())
+}
+
+func TestShouldReturnNonFeeTransferAmount(t *testing.T) {
+	nonFeeTransfer := NonFeeTransfer{
+		Amount:             amount,
+		ConsensusTimestamp: timestamp,
+		EntityID:           entityID,
+	}
+
+	assert.Equal(t, amount, nonFeeTransfer.GetAmount())
+}
+
+func TestShouldReturnNonFeeTransferConsensusTimestamp(t *testing.T) {
+	nonFeeTransfer := NonFeeTransfer{
+		Amount:             amount,
+		ConsensusTimestamp: timestamp,
+		EntityID:           entityID,
+	}
+
+	assert.Equal(t, timestamp, nonFeeTransfer.GetConsensusTimestamp())
+}
+
+func TestShouldReturnNonFeeTransferEntityID(t *testing.T) {
+	nonFeeTransfer := NonFeeTransfer{
+		Amount:             amount,
+		ConsensusTimestamp: timestamp,
+		EntityID:           entityID,
+	}
+
+	assert.Equal(t, entityID, nonFeeTransfer.GetEntityID())
 }

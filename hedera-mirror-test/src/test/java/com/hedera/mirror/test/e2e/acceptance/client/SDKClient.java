@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import javax.inject.Named;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomUtils;
@@ -52,8 +53,12 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 
 @Log4j2
+@Named
 @Value
-public class SDKClient {
+public class SDKClient implements AutoCloseable {
+
+    private static final FileId ADDRESS_BOOK_ID = new FileId(0L, 0L, 101L);
+
     private final Client client;
     private final PublicKey payerPublicKey;
     private final PrivateKey operatorKey;
@@ -62,11 +67,8 @@ public class SDKClient {
     private final long messageTimeoutSeconds;
     private final Hbar maxTransactionFee;
     private final Map<String, AccountId> validateNetworkMap;
-    private static final FileId ADDRESS_BOOK_IPS = new FileId(0L, 0L, 101L);
 
-    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException,
-            InvalidProtocolBufferException, PrecheckStatusException, TimeoutException {
-
+    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException {
         // Grab configuration variables from the .env file
         operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
         operatorKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
@@ -102,6 +104,7 @@ public class SDKClient {
         return new ArrayList<>(validateNetworkMap.values()).get(randIndex);
     }
 
+    @Override
     public void close() throws TimeoutException {
         client.close();
     }
@@ -186,7 +189,7 @@ public class SDKClient {
     private NodeAddressBook getAddressBookFromNetwork(Client client) throws TimeoutException, PrecheckStatusException,
             InvalidProtocolBufferException {
         ByteString contents = new FileContentsQuery()
-                .setFileId(ADDRESS_BOOK_IPS)
+                .setFileId(ADDRESS_BOOK_ID)
                 .setMaxQueryPayment(new Hbar(1))
                 .execute(client);
 

@@ -56,6 +56,6 @@ func TestMempoolTransaction(t *testing.T) {
 	res, e := NewMempoolAPIService().MempoolTransaction(nil, nil)
 
 	// then:
-	assert.Equal(t, errors.Errors[errors.TransactionNotFound], e)
+	assert.Equal(t, errors.ErrTransactionNotFound, e)
 	assert.Nil(t, res)
 }

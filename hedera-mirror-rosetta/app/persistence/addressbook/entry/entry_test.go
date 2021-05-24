@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -86,7 +85,6 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 func TestShouldSuccessReturnAddressBookEntries(t *testing.T) {
 	// given
 	aber, columns, mock := setupRepository(t)
-	defer aber.dbClient.DB().Close()
 
 	mockedRow := mocks.GetFieldsValuesAsDriverValue(dbAddressBookEntry)
 	mockedRows := sqlmock.NewRows(columns).
@@ -108,7 +106,6 @@ func TestShouldSuccessReturnAddressBookEntries(t *testing.T) {
 func TestShouldFailReturnEntriesDueToInvalidDbData(t *testing.T) {
 	// given
 	aber, columns, mock := setupRepository(t)
-	defer aber.dbClient.DB().Close()
 
 	invalidData := &addressBookEntry{
 		Id:                 1,
@@ -123,9 +120,7 @@ func TestShouldFailReturnEntriesDueToInvalidDbData(t *testing.T) {
 	}
 
 	mock.ExpectQuery(latestAddressBookEntries).
-		WillReturnRows(
-			sqlmock.NewRows(columns).
-				AddRow(mocks.GetFieldsValuesAsDriverValue(invalidData)...))
+		WillReturnRows(sqlmock.NewRows(columns).AddRow(mocks.GetFieldsValuesAsDriverValue(invalidData)...))
 
 	// when
 	result, err := aber.Entries()
@@ -134,7 +129,7 @@ func TestShouldFailReturnEntriesDueToInvalidDbData(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 
 	assert.Nil(t, result)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
+	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
 func TestShouldSuccessReturnPeerId(t *testing.T) {
@@ -162,8 +157,8 @@ func TestShouldFailReturnPeerId(t *testing.T) {
 
 	// then
 	assert.Nil(t, result)
-	assert.IsType(t, rTypes.Error{}, *err)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
+	assert.NotNil(t, err)
+	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
 func TestShouldFailReturnPeerIdNegative(t *testing.T) {
@@ -177,8 +172,8 @@ func TestShouldFailReturnPeerIdNegative(t *testing.T) {
 
 	// then
 	assert.Nil(t, result)
-	assert.IsType(t, rTypes.Error{}, *err)
-	assert.Equal(t, errors.Errors[errors.InternalServerError], err)
+	assert.NotNil(t, err)
+	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
 func setupRepository(t *testing.T) (*AddressBookEntryRepository, []string, sqlmock.Sqlmock) {

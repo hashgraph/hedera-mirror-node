@@ -25,6 +25,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
@@ -44,7 +45,10 @@ func NewAccountAPIService(base base.BaseService, accountRepo repositories.Accoun
 }
 
 // AccountBalance implements the /account/balance endpoint.
-func (a *AccountAPIService) AccountBalance(ctx context.Context, request *rTypes.AccountBalanceRequest) (*rTypes.AccountBalanceResponse, *rTypes.Error) {
+func (a *AccountAPIService) AccountBalance(
+	ctx context.Context,
+	request *rTypes.AccountBalanceRequest,
+) (*rTypes.AccountBalanceResponse, *rTypes.Error) {
 	var block *types.Block
 	var err *rTypes.Error
 
@@ -69,4 +73,11 @@ func (a *AccountAPIService) AccountBalance(ctx context.Context, request *rTypes.
 		},
 		Balances: []*rTypes.Amount{balance.ToRosetta()},
 	}, nil
+}
+
+func (a *AccountAPIService) AccountCoins(
+	ctx context.Context,
+	request *rTypes.AccountCoinsRequest,
+) (*rTypes.AccountCoinsResponse, *rTypes.Error) {
+	return nil, errors.ErrNotImplemented
 }

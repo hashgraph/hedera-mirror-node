@@ -36,7 +36,10 @@ type BaseService struct {
 }
 
 // NewBaseService - Service containing common functions that are shared between other services
-func NewBaseService(blockRepo repositories.BlockRepository, transactionRepo repositories.TransactionRepository) BaseService {
+func NewBaseService(
+	blockRepo repositories.BlockRepository,
+	transactionRepo repositories.TransactionRepository,
+) BaseService {
 	return BaseService{
 		blockRepo:       blockRepo,
 		transactionRepo: transactionRepo,
@@ -54,8 +57,12 @@ func (c *BaseService) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) 
 		h := hex.SafeRemoveHexPrefix(*bIdentifier.Hash)
 		return c.blockRepo.FindByHash(h)
 	} else {
-		log.Errorf("An error occurred while retrieving Block with Index [%d] and Hash [%v]. Should not happen.", bIdentifier.Index, bIdentifier.Hash)
-		return nil, errors.Errors[errors.InternalServerError]
+		log.Errorf(
+			"An error occurred while retrieving Block with Index [%d] and Hash [%v]. Should not happen.",
+			bIdentifier.Index,
+			bIdentifier.Hash,
+		)
+		return nil, errors.ErrInternalServerError
 	}
 }
 
@@ -71,7 +78,11 @@ func (c *BaseService) FindByIdentifier(index int64, hash string) (*types.Block, 
 	return c.blockRepo.FindByIdentifier(index, hash)
 }
 
-func (c *BaseService) FindByHashInBlock(identifier string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error) {
+func (c *BaseService) FindByHashInBlock(
+	identifier string,
+	consensusStart int64,
+	consensusEnd int64,
+) (*types.Transaction, *rTypes.Error) {
 	return c.transactionRepo.FindByHashInBlock(identifier, consensusStart, consensusEnd)
 }
 
@@ -79,8 +90,8 @@ func (c *BaseService) FindBetween(start int64, end int64) ([]*types.Transaction,
 	return c.transactionRepo.FindBetween(start, end)
 }
 
-func (c *BaseService) Statuses() (map[int]string, *rTypes.Error) {
-	return c.transactionRepo.Statuses()
+func (c *BaseService) Results() (map[int]string, *rTypes.Error) {
+	return c.transactionRepo.Results()
 }
 
 func (c *BaseService) TypesAsArray() ([]string, *rTypes.Error) {

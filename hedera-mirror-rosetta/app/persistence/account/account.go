@@ -21,10 +21,13 @@
 package account
 
 import (
+	"database/sql"
+	"errors"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/jinzhu/gorm"
+	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"gorm.io/gorm"
 )
 
 const (
@@ -36,12 +39,12 @@ const (
                                         SUM(amount::bigint) AS value,
                                         COUNT(consensus_timestamp) AS number_of_transfers
                                    FROM crypto_transfer
-                                   WHERE consensus_timestamp > $1
-                                        AND consensus_timestamp <= $2
-                                        AND entity_id = $3`
+                                   WHERE consensus_timestamp > @start
+                                        AND consensus_timestamp <= @end
+                                        AND entity_id = @account_id`
 	latestBalanceBeforeConsensus string = `SELECT *
                                            FROM account_balance
-                                           WHERE (account_id = $1 AND consensus_timestamp <= $2)
+                                           WHERE account_id = @account_id AND consensus_timestamp <= @timestamp
                                            ORDER BY consensus_timestamp DESC
                                            LIMIT 1`
 )
@@ -67,7 +70,8 @@ type AccountRepository struct {
 	dbClient *gorm.DB
 }
 
-// NewAccountRepository creates an instance of a TransactionRepository struct. Populates the transaction types and statuses on init
+// NewAccountRepository creates an instance of a TransactionRepository struct. Populates the transaction types and
+// results on init
 func NewAccountRepository(dbClient *gorm.DB) *AccountRepository {
 	return &AccountRepository{
 		dbClient: dbClient,
@@ -76,25 +80,40 @@ func NewAccountRepository(dbClient *gorm.DB) *AccountRepository {
 
 // RetrieveBalanceAtBlock returns the balance of the account at a given block (provided by consensusEnd timestamp).
 // balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
-func (ar *AccountRepository) RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (*types.Amount, *rTypes.Error) {
+func (ar *AccountRepository) RetrieveBalanceAtBlock(
+	addressStr string,
+	consensusEnd int64,
+) (*types.Amount, *rTypes.Error) {
 	acc, err := types.AccountFromString(addressStr)
 	if err != nil {
 		return nil, err
 	}
 	entityID, err1 := acc.ComputeEncodedID()
 	if err1 != nil {
-		return nil, errors.Errors[errors.InvalidAccount]
+		return nil, hErrors.ErrInvalidAccount
 	}
 
 	// gets the most recent balance before block
 	ab := &accountBalance{}
-	if ar.dbClient.Raw(latestBalanceBeforeConsensus, entityID, consensusEnd).Find(&ab).RecordNotFound() {
+	result := ar.dbClient.Raw(
+		latestBalanceBeforeConsensus,
+		sql.Named("account_id", entityID),
+		sql.Named("timestamp", consensusEnd),
+	).
+		First(&ab)
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		ab.Balance = 0
 	}
 
 	r := &balanceChange{}
 	// gets the balance change from the Balance snapshot until the target block
-	ar.dbClient.Raw(balanceChangeBetween, ab.ConsensusTimestamp, consensusEnd, entityID).Scan(r)
+	ar.dbClient.Raw(
+		balanceChangeBetween,
+		sql.Named("start", ab.ConsensusTimestamp),
+		sql.Named("end", consensusEnd),
+		sql.Named("account_id", entityID),
+	).
+		Scan(r)
 
 	return &types.Amount{
 		Value: ab.Balance + r.Value,

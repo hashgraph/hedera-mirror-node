@@ -9,9 +9,6 @@ on:
       chartVersion:
         description: 'Chart Version (semver)'
         required: true
-      description:
-        description: 'Description'
-        required: false
 
 env:
   MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
@@ -50,7 +47,7 @@ jobs:
         if: ${{ contains(steps.version_parser.outputs.version, '-') }}
         run: echo "PRERELEASE=true" >> $GITHUB_ENV
 
-      - name: Retrieve the milestone
+      - name: Retrieve the Milestone
         id: milestone
         if: ${{ env.PRERELEASE != 'true' }}
         uses: julb/action-manage-milestone@v1
@@ -58,6 +55,16 @@ jobs:
           title: Mirror ${{ steps.version_parser.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Milestone Data
+        id: milestone-data
+        if: ${{ steps.milestone.outputs.number != '' }}
+        uses: Beakyn/gha-get-milestone-data@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repository: ${{ github.repository }}
+          milestone: ${{ steps.milestone.outputs.number }}
 
       - name: Set Release Environment Variables
         run: |
@@ -84,6 +91,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          ref: master
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Import GPG Key
@@ -134,6 +142,7 @@ jobs:
       - name: Update Changelog
         if: ${{ steps.milestone.outputs.number != '' }}
         run: |
+          DESCRIPTION="${{ fromJson(steps.milestone-data.outputs.data).description }}"
           RELEASE_DATE=$(date +%Y-%m-%d)
 
           GITHUB_RELEASE_NOTES=$(mktemp --suffix .md)
@@ -141,7 +150,7 @@ jobs:
           TMP_RELEASE_NOTES=$(mktemp --suffix .md)
 
           # copy to a temporary file for modification due to lack of write permsision
-          echo -e "${{ github.event.inputs.description }}\n" | cat - $RELEASE_NOTES_FULLNAME > $GITHUB_RELEASE_NOTES
+          echo -e "$DESCRIPTION\n" | sed 's/\r$//' | cat - $RELEASE_NOTES_FULLNAME > $GITHUB_RELEASE_NOTES
           RELEASE_NOTES=$(sed -r 's/^(#+) /\1# /g' $GITHUB_RELEASE_NOTES)
 
           CHANGELOG_TITLE="# Hedera Mirror Node Changelog"
@@ -202,7 +211,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          ref: master
 
       - name: Import GPG Key
         id: gpg_importer

@@ -41,7 +41,10 @@ func NewBlockAPIService(base base.BaseService) server.BlockAPIServicer {
 }
 
 // Block implements the /block endpoint.
-func (s *BlockAPIService) Block(ctx context.Context, request *rTypes.BlockRequest) (*rTypes.BlockResponse, *rTypes.Error) {
+func (s *BlockAPIService) Block(
+	ctx context.Context,
+	request *rTypes.BlockRequest,
+) (*rTypes.BlockResponse, *rTypes.Error) {
 	block, err := s.RetrieveBlock(request.BlockIdentifier)
 	if err != nil {
 		return nil, err
@@ -70,7 +73,11 @@ func (s *BlockAPIService) BlockTransaction(
 		return nil, err
 	}
 
-	transaction, err := s.FindByHashInBlock(request.TransactionIdentifier.Hash, block.ConsensusStartNanos, block.ConsensusEndNanos)
+	transaction, err := s.FindByHashInBlock(
+		request.TransactionIdentifier.Hash,
+		block.ConsensusStartNanos,
+		block.ConsensusEndNanos,
+	)
 	if err != nil {
 		return nil, err
 	}

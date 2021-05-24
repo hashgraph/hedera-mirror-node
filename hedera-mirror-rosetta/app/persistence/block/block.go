@@ -21,13 +21,15 @@
 package block
 
 import (
+	"database/sql"
+	"errors"
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/jinzhu/gorm"
+	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -52,27 +54,24 @@ const (
                                            index,
                                            prev_hash
                                     FROM record_file
-                                    WHERE hash = $1`
+                                    WHERE hash = @hash`
 
-	// selectSkippedRecordFilesCount - Selects the count of rows from the record_file table,
-	// where each one's consensus_end is before the MIN consensus_timestamp of account_balance table (the first one added).
-	// This way, record files before that timestamp are considered non-existent,
-	// and the first record_file (block) will be considered equal or bigger
-	// than the consensus_timestamp of the first account_balance
-	selectSkippedRecordFilesCount string = `SELECT index + 1
-                                            FROM record_file
-                                            WHERE consensus_end <= (SELECT consensus_timestamp
-                                                                    FROM account_balance_file
-                                                                    ORDER BY consensus_timestamp ASC
-                                                                    LIMIT 1)
-                                            ORDER BY consensus_end DESC
-                                            LIMIT 1`
-
-	// selectLatestConsensusTimestampAccountBalances - Selects the latest consensus_timestamp from account_balance table
-	selectLatestConsensusTimestampAccountBalances string = `SELECT consensus_timestamp
-                                                            FROM account_balance
-                                                            ORDER BY consensus_timestamp DESC
-                                                            LIMIT 1`
+	// selectGenesis - Selects the first block whose consensus_end is after the genesis account balance
+	// timestamp. Return the record file with adjusted consensus start
+	selectGenesis string = `SELECT
+                              consensus_end,
+                              hash,
+                              index,
+                              prev_hash,
+                              CASE
+                                WHEN genesis.min >= rf.consensus_start THEN genesis.min + 1
+                                ELSE rf.consensus_start
+                              END AS consensus_start
+                            FROM record_file AS rf
+                            JOIN (SELECT MIN(consensus_timestamp) FROM account_balance_file) AS genesis
+                              ON consensus_end > genesis.min
+                            ORDER BY consensus_end
+                            LIMIT 1`
 
 	// selectRecordFileByIndex - Selects the record_file by its index
 	selectRecordFileByIndex string = `SELECT consensus_start,
@@ -81,7 +80,7 @@ const (
                                              index,
                                              prev_hash
                                       FROM record_file
-                                      WHERE index = $1`
+                                      WHERE index = @index`
 )
 
 type recordFile struct {
@@ -104,15 +103,37 @@ type recordFile struct {
 }
 
 // TableName - Set table name to be `record_file`
-func (recordFile) TableName() string {
+func (rf *recordFile) TableName() string {
 	return tableNameRecordFile
+}
+
+func (rf *recordFile) ToBlock(genesisIndex int64) *types.Block {
+	index := rf.Index - genesisIndex
+	parentIndex := index - 1
+	parentHash := rf.PrevHash
+
+	// Handle the edge case for querying first block
+	if parentIndex < 0 {
+		parentIndex = 0      // Parent index should be 0, same as current block index
+		parentHash = rf.Hash // Parent hash should be same as current block hash
+	}
+
+	return &types.Block{
+		Index:               index,
+		Hash:                rf.Hash,
+		ParentIndex:         parentIndex,
+		ParentHash:          parentHash,
+		ConsensusStartNanos: rf.ConsensusStart,
+		ConsensusEndNanos:   rf.ConsensusEnd,
+	}
 }
 
 // BlockRepository struct that has connection to the Database
 type BlockRepository struct {
-	once                    sync.Once
-	dbClient                *gorm.DB
-	recordFileStartingIndex *int64
+	once                   sync.Once
+	dbClient               *gorm.DB
+	genesisRecordFile      *recordFile
+	genesisRecordFileIndex int64
 }
 
 // NewBlockRepository creates an instance of a BlockRepository struct
@@ -122,43 +143,55 @@ func NewBlockRepository(dbClient *gorm.DB) *BlockRepository {
 
 // FindByIndex retrieves a block by given Index
 func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
-	startingIndex, err := br.getRecordFilesStartingIndex()
-	if err != nil {
+	if index < 0 {
+		return nil, hErrors.ErrInvalidArgument
+	}
+
+	if _, err := br.getGenesisRecordFile(); err != nil {
 		return nil, err
 	}
 
 	rf := &recordFile{}
-	if br.dbClient.Raw(selectRecordFileByIndex, index+startingIndex).Find(rf).RecordNotFound() {
-		return nil, errors.Errors[errors.BlockNotFound]
+	index += br.genesisRecordFileIndex
+	if index == br.genesisRecordFileIndex {
+		rf = br.genesisRecordFile
+	} else if err := br.dbClient.Raw(selectRecordFileByIndex, sql.Named("index", index)).First(rf).Error; err != nil {
+		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
-	return br.constructBlockResponse(rf)
+	return rf.ToBlock(br.genesisRecordFileIndex), nil
 }
 
 // FindByHash retrieves a block by a given Hash
 func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
-	rf, err := br.findRecordFileByHash(hash)
-	if err != nil {
+	if hash == "" {
+		return nil, hErrors.ErrInvalidArgument
+	}
+
+	if _, err := br.getGenesisRecordFile(); err != nil {
 		return nil, err
 	}
 
-	return br.constructBlockResponse(rf)
+	return br.findBlockByHash(hash)
 }
 
 // FindByIdentifier retrieves a block by Index && Hash
 func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
-	rf, err := br.findRecordFileByHash(hash)
-	if err != nil {
+	if index < 0 || hash == "" {
+		return nil, hErrors.ErrInvalidArgument
+	}
+
+	if _, err := br.getGenesisRecordFile(); err != nil {
 		return nil, err
 	}
 
-	block, err := br.constructBlockResponse(rf)
+	block, err := br.findBlockByHash(hash)
 	if err != nil {
 		return nil, err
 	}
 
 	if block.Index != index {
-		return nil, errors.Errors[errors.BlockNotFound]
+		return nil, hErrors.ErrBlockNotFound
 	}
 
 	return block, nil
@@ -166,96 +199,62 @@ func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 
 // RetrieveGenesis retrieves the genesis block
 func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
-	startingIndex, err := br.getRecordFilesStartingIndex()
-	if err != nil {
+	if _, err := br.getGenesisRecordFile(); err != nil {
 		return nil, err
 	}
 
-	rf := &recordFile{}
-	if br.dbClient.Raw(selectRecordFileByIndex, startingIndex).Find(rf).RecordNotFound() {
-		return nil, errors.Errors[errors.BlockNotFound]
-	}
-
-	return &types.Block{
-		Index:               0,
-		Hash:                rf.Hash,
-		ConsensusStartNanos: rf.ConsensusStart,
-		ConsensusEndNanos:   rf.ConsensusEnd,
-	}, nil
+	return br.genesisRecordFile.ToBlock(br.genesisRecordFileIndex), nil
 }
 
 // RetrieveLatest retrieves the latest block
 func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
-	rf := &recordFile{}
-	if br.dbClient.Raw(selectLatestWithIndex).Scan(rf).RecordNotFound() {
-		return nil, errors.Errors[errors.BlockNotFound]
-	}
-	if rf.Hash == "" {
-		return nil, errors.Errors[errors.BlockNotFound]
-	}
-
-	return br.constructBlockResponse(rf)
-}
-
-func (br *BlockRepository) findRecordFileByHash(hash string) (*recordFile, *rTypes.Error) {
-	rf := &recordFile{}
-	if br.dbClient.Raw(selectByHashWithIndex, hash).Scan(rf).RecordNotFound() {
-		return nil, errors.Errors[errors.BlockNotFound]
-	}
-
-	if rf.Index < 0 || rf.Hash == "" {
-		return nil, errors.Errors[errors.BlockNotFound]
-	}
-
-	return rf, nil
-}
-
-// constructBlockResponse returns the constructed Block
-func (br *BlockRepository) constructBlockResponse(rf *recordFile) (*types.Block, *rTypes.Error) {
-	startingIndex, err := br.getRecordFilesStartingIndex()
-	if err != nil {
+	if _, err := br.getGenesisRecordFile(); err != nil {
 		return nil, err
 	}
 
-	index := rf.Index - startingIndex
-	parentIndex := index - 1
-	parentHash := rf.PrevHash
-
-	// Handle the edge case for querying first block
-	if parentIndex < 0 {
-		parentIndex = 0      // Parent index should be 0, same as current block index
-		parentHash = rf.Hash // Parent hash should be same as current block hash
+	rf := &recordFile{}
+	if err := br.dbClient.Raw(selectLatestWithIndex).First(rf).Error; err != nil {
+		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
-	return &types.Block{
-		Index:               index,
-		Hash:                rf.Hash,
-		ParentIndex:         parentIndex,
-		ParentHash:          parentHash,
-		ConsensusStartNanos: rf.ConsensusStart,
-		ConsensusEndNanos:   rf.ConsensusEnd,
-	}, nil
+
+	return rf.ToBlock(br.genesisRecordFileIndex), nil
 }
 
-func (br *BlockRepository) getRecordFilesStartingIndex() (int64, *rTypes.Error) {
-	if br.recordFileStartingIndex != nil {
-		return *br.recordFileStartingIndex, nil
+func (br *BlockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.Error) {
+	rf := &recordFile{}
+	if hash == br.genesisRecordFile.Hash {
+		rf = br.genesisRecordFile
+	} else if err := br.dbClient.Raw(selectByHashWithIndex, sql.Named("hash", hash)).First(rf).Error; err != nil {
+		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
-	var latestConsensusTimeStampAccountBalances int64
+	return rf.ToBlock(br.genesisRecordFileIndex), nil
+}
 
-	br.dbClient.Raw(selectLatestConsensusTimestampAccountBalances).Count(&latestConsensusTimeStampAccountBalances)
-	if latestConsensusTimeStampAccountBalances == 0 {
-		return 0, errors.Errors[errors.NodeIsStarting]
+func (br *BlockRepository) getGenesisRecordFile() (*recordFile, *rTypes.Error) {
+	if br.genesisRecordFile != nil {
+		return br.genesisRecordFile, nil
 	}
 
-	var startingIndex int64
-	br.dbClient.Raw(selectSkippedRecordFilesCount).Count(&startingIndex)
+	rf := &recordFile{}
+	if err := br.dbClient.Raw(selectGenesis).First(rf).Error; err != nil {
+		return nil, handleDatabaseError(err, hErrors.ErrNodeIsStarting)
+	}
 
 	br.once.Do(func() {
-		br.recordFileStartingIndex = &startingIndex
+		br.genesisRecordFile = rf
+		br.genesisRecordFileIndex = rf.Index
 	})
 
-	log.Infof("Fetched Record Files starting index: %d", *br.recordFileStartingIndex)
+	log.Infof("Fetched genesis record file, index - %d", rf.Index)
+	return br.genesisRecordFile, nil
+}
 
-	return *br.recordFileStartingIndex, nil
+func handleDatabaseError(err error, recordNotFoundErr *rTypes.Error) *rTypes.Error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return recordNotFoundErr
+	}
+
+	log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, err)
+	return hErrors.ErrDatabaseError
 }

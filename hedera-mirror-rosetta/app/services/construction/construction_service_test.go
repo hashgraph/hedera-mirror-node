@@ -292,7 +292,7 @@ func TestConstructionCombineThrowsWithMultipleSignatures(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.MultipleSignaturesPresent], e)
+	assert.Equal(t, errors.ErrMultipleSignaturesPresent, e)
 }
 
 func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
@@ -306,7 +306,7 @@ func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionDecodeFailed], e)
+	assert.Equal(t, errors.ErrTransactionDecodeFailed, e)
 }
 
 func TestConstructionCombineThrowsWhenUnmarshallFails(t *testing.T) {
@@ -320,7 +320,7 @@ func TestConstructionCombineThrowsWhenUnmarshallFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionUnmarshallingFailed], e)
+	assert.Equal(t, errors.ErrTransactionUnmarshallingFailed, e)
 }
 
 func TestConstructionCombineThrowsWithInvalidPublicKey(t *testing.T) {
@@ -334,7 +334,7 @@ func TestConstructionCombineThrowsWithInvalidPublicKey(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.InvalidPublicKey], e)
+	assert.Equal(t, errors.ErrInvalidPublicKey, e)
 }
 
 func TestConstructionCombineThrowsWhenSignatureIsNotVerified(t *testing.T) {
@@ -348,7 +348,7 @@ func TestConstructionCombineThrowsWhenSignatureIsNotVerified(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.InvalidSignatureVerification], e)
+	assert.Equal(t, errors.ErrInvalidSignatureVerification, e)
 }
 
 func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
@@ -362,7 +362,7 @@ func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionInvalidType], e)
+	assert.Equal(t, errors.ErrTransactionInvalidType, e)
 }
 
 func TestConstructionDerive(t *testing.T) {
@@ -372,7 +372,7 @@ func TestConstructionDerive(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.NotImplemented], e)
+	assert.Equal(t, errors.ErrNotImplemented, e)
 }
 
 func TestConstructionHash(t *testing.T) {
@@ -402,7 +402,7 @@ func TestConstructionHashThrowsWhenDecodeStringFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionDecodeFailed], e)
+	assert.Equal(t, errors.ErrTransactionDecodeFailed, e)
 }
 
 func TestConstructionMetadata(t *testing.T) {
@@ -449,7 +449,7 @@ func TestConstructionParseSigned(t *testing.T) {
 		},
 		AccountIdentifierSigners: []*types.AccountIdentifier{
 			{
-				Address: publicKey,
+				Address: DefaultCryptoAccountId1,
 			},
 		},
 	}
@@ -470,7 +470,7 @@ func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionDecodeFailed], e)
+	assert.Equal(t, errors.ErrTransactionDecodeFailed, e)
 }
 
 func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
@@ -480,7 +480,7 @@ func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionUnmarshallingFailed], e)
+	assert.Equal(t, errors.ErrTransactionUnmarshallingFailed, e)
 }
 
 func TestConstructionPayloads(t *testing.T) {
@@ -497,7 +497,8 @@ func TestConstructionPayloads(t *testing.T) {
 				AccountIdentifier: &types.AccountIdentifier{
 					Address: DefaultCryptoAccountId1,
 				},
-				Bytes: expectedNilBytes,
+				Bytes:         expectedNilBytes,
+				SignatureType: types.Ed25519,
 			},
 		},
 	}
@@ -509,7 +510,11 @@ func TestConstructionPayloads(t *testing.T) {
 	// then:
 	// here we do not assert the whole response object to equal the expected one, because invocation of this method appends a unique timestamp to the result, thus making the signed TX and Bytes unique and non-assertable.
 	assert.Len(t, expectedPayloadsResponse.Payloads, 1)
-	assert.Equal(t, expectedPayloadsResponse.Payloads[0].AccountIdentifier.Address, res.Payloads[0].AccountIdentifier.Address)
+	assert.Equal(
+		t,
+		expectedPayloadsResponse.Payloads[0].AccountIdentifier.Address,
+		res.Payloads[0].AccountIdentifier.Address,
+	)
 	assert.Nil(t, e)
 }
 
@@ -538,7 +543,7 @@ func TestConstructionPayloadsThrowsWithEmptyOperations(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.EmptyOperations], e)
+	assert.Equal(t, errors.ErrEmptyOperations, e)
 }
 
 func TestConstructionPayloadsThrowsWithInvalidOperationAmounts(t *testing.T) {
@@ -553,7 +558,7 @@ func TestConstructionPayloadsThrowsWithInvalidOperationAmounts(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.InvalidAmount], e)
+	assert.Equal(t, errors.ErrInvalidAmount, e)
 }
 
 func TestConstructionPayloadsThrowsWhenInvalidAccount(t *testing.T) {
@@ -569,7 +574,7 @@ func TestConstructionPayloadsThrowsWhenInvalidAccount(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.InvalidAccount], e)
+	assert.Equal(t, errors.ErrInvalidAccount, e)
 }
 
 func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
@@ -585,7 +590,7 @@ func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionDecodeFailed], e)
+	assert.Equal(t, errors.ErrTransactionDecodeFailed, e)
 }
 
 func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
@@ -603,13 +608,18 @@ func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.Equal(t, errors.Errors[errors.TransactionUnmarshallingFailed], e)
+	assert.Equal(t, errors.ErrTransactionUnmarshallingFailed, e)
 }
 
 func TestConstructionPreprocess(t *testing.T) {
 	// given:
 	expectedResult := &types.ConstructionPreprocessResponse{
 		Options: make(map[string]interface{}),
+		RequiredPublicKeys: []*types.AccountIdentifier{
+			{
+				Address: DefaultCryptoAccountId1,
+			},
+		},
 	}
 
 	// when:

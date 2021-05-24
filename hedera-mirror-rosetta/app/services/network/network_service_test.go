@@ -27,7 +27,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -112,6 +111,40 @@ func TestNetworkList(t *testing.T) {
 
 func TestNetworkOptions(t *testing.T) {
 	// given:
+	expectedErrors := []*rTypes.Error{
+		errors.ErrAccountNotFound,
+		errors.ErrBlockNotFound,
+		errors.ErrInvalidAccount,
+		errors.ErrInvalidAmount,
+		errors.ErrInvalidOperationsAmount,
+		errors.ErrInvalidOperationsTotalAmount,
+		errors.ErrInvalidPublicKey,
+		errors.ErrInvalidSignatureVerification,
+		errors.ErrInvalidTransactionIdentifier,
+		errors.ErrMultipleOperationTypesPresent,
+		errors.ErrMultipleSignaturesPresent,
+		errors.ErrNodeIsStarting,
+		errors.ErrNotImplemented,
+		errors.ErrOperationResultsNotFound,
+		errors.ErrOperationTypesNotFound,
+		errors.ErrStartMustNotBeAfterEnd,
+		errors.ErrTransactionBuildFailed,
+		errors.ErrTransactionDecodeFailed,
+		errors.ErrTransactionRecordFetchFailed,
+		errors.ErrTransactionMarshallingFailed,
+		errors.ErrTransactionUnmarshallingFailed,
+		errors.ErrTransactionSubmissionFailed,
+		errors.ErrTransactionNotFound,
+		errors.ErrEmptyOperations,
+		errors.ErrTransactionInvalidType,
+		errors.ErrTransactionNotSigned,
+		errors.ErrTransactionHashFailed,
+		errors.ErrTransactionFreezeFailed,
+		errors.ErrInvalidArgument,
+		errors.ErrDatabaseError,
+		errors.ErrInternalServerError,
+	}
+
 	expectedResult := &rTypes.NetworkOptionsResponse{
 		Version: &rTypes.Version{
 			RosettaVersion:    "1",
@@ -123,17 +156,23 @@ func TestNetworkOptions(t *testing.T) {
 			OperationStatuses: []*rTypes.OperationStatus{
 				{
 					Status:     "Pending",
+					Successful: false,
+				},
+				{
+					Status:     "Success",
 					Successful: true,
 				},
 			},
 			OperationTypes:          []string{"Transfer"},
-			Errors:                  maphelper.GetErrorValuesFromStringErrorMap(errors.Errors),
+			Errors:                  expectedErrors,
 			HistoricalBalanceLookup: true,
 		},
 	}
 
 	repository.Setup()
-	repository.MTransactionRepository.On("Statuses").Return(map[int]string{1: "Pending"}, repository.NilError)
+	repository.MTransactionRepository.
+		On("Results").
+		Return(map[int]string{1: "Pending", 22: "Success"}, repository.NilError)
 	repository.MTransactionRepository.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
 
 	// when:
@@ -142,8 +181,8 @@ func TestNetworkOptions(t *testing.T) {
 	// then:
 	assert.Equal(t, expectedResult.Version, res.Version)
 	assert.Equal(t, expectedResult.Allow.HistoricalBalanceLookup, res.Allow.HistoricalBalanceLookup)
-	assert.Equal(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
-	assert.Equal(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
+	assert.ElementsMatch(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
+	assert.ElementsMatch(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
 	assert.ElementsMatch(t, expectedResult.Allow.Errors, res.Allow.Errors)
 	assert.Nil(t, e)
 }
@@ -152,13 +191,13 @@ func TestNetworkOptionsThrowsWhenStatusesFails(t *testing.T) {
 	var nilStatuses map[int]string = nil
 	repository.Setup()
 	repository.MTransactionRepository.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
-	repository.MTransactionRepository.On("Statuses").Return(nilStatuses, &rTypes.Error{})
+	repository.MTransactionRepository.On("Results").Return(nilStatuses, &rTypes.Error{})
 
 	// when:
 	res, e := getSubject().NetworkOptions(nil, nil)
 
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }
 
 func TestNetworkOptionsThrowsWhenTypesAsArrayFails(t *testing.T) {
@@ -170,8 +209,8 @@ func TestNetworkOptionsThrowsWhenTypesAsArrayFails(t *testing.T) {
 	res, e := getSubject().NetworkOptions(nil, nil)
 
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
-	repository.MTransactionRepository.AssertNotCalled(t, "Statuses")
+	assert.NotNil(t, e)
+	repository.MTransactionRepository.AssertNotCalled(t, "Results")
 }
 
 func TestNetworkStatus(t *testing.T) {
@@ -214,7 +253,7 @@ func TestNetworkStatusThrowsWhenRetrieveGenesisFails(t *testing.T) {
 
 	// then
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }
 
 func TestNetworkStatusThrowsWhenRetrieveLatestFails(t *testing.T) {
@@ -228,7 +267,7 @@ func TestNetworkStatusThrowsWhenRetrieveLatestFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }
 
 func TestNetworkStatusThrowsWhenEntriesFail(t *testing.T) {
@@ -243,5 +282,5 @@ func TestNetworkStatusThrowsWhenEntriesFail(t *testing.T) {
 
 	// then:
 	assert.Nil(t, res)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 }

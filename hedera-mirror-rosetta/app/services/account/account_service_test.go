@@ -23,6 +23,7 @@ package account
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
@@ -90,7 +91,12 @@ func TestNewAccountAPIService(t *testing.T) {
 	repository.Setup()
 	assert.IsType(t, &AccountAPIService{}, getSubject())
 	assert.Equal(t, baseService(), getSubject().BaseService, "BaseService was not populated correctly")
-	assert.Equal(t, repository.MAccountRepository, getSubject().accountRepo, "AccountsRepository was not populated correctly")
+	assert.Equal(
+		t,
+		repository.MAccountRepository,
+		getSubject().accountRepo,
+		"AccountsRepository was not populated correctly",
+	)
 }
 
 func TestAccountBalance(t *testing.T) {
@@ -118,7 +124,7 @@ func TestAccountBalanceWithBlockIdentifier(t *testing.T) {
 	// when:
 	actualResult, e := getSubject().AccountBalance(nil, request(true))
 
-	//then:
+	// then:
 	assert.Equal(t, expectedAccountBalanceResponse(), actualResult)
 	assert.Nil(t, e)
 	repository.MBlockRepository.AssertNotCalled(t, "RetrieveLatest")
@@ -134,7 +140,7 @@ func TestAccountBalanceThrowsWhenRetrieveLatestFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, actualResult)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 	repository.MAccountRepository.AssertNotCalled(t, "RetrieveBalanceAtBlock")
 }
 
@@ -148,7 +154,7 @@ func TestAccountBalanceThrowsWhenRetrieveBlockFails(t *testing.T) {
 
 	// then:
 	assert.Nil(t, actualResult)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
 	repository.MAccountRepository.AssertNotCalled(t, "RetrieveBalanceAtBlock")
 	repository.MBlockRepository.AssertNotCalled(t, "RetrieveLatest")
 }
@@ -162,7 +168,16 @@ func TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails(t *testing.T) {
 	// when:
 	actualResult, e := getSubject().AccountBalance(nil, request(true))
 
-	//then:
+	// then:
 	assert.Nil(t, actualResult)
-	assert.IsType(t, &rTypes.Error{}, e)
+	assert.NotNil(t, e)
+}
+
+func TestAccountCoins(t *testing.T) {
+	// when:
+	result, err := getSubject().AccountCoins(nil, &rTypes.AccountCoinsRequest{})
+
+	// then:
+	assert.Nil(t, result)
+	assert.Equal(t, errors.ErrNotImplemented, err)
 }

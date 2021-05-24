@@ -83,12 +83,4 @@ public abstract class AbstractNetworkClient {
                 .hbars
                 .toTinybars();
     }
-
-    public void close() {
-        try {
-            sdkClient.close();
-        } catch (Exception ex) {
-            log.warn("Error closing client : {}", ex.getMessage());
-        }
-    }
 }

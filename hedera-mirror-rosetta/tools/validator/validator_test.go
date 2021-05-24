@@ -43,14 +43,14 @@ func TestValidateOperationsSum(t *testing.T) {
 		}, nil},
 		{[]*types.Operation{
 			operationDummyNegative,
-		}, errors.Errors[errors.InvalidOperationsTotalAmount]},
+		}, errors.ErrInvalidOperationsTotalAmount},
 		{[]*types.Operation{
 			invalidOperationDummy,
-		}, errors.Errors[errors.InvalidAmount]},
-		{[]*types.Operation{}, errors.Errors[errors.EmptyOperations]},
+		}, errors.ErrInvalidAmount},
+		{[]*types.Operation{}, errors.ErrEmptyOperations},
 		{[]*types.Operation{
 			newOperationDummy("0"),
-		}, errors.Errors[errors.InvalidAmount]},
+		}, errors.ErrInvalidAmount},
 	}
 
 	for _, tt := range testData {

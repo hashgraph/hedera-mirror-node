@@ -69,6 +69,10 @@ COPY --from=rosetta-builder /hedera-mirror-rosetta/config/application.yml ./conf
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer
 COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-*exec.jar ./hedera-mirror-importer.jar
+# Enable persisting non-fee transfers to reconstruct the original transfer list
+ENV HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_NONFEETRANSFERS=true
+# Disable Redis because gRPC process is not run within this execution
+ENV HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_REDIS_ENABLED=false
 
 COPY hedera-mirror-rosetta/build /build
 WORKDIR /build
