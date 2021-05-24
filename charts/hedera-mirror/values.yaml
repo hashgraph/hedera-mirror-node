@@ -260,14 +260,14 @@ rest:
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
 test:
-  enabled: true
+  enabled: false
   config:
     hedera:
       mirror:
         test:
           acceptance:
             existingTopicNum:
-            network: testnet
+            network: 
             # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
             operatorId:
             operatorKey:
