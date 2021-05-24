@@ -20,98 +20,137 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * ‍
  */
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import java.security.SecureRandom;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishResponse;
-import com.hedera.mirror.monitor.subscribe.AbstractSubscriber;
+import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
+import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
+import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
+import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
 
-public class RestSubscriber extends AbstractSubscriber<RestSubscriberProperties> {
+@Log4j2
+@Named
+@RequiredArgsConstructor
+class RestSubscriber implements MirrorSubscriber {
 
-    private final Sinks.Many<PublishResponse> sink;
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    public RestSubscriber(MeterRegistry meterRegistry, MonitorProperties monitorProperties,
-                          RestSubscriberProperties properties, WebClient.Builder webClientBuilder) {
-        super(meterRegistry, properties);
+    private final Collection<Sinks.Many<PublishResponse>> sinks;
+    private final SubscribeProperties subscribeProperties;
+    private final Flux<RestSubscription> subscriptions = Flux.defer(() -> getSubscriptions()).cache();
+    private final WebClient webClient;
+
+    @Autowired
+    RestSubscriber(MonitorProperties monitorProperties, SubscribeProperties subscribeProperties,
+                   WebClient.Builder webClientBuilder) {
+        this.subscribeProperties = subscribeProperties;
+        this.sinks = new CopyOnWriteArrayList<>();
 
         String url = monitorProperties.getMirrorNode().getRest().getBaseUrl();
-        WebClient webClient = webClientBuilder.baseUrl(url)
+        webClient = webClientBuilder.baseUrl(url)
                 .defaultHeaders(h -> h.setAccept(List.of(MediaType.APPLICATION_JSON)))
                 .build();
+        log.info("Connecting to mirror node {}", url);
+    }
+
+    @Override
+    public void onPublish(PublishResponse response) {
+        sinks.forEach(sink -> sink.tryEmitNext(response));
+    }
+
+    @Override
+    public Flux<SubscribeResponse> subscribe() {
+        return subscriptions.flatMap(this::clientSubscribe);
+    }
+
+    @Override
+    public Flux<RestSubscription> subscriptions() {
+        return subscriptions;
+    }
+
+    private Flux<RestSubscription> getSubscriptions() {
+        Collection<RestSubscription> subscriptions = new ArrayList<>();
+
+        for (RestSubscriberProperties properties : subscribeProperties.getRest()) {
+            if (subscribeProperties.isEnabled() && properties.isEnabled()) {
+                for (int i = 1; i <= properties.getSubscribers(); ++i) {
+                    subscriptions.add(new RestSubscription(i, properties));
+                }
+            }
+        }
+
+        return Flux.fromIterable(subscriptions);
+    }
+
+    private Flux<SubscribeResponse> clientSubscribe(RestSubscription subscription) {
+        RestSubscriberProperties properties = subscription.getProperties();
 
         RetryBackoffSpec retrySpec = Retry
                 .backoff(properties.getRetry().getMaxAttempts(), properties.getRetry().getMinBackoff())
                 .maxBackoff(properties.getRetry().getMaxBackoff())
                 .filter(this::shouldRetry)
                 .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
-                        r.totalRetries() + 1, r.failure()));
+                        r.totalRetries() + 1, r.failure().getMessage()));
 
-        sink = Sinks.many().multicast().directBestEffort();
-        sink.asFlux().doOnSubscribe(s -> log.info("Connecting to mirror node {}", url))
+        Sinks.Many<PublishResponse> sink = Sinks.many().multicast().directBestEffort();
+        sinks.add(sink);
+        return sink.asFlux()
                 //Randomly filter out transactions to only validate a sample
                 .filter(r -> RANDOM.nextDouble() < properties.getSamplePercent())
+                .publishOn(Schedulers.parallel())
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
-                .doFinally(s -> log.warn("Received {} signal", s))
-                .doFinally(s -> close())
-                .limitRequest(properties.getLimit())
-                .take(properties.getDuration())
                 .flatMap(publishResponse -> webClient.get()
                         .uri("/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
                         .retrieve()
-                        .bodyToMono(String.class)
+                        .bodyToMono(MirrorTransaction.class)
                         .name("rest")
                         .metrics()
-                        .doOnNext(json -> log.trace("Response: {}", json))
                         .timeout(properties.getTimeout())
                         .retryWhen(retrySpec)
-                        .onErrorContinue((t, o) -> onError(t))
-                        .doOnNext(clientResponse -> record(publishResponse)))
-                .subscribe();
+                        .onErrorContinue((t, o) -> subscription.onError(t))
+                        .doOnNext(subscription::onNext)
+                        .map(transaction -> toResponse(subscription, publishResponse, transaction)))
+                .doFinally(s -> subscription.onComplete())
+                .doFinally(s -> sinks.remove(sink))
+                .limitRequest(properties.getLimit())
+                .take(properties.getDuration());
     }
 
-    @Override
-    public void onPublish(PublishResponse response) {
-        sink.emitNext(response, Sinks.EmitFailureHandler.FAIL_FAST);
+    private SubscribeResponse toResponse(RestSubscription subscription, PublishResponse publishResponse,
+                                         MirrorTransaction transaction) {
+        Instant receivedTimestamp = Instant.now();
+
+        return SubscribeResponse.builder()
+                .consensusTimestamp(transaction.getConsensusTimestamp())
+                .publishedTimestamp(publishResponse.getRequest().getTimestamp())
+                .receivedTimestamp(receivedTimestamp)
+                .subscription(subscription)
+                .build();
     }
 
-    @Override
-    protected void onError(Throwable t) {
-        log.warn("Error subscribing to REST API: {}", t.getMessage());
-        String error = t.getClass().getSimpleName();
-
-        if (t instanceof WebClientResponseException) {
-            error = ((WebClientResponseException) t).getStatusCode().toString();
-        }
-
-        errors.add(error);
-    }
-
-    @Override
     protected boolean shouldRetry(Throwable t) {
         return t instanceof WebClientResponseException &&
                 ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND;
-    }
-
-    private void record(PublishResponse r) {
-        Duration latency = Duration.between(r.getRequest().getTimestamp(), Instant.now());
-        log.debug("Transaction retrieved with a latency of {}s", latency.toSeconds());
-        Timer timer = getLatencyTimer(r.getRequest().getType());
-        timer.record(latency);
-        counter.incrementAndGet();
     }
 
     private String toString(TransactionId tid) {

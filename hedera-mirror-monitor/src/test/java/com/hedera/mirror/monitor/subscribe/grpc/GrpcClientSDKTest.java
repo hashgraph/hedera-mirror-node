@@ -28,7 +28,6 @@ import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -232,7 +231,7 @@ class GrpcClientSDKTest {
                         .setNanos(START_TIME.getNano())
                         .build())
                 .setSequenceNumber(sequenceNumber)
-                .setMessage(ByteString.copyFrom(Utility.getMemo(sequenceNumber.toString()), StandardCharsets.UTF_8))
+                .setMessage(ByteString.copyFrom(Utility.generateMessage(256)))
                 .build();
     }
 

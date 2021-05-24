@@ -20,16 +20,7 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import reactor.core.publisher.Flux;
-
-import com.hedera.mirror.monitor.publish.PublishResponse;
-
-public interface MirrorSubscriber {
-
-    default void onPublish(PublishResponse response) {
-    }
-
-    Flux<SubscribeResponse> subscribe();
-
-    <T extends Subscription> Flux<T> subscriptions();
+public enum SubscriberProtocol {
+    GRPC,
+    REST
 }

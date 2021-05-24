@@ -20,10 +20,16 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-public class PublishException extends RuntimeException {
-    private static final long serialVersionUID = 1405915869165326841L;
+import lombok.Getter;
 
-    public PublishException(Throwable throwable) {
+@Getter
+public class PublishException extends RuntimeException {
+
+    private static final long serialVersionUID = 5825147561227266065L;
+    private final PublishRequest publishRequest;
+
+    public PublishException(PublishRequest publishRequest, Throwable throwable) {
         super(throwable);
+        this.publishRequest = publishRequest;
     }
 }

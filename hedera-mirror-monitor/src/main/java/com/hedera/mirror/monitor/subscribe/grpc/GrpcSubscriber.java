@@ -46,14 +46,19 @@ class GrpcSubscriber implements MirrorSubscriber {
     private final ExpressionConverter expressionConverter;
     private final GrpcClient grpcClient;
     private final SubscribeProperties subscribeProperties;
+    private final Flux<GrpcSubscription> subscriptions = Flux.defer(() -> getSubscriptions()).cache();
 
     @Override
     public Flux<SubscribeResponse> subscribe() {
-        return Flux.fromIterable(getSubscriptions())
-                .flatMap(this::clientSubscribe);
+        return subscriptions.flatMap(this::clientSubscribe);
     }
 
-    private Iterable<GrpcSubscription> getSubscriptions() {
+    @Override
+    public Flux<GrpcSubscription> subscriptions() {
+        return subscriptions;
+    }
+
+    private Flux<GrpcSubscription> getSubscriptions() {
         Collection<GrpcSubscription> subscriptions = new ArrayList<>();
 
         for (GrpcSubscriberProperties properties : subscribeProperties.getGrpc()) {
@@ -67,7 +72,7 @@ class GrpcSubscriber implements MirrorSubscriber {
             }
         }
 
-        return subscriptions;
+        return Flux.fromIterable(subscriptions);
     }
 
     private Flux<SubscribeResponse> clientSubscribe(GrpcSubscription subscription) {
@@ -78,7 +83,9 @@ class GrpcSubscriber implements MirrorSubscriber {
                 .doOnError(t -> log.error("Error subscribing {}: ", subscription, t))
                 .retryWhen(Retry.backoff(retry.getMaxAttempts(), retry.getMinBackoff())
                         .maxBackoff(retry.getMaxBackoff())
-                        .filter(this::shouldRetry))
+                        .filter(this::shouldRetry)
+                        .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
+                                r.totalRetries() + 1, r.failure().getMessage())))
                 .doOnSubscribe(s -> log.info("Starting subscriber {}: {}", subscription, subscriberProperties));
     }
 

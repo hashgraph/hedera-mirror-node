@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe;
+package com.hedera.mirror.monitor.subscribe.rest.response;
 
 /*-
  * ‌
@@ -20,9 +20,25 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.time.Instant;
+import lombok.Data;
 
-public interface Subscriber extends AutoCloseable {
+import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.mirror.monitor.converter.StringToInstantDeserializer;
 
-    void onPublish(PublishResponse response);
+@Data
+public class MirrorTransaction {
+
+    @JsonDeserialize(using = StringToInstantDeserializer.class)
+    private Instant consensusTimestamp;
+
+    private TransactionType name;
+
+    private String result;
+
+    private boolean scheduled;
+
+    @JsonDeserialize(using = StringToInstantDeserializer.class)
+    private Instant validStartTimestamp;
 }

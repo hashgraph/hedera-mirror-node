@@ -20,16 +20,21 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import reactor.core.publisher.Flux;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.Data;
 
-import com.hedera.mirror.monitor.publish.PublishResponse;
+@Data
+public class TestSubscription implements Subscription {
 
-public interface MirrorSubscriber {
-
-    default void onPublish(PublishResponse response) {
-    }
-
-    Flux<SubscribeResponse> subscribe();
-
-    <T extends Subscription> Flux<T> subscriptions();
+    private long count = 1;
+    private Duration elapsed = Duration.ofSeconds(1L);
+    private Map<String, Integer> errors = new HashMap<>();
+    private int id = 1;
+    private String name = "Test";
+    private AbstractSubscriberProperties properties;
+    private SubscriberProtocol protocol = SubscriberProtocol.GRPC;
+    private double rate = 1.0;
+    private SubscriptionStatus status = SubscriptionStatus.RUNNING;
 }

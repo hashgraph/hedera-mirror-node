@@ -20,25 +20,57 @@ package com.hedera.datagenerator.common;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Log4j2
 @UtilityClass
 public class Utility {
 
-    public static Instant getTimestamp(byte[] message) {
-        if (message == null || message.length < Long.BYTES) {
+    private static final long MILLIS_OFFSET = Duration.ofMinutes(5L).toMillis();
+
+    public static Instant getTimestamp(byte[] bytes) {
+        try {
+            if (bytes == null) {
+                return null;
+            }
+
+            String message = new String(bytes, StandardCharsets.US_ASCII);
+            String[] parts = StringUtils.split(message, ' ');
+            if (parts == null || parts.length <= 1) {
+                return null;
+            }
+
+            long now = System.currentTimeMillis();
+            Long timestamp = Long.parseLong(parts[0]);
+
+            // Discard unreasonable values
+            if (timestamp == null || timestamp < (now - MILLIS_OFFSET) || timestamp > (now + MILLIS_OFFSET)) {
+                return null;
+            }
+
+            return Instant.ofEpochMilli(timestamp);
+        } catch (Exception e) {
             return null;
         }
+    }
 
-        Long timestamp = Longs.fromByteArray(message);
-        return timestamp != null ? Instant.ofEpochMilli(timestamp) : null;
+    public static byte[] generateMessage(int messageSize) {
+        String message = System.currentTimeMillis() + " ";
+
+        if (messageSize > message.length()) {
+            message += RandomStringUtils.randomAlphabetic(messageSize - message.length());
+        }
+
+        return message.getBytes(StandardCharsets.US_ASCII);
     }
 
     public static String getMemo(String message) {
-        return System.currentTimeMillis() + "_" + message + " at " + Instant.now();
+        return System.currentTimeMillis() + " " + message;
     }
 }
