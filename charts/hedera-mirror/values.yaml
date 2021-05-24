@@ -260,21 +260,25 @@ rest:
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
 test:
-  cucumberFlags: "@acceptance"
-  enabled: false
+  enabled: true
+  config:
+    hedera:
+      mirror:
+        test:
+          acceptance:
+            existingTopicNum:
+            network: testnet
+            # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
+            operatorId:
+            operatorKey:
+            # grpc endpoint
+            mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
+            restBaseUrl: "http://{{ .Release.Name }}-rest/api/v1"
+  cucumberTags: "@acceptance"
   image:
     pullPolicy: IfNotPresent
     repository: gcr.io/mirrornode/hedera-mirror-test
     tag: ""  # Defaults to the chart's app version
-  config:
-    emitBackgroundMessages: false
-    existingTopicNum:
-    network: testnet
-    operatorId:
-    operatorKey:
-  endpoints:
-    mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
-    restBaseUrl: "http://{{ .Release.Name }}-rest/api/v1"
 
 timescaledb:
   enabled: false

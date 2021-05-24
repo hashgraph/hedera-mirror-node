@@ -86,16 +86,23 @@ $ helm upgrade --install mirror charts/hedera-mirror -f charts/hedera-mirror/cus
 ```
 
 ### Production Environments
-In non production environments, the mirror node chart uses the [Traefik subchart](https://github.com/traefik/traefik-helm-chart) to manage access to cluster services through an [Ingress](https://doc.traefik.io/traefik/providers/kubernetes-ingress/) and to route traffic through [Load Balancing](https://doc.traefik.io/traefik/routing/overview/).
-The implemented configuration uses a [default self-signed certificate](https://doc.traefik.io/traefik/https/tls/#default-certificate) to secure traffic over the TLS protocol.
 
-In production it is advised to use a CA signed certificate and an external load balancer to allow for more secure and intricate load balancing needs.
-The following diagram illustrates a high level overview of the resources utilized in the recommended traffic flow.
+In non production environments, the mirror node chart uses
+the [Traefik subchart](https://github.com/traefik/traefik-helm-chart) to manage access to cluster services through
+an [Ingress](https://doc.traefik.io/traefik/providers/kubernetes-ingress/) and to route traffic
+through [Load Balancing](https://doc.traefik.io/traefik/routing/overview/). The implemented configuration uses
+a [default self-signed certificate](https://doc.traefik.io/traefik/https/tls/#default-certificate) to secure traffic
+over the TLS protocol.
+
+In production it is advised to use a CA signed certificate and an external load balancer to allow for more secure and
+intricate load balancing needs. The following diagram illustrates a high level overview of the resources utilized in the
+recommended traffic flow.
 ![Kubernetes deployed Hedera Mirror Node Resource Traffic Flow](images/mirror_traffic_resource_architecture.png)
 
 #### GCP
-When deploying in GCP, the following steps may be taken to use container-native load balancer through a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg).
 
+When deploying in GCP, the following steps may be taken to use container-native load balancer through
+a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg).
 
 1. Create a Kubernetes cluster utilizing a custom subnet.
 
@@ -112,8 +119,8 @@ When deploying in GCP, the following steps may be taken to use container-native 
 
 2. Configure the Traefik Subchart to use the external load balancer.
 
-   The following default production setup configures the Standalone NEG.
-   It exposes 2 ports (80 and 443) for http and TLS based traffic.
+   The following default production setup configures the Standalone NEG. It exposes 2 ports (80 and 443) for http and
+   TLS based traffic.
 
    Apply this config to your local values file (i.e. `custom.yaml`) for use in helm deployment.
    ```yaml
@@ -129,22 +136,46 @@ When deploying in GCP, the following steps may be taken to use container-native 
               }'
    ```
 
-    > **_Note:_** Ensure the NEG names are cluster unique to support shared NEGs across separate globally distributed clusters
+   > **_Note:_** Ensure the NEG names are cluster unique to support shared NEGs across separate globally distributed clusters
 
-   The annotation will ensure that a NEG is created for each name specified, with the endpoints pointing to the Traefik pod IPs in your cluster on the configured port.
-   These ports should match the ports exposed by Traefik in the common chart `.Values.traefik.ports`.
+   The annotation will ensure that a NEG is created for each name specified, with the endpoints pointing to the Traefik
+   pod IPs in your cluster on the configured port. These ports should match the ports exposed by Traefik in the common
+   chart `.Values.traefik.ports`.
 
-3. Create a [Google Managed Certificate](https://cloud.google.com/load-balancing/docs/ssl-certificates/google-managed-certs) for use by the Load Balancer
+3. Create
+   a [Google Managed Certificate](https://cloud.google.com/load-balancing/docs/ssl-certificates/google-managed-certs)
+   for use by the Load Balancer
 
-4. Create an [External HTTPS load balancer](https://cloud.google.com/load-balancing/docs/https/ext-https-lb-simple) and create a Backend Service(s) that utilizes the automatically created NEGs pointing to the traffic pods.
+4. Create an [External HTTPS load balancer](https://cloud.google.com/load-balancing/docs/https/ext-https-lb-simple) and
+   create a Backend Service(s) that utilizes the automatically created NEGs pointing to the traffic pods.
 
 ## Testing
 
 To verify the chart installation is successful, you can run the helm tests. These tests are not automatically executed
-by helm on install/upgrade, they have to be executed manually:
+by helm on install/upgrade, they have to be executed manually. The tests require the `existingTopicNum`,  `operatorId`,
+and `operatorKey` be set in a local values file in order to execute, as well as `network` if using an environment other
+than testnet, and `nodes` if using a custom environment.
+
+To configure:
+
+```yaml
+test:
+  config:
+    hedera:
+      mirror:
+        test:
+          acceptance:
+            existingTopicNum:
+            network:
+            # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
+            operatorId:
+            operatorKey:
+```
+
+To execute:
 
 ```shell script
-helm test "${RELEASE}"
+helm test "${RELEASE} " --timeout 10m
 ```
 
 ## Using
