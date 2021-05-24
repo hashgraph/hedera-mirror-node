@@ -39,12 +39,16 @@ import com.hedera.mirror.importer.util.Utility;
 public class Entity {
     public static final String TEMP_TABLE = "entity_temp";
     public static final String TempToMainUpdateSql = "insert into entity select auto_renew_account_id, " +
-            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, " +
-            "coalesce(memo, '') as memo, modified_timestamp, num, public_key, proxy_account_id, realm," +
+            "auto_renew_period, created_timestamp, coalesce(deleted, false) as deleted, expiration_timestamp, id, " +
+            "key, coalesce(memo, '') as memo, modified_timestamp, num, public_key, proxy_account_id, realm," +
             "shard, submit_key, type from " + TEMP_TABLE + " on conflict (id) do update set " +
-            "auto_renew_period = excluded.auto_renew_period, deleted = excluded.deleted, " +
-            "expiration_timestamp = excluded.expiration_timestamp, key = excluded.key, " +
-            "memo = coalesce(excluded.memo, ''), public_key = excluded.public_key, submit_key = excluded.submit_key";
+            "auto_renew_period = coalesce(excluded.auto_renew_period, entity.auto_renew_period), " +
+            "deleted = coalesce(excluded.deleted, entity.deleted), " +
+            "expiration_timestamp = coalesce(excluded.expiration_timestamp, entity.expiration_timestamp), " +
+            "key = coalesce(excluded.key, entity.key), " +
+            "memo = coalesce(excluded.memo, entity.memo), " +
+            "public_key = coalesce(excluded.public_key, entity.public_key), " +
+            "submit_key = coalesce(excluded.submit_key, entity.submit_key)";
 
     @Id
     private Long id;
@@ -57,7 +61,7 @@ public class Entity {
 
     private Long createdTimestamp;
 
-    private boolean deleted;
+    private Boolean deleted;
 
     private Long expirationTimestamp;
 

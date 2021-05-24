@@ -366,7 +366,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void updateCachedEntity(Entity newEntity) {
         Entity cachedEntity = entities.get(newEntity.getId());
         cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
-        cachedEntity.setDeleted(newEntity.isDeleted());
+        cachedEntity.setDeleted(newEntity.getDeleted());
         cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
         cachedEntity.setKey(newEntity.getKey());
         cachedEntity.setMemo(newEntity.getMemo());
@@ -388,7 +388,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void updateCachedTokenAccount(TokenAccount newTokenAccount) {
         TokenAccount cachedTokenAccount = tokenAccounts.get(newTokenAccount.getId());
-        cachedTokenAccount.setAssociated(newTokenAccount.isAssociated());
+        cachedTokenAccount.setAssociated(newTokenAccount.getAssociated());
         cachedTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
         cachedTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
         cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());

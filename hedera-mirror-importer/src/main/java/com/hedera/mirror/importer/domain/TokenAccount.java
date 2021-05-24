@@ -42,11 +42,13 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class TokenAccount {
     public static final String TEMP_TABLE = "token_account_temp";
-    public static final String TempToMainUpdateSql = "insert into token_account select account_id, associated, " +
+    public static final String TempToMainUpdateSql = "insert into token_account select account_id, " +
+            "coalesce(associated, true) as associated, " +
             "created_timestamp, coalesce(freeze_status, getNewAccountFreezeStatus(token_id)) as " +
             "freeze_status, coalesce(kyc_status, getNewAccountKycStatus(token_id)) as kyc_status, " +
             "modified_timestamp, token_id from " + TEMP_TABLE + " on " +
-            "conflict(token_id, account_id) do update set modified_timestamp = excluded.modified_timestamp," +
+            "conflict(token_id, account_id) do update set " +
+            "modified_timestamp = excluded.modified_timestamp," +
             "associated = coalesce(excluded.associated, token_account.associated), " +
             "freeze_status = coalesce(excluded.freeze_status, token_account.freeze_status)," +
             "kyc_status = coalesce(excluded.kyc_status, token_account.kyc_status)";
@@ -55,7 +57,7 @@ public class TokenAccount {
     @JsonUnwrapped
     private TokenAccount.Id id;
 
-    private boolean associated;
+    private Boolean associated;
 
     private long createdTimestamp;
 

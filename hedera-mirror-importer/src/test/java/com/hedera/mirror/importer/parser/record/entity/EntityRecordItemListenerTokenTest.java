@@ -593,7 +593,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
             assertThat(tokenAccountOptional.get())
                     .returns(createdTimestamp, from(TokenAccount::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(TokenAccount::getModifiedTimestamp))
-                    .returns(associated, from(TokenAccount::isAssociated))
+                    .returns(associated, from(TokenAccount::getAssociated))
                     .returns(frozenStatus, from(TokenAccount::getFreezeStatus))
                     .returns(kycStatus, from(TokenAccount::getKycStatus));
         } else {

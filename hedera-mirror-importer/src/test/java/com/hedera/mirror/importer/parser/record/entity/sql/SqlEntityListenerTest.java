@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -93,6 +94,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
+    private final TransactionTemplate transactionTemplate;
 
     private final String fileName = "2019-08-30T18_10_00.419072Z.rcd";
     private RecordFile recordFile;
@@ -246,7 +248,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    @Transactional
     void onEntityIdDuplicates() throws Exception {
         // given
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
@@ -259,7 +260,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         RecordFile recordFile2 = recordFile(2L, UUID.randomUUID().toString(), null, 1L, null);
         sqlEntityListener.onStart();
         sqlEntityListener.onEntityId(entityId); // duplicate across files
-        sqlEntityListener.onEnd(clone(recordFile2));
+        completeFileAndCommit(recordFile2);
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile, recordFile2);
@@ -391,7 +392,11 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private void completeFileAndCommit() {
-        sqlEntityListener.onEnd(clone(recordFile));
+        transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(clone(recordFile)));
+    }
+
+    private void completeFileAndCommit(RecordFile recordFileToParse) {
+        transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(clone(recordFileToParse)));
     }
 
     private RecordFile recordFile(long consensusStart, String filename, String fileHash, long index, String prevHash) {

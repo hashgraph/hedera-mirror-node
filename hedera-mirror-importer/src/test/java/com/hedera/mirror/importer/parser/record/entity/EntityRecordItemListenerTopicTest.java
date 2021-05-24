@@ -106,7 +106,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .returns("".getBytes(), from(Entity::getKey))
                 .returns("".getBytes(), from(Entity::getSubmitKey))
                 .returns("", from(Entity::getMemo))
-                .returns(false, from(Entity::isDeleted))
+                .returns(false, from(Entity::getDeleted))
                 .returns(EntityTypeEnum.TOPIC.getId(), from(Entity::getType));
     }
 
@@ -128,7 +128,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 .returns("".getBytes(), from(Entity::getKey))
                 .returns("".getBytes(), from(Entity::getSubmitKey))
                 .returns("", from(Entity::getMemo))
-                .returns(false, from(Entity::isDeleted))
+                .returns(false, from(Entity::getDeleted))
                 .returns(EntityTypeEnum.TOPIC.getId(), from(Entity::getType))
                 .returns(autoRenewAccountId, e -> e.getAutoRenewAccountId().getId());
     }
