@@ -26,24 +26,31 @@ import (
 
 // Operation is domain level struct used to represent Operation within Transaction
 type Operation struct {
-	Index   int64
-	Type    string
-	Status  string
-	Account *Account
-	Amount  *Amount
+	Index    int64
+	Type     string
+	Status   string
+	Account  *Account
+	Amount   Amount
+	Metadata map[string]interface{}
 }
 
 // ToRosetta returns Rosetta type Operation from the current domain type Operation
-func (t *Operation) ToRosetta() *rTypes.Operation {
+func (o *Operation) ToRosetta() *rTypes.Operation {
+	var amount *rTypes.Amount
+	if o.Amount != nil {
+		amount = o.Amount.ToRosetta()
+	}
+
 	rOperation := rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{
-			Index: t.Index,
+			Index: o.Index,
 		},
 		RelatedOperations: []*rTypes.OperationIdentifier{},
-		Type:              t.Type,
-		Status:            &t.Status,
-		Account:           t.Account.ToRosetta(),
-		Amount:            t.Amount.ToRosetta(),
+		Type:              o.Type,
+		Status:            &o.Status,
+		Account:           o.Account.ToRosetta(),
+		Amount:            amount,
+		Metadata:          o.Metadata,
 	}
 	return &rOperation
 }

@@ -53,7 +53,7 @@ var (
 	//
 	invalidTypeTransaction = "0x0a332a310a2d0a140a0c08a6e4cb840610f6a3aeef0112041882810c12021805188084af5f22020878c20107320508d0c8e1031200"
 	corruptedTransaction   = "0x6767"
-	publicKey              = "eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba77" // without ed25519PubKeyPrefix
+	publicKeyStr           = "eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba77" // without ed25519PubKeyPrefix
 )
 
 func dummyConstructionCombineRequest() *types.ConstructionCombineRequest {
@@ -64,7 +64,7 @@ func dummyConstructionCombineRequest() *types.ConstructionCombineRequest {
 	return dummyConstructionCombineRequestWith(
 		unsignedTransaction,
 		signingPayloadBytes,
-		publicKey,
+		publicKeyStr,
 		signatureBytes,
 	)
 }
@@ -246,7 +246,7 @@ func TestNewConstructionAPIService(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := NewConstructionAPIService(tt.network, tt.nodes)
+			actual, err := NewConstructionAPIService(tt.network, tt.nodes, nil)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -271,7 +271,7 @@ func TestConstructionCombine(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, dummyConstructionCombineRequest())
 
 	// then:
@@ -287,7 +287,7 @@ func TestConstructionCombineThrowsWithMultipleSignatures(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleConstructionCombineRequest)
 
 	// then:
@@ -301,7 +301,7 @@ func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
 	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = invalidTransaction
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
@@ -315,7 +315,7 @@ func TestConstructionCombineThrowsWhenUnmarshallFails(t *testing.T) {
 	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = corruptedTransaction
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
@@ -329,7 +329,7 @@ func TestConstructionCombineThrowsWithInvalidPublicKey(t *testing.T) {
 	exampleInvalidPublicKeyConstructionCombineRequest.Signatures[0].PublicKey = &types.PublicKey{}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleInvalidPublicKeyConstructionCombineRequest)
 
 	// then:
@@ -343,7 +343,7 @@ func TestConstructionCombineThrowsWhenSignatureIsNotVerified(t *testing.T) {
 	exampleInvalidSigningPayloadConstructionCombineRequest.Signatures[0].Bytes = []byte("bad signature")
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleInvalidSigningPayloadConstructionCombineRequest)
 
 	// then:
@@ -357,7 +357,7 @@ func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
 	exampleInvalidTransactionTypeConstructionCombineRequest.UnsignedTransaction = invalidTypeTransaction
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleInvalidTransactionTypeConstructionCombineRequest)
 
 	// then:
@@ -367,7 +367,7 @@ func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
 
 func TestConstructionDerive(t *testing.T) {
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionDerive(nil, nil)
 
 	// then:
@@ -384,7 +384,7 @@ func TestConstructionHash(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionHash(nil, exampleConstructionHashRequest)
 
 	// then:
@@ -397,7 +397,7 @@ func TestConstructionHashThrowsWhenDecodeStringFails(t *testing.T) {
 	exampleConstructionHashRequest := dummyConstructionHashRequest(invalidTransaction)
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionHash(nil, exampleConstructionHashRequest)
 
 	// then:
@@ -412,7 +412,7 @@ func TestConstructionMetadata(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionMetadata(nil, nil)
 
 	// then:
@@ -431,7 +431,7 @@ func TestConstructionParse(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionParse(nil, exampleConstructionParseRequest)
 
 	// then:
@@ -455,7 +455,7 @@ func TestConstructionParseSigned(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionParse(nil, exampleConstructionParseRequest)
 
 	// then:
@@ -465,7 +465,7 @@ func TestConstructionParseSigned(t *testing.T) {
 
 func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionParse(nil, dummyConstructionParseRequest(invalidTransaction, false))
 
 	// then:
@@ -475,7 +475,7 @@ func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 
 func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionParse(nil, dummyConstructionParseRequest(corruptedTransaction, false))
 
 	// then:
@@ -504,7 +504,7 @@ func TestConstructionPayloads(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
@@ -525,7 +525,7 @@ func TestConstructionPayloadsThrowsWithInvalidOperationsSum(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
@@ -538,7 +538,7 @@ func TestConstructionPayloadsThrowsWithEmptyOperations(t *testing.T) {
 	operations := []*types.Operation{}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
@@ -553,7 +553,7 @@ func TestConstructionPayloadsThrowsWithInvalidOperationAmounts(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
@@ -569,7 +569,7 @@ func TestConstructionPayloadsThrowsWhenInvalidAccount(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
 
 	// then:
@@ -585,7 +585,7 @@ func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionSubmit(nil, exampleConstructionSubmitRequest)
 
 	// then:
@@ -603,7 +603,7 @@ func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionSubmit(nil, exampleConstructionSubmitRequest)
 
 	// then:
@@ -623,7 +623,7 @@ func TestConstructionPreprocess(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(true))
 
 	// then:
@@ -633,7 +633,7 @@ func TestConstructionPreprocess(t *testing.T) {
 
 func TestConstructionPreprocessThrowsWithInvalidOperationsSum(t *testing.T) {
 	// when:
-	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes)
+	service, _ := NewConstructionAPIService(DefaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(false))
 
 	// then:

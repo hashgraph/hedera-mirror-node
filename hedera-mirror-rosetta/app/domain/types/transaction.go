@@ -28,6 +28,8 @@ import (
 type Transaction struct {
 	Hash       string
 	Operations []*Operation
+	Status     string
+	Type       string
 }
 
 // ToRosetta returns Rosetta type Transaction from the current domain type Transaction

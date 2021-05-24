@@ -21,20 +21,18 @@
 package network
 
 import (
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/suite"
 )
-
-func getSubject() server.NetworkAPIServicer {
-	baseService := base.NewBaseService(repository.MBlockRepository, repository.MTransactionRepository)
-	return networkAPIService(baseService)
-}
 
 func dummyGenesisBlock() *types.Block {
 	return &types.Block{
@@ -58,10 +56,10 @@ func dummyLatestBlock() *types.Block {
 	}
 }
 
-func networkAPIService(base base.BaseService) server.NetworkAPIServicer {
+func networkAPIService(abr repositories.AddressBookEntryRepository, base base.BaseService) server.NetworkAPIServicer {
 	return NewNetworkAPIService(
 		base,
-		repository.MAddressBookEntryRepository,
+		abr,
 		&rTypes.NetworkIdentifier{
 			Blockchain: "SomeBlockchain",
 			Network:    "SomeNetwork",
@@ -79,12 +77,28 @@ func networkAPIService(base base.BaseService) server.NetworkAPIServicer {
 	)
 }
 
-func TestNewNetworkAPIService(t *testing.T) {
-	repository.Setup()
-	assert.IsType(t, &NetworkAPIService{}, getSubject())
+func TestNetworkServiceSuite(t *testing.T) {
+	suite.Run(t, new(networkServiceSuite))
 }
 
-func TestNetworkList(t *testing.T) {
+type networkServiceSuite struct {
+	suite.Suite
+	mockAddressBookEntryRepo *repository.MockAddressBookEntryRepository
+	mockBlockRepo            *repository.MockBlockRepository
+	mockTransactionRepo      *repository.MockTransactionRepository
+	networkService           server.NetworkAPIServicer
+}
+
+func (suite *networkServiceSuite) BeforeTest(suiteName string, testName string) {
+	suite.mockAddressBookEntryRepo = &repository.MockAddressBookEntryRepository{}
+	suite.mockBlockRepo = &repository.MockBlockRepository{}
+	suite.mockTransactionRepo = &repository.MockTransactionRepository{}
+
+	baseService := base.NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	suite.networkService = networkAPIService(suite.mockAddressBookEntryRepo, baseService)
+}
+
+func (suite *networkServiceSuite) TestNetworkList() {
 	// given:
 	expectedResult := &rTypes.NetworkListResponse{
 		NetworkIdentifiers: []*rTypes.NetworkIdentifier{
@@ -99,17 +113,15 @@ func TestNetworkList(t *testing.T) {
 		},
 	}
 
-	repository.Setup()
-
 	// when:
-	res, e := getSubject().NetworkList(nil, nil)
+	res, e := suite.networkService.NetworkList(nil, nil)
 
 	// then:
-	assert.Equal(t, expectedResult, res)
-	assert.Nil(t, e)
+	assert.Equal(suite.T(), expectedResult, res)
+	assert.Nil(suite.T(), e)
 }
 
-func TestNetworkOptions(t *testing.T) {
+func (suite *networkServiceSuite) TestNetworkOptions() {
 	// given:
 	expectedErrors := []*rTypes.Error{
 		errors.ErrAccountNotFound,
@@ -169,51 +181,48 @@ func TestNetworkOptions(t *testing.T) {
 		},
 	}
 
-	repository.Setup()
-	repository.MTransactionRepository.
+	suite.mockTransactionRepo.
 		On("Results").
 		Return(map[int]string{1: "Pending", 22: "Success"}, repository.NilError)
-	repository.MTransactionRepository.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
+	suite.mockTransactionRepo.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
 
 	// when:
-	res, e := getSubject().NetworkOptions(nil, nil)
+	res, e := suite.networkService.NetworkOptions(nil, nil)
 
 	// then:
-	assert.Equal(t, expectedResult.Version, res.Version)
-	assert.Equal(t, expectedResult.Allow.HistoricalBalanceLookup, res.Allow.HistoricalBalanceLookup)
-	assert.ElementsMatch(t, expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
-	assert.ElementsMatch(t, expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
-	assert.ElementsMatch(t, expectedResult.Allow.Errors, res.Allow.Errors)
-	assert.Nil(t, e)
+	assert.Equal(suite.T(), expectedResult.Version, res.Version)
+	assert.Equal(suite.T(), expectedResult.Allow.HistoricalBalanceLookup, res.Allow.HistoricalBalanceLookup)
+	assert.ElementsMatch(suite.T(), expectedResult.Allow.OperationStatuses, res.Allow.OperationStatuses)
+	assert.ElementsMatch(suite.T(), expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
+	assert.ElementsMatch(suite.T(), expectedResult.Allow.Errors, res.Allow.Errors)
+	assert.Nil(suite.T(), e)
 }
 
-func TestNetworkOptionsThrowsWhenStatusesFails(t *testing.T) {
+func (suite *networkServiceSuite) TestNetworkOptionsThrowsWhenStatusesFails() {
 	var nilStatuses map[int]string = nil
-	repository.Setup()
-	repository.MTransactionRepository.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
-	repository.MTransactionRepository.On("Results").Return(nilStatuses, &rTypes.Error{})
+	suite.mockTransactionRepo.On("TypesAsArray").Return([]string{"Transfer"}, repository.NilError)
+	suite.mockTransactionRepo.On("Results").Return(nilStatuses, &rTypes.Error{})
 
 	// when:
-	res, e := getSubject().NetworkOptions(nil, nil)
+	res, e := suite.networkService.NetworkOptions(nil, nil)
 
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestNetworkOptionsThrowsWhenTypesAsArrayFails(t *testing.T) {
+func (suite *networkServiceSuite) TestNetworkOptionsThrowsWhenTypesAsArrayFails() {
 	var NilTypesAsArray []string = nil
-	repository.Setup()
-	repository.MTransactionRepository.On("TypesAsArray").Return(NilTypesAsArray, &rTypes.Error{})
+	suite.mockTransactionRepo.On("TypesAsArray").Return(NilTypesAsArray, &rTypes.Error{})
 
 	// when:
-	res, e := getSubject().NetworkOptions(nil, nil)
+	res, e := suite.networkService.NetworkOptions(nil, nil)
 
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
-	repository.MTransactionRepository.AssertNotCalled(t, "Results")
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
+	suite.mockTransactionRepo.AssertNotCalled(suite.T(), "Results")
 }
 
-func TestNetworkStatus(t *testing.T) {
+func (suite *networkServiceSuite) TestNetworkStatus() {
 	// given:
 	exampleEntries := &types.AddressBookEntries{Entries: []*types.AddressBookEntry{}}
 
@@ -230,57 +239,53 @@ func TestNetworkStatus(t *testing.T) {
 		Peers: []*rTypes.Peer{},
 	}
 
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	repository.MBlockRepository.On("RetrieveLatest").Return(dummyLatestBlock(), repository.NilError)
-	repository.MAddressBookEntryRepository.On("Entries").Return(exampleEntries, repository.NilError)
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveLatest").Return(dummyLatestBlock(), repository.NilError)
+	suite.mockAddressBookEntryRepo.On("Entries").Return(exampleEntries, repository.NilError)
 
 	// when:
-	res, e := getSubject().NetworkStatus(nil, nil)
+	res, e := suite.networkService.NetworkStatus(nil, nil)
 
 	// then:
-	assert.Equal(t, expectedResult, res)
-	assert.Nil(t, e)
+	assert.Equal(suite.T(), expectedResult, res)
+	assert.Nil(suite.T(), e)
 }
 
-func TestNetworkStatusThrowsWhenRetrieveGenesisFails(t *testing.T) {
+func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveGenesisFails() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveGenesis").Return(repository.NilBlock, &rTypes.Error{})
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(repository.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := getSubject().NetworkStatus(nil, nil)
+	res, e := suite.networkService.NetworkStatus(nil, nil)
 
 	// then
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestNetworkStatusThrowsWhenRetrieveLatestFails(t *testing.T) {
+func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveLatestFails() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	repository.MBlockRepository.On("RetrieveLatest").Return(repository.NilBlock, &rTypes.Error{})
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveLatest").Return(repository.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := getSubject().NetworkStatus(nil, nil)
+	res, e := suite.networkService.NetworkStatus(nil, nil)
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestNetworkStatusThrowsWhenEntriesFail(t *testing.T) {
+func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenEntriesFail() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	repository.MBlockRepository.On("RetrieveLatest").Return(dummyLatestBlock(), repository.NilError)
-	repository.MAddressBookEntryRepository.On("Entries").Return(repository.NilEntries, &rTypes.Error{})
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveLatest").Return(dummyLatestBlock(), repository.NilError)
+	suite.mockAddressBookEntryRepo.On("Entries").Return(repository.NilEntries, &rTypes.Error{})
 
 	// when:
-	res, e := getSubject().NetworkStatus(nil, nil)
+	res, e := suite.networkService.NetworkStatus(nil, nil)
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }

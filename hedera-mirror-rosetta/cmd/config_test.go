@@ -35,7 +35,7 @@ func TestLoadDefaultConfig(t *testing.T) {
 	os.Chdir("../")
 	defer os.Chdir(wd)
 
-	config, err := LoadConfig()
+	config, err := loadConfig()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config)

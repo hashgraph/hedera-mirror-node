@@ -22,6 +22,7 @@ package entry
 
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	log "github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ const (
 )
 
 type addressBookEntry struct {
-	Id                 int32  `gorm:"type:integer;primary_key"`
+	Id                 int32  `gorm:"type:integer;primaryKey"`
 	ConsensusTimestamp int64  `gorm:"type:bigint"`
 	Ip                 string `gorm:"size:128"`
 	Port               int32  `gorm:"type:integer"`
@@ -55,13 +56,13 @@ func (addressBookEntry) TableName() string {
 	return tableNameAddressBookEntry
 }
 
-// AddressBookEntryRepository struct that has connection to the Database
-type AddressBookEntryRepository struct {
+// addressBookEntryRepository struct that has connection to the Database
+type addressBookEntryRepository struct {
 	dbClient *gorm.DB
 }
 
 // Entries return all found Address Book Entries
-func (aber *AddressBookEntryRepository) Entries() (*types.AddressBookEntries, *rTypes.Error) {
+func (aber *addressBookEntryRepository) Entries() (*types.AddressBookEntries, *rTypes.Error) {
 	dbEntries := aber.retrieveEntries()
 
 	entries := make([]*types.AddressBookEntry, len(dbEntries))
@@ -92,15 +93,15 @@ func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
 	return acc, nil
 }
 
-func (aber *AddressBookEntryRepository) retrieveEntries() []addressBookEntry {
+func (aber *addressBookEntryRepository) retrieveEntries() []addressBookEntry {
 	var entries []addressBookEntry
 	aber.dbClient.Raw(latestAddressBookEntries).Scan(&entries)
 	return entries
 }
 
-// NewAddressBookEntryRepository creates an instance of a AddressBookEntryRepository struct.
-func NewAddressBookEntryRepository(dbClient *gorm.DB) *AddressBookEntryRepository {
-	return &AddressBookEntryRepository{
+// NewAddressBookEntryRepository creates an instance of a addressBookEntryRepository struct.
+func NewAddressBookEntryRepository(dbClient *gorm.DB) repositories.AddressBookEntryRepository {
+	return &addressBookEntryRepository{
 		dbClient: dbClient,
 	}
 }

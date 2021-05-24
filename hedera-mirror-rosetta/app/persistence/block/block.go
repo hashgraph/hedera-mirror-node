@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	log "github.com/sirupsen/logrus"
@@ -128,21 +129,21 @@ func (rf *recordFile) ToBlock(genesisIndex int64) *types.Block {
 	}
 }
 
-// BlockRepository struct that has connection to the Database
-type BlockRepository struct {
+// blockRepository struct that has connection to the Database
+type blockRepository struct {
 	once                   sync.Once
 	dbClient               *gorm.DB
 	genesisRecordFile      *recordFile
 	genesisRecordFileIndex int64
 }
 
-// NewBlockRepository creates an instance of a BlockRepository struct
-func NewBlockRepository(dbClient *gorm.DB) *BlockRepository {
-	return &BlockRepository{dbClient: dbClient}
+// NewBlockRepository creates an instance of a blockRepository struct
+func NewBlockRepository(dbClient *gorm.DB) repositories.BlockRepository {
+	return &blockRepository{dbClient: dbClient}
 }
 
 // FindByIndex retrieves a block by given Index
-func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
 	if index < 0 {
 		return nil, hErrors.ErrInvalidArgument
 	}
@@ -163,7 +164,7 @@ func (br *BlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error
 }
 
 // FindByHash retrieves a block by a given Hash
-func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
 	if hash == "" {
 		return nil, hErrors.ErrInvalidArgument
 	}
@@ -176,7 +177,7 @@ func (br *BlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error)
 }
 
 // FindByIdentifier retrieves a block by Index && Hash
-func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
 	if index < 0 || hash == "" {
 		return nil, hErrors.ErrInvalidArgument
 	}
@@ -198,7 +199,7 @@ func (br *BlockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 }
 
 // RetrieveGenesis retrieves the genesis block
-func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
+func (br *blockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 	if _, err := br.getGenesisRecordFile(); err != nil {
 		return nil, err
 	}
@@ -207,7 +208,7 @@ func (br *BlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 }
 
 // RetrieveLatest retrieves the latest block
-func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
+func (br *blockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 	if _, err := br.getGenesisRecordFile(); err != nil {
 		return nil, err
 	}
@@ -220,7 +221,7 @@ func (br *BlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
 }
 
-func (br *BlockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.Error) {
 	rf := &recordFile{}
 	if hash == br.genesisRecordFile.Hash {
 		rf = br.genesisRecordFile
@@ -231,7 +232,7 @@ func (br *BlockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.E
 	return rf.ToBlock(br.genesisRecordFileIndex), nil
 }
 
-func (br *BlockRepository) getGenesisRecordFile() (*recordFile, *rTypes.Error) {
+func (br *blockRepository) getGenesisRecordFile() (*recordFile, *rTypes.Error) {
 	if br.genesisRecordFile != nil {
 		return br.genesisRecordFile, nil
 	}

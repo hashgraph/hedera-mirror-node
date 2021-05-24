@@ -30,7 +30,7 @@ import (
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/common"
+	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	hexutils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 	"github.com/stretchr/testify/assert"
@@ -50,8 +50,8 @@ var (
 	transactionColumns       = mocks.GetFieldsNamesToSnakeCase(transaction{})
 	transactionTypeColumns   = mocks.GetFieldsNamesToSnakeCase(transactionType{})
 	transactionResultColumns = mocks.GetFieldsNamesToSnakeCase(transactionResult{})
-	cryptoTransferColumns    = mocks.GetFieldsNamesToSnakeCase(common.CryptoTransfer{})
-	nonFeeTransferColumns    = mocks.GetFieldsNamesToSnakeCase(common.NonFeeTransfer{})
+	cryptoTransferColumns    = mocks.GetFieldsNamesToSnakeCase(dbTypes.CryptoTransfer{})
+	nonFeeTransferColumns    = mocks.GetFieldsNamesToSnakeCase(dbTypes.CryptoTransfer{})
 	consensusTimestamp       = int64(1)
 	dbTransactions           = []transaction{
 		{
@@ -73,13 +73,13 @@ var (
 		1: dbTransactions[0],
 		2: dbTransactions[1],
 	}
-	dbCryptoTransfers = []common.CryptoTransfer{
+	dbCryptoTransfers = []dbTypes.CryptoTransfer{
 		{EntityID: firstAccount.EntityNum, ConsensusTimestamp: 1, Amount: -30},
 		{EntityID: secondAccount.EntityNum, ConsensusTimestamp: 2, Amount: -40},
 		{EntityID: nodeAccount.EntityNum, ConsensusTimestamp: 1, Amount: 5},
 		{EntityID: nodeAccount.EntityNum, ConsensusTimestamp: 2, Amount: 5},
 	}
-	dbNonFeeTransfers = []common.NonFeeTransfer{
+	dbNonFeeTransfers = []dbTypes.CryptoTransfer{
 		{EntityID: firstAccount.EntityNum, ConsensusTimestamp: 1, Amount: -25},
 		{EntityID: secondAccount.EntityNum, ConsensusTimestamp: 2, Amount: -35},
 	}
@@ -107,37 +107,37 @@ var (
 			Type:    "CRYPTOTRANSFER",
 			Status:  resultSuccess,
 			Account: firstAccount,
-			Amount:  &types.Amount{Value: -25},
+			Amount:  &types.HbarAmount{Value: -25},
 		},
 		{
 			Type:    "CRYPTOTRANSFER",
 			Status:  resultSuccess,
 			Account: firstAccount,
-			Amount:  &types.Amount{Value: -5},
+			Amount:  &types.HbarAmount{Value: -5},
 		},
 		{
 			Type:    "CRYPTOTRANSFER",
 			Status:  resultSuccess,
 			Account: nodeAccount,
-			Amount:  &types.Amount{Value: 5},
+			Amount:  &types.HbarAmount{Value: 5},
 		},
 		{
 			Type:    "CRYPTODELETE",
 			Status:  resultSuccess,
 			Account: secondAccount,
-			Amount:  &types.Amount{Value: -35},
+			Amount:  &types.HbarAmount{Value: -35},
 		},
 		{
 			Type:    "CRYPTODELETE",
 			Status:  resultSuccess,
 			Account: secondAccount,
-			Amount:  &types.Amount{Value: -5},
+			Amount:  &types.HbarAmount{Value: -5},
 		},
 		{
 			Type:    "CRYPTODELETE",
 			Status:  resultSuccess,
 			Account: nodeAccount,
-			Amount:  &types.Amount{Value: 5},
+			Amount:  &types.HbarAmount{Value: 5},
 		},
 	}
 	tRepoResults = map[int]string{
@@ -151,6 +151,49 @@ var (
 	}
 	tRepoTypesAsArray = []string{"CRYPTODELETE", "CRYPTOTRANSFER"}
 )
+
+func TestTransactionHasTokenOperation(t *testing.T) {
+	var tests = []struct{
+		name string
+		txType int
+		expected bool
+	}{
+		{
+			name: "TokenCreation",
+			txType: 29,
+			expected: true,
+		},
+		{
+			name: "TokenDeletion",
+			txType: 35,
+			expected: true,
+		},
+		{
+			name: "TokenUpdate",
+			txType: 36,
+			expected: true,
+		},
+		{
+			name: "TokenAssociate",
+			txType: 40,
+		},
+		{
+			name: "CryptoTransfer",
+			txType: 14,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, transaction{Type: tt.txType}.hasTokenOperation())
+		})
+	}
+}
+
+func TestTransactionGetHashString(t *testing.T) {
+	tx := transaction{TransactionHash: []byte{1, 2, 3, 0xaa, 0xff}}
+	assert.Equal(t, "0x010203aaff", tx.getHashString())
+}
 
 func TestShouldSuccessFindBetween(t *testing.T) {
 	// given
@@ -350,8 +393,8 @@ func TestShouldSuccessConstructTransaction(t *testing.T) {
 func TestShouldSuccessConstructionOperations(t *testing.T) {
 	var tests = []struct {
 		name            string
-		cryptoTransfers []common.CryptoTransfer
-		nonFeeTransfers []common.NonFeeTransfer
+		cryptoTransfers []dbTypes.CryptoTransfer
+		nonFeeTransfers []dbTypes.CryptoTransfer
 		transactions    map[int64]transaction
 		expected        []*types.Operation
 	}{
@@ -364,7 +407,7 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 		},
 		{
 			name: "SingleTransaction",
-			cryptoTransfers: []common.CryptoTransfer{
+			cryptoTransfers: []dbTypes.CryptoTransfer{
 				{
 					EntityID:           firstAccount.EntityNum,
 					ConsensusTimestamp: 100,
@@ -386,7 +429,7 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Amount:             140,
 				},
 			},
-			nonFeeTransfers: []common.NonFeeTransfer{
+			nonFeeTransfers: []dbTypes.CryptoTransfer{
 				{
 					EntityID:           firstAccount.EntityNum,
 					ConsensusTimestamp: 100,
@@ -416,37 +459,37 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -140},
+					Amount:  &types.HbarAmount{Value: -140},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: secondAccount,
-					Amount:  &types.Amount{Value: 140},
+					Amount:  &types.HbarAmount{Value: 140},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -18},
+					Amount:  &types.HbarAmount{Value: -18},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: nodeAccount,
-					Amount:  &types.Amount{Value: 10},
+					Amount:  &types.HbarAmount{Value: 10},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: treasuryAccount,
-					Amount:  &types.Amount{Value: 8},
+					Amount:  &types.HbarAmount{Value: 8},
 				},
 			},
 		},
 		{
 			name: "SingleTransactionMultipleNonFeeTransferSameEntity",
-			cryptoTransfers: []common.CryptoTransfer{
+			cryptoTransfers: []dbTypes.CryptoTransfer{
 				{
 					EntityID:           firstAccount.EntityNum,
 					ConsensusTimestamp: 100,
@@ -468,7 +511,7 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Amount:             140,
 				},
 			},
-			nonFeeTransfers: []common.NonFeeTransfer{
+			nonFeeTransfers: []dbTypes.CryptoTransfer{
 				// there are two non fee transfers from the sender
 				{
 					EntityID:           firstAccount.EntityNum,
@@ -504,43 +547,43 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -100},
+					Amount:  &types.HbarAmount{Value: -100},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -40},
+					Amount:  &types.HbarAmount{Value: -40},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: secondAccount,
-					Amount:  &types.Amount{Value: 140},
+					Amount:  &types.HbarAmount{Value: 140},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -18},
+					Amount:  &types.HbarAmount{Value: -18},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: nodeAccount,
-					Amount:  &types.Amount{Value: 10},
+					Amount:  &types.HbarAmount{Value: 10},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: treasuryAccount,
-					Amount:  &types.Amount{Value: 8},
+					Amount:  &types.HbarAmount{Value: 8},
 				},
 			},
 		},
 		{
 			name: "SingleTransactionMultipleCryptoTransferSameEntity",
-			cryptoTransfers: []common.CryptoTransfer{
+			cryptoTransfers: []dbTypes.CryptoTransfer{
 				{
 					EntityID:           firstAccount.EntityNum,
 					ConsensusTimestamp: 100,
@@ -567,7 +610,7 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Amount:             140,
 				},
 			},
-			nonFeeTransfers: []common.NonFeeTransfer{
+			nonFeeTransfers: []dbTypes.CryptoTransfer{
 				// there are two non fee transfers from the sender
 				{
 					EntityID:           firstAccount.EntityNum,
@@ -603,43 +646,43 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -100},
+					Amount:  &types.HbarAmount{Value: -100},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -40},
+					Amount:  &types.HbarAmount{Value: -40},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: secondAccount,
-					Amount:  &types.Amount{Value: 140},
+					Amount:  &types.HbarAmount{Value: 140},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -18},
+					Amount:  &types.HbarAmount{Value: -18},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: nodeAccount,
-					Amount:  &types.Amount{Value: 10},
+					Amount:  &types.HbarAmount{Value: 10},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: treasuryAccount,
-					Amount:  &types.Amount{Value: 8},
+					Amount:  &types.HbarAmount{Value: 8},
 				},
 			},
 		},
 		{
 			name: "OneSuccessfulOneFailed",
-			cryptoTransfers: []common.CryptoTransfer{
+			cryptoTransfers: []dbTypes.CryptoTransfer{
 				// transfers for the successful crypto transfer transaction
 				{
 					EntityID:           firstAccount.EntityNum,
@@ -678,7 +721,7 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Amount:             8,
 				},
 			},
-			nonFeeTransfers: []common.NonFeeTransfer{
+			nonFeeTransfers: []dbTypes.CryptoTransfer{
 				// only the successful transaction has non fee transfers
 				{
 					EntityID:           firstAccount.EntityNum,
@@ -721,50 +764,50 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -140},
+					Amount:  &types.HbarAmount{Value: -140},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: secondAccount,
-					Amount:  &types.Amount{Value: 140},
+					Amount:  &types.HbarAmount{Value: 140},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -18},
+					Amount:  &types.HbarAmount{Value: -18},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: nodeAccount,
-					Amount:  &types.Amount{Value: 10},
+					Amount:  &types.HbarAmount{Value: 10},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: treasuryAccount,
-					Amount:  &types.Amount{Value: 8},
+					Amount:  &types.HbarAmount{Value: 8},
 				},
 				// operations of the failed transaction, only fees
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: firstAccount,
-					Amount:  &types.Amount{Value: -18},
+					Amount:  &types.HbarAmount{Value: -18},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: nodeAccount,
-					Amount:  &types.Amount{Value: 10},
+					Amount:  &types.HbarAmount{Value: 10},
 				},
 				{
 					Type:    "CRYPTOTRANSFER",
 					Status:  resultSuccess,
 					Account: treasuryAccount,
-					Amount:  &types.Amount{Value: 8},
+					Amount:  &types.HbarAmount{Value: 8},
 				},
 			},
 		},
@@ -793,20 +836,20 @@ func TestShouldSuccessConstructionOperations(t *testing.T) {
 }
 
 func TestShouldFailConstructionOperationsInvalidTransferEntityId(t *testing.T) {
-	invalidCryptoTransfers := []common.CryptoTransfer{
+	invalidCryptoTransfers := []dbTypes.CryptoTransfer{
 		{EntityID: -1, ConsensusTimestamp: 1, Amount: 1},
 		{EntityID: -2, ConsensusTimestamp: 2, Amount: 1},
 	}
 
-	invalidNonFeeTransfers := []common.NonFeeTransfer{
+	invalidNonFeeTransfers := []dbTypes.CryptoTransfer{
 		{EntityID: -1, ConsensusTimestamp: 1, Amount: 1},
 		{EntityID: -2, ConsensusTimestamp: 2, Amount: 1},
 	}
 
 	var tests = []struct {
 		name            string
-		cryptoTransfers []common.CryptoTransfer
-		nonFeeTransfers []common.NonFeeTransfer
+		cryptoTransfers []dbTypes.CryptoTransfer
+		nonFeeTransfers []dbTypes.CryptoTransfer
 	}{
 		{
 			name:            "InvalidEntityIdInCryptoTransfers",
@@ -1081,10 +1124,6 @@ func TestShouldSuccessReturnTransactionTypes(t *testing.T) {
 	assert.Equal(t, dbTransactionTypes, result)
 }
 
-func TestShouldSuccessReturnTransactionTableName(t *testing.T) {
-	assert.Equal(t, tableNameTransaction, transaction{}.TableName())
-}
-
 func TestShouldSuccessReturnTransactionTypesTableName(t *testing.T) {
 	assert.Equal(t, tableNameTransactionTypes, transactionType{}.TableName())
 }
@@ -1101,7 +1140,7 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 	result := NewTransactionRepository(gormDbClient)
 
 	// then
-	assert.IsType(t, &TransactionRepository{}, result)
+	assert.IsType(t, &transactionRepository{}, result)
 	assert.Equal(t, result.dbClient, gormDbClient)
 }
 
@@ -1204,7 +1243,7 @@ func assertTransactions(t *testing.T, expected, actual []*types.Transaction) {
 	}
 }
 
-func setupRepository(t *testing.T) (*TransactionRepository, sqlmock.Sqlmock) {
+func setupRepository(t *testing.T) (*transactionRepository, sqlmock.Sqlmock) {
 	gormDbClient, mock := mocks.DatabaseMock(t)
 
 	aber := NewTransactionRepository(gormDbClient)

@@ -21,7 +21,6 @@
 package types
 
 import (
-	"fmt"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -40,16 +39,6 @@ func NewAccountFromEncodedID(encodedID int64) (*Account, error) {
 	}
 
 	return &Account{*entityId}, err
-}
-
-// ComputeEncodedID - returns the encoded ID from the Shard, Realm and Number
-func (a *Account) ComputeEncodedID() (int64, error) {
-	return entityid.Encode(a.ShardNum, a.RealmNum, a.EntityNum)
-}
-
-// String - returns the string representation of the account
-func (a *Account) String() string {
-	return fmt.Sprintf("%d.%d.%d", a.ShardNum, a.RealmNum, a.EntityNum)
 }
 
 // ToRosetta returns Rosetta type Account from the current domain type Account

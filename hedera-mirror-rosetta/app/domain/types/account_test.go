@@ -21,11 +21,12 @@
 package types
 
 import (
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func exampleAccount() *Account {
@@ -109,37 +110,37 @@ func TestNewAccountFromEncodedIDThrows(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestComputeEncodedID(t *testing.T) {
-	var testData = []struct {
-		shard, realm, number, result int64
-	}{
-		{0, 0, 1, 1},
-		{0, 1, 1, 4294967297},
-		{123, 123, 123, 34621950416388219},
-	}
+// func TestComputeEncodedID(t *testing.T) {
+// 	var testData = []struct {
+// 		shard, realm, number, result int64
+// 	}{
+// 		{0, 0, 1, 1},
+// 		{0, 1, 1, 4294967297},
+// 		{123, 123, 123, 34621950416388219},
+// 	}
+//
+// 	for _, tt := range testData {
+// 		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
+// 		assert.Equal(t, tt.result, res)
+// 		assert.Nil(t, e)
+// 	}
+// }
 
-	for _, tt := range testData {
-		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
-		assert.Equal(t, tt.result, res)
-		assert.Nil(t, e)
-	}
-}
-
-func TestComputeEncodedIDThrows(t *testing.T) {
-	var testData = []struct {
-		shard, realm, number int64
-	}{
-		{-1, 123, 246},
-		{123, -123, 246},
-		{123, 23, -246},
-	}
-
-	for _, tt := range testData {
-		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
-		assert.Zero(t, res)
-		assert.NotNil(t, e)
-	}
-}
+// func TestComputeEncodedIDThrows(t *testing.T) {
+// 	var testData = []struct {
+// 		shard, realm, number int64
+// 	}{
+// 		{-1, 123, 246},
+// 		{123, -123, 246},
+// 		{123, 23, -246},
+// 	}
+//
+// 	for _, tt := range testData {
+// 		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
+// 		assert.Zero(t, res)
+// 		assert.NotNil(t, e)
+// 	}
+// }
 
 func TestAccountString(t *testing.T) {
 	var testData = []struct {

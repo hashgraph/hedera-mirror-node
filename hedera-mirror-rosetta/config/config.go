@@ -23,7 +23,19 @@ package config
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
-	OperationTypeCryptoTransfer = "CRYPTOTRANSFER"
+	OperationTypeCryptoTransfer  = "CRYPTOTRANSFER"
+	OperationTypeTokenAssociate  = "TOKENASSOCIATE"
+	OperationTypeTokenBurn       = "TOKENBURN"
+	OperationTypeTokenCreate     = "TOKENCREATION"
+	OperationTypeTokenDelete     = "TOKENDELETION"
+	OperationTypeTokenDissociate = "TOKENDISSOCIATE"
+	OperationTypeTokenFreeze     = "TOKENFREEZE"
+	OperationTypeTokenGrantKyc   = "TOKENGRANTKYC"
+	OperationTypeTokenMint       = "TOKENMINT"
+	OperationTypeTokenRevokeKyc  = "TOKENREVOKEKYC"
+	OperationTypeTokenUnfreeze   = "TOKENUNFREEZE"
+	OperationTypeTokenUpdate     = "TOKENUPDATE"
+	OperationTypeTokenWipe       = "TOKENWIPE"
 )
 
 const (
