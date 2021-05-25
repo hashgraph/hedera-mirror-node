@@ -96,10 +96,6 @@ public class PgCopy<T> {
             CopyIn copyIn = pgConnection.getCopyAPI().copyIn(getSql());
 
             try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
-                if (tableName.contains("entity") || tableName.contains("token") || tableName.contains("schedule")) {
-                    log.info("**** {} serialized: columns : ({})", tableName, columnsCsv);
-                    log.info("**** {} serialized: values: ({})", tableName, writer.writeValueAsString(items));
-                }
                 writer.writeValue(pgCopyOutputStream, items);
             } finally {
                 if (copyIn.isActive()) {

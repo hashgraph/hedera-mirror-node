@@ -85,7 +85,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<FileData> fileDataPgCopy;
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<NonFeeTransfer> nonFeeTransferPgCopy;
-    private final PgCopy<Schedule> schedulePgCopy;
     private final PgCopy<TokenTransfer> tokenTransferPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
     private final PgCopy<Transaction> transactionPgCopy;
@@ -93,6 +92,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private final UpsertPgCopy<Entity> entityIdPgCopy;
     private final UpsertPgCopy<Entity> entityPgCopy;
+    private final UpsertPgCopy<Schedule> schedulePgCopy;
     private final UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
     private final UpsertPgCopy<Token> tokenPgCopy;
 
@@ -106,7 +106,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
-    private final Collection<Schedule> schedules;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<Transaction> transactions;
@@ -115,6 +114,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // maps of upgradable domains
     private final Map<Long, Entity> entities;
     private final Map<Long, Entity> entityIdEntities;
+    private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<TokenAccount.Id, TokenAccount> tokenAccounts;
 
@@ -135,7 +135,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, recordParserProperties);
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, recordParserProperties);
         nonFeeTransferPgCopy = new PgCopy<>(NonFeeTransfer.class, meterRegistry, recordParserProperties);
-        schedulePgCopy = new PgCopy<>(Schedule.class, meterRegistry, recordParserProperties);
         tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, recordParserProperties);
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, recordParserProperties);
@@ -151,6 +150,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
                 TokenAccount.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
                 TokenAccount.TempToMainUpdateSql);
+        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
+                Schedule.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
+                Schedule.TempToMainUpdateSql);
         tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
                 Token.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
                 Token.TempToMainUpdateSql);
@@ -160,7 +162,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
-        schedules = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
@@ -168,6 +169,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         entityIdEntities = new HashMap<>();
         entities = new HashMap<>();
+        schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccounts = new HashMap<>();
 
@@ -230,7 +232,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             fileDataPgCopy.copy(fileData, connection);
             liveHashPgCopy.copy(liveHashes, connection);
             nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
-            schedulePgCopy.copy(schedules, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             transactionPgCopy.copy(transactions, connection);
@@ -239,6 +240,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // insert operations with conflict management for updates
             persistUpdatableEntity(connection, entityPgCopy, entities.values(), Entity.class);
             persistUpdatableEntity(connection, entityIdPgCopy, entityIdEntities.values(), EntityId.class);
+            persistUpdatableEntity(connection, schedulePgCopy, schedules.values(), Schedule.class);
             persistUpdatableEntity(connection, tokenAccountPgCopy, tokenAccounts.values(), TokenAccount.class);
             persistUpdatableEntity(connection, tokenPgCopy, tokens.values(), Token.class);
             log.info("Completed batch inserts in {}", stopwatch);
@@ -342,7 +344,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
-        schedules.add(schedule);
+        if (schedules.containsKey(schedule.getScheduleId().getId())) {
+            updateCachedSchedule(schedule);
+            return;
+        }
+
+        schedules.put(schedule.getScheduleId().getId(), schedule);
     }
 
     @Override
@@ -392,5 +399,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cachedTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
         cachedTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
         cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());
+    }
+
+    private void updateCachedSchedule(Schedule schedule) {
+        Schedule cachedSchedule = schedules.get(schedule.getScheduleId().getId());
+        cachedSchedule.setExecutedTimestamp(schedule.getExecutedTimestamp());
     }
 }

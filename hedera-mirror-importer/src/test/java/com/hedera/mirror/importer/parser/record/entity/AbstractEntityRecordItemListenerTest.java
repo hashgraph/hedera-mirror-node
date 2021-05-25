@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -119,7 +118,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
 
-    @Autowired
+    @Resource
     private TransactionTemplate transactionTemplate;
 
     private long nextIndex = 0L;

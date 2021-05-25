@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -257,8 +258,11 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         // build list of entities, half new and half existing
         recordItemList.clear();
-        for (int u = startingAccountNum + updateEntityCount; u < startingAccountNum + initialEntityCount + updateEntityCount; u++) {
-            recordItemList.add(getCreateAccountRecordItem(u));
+        for (int u = startingAccountNum + updateEntityCount; u < startingAccountNum + initialEntityCount; u++) {
+            recordItemList.add(getUpdateAccountRecordItem(u));
+        }
+        for (int c = startingAccountNum + initialEntityCount; c < startingAccountNum + initialEntityCount + updateEntityCount; c++) {
+            recordItemList.add(getCreateAccountRecordItem(c));
         }
 
         // insert initialEntityCount entities
@@ -269,7 +273,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 updateEntityCount,
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
 
-        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount + 4);
+        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount + 5);
     }
 
     /**
@@ -696,12 +700,15 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
     private Transaction cryptoUpdateTransaction() {
         return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
+                .setAccountIDToUpdate(accountId)
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
+                .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
-                .setProxyAccountID(PROXY)
-                .setReceiveRecordThreshold(2000L)
-                .setReceiverSigRequired(true)
-                .setSendRecordThreshold(3000L));
+                .setMemo(StringValue.of("CryptoUpdateAccount memo"))
+                .setProxyAccountID(PROXY_UPDATE)
+                .setReceiveRecordThreshold(5001L)
+                .setReceiverSigRequired(false)
+                .setSendRecordThreshold(6001L));
     }
 
     private RecordItem getCreateAccountRecordItem(int accountNum) throws Exception {
@@ -723,10 +730,6 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 accountNum);
         return new RecordItem(updateTransaction, createRecord);
     }
-
-//    private Transaction cryptoUpdateTransaction() {
-//        return cryptoCreateTransaction();
-//    }
 
     private Transaction cryptoDeleteTransaction() {
         return buildTransaction(builder -> builder.getCryptoDeleteBuilder()

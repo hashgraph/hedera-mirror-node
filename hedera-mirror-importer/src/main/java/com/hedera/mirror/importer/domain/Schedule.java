@@ -36,6 +36,13 @@ import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 @Entity
 @NoArgsConstructor
 public class Schedule {
+    public static final String TEMP_TABLE = "schedule_temp";
+    public static final String TempToMainUpdateSql = "insert into schedule select coalesce(consensus_timestamp, 1), " +
+            "coalesce(creator_account_id, 0), executed_timestamp, coalesce(payer_account_id, 0), schedule_id, " +
+            "coalesce(transaction_body, E'\'\''::bytea) from " + TEMP_TABLE +
+            " on conflict (schedule_id) do update set " +
+            "executed_timestamp = coalesce(excluded.executed_timestamp, schedule.executed_timestamp)";
+
     @Id
     private Long consensusTimestamp;
 

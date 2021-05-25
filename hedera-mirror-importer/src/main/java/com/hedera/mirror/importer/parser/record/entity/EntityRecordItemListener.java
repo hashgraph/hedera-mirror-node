@@ -462,30 +462,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 TokenAccount tokenAccount = new TokenAccount(tokenId, EntityId.of(accountID));
                 tokenAccount.setCreatedTimestamp(consensusTimeStamp);
                 // freeze and kyc status will be set during db upsert flow
-//                tokenAccount.setFreezeStatus(storedToken.getNewAccountFreezeStatus());
-//                tokenAccount.setKycStatus(storedToken.getNewAccountKycStatus());
-
-//                Optional<TokenAccount> optionalTokenAccount = retrieveTokenAccount(token, accountID,
-//                TransactionTypeEnum.TOKENASSOCIATE, consensusTimeStamp);
-//                TokenAccount tokenAccount = null;
-//                if (optionalTokenAccount.isPresent()) {
-//                    tokenAccount = optionalTokenAccount.get();
-//                } else {
-//                    // if not onboarded create TokenAccount based on Token details
-//                    EntityId tokenID = EntityId.of(token);
-//                    Optional<Token> optionalToken = retrieveToken(token, TransactionTypeEnum.TOKENASSOCIATE,
-//                            consensusTimeStamp);
-//                    if (optionalToken.isPresent()) {
-//                        Token storedToken = optionalToken.get();
-//                        tokenAccount = new TokenAccount(tokenID, EntityId.of(accountID));
-//                        tokenAccount.setCreatedTimestamp(consensusTimeStamp);
-//                        tokenAccount.setFreezeStatus(storedToken.getNewAccountFreezeStatus());
-//                        tokenAccount.setKycStatus(storedToken.getNewAccountKycStatus());
-//                    } else {
-//                        return;
-//                    }
-//                }
-
                 tokenAccount.setAssociated(true);
                 tokenAccount.setModifiedTimestamp(consensusTimeStamp);
                 entityListener.onTokenAccount(tokenAccount);

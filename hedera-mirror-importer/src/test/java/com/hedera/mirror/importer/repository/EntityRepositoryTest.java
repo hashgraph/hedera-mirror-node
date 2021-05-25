@@ -43,6 +43,7 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
         entity.setShard(0L);
         entity.setType(1);
         entity.setMemo("abc" + (char) 0);
+        entity.setDeleted(false);
         entityRepository.save(entity);
         assertThat(entityRepository.findById(entity.getId())).get().isEqualTo(entity);
     }

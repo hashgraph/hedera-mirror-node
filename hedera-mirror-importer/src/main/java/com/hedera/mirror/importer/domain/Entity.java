@@ -47,6 +47,7 @@ public class Entity {
             "expiration_timestamp = coalesce(excluded.expiration_timestamp, entity.expiration_timestamp), " +
             "key = coalesce(excluded.key, entity.key), " +
             "memo = coalesce(excluded.memo, entity.memo), " +
+            "proxy_account_id = coalesce(excluded.proxy_account_id, entity.proxy_account_id), " +
             "public_key = coalesce(excluded.public_key, entity.public_key), " +
             "submit_key = coalesce(excluded.submit_key, entity.submit_key)";
 
