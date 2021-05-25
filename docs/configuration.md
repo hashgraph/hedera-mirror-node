@@ -77,6 +77,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.balance.retry.maxBackoff`             | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.minBackoff`             | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.multiplier`             | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.balance.processingTimeout`            | 10s                     | The additional timeout to allow after the last balance stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.event.bufferSize`                     | 32768                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
 | `hedera.mirror.importer.parser.event.frequency`                      | 100ms                   | How often to poll for new messages                                                             |
@@ -87,6 +88,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.event.retry.maxBackoff`               | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.event.retry.minBackoff`               | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.event.retry.multiplier`               | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.event.processingTimeout`              | 10s                     | The additional timeout to allow after the last event stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.exclude`                              | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`                       | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
 | `hedera.mirror.importer.parser.exclude.transaction`                  | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
@@ -122,6 +124,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.retry.maxBackoff`                     | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.record.retry.minBackoff`                     | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.record.retry.multiplier`                     | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.record.processingTimeout`                    | 10s                     | The additional timeout to allow after the last record stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 | `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |

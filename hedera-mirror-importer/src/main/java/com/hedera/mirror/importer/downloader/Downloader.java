@@ -77,6 +77,7 @@ import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class Downloader<T extends StreamFile> {
+    public static final String STREAM_CLOSE_LATENCY_METRIC_NAME = "hedera.mirror.stream.close.latency";
 
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
@@ -136,7 +137,7 @@ public abstract class Downloader<T extends StreamFile> {
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
 
-        streamCloseMetric = Timer.builder("hedera.mirror.stream.close.latency")
+        streamCloseMetric = Timer.builder(STREAM_CLOSE_LATENCY_METRIC_NAME)
                 .description("The difference between the consensus time of the last and first transaction in the " +
                         "stream file")
                 .tag("type", streamType.toString())
