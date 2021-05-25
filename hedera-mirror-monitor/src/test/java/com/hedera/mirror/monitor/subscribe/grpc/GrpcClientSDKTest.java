@@ -128,6 +128,7 @@ class GrpcClientSDKTest {
         GrpcSubscription subscription2 = new GrpcSubscription(2, properties);
         grpcClientSDK.subscribe(subscription2)
                 .as(StepVerifier::create)
+                .thenAwait(Duration.ofSeconds(1L))
                 .expectNextCount(2L)
                 .thenCancel()
                 .verify(Duration.ofSeconds(5L));

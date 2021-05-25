@@ -105,8 +105,7 @@ class RestSubscriberTest {
                 .isNotNull()
                 .returns(2L, Subscription::getCount)
                 .returns(Map.of(), Subscription::getErrors)
-                .returns(SubscriberProtocol.REST, Subscription::getProtocol)
-                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
+                .returns(SubscriberProtocol.REST, Subscription::getProtocol);
     }
 
     @Test
@@ -129,8 +128,7 @@ class RestSubscriberTest {
                         .returns(2L, Subscription::getCount)
                         .returns(Map.of(), Subscription::getErrors)
                         .returns(restSubscriberProperties, Subscription::getProperties)
-                        .returns(SubscriberProtocol.REST, Subscription::getProtocol)
-                        .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus))
+                        .returns(SubscriberProtocol.REST, Subscription::getProtocol))
                 .extracting(Subscription::getId)
                 .containsExactly(1, 2);
     }
@@ -247,7 +245,8 @@ class RestSubscriberTest {
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
-                .returns(3L, Subscription::getCount);
+                .returns(3L, Subscription::getCount)
+                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
     }
 
     @Test
@@ -287,8 +286,7 @@ class RestSubscriberTest {
         assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(0L, Subscription::getCount)
-                .returns(Map.of("500", 1), Subscription::getErrors)
-                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
+                .returns(Map.of("500", 1), Subscription::getErrors);
     }
 
     @Test
@@ -309,8 +307,7 @@ class RestSubscriberTest {
         assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(1L, Subscription::getCount)
-                .returns(Map.of(), Subscription::getErrors)
-                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
+                .returns(Map.of(), Subscription::getErrors);
     }
 
     @Test
@@ -331,8 +328,7 @@ class RestSubscriberTest {
         assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(0L, Subscription::getCount)
-                .returns(Map.of("404", 1), Subscription::getErrors)
-                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
+                .returns(Map.of("404", 1), Subscription::getErrors);
     }
 
     @Test
@@ -355,8 +351,7 @@ class RestSubscriberTest {
         assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(0L, Subscription::getCount)
-                .returns(Map.of(), Subscription::getErrors)
-                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
+                .returns(Map.of(), Subscription::getErrors);
     }
 
     @Test
@@ -416,7 +411,6 @@ class RestSubscriberTest {
         assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(Map.of(), Subscription::getErrors)
-                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus)
                 .extracting(Subscription::getCount)
                 .isEqualTo(restSubscriberProperties.getLimit());
     }
