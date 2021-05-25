@@ -16,6 +16,7 @@ spec:
       command:
         - 'sh'
         - '-c'
+          # Copying the contents of the secret to the directory the image reads from without overwriting the existing yml.
         - |
           cp /etc/secrets/* /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/
           ./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
