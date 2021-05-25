@@ -274,6 +274,7 @@ test:
             operatorKey:
             rest:
               baseUrl: "http://{{ .Release.Name }}-rest/api/v1"
+            retrieveAddressBook: false
   cucumberTags: "@acceptance"
   enabled: false
   image:
