@@ -38,7 +38,21 @@ import com.hedera.mirror.importer.util.Utility;
 @ToString(exclude = {"key", "submitKey"})
 public class Entity {
     public static final String TEMP_TABLE = "entity_temp";
-    public static final String TempToMainUpdateSql = "insert into entity select auto_renew_account_id, " +
+    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into entity select auto_renew_account_id, " +
+            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, " +
+            "num, public_key, proxy_account_id, realm, shard, submit_key, type from " + TEMP_TABLE +
+            " where created_timestamp is not null on conflict (id) do nothing";
+    public static final String TEMP_TO_MAIN_UPDATE_SQL = "update entity set " +
+            "auto_renew_period = coalesce(" + TEMP_TABLE + ".auto_renew_period, entity.auto_renew_period), " +
+            "deleted = coalesce(" + TEMP_TABLE + ".deleted, entity.deleted), " +
+            "expiration_timestamp = coalesce(" + TEMP_TABLE + ".expiration_timestamp, entity.expiration_timestamp), " +
+            "key = coalesce(" + TEMP_TABLE + ".key, entity.key), " +
+            "memo = coalesce(" + TEMP_TABLE + ".memo, entity.memo), " +
+            "proxy_account_id = coalesce(" + TEMP_TABLE + ".proxy_account_id, entity.proxy_account_id), " +
+            "public_key = coalesce(" + TEMP_TABLE + ".public_key, entity.public_key), " +
+            "submit_key = coalesce(" + TEMP_TABLE + ".submit_key, entity.submit_key) from " + TEMP_TABLE +
+            " where entity.id = " + TEMP_TABLE + ".id and " + TEMP_TABLE + ".created_timestamp is null";
+    public static final String TEMP_TO_MAIN_UPSERT_SQL = "insert into entity select auto_renew_account_id, " +
             "auto_renew_period, created_timestamp, coalesce(deleted, false) as deleted, expiration_timestamp, id, " +
             "key, coalesce(memo, '') as memo, modified_timestamp, num, public_key, proxy_account_id, realm," +
             "shard, submit_key, type from " + TEMP_TABLE + " on conflict (id) do update set " +

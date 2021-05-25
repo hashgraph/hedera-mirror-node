@@ -465,7 +465,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 tokenAccount.setAssociated(true);
                 tokenAccount.setModifiedTimestamp(consensusTimeStamp);
                 entityListener.onTokenAccount(tokenAccount);
-//                tokenAccountRepository.save(tokenAccount);
             });
         }
     }

@@ -42,7 +42,21 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class TokenAccount {
     public static final String TEMP_TABLE = "token_account_temp";
-    public static final String TempToMainUpdateSql = "insert into token_account select account_id, " +
+    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into token_account select account_id, " +
+            "coalesce(associated, true) as associated, created_timestamp, " +
+            "coalesce(freeze_status, getNewAccountFreezeStatus(token_id)) as freeze_status, " +
+            "coalesce(kyc_status, getNewAccountKycStatus(token_id)) as kyc_status, modified_timestamp, token_id from "
+            + TEMP_TABLE + " where created_timestamp is not null on conflict(token_id, account_id) do nothing";
+    public static final String TEMP_TO_MAIN_UPDATE_SQL = "update token_account ta set " +
+            "associated = coalesce(" + TEMP_TABLE + ".associated, ta.associated), " +
+            "modified_timestamp = " + TEMP_TABLE + ".modified_timestamp, " +
+            "freeze_status = coalesce(" + TEMP_TABLE + ".freeze_status, ta.freeze_status), " +
+            "kyc_status = coalesce(" + TEMP_TABLE + ".kyc_status, ta.kyc_status) " +
+            "from " + TEMP_TABLE +
+            " join token t on " + TEMP_TABLE + ".token_id = t.token_id " +
+            "where ta.token_id = " + TEMP_TABLE + ".token_id and ta.account_id = " + TEMP_TABLE + ".account_id and " +
+            TEMP_TABLE + ".created_timestamp is null";
+    public static final String TEMP_TO_MAIN_UPSERT_SQL = "insert into token_account select account_id, " +
             "coalesce(associated, true) as associated, " +
             "created_timestamp, coalesce(freeze_status, getNewAccountFreezeStatus(token_id)) as " +
             "freeze_status, coalesce(kyc_status, getNewAccountKycStatus(token_id)) as kyc_status, " +
@@ -59,7 +73,7 @@ public class TokenAccount {
 
     private Boolean associated;
 
-    private long createdTimestamp;
+    private Long createdTimestamp;
 
     @Enumerated(EnumType.ORDINAL)
     private TokenFreezeStatusEnum freezeStatus;

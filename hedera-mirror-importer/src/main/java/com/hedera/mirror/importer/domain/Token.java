@@ -46,14 +46,33 @@ import com.hedera.mirror.importer.util.Utility;
 @ToString(exclude = {"freezeKey", "kycKey", "supplyKey", "wipeKey"})
 public class Token {
     public static final String TEMP_TABLE = "token_temp";
-    public static final String TempToMainUpdateSql = "insert into token select * from " + TEMP_TABLE + " on conflict " +
+    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into token select * from " + TEMP_TABLE +
+            " where created_timestamp is not null on conflict(token_id) do nothing";
+    public static final String TEMP_TO_MAIN_UPDATE_SQL = "update token t set " +
+            "freeze_key = coalesce(" + TEMP_TABLE + ".freeze_key, t.freeze_key), " +
+            "freeze_key_ed25519_hex = coalesce(" + TEMP_TABLE + ".freeze_key_ed25519_hex, t.freeze_key_ed25519_hex), " +
+            "kyc_key =  coalesce(" + TEMP_TABLE + ".kyc_key, t.kyc_key), " +
+            "kyc_key_ed25519_hex =  coalesce(" + TEMP_TABLE + ".kyc_key_ed25519_hex, t.kyc_key_ed25519_hex), " +
+            "modified_timestamp = " + TEMP_TABLE + ".modified_timestamp, " +
+            "name = coalesce(" + TEMP_TABLE + ".name, t.name), " +
+            "supply_key = coalesce(" + TEMP_TABLE + ".supply_key, t.supply_key), " +
+            "supply_key_ed25519_hex = coalesce(" + TEMP_TABLE + ".supply_key_ed25519_hex, t.supply_key_ed25519_hex), " +
+            "symbol = " + TEMP_TABLE + ".symbol, " +
+            "total_supply = coalesce(" + TEMP_TABLE + ".total_supply, t.total_supply)," +
+            "treasury_account_id = " + TEMP_TABLE + ".treasury_account_id, " +
+            "wipe_key = coalesce(" + TEMP_TABLE + ".wipe_key, t.wipe_key), " +
+            "wipe_key_ed25519_hex = coalesce(" + TEMP_TABLE + ".wipe_key_ed25519_hex, t.wipe_key_ed25519_hex) " +
+            "from " + TEMP_TABLE +
+            " where t.token_id = " + TEMP_TABLE + ".token_id and " + TEMP_TABLE + ".created_timestamp is null";
+    public static final String TEMP_TO_MAIN_UPSERT_SQL = "insert into token select * from " + TEMP_TABLE + " on " +
+            "conflict " +
             "(token_id) do update set " +
             "freeze_key = coalesce(excluded.freeze_key, token.freeze_key), " +
             "freeze_key_ed25519_hex = coalesce(excluded.freeze_key_ed25519_hex, token.freeze_key_ed25519_hex), " +
             "kyc_key =  coalesce(excluded.kyc_key, token.kyc_key), " +
             "kyc_key_ed25519_hex =  coalesce(excluded.kyc_key_ed25519_hex, token.kyc_key_ed25519_hex), " +
             "modified_timestamp = excluded.modified_timestamp, " +
-            "name = excluded.name, " +
+            "name = coalesce(excluded.name, ''), " +
             "supply_key = coalesce(excluded.supply_key, token.supply_key), " +
             "supply_key_ed25519_hex = coalesce(excluded.supply_key_ed25519_hex, token.supply_key_ed25519_hex), " +
             "symbol = excluded.symbol, " +
@@ -67,7 +86,7 @@ public class Token {
     @JsonUnwrapped
     private Token.Id tokenId;
 
-    private long createdTimestamp;
+    private Long createdTimestamp; // make object nullable to help differentiate between update and missing value
 
     private long decimals;
 
@@ -80,7 +99,7 @@ public class Token {
 
     private long initialSupply;
 
-    private long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
+    private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
 
     private byte[] kycKey;
 

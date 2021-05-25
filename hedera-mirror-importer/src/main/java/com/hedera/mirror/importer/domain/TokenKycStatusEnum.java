@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -32,4 +33,9 @@ public enum TokenKycStatusEnum {
     REVOKED(2);
 
     private final int id;
+
+    @JsonValue
+    public String getId() {
+        return String.valueOf(id);
+    }
 }

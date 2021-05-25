@@ -37,10 +37,12 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
 
     public static final String TEMP_POSTFIX = "_temp";
     private final String finalTableName;
+    private final String insertSql;
+    private final String updateSql;
     private final String upsertSql;
 
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
-                        String tempTableName, String upsertSql) {
+                        String tempTableName, String insertSql, String updateSql, String upsertSql) {
         super(entityClass, meterRegistry, properties);
         tableName = CaseFormat.UPPER_CAMEL.to(
                 CaseFormat.LOWER_UNDERSCORE,
@@ -48,6 +50,8 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         finalTableName = CaseFormat.UPPER_CAMEL.to(
                 CaseFormat.LOWER_UNDERSCORE,
                 entityClass.getSimpleName());
+        this.insertSql = insertSql;
+        this.updateSql = updateSql;
         this.upsertSql = upsertSql;
     }
 
@@ -62,9 +66,22 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
 
     public int upsertFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        int updateCount = connection.prepareStatement(upsertSql).executeUpdate();
-        log.info("Copied {} rows from {} table to {} table in {}", updateCount, tableName, finalTableName, stopwatch);
-        return updateCount;
+        int upsertCount = connection.prepareStatement(upsertSql).executeUpdate();
+        log.info("Copied {} rows from {} table to {} table in {}", upsertCount, tableName, finalTableName, stopwatch);
+        return upsertCount;
+    }
+
+    public int insertToFinalTable(Connection connection) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        int insertCount = connection.prepareStatement(insertSql).executeUpdate();
+        log.info("Inserted {} rows from {} table to {} table in {}", insertCount, tableName, finalTableName, stopwatch);
+        return insertCount;
+    }
+
+    public void updateFinalTable(Connection connection) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        connection.prepareStatement(updateSql).execute();
+        log.info("Updated rows from {} table to {} table in {}", tableName, finalTableName, stopwatch);
     }
 }
 

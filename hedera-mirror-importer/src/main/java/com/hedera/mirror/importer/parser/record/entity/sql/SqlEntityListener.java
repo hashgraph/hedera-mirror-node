@@ -143,19 +143,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // updatable tables
         entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
                 Entity.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                Entity.TempToMainUpdateSql);
+                Entity.TEMP_TO_MAIN_INSERT_SQL, Entity.TEMP_TO_MAIN_UPDATE_SQL, Entity.TEMP_TO_MAIN_UPSERT_SQL);
         entityIdPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
                 EntityId.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                EntityId.TempToMainUpdateSql);
+                EntityId.TEMP_TO_MAIN_INSERT_SQL, EntityId.TEMP_TO_MAIN_UPDATE_SQL, EntityId.TEMP_TO_MAIN_UPSERT_SQL);
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
                 TokenAccount.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                TokenAccount.TempToMainUpdateSql);
+                TokenAccount.TEMP_TO_MAIN_INSERT_SQL, TokenAccount.TEMP_TO_MAIN_UPDATE_SQL,
+                TokenAccount.TEMP_TO_MAIN_UPSERT_SQL);
         schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
                 Schedule.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                Schedule.TempToMainUpdateSql);
+                Schedule.TEMP_TO_MAIN_INSERT_SQL, Schedule.TEMP_TO_MAIN_UPDATE_SQL, Schedule.TEMP_TO_MAIN_UPSERT_SQL);
         tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
                 Token.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                Token.TempToMainUpdateSql);
+                Token.TEMP_TO_MAIN_INSERT_SQL, Token.TEMP_TO_MAIN_UPDATE_SQL, Token.TEMP_TO_MAIN_UPSERT_SQL);
 
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -366,38 +367,78 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         Stopwatch stopwatch = Stopwatch.createStarted();
         upsertPgCopy.createTempTable(connection);
         upsertPgCopy.copy(values, connection);
-        int updateCount = upsertPgCopy.upsertFinalTable(connection);
-        log.info("Inserted {} of {} {}'s in {}", updateCount, values.size(), entityClass.getSimpleName(), stopwatch);
+        int insertCount = upsertPgCopy.insertToFinalTable(connection);
+        upsertPgCopy.updateFinalTable(connection);
+//        int upsertCount = upsertPgCopy.upsertFinalTable(connection);
+        log.info("Inserted {} of {} {}'s in {}", insertCount, values.size(),
+                entityClass.getSimpleName(), stopwatch);
+//        log.info("Inserted {} of {} {}'s in {}", upsertCount, values.size(), entityClass.getSimpleName(), stopwatch);
     }
 
     private void updateCachedEntity(Entity newEntity) {
         Entity cachedEntity = entities.get(newEntity.getId());
         cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
-        cachedEntity.setDeleted(newEntity.getDeleted());
-        cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
-        cachedEntity.setKey(newEntity.getKey());
-        cachedEntity.setMemo(newEntity.getMemo());
-        cachedEntity.setPublicKey(newEntity.getPublicKey());
-        cachedEntity.setSubmitKey(newEntity.getSubmitKey());
+
+        // delete vs update operation
+        if (newEntity.getDeleted() == null) {
+            cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
+            cachedEntity.setKey(newEntity.getKey());
+            cachedEntity.setMemo(newEntity.getMemo());
+            cachedEntity.setPublicKey(newEntity.getPublicKey());
+        } else {
+            cachedEntity.setDeleted(newEntity.getDeleted());
+        }
     }
 
     private void updateCachedToken(Token newToken) {
         Token cachedToken = tokens.get(newToken.getTokenId().getTokenId().getId());
-        cachedToken.setFreezeKey(newToken.getFreezeKey());
-        cachedToken.setKycKey(newToken.getKycKey());
+
+        if (newToken.getFreezeKey() != null) {
+            cachedToken.setFreezeKey(newToken.getFreezeKey());
+        }
+
+        if (newToken.getKycKey() != null) {
+            cachedToken.setKycKey(newToken.getKycKey());
+        }
+
         cachedToken.setModifiedTimestamp(newToken.getModifiedTimestamp());
-        cachedToken.setName(newToken.getName());
-        cachedToken.setSymbol(newToken.getSymbol());
-        cachedToken.setTreasuryAccountId(newToken.getTreasuryAccountId());
-        cachedToken.setSupplyKey(newToken.getSupplyKey());
-        cachedToken.setWipeKey(newToken.getWipeKey());
+
+        if (newToken.getName() != null) {
+            cachedToken.setName(newToken.getName());
+        }
+
+        if (newToken.getSymbol() != null) {
+            cachedToken.setSymbol(newToken.getSymbol());
+        }
+
+        if (newToken.getTreasuryAccountId() != null) {
+            cachedToken.setTreasuryAccountId(newToken.getTreasuryAccountId());
+        }
+
+        if (newToken.getSupplyKey() != null) {
+            cachedToken.setSupplyKey(newToken.getSupplyKey());
+        }
+
+        if (newToken.getWipeKey() != null) {
+            cachedToken.setWipeKey(newToken.getWipeKey());
+        }
     }
 
     private void updateCachedTokenAccount(TokenAccount newTokenAccount) {
         TokenAccount cachedTokenAccount = tokenAccounts.get(newTokenAccount.getId());
-        cachedTokenAccount.setAssociated(newTokenAccount.getAssociated());
-        cachedTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
-        cachedTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
+
+        if (newTokenAccount.getAssociated() != null) {
+            cachedTokenAccount.setAssociated(newTokenAccount.getAssociated());
+        }
+
+        if (newTokenAccount.getFreezeStatus() != null) {
+            cachedTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
+        }
+
+        if (newTokenAccount.getKycStatus() != null) {
+            cachedTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
+        }
+
         cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());
     }
 

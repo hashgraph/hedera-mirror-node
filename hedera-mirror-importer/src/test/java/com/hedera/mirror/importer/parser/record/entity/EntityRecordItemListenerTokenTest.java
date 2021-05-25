@@ -44,8 +44,11 @@ import java.util.Optional;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Token;
@@ -81,6 +84,14 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Resource
     protected TokenTransferRepository tokenTransferRepository;
+
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
+    @Resource
+    private CacheManager cacheManager;
+
+    void beforeAll() {
+        cacheManager.getCache("tokenaccounts").clear();
+    }
 
     @BeforeEach
     void before() {
@@ -572,6 +583,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
                                          long modifiedTimestamp, String symbol, long totalSupply) {
+        // clear cache for PgCopy scenarios which don't utilize it
+        cacheManager.getCache("tokens").clear();
+
         Optional<Token> tokenOptional = tokenRepository.findById(new Token.Id(EntityId.of(tokenID)));
         if (present) {
             assertThat(tokenOptional.get())
@@ -587,6 +601,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, boolean present,
                                                 long createdTimestamp, long modifiedTimestamp, boolean associated,
                                                 TokenFreezeStatusEnum frozenStatus, TokenKycStatusEnum kycStatus) {
+        // clear cache for PgCopy scenarios which don't utilize it
+        cacheManager.getCache("tokenaccounts").clear();
+
         Optional<TokenAccount> tokenAccountOptional = tokenAccountRepository
                 .findByTokenIdAndAccountId(EntityId.of(tokenID).getId(), EntityId.of(accountId).getId());
         if (present) {
