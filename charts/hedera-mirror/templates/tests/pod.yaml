@@ -11,7 +11,7 @@ metadata:
 spec:
   containers:
     - name: acceptance-tests
-      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag | default .Chart.AppVersion }}"
+      image: "{{ .Values.test.image.repository }}:{{ .Values.global.image.tag | default .Values.test.image.tag | default .Chart.AppVersion }}"
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       command:
         - 'sh'
