@@ -48,10 +48,6 @@ applicationResource:
   partnerName: ""
   solutionId: ""
 
-global:
-  namespaceOverride: ""
-  useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
-
 db:
   host: "{{ .Release.Name }}"
   name: mirror_node
@@ -59,6 +55,11 @@ db:
   owner:
     password: ""  # Randomly generated if left blank
     username: mirror_node
+
+global:
+  image: {}
+  namespaceOverride: ""
+  useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
 grpc:
   db:
@@ -258,6 +259,29 @@ rest:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
+
+test:
+  config:
+    hedera:
+      mirror:
+        test:
+          acceptance:
+            existingTopicNum:
+            # grpc endpoint
+            mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
+            network:
+            # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
+            operatorId:
+            operatorKey:
+            rest:
+              baseUrl: "http://{{ .Release.Name }}-rest/api/v1"
+            retrieveAddressBook: false
+  cucumberTags: "@acceptance"
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    repository: gcr.io/mirrornode/hedera-mirror-test
+    tag: ""  # Defaults to the chart's app version
 
 timescaledb:
   enabled: false

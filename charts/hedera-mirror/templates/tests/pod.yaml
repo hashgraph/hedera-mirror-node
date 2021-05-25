@@ -1,0 +1,34 @@
+{{- if .Values.test.enabled -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.fullname" . }}-acceptance-test
+  namespace: {{ include "hedera-mirror.namespace" . }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: hook-failed,hook-succeeded
+spec:
+  containers:
+    - name: acceptance-tests
+      image: "{{ .Values.test.image.repository }}:{{ .Values.global.image.tag | default .Values.test.image.tag | default .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.test.image.pullPolicy }}
+      command:
+        - 'sh'
+        - '-c'
+          # Copying the contents of the secret to the directory the image reads from without overwriting the existing yml.
+        - |
+          cp /etc/secrets/* /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/
+          ./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
+      volumeMounts:
+        - name: acceptance-tests
+          mountPath: /etc/secrets
+          readOnly: true
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 1
+  volumes:
+    - name: acceptance-tests
+      secret:
+        defaultMode: 420
+        secretName: {{ include "hedera-mirror.fullname" . }}-acceptance-test
+{{- end -}}

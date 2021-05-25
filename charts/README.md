@@ -141,10 +141,30 @@ When deploying in GCP, the following steps may be taken to use container-native 
 ## Testing
 
 To verify the chart installation is successful, you can run the helm tests. These tests are not automatically executed
-by helm on install/upgrade, they have to be executed manually:
+by helm on install/upgrade, they have to be executed manually. The tests require the `existingTopicNum`,  `operatorId`,
+and `operatorKey` properties be set in a local values file in order to execute, as well as `network` if using an environment other
+than testnet, and `nodes` if using a custom environment.
+
+To configure:
+
+```yaml
+test:
+  config:
+    hedera:
+      mirror:
+        test:
+          acceptance:
+            existingTopicNum:
+            network:
+            # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
+            operatorId:
+            operatorKey:
+```
+
+To execute:
 
 ```shell script
-helm test "${RELEASE}"
+helm test "${RELEASE} " --timeout 10m
 ```
 
 ## Using
