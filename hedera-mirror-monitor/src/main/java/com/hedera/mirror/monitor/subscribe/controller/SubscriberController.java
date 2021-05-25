@@ -59,8 +59,8 @@ class SubscriberController {
     }
 
     @GetMapping("/{name}")
-    public Flux<Subscription> subscription(@PathVariable String name,
-                                           @RequestParam Optional<List<SubscriptionStatus>> status) {
+    public Flux<Subscription> subscriptions(@PathVariable String name,
+                                            @RequestParam Optional<List<SubscriptionStatus>> status) {
         return subscriptions(Optional.empty(), status)
                 .filter(subscription -> subscription.getName().equals(name))
                 .switchIfEmpty(Mono.error(new NoSuchElementException()));
@@ -68,7 +68,7 @@ class SubscriberController {
 
     @GetMapping("/{name}/{id}")
     public Mono<Subscription> subscription(@PathVariable String name, @PathVariable int id) {
-        return subscription(name, Optional.empty())
+        return subscriptions(name, Optional.empty())
                 .filter(s -> s.getId() == id)
                 .last();
     }

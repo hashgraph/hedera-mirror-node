@@ -169,7 +169,7 @@ class SubscriberControllerTest {
     }
 
     @Test
-    void subscriptionsByNameAndId() {
+    void subscription() {
         subscription2.setName(subscription1.getName());
         subscription2.setId(2);
         webTestClient.get()
@@ -182,7 +182,7 @@ class SubscriberControllerTest {
     }
 
     @Test
-    void subscriptionsByNameAndIdNotFound1() {
+    void subscriptionIdNotFound1() {
         webTestClient.get()
                 .uri("/api/v1/subscriber/grpc1/3")
                 .exchange()
@@ -191,7 +191,7 @@ class SubscriberControllerTest {
     }
 
     @Test
-    void subscriptionsByNameAndIdNotFound2() {
+    void subscriptionNameNotFound() {
         webTestClient.get()
                 .uri("/api/v1/subscriber/invalid/1")
                 .exchange()

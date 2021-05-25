@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -35,7 +34,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
@@ -46,6 +44,7 @@ import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
+import com.hedera.mirror.monitor.subscribe.SubscriptionStatus;
 import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
 
 @Log4j2
@@ -55,7 +54,6 @@ class RestSubscriber implements MirrorSubscriber {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final Collection<Sinks.Many<PublishResponse>> sinks;
     private final SubscribeProperties subscribeProperties;
     private final Flux<RestSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
     private final WebClient webClient;
@@ -64,7 +62,6 @@ class RestSubscriber implements MirrorSubscriber {
     RestSubscriber(MonitorProperties monitorProperties, SubscribeProperties subscribeProperties,
                    WebClient.Builder webClientBuilder) {
         this.subscribeProperties = subscribeProperties;
-        this.sinks = new CopyOnWriteArrayList<>();
 
         String url = monitorProperties.getMirrorNode().getRest().getBaseUrl();
         webClient = webClientBuilder.baseUrl(url)
@@ -75,7 +72,11 @@ class RestSubscriber implements MirrorSubscriber {
 
     @Override
     public void onPublish(PublishResponse response) {
-        sinks.forEach(sink -> sink.tryEmitNext(response));
+        subscriptions.doOnNext(s -> log.info("onPublish: {}", s))
+                .filter(s -> s.getStatus() != SubscriptionStatus.COMPLETED)
+                .filter(s -> RANDOM.nextDouble() < s.getProperties().getSamplePercent())
+                .map(RestSubscription::getSink)
+                .subscribe(s -> log.info("Result: {}", s.tryEmitNext(response)));
     }
 
     @Override
@@ -112,12 +113,10 @@ class RestSubscriber implements MirrorSubscriber {
                 .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
                         r.totalRetries() + 1, r.failure().getMessage()));
 
-        Sinks.Many<PublishResponse> sink = Sinks.many().multicast().directBestEffort();
-        sinks.add(sink);
-        return sink.asFlux()
-                //Randomly filter out transactions to only validate a sample
-                .filter(r -> RANDOM.nextDouble() < properties.getSamplePercent())
+        return subscription.getSink()
+                .asFlux()
                 .publishOn(Schedulers.parallel())
+                .doFinally(s -> subscription.onComplete())
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
                 .flatMap(publishResponse -> webClient.get()
                         .uri("/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
@@ -130,8 +129,6 @@ class RestSubscriber implements MirrorSubscriber {
                         .onErrorContinue((t, o) -> subscription.onError(t))
                         .doOnNext(subscription::onNext)
                         .map(transaction -> toResponse(subscription, publishResponse, transaction)))
-                .doFinally(s -> subscription.onComplete())
-                .doFinally(s -> sinks.remove(sink))
                 .limitRequest(properties.getLimit())
                 .take(properties.getDuration());
     }

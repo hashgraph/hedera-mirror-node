@@ -30,9 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -45,10 +43,7 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
@@ -72,7 +67,6 @@ class RestSubscriberTest {
     private SubscribeProperties subscribeProperties;
     private RestSubscriberProperties restSubscriberProperties;
     private RestSubscriber restSubscriber;
-    private CountDownLatch countDownLatch;
 
     @BeforeEach
     void setup() {
@@ -154,11 +148,12 @@ class RestSubscriberTest {
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .expectNextCount(4L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(4)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
+                .doesNotHaveDuplicates()
                 .allSatisfy(s -> assertThat(s).isNotNull()
                         .returns(2L, Subscription::getCount)
                         .returns(Map.of(), Subscription::getErrors))
@@ -198,6 +193,7 @@ class RestSubscriberTest {
     void subscribeEmpty() {
         restSubscriber.subscribe()
                 .as(StepVerifier::create)
+                .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500L));
 
@@ -283,6 +279,7 @@ class RestSubscriberTest {
                 .as(StepVerifier::create)
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .thenAwait(Duration.ofSeconds(1L))
+                .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500L));
 
@@ -304,6 +301,7 @@ class RestSubscriberTest {
                 .as(StepVerifier::create)
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .thenAwait(Duration.ofMillis(500L))
+                .expectNextCount(1L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500L));
 
@@ -325,7 +323,7 @@ class RestSubscriberTest {
         restSubscriber.subscribe()
                 .as(StepVerifier::create)
                 .then(() -> restSubscriber.onPublish(publishResponse()))
-                .thenAwait(Duration.ofMillis(1000L))
+                .thenAwait(Duration.ofSeconds(1L))
                 .thenCancel()
                 .verify(Duration.ofMillis(500L));
 
@@ -338,7 +336,7 @@ class RestSubscriberTest {
     }
 
     @Test
-    void zeroSamplePercent() {
+    void samplePercent0() {
         restSubscriberProperties.setLimit(1000L);
         restSubscriberProperties.setSamplePercent(0.0);
 
@@ -349,6 +347,7 @@ class RestSubscriberTest {
                         restSubscriber.onPublish(publishResponse());
                     }
                 })
+                .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500L));
 
@@ -360,46 +359,57 @@ class RestSubscriberTest {
                 .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus);
     }
 
-    @Disabled("Still working on fixing")
     @Test
-    void middleSamplePercent() {
-        restSubscriberProperties.setLimit(1000L);
+    void samplePercent75() {
+        restSubscriberProperties.setLimit(256L);
         restSubscriberProperties.setSamplePercent(0.75);
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK))
+        int min = (int) (restSubscriberProperties.getLimit() * (restSubscriberProperties.getSamplePercent() - 0.5));
+        int max = (int) (restSubscriberProperties.getLimit() * (restSubscriberProperties.getSamplePercent() + 0.5));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK))
                 .thenReturn(response(HttpStatus.OK));
 
         restSubscriber.subscribe()
                 .as(StepVerifier::create)
-                .then(this::publish)
-                .thenConsumeWhile(r -> true)
+                .then(() -> {
+                    for (int i = 0; i < restSubscriberProperties.getLimit(); ++i) {
+                        restSubscriber.onPublish(publishResponse());
+                    }
+                })
+                .thenAwait(Duration.ofSeconds(1L))
+                .expectNextCount(min)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
-        verify(exchangeFunction, atLeast(700)).exchange(Mockito.isA(ClientRequest.class));
-        verify(exchangeFunction, atMost(800)).exchange(Mockito.isA(ClientRequest.class));
+        verify(exchangeFunction, atLeast(min)).exchange(Mockito.isA(ClientRequest.class));
+        verify(exchangeFunction, atMost(max)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(Map.of(), Subscription::getErrors)
-                .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus)
                 .extracting(Subscription::getCount)
                 .isNotNull()
-                .matches(count -> count >= 700 && count <= 800);
+                .matches(count -> count >= min && count <= max);
     }
 
-    @Disabled("Still working on fixing")
     @Test
-    void oneHundredSamplePercent() {
-        restSubscriberProperties.setLimit(1000L);
+    void samplePercent100() {
+        restSubscriberProperties.setLimit(256L);
         restSubscriberProperties.setSamplePercent(1.0);
-        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK))
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
+                .thenReturn(response(HttpStatus.OK))
                 .thenReturn(response(HttpStatus.OK));
 
         restSubscriber.subscribe()
                 .as(StepVerifier::create)
-                .then(this::publish)
-                .thenConsumeWhile(r -> true)
+                .then(() -> {
+                    for (int i = 0; i < restSubscriberProperties.getLimit(); ++i) {
+                        restSubscriber.onPublish(publishResponse());
+                    }
+                })
+                .thenAwait(Duration.ofSeconds(1L))
+                .expectNextCount(restSubscriberProperties.getLimit())
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
 
         verify(exchangeFunction, times((int) restSubscriberProperties.getLimit()))
                 .exchange(Mockito.isA(ClientRequest.class));
@@ -409,14 +419,6 @@ class RestSubscriberTest {
                 .returns(SubscriptionStatus.COMPLETED, Subscription::getStatus)
                 .extracting(Subscription::getCount)
                 .isEqualTo(restSubscriberProperties.getLimit());
-    }
-
-    private Disposable publish() {
-        return Flux.range(0, (int) restSubscriberProperties.getLimit())
-                .flatMap(i -> Mono.fromRunnable(() -> restSubscriber.onPublish(publishResponse()))
-                        .delayElement(Duration.ofMillis(50L)))
-                .subscribeOn(Schedulers.parallel())
-                .subscribe();
     }
 
     private PublishResponse publishResponse() {

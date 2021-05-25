@@ -93,6 +93,7 @@ class GrpcSubscriberTest {
                 .verifyComplete();
         assertThat(grpcSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
+                .doesNotHaveDuplicates()
                 .allSatisfy(s -> assertThat(s).isNotNull()
                         .returns(grpcSubscriberProperties, Subscription::getProperties)
                         .returns(SubscriberProtocol.GRPC, Subscription::getProtocol))
@@ -114,6 +115,7 @@ class GrpcSubscriberTest {
                 .verifyComplete();
         assertThat(grpcSubscriber.getSubscriptions().collectList().block())
                 .hasSize(2)
+                .doesNotHaveDuplicates()
                 .allSatisfy(s -> assertThat(s).isNotNull()
                         .returns(SubscriberProtocol.GRPC, Subscription::getProtocol))
                 .extracting(Subscription::getName)
