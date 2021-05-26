@@ -24,15 +24,9 @@ spec:
       name: mirror
   values:
     prometheus:
-      kubelet:
-        enabled: true
       kubeApiserver:
         enabled: true
-      kubeControllerManager:
-        enabled: true
-      kubeEtcd:
-        enabled: true
-      kubeScheduler:
+      kubelet:
         enabled: true
       prometheusOperator:
         kubeletService:
