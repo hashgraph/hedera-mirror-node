@@ -81,16 +81,10 @@ jobs:
             -p 5432:5432 -p 5700:5700 "${MODULE}"
 
       - name: Wait for Mirror Node to start syncing
-        run: |
-          ./scripts/wait-for-mirror-node.sh && code=0 || code=$?
-          [[ $code -ne 0 ]] && docker logs $(docker container ls -l -q -a)
-          exit $code
+        run: ./scripts/wait-for-mirror-node.sh
 
       - name: Get Genesis Account Balances
-        run: |
-          ./scripts/validation/get-genesis-balance.sh testnet && code=0 || code=$?
-          [[ $code -ne 0 ]] && docker logs $(docker container ls -l -q -a)
-          exit $code
+        run: ./scripts/validation/get-genesis-balance.sh testnet
 
       - name: Run Rosetta CLI Validation
         working-directory: ./hedera-mirror-rosetta/scripts/validation
@@ -104,8 +98,6 @@ jobs:
           ./run-validation.sh testnet data && code=0 || code=$?
           [[ $code -eq 0 ]] && { wait $pid || code=$?; }
           cat /tmp/construction-validation.log
-
-          [[ $code -ne 0 ]] && docker logs $(docker container ls -l -q -a)
           exit $code
 
   gosec:
