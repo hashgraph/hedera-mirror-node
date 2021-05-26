@@ -103,7 +103,7 @@ jobs:
           exit $code
 
       - name: Show Container Log
-        if: ${{ failure() && env.CONTAINER_ID != "" }}
+        if: ${{ failure() && env.CONTAINER_ID != '' }}
         run: docker logs $CONTAINER_ID
 
   gosec:
