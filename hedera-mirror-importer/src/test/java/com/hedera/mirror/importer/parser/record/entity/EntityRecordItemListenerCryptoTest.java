@@ -43,8 +43,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,8 +50,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entity;
@@ -70,9 +66,6 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
             .build();
     private static final long[] additionalTransfers = {5000, 6000};
     private static final long[] additionalTransferAmounts = {1001, 1002};
-
-    @Autowired
-    private TransactionTemplate transactionTemplate;
 
     @BeforeEach
     void before() {
@@ -234,45 +227,6 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 , () -> assertEquals(Utility.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpirationTimestamp())
         );
-    }
-
-    @Test
-    void multiEntityUpdate() throws Exception {
-        int startingAccountNum = 3000; // some hard coded tests accounts exist under this range so start above
-        int initialEntityCount = 6000;
-        int updateEntityCount = initialEntityCount / 2;
-        List<RecordItem> recordItemList = new ArrayList<>();
-
-        // build record list of new crypto accounts
-        for (int i = startingAccountNum; i < startingAccountNum + initialEntityCount; i++) {
-            recordItemList.add(getCreateAccountRecordItem(i));
-        }
-
-        // insert initialEntityCount of new entities
-        Instant startTime = Instant.now();
-        parseRecordItemsAndCommit(recordItemList);
-        log.info("Inserting {} ({} -> {}) entities took {} ms", recordItemList.size(), startingAccountNum,
-                startingAccountNum + initialEntityCount,
-                java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
-        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + 4);
-
-        // build list of entities, half new and half existing
-        recordItemList.clear();
-        for (int u = startingAccountNum + updateEntityCount; u < startingAccountNum + initialEntityCount; u++) {
-            recordItemList.add(getUpdateAccountRecordItem(u));
-        }
-        for (int c = startingAccountNum + initialEntityCount; c < startingAccountNum + initialEntityCount + updateEntityCount; c++) {
-            recordItemList.add(getCreateAccountRecordItem(c));
-        }
-
-        // insert initialEntityCount entities
-        startTime = Instant.now();
-        parseRecordItemsAndCommit(recordItemList);
-        log.info("Inserting {} ({} -> {}) entities with {} updates took {} ms", recordItemList.size(),
-                startingAccountNum + updateEntityCount, startingAccountNum + initialEntityCount + updateEntityCount,
-                java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
-
-        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount + 4);
     }
 
     /**

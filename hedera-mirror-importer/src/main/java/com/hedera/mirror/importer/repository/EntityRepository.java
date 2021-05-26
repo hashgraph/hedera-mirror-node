@@ -49,38 +49,8 @@ public interface EntityRepository extends PagingAndSortingRepository<Entity, Lon
             "values (?1, ?2, ?3, ?4, ?5) on conflict do nothing", nativeQuery = true)
     void insertEntityId(long id, long shard, long realm, long num, int type);
 
-    @Modifying
-    @Query(value = "insert into entity select * from entity_temp on conflict (id) do update set " +
-            "auto_renew_period = excluded.auto_renew_period, deleted = excluded.deleted, " +
-            "expiration_timestamp = excluded.expiration_timestamp, key = excluded.key, memo = excluded.memo, " +
-            "public_key = excluded.public_key, submit_key = excluded.submit_key", nativeQuery = true)
-    void insertEntityValuesFromTemp();
-//    void insertEntityValuesFromTemp(Long autoRenewAccountId, Long autoRenewPeriod, Long createdTimestamp,
-//                                    boolean deleted, Long expirationTimestamp, Long id, byte[] key, String memo,
-//                                    Long modifiedTimestamp, Long num, String publicKey, Long proxyAccountId,
-//                                    Long realm, Long shard, byte[] submitKey, Integer type);
-
     default void insertEntityId(EntityId entityId) {
         insertEntityId(entityId.getId(), entityId.getShardNum(), entityId.getRealmNum(),
                 entityId.getEntityNum(), entityId.getType());
     }
-
-//    default void insertFromTemp(Entity entity) {
-//        insertEntityValuesFromTemp(entity.getAutoRenewAccountId().getId(),
-//                entity.getAutoRenewPeriod(),
-//                entity.getCreatedTimestamp(),
-//                entity.isDeleted(),
-//                entity.getExpirationTimestamp(),
-//                entity.getId(),
-//                entity.getKey(),
-//                entity.getMemo(),
-//                entity.getModifiedTimestamp(),
-//                entity.getNum(),
-//                entity.getPublicKey(),
-//                entity.getProxyAccountId().getId(),
-//                entity.getRealm(),
-//                entity.getShard(),
-//                entity.getSubmitKey(),
-//                entity.getType());
-//    }
 }
