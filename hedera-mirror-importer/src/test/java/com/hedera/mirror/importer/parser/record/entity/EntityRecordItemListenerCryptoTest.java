@@ -203,7 +203,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         createAccount();
 
         // now update
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
@@ -269,11 +269,10 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         startTime = Instant.now();
         parseRecordItemsAndCommit(recordItemList);
         log.info("Inserting {} ({} -> {}) entities with {} updates took {} ms", recordItemList.size(),
-                startingAccountNum + updateEntityCount, initialEntityCount + updateEntityCount,
-                updateEntityCount,
+                startingAccountNum + updateEntityCount, startingAccountNum + initialEntityCount + updateEntityCount,
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
 
-        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount + 5);
+        assertThat(entityRepository.findAll()).hasSize(initialEntityCount + updateEntityCount + 4);
     }
 
     /**
@@ -281,7 +280,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
      */
     @Test
     void samePayerAndUpdateAccount() throws Exception {
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         transactionBody = TransactionBody.newBuilder()
                 .mergeFrom(transactionBody)
@@ -302,7 +301,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void proxyAccountIdSetTo0() throws Exception {
         // given
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         var bodyBuilder = transactionBody.toBuilder();
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
@@ -357,7 +356,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now update
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
@@ -698,9 +697,9 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setSendRecordThreshold(3000L));
     }
 
-    private Transaction cryptoUpdateTransaction() {
+    private Transaction cryptoUpdateTransaction(AccountID accountNum) {
         return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
-                .setAccountIDToUpdate(accountId)
+                .setAccountIDToUpdate(accountNum)
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
@@ -722,7 +721,8 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     private RecordItem getUpdateAccountRecordItem(int accountNum) throws Exception {
-        Transaction updateTransaction = cryptoUpdateTransaction();
+        Transaction updateTransaction = cryptoUpdateTransaction(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
+                .setAccountNum(accountNum).build());
         TransactionBody updateTransactionBody = getTransactionBody(updateTransaction);
         TransactionRecord createRecord = transactionRecord(
                 updateTransactionBody,

@@ -35,15 +35,13 @@ import lombok.extern.log4j.Log4j2;
  */
 @Log4j2
 public class UpsertPgCopy<T> extends PgCopy<T> {
-
-    public static final String TEMP_POSTFIX = "_temp";
     private final String finalTableName;
     private final String insertSql;
     private final String updateSql;
-    private final String upsertSql;
+    private final String createTempTableSql;
 
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
-                        String tempTableName, String insertSql, String updateSql, String upsertSql) {
+                        String tempTableName, String insertSql, String updateSql) {
         super(entityClass, meterRegistry, properties);
         tableName = CaseFormat.UPPER_CAMEL.to(
                 CaseFormat.LOWER_UNDERSCORE,
@@ -53,26 +51,17 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
                 entityClass.getSimpleName());
         this.insertSql = insertSql;
         this.updateSql = updateSql;
-        this.upsertSql = upsertSql;
+        createTempTableSql = String.format("create temporary table %s on commit drop as table %s limit 0",
+                tableName, finalTableName);
     }
 
     public void createTempTable(Connection connection) throws SQLException {
         // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
-        connection.prepareStatement(
-                String.format("create temporary table %s on commit drop as table %s limit 0", tableName,
-                        finalTableName))
-                .executeUpdate();
-        log.trace("Created temp table {}", tableName);
-    }
-
-    public int upsertFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        int upsertCount = 0;
-        try (PreparedStatement preparedStatement = connection.prepareStatement(upsertSql)) {
-            upsertCount = preparedStatement.executeUpdate();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(createTempTableSql)) {
+            preparedStatement.executeUpdate();
         }
-        log.debug("Copied {} rows from {} table to {} table in {}", upsertCount, tableName, finalTableName, stopwatch);
-        return upsertCount;
+        log.trace("Created temp table {} in {}", tableName, stopwatch);
     }
 
     public int insertToFinalTable(Connection connection) throws SQLException {

@@ -141,22 +141,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, recordParserProperties);
 
         // updatable tables
-        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
-                Entity.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                Entity.TEMP_TO_MAIN_INSERT_SQL, Entity.TEMP_TO_MAIN_UPDATE_SQL, Entity.TEMP_TO_MAIN_UPSERT_SQL);
-        entityIdPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
-                EntityId.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                EntityId.TEMP_TO_MAIN_INSERT_SQL, EntityId.TEMP_TO_MAIN_UPDATE_SQL, EntityId.TEMP_TO_MAIN_UPSERT_SQL);
+        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, Entity.TEMP_TABLE,
+                Entity.TEMP_TO_MAIN_INSERT_SQL, Entity.TEMP_TO_MAIN_UPDATE_SQL);
+        entityIdPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, EntityId.TEMP_TABLE,
+                EntityId.TEMP_TO_MAIN_INSERT_SQL, EntityId.TEMP_TO_MAIN_UPDATE_SQL);
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
-                TokenAccount.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                TokenAccount.TEMP_TO_MAIN_INSERT_SQL, TokenAccount.TEMP_TO_MAIN_UPDATE_SQL,
-                TokenAccount.TEMP_TO_MAIN_UPSERT_SQL);
-        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
-                Schedule.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                Schedule.TEMP_TO_MAIN_INSERT_SQL, Schedule.TEMP_TO_MAIN_UPDATE_SQL, Schedule.TEMP_TO_MAIN_UPSERT_SQL);
-        tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
-                Token.class.getSimpleName() + UpsertPgCopy.TEMP_POSTFIX,
-                Token.TEMP_TO_MAIN_INSERT_SQL, Token.TEMP_TO_MAIN_UPDATE_SQL, Token.TEMP_TO_MAIN_UPSERT_SQL);
+                TokenAccount.TEMP_TABLE, TokenAccount.TEMP_TO_MAIN_INSERT_SQL, TokenAccount.TEMP_TO_MAIN_UPDATE_SQL);
+        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties, Schedule.TEMP_TABLE,
+                Schedule.TEMP_TO_MAIN_INSERT_SQL, Schedule.TEMP_TO_MAIN_UPDATE_SQL);
+        tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties, Token.TEMP_TABLE,
+                Token.TEMP_TO_MAIN_INSERT_SQL, Token.TEMP_TO_MAIN_UPDATE_SQL);
 
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
