@@ -26,6 +26,14 @@ spec:
     prometheus:
       kubelet:
         enabled: true
+      kubeApiserver:
+        enabled: true
+      kubeControllerManager:
+        enabled: true
+      kubeEtcd:
+        enabled: true
+      kubeScheduler:
+        enabled: true
       prometheusOperator:
         kubeletService:
           enabled: true
