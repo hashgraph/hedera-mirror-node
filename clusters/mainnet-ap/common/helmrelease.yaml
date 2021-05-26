@@ -24,6 +24,11 @@ spec:
       name: mirror
   values:
     prometheus:
+      kubelet:
+        enabled: true
+      prometheusOperator:
+        kubeletService:
+          enabled: true
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "mainnet"]
