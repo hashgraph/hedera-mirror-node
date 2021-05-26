@@ -48,11 +48,12 @@ class RestSubscription extends AbstractSubscription<RestSubscriberProperties, Mi
     @Override
     public void onError(Throwable t) {
         log.warn("Error subscribing to REST API: {}", t.getMessage());
-        String error = t.getClass().getSimpleName();
 
         if (Exceptions.isRetryExhausted(t) && t.getCause() != null) {
             t = t.getCause();
         }
+
+        String error = t.getClass().getSimpleName();
 
         if (t instanceof WebClientResponseException) {
             error = String.valueOf(((WebClientResponseException) t).getStatusCode().value());

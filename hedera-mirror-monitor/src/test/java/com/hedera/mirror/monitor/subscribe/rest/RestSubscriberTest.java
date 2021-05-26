@@ -27,8 +27,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,12 +62,22 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
+import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
 import com.hedera.mirror.monitor.subscribe.Subscription;
 import com.hedera.mirror.monitor.subscribe.SubscriptionStatus;
+import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class RestSubscriberTest {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    static {
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(Instant.class, new InstantToStringSerializer());
+        OBJECT_MAPPER.registerModule(simpleModule);
+    }
 
     @Mock
     private ExchangeFunction exchangeFunction;
@@ -92,20 +110,29 @@ class RestSubscriberTest {
     void subscribe() {
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
+        Collection<SubscribeResponse> responses = new ArrayList<>();
         restSubscriber.subscribe()
+                .doOnNext(responses::add)
                 .as(StepVerifier::create)
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofMillis(500000L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
-        assertThat(restSubscriber.getSubscriptions().blockFirst())
+        RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
+        assertThat(subscription)
                 .isNotNull()
                 .returns(2L, Subscription::getCount)
                 .returns(Map.of(), Subscription::getErrors)
                 .returns(SubscriberProtocol.REST, Subscription::getProtocol);
+        assertThat(responses).hasSize(2).allSatisfy(s -> {
+            assertThat(s.getConsensusTimestamp()).isNotNull();
+            assertThat(s.getPublishedTimestamp()).isNotNull();
+            assertThat(s.getReceivedTimestamp()).isNotNull();
+            assertThat(s.getSubscription()).isNotNull().isEqualTo(subscription);
+        });
     }
 
     @Test
@@ -431,9 +458,35 @@ class RestSubscriberTest {
             return Mono.defer(() -> Mono
                     .error(WebClientResponseException.create(httpStatus.value(), "", HttpHeaders.EMPTY, null, null)));
         }
-        return Mono.just(ClientResponse.create(httpStatus)
-                .header("Content-Type", "application/json")
-                .body("{}")
-                .build());
+
+        MirrorTransaction mirrorTransaction = new MirrorTransaction();
+        mirrorTransaction.setConsensusTimestamp(Instant.now());
+        mirrorTransaction.setName(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
+        mirrorTransaction.setResult("SUCCESS");
+        mirrorTransaction.setValidStartTimestamp(Instant.now().minusSeconds(1L));
+
+        try {
+            String json = OBJECT_MAPPER.writeValueAsString(mirrorTransaction);
+            return Mono.just(ClientResponse.create(httpStatus)
+                    .header("Content-Type", "application/json")
+                    .body(json)
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static class InstantToStringSerializer extends StdScalarSerializer<Instant> {
+
+        private static final long serialVersionUID = -7958416584497817326L;
+
+        protected InstantToStringSerializer() {
+            super(Instant.class);
+        }
+
+        @Override
+        public void serialize(Instant instant, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeRawValue(instant.getEpochSecond() + "." + instant.getNano());
+        }
     }
 }

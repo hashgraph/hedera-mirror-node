@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -49,7 +48,6 @@ import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
 
 @Log4j2
 @Named
-@RequiredArgsConstructor
 class RestSubscriber implements MirrorSubscriber {
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -72,11 +70,10 @@ class RestSubscriber implements MirrorSubscriber {
 
     @Override
     public void onPublish(PublishResponse response) {
-        subscriptions.doOnNext(s -> log.info("onPublish: {}", s))
-                .filter(s -> s.getStatus() != SubscriptionStatus.COMPLETED)
+        subscriptions.filter(s -> s.getStatus() != SubscriptionStatus.COMPLETED)
                 .filter(s -> RANDOM.nextDouble() < s.getProperties().getSamplePercent())
                 .map(RestSubscription::getSink)
-                .subscribe(s -> log.info("Result: {}", s.tryEmitNext(response)));
+                .subscribe(s -> s.tryEmitNext(response));
     }
 
     @Override

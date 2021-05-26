@@ -32,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.monitor.config.LoggingFilter;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
 import com.hedera.mirror.monitor.subscribe.SubscriptionStatus;
@@ -64,7 +65,7 @@ class SubscriberControllerTest {
         subscription2.setStatus(SubscriptionStatus.RUNNING);
 
         SubscriberController subscriberController = new SubscriberController(mirrorSubscriber);
-        webTestClient = WebTestClient.bindToController(subscriberController).build();
+        webTestClient = WebTestClient.bindToController(subscriberController).webFilter(new LoggingFilter()).build();
         when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscription1, subscription2));
     }
 

@@ -63,10 +63,11 @@ public class LoggingFilter implements WebFilter {
 
     private String getClient(ServerHttpRequest request) {
         InetSocketAddress remoteAddress = request.getRemoteAddress();
+
         if (remoteAddress != null && remoteAddress.getAddress() != null) {
             return remoteAddress.getAddress().toString();
-        } else {
-            return LOCALHOST;
         }
+
+        return LOCALHOST;
     }
 }

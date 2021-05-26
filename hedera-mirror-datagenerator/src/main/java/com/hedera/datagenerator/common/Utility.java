@@ -37,6 +37,14 @@ public class Utility {
     private static final long MILLIS_OFFSET = Duration.ofMinutes(5L).toMillis();
     private static final Random RANDOM = new SecureRandom();
 
+    /**
+     * Parses bytes as a String expected to be in format ^\d+ .*$. The first part is the published timestamp in
+     * milliseconds from epoch followed by a mandatory space. Optionally, additional arbitrary characters can be
+     * appended that are ignored by this method.
+     *
+     * @param bytes containing a timestamp encoded as a String
+     * @return the parsed Instant
+     */
     public static Instant getTimestamp(byte[] bytes) {
         try {
             if (bytes == null) {
@@ -63,11 +71,12 @@ public class Utility {
         }
     }
 
-    public static byte[] generateMessage(int messageSize) {
+    public static byte[] generateMessage(int requestedMessageSize) {
         String message = System.currentTimeMillis() + " ";
 
-        if (messageSize > message.length()) {
-            message += RandomStringUtils.random(messageSize - message.length(), 0, 0, true, false, null, RANDOM);
+        if (message.length() < requestedMessageSize) {
+            int length = requestedMessageSize - message.length();
+            message += RandomStringUtils.random(length, 0, 0, true, false, null, RANDOM);
         }
 
         return message.getBytes(StandardCharsets.US_ASCII);
