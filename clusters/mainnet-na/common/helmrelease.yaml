@@ -27,6 +27,8 @@ spec:
       kubelet:
         enabled: true
       prometheusOperator:
+        kubeletService:
+          enabled: true
         namespaces:
           additional: ["kube-system", "common", "mainnet"]
     traefik:
