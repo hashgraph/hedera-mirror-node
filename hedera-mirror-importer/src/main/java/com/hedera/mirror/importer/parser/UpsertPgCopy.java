@@ -24,6 +24,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import lombok.extern.log4j.Log4j2;
 
@@ -66,22 +67,31 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
 
     public int upsertFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        int upsertCount = connection.prepareStatement(upsertSql).executeUpdate();
-        log.info("Copied {} rows from {} table to {} table in {}", upsertCount, tableName, finalTableName, stopwatch);
+        int upsertCount = 0;
+        try (PreparedStatement preparedStatement = connection.prepareStatement(upsertSql)) {
+            upsertCount = preparedStatement.executeUpdate();
+        }
+        log.debug("Copied {} rows from {} table to {} table in {}", upsertCount, tableName, finalTableName, stopwatch);
         return upsertCount;
     }
 
     public int insertToFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        int insertCount = connection.prepareStatement(insertSql).executeUpdate();
-        log.info("Inserted {} rows from {} table to {} table in {}", insertCount, tableName, finalTableName, stopwatch);
+        int insertCount = 0;
+        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
+            insertCount = preparedStatement.executeUpdate();
+        }
+        log.debug("Inserted {} rows from {} table to {} table in {}", insertCount, tableName, finalTableName,
+                stopwatch);
         return insertCount;
     }
 
     public void updateFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        connection.prepareStatement(updateSql).execute();
-        log.info("Updated rows from {} table to {} table in {}", tableName, finalTableName, stopwatch);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+            preparedStatement.execute();
+        }
+        log.debug("Updated rows from {} table to {} table in {}", tableName, finalTableName, stopwatch);
     }
 }
 

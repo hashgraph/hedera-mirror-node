@@ -49,7 +49,7 @@ public class Entity {
             "deleted = coalesce(" + TEMP_TABLE + ".deleted, entity.deleted), " +
             "expiration_timestamp = coalesce(" + TEMP_TABLE + ".expiration_timestamp, entity.expiration_timestamp), " +
             "key = coalesce(" + TEMP_TABLE + ".key, entity.key), " +
-            "memo = coalesce(" + TEMP_TABLE + ".memo, entity.memo), " +
+            "memo = coalesce(" + TEMP_TABLE + ".memo, entity.memo, ''), " +
             "proxy_account_id = coalesce(" + TEMP_TABLE + ".proxy_account_id, entity.proxy_account_id), " +
             "public_key = coalesce(" + TEMP_TABLE + ".public_key, entity.public_key), " +
             "submit_key = coalesce(" + TEMP_TABLE + ".submit_key, entity.submit_key) from " + TEMP_TABLE +

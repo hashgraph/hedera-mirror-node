@@ -367,10 +367,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         Stopwatch stopwatch = Stopwatch.createStarted();
         upsertPgCopy.createTempTable(connection);
         upsertPgCopy.copy(values, connection);
-        int insertCount = upsertPgCopy.insertToFinalTable(connection);
+        upsertPgCopy.insertToFinalTable(connection);
         upsertPgCopy.updateFinalTable(connection);
-        log.info("Inserted {} of {} {}'s in {}", insertCount, values.size(),
-                entityClass.getSimpleName(), stopwatch);
+        log.info("Inserted {} {}'s in {}", values.size(), entityClass.getSimpleName(), stopwatch);
     }
 
     private void updateCachedEntity(Entity newEntity) {
