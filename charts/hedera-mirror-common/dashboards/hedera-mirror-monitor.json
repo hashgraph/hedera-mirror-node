@@ -156,7 +156,7 @@
       "pluginVersion": "7.3.3",
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",subscriber=\"GrpcSubscriber\"}[$__rate_interval]))",
+          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"

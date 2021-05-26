@@ -4,20 +4,17 @@ hedera:
       publish:
         scenarios:
           - name: HCS Pinger
-            enabled: true
             properties:
               topicId: ${topic.ping}
-            recordPercent: 1.0
+            receiptPercent: 1.0
             tps: 0.1
             type: CONSENSUS_SUBMIT_MESSAGE
       subscribe:
         grpc:
           - name: HCS Subscribe
-            enabled: true
             topicId: ${topic.ping}
         rest:
           - name: HCS REST
-            enabled: true
             samplePercent: 1.0
 logging:
   level:

@@ -49,7 +49,7 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-monitor/application.yml
 
   redis:
-    image: redis:5.0.9-alpine
+    image: redis:6.2.3-alpine
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM
@@ -82,7 +82,7 @@ services:
   timescaledb:
     deploy:
       replicas: 0
-    image: timescale/timescaledb-ha:pg13-ts2.2-latest
+    image: timescale/timescaledb-ha:pg13.3-ts2.3.0-p0
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM

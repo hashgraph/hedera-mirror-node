@@ -241,7 +241,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].properties`      | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
 `hedera.mirror.monitor.publish.scenarios[].receiptPercent`  | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].recordPercent`   | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
-`hedera.mirror.monitor.publish.scenarios[].timeout`         | 10s        | How long to wait for the transaction result
+`hedera.mirror.monitor.publish.scenarios[].timeout`         | 12s        | How long to wait for the transaction result
 `hedera.mirror.monitor.publish.scenarios[].tps`             | 1.0        | The rate at which transactions will publish
 `hedera.mirror.monitor.publish.scenarios[].type`            |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
 `hedera.mirror.monitor.publish.statusFrequency`             | 10s        | How often to log publishing statistics
@@ -267,7 +267,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.subscribe.rest[].retry.maxBackoff`   | 8s         | The maximum amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.rest[].retry.minBackoff`   | 250ms      | The initial amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.rest[].samplePercent`      | 1.0        | The percentage of transactions to verify against the REST API. Accepts values between 0-1
-`hedera.mirror.monitor.subscribe.rest[].timeout`            | 2s         | Maximum amount of time to wait for a REST API call to retrieve data
+`hedera.mirror.monitor.subscribe.rest[].timeout`            | 5s         | Maximum amount of time to wait for a REST API call to retrieve data
 `hedera.mirror.monitor.subscribe.statusFrequency`           | 10s        | How often to log subscription statistics
 `hedera.mirror.monitor.validateNodes`                       | true       | Whether to validate and remove invalid or down nodes permanently before publishing
 

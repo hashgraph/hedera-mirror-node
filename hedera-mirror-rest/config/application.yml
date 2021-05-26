@@ -15,7 +15,7 @@ hedera:
       includeHostInLink: false
       log:
         level: debug
-      maxLimit: 1000
+      maxLimit: 500
       maxRepeatedQueryParameters: 100
       metrics:
         enabled: true

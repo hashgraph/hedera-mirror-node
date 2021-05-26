@@ -200,24 +200,6 @@ prometheus:
       existingSecret: grafana-admin
     adminPassword: ""  # Randomly generated if left blank
     defaultDashboardsEnabled: true
-    grafana.ini:
-      server:
-        root_url: "%(protocol)s://%(domain)s/grafana/"
-    ingress:
-      annotations:
-        traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-common.namespace" . }}-{{ .Release.Name }}-grafana@kubernetescrd'
-      enabled: true
-      hosts: [""]
-      middleware:
-        circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
-        connectionsPerIP: 10
-        enabled: true
-        ipWhitelist:
-          - 0.0.0.0/0
-        rateLimit:
-          average: 50
-          burst: 100
-      path: "/grafana"
     plugins:
       - camptocamp-prometheus-alertmanager-datasource
     rbac:
@@ -239,15 +221,13 @@ prometheus:
       requests:
         cpu: 5m
         memory: 16Mi
-  kubeApiserver:
-    enabled: false
   kubeControllerManager:
     enabled: false
   kubeDns:
     enabled: true
   kubeEtcd:
     enabled: false
-  kubelet:
+  kubeProxy:
     enabled: false
   kubeScheduler:
     enabled: false
@@ -273,8 +253,6 @@ prometheus:
           matchLabels:
             app.kubernetes.io/name: traefik
     prometheusSpec:
-      image:
-        tag: v2.20.0
       podMonitorSelectorNilUsesHelmValues: false
       priorityClassName: low
       resources:
@@ -296,8 +274,6 @@ prometheus:
                 storage: 50Gi
       walCompression: true
   prometheusOperator:
-    kubeletService:
-      enabled: false
     namespaces:
       additional: []
       releaseNamespace: true
@@ -351,12 +327,12 @@ traefik:
     minAvailable: 1
   priorityClassName: critical
   resources:
-    requests:
-      cpu: 100m
-      memory: 50Mi
     limits:
-      cpu: 500m
-      memory: 300Mi
+      cpu: 850m
+      memory: 1250Mi
+    requests:
+      cpu: 250m
+      memory: 150Mi
   service:
     spec: {}
     type: ClusterIP

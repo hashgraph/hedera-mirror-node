@@ -31,6 +31,7 @@ import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
+import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -39,7 +40,7 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 
 @Data
-public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction> {
+public class TokenUpdateTransactionSupplier implements TransactionSupplier<TokenUpdateTransaction>, AdminKeyable {
 
     private String adminKey;
 

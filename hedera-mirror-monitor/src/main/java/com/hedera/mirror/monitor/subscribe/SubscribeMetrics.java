@@ -88,8 +88,8 @@ public class SubscribeMetrics {
 
     private void status(Subscription s) {
         if (s.getStatus() == SubscriptionStatus.RUNNING) {
-            log.info("{}: {} transactions in {} at {}/s. Errors: {}",
-                    s, s.getCount(), s.getElapsed(), s.getRate(), s.getErrors());
+            log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
+                    s.getProtocol(), s, s.getCount(), s.getElapsed(), s.getRate(), s.getErrors());
         }
     }
 }

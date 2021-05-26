@@ -15,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1,
-  "iteration": 1603503714352,
+  "id": 33,
+  "iteration": 1622216967101,
   "links": [],
   "panels": [
     {
@@ -35,7 +35,6 @@
               "value": "null"
             }
           ],
-          "nullValueMode": "connected",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -81,9 +80,10 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "targets": [
         {
           "expr": "sum(rate(hedera_mirror_transaction_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
@@ -113,7 +113,6 @@
               "value": "null"
             }
           ],
-          "nullValueMode": "connected",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -159,9 +158,10 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "targets": [
         {
           "expr": "sum(rate(hedera_mirror_transaction_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",type=\"CONSENSUSSUBMITMESSAGE\"}[$__rate_interval]))",
@@ -192,7 +192,6 @@
               "value": "null"
             }
           ],
-          "nullValueMode": "connected",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -234,9 +233,10 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "targets": [
         {
           "expr": "sum(hedera_mirror_transaction_size_bytes_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) / sum(hedera_mirror_transaction_size_bytes_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
@@ -267,7 +267,6 @@
               "value": "null"
             }
           ],
-          "nullValueMode": "connected",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -309,9 +308,10 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "targets": [
         {
           "expr": "sum(rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"RECORD\"}[$__rate_interval])) / sum(rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"RECORD\"}[$__rate_interval]))",
@@ -341,7 +341,6 @@
               "value": "null"
             }
           ],
-          "nullValueMode": "connected",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -383,9 +382,10 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "targets": [
         {
           "expr": "sum(rate(hedera_mirror_parse_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=\"BALANCE\"}[$__rate_interval])) / sum(rate(hedera_mirror_parse_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=\"BALANCE\"}[$__rate_interval]))",
@@ -461,7 +461,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -563,7 +563,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -670,7 +670,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -782,7 +782,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -893,7 +893,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1003,7 +1003,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1106,7 +1106,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1210,7 +1210,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1333,7 +1333,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1437,7 +1437,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1562,7 +1562,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1683,7 +1683,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1822,7 +1822,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.1",
+      "pluginVersion": "7.4.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1971,7 +1971,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2085,7 +2085,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2195,7 +2195,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2305,7 +2305,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2416,7 +2416,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2526,7 +2526,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2636,7 +2636,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2746,7 +2746,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2856,7 +2856,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2967,7 +2967,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3077,7 +3077,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3187,7 +3187,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3300,7 +3300,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3411,7 +3411,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3525,7 +3525,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3597,7 +3597,7 @@
           "dashes": false,
           "datasource": null,
           "decimals": 2,
-          "description": "The difference in the consensus time of the last transaction in the file and the time at which the file was processed successfully",
+          "description": "The difference in time between the consensus time of the last transaction in the file and the time at which the file was created in the cloud storage provider",
           "fieldConfig": {
             "defaults": {
               "custom": {},
@@ -3612,6 +3612,228 @@
             "w": 12,
             "x": 12,
             "y": 148
+          },
+          "hiddenSeries": false,
+          "id": 147,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": true,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "BALANCE",
+              "value": "BALANCE"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_importer_cloud_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) / sum(rate(hedera_mirror_importer_cloud_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]))",
+              "interval": "1m",
+              "legendFormat": "  ",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Consensus to Cloud Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The difference in time between the consensus time of the last transaction in the file and the time at which the file was downloaded and verified",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 156
+          },
+          "hiddenSeries": false,
+          "id": 128,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": true,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "BALANCE",
+              "value": "BALANCE"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) / sum(rate(hedera_mirror_download_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]))",
+              "interval": "1m",
+              "legendFormat": "  ",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Consensus to Download Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The difference in the consensus time of the last transaction in the file and the time at which the file was processed successfully",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 156
           },
           "hiddenSeries": false,
           "id": 90,
@@ -3636,7 +3858,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3722,7 +3944,7 @@
         "x": 0,
         "y": 92
       },
-      "id": 93,
+      "id": 148,
       "panels": [
         {
           "aliasColors": {},
@@ -3745,10 +3967,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 85
+            "y": 93
           },
           "hiddenSeries": false,
-          "id": 94,
+          "id": 149,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -3772,11 +3994,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 39,
           "repeatedByRow": true,
           "scopedVars": {
@@ -3865,10 +4087,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 85
+            "y": 93
           },
           "hiddenSeries": false,
-          "id": 95,
+          "id": 150,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -3889,11 +4111,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 44,
           "repeatedByRow": true,
           "scopedVars": {
@@ -3978,10 +4200,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 93
+            "y": 101
           },
           "hiddenSeries": false,
-          "id": 96,
+          "id": 151,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4002,11 +4224,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 45,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4091,10 +4313,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 93
+            "y": 101
           },
           "hiddenSeries": false,
-          "id": 97,
+          "id": 152,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4115,11 +4337,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 46,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4204,10 +4426,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 101
+            "y": 109
           },
           "hiddenSeries": false,
-          "id": 98,
+          "id": 153,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4229,11 +4451,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 40,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4318,10 +4540,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 101
+            "y": 109
           },
           "hiddenSeries": false,
-          "id": 99,
+          "id": 154,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4342,11 +4564,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 43,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4431,10 +4653,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 109
+            "y": 117
           },
           "hiddenSeries": false,
-          "id": 100,
+          "id": 155,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4455,11 +4677,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 47,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4544,10 +4766,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 109
+            "y": 117
           },
           "hiddenSeries": false,
-          "id": 101,
+          "id": 156,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4568,11 +4790,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 41,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4657,10 +4879,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 117
+            "y": 125
           },
           "hiddenSeries": false,
-          "id": 102,
+          "id": 157,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4681,11 +4903,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 48,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4770,10 +4992,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 117
+            "y": 125
           },
           "hiddenSeries": false,
-          "id": 103,
+          "id": 158,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4795,11 +5017,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 49,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4884,10 +5106,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 125
+            "y": 133
           },
           "hiddenSeries": false,
-          "id": 104,
+          "id": 159,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -4908,11 +5130,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 50,
           "repeatedByRow": true,
           "scopedVars": {
@@ -4997,10 +5219,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 125
+            "y": 133
           },
           "hiddenSeries": false,
-          "id": 105,
+          "id": 160,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -5021,11 +5243,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 51,
           "repeatedByRow": true,
           "scopedVars": {
@@ -5110,10 +5332,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 133
+            "y": 141
           },
           "hiddenSeries": false,
-          "id": 106,
+          "id": 161,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -5137,11 +5359,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 52,
           "repeatedByRow": true,
           "scopedVars": {
@@ -5226,10 +5448,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 133
+            "y": 141
           },
           "hiddenSeries": false,
-          "id": 107,
+          "id": 162,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -5251,11 +5473,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 55,
           "repeatedByRow": true,
           "scopedVars": {
@@ -5343,10 +5565,10 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 141
+            "y": 149
           },
           "hiddenSeries": false,
-          "id": 108,
+          "id": 163,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -5368,11 +5590,11 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 11,
           "repeatedByRow": true,
           "scopedVars": {
@@ -5443,7 +5665,7 @@
           "dashes": false,
           "datasource": null,
           "decimals": 2,
-          "description": "The difference in the consensus time of the last transaction in the file and the time at which the file was processed successfully",
+          "description": "The difference in time between the consensus time of the last transaction in the file and the time at which the file was created in the cloud storage provider",
           "fieldConfig": {
             "defaults": {
               "custom": {},
@@ -5457,10 +5679,10 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 141
+            "y": 149
           },
           "hiddenSeries": false,
-          "id": 109,
+          "id": 164,
           "legend": {
             "alignAsTable": true,
             "avg": true,
@@ -5482,11 +5704,239 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.2.1",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
-          "repeatIteration": 1603503714352,
+          "repeatIteration": 1622216967101,
+          "repeatPanelId": 147,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_importer_cloud_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) / sum(rate(hedera_mirror_importer_cloud_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]))",
+              "interval": "1m",
+              "legendFormat": "  ",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Consensus to Cloud Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The difference in time between the consensus time of the last transaction in the file and the time at which the file was downloaded and verified",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 157
+          },
+          "hiddenSeries": false,
+          "id": 165,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": true,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1622216967101,
+          "repeatPanelId": 128,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "stream": {
+              "selected": false,
+              "text": "RECORD",
+              "value": "RECORD"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hedera_mirror_download_latency_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) / sum(rate(hedera_mirror_download_latency_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval]))",
+              "interval": "1m",
+              "legendFormat": "  ",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Consensus to Download Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "decimals": null,
+              "format": "s",
+              "label": "",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "decimals": 2,
+          "description": "The difference in the consensus time of the last transaction in the file and the time at which the file was processed successfully",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 157
+          },
+          "hiddenSeries": false,
+          "id": 166,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": true,
+            "max": true,
+            "min": true,
+            "rightSide": true,
+            "show": true,
+            "sideWidth": null,
+            "sort": "avg",
+            "sortDesc": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1622216967101,
           "repeatPanelId": 90,
           "repeatedByRow": true,
           "scopedVars": {
@@ -5551,7 +6001,7 @@
           }
         }
       ],
-      "repeatIteration": 1603503714352,
+      "repeatIteration": 1622216967101,
       "repeatPanelId": 37,
       "scopedVars": {
         "stream": {
@@ -5565,32 +6015,17 @@
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "style": "dark",
-  "tags": [
-    "hedera",
-    "mirror",
-    "importer",
-    "application"
-  ],
+  "tags": [],
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": true,
-          "text": "hedera-mirror-importer",
-          "value": "hedera-mirror-importer"
-        },
+        "description": null,
+        "error": null,
         "hide": 2,
         "label": null,
         "name": "application",
-        "options": [
-          {
-            "selected": true,
-            "text": "hedera-mirror-importer",
-            "value": "hedera-mirror-importer"
-          }
-        ],
         "query": "hedera-mirror-importer",
         "skipUrlSync": false,
         "type": "constant"
@@ -5604,13 +6039,18 @@
         },
         "datasource": "Prometheus",
         "definition": "label_values(system_cpu_count{application=\"$application\"}, namespace)",
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": "Namespace",
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "label_values(system_cpu_count{application=\"$application\"}, namespace)",
+        "query": {
+          "query": "label_values(system_cpu_count{application=\"$application\"}, namespace)",
+          "refId": "Prometheus-namespace-Variable-Query"
+        },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -5630,13 +6070,18 @@
         },
         "datasource": "Prometheus",
         "definition": "label_values(system_cpu_count{application=\"$application\",namespace=~\"$namespace\"}, pod)",
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": "Pod",
         "multi": false,
         "name": "pod",
         "options": [],
-        "query": "label_values(system_cpu_count{application=\"$application\",namespace=~\"$namespace\"}, pod)",
+        "query": {
+          "query": "label_values(system_cpu_count{application=\"$application\",namespace=~\"$namespace\"}, pod)",
+          "refId": "Prometheus-pod-Variable-Query"
+        },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -5656,13 +6101,18 @@
         },
         "datasource": "Prometheus",
         "definition": "label_values(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
+        "description": null,
+        "error": null,
         "hide": 2,
         "includeAll": true,
         "label": "Stream",
         "multi": false,
         "name": "stream",
         "options": [],
-        "query": "label_values(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
+        "query": {
+          "query": "label_values(hedera_mirror_download_request_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
+          "refId": "Prometheus-stream-Variable-Query"
+        },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,

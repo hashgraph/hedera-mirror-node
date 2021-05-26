@@ -7,4 +7,4 @@ embedded:
   postgresql:
     docker-image: postgres:9.6-alpine
   redis:
-    docker-image: redis:5.0.9-alpine
+    docker-image: redis:6.2.3-alpine

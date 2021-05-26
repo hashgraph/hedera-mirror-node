@@ -1,9 +1,9 @@
 embedded:
   postgresql:
     enabled: true
-    docker-image: postgres:9.6-alpine #  postgres:12-alpine is current default
+    docker-image: postgres:9.6-alpine
   redis:
-    docker-image: redis:5.0.9-alpine
+    docker-image: redis:6.2.3-alpine
 spring:
   flyway:
     baselineVersion: 0

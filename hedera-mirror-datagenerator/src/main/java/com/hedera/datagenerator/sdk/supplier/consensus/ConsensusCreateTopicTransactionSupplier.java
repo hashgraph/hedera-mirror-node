@@ -24,6 +24,7 @@ import javax.validation.constraints.Min;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
+import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -31,7 +32,8 @@ import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 
 @Data
-public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<TopicCreateTransaction> {
+public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<TopicCreateTransaction>,
+        AdminKeyable {
 
     private String adminKey;
 

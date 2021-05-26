@@ -167,7 +167,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.2.0-debian-10-r83
+    tag: 13.3.0-debian-10-r11
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -288,7 +288,7 @@ timescaledb:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    tag: pg13-ts2.2-latest
+    tag: pg13.3-ts2.3.0-p0
   loadBalancer:
     enabled: false
   patroni:

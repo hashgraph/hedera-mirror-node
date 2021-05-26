@@ -193,10 +193,10 @@ prometheusRules:
   ImporterBalanceParseLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Took longer than 6.5s to parse balance stream files
+      summary: Took longer than 16s to parse balance stream files
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 6.5
-    for: 1m
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 16
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-importer
@@ -231,10 +231,10 @@ prometheusRules:
   ImporterCloudStorageLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} cloud storage latency trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Cloud storage latency exceeds 1s
+      summary: Cloud storage latency exceeds 2s
     enabled: true
-    expr: sum(rate(hedera_mirror_download_request_seconds_sum{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) > 1
-    for: 1m
+    expr: sum(rate(hedera_mirror_download_request_seconds_sum{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) > 2
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-importer
