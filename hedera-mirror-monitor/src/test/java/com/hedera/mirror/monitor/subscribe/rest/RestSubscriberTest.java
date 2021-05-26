@@ -118,7 +118,7 @@ class RestSubscriberTest {
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500000L));
+                .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
         RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
