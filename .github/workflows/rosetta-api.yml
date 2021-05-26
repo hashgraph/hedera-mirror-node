@@ -75,10 +75,12 @@ jobs:
 
       - name: Run Mirror Node
         run: |
-          docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
+          CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
             -e NETWORK=testnet \
             -v /tmp/application.yml:/var/importer/application.yml \
-            -p 5432:5432 -p 5700:5700 "${MODULE}"
+            -p 5432:5432 -p 5700:5700 "${MODULE}")
+
+          echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
 
       - name: Wait for Mirror Node to start syncing
         run: ./scripts/wait-for-mirror-node.sh
@@ -99,6 +101,10 @@ jobs:
           [[ $code -eq 0 ]] && { wait $pid || code=$?; }
           cat /tmp/construction-validation.log
           exit $code
+
+      - name: Show Container Log
+        if: ${{ failure() && env.CONTAINER_ID != "" }}
+        run: docker logs $CONTAINER_ID
 
   gosec:
     runs-on: ubuntu-latest
