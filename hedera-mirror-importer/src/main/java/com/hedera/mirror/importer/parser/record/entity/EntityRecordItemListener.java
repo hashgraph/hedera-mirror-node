@@ -445,6 +445,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             entity.setProxyAccountId(proxyAccount);
         }
 
+        entity.setModifiedTimestamp(recordItem.getConsensusTimestamp());
         entityListener.onEntity(entity);
     }
 

@@ -2,9 +2,10 @@
 -- Support upsert capabilities for entity related tables
 -------------------
 
--- allow nullable on token associated
--- alter table if exists token_account
---     alter column associated drop not null;
+-- allow nullable on entity deleted as transaction cannot make this assumption
+alter table entity
+    alter column deleted drop default,
+    alter column deleted drop not null;
 
 -- create getNewAccountFreezeStatus function
 -- if no freeze_key return NOT_APPLICABLE (0), else return FROZEN (1) or UNFROZEN (2) based on if freeze_default is true

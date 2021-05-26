@@ -103,7 +103,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         createTokenEntity(TOKEN_ID, SYMBOL, CREATE_TIMESTAMP, false, false);
 
         Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
-                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
@@ -162,10 +162,11 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         // delete token
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
-        insertAndParseTransaction(deleteTransaction, 10L, INITIAL_SUPPLY);
+        long deleteTimeStamp = 10L;
+        insertAndParseTransaction(deleteTransaction, deleteTimeStamp, INITIAL_SUPPLY);
 
         Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
-                true, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
+                true, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
@@ -187,7 +188,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(transaction, updateTimeStamp, INITIAL_SUPPLY);
 
         Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
-                TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null);
+                TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null, CREATE_TIMESTAMP,
+                CREATE_TIMESTAMP);
         assertEquals(5, entityRepository.count()); // Node, payer, token, old autorenew, and new autorenew
         assertEntity(expected);
 

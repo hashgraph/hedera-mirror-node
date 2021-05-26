@@ -37,13 +37,12 @@ import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 @NoArgsConstructor
 public class Schedule {
     public static final String TEMP_TABLE = "schedule_temp";
-    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into schedule select consensus_timestamp, " +
-            "creator_account_id, , executed_timestamp, payer_account_id, schedule_id, transaction_body " +
-            "from " + TEMP_TABLE + "where consensus_timestamp is not null on conflict(schedule_id) do nothing";
+    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into schedule select * from " + TEMP_TABLE +
+            " where consensus_timestamp is not null on conflict(schedule_id) do nothing";
     public static final String TEMP_TO_MAIN_UPDATE_SQL = "update schedule set " +
             "executed_timestamp = " + TEMP_TABLE + ".executed_timestamp from " + TEMP_TABLE +
-            " where schedule.schedule_id = " + TEMP_TABLE + ".schedule_id and " + TEMP_TABLE + ".consensus_timestamp " +
-            "is null";
+            " where schedule.schedule_id = " + TEMP_TABLE + ".schedule_id and " + TEMP_TABLE + ".executed_timestamp " +
+            "is not null";
     public static final String TEMP_TO_MAIN_UPSERT_SQL = "insert into schedule select coalesce(consensus_timestamp, " +
             "1), coalesce(creator_account_id, 0), executed_timestamp, coalesce(payer_account_id, 0), schedule_id, " +
             "coalesce(transaction_body, E'\'\''::bytea) from " + TEMP_TABLE +

@@ -57,9 +57,9 @@ public class Token {
             "name = coalesce(" + TEMP_TABLE + ".name, t.name), " +
             "supply_key = coalesce(" + TEMP_TABLE + ".supply_key, t.supply_key), " +
             "supply_key_ed25519_hex = coalesce(" + TEMP_TABLE + ".supply_key_ed25519_hex, t.supply_key_ed25519_hex), " +
-            "symbol = " + TEMP_TABLE + ".symbol, " +
+            "symbol = coalesce(" + TEMP_TABLE + ".symbol, t.symbol), " +
             "total_supply = coalesce(" + TEMP_TABLE + ".total_supply, t.total_supply)," +
-            "treasury_account_id = " + TEMP_TABLE + ".treasury_account_id, " +
+            "treasury_account_id = coalesce(" + TEMP_TABLE + ".treasury_account_id, t.treasury_account_id), " +
             "wipe_key = coalesce(" + TEMP_TABLE + ".wipe_key, t.wipe_key), " +
             "wipe_key_ed25519_hex = coalesce(" + TEMP_TABLE + ".wipe_key_ed25519_hex, t.wipe_key_ed25519_hex) " +
             "from " + TEMP_TABLE +

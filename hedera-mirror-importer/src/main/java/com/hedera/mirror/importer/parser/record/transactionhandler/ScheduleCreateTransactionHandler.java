@@ -20,12 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.Entity;
-
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
@@ -49,6 +48,9 @@ public class ScheduleCreateTransactionHandler implements TransactionHandler {
         if (scheduleCreateTransactionBody.hasAdminKey()) {
             entity.setKey(scheduleCreateTransactionBody.getAdminKey().toByteArray());
         }
+
+        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
+        entity.setDeleted(false);
         entity.setMemo(scheduleCreateTransactionBody.getMemo());
     }
 }

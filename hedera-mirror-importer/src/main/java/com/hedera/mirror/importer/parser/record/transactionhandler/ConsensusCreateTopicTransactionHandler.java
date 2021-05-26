@@ -52,6 +52,10 @@ public class ConsensusCreateTopicTransactionHandler implements TransactionHandle
         if (createTopic.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(createTopic.getAutoRenewPeriod().getSeconds());
         }
+
+        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
+        entity.setDeleted(false);
+
         // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
         // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
         var adminKey = createTopic.hasAdminKey() ? createTopic.getAdminKey().toByteArray() : new byte[0];

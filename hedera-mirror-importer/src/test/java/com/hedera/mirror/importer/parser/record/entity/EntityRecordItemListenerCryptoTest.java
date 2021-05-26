@@ -643,7 +643,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertAccount(record.getReceipt().getAccountID(), actualAccount),
-                () -> assertEquals(deleted, actualAccount.getDeleted()));
+                () -> assertEntity(actualAccount));
     }
 
     private void assertCryptoEntity(CryptoCreateTransactionBody expected, Timestamp consensusTimestamp) {

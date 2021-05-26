@@ -59,6 +59,10 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
+    protected static final Long DEFAULT_CREATED_TIMESTAMP = 0L;
+
+    protected static final boolean DEFAULT_DELETED = false;
+
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
 
     protected static final Timestamp DEFAULT_EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
@@ -315,6 +319,30 @@ public abstract class AbstractTransactionHandlerTest {
                 default:
                     break;
             }
+        }
+
+        // set created_timestamp and deleted based on transaction body type
+        int dataCase = defaultBody.getDataCase().getNumber();
+        switch (dataCase) {
+            case 8: // contractCreate
+            case 11: // cryptoCreate
+            case 17: // fileCreate
+            case 24: // consensusCreate
+            case 29: // tokenCreate
+            case 42: // scheduleCreate
+                entity.setCreatedTimestamp(DEFAULT_CREATED_TIMESTAMP);
+                entity.setDeleted(DEFAULT_DELETED);
+                break;
+            case 12: // cryptoDelete
+            case 22: // contractDelete
+            case 18: // fileDelete
+            case 26: // consensusDelete
+            case 35: // tokenDelete
+            case 43: // scheduleDelete
+                entity.setDeleted(true);
+                break;
+            default:
+                break;
         }
 
         entity.setMemo("");

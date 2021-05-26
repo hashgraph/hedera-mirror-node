@@ -39,10 +39,12 @@ import com.hedera.mirror.importer.util.Utility;
 public class Entity {
     public static final String TEMP_TABLE = "entity_temp";
     public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into entity select auto_renew_account_id, " +
-            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, " +
-            "num, public_key, proxy_account_id, realm, shard, submit_key, type from " + TEMP_TABLE +
-            " where created_timestamp is not null on conflict (id) do nothing";
+            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, coalesce(memo, ''), " +
+            "modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type from " + TEMP_TABLE +
+            " on conflict (id) do nothing";
     public static final String TEMP_TO_MAIN_UPDATE_SQL = "update entity set " +
+            "auto_renew_account_id = coalesce(" + TEMP_TABLE + ".auto_renew_account_id, entity.auto_renew_account_id)" +
+            ", " +
             "auto_renew_period = coalesce(" + TEMP_TABLE + ".auto_renew_period, entity.auto_renew_period), " +
             "deleted = coalesce(" + TEMP_TABLE + ".deleted, entity.deleted), " +
             "expiration_timestamp = coalesce(" + TEMP_TABLE + ".expiration_timestamp, entity.expiration_timestamp), " +

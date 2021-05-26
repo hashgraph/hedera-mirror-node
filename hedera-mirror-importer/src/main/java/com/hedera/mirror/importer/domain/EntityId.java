@@ -49,10 +49,9 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EntityId implements Serializable, Comparable<EntityId> {
     public static final String TEMP_TABLE = "entity_id_temp";
-    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into entity select auto_renew_account_id, " +
-            "auto_renew_period, created_timestamp, false as deleted, expiration_timestamp, id, key, '' as memo, " +
-            "modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type from " + TEMP_TABLE + " on conflict" +
-            " (id) do nothing";
+    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into entity (deleted, id, memo, num, realm, shard, " +
+            "type) select null as deleted, id, '' as memo, num, realm, shard, type from " + TEMP_TABLE +
+            " on conflict (id) do nothing";
     public static final String TEMP_TO_MAIN_UPDATE_SQL = "select 1";
     public static final String TEMP_TO_MAIN_UPSERT_SQL = "select 1";
 
@@ -142,7 +141,6 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         entity.setRealm(realmNum);
         entity.setNum(entityNum);
         entity.setType(type);
-        entity.setDeleted(false);
         return entity;
     }
 

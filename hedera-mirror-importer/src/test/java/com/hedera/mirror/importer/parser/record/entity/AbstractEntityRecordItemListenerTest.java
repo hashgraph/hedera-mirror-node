@@ -349,7 +349,8 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected Entity createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-                                  boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
+                                  Boolean deleted, Long expiryTimeNs, String memo, Key submitKey,
+                                  Long createdTimestamp, Long modifiedTimestamp) {
         if (autoRenewAccountId != null) {
             entityRepository.save(autoRenewAccountId.toEntity());
         }
@@ -360,9 +361,11 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         Entity entity = entityId.toEntity();
         entity.setAutoRenewAccountId(autoRenewAccountId);
         entity.setAutoRenewPeriod(autoRenewPeriod);
+        entity.setCreatedTimestamp(createdTimestamp);
         entity.setDeleted(deleted);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
+        entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
 

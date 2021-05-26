@@ -42,12 +42,16 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.converter.KeyConverter;
 import com.hedera.mirror.importer.converter.TopicIdConverter;
 import com.hedera.mirror.importer.domain.Entity;
@@ -63,6 +67,10 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     static final String TRANSACTION_MEMO = "transaction memo";
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
+
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
+    @Resource
+    private CacheManager cacheManager;
 
     @ParameterizedTest
     @CsvSource({
@@ -83,10 +91,15 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
         long entityCount = autoRenewAccountNum != null ? 4 : 3; // Node, payer, topic & optionally autorenew
         var entity = getTopicEntity(topicId);
+
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
         var expectedEntity = createTopicEntity(topicId, null, null, adminKey, submitKey, memo, autoRenewAccountNum,
                 autoRenewPeriod);
+        expectedEntity.setCreatedTimestamp(consensusTimestamp);
+        expectedEntity.setDeleted(false);
+        expectedEntity.setModifiedTimestamp(consensusTimestamp);
+
         assertThat(entity).isEqualTo(expectedEntity);
     }
 
@@ -122,6 +135,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
         var entity = getTopicEntity(TOPIC_ID);
+
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(4L, entityRepository.count()); // Node, payer, topic, autorenew
         assertThat(entity)
@@ -194,7 +208,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
-        assertThat(entity).isEqualTo(expectedEntity);
+        assertEntity(expectedEntity);
     }
 
     @Test
@@ -243,6 +257,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
         var expectedTopic = createTopicEntity(TOPIC_ID, 11L, 0, adminKey, submitKey, memo, autoRenewAccount.getId(),
                 30L);
+        expectedTopic.setModifiedTimestamp(consensusTimestamp);
         assertThat(entity).isEqualTo(expectedTopic);
     }
 
@@ -269,6 +284,9 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
                 autoRenewAccountNum, autoRenewPeriod);
         entityRepository.save(topic);
 
+        if (updatedAutoRenewAccountNum != null) {
+            topic.setAutoRenewAccountId(EntityId.of(0, 0, updatedAutoRenewAccountNum, EntityTypeEnum.ACCOUNT));
+        }
         if (updatedAutoRenewPeriod != null) {
             topic.setAutoRenewPeriod(updatedAutoRenewPeriod);
         }
@@ -339,6 +357,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         // Setup expected data
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         topic.setDeleted(true);
+        topic.setModifiedTimestamp(consensusTimestamp);
         // Topic not saved to the repository.
 
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
@@ -730,6 +749,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     }
 
     private Entity getTopicEntity(TopicID topicId) {
+        cacheManager.getCache("entity").clear();
         return getEntity(EntityId.of(topicId).getId());
     }
 }

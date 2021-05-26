@@ -363,7 +363,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                                 " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         entity.getAutoRenewAccountId().getId(),
                         entity.getAutoRenewPeriod(),
-                        entity.getDeleted(),
+                        entity.getDeleted() == null ? false : entity.getDeleted(),
                         entity.getNum(),
                         entity.getRealm(),
                         entity.getShard(),

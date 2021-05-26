@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import javax.annotation.Resource;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.DecoderException;
@@ -37,10 +38,13 @@ import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
@@ -95,6 +99,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
     private final TransactionTemplate transactionTemplate;
+
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
+    @Resource
+    private CacheManager cacheManager;
 
     private final String fileName = "2019-08-30T18_10_00.419072Z.rcd";
     private RecordFile recordFile;
@@ -289,10 +297,18 @@ public class SqlEntityListenerTest extends IntegrationTest {
     void onTokenAccount() throws Exception {
         String tokenId1 = "0.0.3";
         String tokenId2 = "0.0.5";
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, "0.0.500", 1);
+        Token token2 = getToken(tokenId2, "0.0.110", 2);
+        sqlEntityListener.onToken(token1);
+        sqlEntityListener.onToken(token2);
+        completeFileAndCommit();
+
         String accountId1 = "0.0.7";
         String accountId2 = "0.0.11";
-        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 1);
-        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11", 2);
+        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 5);
+        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11", 6);
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);

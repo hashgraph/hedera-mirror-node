@@ -242,8 +242,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             persistUpdatableEntity(connection, entityPgCopy, entities.values(), Entity.class);
             persistUpdatableEntity(connection, entityIdPgCopy, entityIdEntities.values(), EntityId.class);
             persistUpdatableEntity(connection, schedulePgCopy, schedules.values(), Schedule.class);
-            persistUpdatableEntity(connection, tokenAccountPgCopy, tokenAccounts.values(), TokenAccount.class);
             persistUpdatableEntity(connection, tokenPgCopy, tokens.values(), Token.class);
+            persistUpdatableEntity(connection, tokenAccountPgCopy, tokenAccounts.values(), TokenAccount.class);
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -369,17 +369,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         upsertPgCopy.copy(values, connection);
         int insertCount = upsertPgCopy.insertToFinalTable(connection);
         upsertPgCopy.updateFinalTable(connection);
-//        int upsertCount = upsertPgCopy.upsertFinalTable(connection);
         log.info("Inserted {} of {} {}'s in {}", insertCount, values.size(),
                 entityClass.getSimpleName(), stopwatch);
-//        log.info("Inserted {} of {} {}'s in {}", upsertCount, values.size(), entityClass.getSimpleName(), stopwatch);
     }
 
     private void updateCachedEntity(Entity newEntity) {
         Entity cachedEntity = entities.get(newEntity.getId());
         cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
 
-        // delete vs update operation
+        // update vs delete operation
         if (newEntity.getDeleted() == null) {
             cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
             cachedEntity.setKey(newEntity.getKey());
@@ -409,6 +407,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (newToken.getSymbol() != null) {
             cachedToken.setSymbol(newToken.getSymbol());
+        }
+
+        if (newToken.getTotalSupply() != null) {
+            cachedToken.setTotalSupply(newToken.getTotalSupply());
         }
 
         if (newToken.getTreasuryAccountId() != null) {
