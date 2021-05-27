@@ -195,6 +195,12 @@ should suffice. Additionally, the
 `hedera.mirror.monitor.subscribe.grpc.subscribers` property can be adjusted to increase the number of concurrent
 subscribers for that scenario.
 
+## OpenAPI
+
+The monitor [OpenAPI](https://www.openapis.org) specification is available at `/api/v1/docs/openapi`
+and `/api/v1/docs/openapi.yaml`. The [Swagger UI](https://swagger.io/tools/swagger-ui) is also available
+at `/api/v1/docs`. This UI provides a form of documentation, and an interactive way to explore the monitor's REST API.
+
 ## Dashboard & Metrics
 
 The monitor includes a Grafana [dashboard](/charts/hedera-mirror-common/dashboards/hedera-mirror-monitor.json) that

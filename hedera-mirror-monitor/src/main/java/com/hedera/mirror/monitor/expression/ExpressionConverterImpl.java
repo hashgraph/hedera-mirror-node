@@ -42,7 +42,6 @@ import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplie
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
-import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
@@ -118,7 +117,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             throw e;
         } catch (Exception e) {
             log.error("Error converting expression {}:", expression, e);
-            throw new PublishException(e);
+            throw new RuntimeException(e);
         }
     }
 

@@ -66,13 +66,7 @@ alertmanager:
 
 annotations: {}
 
-config:
-  hedera:
-    mirror:
-      monitor:
-        mirrorNode:
-          rest:
-            port: 80
+config: {}
 
 # Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
 env:
@@ -222,7 +216,7 @@ prometheusRules:
 
   MonitorSubscribeLatency:
     annotations:
-      description: "{{ $labels.subscriber }} latency averaging {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "Latency averaging {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "End to end latency exceeds 10s"
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) > 10
@@ -233,7 +227,7 @@ prometheusRules:
 
   MonitorSubscribeStopped:
     annotations:
-      description: "{{ $labels.subscriber }} TPS dropped to {{ $value }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "TPS dropped to {{ $value }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Subscription stopped"
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) <= 0

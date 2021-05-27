@@ -50,8 +50,10 @@ management:
         readiness:
           include: ping
 server:
-  shutdown: graceful
+  http2:
+    enabled: true
   port: 8082
+  shutdown: graceful
 spring:
   application:
     name: hedera-mirror-monitor
@@ -63,4 +65,9 @@ spring:
         paths: /usr/etc/${spring.application.name}
   lifecycle:
     timeout-per-shutdown-phase: 20s
-
+springdoc:
+  api-docs:
+    path: /api/v1/docs/openapi
+  swagger-ui:
+    path: /api/v1/docs
+    disable-swagger-default-url: true

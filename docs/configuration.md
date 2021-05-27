@@ -267,7 +267,6 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.subscribe.rest[].retry.maxBackoff`   | 8s         | The maximum amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.rest[].retry.minBackoff`   | 250ms      | The initial amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.rest[].samplePercent`      | 1.0        | The percentage of transactions to verify against the REST API. Accepts values between 0-1
-`hedera.mirror.monitor.subscribe.rest[].statusFrequency`    | 10s        | How often to log subscription statistics
 `hedera.mirror.monitor.subscribe.rest[].timeout`            | 2s         | Maximum amount of time to wait for a REST API call to retrieve data
 `hedera.mirror.monitor.subscribe.statusFrequency`           | 10s        | How often to log subscription statistics
 `hedera.mirror.monitor.validateNodes`                       | true       | Whether to validate and remove invalid or down nodes permanently before publishing

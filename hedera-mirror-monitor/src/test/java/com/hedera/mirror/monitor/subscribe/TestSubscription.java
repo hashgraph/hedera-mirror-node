@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.publish;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,16 +20,21 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import lombok.Getter;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.Data;
 
-@Getter
-public class PublishException extends RuntimeException {
+@Data
+public class TestSubscription implements Subscription {
 
-    private static final long serialVersionUID = 5825147561227266065L;
-    private final transient PublishRequest publishRequest;
-
-    public PublishException(PublishRequest publishRequest, Throwable throwable) {
-        super(throwable);
-        this.publishRequest = publishRequest;
-    }
+    private long count = 1;
+    private Duration elapsed = Duration.ofSeconds(1L);
+    private Map<String, Integer> errors = new HashMap<>();
+    private int id = 1;
+    private String name = "Test";
+    private AbstractSubscriberProperties properties;
+    private SubscriberProtocol protocol = SubscriberProtocol.GRPC;
+    private double rate = 1.0;
+    private SubscriptionStatus status = SubscriptionStatus.RUNNING;
 }

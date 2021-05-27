@@ -20,75 +20,25 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * ‍
  */
 
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ConcurrentHashMultiset;
-import com.google.common.collect.Multiset;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.math3.util.Precision;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessage;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
-import com.hedera.mirror.monitor.subscribe.Subscription;
+import com.hedera.mirror.monitor.subscribe.AbstractSubscription;
+import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
 
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@Log4j2
-public class GrpcSubscription implements Subscription {
+class GrpcSubscription extends AbstractSubscription<GrpcSubscriberProperties, TopicMessage> {
 
-    @EqualsAndHashCode.Include
-    private final int id;
-
-    @EqualsAndHashCode.Include
-    private final GrpcSubscriberProperties properties;
-
-    private final AtomicLong count = new AtomicLong(0L);
-    private final Multiset<String> errors = ConcurrentHashMultiset.create();
-    private final AtomicLong lastCount = new AtomicLong(0L);
-    private final AtomicLong lastElapsed = new AtomicLong(0L);
-    private final Stopwatch stopwatch = Stopwatch.createStarted();
-    private volatile Optional<TopicMessage> last = Optional.empty();
-
-    @Override
-    public long getCount() {
-        return count.get();
+    GrpcSubscription(int id, GrpcSubscriberProperties properties) {
+        super(id, properties);
     }
 
     @Override
-    public Map<String, Integer> getErrors() {
-        Map<String, Integer> errorCounts = new TreeMap<>();
-        errors.forEachEntry(errorCounts::put);
-        return Collections.unmodifiableMap(errorCounts);
-    }
-
-    @Override
-    public double getRate() {
-        long count = getCount();
-        long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        long instantCount = count - lastCount.getAndSet(count);
-        long instantElapsed = elapsed - lastElapsed.getAndSet(elapsed);
-        return getRate(instantCount, instantElapsed);
-    }
-
-    private double getRate(long count, long elapsedMicros) {
-        return Precision.round(elapsedMicros > 0 ? (count * 1000000.0) / elapsedMicros : 0.0, 1);
-    }
-
-    @Override
-    public TransactionType getType() {
-        return TransactionType.CONSENSUS_SUBMIT_MESSAGE;
+    public SubscriberProtocol getProtocol() {
+        return SubscriberProtocol.GRPC;
     }
 
     TopicMessageQuery getTopicMessageQuery() {
@@ -104,12 +54,8 @@ public class GrpcSubscription implements Subscription {
         return topicMessageQuery;
     }
 
-    void onComplete() {
-        stopwatch.stop();
-    }
-
-    void onNext(TopicMessage topicResponse) {
-        count.incrementAndGet();
+    @Override
+    public void onNext(TopicMessage topicResponse) {
         log.trace("{}: Received message #{} with timestamp {}", this, topicResponse.sequenceNumber,
                 topicResponse.consensusTimestamp);
 
@@ -121,20 +67,15 @@ public class GrpcSubscription implements Subscription {
             }
         });
 
-        last = Optional.of(topicResponse);
+        super.onNext(topicResponse);
     }
 
-    void onError(Throwable t) {
+    @Override
+    public void onError(Throwable t) {
         Status.Code statusCode = Status.Code.UNKNOWN;
         if (t instanceof StatusRuntimeException) {
             statusCode = ((StatusRuntimeException) t).getStatus().getCode();
         }
         errors.add(statusCode.name());
-    }
-
-    @Override
-    public String toString() {
-        String name = getProperties().getName();
-        return getProperties().getSubscribers() <= 1 ? name : name + " #" + getId();
     }
 }

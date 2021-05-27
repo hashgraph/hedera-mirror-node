@@ -56,7 +56,6 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final PublishMetrics publishMetrics;
     private final Supplier<List<Client>> clients = Suppliers.memoize(this::getClients);
     private final Supplier<List<AccountId>> nodeAccountIds = Suppliers.memoize(this::getNodeAccountIds);
     private final AtomicInteger counter = new AtomicInteger(0);
@@ -79,13 +78,6 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     public Mono<PublishResponse> publish(PublishRequest request) {
-        return doPublish(request)
-                .doOnSuccess(response -> publishMetrics.onSuccess(request, response))
-                .doOnError(throwable -> publishMetrics.onError(request, throwable))
-                .onErrorMap(PublishException::new);
-    }
-
-    private Mono<PublishResponse> doPublish(PublishRequest request) {
         log.trace("Publishing: {}", request);
         int clientIndex = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
         Client client = clients.get().get(clientIndex);
@@ -98,7 +90,8 @@ public class TransactionPublisher implements AutoCloseable {
                         log.info("Received response : {}", response);
                     }
                 })
-                .timeout(request.getTimeout());
+                .timeout(request.getTimeout())
+                .onErrorMap(t -> new PublishException(request, t));
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {

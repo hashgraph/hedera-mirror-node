@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -37,8 +38,11 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
+import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
+import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
+import com.hedera.mirror.monitor.subscribe.Subscription;
 
 @ExtendWith(MockitoExtension.class)
 class GrpcSubscriberTest {
@@ -61,12 +65,22 @@ class GrpcSubscriberTest {
     }
 
     @Test
+    void onPublish() {
+        grpcSubscriber.onPublish(PublishResponse.builder().build());
+        verifyNoInteractions(grpcClient);
+    }
+
+    @Test
     void subscribe() {
         when(grpcClient.subscribe(any())).thenReturn(Flux.just(response(), response()));
         grpcSubscriber.subscribe()
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
-                .verifyComplete();
+                .expectComplete()
+                .verify(Duration.ofMillis(500L));
+        assertThat(grpcSubscriber.getSubscriptions().blockFirst())
+                .isNotNull()
+                .returns(SubscriberProtocol.GRPC, Subscription::getProtocol);
     }
 
     @Test
@@ -77,6 +91,14 @@ class GrpcSubscriberTest {
                 .as(StepVerifier::create)
                 .expectNextCount(4L)
                 .verifyComplete();
+        assertThat(grpcSubscriber.getSubscriptions().collectList().block())
+                .hasSize(2)
+                .doesNotHaveDuplicates()
+                .allSatisfy(s -> assertThat(s).isNotNull()
+                        .returns(grpcSubscriberProperties, Subscription::getProperties)
+                        .returns(SubscriberProtocol.GRPC, Subscription::getProtocol))
+                .extracting(Subscription::getId)
+                .containsExactly(1, 2);
     }
 
     @Test
@@ -91,6 +113,13 @@ class GrpcSubscriberTest {
                 .as(StepVerifier::create)
                 .expectNextCount(4L)
                 .verifyComplete();
+        assertThat(grpcSubscriber.getSubscriptions().collectList().block())
+                .hasSize(2)
+                .doesNotHaveDuplicates()
+                .allSatisfy(s -> assertThat(s).isNotNull()
+                        .returns(SubscriberProtocol.GRPC, Subscription::getProtocol))
+                .extracting(Subscription::getName)
+                .doesNotHaveDuplicates();
     }
 
     @Test
@@ -102,6 +131,7 @@ class GrpcSubscriberTest {
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(200));
+        assertThat(grpcSubscriber.getSubscriptions().count().block()).isZero();
     }
 
     @Test
@@ -113,6 +143,7 @@ class GrpcSubscriberTest {
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(200));
+        assertThat(grpcSubscriber.getSubscriptions().count().block()).isZero();
     }
 
     @Test

@@ -23,8 +23,12 @@ package com.hedera.mirror.monitor.publish;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -46,7 +50,7 @@ public class PublishProperties {
 
     private boolean enabled = true;
 
-    @NotEmpty
+    @NotNull
     private List<ScenarioProperties> scenarios = new ArrayList<>();
 
     @DurationMin(seconds = 1L)
@@ -59,4 +63,24 @@ public class PublishProperties {
     @DurationMin(seconds = 0)
     @NotNull
     private Duration warmupPeriod = Duration.ofSeconds(30L);
+
+    @PostConstruct
+    void validate() {
+        if (enabled && scenarios.isEmpty()) {
+            throw new IllegalArgumentException("There must be at least one publish scenario");
+        }
+
+        Set<String> names = scenarios.stream()
+                .map(ScenarioProperties::getName)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet()
+                .stream()
+                .filter(e -> e.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        if (!names.isEmpty()) {
+            throw new IllegalArgumentException("More than one publish scenario with the same name: " + names);
+        }
+    }
 }

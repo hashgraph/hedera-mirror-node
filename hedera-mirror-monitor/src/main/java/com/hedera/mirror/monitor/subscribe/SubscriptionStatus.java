@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.publish;
+package com.hedera.mirror.monitor.subscribe;
 
 /*-
  * ‌
@@ -20,16 +20,8 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import lombok.Getter;
-
-@Getter
-public class PublishException extends RuntimeException {
-
-    private static final long serialVersionUID = 5825147561227266065L;
-    private final transient PublishRequest publishRequest;
-
-    public PublishException(PublishRequest publishRequest, Throwable throwable) {
-        super(throwable);
-        this.publishRequest = publishRequest;
-    }
+public enum SubscriptionStatus {
+    COMPLETED,
+    IDLE,
+    RUNNING,
 }

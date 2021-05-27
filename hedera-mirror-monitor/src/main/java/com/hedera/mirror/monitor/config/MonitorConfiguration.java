@@ -32,16 +32,20 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.monitor.generator.TransactionGenerator;
+import com.hedera.mirror.monitor.publish.PublishException;
+import com.hedera.mirror.monitor.publish.PublishMetrics;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
-import com.hedera.mirror.monitor.subscribe.Subscriber;
 
 @Log4j2
 @Configuration
 class MonitorConfiguration {
+
+    @Resource
+    private MirrorSubscriber mirrorSubscriber;
 
     @Resource
     private PublishProperties publishProperties;
@@ -52,20 +56,18 @@ class MonitorConfiguration {
     @Resource
     private TransactionPublisher transactionPublisher;
 
-    @Resource
-    private Subscriber subscriber;
-
     /**
-     * Constructs a reactive flow for publishing and subscribing to transactions. The transaction generator will run on
-     * a single thread and generate transactions as fast as possible. Next, a parallel Flux will concurrently publish
-     * those transactions to the main nodes. Finally, a subscriber will receive every published transaction response and
-     * validate whether that transaction was received by the mirror node APIs.
+     * Constructs a reactive flow for publishing transactions. The transaction generator will run on a single thread and
+     * generate transactions as fast as possible. Next, a parallel Flux will concurrently publish those transactions to
+     * the main nodes. Once the response is received, it will be sent to subscribers in case they need to sample them to
+     * validate whether that transaction was received by the mirror node APIs. Finally, metrics will be collected for
+     * every published transaction.
      *
-     * @return the subscribed flux
+     * @return the publishing flow's Disposable
      */
     @Bean(destroyMethod = "dispose")
     @ConditionalOnProperty(value = "hedera.mirror.monitor.publish.enabled", havingValue = "true", matchIfMissing = true)
-    Disposable publish() {
+    Disposable publish(PublishMetrics publishMetrics) {
         return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
                 .flatMapIterable(Function.identity())
                 .retry()
@@ -80,16 +82,24 @@ class MonitorConfiguration {
                 .runOn(Schedulers.newParallel("resolver", publishProperties.getThreads()))
                 .flatMap(Function.identity())
                 .sequential()
+                .doOnError(PublishException.class, publishMetrics::onError)
+                .doOnNext(mirrorSubscriber::onPublish)
                 .onErrorContinue((t, r) -> log.error("Unexpected error during publish flow: ", t))
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .doOnSubscribe(s -> log.info("Starting publisher flow"))
-                .subscribe(subscriber::onPublish);
+                .subscribe(publishMetrics::onSuccess);
     }
 
+    /**
+     * Starts subscribing to mirror node APIs to receive data, sending the results to the metrics collector.
+     *
+     * @param subscribeMetrics
+     * @return the subscribing flow's Disposable
+     */
     @Bean(destroyMethod = "dispose")
     @ConditionalOnProperty(value = "hedera.mirror.monitor.subscribe.enabled", havingValue = "true",
             matchIfMissing = true)
-    Disposable subscribe(MirrorSubscriber mirrorSubscriber, SubscribeMetrics subscribeMetrics) {
+    Disposable subscribe(SubscribeMetrics subscribeMetrics) {
         return mirrorSubscriber.subscribe()
                 .name("subscribe")
                 .metrics()
