@@ -89,8 +89,12 @@ public class Utility {
      */
     public static String convertSimpleKeyToHex(@Nullable byte[] protobufKey) {
         try {
-            if (ArrayUtils.isEmpty(protobufKey)) {
+            if (protobufKey == null) {
                 return null;
+            }
+
+            if (ArrayUtils.isEmpty(protobufKey)) {
+                return "";
             }
 
             Key key = Key.parseFrom(protobufKey);
@@ -150,9 +154,8 @@ public class Utility {
     }
 
     /**
-     * Converts instant to time in only nanos, with a fallback if overflow: If positive overflow, return
-     * the max time in the future (Long.MAX_VALUE). If negative overflow, return the max time in the past
-     * (Long.MIN_VALUE).
+     * Converts instant to time in only nanos, with a fallback if overflow: If positive overflow, return the max time in
+     * the future (Long.MAX_VALUE). If negative overflow, return the max time in the past (Long.MIN_VALUE).
      */
     public static long convertToNanosMax(Instant instant) {
         if (instant == null) {

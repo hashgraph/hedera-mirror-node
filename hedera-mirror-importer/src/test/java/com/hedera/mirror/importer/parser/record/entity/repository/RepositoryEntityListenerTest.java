@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -112,7 +113,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     @Test
     void onEntityId() {
         repositoryEntityListener.onEntityId(ENTITY_ID);
-        assertThat(entityRepository.findAll()).contains(ENTITY_ID.toEntity());
+        assertThat(entityRepository.findAll()).contains(getEntityWithDefaultMemo(ENTITY_ID));
     }
 
     @Test
@@ -235,5 +236,11 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         transaction.setValidStartNs(1L);
         repositoryEntityListener.onTransaction(transaction);
         assertThat(transactionRepository.findAll()).contains(transaction);
+    }
+
+    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
+        Entity entity = entityId.toEntity();
+        entity.setMemo("");
+        return entity;
     }
 }

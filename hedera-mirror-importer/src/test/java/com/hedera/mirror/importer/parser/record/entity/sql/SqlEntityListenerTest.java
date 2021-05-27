@@ -48,6 +48,7 @@ import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -252,7 +253,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, entityRepository.count());
-        assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
+        assertExistsAndEquals(entityRepository, getEntityWithDefaultMemo(entityId), 10L);
     }
 
     @Test
@@ -273,7 +274,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile, recordFile2);
         assertEquals(1, entityRepository.count());
-        assertExistsAndEquals(entityRepository, entityId.toEntity(), 10L);
+        assertExistsAndEquals(entityRepository, getEntityWithDefaultMemo(entityId), 10L);
     }
 
     @Test
@@ -545,5 +546,11 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     private RecordFile clone(RecordFile recordFile) {
         return recordFile.toBuilder().build();
+    }
+
+    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
+        Entity entity = entityId.toEntity();
+        entity.setMemo("");
+        return entity;
     }
 }

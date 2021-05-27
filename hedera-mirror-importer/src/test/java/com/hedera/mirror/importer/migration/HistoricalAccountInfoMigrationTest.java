@@ -270,6 +270,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         entity.setType(type.getId());
         entity.setId(num);
         entity.setDeleted(false);
+        entity.setMemo("");
 
         if (afterReset) {
             Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build();

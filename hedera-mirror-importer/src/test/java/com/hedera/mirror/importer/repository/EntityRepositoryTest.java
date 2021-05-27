@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
@@ -49,16 +51,64 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
+    void entityPublicKeyUpdates() {
+        Entity entity = new Entity();
+        entity.setId(1L);
+        entity.setNum(1L);
+        entity.setRealm(0L);
+        entity.setShard(0L);
+        entity.setType(1);
+        entity.setMemo("abc" + (char) 0);
+        entity.setDeleted(false);
+        entityRepository.save(entity);
+
+        // unset key should result in null public key
+        assertThat(entityRepository.findById(entity.getId())).get()
+                .extracting(Entity::getPublicKey).isEqualTo(null);
+
+        // default proto key of single byte should result in empty public key
+        entity.setKey(Key.getDefaultInstance().toByteArray());
+        entityRepository.save(entity);
+        assertThat(entityRepository.findById(entity.getId())).get()
+                .extracting(Entity::getPublicKey).isEqualTo(""); // "" -> ""
+
+        // invalid key should be null
+        entity.setKey("123".getBytes());
+        entityRepository.save(entity);
+        assertThat(entityRepository.findById(entity.getId())).get()
+                .extracting(Entity::getPublicKey).isNull(); // "" -> ""
+
+        // valid key should not be null
+        entity.setKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build().toByteArray());
+        entityRepository.save(entity);
+        assertThat(entityRepository.findById(entity.getId())).get()
+                .extracting(Entity::getPublicKey).isNotNull(); // "" -> ""
+
+        // null key like unset should result in null public key
+        entity.setKey(null);
+        entityRepository.save(entity);
+        assertThat(entityRepository.findById(entity.getId())).get()
+                .extracting(Entity::getPublicKey).isEqualTo(null); // null -> null
+    }
+
+    @Test
     void insertEntityId() {
         // given
         EntityId entityId = EntityId.of(10L, 20L, 30L, EntityTypeEnum.ACCOUNT);
         entityRepository.insertEntityId(entityId);
-        assertThat(entityRepository.findById(entityId.getId())).get().isEqualTo(entityId.toEntity());
+        assertThat(entityRepository.findById(entityId.getId())).get()
+                .isEqualTo(getEntityWithDefaultMemo(entityId));
 
         // when
         entityRepository.insertEntityId(entityId); // insert again to test for conflict
 
         assertThat(entityRepository.count()).isEqualTo(1);
-        assertThat(entityRepository.findById(entityId.getId())).get().isEqualTo(entityId.toEntity());
+        assertThat(entityRepository.findById(entityId.getId())).get().isEqualTo(getEntityWithDefaultMemo(entityId));
+    }
+
+    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
+        Entity entity = entityId.toEntity();
+        entity.setMemo("");
+        return entity;
     }
 }

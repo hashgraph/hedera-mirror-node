@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -39,8 +40,11 @@ import com.hedera.mirror.importer.util.Utility;
 public class Entity {
     public static final String TEMP_TABLE = "entity_temp";
     public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into entity select auto_renew_account_id, " +
-            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, coalesce(memo, ''), " +
-            "modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type from " + TEMP_TABLE +
+            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, " +
+            "case when " + TEMP_TABLE + ".memo = ' ' then '' else coalesce(memo, '') end, " +
+            "modified_timestamp, num, " +
+            "case when " + TEMP_TABLE + ".public_key = ' ' then '' else public_key end, " +
+            "proxy_account_id, realm, shard, submit_key, type from " + TEMP_TABLE +
             " on conflict (id) do nothing";
     public static final String TEMP_TO_MAIN_UPDATE_SQL = "update entity set " +
             "auto_renew_account_id = coalesce(" + TEMP_TABLE + ".auto_renew_account_id, entity.auto_renew_account_id)" +
@@ -49,23 +53,13 @@ public class Entity {
             "deleted = coalesce(" + TEMP_TABLE + ".deleted, entity.deleted), " +
             "expiration_timestamp = coalesce(" + TEMP_TABLE + ".expiration_timestamp, entity.expiration_timestamp), " +
             "key = coalesce(" + TEMP_TABLE + ".key, entity.key), " +
-            "memo = coalesce(" + TEMP_TABLE + ".memo, entity.memo, ''), " +
+            "memo = case when " + TEMP_TABLE + ".memo = ' ' then '' " +
+            "else coalesce(" + TEMP_TABLE + ".memo, entity.memo) end, " +
             "proxy_account_id = coalesce(" + TEMP_TABLE + ".proxy_account_id, entity.proxy_account_id), " +
-            "public_key = coalesce(" + TEMP_TABLE + ".public_key, entity.public_key), " +
+            "public_key = case when " + TEMP_TABLE + ".public_key = ' ' then '' " +
+            "else coalesce(" + TEMP_TABLE + ".public_key, entity.public_key) end, " +
             "submit_key = coalesce(" + TEMP_TABLE + ".submit_key, entity.submit_key) from " + TEMP_TABLE +
             " where entity.id = " + TEMP_TABLE + ".id and " + TEMP_TABLE + ".created_timestamp is null";
-    public static final String TEMP_TO_MAIN_UPSERT_SQL = "insert into entity select auto_renew_account_id, " +
-            "auto_renew_period, created_timestamp, coalesce(deleted, false) as deleted, expiration_timestamp, id, " +
-            "key, coalesce(memo, '') as memo, modified_timestamp, num, public_key, proxy_account_id, realm," +
-            "shard, submit_key, type from " + TEMP_TABLE + " on conflict (id) do update set " +
-            "auto_renew_period = coalesce(excluded.auto_renew_period, entity.auto_renew_period), " +
-            "deleted = coalesce(excluded.deleted, entity.deleted), " +
-            "expiration_timestamp = coalesce(excluded.expiration_timestamp, entity.expiration_timestamp), " +
-            "key = coalesce(excluded.key, entity.key), " +
-            "memo = coalesce(excluded.memo, entity.memo), " +
-            "proxy_account_id = coalesce(excluded.proxy_account_id, entity.proxy_account_id), " +
-            "public_key = coalesce(excluded.public_key, entity.public_key), " +
-            "submit_key = coalesce(excluded.submit_key, entity.submit_key)";
 
     @Id
     private Long id;
@@ -84,7 +78,8 @@ public class Entity {
 
     private byte[] key;
 
-    private String memo = "";
+    @JsonSerialize(using = NullableStringSerializer.class)
+    private String memo;
 
     private Long modifiedTimestamp;
 
@@ -94,7 +89,8 @@ public class Entity {
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId proxyAccountId;
 
-    private String publicKey;
+    @JsonSerialize(using = NullableStringSerializer.class)
+    private String publicKey; // null as default, "" Key.getDefaultInstance() case.
 
     private Long realm;
 

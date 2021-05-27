@@ -634,7 +634,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         if (autoRenewAccountNum != null) {
             var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
             entityRepository.findById(autoRenewAccount.getId())
-                    .orElse(entityRepository.save(autoRenewAccount.toEntity()));
+                    .orElse(entityRepository.save(getEntityWithDefaultMemo(autoRenewAccount)));
             topic.setAutoRenewAccountId(autoRenewAccount);
         }
         if (autoRenewPeriod != null) {

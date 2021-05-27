@@ -352,7 +352,7 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
                                   Boolean deleted, Long expiryTimeNs, String memo, Key submitKey,
                                   Long createdTimestamp, Long modifiedTimestamp) {
         if (autoRenewAccountId != null) {
-            entityRepository.save(autoRenewAccountId.toEntity());
+            entityRepository.save(getEntityWithDefaultMemo(autoRenewAccountId));
         }
 
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
@@ -404,6 +404,12 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void assertEntity(Entity expected) {
         Entity actual = getEntity(expected.getId());
         assertThat(actual).isEqualTo(expected);
+    }
+
+    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
+        Entity entity = entityId.toEntity();
+        entity.setMemo("");
+        return entity;
     }
 
     private RecordFile recordFile(long consensusStart, long consensusEnd, String filename) {
