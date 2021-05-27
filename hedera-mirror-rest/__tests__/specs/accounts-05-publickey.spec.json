@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for specific id with a matching public key",
+  "description": "Query accounts by public key and DER prefixed variations",
   "setup": {
     "accounts": [
       {
