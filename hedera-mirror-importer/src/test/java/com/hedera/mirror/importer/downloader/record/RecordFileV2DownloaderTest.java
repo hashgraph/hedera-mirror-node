@@ -69,6 +69,6 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
         downloader.download();
 
-        verifyStreamFiles(List.of("2019-07-01T14:13:00.317763Z.rcd", "2019-07-01T14:29:00.302068Z.rcd"));
+        verifyStreamFiles(List.of("2019-07-01T14_13_00.317763Z.rcd", "2019-07-01T14_29_00.302068Z.rcd"));
     }
 }
