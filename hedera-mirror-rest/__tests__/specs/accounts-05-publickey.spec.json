@@ -59,7 +59,14 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
+  "urls": [
+    "/api/v1/accounts?account.publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
+    "/api/v1/accounts?account.publickey=3C3D546321FF6F63D701D2EC5C277095874E19F4A235BEE1E6BB19258BF362BE",
+    "/api/v1/accounts?account.publickey=3c3D546321FF6F63D701D2EC5C277095874e19F4A235BEE1E6BB19258BF362be",
+    "/api/v1/accounts?account.publickey=302a300506032b65700321003c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
+    "/api/v1/accounts?account.publickey=302A300506032B65700321003C3D546321FF6F63D701D2EC5C277095874E19F4A235BEE1E6BB19258BF362BE",
+    "/api/v1/accounts?account.publickey=302a300506032B65700321003C3D546321FF6F63D701D2EC5C277095874E19F4A235BEE1E6BB19258BF362be"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "accounts": [
