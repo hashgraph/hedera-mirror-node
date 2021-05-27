@@ -33,6 +33,6 @@ public class NullableStringSerializer extends JsonSerializer<String> {
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         // empty strings are serialized as null, set to reserved space character and rely on db update sql to parse
-        gen.writeString(value == "" ? " " : value);
+        gen.writeString(value.equals("") ? " " : value);
     }
 }

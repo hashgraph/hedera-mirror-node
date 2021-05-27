@@ -46,7 +46,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final int CONNECTED_ENTITY_COUNT = 4;
 

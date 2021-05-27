@@ -64,31 +64,31 @@ public class EntityRepositoryTest extends AbstractRepositoryTest {
 
         // unset key should result in null public key
         assertThat(entityRepository.findById(entity.getId())).get()
-                .extracting(Entity::getPublicKey).isEqualTo(null);
+                .extracting(Entity::getPublicKey).isNull();
 
         // default proto key of single byte should result in empty public key
         entity.setKey(Key.getDefaultInstance().toByteArray());
         entityRepository.save(entity);
         assertThat(entityRepository.findById(entity.getId())).get()
-                .extracting(Entity::getPublicKey).isEqualTo(""); // "" -> ""
+                .extracting(Entity::getPublicKey).isEqualTo("");
 
         // invalid key should be null
         entity.setKey("123".getBytes());
         entityRepository.save(entity);
         assertThat(entityRepository.findById(entity.getId())).get()
-                .extracting(Entity::getPublicKey).isNull(); // "" -> ""
+                .extracting(Entity::getPublicKey).isNull();
 
         // valid key should not be null
         entity.setKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build().toByteArray());
         entityRepository.save(entity);
         assertThat(entityRepository.findById(entity.getId())).get()
-                .extracting(Entity::getPublicKey).isNotNull(); // "" -> ""
+                .extracting(Entity::getPublicKey).isNotNull();
 
         // null key like unset should result in null public key
         entity.setKey(null);
         entityRepository.save(entity);
         assertThat(entityRepository.findById(entity.getId())).get()
-                .extracting(Entity::getPublicKey).isEqualTo(null); // null -> null
+                .extracting(Entity::getPublicKey).isNull();
     }
 
     @Test
