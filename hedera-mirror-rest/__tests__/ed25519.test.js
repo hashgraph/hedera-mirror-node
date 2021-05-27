@@ -32,11 +32,11 @@ describe('Ed25519 tests', () => {
     const validDecoded = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
 
     let response = ed25519.derToEd25519(validDer);
-    expect(response).toEqual(validDecoded.toUpperCase()); // asn1js returns uppercase characters
+    expect(response).toEqual(validDecoded);
 
     // Uppercase key
     response = ed25519.derToEd25519(validDer.toUpperCase());
-    expect(response).toEqual(validDecoded.toUpperCase());
+    expect(response).toEqual(validDecoded);
   });
 
   test(`Inalid conversion:`, () => {

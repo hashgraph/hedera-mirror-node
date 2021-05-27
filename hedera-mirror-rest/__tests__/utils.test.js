@@ -242,7 +242,7 @@ describe('utils encodeMessage tests', () => {
 
     test(`Verify parsePublicKey on valid decode publickey`, () => {
       const validDer = '302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
-      const validDecoded = '7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC';
+      const validDecoded = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
       expect(utils.parsePublicKey(validDer)).toBe(validDecoded);
     });
   });
@@ -576,7 +576,7 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
           'gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc',
       },
       expectedClause: 'account.publickey >= ?',
-      expectedValues: ['7A3C5477BDF4A63742647D7CFC4544ACC1899D07141CAF4CD9FEA2F75B28A5CC'],
+      expectedValues: ['7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc'],
     },
   ];
   parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) =>
