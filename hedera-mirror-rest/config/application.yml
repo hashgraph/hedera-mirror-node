@@ -41,5 +41,4 @@ hedera:
           accessKey:
           secretKey:
           bucketName:
-      shutdown:
-        timeout: 20000
+

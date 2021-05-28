@@ -58,11 +58,7 @@ const livenessCheck = async () => {};
 
 const beforeShutdown = async () => {
   logger.info(`Closing connection pool`);
-  return pool.end().then(
-    new Promise((resolve) => {
-      setTimeout(resolve, config.shutdown.timeout);
-    })
-  );
+  return pool.end();
 };
 
 module.exports = {

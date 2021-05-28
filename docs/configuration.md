@@ -319,7 +319,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
-| `hedera.mirror.rest.shutdown.timeout`                    | 20000                   | The amount of time (in ms) to give the process to gracefully shut down                         |
 
 ### Enable State Proof Alpha
 
