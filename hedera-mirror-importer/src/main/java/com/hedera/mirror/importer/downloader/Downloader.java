@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.context.event.EventListener;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -71,6 +72,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
+import com.hedera.mirror.importer.parser.record.entity.FlywayMigrationsCompleteEvent;
 import com.hedera.mirror.importer.reader.StreamFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.util.ShutdownHelper;
@@ -92,6 +94,8 @@ public abstract class Downloader<T extends StreamFile> {
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final StreamType streamType;
+
+    protected boolean dbMigrationsFinished = false;
 
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
 
@@ -156,6 +160,10 @@ public abstract class Downloader<T extends StreamFile> {
         }
 
         if (ShutdownHelper.isStopping()) {
+            return;
+        }
+
+        if (!dbMigrationsFinished) {
             return;
         }
 
@@ -539,5 +547,10 @@ public abstract class Downloader<T extends StreamFile> {
         }
 
         return streamFile.getPreviousHash().contentEquals(expectedPreviousHash);
+    }
+
+    @EventListener
+    public void startDownloader(FlywayMigrationsCompleteEvent event) {
+        dbMigrationsFinished = true;
     }
 }
