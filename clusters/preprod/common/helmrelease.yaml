@@ -25,7 +25,7 @@ spec:
     prometheus:
       prometheusOperator:
         namespaces:
-          additional: ["kube-system", "common", "integration", "previewnet"]
+          additional: ["kube-system", "common", "integration", "performance", "previewnet"]
     traefik:
       service:
         annotations:
