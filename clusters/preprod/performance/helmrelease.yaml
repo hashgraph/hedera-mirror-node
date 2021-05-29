@@ -33,10 +33,14 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    db:
+      schema: public
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
+    postgresql:
+      enabled: false
 
