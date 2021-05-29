@@ -16,7 +16,7 @@
 
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
-        <springdoc.version>1.5.8</springdoc.version>
+        <springdoc.version>1.5.9</springdoc.version>
     </properties>
 
     <dependencies>
