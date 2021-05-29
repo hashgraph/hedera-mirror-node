@@ -29,5 +29,5 @@ spec:
     traefik:
       service:
         annotations:
-          cloud.google.com/neg: '{ "exposed_ports":{ "80":{"name": "common-mirror-traefik-neg"}, "443":{"name": "common-mirror-traefik-tls-neg"} } }'
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod"} } }'
 
