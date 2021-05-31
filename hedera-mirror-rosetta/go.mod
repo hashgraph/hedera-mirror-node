@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/caarlos0/env/v6 v6.6.0
+	github.com/caarlos0/env/v6 v6.6.2
 	github.com/coinbase/rosetta-sdk-go v0.6.10
 	github.com/hashgraph/hedera-sdk-go/v2 v2.1.6-0.20210506233146-1386b584158e
 	github.com/iancoleman/strcase v0.1.3
