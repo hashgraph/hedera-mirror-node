@@ -56,7 +56,6 @@ import com.hedera.mirror.importer.migration.FlywayProperties;
 @EnableAsync
 @Log4j2
 @RequiredArgsConstructor
-//@AutoConfigureBefore(MigrationConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
 public class MirrorImporterConfiguration {
 
     private final MirrorProperties mirrorProperties;
@@ -137,13 +136,13 @@ public class MirrorImporterConfiguration {
     }
 
     @Bean
-    Flyway flyway(FlywayProperties flywayProperties) {
-        HikariDataSource dataSource1 = new HikariDataSource();
+    Flyway flyway() {
+        HikariDataSource flywayDataSource = new HikariDataSource();
 
-        dataSource1.setUsername(flywayProperties.getUser());
-        dataSource1.setPoolName("flyway");
-        dataSource1.setPassword(flywayProperties.getPassword());
-        dataSource1.setJdbcUrl(flywayProperties.getUrl());
+        flywayDataSource.setUsername(flywayProperties.getUser());
+        flywayDataSource.setPoolName("flyway");
+        flywayDataSource.setPassword(flywayProperties.getPassword());
+        flywayDataSource.setJdbcUrl(flywayProperties.getUrl());
 
         Map<String, String> placeholders = flywayProperties.getPlaceholders();
         Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
@@ -162,7 +161,7 @@ public class MirrorImporterConfiguration {
                 .connectRetries(flywayProperties.getConnectRetries())
                 .locations(flywayProperties.getLocations())
                 .target(flywayProperties.getTarget())
-                .dataSource(dataSource1).load();
+                .dataSource(flywayDataSource).load();
     }
 
     @Configuration
