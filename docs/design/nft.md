@@ -27,7 +27,7 @@ the mirror node can be updated to add support for NFTs.
   enum, values `INFINITE` and `FINITE`), and `max_supply` (bigint).
   - Default values will be `FUNGIBLE_COMMON`, `INFINITE`, and max long, respectively.
 
-- Add a new `nft` tableRightRi
+- Add a new `nft` table
 
 ```sql
 create table if not exists nft
