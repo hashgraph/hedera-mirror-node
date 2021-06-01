@@ -29,7 +29,6 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -118,21 +117,6 @@ public class MirrorImporterConfiguration {
                 .region(Region.of(region))
                 .httpClient(httpClient)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
-    }
-
-    @Bean
-    FlywayConfigurationCustomizer flywayConfigurationCustomizer() {
-        return configuration -> {
-            Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
-            if (timestamp == null) {
-                if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
-                    timestamp = 1592499600000000000L;
-                } else {
-                    timestamp = 1588706343553042000L;
-                }
-            }
-            configuration.getPlaceholders().put("topicRunningHashV2AddedTimestamp", timestamp.toString());
-        };
     }
 
     @Bean
