@@ -39,7 +39,7 @@ describe('Ed25519 tests', () => {
     expect(response).toEqual(validDecoded);
   });
 
-  test(`Inalid conversion:`, () => {
+  test(`Invalid conversion:`, () => {
     const invalidDers = [
       // Corrupt beginning - 30aa
       '30aa300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc',

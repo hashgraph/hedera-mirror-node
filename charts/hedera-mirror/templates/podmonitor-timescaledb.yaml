@@ -1,4 +1,4 @@
-{{- if .Values.timescaledb.podMonitor.enabled -}}
+{{- if and .Values.timescaledb.enabled .Values.timescaledb.podMonitor.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:

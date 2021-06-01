@@ -153,13 +153,13 @@ hedera:
             tps: 1
             type: TOKEN_ASSOCIATE
           - name: HTS transfer
-          properties:
-            recipientAccountId: ${account.them}
-            senderAccountId: ${account.me}
-            tokenId: ${token.foobar}
-            transferType: BOTH
-          tps: 1
-          type: CRYPTO_TRANSFER
+            properties:
+              recipientAccountId: ${account.them}
+              senderAccountId: ${account.me}
+              tokenId: ${token.foobar}
+              transferType: BOTH
+            tps: 1
+            type: CRYPTO_TRANSFER
 ```
 
 ### Subscribe

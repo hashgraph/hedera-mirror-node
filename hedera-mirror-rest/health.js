@@ -24,7 +24,9 @@ const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const config = require('./config.js');
 
-const readinessQuery = `select true from t_entity_types limit 1;`;
+const readinessQuery = `select true
+                        from t_entity_types
+                        limit 1;`;
 
 /**
  * Function to determine readiness of application.
@@ -54,14 +56,13 @@ const livenessCheck = async () => {};
  * @return {} None.
  */
 
-function beforeDown() {
-  return new Promise((resolve) => {
-    setTimeout(resolve, config.shutdown.timeout);
-  });
-}
+const beforeShutdown = async () => {
+  logger.info(`Closing connection pool`);
+  return pool.end();
+};
 
 module.exports = {
   readinessCheck,
   livenessCheck,
-  beforeDown,
+  beforeShutdown,
 };

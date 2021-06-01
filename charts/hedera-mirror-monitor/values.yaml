@@ -160,7 +160,7 @@ prometheusRules:
       summary: No monitor instances running
     enabled: true
     expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace, pod) < 1
-    for: 30s
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-monitor
@@ -181,9 +181,9 @@ prometheusRules:
   MonitorPublishLatency:
     annotations:
       description: "Averaging {{ $value | humanizeDuration }} publish latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Publish latency exceeds 2s"
+      summary: "Publish latency exceeds 5s"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 2
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 5
     for: 2m
     labels:
       severity: critical
@@ -217,9 +217,9 @@ prometheusRules:
   MonitorSubscribeLatency:
     annotations:
       description: "Latency averaging {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "End to end latency exceeds 10s"
+      summary: "End to end latency exceeds 12s"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) > 10
+    expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) > 12
     for: 2m
     labels:
       severity: critical

@@ -57,7 +57,7 @@ global:
 hpa:
   enabled: true
   minReplicas: 3
-  maxReplicas: 10
+  maxReplicas: 15
   utilization: 80
 
 image:
@@ -75,7 +75,7 @@ ingress:
     - host: ""
       paths: ["/api/v1"]
   middleware:
-    circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+    circuitBreaker: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
     connectionsPerIP: 5
     enabled: false
     ipWhitelist:
@@ -174,11 +174,11 @@ readinessProbe:
 
 resources:
   limits:
-    cpu: 500m
-    memory: 128Mi
+    cpu: 750m
+    memory: 350Mi
   requests:
-    cpu: 20m
-    memory: 32Mi
+    cpu: 50m
+    memory: 64Mi
 
 revisionHistoryLimit: 3
 

@@ -31,6 +31,7 @@ import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 
 import com.hedera.datagenerator.common.Utility;
+import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -38,7 +39,8 @@ import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
 
 @Data
-public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<TopicUpdateTransaction> {
+public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<TopicUpdateTransaction>,
+        AdminKeyable {
 
     private String adminKey;
 
