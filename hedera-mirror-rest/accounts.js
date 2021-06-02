@@ -48,19 +48,43 @@ const processRow = (row) => {
 };
 
 /**
- * Creates account query with optional extra where condition, order clause, and query
+ * Creates account query and params from filters with limit and order
  *
- * @param {string} extraWhereCondition optional extra where condition
- * @param {string} orderClause optional order clause
- * @param {string} order optional sorting order
- * @param {string} query optional additional query, e.g., limit clause
- * @return {string} the complete account query
+ * @param entityAccountQuery - optional entity id query
+ * @param balancesAccountQuery - optional account balance account id query
+ * @param balanceQuery - optional account balance query
+ * @param pubKeyQuery - optional entity public key query
+ * @param limitAndOrderQuery - optional limit and order query
+ * @return {{query: string, params}}
  */
-const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
-  // token balances pairs are aggregated as an array of json objects {token_id, balance}
-  const whereClause = extraWhereCondition ? `where ${extraWhereCondition}` : '';
+const getAccountQuery = (
+  entityAccountQuery,
+  balancesAccountQuery,
+  balanceQuery = {query: '', params: []},
+  pubKeyQuery = {query: '', params: []},
+  limitAndOrderQuery = {query: '', params: [], order: ''}
+) => {
+  const entityWhereFilter = ['type < 3', entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
+  const balanceWhereFilter = [
+    'ab.consensus_timestamp = (select max(consensus_timestamp) as time_stamp_max from account_balance)',
+    balancesAccountQuery.query,
+    balanceQuery.query,
+  ]
+    .filter((x) => !!x)
+    .join(' and ');
+  const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
 
-  return `
+  // balanceQuery and pubKeyQuery are applied in the two sub queries; depending on the presence, use different joins
+  let joinType = 'full outer';
+  if (balanceQuery.query && pubKeyQuery.query) {
+    joinType = 'inner';
+  } else if (balanceQuery.query) {
+    joinType = 'left outer';
+  } else if (pubKeyQuery.query) {
+    joinType = 'right outer';
+  }
+
+  const query = `
     select ab.balance as account_balance,
        ab.consensus_timestamp as consensus_timestamp,
        coalesce(ab.account_id, e.id) as entity_id,
@@ -69,26 +93,48 @@ const getAccountQuery = (extraWhereCondition, orderClause, order, query) => {
        e.key,
        e.deleted,
        (
-         select
-           json_agg(
-             json_build_object(
-               'token_id', tb.token_id::text,
-               'balance', tb.balance
-             ) order by tb.token_id ${order || ''}
-           )
-         from token_balance tb
-         where
-           ab.consensus_timestamp = tb.consensus_timestamp
-           and ab.account_id = tb.account_id
-       ) as token_balances
-    from account_balance ab
-    inner join (select max(consensus_timestamp) as time_stamp_max from account_balance) as abm on ab.consensus_timestamp = abm.time_stamp_max
-    full outer join (select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key from entity where type < 3) e on (
-        ab.account_id = e.id
-    )
-    ${whereClause}
-    ${orderClause || ''}
-    ${query || ''}`;
+         select json_agg(
+           json_build_object(
+             'token_id', token_id::text,
+             'balance', balance
+           ) order by token_id ${order || ''}
+         )
+         from token_balance
+         where account_id = ab.account_id and consensus_timestamp = ab.consensus_timestamp
+       ) token_balances
+    from (
+      select *
+      from account_balance ab
+      where ${balanceWhereFilter}
+      order by ab.account_id ${order || ''}
+      ${limitQuery || ''}
+    ) ab
+    ${joinType} join (
+      select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key
+      from entity e
+      where ${entityWhereFilter}
+      order by e.id ${order || ''}
+      ${limitQuery || ''}
+    ) e on e.id = ab.account_id
+    order by coalesce(ab.account_id, e.id) ${order || ''}
+    ${limitQuery || ''}`;
+
+  const params = balancesAccountQuery.params
+    .concat(balanceQuery.params)
+    .concat(limitParams)
+    .concat(entityAccountQuery.params)
+    .concat(pubKeyQuery.params)
+    .concat(limitParams)
+    .concat(limitParams);
+
+  return {query, params};
+};
+
+const toQueryObject = (queryAndParams) => {
+  return {
+    query: queryAndParams[0],
+    params: queryAndParams[1],
+  };
 };
 
 /**
@@ -103,36 +149,28 @@ const getAccounts = async (req, res) => {
   await utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
-  // Because of the outer join on the 'account_balance ab' and 'entity e' below, we
-  // need to look  for the given account.id in both account_balance and entity table and combine with an 'or'
-  const [balancesAccountQuery, balancesAccountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
-  const [entityAccountQuery, entityAccountParams] = utils.parseAccountIdQueryParam(req.query, 'e.id');
-  const accountQuery = balancesAccountQuery === '' ? '' : `(${balancesAccountQuery} or ${entityAccountQuery})`;
-  const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.public_key');
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
+  const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
+  const balancesAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
+  const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'ab.balance'));
+  const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'e.public_key'));
+  const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
 
-  const entitySql = getAccountQuery(
-    `${[accountQuery, balanceQuery, pubKeyQuery].filter((x) => !!x).join(' and ')}`,
-    `order by coalesce(ab.account_id, e.id) ${order}`,
-    order,
-    query
+  const {query, params} = getAccountQuery(
+    entityAccountQuery,
+    balancesAccountQuery,
+    balanceQuery,
+    pubKeyQuery,
+    limitAndOrderQuery
   );
 
-  const entityParams = balancesAccountParams
-    .concat(entityAccountParams)
-    .concat(balanceParams)
-    .concat(pubKeyParams)
-    .concat(params);
-
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(query);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAccounts query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
+    logger.trace(`getAccounts query: ${pgEntityQuery} ${JSON.stringify(params)}`);
   }
 
   // Execute query
-  const result = await utils.queryQuietly(pgEntityQuery, ...entityParams);
+  const result = await utils.queryQuietly(pgEntityQuery, ...params);
   const ret = {
     accounts: result.rows.map((row) => processRow(row)),
     links: {
@@ -148,10 +186,10 @@ const getAccounts = async (req, res) => {
   ret.links = {
     next: utils.getPaginationLink(
       req,
-      ret.accounts.length !== limit,
+      ret.accounts.length !== limitAndOrderQuery.limit,
       constants.filterKeys.ACCOUNT_ID,
       anchorAcc,
-      order
+      limitAndOrderQuery.order
     ),
   };
 
@@ -184,11 +222,12 @@ const getOneAccount = async (req, res) => {
     transactions: [],
   };
 
-  // Because of the outer join on the 'account_balance ab' and 'entity e' below, we
-  // need to look for the given account.id in both account_balance and entity tables and combine with an 'or'
-  const entitySql = getAccountQuery(` (ab.account_id = ? or e.id = ?)`);
-  const entityParams = [accountId, accountId];
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entitySql);
+  const accountIdParams = [accountId];
+  const {query: entityQuery, params: entityParams} = getAccountQuery(
+    {query: 'e.id = ?', params: accountIdParams},
+    {query: 'ab.account_id = ?', params: accountIdParams}
+  );
+  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
