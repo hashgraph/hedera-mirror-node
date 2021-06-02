@@ -23,15 +23,15 @@ package com.hedera.mirror.importer.config;
 import java.net.URI;
 import java.time.Duration;
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,13 +66,16 @@ public class MirrorImporterConfiguration {
     private final MetricsExecutionInterceptor metricsExecutionInterceptor;
     private final AwsCredentialsProvider awsCredentialsProvider;
 
-    @Resource(name = "webServerStartStop")
+    @Autowired(required = false)
+    @Qualifier("webServerStartStop")
     private SmartLifecycle webServerStartStop;
 
     @PostConstruct
     void init() {
         // Start the web server ASAP so kubernetes liveness probe is up before long-running migrations
-        webServerStartStop.start();
+        if (webServerStartStop != null) {
+            webServerStartStop.start();
+        }
     }
 
     @Bean
