@@ -51,13 +51,13 @@ hedera:
 ### Publish
 
 The monitor can be configured to publish multiple transaction types concurrently. It does this by specifying a list of
-scenarios that should actively publish. A unique scenario name is used as a label for logs, metrics and the REST API so
-that each scenario can be monitored separately. Each scenario has a target transactions per second (TPS) and uses a
-client side rate limiter to achieve the desired rate. Additionally, a percentage of receipts or records can be requested
-for each transaction to verify transactions are reaching consensus.
+scenarios that should actively publish. A unique scenario name should be used as a label for logs, metrics, and the REST
+API so that each scenario can be monitored separately. Each scenario has a target transactions per second (TPS) and uses
+a client-side rate limiter to achieve the desired rate. Additionally, a percentage of receipts or records can be
+requested for each transaction to verify transactions are reaching consensus.
 
-The monitor can be used to publish at a very high TPS, with a single monitor able to max out the current capability of
-the Hedera network. To publish at higher rates, the `hedera.mirror.monitor.publish.clients` and
+The monitor can be used to publish at a very high TPS, with a single monitor able to achieve 10K TPS on the Hedera
+network. To publish at higher rates, the `hedera.mirror.monitor.publish.clients` and
 `hedera.mirror.monitor.publish.responseThreads` properties can be adjusted. With the default values of four clients and
 40 response threads, the monitor can already achieve 10K TPS out of the box. The transaction publisher will round-robin
 the list of clients to send transactions to the Hedera Network, and every transaction is sent to a randomly chosen node,
