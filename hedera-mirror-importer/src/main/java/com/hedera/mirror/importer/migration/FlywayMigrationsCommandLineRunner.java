@@ -43,18 +43,20 @@ import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.Flyway;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.annotation.Order;
 
 import com.hedera.mirror.importer.parser.record.entity.FlywayMigrationsCompleteEvent;
 
 @Named
 @RequiredArgsConstructor
+@Order(0)
 public class FlywayMigrationsCommandLineRunner implements CommandLineRunner {
 
     private final Flyway flyway;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public void run(String... args) {
+    public void run(String... args) throws Exception {
         flyway.migrate();
         eventPublisher.publishEvent(new FlywayMigrationsCompleteEvent(this));
     }

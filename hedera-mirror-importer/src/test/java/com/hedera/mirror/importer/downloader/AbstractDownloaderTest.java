@@ -77,6 +77,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cglib.core.ReflectUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -139,6 +140,7 @@ public abstract class AbstractDownloaderTest {
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
     protected long firstIndex = 0L;
+    protected ApplicationEventPublisher eventPublisher;
 
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
