@@ -76,7 +76,6 @@ spring:
         reWriteBatchedInserts: true
       maximumPoolSize: 14 # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
   flyway:
-    enabled: false
     baselineOnMigrate: true
     connectRetries: 20
     ignoreMissingMigrations: true
