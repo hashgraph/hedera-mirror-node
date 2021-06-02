@@ -1,13 +1,13 @@
-{{- if .Values.podMonitor.enabled -}}
+{{- if .Values.serviceMonitor.enabled -}}
 apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
+kind: ServiceMonitor
 metadata:
   labels: {{ include "hedera-mirror-monitor.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-monitor.fullname" . }}
   namespace: {{ include "hedera-mirror-monitor.namespace" . }}
 spec:
-  podMetricsEndpoints:
-    - interval: {{ .Values.podMonitor.interval }}
+  endpoints:
+    - interval: {{ .Values.serviceMonitor.interval }}
       path: /actuator/prometheus
       port: http
   selector:
