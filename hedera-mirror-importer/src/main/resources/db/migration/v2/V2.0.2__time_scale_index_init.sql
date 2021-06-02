@@ -45,8 +45,10 @@ alter table entity
 alter table entity
     add constraint c__entity__lower_ed25519
         check (public_key = lower(public_key));
-create index if not exists entity__public_key_natural_id
-    on entity (public_key, type, shard, realm, num);
+create index if not exists entity__id_type
+    on entity (id, type);
+create index if not exists entity__public_key
+    on entity (public_key) where public_key is not null;
 create unique index if not exists entity__shard_realm_num
     on entity (shard, realm, num, id);
 -- have to add id when creating unique indexes due to partitioning
