@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.config;
 
 import java.net.URI;
 import java.time.Duration;
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -63,6 +65,15 @@ public class MirrorImporterConfiguration {
     private final CommonDownloaderProperties downloaderProperties;
     private final MetricsExecutionInterceptor metricsExecutionInterceptor;
     private final AwsCredentialsProvider awsCredentialsProvider;
+
+    @Resource(name = "webServerStartStop")
+    private SmartLifecycle webServerStartStop;
+
+    @PostConstruct
+    void init() {
+        // Start the web server ASAP so kubernetes liveness probe is up before long-running migrations
+        webServerStartStop.start();
+    }
 
     @Bean
     @Profile("kubernetes")
@@ -122,11 +133,6 @@ public class MirrorImporterConfiguration {
 
     @Bean
     FlywayConfigurationCustomizer flywayConfigurationCustomizer(ApplicationContext applicationContext) {
-        // Start the web server before doing flyway migrations so kubernetes liveness probe is up before long-running
-        //migrations
-        SmartLifecycle smartLifecycle = applicationContext.getBean("webServerStartStop", SmartLifecycle.class);
-        smartLifecycle.start();
-
         return configuration -> {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
