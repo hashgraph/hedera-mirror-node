@@ -132,7 +132,7 @@ public class MirrorImporterConfiguration {
     }
 
     @Bean
-    FlywayConfigurationCustomizer flywayConfigurationCustomizer(ApplicationContext applicationContext) {
+    FlywayConfigurationCustomizer flywayConfigurationCustomizer() {
         return configuration -> {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
