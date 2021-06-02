@@ -78,7 +78,7 @@ create table if not exists nft_transfer
 - If transaction is successful, persist any NFT Transfers.
 - `insertTokenCreate()` must be updated to set `tokenType`, `tokenSupplyType` and `maxSupply`
 - `insertTokenMint()` must be updated to handle the new field `metadata` and create and persist the `NFTs` if type
-  is `NON_FUNGIBLE_UNIQUE`.
+  is `NON_FUNGIBLE_UNIQUE`. Multiple `NFTs` can be minted in one transaction.
 - `insertTokenBurn` must be updated to handle the new field `serialNumbers`, mark the `NFTs` as deleted, and
   update `modifiedTimestamp` if the `serialNumbers` list is set.
 - `insertTokenWipe` must be updated to handle the new field `serialNumbers`, mark the `NFTs` as deleted and
