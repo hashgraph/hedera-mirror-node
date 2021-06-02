@@ -21,7 +21,7 @@ package com.hedera.mirror.monitor.subscribe;
  */
 
 public enum SubscriptionStatus {
-    COMPLETED,
-    IDLE,
-    RUNNING,
+    COMPLETED, // The scenario has completed normally due to reaching the configured duration or limit
+    IDLE,      // The scenario has not completed but is not currently receiving any responses
+    RUNNING,   // The scenario is still actively receiving responses
 }

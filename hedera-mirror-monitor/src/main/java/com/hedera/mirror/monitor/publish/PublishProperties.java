@@ -58,7 +58,7 @@ public class PublishProperties {
     private Duration statusFrequency = Duration.ofSeconds(10L);
 
     @Min(1)
-    private int threads = 5;
+    private int responseThreads = 40;
 
     @DurationMin(seconds = 0)
     @NotNull
