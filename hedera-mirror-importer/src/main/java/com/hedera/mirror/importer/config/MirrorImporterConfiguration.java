@@ -20,10 +20,11 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import com.zaxxer.hikari.HikariDataSource;
 import java.net.URI;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
+import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
@@ -50,7 +51,6 @@ import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
-import com.hedera.mirror.importer.migration.FlywayProperties;
 
 @Configuration
 @EnableAsync
@@ -63,7 +63,6 @@ public class MirrorImporterConfiguration {
     private final CommonDownloaderProperties downloaderProperties;
     private final MetricsExecutionInterceptor metricsExecutionInterceptor;
     private final AwsCredentialsProvider awsCredentialsProvider;
-    private final FlywayProperties flywayProperties;
 
     @Bean
     @Profile("kubernetes")
@@ -137,15 +136,19 @@ public class MirrorImporterConfiguration {
     }
 
     @Bean
-    Flyway flyway(FlywayProperties flywayProperties) {
-        HikariDataSource dataSource1 = new HikariDataSource();
-
-        dataSource1.setUsername(flywayProperties.getUser());
-        dataSource1.setPoolName("flyway");
-        dataSource1.setPassword(flywayProperties.getPassword());
-        dataSource1.setJdbcUrl(flywayProperties.getUrl());
-
-        Map<String, String> placeholders = flywayProperties.getPlaceholders();
+    Flyway flyway(DataSource dataSource) {
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("api-password", "mirror_api");
+        placeholders.put("api-user", "mirror_api_pass");
+        placeholders.put("autovacuumFreezeMaxAgeInsertOnly", "100000");
+        placeholders.put("autovacuumVacuumInsertThresholdCryptoTransfer", "300000");
+        placeholders.put("autovacuumVacuumInsertThresholdTokenTransfer", "2000");
+        placeholders.put("autovacuumVacuumInsertThresholdTransaction", "100000");
+        placeholders.put("chunkIdInterval", "100000");
+        placeholders.put("chunkTimeInterval", "86400000000000");
+        placeholders.put("compressionAge", "604800000000000");
+        placeholders.put("db-name", "mirror_node");
+        placeholders.put("db-user", "mirror_node");
         Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
         if (timestamp == null) {
             if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET) {
@@ -157,12 +160,12 @@ public class MirrorImporterConfiguration {
         placeholders.put("topicRunningHashV2AddedTimestamp", timestamp.toString());
         return Flyway.configure().baselineOnMigrate(true)
                 .placeholders(placeholders)
-                .baselineVersion(flywayProperties.getBaselineVersion())
-                .ignoreMissingMigrations(flywayProperties.isIgnoreMissingMigrations())
-                .connectRetries(flywayProperties.getConnectRetries())
-                .locations(flywayProperties.getLocations())
-                .target(flywayProperties.getTarget())
-                .dataSource(dataSource1).load();
+                .baselineVersion("0")
+                .ignoreMissingMigrations(true)
+                .connectRetries(20)
+                .locations("classpath:db/migration/v1")
+                .target("latest")
+                .dataSource(dataSource).load();
     }
 
     @Configuration

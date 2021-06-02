@@ -24,7 +24,6 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -77,7 +76,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cglib.core.ReflectUtils;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -101,8 +99,6 @@ import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.migration.FlywayProperties;
-import com.hedera.mirror.importer.parser.record.entity.FlywayMigrationsCompleteEvent;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
@@ -124,7 +120,6 @@ public abstract class AbstractDownloaderTest {
     protected S3Proxy s3Proxy;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
-    protected FlywayProperties flywayProperties;
     protected MirrorProperties mirrorProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
@@ -140,7 +135,6 @@ public abstract class AbstractDownloaderTest {
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
     protected long firstIndex = 0L;
-    protected ApplicationEventPublisher eventPublisher;
 
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
@@ -201,7 +195,7 @@ public abstract class AbstractDownloaderTest {
         initProperties();
         s3AsyncClient = new MirrorImporterConfiguration(
                 mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
-                AnonymousCredentialsProvider.create(), flywayProperties)
+                AnonymousCredentialsProvider.create())
                 .s3CloudStorageClient();
 
         signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
@@ -220,7 +214,6 @@ public abstract class AbstractDownloaderTest {
         startS3Proxy();
 
         doReturn(addressBook).when(addressBookService).getCurrent();
-        downloader.startDownloader(mock(FlywayMigrationsCompleteEvent.class));
     }
 
     @AfterEach
@@ -237,8 +230,6 @@ public abstract class AbstractDownloaderTest {
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);
 
         downloaderProperties = getDownloaderProperties();
-
-        flywayProperties = new FlywayProperties();
     }
 
     private void startS3Proxy() throws Exception {

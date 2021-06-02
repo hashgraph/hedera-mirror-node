@@ -93,7 +93,6 @@ spring:
       compressionAge: 604800000000000
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
-    url: ${spring.datasource.url}
     user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:

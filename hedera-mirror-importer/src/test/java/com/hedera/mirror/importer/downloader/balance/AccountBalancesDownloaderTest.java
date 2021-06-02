@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.downloader.balance;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -36,7 +35,6 @@ import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.FlywayMigrationsCompleteEvent;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.ProtoBalanceFileReader;
@@ -87,7 +85,6 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         downloader = new AccountBalancesDownloader(s3AsyncClient, addressBookService,
                 (BalanceDownloaderProperties) downloaderProperties, meterRegistry, nodeSignatureVerifier,
                 signatureFileReader, protoBalanceFileReader, streamFileNotifier, dateRangeProcessor);
-        downloader.startDownloader(mock(FlywayMigrationsCompleteEvent.class));
         fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
                 .from(Path.of("accountBalances", "mixed"))
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());
