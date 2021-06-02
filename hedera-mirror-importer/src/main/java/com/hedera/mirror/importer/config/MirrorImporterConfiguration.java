@@ -29,6 +29,8 @@ import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -119,7 +121,12 @@ public class MirrorImporterConfiguration {
     }
 
     @Bean
-    FlywayConfigurationCustomizer flywayConfigurationCustomizer() {
+    FlywayConfigurationCustomizer flywayConfigurationCustomizer(ApplicationContext applicationContext) {
+        // Start the web server before doing flyway migrations so kubernetes liveness probe is up before long-running
+        //migrations
+        SmartLifecycle smartLifecycle = applicationContext.getBean("webServerStartStop", SmartLifecycle.class);
+        smartLifecycle.start();
+
         return configuration -> {
             Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
