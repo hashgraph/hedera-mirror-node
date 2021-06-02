@@ -44,7 +44,7 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash("333d6940254659533fd6b939033e59c57fe8f4ff78375d1e687c032918aa0b7b8179c7fd403754274a8c91e0b6c0195a")
                 .hash("333d6940254659533fd6b939033e59c57fe8f4ff78375d1e687c032918aa0b7b8179c7fd403754274a8c91e0b6c0195a")
-                .name("2019-07-01T14:13:00.317763Z.rcd")
+                .name("2019-07-01T14_13_00.317763Z.rcd")
                 .previousHash("f423447a3d5a531a07426070e511555283daae063706242590949116f717a0524e4dd18f9d64e66c73982d475401db04")
                 .version(1)
                 .build();
@@ -55,7 +55,7 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash("1faf198f8fdbefa59bde191f214d73acdc4f5c0f434677a7edf9591b129e21aea90a5b3119d2802cee522e7be6bc8830")
                 .hash("1faf198f8fdbefa59bde191f214d73acdc4f5c0f434677a7edf9591b129e21aea90a5b3119d2802cee522e7be6bc8830")
-                .name("2019-07-01T14:29:00.302068Z.rcd")
+                .name("2019-07-01T14_29_00.302068Z.rcd")
                 .previousHash(recordFileV1_1.getFileHash())
                 .version(1)
                 .build();
