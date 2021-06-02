@@ -36,7 +36,7 @@ create table if not exists nft
   created_timestamp     bigint  primary key     not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
-  metadata              text    default ''      not null,
+  metadata              bytea   default ''      not null,
   serial_number         bigint                  not null,
   token_id              bigint                  not null
 );
@@ -235,6 +235,7 @@ Add optional filters
   - `account_id` should not display when the NFT has been deleted.
   - This endpoint should return a 409 for tokens that are not of type `NON_FUNGIBLE_UNIQUE` with a message that
     indicates that this endpoint is not valid for this token type.
+  - `metadata_base64` should be base64 encoded before returning.
 
 ```json
 {
@@ -243,7 +244,7 @@ Add optional filters
       "account_id": "0.0.111",
       "created_timestamp": "1610682445.003266000",
       "deleted": false,
-      "metadata": "This is a test NFT",
+      "metadata_base64": "VGhpcyBpcyBhIHRlc3QgTkZU",
       "modified_timestamp": "1610682445.003266001",
       "serial_number": 124
     }
@@ -265,13 +266,14 @@ Optional Filters
 
 - GET `/api/v1/tokens/{id}/nfts/{serialNumber}` will show information about an individual NFT.
   - `account_id` should not display when the NFT or Token has been deleted.
+  - `metadata_base64` should be base64 encoded before returning.
 
 ```json
 {
   "account_id": "0.0.111",
   "created_timestamp": "1610682445.003266000",
   "deleted": false,
-  "metadata": "This is a test NFT",
+  "metadata_base64": "VGhpcyBpcyBhIHRlc3QgTkZU",
   "modified_timestamp": "1610682445.003266000",
   "serial_number": 124
 }
@@ -390,17 +392,3 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 - Submit a ScheduleSign from the receiving account
 - Verify response codes and data from /tokens, /tokens/{id}/nfts, /tokens/{id}/nfts/{serialNumber}/transactions,
   /schedules/{id}, and /transactions
-
-# Outstanding Questions and Concerns:
-
-1. Will NFTs be present in the balance file?
-
-- `TokenBalance` is being updated for NFTs to show the number of NFTs held in an account, however it has not yet been
-  confirmed if the balance file (specifically `TokenUnitBalance`) will also be updated.
-
-2. Will NFT balances be added to the csv version of the balance file, or just the proto version? If so, will this be
-   considered a version bump for the csv file?
-
-- If the csv file does not contain the NFT balances, this will not affect the mirror node. If it does contain the NFT
-  balances, this will also have no effect unless the version is bumped, in which case a new parser will be needed with
-  minimal changes.
