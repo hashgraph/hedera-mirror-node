@@ -136,14 +136,13 @@ imagePullSecrets: []
 
 labels: {}
 
-# Spring boot probes are started after Flyway migration, must correct this to prevent unnecessary restarts
-livenessProbe: null
-#  httpGet:
-#    path: /actuator/health/liveness
-#    port: http
-#  initialDelaySeconds: 60
-#  periodSeconds: 30
-#  timeoutSeconds: 2
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 2
 
 nameOverride: ""
 
