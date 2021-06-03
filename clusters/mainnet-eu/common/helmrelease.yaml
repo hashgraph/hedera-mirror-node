@@ -27,9 +27,9 @@ spec:
       prometheusOperator:
       prometheusOperator:
         namespaces:
-          additional: ["kube-system", "common", "mainnet"]
+          additional: ["kube-system", "common", "mainnet-eu"]
     traefik:
       service:
         annotations:
-          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-ap"} } }'
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-eu"} } }'
 

@@ -16,5 +16,5 @@ spec:
       namespace: common
     - kind: HelmRelease
       name: '*'
-      namespace: mainnet
+      namespace: mainnet-eu
 
