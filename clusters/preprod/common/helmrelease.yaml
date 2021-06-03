@@ -6,7 +6,7 @@ metadata:
 spec:
   chart:
     spec:
-      chart: charts/hedera-mirror-common
+      chart: hedera-mirror-common
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
