@@ -8,7 +8,7 @@ spec:
     spec:
       chart: charts/hedera-mirror-common
       sourceRef:
-        kind: GitRepository
+        kind: HelmRepository
         name: hedera-mirror-node
       version: '0.22.0-rc1'
   install:
