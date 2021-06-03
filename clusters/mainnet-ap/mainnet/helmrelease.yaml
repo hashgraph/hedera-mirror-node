@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.21.0-rc1'
+      version: '0.22.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -33,8 +33,6 @@ spec:
     - kind: Secret
       name: mirror
   values:
-    db:
-      schema: public
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
