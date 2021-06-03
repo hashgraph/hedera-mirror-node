@@ -189,7 +189,11 @@ values ('OK', 0),
        ('THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC', 219),
        ('SUCCESS_BUT_MISSING_EXPECTED_OPERATION', 220),
        ('UNPARSEABLE_THROTTLE_DEFINITIONS', 221),
-       ('INVALID_THROTTLE_DEFINITIONS', 222);
+       ('INVALID_THROTTLE_DEFINITIONS', 222),
+       ('ACCOUNT_EXPIRED_AND_PENDING_REMOVAL', 223),
+       ('INVALID_TOKEN_MAX_SUPPLY', 224),
+       ('INVALID_TOKEN_NFT_SERIAL_NUMBER', 225),
+       ('INVALID_NFT_ID', 226);
 
 -- t_transaction_types
 insert into t_transaction_types (proto_id, name, entity_type)

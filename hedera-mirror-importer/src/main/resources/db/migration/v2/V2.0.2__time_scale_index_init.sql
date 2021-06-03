@@ -67,6 +67,14 @@ alter table file_data
 alter table live_hash
     add primary key (consensus_timestamp);
 
+-- nft
+create unique index if not exists nft__token_id_serial_num
+    on nft (token_id, serial_number);
+
+-- nft_transfer
+create unique index if not exists nft_transfer__timestamp_token_id_serial_num
+    on nft_transfer (consensus_timestamp, token_id, serial_number);
+
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp
     on non_fee_transfer (consensus_timestamp);

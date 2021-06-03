@@ -30,6 +30,7 @@ select set_integer_now_func('crypto_transfer', 'latest_consensus_timestamp');
 select set_integer_now_func('event_file', 'latest_consensus_timestamp');
 select set_integer_now_func('file_data', 'latest_consensus_timestamp');
 select set_integer_now_func('live_hash', 'latest_consensus_timestamp');
+select set_integer_now_func('nft_transfer', 'latest_consensus_timestamp');
 select set_integer_now_func('non_fee_transfer', 'latest_consensus_timestamp');
 select set_integer_now_func('record_file', 'latest_consensus_timestamp');
 select set_integer_now_func('transaction_signature', 'latest_consensus_timestamp');
@@ -67,6 +68,11 @@ alter table file_data
 
 alter table live_hash
     set (timescaledb.compress);
+
+-- nft skipped as update on compressed chunk is not allowed
+
+alter table nft_transfer
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'receiver_account_id');
 
 alter table non_fee_transfer
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
@@ -112,6 +118,7 @@ select add_compression_policy('crypto_transfer', bigint '${compressionAge}');
 select add_compression_policy('event_file', bigint '${compressionAge}');
 select add_compression_policy('file_data', bigint '${compressionAge}');
 select add_compression_policy('live_hash', bigint '${compressionAge}');
+select add_compression_policy('nft_transfer', bigint '${compressionAge}');
 select add_compression_policy('non_fee_transfer', bigint '${compressionAge}');
 select add_compression_policy('record_file', bigint '${compressionAge}');
 select add_compression_policy('token_balance', bigint '${compressionAge}');
