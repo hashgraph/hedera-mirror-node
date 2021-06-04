@@ -257,11 +257,11 @@ create table if not exists token
     name                   character varying(100) not null,
     supply_key             bytea,
     supply_key_ed25519_hex varchar                null,
-    supply_type            character varying(10)  not null default INFINITE,
+    supply_type            character varying(10)  not null default 'INFINITE',
     symbol                 character varying(100) not null,
     total_supply           bigint                 not null default 0,
     treasury_account_id    bigint                 not null,
-    type                   character varying(20) not null default NON_FUNGIBLE_UNIQUE,
+    type                   character varying(20) not null default 'NON_FUNGIBLE_UNIQUE',
     wipe_key               bytea,
     wipe_key_ed25519_hex   varchar                null
 );
