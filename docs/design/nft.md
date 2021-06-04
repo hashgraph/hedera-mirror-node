@@ -235,7 +235,7 @@ Add optional filters
   - `account_id` should not display when the NFT has been deleted.
   - This endpoint should return a 409 for tokens that are not of type `NON_FUNGIBLE_UNIQUE` with a message that
     indicates that this endpoint is not valid for this token type.
-  - `metadata_base64` should be base64 encoded before returning.
+  - `metadata` should be base64 encoded before returning.
 
 ```json
 {
@@ -244,7 +244,7 @@ Add optional filters
       "account_id": "0.0.111",
       "created_timestamp": "1610682445.003266000",
       "deleted": false,
-      "metadata_base64": "VGhpcyBpcyBhIHRlc3QgTkZU",
+      "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
       "modified_timestamp": "1610682445.003266001",
       "serial_number": 124
     }
@@ -266,14 +266,14 @@ Optional Filters
 
 - GET `/api/v1/tokens/{id}/nfts/{serialNumber}` will show information about an individual NFT.
   - `account_id` should not display when the NFT or Token has been deleted.
-  - `metadata_base64` should be base64 encoded before returning.
+  - `metadata` should be base64 encoded before returning.
 
 ```json
 {
   "account_id": "0.0.111",
   "created_timestamp": "1610682445.003266000",
   "deleted": false,
-  "metadata_base64": "VGhpcyBpcyBhIHRlc3QgTkZU",
+  "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
   "modified_timestamp": "1610682445.003266000",
   "serial_number": 124
 }
