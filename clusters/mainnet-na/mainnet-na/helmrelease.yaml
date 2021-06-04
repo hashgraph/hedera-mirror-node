@@ -60,4 +60,6 @@ spec:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
     postgresql:
       enabled: false
+    redis:
+      enabled: false
 
