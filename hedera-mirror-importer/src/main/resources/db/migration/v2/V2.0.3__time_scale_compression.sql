@@ -72,7 +72,7 @@ alter table live_hash
 -- nft skipped as update on compressed chunk is not allowed
 
 alter table nft_transfer
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'receiver_account_id');
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'token_id');
 
 alter table non_fee_transfer
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
