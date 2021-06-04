@@ -1,0 +1,21 @@
+name: Windows
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          path: ~/.m2
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Maven package
+        run: ./mvnw.cmd package --batch-mode --no-transfer-progress -DskipTests
