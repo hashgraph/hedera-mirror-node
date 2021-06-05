@@ -23,6 +23,9 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Id;
+import javax.persistence.Inheritance;
+import javax.persistence.InheritanceType;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
@@ -37,33 +40,9 @@ import com.hedera.mirror.importer.util.Utility;
 @javax.persistence.Entity
 @Log4j2
 @ToString(exclude = {"key", "submitKey"})
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+@AllArgsConstructor
 public class Entity {
-    public static final String TEMP_TABLE = "entity_temp";
-    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into entity select auto_renew_account_id, " +
-            "auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, " +
-            "case when " + TEMP_TABLE + ".memo = ' ' then '' else coalesce(memo, '') end, " +
-            "modified_timestamp, num, " +
-            "case when " + TEMP_TABLE + ".public_key = ' ' then '' else public_key end, " +
-            "proxy_account_id, realm, shard, submit_key, type from " + TEMP_TABLE +
-            " on conflict (id) do nothing";
-    public static final String TEMP_TO_MAIN_UPDATE_SQL = "update entity set " +
-            "auto_renew_account_id = coalesce(" + TEMP_TABLE + ".auto_renew_account_id, entity.auto_renew_account_id)" +
-            ", " +
-            "auto_renew_period = coalesce(" + TEMP_TABLE + ".auto_renew_period, entity.auto_renew_period), " +
-            "deleted = coalesce(" + TEMP_TABLE + ".deleted, entity.deleted), " +
-            "expiration_timestamp = coalesce(" + TEMP_TABLE + ".expiration_timestamp, entity.expiration_timestamp), " +
-            "key = coalesce(" + TEMP_TABLE + ".key, entity.key), " +
-            "memo = case when " + TEMP_TABLE + ".memo = ' ' then '' " +
-            "else coalesce(" + TEMP_TABLE + ".memo, entity.memo) end, " +
-            "proxy_account_id = coalesce(" + TEMP_TABLE + ".proxy_account_id, entity.proxy_account_id), " +
-            "public_key = case when " + TEMP_TABLE + ".public_key = ' ' then '' " +
-            "else coalesce(" + TEMP_TABLE + ".public_key, entity.public_key) end, " +
-            "submit_key = coalesce(" + TEMP_TABLE + ".submit_key, entity.submit_key) from " + TEMP_TABLE +
-            " where entity.id = " + TEMP_TABLE + ".id and " + TEMP_TABLE + ".created_timestamp is null";
-
-    @Id
-    private Long id;
-
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId autoRenewAccountId;
@@ -76,6 +55,9 @@ public class Entity {
 
     private Long expirationTimestamp;
 
+    @Id
+    private Long id;
+
     private byte[] key;
 
     @JsonSerialize(using = NullableStringSerializer.class)
@@ -85,12 +67,12 @@ public class Entity {
 
     private Long num;
 
+    @JsonSerialize(using = NullableStringSerializer.class)
+    private String publicKey; // null as default, "" Key.getDefaultInstance() case.
+
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId proxyAccountId;
-
-    @JsonSerialize(using = NullableStringSerializer.class)
-    private String publicKey; // null as default, "" Key.getDefaultInstance() case.
 
     private Long realm;
 
@@ -99,6 +81,9 @@ public class Entity {
     private byte[] submitKey;
 
     private Integer type;
+
+    public Entity() {
+    }
 
     public void setKey(byte[] key) {
         this.key = key;

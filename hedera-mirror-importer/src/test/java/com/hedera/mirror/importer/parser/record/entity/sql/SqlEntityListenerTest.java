@@ -58,7 +58,9 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenAccountId;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
@@ -319,9 +321,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, tokenAccountRepository.count());
-        assertExistsAndEquals(tokenAccountRepository, tokenAccount1, new TokenAccount.Id(EntityId
+        assertExistsAndEquals(tokenAccountRepository, tokenAccount1, new TokenAccountId(EntityId
                 .of(tokenId1, EntityTypeEnum.TOKEN), EntityId.of(accountId1, ACCOUNT)));
-        assertExistsAndEquals(tokenAccountRepository, tokenAccount2, new TokenAccount.Id(EntityId
+        assertExistsAndEquals(tokenAccountRepository, tokenAccount2, new TokenAccountId(EntityId
                 .of(tokenId2, EntityTypeEnum.TOKEN), EntityId.of(accountId2, ACCOUNT)));
     }
 
@@ -494,7 +496,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(hexKey);
         token.setSymbol("FOOTOK");
-        token.setTokenId(new Token.Id(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        token.setTokenId(new TokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         token.setTreasuryAccountId(EntityId.of(accountId, ACCOUNT));
         token.setWipeKey(hexKey);
 

@@ -21,57 +21,23 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
+import javax.persistence.Access;
+import javax.persistence.AccessType;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
 public class TokenAccount {
-    public static final String TEMP_TABLE = "token_account_temp";
-    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into token_account select account_id, " +
-            "coalesce(tat.associated, true) as associated, tat.created_timestamp, " +
-            "coalesce(tat.freeze_status, getNewAccountFreezeStatus(tat.token_id)) as freeze_status, " +
-            "coalesce(tat.kyc_status, getNewAccountKycStatus(tat.token_id)) as kyc_status, tat.modified_timestamp, " +
-            "tat.token_id from " + TEMP_TABLE + " tat" +
-            " join token t on tat.token_id = t.token_id " + // ignore entries where token not in db
-            " where tat.created_timestamp is not null on conflict(token_id, account_id) do nothing";
-    public static final String TEMP_TO_MAIN_UPDATE_SQL = "update token_account ta set " +
-            "associated = coalesce(" + TEMP_TABLE + ".associated, ta.associated), " +
-            "modified_timestamp = " + TEMP_TABLE + ".modified_timestamp, " +
-            "freeze_status = coalesce(" + TEMP_TABLE + ".freeze_status, ta.freeze_status), " +
-            "kyc_status = coalesce(" + TEMP_TABLE + ".kyc_status, ta.kyc_status) " +
-            "from " + TEMP_TABLE +
-            " join token t on " + TEMP_TABLE + ".token_id = t.token_id " + // ignore entries where token not in db
-            "where ta.token_id = " + TEMP_TABLE + ".token_id and ta.account_id = " + TEMP_TABLE + ".account_id and " +
-            TEMP_TABLE + ".created_timestamp is null";
-    public static final String TEMP_TO_MAIN_UPSERT_SQL = "insert into token_account select account_id, " +
-            "coalesce(associated, true) as associated, " +
-            "created_timestamp, coalesce(freeze_status, getNewAccountFreezeStatus(token_id)) as " +
-            "freeze_status, coalesce(kyc_status, getNewAccountKycStatus(token_id)) as kyc_status, " +
-            "modified_timestamp, token_id from " + TEMP_TABLE + " on " +
-            "conflict(token_id, account_id) do update set " +
-            "modified_timestamp = excluded.modified_timestamp," +
-            "associated = coalesce(excluded.associated, token_account.associated), " +
-            "freeze_status = coalesce(excluded.freeze_status, token_account.freeze_status)," +
-            "kyc_status = coalesce(excluded.kyc_status, token_account.kyc_status)";
-
+    @Access(AccessType.FIELD)
     @EmbeddedId
     @JsonUnwrapped
-    private TokenAccount.Id id;
+    private TokenAccountId id;
 
     private Boolean associated;
 
@@ -85,23 +51,31 @@ public class TokenAccount {
 
     private long modifiedTimestamp;
 
+//    @Getter
+//    @Transient
+//    private EntityId accountId;
+//
+//    @Getter
+//    @Transient
+//    private EntityId tokenId;
+
     public TokenAccount(EntityId tokenId, EntityId accountId) {
-        id = new TokenAccount.Id(tokenId, accountId);
+        id = new TokenAccountId(tokenId, accountId);
     }
 
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Embeddable
-    public static class Id implements Serializable {
-        private static final long serialVersionUID = -4069569824910871771L;
-
-        @Convert(converter = TokenIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId tokenId;
-
-        @Convert(converter = AccountIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId accountId;
-    }
+//    @Data
+//    @AllArgsConstructor
+//    @NoArgsConstructor
+//    @Embeddable
+//    public static class Id implements Serializable {
+//        private static final long serialVersionUID = -4069569824910871771L;
+//
+//        @Convert(converter = TokenIdConverter.class)
+//        @JsonSerialize(using = EntityIdSerializer.class)
+//        private EntityId tokenId;
+//
+//        @Convert(converter = AccountIdConverter.class)
+//        @JsonSerialize(using = EntityIdSerializer.class)
+//        private EntityId accountId;
+//    }
 }

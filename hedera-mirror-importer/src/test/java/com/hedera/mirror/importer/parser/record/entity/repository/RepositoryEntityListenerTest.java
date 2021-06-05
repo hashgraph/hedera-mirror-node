@@ -43,6 +43,7 @@ import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
@@ -183,7 +184,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(input.toByteArray());
         token.setSymbol("FOOTOK");
-        token.setTokenId(new Token.Id(TOKEN_ID));
+        token.setTokenId(new TokenId(TOKEN_ID));
         token.setTreasuryAccountId(ENTITY_ID);
         token.setWipeKey(input.toByteArray());
         repositoryEntityListener.onToken(token);

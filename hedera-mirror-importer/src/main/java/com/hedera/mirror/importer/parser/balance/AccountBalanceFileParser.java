@@ -26,6 +26,7 @@ import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -135,6 +136,8 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             Instant consensusInstant = Instant.ofEpochSecond(0L, consensusTimestamp);
             parseLatencyMetric.record(Duration.between(consensusInstant, loadEnd));
             success = true;
+        } catch (SQLException ex) {
+            log.error("Error copying balance file {} contents to db", name, ex);
         } catch (Exception ex) {
             log.error("Failed to load account balance file {}", name, ex);
             throw ex;

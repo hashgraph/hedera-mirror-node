@@ -610,7 +610,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
                 () -> assertNull(actualAccount.getExpirationTimestamp()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccountId),
-                () -> assertNull(actualAccount.getExpirationTimestamp())
+                () -> assertNotNull(actualAccount.getModifiedTimestamp())
         );
     }
 

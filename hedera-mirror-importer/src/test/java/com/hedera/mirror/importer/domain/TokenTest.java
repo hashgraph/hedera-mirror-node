@@ -120,7 +120,7 @@ public class TokenTest {
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(hexKey);
         token.setSymbol("FOOTOK");
-        token.setTokenId(new Token.Id(FOO_COIN_ID));
+        token.setTokenId(new TokenId(FOO_COIN_ID));
         token.setTreasuryAccountId(treasuryAccount);
         token.setWipeKey(hexKey);
         return token;

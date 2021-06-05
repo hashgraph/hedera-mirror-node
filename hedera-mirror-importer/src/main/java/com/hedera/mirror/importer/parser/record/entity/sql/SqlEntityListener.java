@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,7 +37,6 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
-import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -52,6 +50,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenAccountId;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -66,7 +65,12 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.EntityIdRepositoryCustomImpl;
+import com.hedera.mirror.importer.repository.EntityRepositoryCustomImpl;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.ScheduleRepositoryCustomImpl;
+import com.hedera.mirror.importer.repository.TokenAccountRepositoryCustomImpl;
+import com.hedera.mirror.importer.repository.TokenRepositoryCustomImpl;
 
 @Log4j2
 @Named
@@ -116,13 +120,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<Long, Entity> entityIdEntities;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
-    private final Map<TokenAccount.Id, TokenAccount> tokenAccounts;
+    private final Map<TokenAccountId, TokenAccount> tokenAccounts;
 
     public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
                              DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
-                             ApplicationEventPublisher eventPublisher) {
+                             ApplicationEventPublisher eventPublisher,
+                             EntityRepositoryCustomImpl entityRepositoryCustom,
+                             EntityIdRepositoryCustomImpl entityIdRepositoryCustom,
+                             ScheduleRepositoryCustomImpl scheduleRepositoryCustom,
+                             TokenRepositoryCustomImpl tokenRepositoryCustom,
+                             TokenAccountRepositoryCustomImpl tokenAccountRepositoryCustom) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
@@ -141,16 +150,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, recordParserProperties);
 
         // updatable tables
-        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, Entity.TEMP_TABLE,
-                Entity.TEMP_TO_MAIN_INSERT_SQL, Entity.TEMP_TO_MAIN_UPDATE_SQL);
-        entityIdPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, EntityId.TEMP_TABLE,
-                EntityId.TEMP_TO_MAIN_INSERT_SQL, EntityId.TEMP_TO_MAIN_UPDATE_SQL);
+        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, entityRepositoryCustom);
+        entityIdPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
+                entityIdRepositoryCustom);
+        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
+                scheduleRepositoryCustom);
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
-                TokenAccount.TEMP_TABLE, TokenAccount.TEMP_TO_MAIN_INSERT_SQL, TokenAccount.TEMP_TO_MAIN_UPDATE_SQL);
-        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties, Schedule.TEMP_TABLE,
-                Schedule.TEMP_TO_MAIN_INSERT_SQL, Schedule.TEMP_TO_MAIN_UPDATE_SQL);
-        tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties, Token.TEMP_TABLE,
-                Token.TEMP_TO_MAIN_INSERT_SQL, Token.TEMP_TO_MAIN_UPDATE_SQL);
+                tokenAccountRepositoryCustom);
+        tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
+                tokenRepositoryCustom);
 
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -233,11 +241,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             transactionSignaturePgCopy.copy(transactionSignatures, connection);
 
             // insert operations with conflict management for updates
-            persistUpdatableEntity(connection, entityPgCopy, entities.values(), Entity.class);
-            persistUpdatableEntity(connection, entityIdPgCopy, entityIdEntities.values(), EntityId.class);
-            persistUpdatableEntity(connection, schedulePgCopy, schedules.values(), Schedule.class);
-            persistUpdatableEntity(connection, tokenPgCopy, tokens.values(), Token.class);
-            persistUpdatableEntity(connection, tokenAccountPgCopy, tokenAccounts.values(), TokenAccount.class);
+            entityPgCopy.copy(entities.values(), connection);
+            entityIdPgCopy.copy(entityIdEntities.values(), connection);
+            schedulePgCopy.copy(schedules.values(), connection);
+            tokenPgCopy.copy(tokens.values(), connection);
+            tokenAccountPgCopy.copy(tokenAccounts.values(), connection);
+//            persistUpdatableEntity(connection, entityPgCopy, entities.values(), Entity.class);
+//            persistUpdatableEntity(connection, entityIdPgCopy, entityIdEntities.values(), EntityId.class);
+//            persistUpdatableEntity(connection, schedulePgCopy, schedules.values(), Schedule.class);
+//            persistUpdatableEntity(connection, tokenPgCopy, tokens.values(), Token.class);
+//            persistUpdatableEntity(connection, tokenAccountPgCopy, tokenAccounts.values(), TokenAccount.class);
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -352,19 +365,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures.add(transactionSignature);
     }
 
-    private void persistUpdatableEntity(Connection connection, UpsertPgCopy upsertPgCopy, Collection values,
-                                        Class entityClass) throws SQLException {
-        if (CollectionUtils.isEmpty(values)) {
-            return;
-        }
-
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        upsertPgCopy.createTempTable(connection);
-        upsertPgCopy.copy(values, connection);
-        upsertPgCopy.insertToFinalTable(connection);
-        upsertPgCopy.updateFinalTable(connection);
-        log.info("Inserted {} {}'s in {}", values.size(), entityClass.getSimpleName(), stopwatch);
-    }
+//    private void persistUpdatableEntity(Connection connection, UpsertPgCopy upsertPgCopy, Collection values,
+//                                        Class entityClass) throws SQLException {
+//        if (CollectionUtils.isEmpty(values)) {
+//            return;
+//        }
+//
+//        Stopwatch stopwatch = Stopwatch.createStarted();
+//        upsertPgCopy.createTempTable(connection);
+//        upsertPgCopy.copy(values, connection);
+//        int upsertCount = upsertPgCopy.upsertToFinalTable(connection);
+//        log.info("Upserted {} of {} {}'s in {}", upsertCount, values.size(), entityClass.getSimpleName(), stopwatch);
+//    }
 
     private void updateCachedEntity(Entity newEntity) {
         Entity cachedEntity = entities.get(newEntity.getId());

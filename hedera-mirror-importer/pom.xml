@@ -21,6 +21,7 @@
         <commons-io.version>2.10.0</commons-io.version>
         <s3proxy.version>1.8.0</s3proxy.version>
         <testcontainers.version>1.15.3</testcontainers.version>
+        <jmh.version>1.29</jmh.version>
     </properties>
 
     <dependencyManagement>
@@ -109,6 +110,15 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-jpamodelgen</artifactId>
+        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>org.hibernate.orm</groupId>-->
+        <!--            <artifactId>hibernate-jpamodelgen</artifactId>-->
+        <!--            <version>6.0.0.Alpha8</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
@@ -259,6 +269,23 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test
+            </scope>
+        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>com.vladmihalcea</groupId>-->
+        <!--            <artifactId>hibernate-types-52</artifactId>-->
+        <!--        </dependency>-->
     </dependencies>
 
     <profiles>
@@ -354,6 +381,16 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
+            <!--            <plugin>-->
+            <!--                <artifactId>maven-compiler-plugin</artifactId>-->
+            <!--                <configuration>-->
+            <!--                    <compilerArguments>-->
+            <!--                        <source>1.8</source> &lt;!&ndash; Target older Java version to be compatible with more clients &ndash;&gt;-->
+            <!--                        <target>1.8</target>-->
+            <!--                        <processor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</processor>-->
+            <!--                    </compilerArguments>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
         </plugins>
     </build>
 </project>

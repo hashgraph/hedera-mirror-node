@@ -54,6 +54,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -588,7 +589,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         // clear cache for PgCopy scenarios which don't utilize it
         cacheManager.getCache("tokens").clear();
 
-        Optional<Token> tokenOptional = tokenRepository.findById(new Token.Id(EntityId.of(tokenID)));
+        Optional<Token> tokenOptional = tokenRepository.findById(new TokenId(EntityId.of(tokenID)));
         if (present) {
             assertThat(tokenOptional.get())
                     .returns(createdTimestamp, from(Token::getCreatedTimestamp))

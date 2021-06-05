@@ -30,14 +30,18 @@ import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.PGCopyOutputStream;
 
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.exception.ParserException;
 
 /**
@@ -48,28 +52,36 @@ import com.hedera.mirror.importer.exception.ParserException;
 @Log4j2
 public class PgCopy<T> {
 
-    protected String tableName;
-    private String sql;
+    private final String sql;
     private final ObjectWriter writer;
-    private final Timer insertDurationMetric;
+    protected final Timer insertDurationMetric;
     private final ParserProperties properties;
-    private final String columnsCsv;
+    protected final String tableName;
+    protected boolean insertCopy = true;
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
+        this(entityClass, meterRegistry, properties, entityClass.getSimpleName());
+    }
+
+    public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties, String tableName) {
         this.properties = properties;
-        tableName = CaseFormat.UPPER_CAMEL.to(
+        this.tableName = CaseFormat.UPPER_CAMEL.to(
                 CaseFormat.LOWER_UNDERSCORE,
-                entityClass.getSimpleName());
+                StringUtils.isEmpty(tableName) ? entityClass.getSimpleName() : tableName);
         var mapper = new CsvMapper();
         SimpleModule module = new SimpleModule();
         module.addSerializer(byte[].class, new ByteArrayToHexSerializer());
+        module.addSerializer(EntityId.class, new EntityIdSerializer());
         mapper.registerModule(module);
         var schema = mapper.schemaFor(entityClass);
         writer = mapper.writer(schema);
-        columnsCsv = Lists.newArrayList(schema.iterator()).stream()
+        String columnsCsv = Lists.newArrayList(schema.iterator()).stream()
                 .map(CsvSchema.Column::getName)
+                .distinct()
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
+        sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", this.tableName, columnsCsv);
+        log.info("**** {} serialized: columns : ({})", tableName, columnsCsv);
 
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
@@ -77,25 +89,25 @@ public class PgCopy<T> {
                 .register(meterRegistry);
     }
 
-    private String getSql() {
-        if (sql == null) {
-            sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", tableName, columnsCsv);
-        }
-
-        return sql;
-    }
-
-    public void copy(Collection<T> items, Connection connection) {
+    public void copy(Collection<T> items, Connection connection) throws SQLException {
         if (items == null || items.isEmpty()) {
             return;
         }
 
         try {
-            Stopwatch stopwatch = Stopwatch.createStarted();
+            Stopwatch stopwatch = null;
+            if (insertCopy) {
+                stopwatch = Stopwatch.createStarted();
+            }
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            CopyIn copyIn = pgConnection.getCopyAPI().copyIn(getSql());
+            CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
             try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
+//                log.info("**** {}'s copySql: {}}", tableName, sql);
+                if (tableName.contains("entity") || tableName.contains("token") || tableName.contains("schedule")) {
+//                    log.info("**** {} serialized: columns : ({})", tableName, columnsCsv);
+                    log.info("**** {} serialized: values: ({})", tableName, writer.writeValueAsString(items));
+                }
                 writer.writeValue(pgCopyOutputStream, items);
             } finally {
                 if (copyIn.isActive()) {
@@ -103,8 +115,10 @@ public class PgCopy<T> {
                 }
             }
 
-            insertDurationMetric.record(stopwatch.elapsed());
-            log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
+            if (stopwatch != null) {
+                insertDurationMetric.record(stopwatch.elapsed());
+                log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
+            }
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }

@@ -48,13 +48,6 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @Value
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EntityId implements Serializable, Comparable<EntityId> {
-    public static final String TEMP_TABLE = "entity_id_temp";
-    public static final String TEMP_TO_MAIN_INSERT_SQL = "insert into entity (deleted, id, memo, num, realm, shard, " +
-            "type) select null as deleted, id, '' as memo, num, realm, shard, type from " + TEMP_TABLE +
-            " on conflict (id) do nothing";
-    public static final String TEMP_TO_MAIN_UPDATE_SQL = "select 1";
-    public static final String TEMP_TO_MAIN_UPSERT_SQL = "select 1";
-
     private static final Comparator<EntityId> COMPARATOR = Comparator
             .nullsFirst(Comparator.comparingLong(EntityId::getId));
     public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT.getId());
@@ -141,6 +134,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         entity.setRealm(realmNum);
         entity.setNum(entityNum);
         entity.setType(type);
+        entity.setMemo(" ");
         return entity;
     }
 

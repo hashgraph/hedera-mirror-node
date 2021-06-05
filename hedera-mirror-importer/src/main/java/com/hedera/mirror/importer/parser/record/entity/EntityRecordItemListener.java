@@ -67,6 +67,7 @@ import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
@@ -494,7 +495,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setModifiedTimestamp(consensusTimeStamp);
             token.setName(tokenCreateTransactionBody.getName());
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
-            token.setTokenId(new Token.Id(EntityId.of(recordItem.getRecord().getReceipt().getTokenID())));
+            token.setTokenId(new TokenId(EntityId.of(recordItem.getRecord().getReceipt().getTokenID())));
             token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
 
             if (tokenCreateTransactionBody.hasFreezeKey()) {
@@ -623,7 +624,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
 
             Token token = new Token();
-            token.setTokenId(new Token.Id(EntityId.of(tokenUpdateTransactionBody.getToken())));
+            token.setTokenId(new TokenId(EntityId.of(tokenUpdateTransactionBody.getToken())));
             token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
 
             if (tokenUpdateTransactionBody.hasFreezeKey()) {
@@ -690,7 +691,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void updateTokenSupply(TokenID tokenID, long newTotalSupply, long modifiedTimestamp) {
         Token token = new Token();
-        token.setTokenId(new Token.Id(EntityId.of(tokenID)));
+        token.setTokenId(new TokenId(EntityId.of(tokenID)));
         token.setTotalSupply(newTotalSupply);
         token.setModifiedTimestamp(modifiedTimestamp);
         entityListener.onToken(token);
