@@ -37,12 +37,10 @@ class ScheduleRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest 
     @Override
     public String getInsertQuery() {
         return "insert into schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, " +
-                "schedule_id, transaction_body) select coalesce(schedule_temp.consensus_timestamp, 0) as " +
-                "consensus_timestamp, coalesce(schedule_temp.creator_account_id, 1) as creator_account_id, coalesce" +
-                "(schedule_temp.executed_timestamp, null) as executed_timestamp, coalesce(schedule_temp" +
-                ".payer_account_id, 1) as payer_account_id, coalesce(schedule_temp.schedule_id, 1) as schedule_id, " +
-                "coalesce(schedule_temp.transaction_body, E'\'\''::bytea) as transaction_body from schedule_temp " +
-                "where schedule_temp.consensus_timestamp is not null  on conflict (schedule_id) do nothing";
+                "schedule_id, transaction_body) select schedule_temp.consensus_timestamp, schedule_temp" +
+                ".creator_account_id, schedule_temp.executed_timestamp, schedule_temp.payer_account_id, schedule_temp" +
+                ".schedule_id, schedule_temp.transaction_body from schedule_temp where schedule_temp" +
+                ".consensus_timestamp is not null  on conflict (schedule_id) do nothing";
     }
 
     @Override
@@ -50,18 +48,6 @@ class ScheduleRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest 
         return "update schedule set executed_timestamp = coalesce(schedule_temp.executed_timestamp, schedule" +
                 ".executed_timestamp) from schedule_temp where schedule.schedule_id = schedule_temp.schedule_id and " +
                 "schedule_temp.executed_timestamp is not null";
-    }
-
-    @Override
-    public String getUpsertQuery() {
-        return "insert into schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, " +
-                "schedule_id, transaction_body) select coalesce(schedule_temp.consensus_timestamp, 0) as " +
-                "consensus_timestamp, coalesce(schedule_temp.creator_account_id, 1) as creator_account_id, coalesce" +
-                "(schedule_temp.executed_timestamp, null) as executed_timestamp, coalesce(schedule_temp" +
-                ".payer_account_id, 1) as payer_account_id, coalesce(schedule_temp.schedule_id, 1) as schedule_id, " +
-                "coalesce(schedule_temp.transaction_body, E''''::bytea) as transaction_body from schedule_temp on " +
-                "conflict (schedule_id) do update set executed_timestamp = coalesce(excluded.executed_timestamp, " +
-                "schedule.executed_timestamp)";
     }
 
     @Test

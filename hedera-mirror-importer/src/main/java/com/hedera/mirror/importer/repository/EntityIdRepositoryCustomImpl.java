@@ -40,6 +40,12 @@ public class EntityIdRepositoryCustomImpl extends AbstractUpdatableDomainReposit
     private static final List<String> nullableColumns = List.of();
     private static final List<SingularAttribute> updatableColumns = Lists.newArrayList();
 
+    @Getter(lazy = true)
+    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
+    // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
+    private final List<SingularAttribute> selectableColumns = Lists.newArrayList(Entity_.id, Entity_.memo,
+            Entity_.num, Entity_.realm, Entity_.shard, Entity_.type);
+
     @Override
     public String getTableName() {
         return TABLE;
@@ -54,12 +60,6 @@ public class EntityIdRepositoryCustomImpl extends AbstractUpdatableDomainReposit
     public List<String> getConflictIdColumns() {
         return conflictTargetColumns;
     }
-
-    @Getter(lazy = true)
-    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
-    // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final List<SingularAttribute> selectableColumns = Lists.newArrayList(Entity_.id, Entity_.memo,
-            Entity_.num, Entity_.realm, Entity_.shard, Entity_.type);
 
     @Override
     public String getInsertWhereClause() {
@@ -79,10 +79,5 @@ public class EntityIdRepositoryCustomImpl extends AbstractUpdatableDomainReposit
     @Override
     public boolean isNullableColumn(String columnName) {
         return nullableColumns.contains(columnName);
-    }
-
-    @Override
-    public boolean shouldUpdateOnConflict() {
-        return false;
     }
 }

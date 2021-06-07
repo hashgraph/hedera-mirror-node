@@ -93,9 +93,4 @@ public class TokenRepositoryCustomImpl extends AbstractUpdatableDomainRepository
     public boolean isNullableColumn(String columnName) {
         return nullableColumns.contains(columnName);
     }
-
-    @Override
-    public boolean shouldUpdateOnConflict() {
-        return true;
-    }
 }

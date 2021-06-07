@@ -32,8 +32,6 @@ public abstract class AbstractRepositoryCustomImplTest extends AbstractRepositor
 
     protected abstract String getUpdateQuery();
 
-    protected abstract String getUpsertQuery();
-
     @Test
     void insert() {
         String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery();
@@ -44,11 +42,5 @@ public abstract class AbstractRepositoryCustomImplTest extends AbstractRepositor
     void update() {
         String updateQuery = getUpdatableDomainRepositoryCustom().getUpdateQuery();
         assertThat(updateQuery).isEqualTo(getUpdateQuery());
-    }
-
-    @Test
-    void upsert() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getUpsertQuery();
-        assertThat(upsertQuery).isEqualTo(getUpsertQuery());
     }
 }

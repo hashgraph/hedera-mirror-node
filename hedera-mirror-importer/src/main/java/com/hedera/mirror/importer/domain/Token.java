@@ -159,17 +159,4 @@ public class Token {
     public void setSymbol(String symbol) {
         this.symbol = Utility.sanitize(symbol);
     }
-//
-//    @Data
-//    @Embeddable
-//    @AllArgsConstructor
-//    @NoArgsConstructor
-//    public static class Id implements Serializable {
-//
-//        private static final long serialVersionUID = -4595724698253758379L;
-//
-//        @Convert(converter = TokenIdConverter.class)
-//        @JsonSerialize(using = EntityIdSerializer.class)
-//        private EntityId tokenId;
-//    }
 }

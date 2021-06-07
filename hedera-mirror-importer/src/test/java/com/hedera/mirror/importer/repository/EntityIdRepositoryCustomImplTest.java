@@ -36,20 +36,15 @@ class EntityIdRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest 
 
     @Override
     public String getInsertQuery() {
-        return "insert into entity (id, memo, num, realm, shard, type) select coalesce(entity_id_temp.id, 0) as id, " +
-                "case when entity_id_temp.memo = ' ' then '' else coalesce(entity_id_temp.memo, '') end, coalesce" +
-                "(entity_id_temp.num, 0) as num, coalesce(entity_id_temp.realm, 0) as realm, coalesce(entity_id_temp" +
-                ".shard, 0) as shard, entity_id_temp.type from entity_id_temp on conflict (id) do nothing";
+        return "insert into entity (id, memo, num, realm, shard, type) select entity_id_temp.id, case when " +
+                "entity_id_temp.memo = ' ' then '' else coalesce(entity_id_temp.memo, '') end, entity_id_temp.num, " +
+                "entity_id_temp.realm, entity_id_temp.shard, entity_id_temp.type from entity_id_temp on conflict (id)" +
+                " do nothing";
     }
 
     @Override
     public String getUpdateQuery() {
         return "";
-    }
-
-    @Override
-    public String getUpsertQuery() {
-        return getInsertQuery();
     }
 
     @Test

@@ -51,31 +51,7 @@ public class TokenAccount {
 
     private long modifiedTimestamp;
 
-//    @Getter
-//    @Transient
-//    private EntityId accountId;
-//
-//    @Getter
-//    @Transient
-//    private EntityId tokenId;
-
     public TokenAccount(EntityId tokenId, EntityId accountId) {
         id = new TokenAccountId(tokenId, accountId);
     }
-
-//    @Data
-//    @AllArgsConstructor
-//    @NoArgsConstructor
-//    @Embeddable
-//    public static class Id implements Serializable {
-//        private static final long serialVersionUID = -4069569824910871771L;
-//
-//        @Convert(converter = TokenIdConverter.class)
-//        @JsonSerialize(using = EntityIdSerializer.class)
-//        private EntityId tokenId;
-//
-//        @Convert(converter = AccountIdConverter.class)
-//        @JsonSerialize(using = EntityIdSerializer.class)
-//        private EntityId accountId;
-//    }
 }

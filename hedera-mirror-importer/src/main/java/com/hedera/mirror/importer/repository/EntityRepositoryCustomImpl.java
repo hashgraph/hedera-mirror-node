@@ -87,9 +87,4 @@ public class EntityRepositoryCustomImpl extends AbstractUpdatableDomainRepositor
     public boolean isNullableColumn(String columnName) {
         return nullableColumns.contains(columnName);
     }
-
-    @Override
-    public boolean shouldUpdateOnConflict() {
-        return true;
-    }
 }

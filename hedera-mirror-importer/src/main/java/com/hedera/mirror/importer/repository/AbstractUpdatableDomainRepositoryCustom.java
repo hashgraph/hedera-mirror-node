@@ -24,6 +24,7 @@ import com.google.common.base.CaseFormat;
 import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,16 +38,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.utils.CollectionUtils;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
-import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 
 public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements UpdatableDomainRepositoryCustom {
     private static final String EMPTY_STRING = "\'\'";
-    private static final String EXCLUDED_TABLE = "excluded";
     private static final String NULL_STRING = "null";
     private static final String RESERVED_SPACE_CHAR = "\' \'";
 
@@ -64,9 +62,6 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
 
-    @Getter(lazy = true)
-    private final String upsertQuery = generateUpsertQuery();
-
     protected final Logger log = LogManager.getLogger(getClass());
 
     @Override
@@ -79,11 +74,7 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
         StringBuilder insertQueryBuilder = new StringBuilder("insert into " + getTableName());
 
         // build target column list
-        insertQueryBuilder.append(" (");
-        insertQueryBuilder.append(getListFromSelectableColumns());
-        insertQueryBuilder.append(") ");
-
-        insertQueryBuilder.append("select ");
+        insertQueryBuilder.append(String.format(" (%s) select ", getColumnListFromSelectableColumns()));
 
         insertQueryBuilder.append(getSelectableFieldsClause());
 
@@ -114,29 +105,24 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
         return updateQueryBuilder.toString();
     }
 
-    private String generateUpsertQuery() {
-        StringBuilder upsertQueryBuilder = new StringBuilder("insert into " + getTableName());
-
-        // when a subset of columns are provided scope the columns to ensure data types line up with incoming select
-        upsertQueryBuilder.append(" (");
-        if (!CollectionUtils.isNullOrEmpty(getSelectableColumns())) {
-            upsertQueryBuilder.append(getListFromSelectableColumns());
-        } else {
-            upsertQueryBuilder.append(getListFromAllColumns());
+    private String getColumnListFromSelectableColumns() {
+        if (CollectionUtils.isNullOrEmpty(getSelectableColumns())) {
+            return getColumnListFromAllColumns();
         }
-        upsertQueryBuilder.append(") ");
 
-        upsertQueryBuilder.append("select ");
+        return getSelectableColumns().stream()
+                .sorted(ATTRIBUTE_COMPARATOR)
+                .map(x -> getFormattedColumnName(x.getName()))
+                .collect(Collectors.joining(", "));
+    }
 
-        upsertQueryBuilder.append(getSelectableFieldsClause());
-
-        upsertQueryBuilder.append(" from " + getTemporaryTableName());
-
-        upsertQueryBuilder
-                .append(shouldUpdateOnConflict() ? getDoUpdateConflictClause(EXCLUDED_TABLE) :
-                        getDoNothingConflictClause());
-
-        return upsertQueryBuilder.toString();
+    private String getColumnListFromAllColumns() {
+        return Arrays.stream(metaModelClass.getDeclaredFields())
+                .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
+                .collect(Collectors.toList())
+                .stream()
+                .sorted(FIELD_COMPARATOR)
+                .map(x -> getFormattedColumnName(x.getName())).collect(Collectors.joining(", "));
     }
 
     protected String getTableColumnName(String tableName, String camelCaseName) {
@@ -236,7 +222,7 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
         List<String> selectQueries = new ArrayList<>();
         entityFields.forEach(field -> {
             String selectQuery = "";
-            Type[] parameterizedTypes = ((ParameterizedTypeImpl) field
+            Type[] parameterizedTypes = ((ParameterizedType) field
                     .getGenericType())
                     .getActualTypeArguments(); // [<domainType>, <attributeClass>]
             Type attributeClass = parameterizedTypes[1];
@@ -254,20 +240,30 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
     private String getColumnSelectQuery(Type attributeType, String attributeName) {
         if (attributeType == String.class) {
             return getStringColumnTypeSelect(attributeName);
-        } else if (attributeType == Boolean.class) {
-            return getBooleanColumnTypeSelect(attributeName);
-        } else if (attributeType == byte[].class) {
-            return getByteArrayColumnTypeSelect(attributeName);
-        } else if (attributeType == EntityId.class) {
-            return getEntityIdColumnTypeSelect(attributeName);
-        } else if (attributeType == Long.class) {
-            return getLongColumnTypeSelect(attributeName);
         } else if (attributeType == TokenFreezeStatusEnum.class) {
             return getTokenFreezeEnumColumnTypeSelect(attributeName);
         } else if (attributeType == TokenKycStatusEnum.class) {
             return getTokenKycEnumColumnTypeSelect(attributeName);
         } else {
             return getTableColumnName(getTemporaryTableName(), attributeName);
+        }
+    }
+
+    private String getStringColumnTypeSelect(String attributeName) {
+        // String columns need extra logic since their default value and empty value are both serialized as null
+        // Domain serializer adds a special scenario to set ' ' as the placeholder for an empty. Null is null
+        if (isNullableColumn(attributeName)) {
+            return getSelectCaseQuery(
+                    attributeName,
+                    RESERVED_SPACE_CHAR,
+                    EMPTY_STRING,
+                    getSelectCoalesceQuery(attributeName, NULL_STRING));
+        } else {
+            return getSelectCaseQuery(
+                    attributeName,
+                    RESERVED_SPACE_CHAR,
+                    EMPTY_STRING,
+                    getSelectCoalesceQuery(attributeName, EMPTY_STRING));
         }
     }
 
@@ -292,83 +288,6 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
                     getTableColumnName(getTemporaryTableName(), TokenAccountId_.TOKEN_ID));
             return getSelectCoalesceQueryWithDefaultAlias(attributeName, kycValue);
         }
-    }
-
-    private String getStringColumnTypeSelect(String attributeName) {
-        // String columns need extra logic since their default value and empty value are both serialized as null
-        // Domain serializer adds a special scenario to set ' ' as the placeholder for an empty. Null is null
-        if (isNullableColumn(attributeName)) {
-            return getSelectCaseQuery(
-                    attributeName,
-                    RESERVED_SPACE_CHAR,
-                    EMPTY_STRING,
-                    getSelectCoalesceQuery(attributeName, NULL_STRING));
-        } else {
-            return getSelectCaseQuery(
-                    attributeName,
-                    RESERVED_SPACE_CHAR,
-                    EMPTY_STRING,
-                    getSelectCoalesceQuery(attributeName, EMPTY_STRING));
-        }
-    }
-
-    private String getBooleanColumnTypeSelect(String attributeName) {
-        if (isNullableColumn(attributeName)) {
-            return getSelectCoalesceQuery(attributeName, NULL_STRING);
-        } else {
-            return getSelectCoalesceQuery(attributeName, "FALSE");
-        }
-    }
-
-    private String getByteArrayColumnTypeSelect(String attributeName) {
-        if (isNullableColumn(attributeName)) {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, NULL_STRING);
-        } else {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, "E'\'\''::bytea");
-        }
-    }
-
-    private String getEntityIdColumnTypeSelect(String attributeName) {
-        if (isNullableColumn(attributeName)) {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, NULL_STRING);
-        } else {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, "1");
-        }
-    }
-
-    private String getLongColumnTypeSelect(String attributeName) {
-        if (isNullableColumn(attributeName)) {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, NULL_STRING);
-        } else {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, "0");
-        }
-    }
-
-    private String getListFromSelectableColumns() {
-        if (CollectionUtils.isNullOrEmpty(getSelectableColumns())) {
-            return getListFromAllColumns();
-        }
-
-        return getSelectableColumns().stream()
-                .sorted(ATTRIBUTE_COMPARATOR)
-                .map(x -> getFormattedColumnName(x.getName()))
-                .collect(Collectors.joining(", "));
-    }
-
-    private String getListFromAllColumns() {
-        return Arrays.stream(metaModelClass.getDeclaredFields())
-                .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
-                .collect(Collectors.toList())
-                .stream()
-                .sorted(FIELD_COMPARATOR)
-                .map(x -> getFormattedColumnName(x.getName())).collect(Collectors.joining(", "));
-    }
-
-    private String getDoUpdateConflictClause(String tempTableName) {
-        StringBuilder updateQueryBuilder = new StringBuilder(getConflictClause("update set "));
-
-        updateQueryBuilder.append(getUpdateClause(tempTableName));
-        return updateQueryBuilder.toString();
     }
 
     private String getUpdateClause(String tempTableName) {

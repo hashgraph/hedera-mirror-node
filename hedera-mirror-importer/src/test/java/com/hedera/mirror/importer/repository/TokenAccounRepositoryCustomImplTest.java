@@ -37,14 +37,13 @@ class TokenAccounRepositoryCustomImplTest extends AbstractRepositoryCustomImplTe
     @Override
     public String getInsertQuery() {
         return "insert into token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, " +
-                "modified_timestamp, token_id) select coalesce(token_account_temp.account_id, 1) as account_id, " +
-                "coalesce(token_account_temp.associated, FALSE), coalesce(token_account_temp.created_timestamp, 0) as" +
-                " created_timestamp, coalesce(token_account_temp.freeze_status, getNewAccountFreezeStatus" +
-                "(token_account_temp.token_id)) as freeze_status, coalesce(token_account_temp.kyc_status, " +
-                "getNewAccountKycStatus(token_account_temp.token_id)) as kyc_status, token_account_temp" +
-                ".modified_timestamp, coalesce(token_account_temp.token_id, 1) as token_id from token_account_temp " +
-                "join token on token_account_temp.token_id = token.token_id where token_account_temp" +
-                ".created_timestamp is not null  on conflict (token_id, account_id) do nothing";
+                "modified_timestamp, token_id) select token_account_temp.account_id, token_account_temp.associated, " +
+                "token_account_temp.created_timestamp, coalesce(token_account_temp.freeze_status, " +
+                "getNewAccountFreezeStatus(token_account_temp.token_id)) as freeze_status, coalesce" +
+                "(token_account_temp.kyc_status, getNewAccountKycStatus(token_account_temp.token_id)) as kyc_status, " +
+                "token_account_temp.modified_timestamp, token_account_temp.token_id from token_account_temp join " +
+                "token on token_account_temp.token_id = token.token_id where token_account_temp.created_timestamp is " +
+                "not null  on conflict (token_id, account_id) do nothing";
     }
 
     @Override
@@ -56,21 +55,6 @@ class TokenAccounRepositoryCustomImplTest extends AbstractRepositoryCustomImplTe
                 ".modified_timestamp) from token_account_temp " +
                 "where token_account.token_id = token_account_temp.token_id and token_account.account_id = " +
                 "token_account_temp.account_id and token_account_temp.created_timestamp is null";
-    }
-
-    @Override
-    public String getUpsertQuery() {
-        return "insert into token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, " +
-                "modified_timestamp, token_id) select coalesce(token_account_temp.account_id, 1) as account_id, " +
-                "coalesce(token_account_temp.associated, FALSE), coalesce(token_account_temp.created_timestamp, 0) as" +
-                " created_timestamp, coalesce(token_account_temp.freeze_status, getNewAccountFreezeStatus" +
-                "(token_account_temp.token_id)) as freeze_status, coalesce(token_account_temp.kyc_status, " +
-                "getNewAccountKycStatus(token_account_temp.token_id)) as kyc_status, token_account_temp" +
-                ".modified_timestamp, coalesce(token_account_temp.token_id, 1) as token_id from token_account_temp on" +
-                " conflict (token_id, account_id) do update set associated = coalesce(excluded.associated, " +
-                "token_account.associated), freeze_status = coalesce(excluded.freeze_status, token_account" +
-                ".freeze_status), kyc_status = coalesce(excluded.kyc_status, token_account.kyc_status), " +
-                "modified_timestamp = coalesce(excluded.modified_timestamp, token_account.modified_timestamp)";
     }
 
     @Test

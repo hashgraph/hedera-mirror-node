@@ -28,6 +28,10 @@ public interface UpdatableDomainRepositoryCustom {
 
     String getCreateTempTableQuery();
 
+    String getInsertQuery();
+
+    String getInsertWhereClause();
+
     List<SingularAttribute> getSelectableColumns();
 
     String getTableName();
@@ -36,20 +40,9 @@ public interface UpdatableDomainRepositoryCustom {
 
     List<SingularAttribute> getUpdatableColumns();
 
-    String getInsertQuery();
-
-    String getInsertWhereClause();
-
-    String getUpsertQuery();
-
     String getUpdateQuery();
 
     String getUpdateWhereClause();
 
     boolean isNullableColumn(String columnName);
-
-    boolean shouldUpdateOnConflict();
-
-    // add a is nullable column or implement a method that returns the default value for a column.
-    // potentially implement initial method in abstract class that does the
 }

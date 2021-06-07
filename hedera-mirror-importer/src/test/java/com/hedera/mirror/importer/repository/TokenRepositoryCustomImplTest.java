@@ -39,20 +39,17 @@ class TokenRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest {
         return "insert into token (created_timestamp, decimals, freeze_default, freeze_key, freeze_key_ed25519_hex, " +
                 "initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, name, supply_key, " +
                 "supply_key_ed25519_hex, symbol, token_id, total_supply, treasury_account_id, wipe_key, " +
-                "wipe_key_ed25519_hex) select coalesce(token_temp.created_timestamp, 0) as created_timestamp, " +
-                "token_temp.decimals, token_temp.freeze_default, coalesce(token_temp.freeze_key, null) as freeze_key," +
-                " case when token_temp.freeze_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
-                ".freeze_key_ed25519_hex, null) end, token_temp.initial_supply, coalesce(token_temp.kyc_key, null) as" +
-                " kyc_key, case when token_temp.kyc_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
+                "wipe_key_ed25519_hex) select token_temp.created_timestamp, token_temp.decimals, token_temp" +
+                ".freeze_default, token_temp.freeze_key, case when token_temp.freeze_key_ed25519_hex = ' ' then '' " +
+                "else coalesce(token_temp.freeze_key_ed25519_hex, null) end, token_temp.initial_supply, token_temp" +
+                ".kyc_key, case when token_temp.kyc_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
                 ".kyc_key_ed25519_hex, null) end, token_temp.modified_timestamp, case when token_temp.name = ' ' then" +
-                " '' else coalesce(token_temp.name, '') end, coalesce(token_temp.supply_key, null) as supply_key, " +
-                "case when token_temp.supply_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
-                ".supply_key_ed25519_hex, null) end, case when token_temp.symbol = ' ' then '' else coalesce" +
-                "(token_temp.symbol, '') end, token_temp.token_id, coalesce(token_temp.total_supply, 0) as " +
-                "total_supply, coalesce(token_temp.treasury_account_id, 1) as treasury_account_id, coalesce" +
-                "(token_temp.wipe_key, null) as wipe_key, case when token_temp.wipe_key_ed25519_hex = ' ' then '' " +
-                "else coalesce(token_temp.wipe_key_ed25519_hex, null) end from token_temp where token_temp" +
-                ".created_timestamp is not null  on conflict (token_id) do nothing";
+                " '' else coalesce(token_temp.name, '') end, token_temp.supply_key, case when token_temp" +
+                ".supply_key_ed25519_hex = ' ' then '' else coalesce(token_temp.supply_key_ed25519_hex, null) end, " +
+                "case when token_temp.symbol = ' ' then '' else coalesce(token_temp.symbol, '') end, token_temp" +
+                ".token_id, token_temp.total_supply, token_temp.treasury_account_id, token_temp.wipe_key, case when " +
+                "token_temp.wipe_key_ed25519_hex = ' ' then '' else coalesce(token_temp.wipe_key_ed25519_hex, null) " +
+                "end from token_temp where token_temp.created_timestamp is not null  on conflict (token_id) do nothing";
     }
 
     @Override
@@ -72,40 +69,6 @@ class TokenRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest {
                 ".wipe_key, token.wipe_key), wipe_key_ed25519_hex = case when token_temp.wipe_key_ed25519_hex = ' ' " +
                 "then '' else coalesce(token_temp.wipe_key_ed25519_hex, token.wipe_key_ed25519_hex) end from " +
                 "token_temp where token.token_id = token_temp.token_id  and token_temp.created_timestamp is null";
-    }
-
-    @Override
-    public String getUpsertQuery() {
-        return "insert into token (created_timestamp, decimals, freeze_default, freeze_key, freeze_key_ed25519_hex, " +
-                "initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, name, supply_key, " +
-                "supply_key_ed25519_hex, symbol, token_id, total_supply, treasury_account_id, wipe_key, " +
-                "wipe_key_ed25519_hex) select coalesce(token_temp.created_timestamp, 0) as created_timestamp, " +
-                "token_temp.decimals, token_temp.freeze_default, coalesce(token_temp.freeze_key, null) as freeze_key," +
-                " case when token_temp.freeze_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
-                ".freeze_key_ed25519_hex, null) end, token_temp.initial_supply, coalesce(token_temp.kyc_key, null) as" +
-                " kyc_key, case when token_temp.kyc_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
-                ".kyc_key_ed25519_hex, null) end, token_temp.modified_timestamp, case when token_temp.name = ' ' then" +
-                " '' else coalesce(token_temp.name, '') end, coalesce(token_temp.supply_key, null) as supply_key, " +
-                "case when token_temp.supply_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
-                ".supply_key_ed25519_hex, null) end, case when token_temp.symbol = ' ' then '' else coalesce" +
-                "(token_temp.symbol, '') end, token_temp.token_id, coalesce(token_temp.total_supply, 0) as " +
-                "total_supply, coalesce(token_temp.treasury_account_id, 1) as treasury_account_id, coalesce" +
-                "(token_temp.wipe_key, null) as wipe_key, case when token_temp.wipe_key_ed25519_hex = ' ' then '' " +
-                "else coalesce(token_temp.wipe_key_ed25519_hex, null) end from token_temp on conflict (token_id) do " +
-                "update set freeze_key = coalesce(excluded.freeze_key, token.freeze_key), freeze_key_ed25519_hex = " +
-                "case when token_temp.freeze_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
-                ".freeze_key_ed25519_hex, token.freeze_key_ed25519_hex) end, kyc_key = coalesce(excluded.kyc_key, " +
-                "token.kyc_key), kyc_key_ed25519_hex = case when token_temp.kyc_key_ed25519_hex = ' ' then '' else " +
-                "coalesce(token_temp.kyc_key_ed25519_hex, token.kyc_key_ed25519_hex) end, modified_timestamp = " +
-                "coalesce(excluded.modified_timestamp, token.modified_timestamp), name = case when token_temp.name = " +
-                "' ' then '' else coalesce(token_temp.name, token.name) end, supply_key = coalesce(excluded" +
-                ".supply_key, token.supply_key), supply_key_ed25519_hex = case when token_temp.supply_key_ed25519_hex" +
-                " = ' ' then '' else coalesce(token_temp.supply_key_ed25519_hex, token.supply_key_ed25519_hex) end, " +
-                "symbol = case when token_temp.symbol = ' ' then '' else coalesce(token_temp.symbol, token.symbol) " +
-                "end, total_supply = coalesce(excluded.total_supply, token.total_supply), treasury_account_id = " +
-                "coalesce(excluded.treasury_account_id, token.treasury_account_id), wipe_key = coalesce(excluded" +
-                ".wipe_key, token.wipe_key), wipe_key_ed25519_hex = case when token_temp.wipe_key_ed25519_hex = ' ' " +
-                "then '' else coalesce(token_temp.wipe_key_ed25519_hex, token.wipe_key_ed25519_hex) end";
     }
 
     @Test

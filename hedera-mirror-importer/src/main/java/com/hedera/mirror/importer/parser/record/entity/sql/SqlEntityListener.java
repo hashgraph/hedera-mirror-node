@@ -246,11 +246,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             schedulePgCopy.copy(schedules.values(), connection);
             tokenPgCopy.copy(tokens.values(), connection);
             tokenAccountPgCopy.copy(tokenAccounts.values(), connection);
-//            persistUpdatableEntity(connection, entityPgCopy, entities.values(), Entity.class);
-//            persistUpdatableEntity(connection, entityIdPgCopy, entityIdEntities.values(), EntityId.class);
-//            persistUpdatableEntity(connection, schedulePgCopy, schedules.values(), Schedule.class);
-//            persistUpdatableEntity(connection, tokenPgCopy, tokens.values(), Token.class);
-//            persistUpdatableEntity(connection, tokenAccountPgCopy, tokenAccounts.values(), TokenAccount.class);
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -365,31 +360,25 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures.add(transactionSignature);
     }
 
-//    private void persistUpdatableEntity(Connection connection, UpsertPgCopy upsertPgCopy, Collection values,
-//                                        Class entityClass) throws SQLException {
-//        if (CollectionUtils.isEmpty(values)) {
-//            return;
-//        }
-//
-//        Stopwatch stopwatch = Stopwatch.createStarted();
-//        upsertPgCopy.createTempTable(connection);
-//        upsertPgCopy.copy(values, connection);
-//        int upsertCount = upsertPgCopy.upsertToFinalTable(connection);
-//        log.info("Upserted {} of {} {}'s in {}", upsertCount, values.size(), entityClass.getSimpleName(), stopwatch);
-//    }
-
     private void updateCachedEntity(Entity newEntity) {
         Entity cachedEntity = entities.get(newEntity.getId());
         cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
 
-        // update vs delete operation
-        if (newEntity.getDeleted() == null) {
+        if (newEntity.getDeleted() != null) {
+            cachedEntity.setDeleted(newEntity.getDeleted());
+        }
+
+        if (newEntity.getExpirationTimestamp() != null) {
             cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
+        }
+
+        if (newEntity.getKey() != null) {
             cachedEntity.setKey(newEntity.getKey());
             cachedEntity.setMemo(newEntity.getMemo());
-            cachedEntity.setPublicKey(newEntity.getPublicKey());
-        } else {
-            cachedEntity.setDeleted(newEntity.getDeleted());
+        }
+
+        if (newEntity.getMemo() != null) {
+            cachedEntity.setMemo(newEntity.getMemo());
         }
     }
 
