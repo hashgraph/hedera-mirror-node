@@ -27,6 +27,9 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -69,6 +72,9 @@ public class Token {
     @ToString.Exclude
     private String kycKeyEd25519Hex;
 
+    @Min(0)
+    private long maxSSupply;
+
     private long modifiedTimestamp;
 
     private String name;
@@ -80,10 +86,16 @@ public class Token {
     @ToString.Exclude
     private String supplyKeyEd25519Hex;
 
+    @Enumerated(EnumType.ORDINAL)
+    private TokenSupplyTypeEnum supplyType;
+
     private String symbol;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId treasuryAccountId;
+
+    @Enumerated(EnumType.ORDINAL)
+    private TokenTypeEnum type;
 
     @ToString.Exclude
     private byte[] wipeKey;
