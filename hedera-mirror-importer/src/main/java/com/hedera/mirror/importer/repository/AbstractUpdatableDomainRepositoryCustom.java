@@ -59,6 +59,11 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
     @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
 
+    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
+    @Getter(lazy = true)
+    // Note JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
+    private final List<SingularAttribute> selectableColumns = Collections.emptyList();
+
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
 

@@ -30,11 +30,9 @@ import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.PGCopyOutputStream;
@@ -54,10 +52,10 @@ public class PgCopy<T> {
 
     private final String sql;
     private final ObjectWriter writer;
-    protected final Timer insertDurationMetric;
     private final ParserProperties properties;
+    protected final MeterRegistry meterRegistry;
+    protected Timer insertDurationMetric;
     protected final String tableName;
-    protected boolean insertCopy = true;
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
         this(entityClass, meterRegistry, properties, entityClass.getSimpleName());
@@ -65,9 +63,10 @@ public class PgCopy<T> {
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties, String tableName) {
         this.properties = properties;
+        this.meterRegistry = meterRegistry;
         this.tableName = CaseFormat.UPPER_CAMEL.to(
                 CaseFormat.LOWER_UNDERSCORE,
-                StringUtils.isEmpty(tableName) ? entityClass.getSimpleName() : tableName);
+                tableName);
         var mapper = new CsvMapper();
         SimpleModule module = new SimpleModule();
         module.addSerializer(byte[].class, new ByteArrayToHexSerializer());
@@ -81,30 +80,31 @@ public class PgCopy<T> {
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
         sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", this.tableName, columnsCsv);
-
-        insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
-                .description("Time to insert transactions into table")
-                .tag("table", tableName)
-                .register(meterRegistry);
     }
 
-    public void copy(Collection<T> items, Connection connection) throws SQLException {
+    protected Timer getCopyDurationMetric() {
+        // in PgCopy copy and insert are synonymous
+        if (insertDurationMetric == null) {
+            insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
+                    .description("Time to insert transactions into table")
+                    .tag("table", tableName)
+                    .register(meterRegistry);
+        }
+
+        return insertDurationMetric;
+    }
+
+    public void copy(Collection<T> items, Connection connection) {
         if (items == null || items.isEmpty()) {
             return;
         }
 
         try {
-            Stopwatch stopwatch = null;
-            if (insertCopy) {
-                stopwatch = Stopwatch.createStarted();
-            }
+            Stopwatch stopwatch = Stopwatch.createStarted();
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
             CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
             try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
-                if (tableName.contains("entity") || tableName.contains("token") || tableName.contains("schedule")) {
-                    log.info("**** {} serialized: values: ({})", tableName, writer.writeValueAsString(items));
-                }
                 writer.writeValue(pgCopyOutputStream, items);
             } finally {
                 if (copyIn.isActive()) {
@@ -112,10 +112,8 @@ public class PgCopy<T> {
                 }
             }
 
-            if (stopwatch != null) {
-                insertDurationMetric.record(stopwatch.elapsed());
-                log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
-            }
+            getCopyDurationMetric().record(stopwatch.elapsed());
+            log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }

@@ -60,7 +60,6 @@ public class TokenAccountRepositoryCustomImpl extends AbstractUpdatableDomainRep
     }
 
     @Getter(lazy = true)
-    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
     private final List<SingularAttribute> selectableColumns = Lists.newArrayList(TokenAccountId_.accountId,
             TokenAccount_.associated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,

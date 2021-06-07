@@ -70,7 +70,6 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
         private long consensusTimestamp;
 
         @Convert(converter = TokenIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId tokenId;
 
         @Convert(converter = AccountIdConverter.class)

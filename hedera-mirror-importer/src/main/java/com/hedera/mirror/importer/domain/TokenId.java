@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
@@ -28,9 +27,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 
+/**
+ * Token table embedded Id. This needs to exist as a separate class to ensure JPAMetaModelEntityProcessor picks it up
+ */
 @Data
 @Embeddable
 @AllArgsConstructor
@@ -39,6 +40,5 @@ public class TokenId implements Serializable {
     private static final long serialVersionUID = -4595724698253758379L;
 
     @Convert(converter = TokenIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId tokenId;
 }

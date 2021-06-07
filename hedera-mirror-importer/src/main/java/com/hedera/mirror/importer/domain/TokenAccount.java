@@ -21,8 +21,6 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import javax.persistence.Access;
-import javax.persistence.AccessType;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -34,7 +32,6 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 public class TokenAccount {
-    @Access(AccessType.FIELD)
     @EmbeddedId
     @JsonUnwrapped
     private TokenAccountId id;

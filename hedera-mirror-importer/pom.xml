@@ -21,7 +21,6 @@
         <commons-io.version>2.10.0</commons-io.version>
         <s3proxy.version>1.8.0</s3proxy.version>
         <testcontainers.version>1.15.3</testcontainers.version>
-        <jmh.version>1.29</jmh.version>
     </properties>
 
     <dependencyManagement>
@@ -263,19 +262,6 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-core</artifactId>
-            <version>${jmh.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-generator-annprocess</artifactId>
-            <version>${jmh.version}</version>
-            <scope>test
-            </scope>
         </dependency>
     </dependencies>
 

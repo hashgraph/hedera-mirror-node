@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser;
 
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -29,10 +30,11 @@ import java.util.Collection;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.UpdatableDomainRepositoryCustom;
 
 /**
- * Stateless writer to insert rows into PostgreSQL using COPY.
+ * Stateless writer to upsert rows into PostgreSQL using COPY into a temp table then insert and update into final table
  *
  * @param <T> domain object
  */
@@ -43,6 +45,9 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private final String insertSql;
     private final String updateSql;
 
+    protected Timer copyDurationMetric;
+    protected Timer updateDurationMetric;
+
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
                         UpdatableDomainRepositoryCustom updatableDomainRepositoryCustom) {
         super(entityClass, meterRegistry, properties, updatableDomainRepositoryCustom.getTemporaryTableName());
@@ -50,30 +55,51 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         finalTableName = updatableDomainRepositoryCustom.getTableName();
         insertSql = updatableDomainRepositoryCustom.getInsertQuery();
         updateSql = updatableDomainRepositoryCustom.getUpdateQuery();
-
-        // flag that this is not the base insert copy scenario
-        insertCopy = false;
+        insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
+                .description("Time to insert parsed transactions information into table")
+                .tag("table", finalTableName)
+                .register(meterRegistry);
+        updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.update")
+                .description("Time to update parsed transactions information into table")
+                .tag("table", finalTableName)
+                .register(meterRegistry);
     }
 
     @Override
-    public void copy(Collection<T> items, Connection connection) throws SQLException {
+    public void copy(Collection<T> items, Connection connection) {
         if (CollectionUtils.isEmpty(items)) {
             return;
         }
 
-        // create temp table to copy into
-        createTempTable(connection);
+        try {
+            // create temp table to copy into
+            createTempTable(connection);
 
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        // copy items to temp table
-        super.copy(items, connection);
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            // copy items to temp table
+            super.copy(items, connection);
 
-        // from temp table upsert to final table
-        int insertCount = insertToFinalTable(connection);
-        updateFinalTable(connection);
-        insertDurationMetric.record(stopwatch.elapsed());
-        log.info("Inserted {} and updated from a total of {} rows to {} in {}", insertCount, items
-                .size(), finalTableName, stopwatch);
+            // from temp table upsert to final table
+            int insertCount = insertToFinalTable(connection);
+            updateFinalTable(connection);
+            insertDurationMetric.record(stopwatch.elapsed());
+            log.info("Inserted {} and updated from a total of {} rows to {} in {}", insertCount, items
+                    .size(), finalTableName, stopwatch);
+        } catch (Exception e) {
+            throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
+        }
+    }
+
+    @Override
+    protected Timer getCopyDurationMetric() {
+        if (copyDurationMetric == null) {
+            copyDurationMetric = Timer.builder("hedera.mirror.importer.parse.copy")
+                    .description("Time to insert transactions into temp table")
+                    .tag("table", finalTableName)
+                    .register(meterRegistry);
+        }
+
+        return copyDurationMetric;
     }
 
     private void createTempTable(Connection connection) throws SQLException {
@@ -88,7 +114,6 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     public int insertToFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         int insertCount = 0;
-        log.info("** Run insertSql {}", insertSql);
         try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
             insertCount = preparedStatement.executeUpdate();
         }
@@ -99,10 +124,10 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
 
     public void updateFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("** Run updateSql {}", updateSql);
         try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
             preparedStatement.execute();
         }
+        updateDurationMetric.record(stopwatch.elapsed());
         log.info("Updated rows from {} table to {} table in {}", tableName, finalTableName, stopwatch);
     }
 }

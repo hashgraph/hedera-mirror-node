@@ -23,16 +23,12 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -40,11 +36,8 @@ import com.hedera.mirror.importer.util.Utility;
 @javax.persistence.Entity
 @Log4j2
 @ToString(exclude = {"key", "submitKey"})
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-@AllArgsConstructor
 public class Entity {
     @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId autoRenewAccountId;
 
     private Long autoRenewPeriod;
@@ -68,10 +61,9 @@ public class Entity {
     private Long num;
 
     @JsonSerialize(using = NullableStringSerializer.class)
-    private String publicKey; // null as default, "" Key.getDefaultInstance() case.
+    private String publicKey;
 
     @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId proxyAccountId;
 
     private Long realm;
@@ -81,9 +73,6 @@ public class Entity {
     private byte[] submitKey;
 
     private Integer type;
-
-    public Entity() {
-    }
 
     public void setKey(byte[] key) {
         this.key = key;

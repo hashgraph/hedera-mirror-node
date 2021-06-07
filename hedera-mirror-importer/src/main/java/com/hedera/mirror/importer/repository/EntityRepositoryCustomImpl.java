@@ -21,11 +21,9 @@ package com.hedera.mirror.importer.repository;
  */
 
 import com.google.common.collect.Lists;
-import java.util.Collections;
 import java.util.List;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -59,11 +57,6 @@ public class EntityRepositoryCustomImpl extends AbstractUpdatableDomainRepositor
     public List<String> getConflictIdColumns() {
         return conflictTargetColumns;
     }
-
-    @Getter(lazy = true)
-    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
-    // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final List<SingularAttribute> selectableColumns = Collections.emptyList();
 
     @Override
     public String getInsertWhereClause() {
