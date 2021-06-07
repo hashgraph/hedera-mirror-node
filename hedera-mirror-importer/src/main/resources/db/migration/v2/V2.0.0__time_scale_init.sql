@@ -252,7 +252,7 @@ create table if not exists token
     initial_supply         bigint                 not null,
     kyc_key                bytea,
     kyc_key_ed25519_hex    varchar                null,
-    max_supply             bigint                 not null default 9223372036854775807,
+    max_supply             bigint                 not null default 9223372036854775807, -- max long
     modified_timestamp     bigint                 not null,
     name                   character varying(100) not null,
     supply_key             bytea,
@@ -337,4 +337,3 @@ create table if not exists transaction
     transaction_bytes      bytea
 );
 comment on table transaction is 'Submitted network transactions';
-
