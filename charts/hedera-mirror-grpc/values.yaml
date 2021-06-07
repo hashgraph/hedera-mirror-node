@@ -61,6 +61,7 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 hpa:
   enabled: false
@@ -108,6 +109,8 @@ livenessProbe:
   timeoutSeconds: 2
 
 nodeSelector: {}
+
+podAnnotations: {}
 
 podSecurityContext:
   fsGroup: 1000
@@ -199,11 +202,11 @@ prometheusRules:
 
   GrpcNoPodsReady:
     annotations:
-      description: "No grpc instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: No grpc instances running
+      description: "No gRPC API instances are currently running in {{ $labels.namespace }}"
+      summary: No gRPC API instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="grpc"}) by (namespace, pod) < 1
-    for: 30s
+    expr: sum(kube_pod_container_status_ready{container="grpc"}) by (namespace) < 1
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-grpc
