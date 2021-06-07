@@ -61,18 +61,28 @@ public class TokenRepositoryCustomImpl extends AbstractUpdatableDomainRepository
         return conflictTargetColumns;
     }
 
-    @Getter // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
+    @Getter(lazy = true)
+    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    public List<SingularAttribute> selectableColumns = Lists.newArrayList(Token_.createdTimestamp, Token_.decimals,
-            Token_.freezeDefault, Token_.freezeKey, Token_.freezeKeyEd25519Hex, Token_.initialSupply, Token_.kycKey,
-            Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name, Token_.supplyKey,
+    private final List<SingularAttribute> selectableColumns = Lists.newArrayList(Token_.createdTimestamp,
+            Token_.decimals, Token_.freezeDefault, Token_.freezeKey, Token_.freezeKeyEd25519Hex, Token_.initialSupply,
+            Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name, Token_.supplyKey,
             Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.tokenId, Token_.totalSupply, Token_.treasuryAccountId,
             Token_.wipeKey, Token_.wipeKeyEd25519Hex);
-//    @Override
-//    public List<SingularAttribute> getSelectableColumns() {
-//        // null or empty list implies select all fields
-//        return Collections.emptyList();
-//    }
+
+    @Override
+    public String getInsertWhereClause() {
+        return String.format(" where %s is not null ",
+                getTableColumnName(getTemporaryTableName(), Token_.CREATED_TIMESTAMP));
+    }
+
+    @Override
+    public String getUpdateWhereClause() {
+        return String.format(" where %s = %s  and %s is null",
+                getTableColumnName(getTableName(), Token_.TOKEN_ID),
+                getTableColumnName(getTemporaryTableName(), Token_.TOKEN_ID),
+                getTableColumnName(getTemporaryTableName(), Token_.CREATED_TIMESTAMP));
+    }
 
     @Override
     public List<SingularAttribute> getUpdatableColumns() {

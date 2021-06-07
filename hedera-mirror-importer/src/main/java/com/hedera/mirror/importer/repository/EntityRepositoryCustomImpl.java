@@ -60,14 +60,23 @@ public class EntityRepositoryCustomImpl extends AbstractUpdatableDomainRepositor
         return conflictTargetColumns;
     }
 
-    @Getter // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
+    @Getter(lazy = true)
+    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    public List<SingularAttribute> selectableColumns = Collections.emptyList();
-//    @Override
-//    public List<SingularAttribute> getSelectableColumns() {
-//        // null or empty list implies select all fields
-//        return Collections.emptyList();
-//    }
+    private final List<SingularAttribute> selectableColumns = Collections.emptyList();
+
+    @Override
+    public String getInsertWhereClause() {
+        return "";
+    }
+
+    @Override
+    public String getUpdateWhereClause() {
+        return String.format(" where %s = %s and %s is null",
+                getTableColumnName(getTableName(), Entity_.ID),
+                getTableColumnName(getTemporaryTableName(), Entity_.ID),
+                getTableColumnName(getTemporaryTableName(), Entity_.CREATED_TIMESTAMP));
+    }
 
     @Override
     public List<SingularAttribute> getUpdatableColumns() {

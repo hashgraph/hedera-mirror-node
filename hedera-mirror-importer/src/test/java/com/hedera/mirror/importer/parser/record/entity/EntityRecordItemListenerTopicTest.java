@@ -265,6 +265,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
     @CsvSource({
             "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, 0, 0, , , , 1, 30, , 0",
             "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, , , , , , 1, 30, , ",
+            "0.0.1500, 10, 20, admin-key, submit-key, memo, 5000000, , , , , '', 1, 30, , ",
             "0.0.1501, 0, 0, '', '', '', 5000001, 0, 0, , , , , , ,",
             "0.0.1502, , , admin-key, submit-key, memo, 5000002, 10, 20, updated-admin-key, updated-submit-key, " +
                     "updated-memo, 1, 30, 11, 31",

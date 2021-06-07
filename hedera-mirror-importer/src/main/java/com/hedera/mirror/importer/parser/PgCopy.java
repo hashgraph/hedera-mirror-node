@@ -81,7 +81,6 @@ public class PgCopy<T> {
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
         sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", this.tableName, columnsCsv);
-        log.info("**** {} serialized: columns : ({})", tableName, columnsCsv);
 
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
@@ -103,9 +102,7 @@ public class PgCopy<T> {
             CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
             try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
-//                log.info("**** {}'s copySql: {}}", tableName, sql);
                 if (tableName.contains("entity") || tableName.contains("token") || tableName.contains("schedule")) {
-//                    log.info("**** {} serialized: columns : ({})", tableName, columnsCsv);
                     log.info("**** {} serialized: values: ({})", tableName, writer.writeValueAsString(items));
                 }
                 writer.writeValue(pgCopyOutputStream, items);

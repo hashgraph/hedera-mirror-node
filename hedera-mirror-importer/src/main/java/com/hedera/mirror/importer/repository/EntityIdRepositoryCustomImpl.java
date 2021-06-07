@@ -55,10 +55,21 @@ public class EntityIdRepositoryCustomImpl extends AbstractUpdatableDomainReposit
         return conflictTargetColumns;
     }
 
-    @Getter // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
+    @Getter(lazy = true)
+    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    public List<SingularAttribute> selectableColumns = Lists.newArrayList(Entity_.id, Entity_.memo,
+    private final List<SingularAttribute> selectableColumns = Lists.newArrayList(Entity_.id, Entity_.memo,
             Entity_.num, Entity_.realm, Entity_.shard, Entity_.type);
+
+    @Override
+    public String getInsertWhereClause() {
+        return "";
+    }
+
+    @Override
+    public String getUpdateWhereClause() {
+        return "";
+    }
 
     @Override
     public List<SingularAttribute> getUpdatableColumns() {

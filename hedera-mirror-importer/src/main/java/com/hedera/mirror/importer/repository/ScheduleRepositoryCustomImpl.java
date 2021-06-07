@@ -56,14 +56,24 @@ public class ScheduleRepositoryCustomImpl extends AbstractUpdatableDomainReposit
         return conflictTargetColumns;
     }
 
-    @Getter // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
+    @Getter(lazy = true)
+    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    public List<SingularAttribute> selectableColumns = Collections.emptyList();
-//    @Override
-//    public List<SingularAttribute> getSelectableColumns() {
-//        // null or empty list implies select all fields
-//        return Collections.emptyList();
-//    }
+    private final List<SingularAttribute> selectableColumns = Collections.emptyList();
+
+    @Override
+    public String getInsertWhereClause() {
+        return String.format(" where %s is not null ",
+                getTableColumnName(getTemporaryTableName(), Schedule_.CONSENSUS_TIMESTAMP));
+    }
+
+    @Override
+    public String getUpdateWhereClause() {
+        return String.format(" where %s = %s and %s is not null",
+                getTableColumnName(getTableName(), Schedule_.SCHEDULE_ID),
+                getTableColumnName(getTemporaryTableName(), Schedule_.SCHEDULE_ID),
+                getTableColumnName(getTemporaryTableName(), Schedule_.EXECUTED_TIMESTAMP));
+    }
 
     @Override
     public List<SingularAttribute> getUpdatableColumns() {

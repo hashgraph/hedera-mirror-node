@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenAccount_;
+import com.hedera.mirror.importer.domain.Token_;
 
 @Component
 @Named
@@ -58,20 +59,38 @@ public class TokenAccountRepositoryCustomImpl extends AbstractUpdatableDomainRep
         return conflictTargetColumns;
     }
 
-    @Getter // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
+    @Getter(lazy = true)
+    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    public List<SingularAttribute> selectableColumns = Lists.newArrayList(TokenAccountId_.accountId,
+    private final List<SingularAttribute> selectableColumns = Lists.newArrayList(TokenAccountId_.accountId,
             TokenAccount_.associated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
             TokenAccount_.kycStatus, TokenAccount_.modifiedTimestamp, TokenAccountId_.tokenId);
-//    @Override
-//    public List<SingularAttribute> getSelectableColumns() {
-//        // null or empty list implies select all fields
-//        // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly
-//        referenced
-//        return Lists.newArrayList(TokenAccountId_.accountId, TokenAccount_.associated, TokenAccount_.createdTimestamp,
-//                TokenAccount_.freezeStatus, TokenAccount_.kycStatus, TokenAccount_.modifiedTimestamp,
-//                TokenAccountId_.tokenId);
-//    }
+
+    @Override
+    public String getInsertWhereClause() {
+        StringBuilder insertWhereQueryBuilder = new StringBuilder();
+
+        // ignore entries where token not in db
+        insertWhereQueryBuilder.append(String.format(" join %s on %s = %s", TokenRepositoryCustomImpl.TABLE,
+                getTableColumnName(getTemporaryTableName(), Token_.TOKEN_ID),
+                getTableColumnName(TokenRepositoryCustomImpl.TABLE, TokenAccountId_.TOKEN_ID)));
+
+        // ignore entries where token not in db
+        insertWhereQueryBuilder.append(String.format(" where %s is not null ",
+                getTableColumnName(getTemporaryTableName(), TokenAccount_.CREATED_TIMESTAMP)));
+
+        return insertWhereQueryBuilder.toString();
+    }
+
+    @Override
+    public String getUpdateWhereClause() {
+        return String.format(" where %s = %s and %s = %s and %s is null",
+                getTableColumnName(getTableName(), TokenAccountId_.TOKEN_ID),
+                getTableColumnName(getTemporaryTableName(), TokenAccountId_.TOKEN_ID),
+                getTableColumnName(getTableName(), TokenAccountId_.ACCOUNT_ID),
+                getTableColumnName(getTemporaryTableName(), TokenAccountId_.ACCOUNT_ID),
+                getTableColumnName(getTemporaryTableName(), TokenAccount_.CREATED_TIMESTAMP));
+    }
 
     @Override
     public List<SingularAttribute> getUpdatableColumns() {

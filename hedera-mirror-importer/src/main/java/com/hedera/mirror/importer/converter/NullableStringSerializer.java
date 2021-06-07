@@ -30,11 +30,10 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Named
 public class NullableStringSerializer extends JsonSerializer<String> {
-    private static final String RESERVED_SPACE_CHAR = " ";
 
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         // empty strings are serialized as null, set to reserved space character and rely on db update sql to parse
-        gen.writeString(value.equals("") ? RESERVED_SPACE_CHAR : value);
+        gen.writeString(value.equals("") ? " " : value);
     }
 }

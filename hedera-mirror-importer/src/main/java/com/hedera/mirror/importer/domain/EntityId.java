@@ -134,7 +134,6 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         entity.setRealm(realmNum);
         entity.setNum(entityNum);
         entity.setType(type);
-        entity.setMemo(" ");
         return entity;
     }
 

@@ -1,8 +1,8 @@
 -------------------
--- Support upsert capabilities for entity related tables
+-- Support upsert (insert and update from temp table) capabilities for updatable domains
 -------------------
 
--- allow nullable on entity deleted as transaction cannot make this assumption
+-- allow nullable on entity deleted as transaction cannot make this assumption on updates
 alter table entity
     alter column deleted drop default,
     alter column deleted drop not null;
@@ -48,17 +48,5 @@ begin
     end if;
 
     return status;
-end
-$$ language plpgsql;
-
--- create getNewAccountKycStatus function - takes tokenId and gives KycStatus default
--- if no key_key return NOT_APPLICABLE (0), else return REVOKED (2)
-create or replace function getTokenName(tokenId bigint) returns smallint as
-$$
-declare
-    tokenName varchar;
-begin
-    select into tokenName name from token where token_id = tokenId;
-    return tokenName;
 end
 $$ language plpgsql;

@@ -36,7 +36,15 @@ public interface UpdatableDomainRepositoryCustom {
 
     List<SingularAttribute> getUpdatableColumns();
 
+    String getInsertQuery();
+
+    String getInsertWhereClause();
+
     String getUpsertQuery();
+
+    String getUpdateQuery();
+
+    String getUpdateWhereClause();
 
     boolean isNullableColumn(String columnName);
 

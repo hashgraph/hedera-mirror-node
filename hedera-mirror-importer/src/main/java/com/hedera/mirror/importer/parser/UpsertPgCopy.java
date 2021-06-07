@@ -40,14 +40,16 @@ import com.hedera.mirror.importer.repository.UpdatableDomainRepositoryCustom;
 public class UpsertPgCopy<T> extends PgCopy<T> {
     private final String finalTableName;
     private final String createTempTableSql;
-    private final String upsertSql;
+    private final String insertSql;
+    private final String updateSql;
 
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
                         UpdatableDomainRepositoryCustom updatableDomainRepositoryCustom) {
         super(entityClass, meterRegistry, properties, updatableDomainRepositoryCustom.getTemporaryTableName());
         createTempTableSql = updatableDomainRepositoryCustom.getCreateTempTableQuery();
         finalTableName = updatableDomainRepositoryCustom.getTableName();
-        upsertSql = updatableDomainRepositoryCustom.getUpsertQuery();
+        insertSql = updatableDomainRepositoryCustom.getInsertQuery();
+        updateSql = updatableDomainRepositoryCustom.getUpdateQuery();
 
         // flag that this is not the base insert copy scenario
         insertCopy = false;
@@ -67,9 +69,11 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         super.copy(items, connection);
 
         // from temp table upsert to final table
-        int upsertCount = upsertToFinalTable(connection);
+        int insertCount = insertToFinalTable(connection);
+        updateFinalTable(connection);
         insertDurationMetric.record(stopwatch.elapsed());
-        log.info("Upserted {} of {} rows to {} in {}", upsertCount, items.size(), finalTableName, stopwatch);
+        log.info("Inserted {} and updated from a total of {} rows to {} in {}", insertCount, items
+                .size(), finalTableName, stopwatch);
     }
 
     private void createTempTable(Connection connection) throws SQLException {
@@ -81,16 +85,25 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         log.trace("Created temp table {} in {}", tableName, stopwatch);
     }
 
-    private int upsertToFinalTable(Connection connection) throws SQLException {
+    public int insertToFinalTable(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        int upsertCount = 0;
-        log.info("** Run upsertSql {}", upsertSql);
-        try (PreparedStatement preparedStatement = connection.prepareStatement(upsertSql)) {
-            upsertCount = preparedStatement.executeUpdate();
+        int insertCount = 0;
+        log.info("** Run insertSql {}", insertSql);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
+            insertCount = preparedStatement.executeUpdate();
         }
-        log.info("Upserted {} rows from {} table to {} table in {}", upsertCount, tableName, finalTableName,
+        log.info("Inserted {} rows from {} table to {} table in {}", insertCount, tableName, finalTableName,
                 stopwatch);
-        return upsertCount;
+        return insertCount;
+    }
+
+    public void updateFinalTable(Connection connection) throws SQLException {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        log.info("** Run updateSql {}", updateSql);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+            preparedStatement.execute();
+        }
+        log.info("Updated rows from {} table to {} table in {}", tableName, finalTableName, stopwatch);
     }
 }
 
