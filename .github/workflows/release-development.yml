@@ -29,7 +29,7 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build and push images
-        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Ddocker.tag.version=master-${GITHUB_SHA}
+        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Ddocker.tag.version=master
 
   deploy:
     needs: publish
@@ -39,12 +39,9 @@ jobs:
         with:
           ref: deploy
 
-      - name: Update dev tag
-        run: |-
-          sed -i "s/ref: .*/ref: ${GITHUB_SHA}/" ./common/helmrelease.yaml
-          sed -i "s/ref: .*/ref: ${GITHUB_SHA}/" ./dev/helmrelease.yaml
-          sed -i "s/tag: .*/tag: master-${GITHUB_SHA}/" ./dev/helmrelease.yaml
+      - name: Update integration deployment configuration
+        run: 'sed -i "s/git.commit: .*/git.commit: ${GITHUB_SHA}/" clusters/preprod/integration/helmrelease.yaml'
 
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Upgrade dev to master-${{ github.sha }}
+          commit_message: Upgrade integration to master ${{ github.sha }}

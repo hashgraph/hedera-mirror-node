@@ -9,8 +9,8 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 
 ## Requirements
 
-- [Helm 3](https://helm.sh)
-- [Kubernetes 1.17+](https://kubernetes.io)
+- [Helm 3+](https://helm.sh)
+- [Kubernetes 1.19+](https://kubernetes.io)
 
 Set environment variables that will be used for the remainder of the document:
 
@@ -44,9 +44,9 @@ instead of PostgreSQL:
 $ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enabled=false --set timescaledb.enabled=true
 ```
 
-### Address Book
+### Non-Production Environments
 
-When running against a network other than a public network (demo/previewnet/testnet/mainnet), the network must be
+When running against a network other than a public network (e.g., demo/previewnet/testnet/mainnet), the network must be
 updated with an initial address book file prior to deploying the chart.
 
 1. First acquire the address book file and encode its contents to Base64:
@@ -64,21 +64,21 @@ importer:
 
 ### Production Environments
 
-In non production environments, the mirror node chart uses
-the [Traefik subchart](https://github.com/traefik/traefik-helm-chart) to manage access to cluster services through
-an [Ingress](https://doc.traefik.io/traefik/providers/kubernetes-ingress/) and to route traffic
-through [Load Balancing](https://doc.traefik.io/traefik/routing/overview/). The implemented configuration uses
-a [default self-signed certificate](https://doc.traefik.io/traefik/https/tls/#default-certificate) to secure traffic
-over the TLS protocol.
+The mirror node chart uses the [Traefik chart](https://github.com/traefik/traefik-helm-chart) to manage access to
+cluster services through an [Ingress](https://doc.traefik.io/traefik/providers/kubernetes-ingress/) and
+to [route](https://doc.traefik.io/traefik/routing/overview/) traffic through a load balancer. The implemented
+configuration uses a default [self-signed certificate](https://doc.traefik.io/traefik/https/tls/#default-certificate) to
+secure traffic over TLS.
 
-In production it is advised to use a CA signed certificate and an external load balancer to allow for more secure and
-intricate load balancing needs. The following diagram illustrates a high level overview of the resources utilized in the
-recommended traffic flow.
+In production, it is advised to use a certificate authority signed certificate, and an external load balancer to allow
+for more secure and intricate load balancing needs. The following diagram illustrates a high level overview of the
+resources utilized in the recommended traffic flow.
+
 ![Kubernetes deployed Hedera Mirror Node Resource Traffic Flow](images/mirror_traffic_resource_architecture.png)
 
 #### GCP
 
-When deploying in GCP, the following steps may be taken to use container-native load balancer through
+When deploying in GCP, the following steps may be taken to use a container-native load balancer through
 a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standalone-neg).
 
 1. Create a Kubernetes cluster utilizing a custom subnet.
@@ -94,23 +94,17 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
        --machine-type=n1-standard-4
    ```
 
-2. Configure the Traefik Subchart to use the external load balancer.
+2. Configure Traefik to use the external load balancer.
 
-   The following default production setup configures the Standalone NEG. It exposes 2 ports (80 and 443) for http and
-   TLS based traffic.
+   The following default production setup configures the Standalone NEG. It exposes port 443 for HTTPS based traffic.
+   This load balancer is a GCP container-native load balancer through standalone NEG. Please modify for other cloud
+   providers. Apply this config to your local values file (i.e. `custom.yaml`) for use in helm deployment:
 
-   Apply this config to your local values file (i.e. `custom.yaml`) for use in helm deployment.
    ```yaml
    traefik:
      service:
        annotations:
-         # default load balancer is GCP container-native load balancer through standalone NEG. Modify for other cloud providers
-         cloud.google.com/neg: '{
-                "exposed_ports":{
-                   "80":{"name": "<non_tls_neg_name>"},
-                   "443":{"name": "<tls_neg_name>"}
-                }
-              }'
+         cloud.google.com/neg: '{"exposed_ports": {"443": {"name": "<tls_neg_name>"}}}'
    ```
 
    > **_Note:_** Ensure the NEG names are cluster unique to support shared NEGs across separate globally distributed clusters
@@ -129,7 +123,7 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
 ## Testing
 
 To verify the chart installation is successful, you can run the helm tests. These tests are not automatically executed
-by helm on install/upgrade, they have to be executed manually. The tests require the `existingTopicNum`,  `operatorId`,
+by helm on install/upgrade, they have to be executed manually. The tests require the `existingTopicNum`, `operatorId`,
 and `operatorKey` properties be set in a local values file in order to execute, as well as `network` if using an
 environment other than testnet, and `nodes` if using a custom environment.
 
@@ -157,28 +151,29 @@ helm test "${RELEASE} " --timeout 10m
 
 ## Using
 
-All of the APIs and dashboards can be accessed via a single IP. To get the load balancer IP:
+All the public APIs can be accessed via a single IP. First, get the load balancer IP address:
 
 ```shell script
-  export SERVICE_IP=$(kubectl get service "${RELEASE}-traefik" -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+export SERVICE_IP=$(kubectl get service -n common "${RELEASE}-traefik" -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
 ```
 
 To access the GRPC API (using [grpcurl](https://github.com/fullstorydev/grpcurl)):
 
 ```shell script
-  grpcurl -plaintext ${SERVICE_IP}:80 list
+grpcurl -plaintext ${SERVICE_IP}:80 list
 ```
 
 To access the REST API:
 
 ```shell script
-  curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
+curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
 ```
 
 To view the Grafana dashboard:
 
-```shell script
-  open "http://${SERVICE_IP}/grafana"
+```shell
+kubectl port-forward -n common service/${RELEASE}-grafana 8080:80 &
+open "http://localhost:8080"
 ```
 
 ## Uninstall
@@ -186,14 +181,14 @@ To view the Grafana dashboard:
 To remove all the Kubernetes components associated with the chart and delete the release:
 
 ```shell script
-$ helm delete "${RELEASE}"
+helm delete "${RELEASE}"
 ```
 
 The above command does not delete any of the underlying persistent volumes. To delete all the data associated with this
 release:
 
 ```shell script
-$ kubectl delete $(kubectl get pvc -o name)
+kubectl delete $(kubectl get pvc -o name)
 ```
 
 ## Troubleshooting
@@ -202,9 +197,9 @@ To troubleshoot a pod, you can view its log and describe the pod to see its stat
 [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) documentation for more commands.
 
 ```shell script
-$ kubectl describe pod "${RELEASE}-importer-0"
-$ kubectl logs -f --tail=100 "${RELEASE}-importer-0"
-$ kubectl logs -f --prefix --tail=10 -l app.kubernetes.io/name=importer
+kubectl describe pod "${POD_NAME}"
+kubectl logs -f --tail=100 "${POD_NAME}"
+kubectl logs -f --prefix --tail=10 -l app.kubernetes.io/name=importer
 ```
 
 To change application properties without restarting, you can create a
@@ -213,8 +208,8 @@ named `hedera-mirror-grpc` or `hedera-mirror-importer` and supply an `applicatio
 Note that some properties that are used on startup will still require a restart.
 
 ```shell script
-$ echo "logging.level.com.hedera.mirror.grpc=TRACE" > application.properties
-$ kubectl create configmap hedera-mirror-grpc --from-file=application.properties
+echo "logging.level.com.hedera.mirror.grpc=TRACE" > application.properties
+kubectl create configmap hedera-mirror-grpc --from-file=application.properties
 ```
 
 Dashboard, metrics and alerts can be viewed via [Grafana](https://grafana.com). See the [Using](#using) section for how
@@ -223,17 +218,26 @@ to connect to Grafana.
 To connect to the database and run queries:
 
 ```shell script
-$ kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d mirror_node -U mirror_node
+kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d mirror_node -U mirror_node
+```
+
+A thread dump can be taken by sending a `QUIT` signal to the java process inside the container. The thread dump output
+will be visible via container logs.
+
+```shell
+kubectl exec "${POD_NAME}" -- kill -QUIT 1
+kubectl logs -f "${POD_NAME}"
 ```
 
 ### Alerts
 
 Prometheus AlertManager is used to monitor and alert for ongoing issues in the cluster. If an alert is received via a
 notification mechanism like Slack or PagerDuty, it should contain enough details to know where to start the
-investigation. Active alerts can be viewed via the `AlertManager` dashboard in Grafana that is exposed by the load
-balancer. To see further details or to silence or suppress the alert it will need to be done via the AlertManager UI. To
-access the AlertManager UI, expose it via kubectl:
+investigation. Active alerts can be viewed via the `AlertManager` dashboard in Grafana. To see further details or to
+silence or suppress the alert it will need to be done via the AlertManager UI. To access the AlertManager UI, expose it
+via kubectl:
 
 ```shell script
-kubectl port-forward service/${RELEASE}-prometheus-alertmanager 9093:9093
+kubectl port-forward -n common service/${RELEASE}-prometheus-alertmanager 9093:9093 &
+open http://localhost:9093
 ```

@@ -1519,7 +1519,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{kubernetes_io_hostname=~\"^$Node$\"}) by (pod, container) / sum(kube_pod_container_resource_limits_memory_bytes{kubernetes_io_hostname=~\"^$Node$\"}) by (pod, container)",
+          "expr": "sum(container_memory_working_set_bytes{kubernetes_io_hostname=~\"^$Node$\"}) by (pod, container) / sum(kube_pod_container_resource_limits{kubernetes_io_hostname=~\"^$Node$\"}) by (pod, container)",
           "interval": "10s",
           "legendFormat": "{{ pod }}",
           "refId": "B"

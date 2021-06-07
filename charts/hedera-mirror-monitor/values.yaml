@@ -97,6 +97,19 @@ image:
 
 imagePullSecrets: []
 
+ingress:
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-monitor.namespace" . }}-{{ include "hedera-mirror-monitor.fullname" . }}@kubernetescrd'
+  enabled: true
+  hosts:
+    - host: ""
+      paths: ["/monitor/api"]
+  middleware:
+    enabled: false
+  tls:
+    enabled: false
+    secretName: ""
+
 labels: {}
 
 livenessProbe:

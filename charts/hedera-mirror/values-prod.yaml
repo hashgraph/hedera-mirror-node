@@ -30,6 +30,9 @@ monitor:
   alertmanager:
     inhibitRules:
       enabled: true
+  ingress:
+    middleware:
+      enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true

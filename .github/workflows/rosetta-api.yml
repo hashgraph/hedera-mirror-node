@@ -35,6 +35,7 @@ jobs:
           GOPATH: ~/go
 
       - name: Upload coverage report
+        if: always()
         run: bash <(curl -s https://codecov.io/bash)
 
       - name: Upload artifact
@@ -46,6 +47,7 @@ jobs:
           if-no-files-found: error
 
   validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && !contains(github.head_ref, 'dependabot/')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
