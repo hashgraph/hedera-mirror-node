@@ -47,34 +47,42 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 ) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenFreezeUnfreeze, err := t.preprocess(operations)
-	if err != nil {
-		return nil, nil, err
+	payer, tokenFreezeUnfreeze, rErr := t.preprocess(operations)
+	if rErr != nil {
+		return nil, nil, rErr
 	}
 
 	var tx ITransaction
+	var err error
 
 	if t.operationType == config.OperationTypeTokenFreeze {
-		tx = hedera.NewTokenFreezeTransaction().
+		tx, err = hedera.NewTokenFreezeTransaction().
 			SetAccountID(*tokenFreezeUnfreeze.Account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenID(*tokenFreezeUnfreeze.Token).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Freeze()
 	} else {
-		tx = hedera.NewTokenUnfreezeTransaction().
+		tx, err = hedera.NewTokenUnfreezeTransaction().
 			SetAccountID(*tokenFreezeUnfreeze.Account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenID(*tokenFreezeUnfreeze.Token).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Unfreeze() // SDK typo
+	}
+
+	if err != nil {
+		return nil, nil, hErrors.ErrInternalServerError
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(
-	transaction ITransaction,
-	signed bool,
-) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
+func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(transaction ITransaction) (
+	[]*rTypes.Operation,
+	[]hedera.AccountID,
+	*rTypes.Error,
+) {
 	var account hedera.AccountID
 	var payer hedera.AccountID
 	var token hedera.TokenID

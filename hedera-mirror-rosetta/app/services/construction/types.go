@@ -30,6 +30,7 @@ import (
 type ITransaction interface {
 	Execute(client *hedera.Client) (hedera.TransactionResponse, error)
 	GetNodeAccountIDs() []hedera.AccountID
+	GetSignatures() (map[hedera.AccountID]map[*hedera.PublicKey][]byte, error)
 	GetTransactionHash() ([]byte, error)
 	GetTransactionID() hedera.TransactionID
 	ToBytes() ([]byte, error)
@@ -46,11 +47,7 @@ type TransactionConstructor interface {
 	)
 
 	// Parse parses a signed or unsigned transaction to get its operations and required signers
-	Parse(transaction ITransaction, signed bool) (
-		[]*types.Operation,
-		[]hedera.AccountID,
-		*types.Error,
-	)
+	Parse(transaction ITransaction) ([]*types.Operation, []hedera.AccountID, *types.Error)
 
 	// Preprocess preprocesses the operations to get required signers
 	Preprocess(operations []*types.Operation) ([]hedera.AccountID, *types.Error)

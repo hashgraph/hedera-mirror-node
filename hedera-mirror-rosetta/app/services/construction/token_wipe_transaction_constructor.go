@@ -49,25 +49,30 @@ func (t *tokenWipeTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 ) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenWipe, err := t.preprocess(operations)
-	if err != nil {
-		return nil, nil, err
+	payer, tokenWipe, rErr := t.preprocess(operations)
+	if rErr != nil {
+		return nil, nil, rErr
 	}
 
-	tx := hedera.NewTokenWipeTransaction().
+	tx, err := hedera.NewTokenWipeTransaction().
 		SetAccountID(*tokenWipe.Account).
 		SetAmount(tokenWipe.Amount).
 		SetTokenID(tokenWipe.Token).
 		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.TransactionIDGenerate(*payer))
+		SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+		Freeze()
+	if err != nil {
+		return nil, nil, hErrors.ErrTransactionFreezeFailed
+	}
 
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Parse(
-	transaction ITransaction,
-	signed bool,
-) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
+func (t *tokenWipeTransactionConstructor) Parse(transaction ITransaction) (
+	[]*rTypes.Operation,
+	[]hedera.AccountID,
+	*rTypes.Error,
+) {
 	tx, ok := transaction.(*hedera.TokenWipeTransaction)
 	if !ok {
 		return nil, nil, hErrors.ErrTransactionInvalidType
@@ -78,7 +83,7 @@ func (t *tokenWipeTransactionConstructor) Parse(
 	token := tx.GetTokenID()
 
 	if isZeroAccountId(account) || payer == nil || isZeroAccountId(*payer) || isZeroTokenId(token) {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	dbToken, err := t.tokenRepo.Find(token.String())

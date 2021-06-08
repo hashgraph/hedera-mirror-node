@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -52,6 +53,7 @@ var (
 		ShardNum:  0,
 		RealmNum:  0,
 		EntityNum: 5,
+		EncodedId: 5,
 	}
 	peerId                   = &types.Account{EntityId: *entityId}
 	expectedAddressBookEntry = &types.AddressBookEntry{
@@ -78,8 +80,7 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 	result := NewAddressBookEntryRepository(gormDbClient)
 
 	// then
-	assert.IsType(t, &AddressBookEntryRepository{}, result)
-	assert.Equal(t, result.dbClient, gormDbClient)
+	assert.NotNil(t, result)
 }
 
 func TestShouldSuccessReturnAddressBookEntries(t *testing.T) {
@@ -176,7 +177,7 @@ func TestShouldFailReturnPeerIdNegative(t *testing.T) {
 	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
-func setupRepository(t *testing.T) (*AddressBookEntryRepository, []string, sqlmock.Sqlmock) {
+func setupRepository(t *testing.T) (repositories.AddressBookEntryRepository, []string, sqlmock.Sqlmock) {
 	gormDbClient, mock := mocks.DatabaseMock(t)
 
 	columns := mocks.GetFieldsNamesToSnakeCase(addressBookEntry{})

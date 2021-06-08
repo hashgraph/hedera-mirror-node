@@ -181,7 +181,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 			tx := tt.getTransaction()
 
 			// when
-			operations, signers, err := h.Parse(tx, false)
+			operations, signers, err := h.Parse(tx)
 
 			// then
 			if tt.expectError {

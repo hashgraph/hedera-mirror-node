@@ -40,33 +40,41 @@ func (t *tokenAssociateDissociateTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 ) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenIds, err := t.preprocess(operations)
-	if err != nil {
-		return nil, nil, err
+	payer, tokenIds, rErr := t.preprocess(operations)
+	if rErr != nil {
+		return nil, nil, rErr
 	}
 
 	var tx ITransaction
+	var err error
 	if t.operationType == config.OperationTypeTokenAssociate {
-		tx = hedera.NewTokenAssociateTransaction().
+		tx, err = hedera.NewTokenAssociateTransaction().
 			SetAccountID(*payer).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenIDs(tokenIds...).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Freeze()
 	} else {
-		tx = hedera.NewTokenDissociateTransaction().
+		tx, err = hedera.NewTokenDissociateTransaction().
 			SetAccountID(*payer).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenIDs(tokenIds...).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Freeze()
+	}
+
+	if err != nil {
+		return nil, nil, hErrors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) Parse(
-	transaction ITransaction,
-	signed bool,
-) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
+func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction ITransaction) (
+	[]*rTypes.Operation,
+	[]hedera.AccountID,
+	*rTypes.Error,
+) {
 	var accountId hedera.AccountID
 	var payerId *hedera.AccountID
 	var tokenIds []hedera.TokenID
@@ -93,15 +101,15 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(
 	}
 
 	if isZeroAccountId(accountId) || payerId == nil || isZeroAccountId(*payerId) {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	if accountId != *payerId {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	if len(tokenIds) == 0 {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	account := &rTypes.AccountIdentifier{Address: accountId.String()}

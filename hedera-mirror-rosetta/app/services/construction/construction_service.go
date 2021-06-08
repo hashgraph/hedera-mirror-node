@@ -38,8 +38,8 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 )
 
-// ConstructionAPIService implements the server.ConstructionAPIServicer interface.
-type ConstructionAPIService struct {
+// constructionAPIService implements the server.ConstructionAPIServicer interface.
+type constructionAPIService struct {
 	hederaClient       *hedera.Client
 	nodeAccountIds     []hedera.AccountID
 	nodeAccountIdsLen  *big.Int
@@ -47,7 +47,7 @@ type ConstructionAPIService struct {
 }
 
 // ConstructionCombine implements the /construction/combine endpoint.
-func (c *ConstructionAPIService) ConstructionCombine(
+func (c *constructionAPIService) ConstructionCombine(
 	ctx context.Context,
 	request *rTypes.ConstructionCombineRequest,
 ) (*rTypes.ConstructionCombineResponse, *rTypes.Error) {
@@ -91,7 +91,7 @@ func (c *ConstructionAPIService) ConstructionCombine(
 }
 
 // ConstructionDerive implements the /construction/derive endpoint.
-func (c *ConstructionAPIService) ConstructionDerive(
+func (c *constructionAPIService) ConstructionDerive(
 	ctx context.Context,
 	request *rTypes.ConstructionDeriveRequest,
 ) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
@@ -99,7 +99,7 @@ func (c *ConstructionAPIService) ConstructionDerive(
 }
 
 // ConstructionHash implements the /construction/hash endpoint.
-func (c *ConstructionAPIService) ConstructionHash(
+func (c *constructionAPIService) ConstructionHash(
 	ctx context.Context,
 	request *rTypes.ConstructionHashRequest,
 ) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
@@ -122,7 +122,7 @@ func (c *ConstructionAPIService) ConstructionHash(
 }
 
 // ConstructionMetadata implements the /construction/metadata endpoint.
-func (c *ConstructionAPIService) ConstructionMetadata(
+func (c *constructionAPIService) ConstructionMetadata(
 	ctx context.Context,
 	request *rTypes.ConstructionMetadataRequest,
 ) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
@@ -132,7 +132,7 @@ func (c *ConstructionAPIService) ConstructionMetadata(
 }
 
 // ConstructionParse implements the /construction/parse endpoint.
-func (c *ConstructionAPIService) ConstructionParse(
+func (c *constructionAPIService) ConstructionParse(
 	ctx context.Context,
 	request *rTypes.ConstructionParseRequest,
 ) (*rTypes.ConstructionParseResponse, *rTypes.Error) {
@@ -141,14 +141,16 @@ func (c *ConstructionAPIService) ConstructionParse(
 		return nil, err
 	}
 
-	operations, accounts, err := c.transactionHandler.Parse(transaction, request.Signed)
+	operations, accounts, err := c.transactionHandler.Parse(transaction)
 	if err != nil {
 		return nil, err
 	}
 
 	signers := make([]*rTypes.AccountIdentifier, 0, len(accounts))
-	for _, account := range accounts {
-		signers = append(signers, &rTypes.AccountIdentifier{Address: account.String()})
+	if request.Signed {
+		for _, account := range accounts {
+			signers = append(signers, &rTypes.AccountIdentifier{Address: account.String()})
+		}
 	}
 
 	return &rTypes.ConstructionParseResponse{
@@ -158,7 +160,7 @@ func (c *ConstructionAPIService) ConstructionParse(
 }
 
 // ConstructionPayloads implements the /construction/payloads endpoint.
-func (c *ConstructionAPIService) ConstructionPayloads(
+func (c *constructionAPIService) ConstructionPayloads(
 	ctx context.Context,
 	request *rTypes.ConstructionPayloadsRequest,
 ) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
@@ -193,7 +195,7 @@ func (c *ConstructionAPIService) ConstructionPayloads(
 }
 
 // ConstructionPreprocess implements the /construction/preprocess endpoint.
-func (c *ConstructionAPIService) ConstructionPreprocess(
+func (c *constructionAPIService) ConstructionPreprocess(
 	ctx context.Context,
 	request *rTypes.ConstructionPreprocessRequest,
 ) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
@@ -214,7 +216,7 @@ func (c *ConstructionAPIService) ConstructionPreprocess(
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.
-func (c *ConstructionAPIService) ConstructionSubmit(
+func (c *constructionAPIService) ConstructionSubmit(
 	ctx context.Context,
 	request *rTypes.ConstructionSubmitRequest,
 ) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
@@ -242,7 +244,7 @@ func (c *ConstructionAPIService) ConstructionSubmit(
 	}, nil
 }
 
-func (c *ConstructionAPIService) getRandomNodeAccountId() hedera.AccountID {
+func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	index, err := rand.Int(rand.Reader, c.nodeAccountIdsLen)
 	if err != nil {
 		log.Errorf("Failed to get a random number, use 0 instead: %s", err)
@@ -252,7 +254,7 @@ func (c *ConstructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	return c.nodeAccountIds[index.Int64()]
 }
 
-// NewConstructionAPIService creates a new instance of a ConstructionAPIService.
+// NewConstructionAPIService creates a new instance of a constructionAPIService.
 func NewConstructionAPIService(
 	network string,
 	nodes types.NodeMap,
@@ -279,7 +281,7 @@ func NewConstructionAPIService(
 		nodeAccountIds = append(nodeAccountIds, nodeAccountId)
 	}
 
-	return &ConstructionAPIService{
+	return &constructionAPIService{
 		hederaClient:       hederaClient,
 		nodeAccountIds:     nodeAccountIds,
 		nodeAccountIdsLen:  big.NewInt(int64(len(nodeAccountIds))),
@@ -342,10 +344,34 @@ func unmarshallTransactionFromHexString(transactionString string) (ITransaction,
 		return nil, errors.ErrTransactionUnmarshallingFailed
 	}
 
-	iTransaction, ok := transaction.(ITransaction)
-	if !ok {
+	switch tx := transaction.(type) {
+	case hedera.TokenAssociateTransaction:
+		return &tx, nil
+	case hedera.TokenBurnTransaction:
+		return &tx, nil
+	case hedera.TokenCreateTransaction:
+		return &tx, nil
+	case hedera.TokenDeleteTransaction:
+		return &tx, nil
+	case hedera.TokenDissociateTransaction:
+		return &tx, nil
+	case hedera.TokenFreezeTransaction:
+		return &tx, nil
+	case hedera.TokenGrantKycTransaction:
+		return &tx, nil
+	case hedera.TokenMintTransaction:
+		return &tx, nil
+	case hedera.TokenRevokeKycTransaction:
+		return &tx, nil
+	case hedera.TokenUnfreezeTransaction:
+		return &tx, nil
+	case hedera.TokenUpdateTransaction:
+		return &tx, nil
+	case hedera.TokenWipeTransaction:
+		return &tx, nil
+	case hedera.TransferTransaction:
+		return &tx, nil
+	default:
 		return nil, errors.ErrTransactionInvalidType
 	}
-
-	return iTransaction, nil
 }

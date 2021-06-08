@@ -25,11 +25,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -41,26 +40,23 @@ import (
 )
 
 const (
-	tableNameTransactionResults  = "t_transaction_results"
-	tableNameTransactionTypes    = "t_transaction_types"
-	transactionResultSuccess     = 22
-	transactionTypeTokenCreation = 29
-	transactionTypeTokenDeletion = 35
-	transactionTypeTokenUpdate   = 36
+	tableNameTransactionResults = "t_transaction_results"
+	tableNameTransactionTypes   = "t_transaction_types"
+	transactionResultSuccess    = 22
 )
 
 const (
 	whereClauseBetweenConsensus string = `SELECT * FROM transaction
                                           WHERE consensus_ns >= @start AND consensus_ns <= @end`
 	whereCryptoTransferConsensusTimestampInTimestampsAsc string = `SELECT * FROM crypto_transfer
-                                                                   WHERE consensus_timestamp IN (@timestamps)
+                                                                   WHERE consensus_timestamp IN @timestamps
                                                                    ORDER BY consensus_timestamp`
 	whereNonFeeTransferConsensusTimestampInTimestampsAsc string = `SELECT * FROM non_fee_transfer
-                                                                   WHERE consensus_timestamp IN (@timestamps)
+                                                                   WHERE consensus_timestamp IN @timestamps
                                                                    ORDER BY consensus_timestamp`
 	whereTokenTransferConsensusTimestampInTimestampsAsc string = `SELECT tt.*, t.decimals FROM token_transfer tt
                                                                   JOIN token t on t.token_id = tt.token_id
-                                                                  WHERE tt.consensus_timestamp IN (@timestamps)
+                                                                  WHERE tt.consensus_timestamp IN @timestamps
                                                                   ORDER BY tt.consensus_timestamp`
 	whereTransactionsByHashAndConsensusTimestamps string = `SELECT * FROM transaction
                                                             WHERE transaction_hash = @hash
@@ -120,35 +116,6 @@ type token struct {
 	WipeKeyEd25519Hex   string
 }
 
-type transaction struct {
-	ConsensusNS          int64
-	ChargedTxFee         int64
-	EntityID             int64
-	InitialBalance       int64
-	MaxFee               int64
-	Memo                 []byte
-	NodeAccountID        int64
-	PayerAccountID       int64
-	Result               int
-	Scheduled            bool
-	TransactionBytes     []byte
-	TransactionHash      []byte
-	Type                 int
-	ValidDurationSeconds int64
-	ValidStartNS         int64
-}
-
-func (t transaction) getHashString() string {
-	return hexUtils.SafeAddHexPrefix(hex.EncodeToString(t.TransactionHash))
-}
-
-func (t transaction) hasTokenOperation() bool {
-	// these three transaction types have token id saved and require an extra operation in addition to any transfer
-	return t.Type == transactionTypeTokenCreation ||
-		t.Type == transactionTypeTokenDeletion ||
-		t.Type == transactionTypeTokenUpdate
-}
-
 type transactionType struct {
 	ProtoID int    `gorm:"type:integer;primaryKey"`
 	Name    string `gorm:"size:30"`
@@ -184,7 +151,7 @@ type transactionRepository struct {
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
-func NewTransactionRepository(dbClient *gorm.DB) *transactionRepository {
+func NewTransactionRepository(dbClient *gorm.DB) repositories.TransactionRepository {
 	return &transactionRepository{dbClient: dbClient}
 }
 
@@ -224,14 +191,14 @@ func (tr *transactionRepository) FindBetween(start int64, end int64) ([]*types.T
 	if start > end {
 		return nil, hErrors.ErrStartMustNotBeAfterEnd
 	}
-	var transactions []transaction
+	var transactions []dbTypes.Transaction
 	tr.dbClient.
 		Raw(whereClauseBetweenConsensus, sql.Named("start", start), sql.Named("end", end)).
 		Find(&transactions)
 
-	sameHashMap := make(map[string][]transaction)
+	sameHashMap := make(map[string][]dbTypes.Transaction)
 	for _, t := range transactions {
-		h := t.getHashString()
+		h := t.GetHashString()
 		sameHashMap[h] = append(sameHashMap[h], t)
 	}
 	res := make([]*types.Transaction, 0, len(sameHashMap))
@@ -251,7 +218,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 	consensusStart int64,
 	consensusEnd int64,
 ) (*types.Transaction, *rTypes.Error) {
-	var transactions []transaction
+	var transactions []dbTypes.Transaction
 	transactionHash, err := hex.DecodeString(hexUtils.SafeRemoveHexPrefix(hashStr))
 	if err != nil {
 		return nil, hErrors.ErrInvalidTransactionIdentifier
@@ -295,12 +262,12 @@ func (tr *transactionRepository) findTokenTransfersAsc(timestamps []int64) []tok
 }
 
 func (tr *transactionRepository) findTransfersAsc(query string, timestamps []int64, out interface{}) {
-	timestampsStr := intsToString(timestamps)
-	tr.dbClient.Raw(query, sql.Named("timestamps", timestampsStr)).Find(out)
+	// timestampsStr := intsToString(timestamps)
+	tr.dbClient.Raw(query, sql.Named("timestamps", timestamps)).Find(out)
 }
 
-func (tr *transactionRepository) findToken(transaction transaction) (*token, *rTypes.Error) {
-	if !transaction.hasTokenOperation() {
+func (tr *transactionRepository) findToken(transaction dbTypes.Transaction) (*token, *rTypes.Error) {
+	if !transaction.HasTokenOperation() {
 		return nil, nil
 	}
 
@@ -327,13 +294,13 @@ func (tr *transactionRepository) retrieveTransactionResults() []transactionResul
 	return tResults
 }
 
-func (tr *transactionRepository) constructTransaction(sameHashTransactions []transaction) (
+func (tr *transactionRepository) constructTransaction(sameHashTransactions []dbTypes.Transaction) (
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
+	tResult := &types.Transaction{Hash: sameHashTransactions[0].GetHashString()}
 
-	transactionsMap := make(map[int64]transaction)
+	transactionsMap := make(map[int64]dbTypes.Transaction)
 	timestamps := make([]int64, len(sameHashTransactions))
 	for i, t := range sameHashTransactions {
 		transactionsMap[t.ConsensusNS] = t
@@ -365,7 +332,7 @@ func (tr *transactionRepository) constructOperations(
 	cryptoTransfers []dbTypes.CryptoTransfer,
 	nonFeeTransfers []dbTypes.CryptoTransfer,
 	tokenTransfers []tokenTransfer,
-	transactions map[int64]transaction,
+	transactions map[int64]dbTypes.Transaction,
 	token *token,
 ) ([]*types.Operation, *rTypes.Error) {
 	transactionTypes, err := tr.Types()
@@ -444,14 +411,6 @@ func constructAccount(encodedID int64) (*types.Account, *rTypes.Error) {
 	return account, nil
 }
 
-func intsToString(ints []int64) string {
-	r := make([]string, len(ints))
-	for i, v := range ints {
-		r[i] = strconv.FormatInt(v, 10)
-	}
-	return strings.Join(r, ",")
-}
-
 func makeTransferKey(timestamp int64, entityId int64) string {
 	return fmt.Sprintf("%d-%d", timestamp, entityId)
 }
@@ -505,7 +464,7 @@ func getTransferOperations(
 	nonFeeTransfers []dbTypes.CryptoTransfer,
 	cryptoTransfers []dbTypes.CryptoTransfer,
 	tokenTransfers []tokenTransfer,
-	transactionsMap map[int64]transaction,
+	transactionsMap map[int64]dbTypes.Transaction,
 	transactionResults map[int]string,
 	transactionTypes map[int]string,
 ) ([]*types.Operation, *rTypes.Error) {
@@ -526,9 +485,9 @@ func getTransferOperations(
 		operationType := transactionTypes[transactionsMap[timestamp].Type]
 
 		// crypto transfer is always successful regardless of transaction result
-		operationStatus := statusSuccess
+		operationStatus := transactionResults[transactionsMap[timestamp].Result]
 		if i >= len(nonFeeTransfers) {
-			operationStatus = transactionResults[transactionsMap[timestamp].Result]
+			operationStatus = statusSuccess
 		}
 
 		operations = append(operations, &types.Operation{
@@ -570,7 +529,7 @@ func getTransferOperations(
 func getTokenOperation(
 	index int,
 	token *token,
-	transactionsMap map[int64]transaction,
+	transactionsMap map[int64]dbTypes.Transaction,
 	transactionResults map[int]string,
 	transactionTypes map[int]string,
 ) (*types.Operation, *rTypes.Error) {
@@ -615,7 +574,7 @@ func getTokenOperation(
 		},
 	}
 
-	if transactionType == transactionTypeTokenCreation {
+	if transactionType == dbTypes.TransactionTypeTokenCreation {
 		// token creation shouldn't have Amount
 		operation.Amount = nil
 		metadata := make(map[string]interface{})

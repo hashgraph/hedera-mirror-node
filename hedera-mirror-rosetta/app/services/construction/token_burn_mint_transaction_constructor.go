@@ -47,34 +47,42 @@ func (t *tokenBurnMintTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 ) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenAmount, err := t.preprocess(operations)
-	if err != nil {
-		return nil, nil, err
+	payer, tokenAmount, rErr := t.preprocess(operations)
+	if rErr != nil {
+		return nil, nil, rErr
 	}
 
 	var tx ITransaction
+	var err error
 
 	if t.operationType == config.OperationTypeTokenBurn {
-		tx = hedera.NewTokenBurnTransaction().
+		tx, err = hedera.NewTokenBurnTransaction().
 			SetAmount(tokenAmount.amount).
 			SetTokenID(tokenAmount.token).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Freeze()
 	} else {
-		tx = hedera.NewTokenMintTransaction().
+		tx, err = hedera.NewTokenMintTransaction().
 			SetAmount(tokenAmount.amount).
 			SetTokenID(tokenAmount.token).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Freeze()
+	}
+
+	if err != nil {
+		return nil, nil, hErrors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) Parse(
-	transaction ITransaction,
-	signed bool,
-) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
+func (t *tokenBurnMintTransactionConstructor) Parse(transaction ITransaction) (
+	[]*rTypes.Operation,
+	[]hedera.AccountID,
+	*rTypes.Error,
+) {
 	var amount uint64
 	var payer *hedera.AccountID
 	var tokenId hedera.TokenID
@@ -101,7 +109,7 @@ func (t *tokenBurnMintTransactionConstructor) Parse(
 	}
 
 	if isZeroTokenId(tokenId) || payer == nil || isZeroAccountId(*payer) {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	dbToken, err := t.tokeRepo.Find(tokenId.String())

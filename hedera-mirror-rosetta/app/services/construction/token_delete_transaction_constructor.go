@@ -39,23 +39,28 @@ func (t *tokenDeleteTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 ) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payerId, tokenId, err := t.preprocess(operations)
-	if err != nil {
-		return nil, nil, err
+	payerId, tokenId, rErr := t.preprocess(operations)
+	if rErr != nil {
+		return nil, nil, rErr
 	}
 
-	tx := hedera.NewTokenDeleteTransaction().
+	tx, err := hedera.NewTokenDeleteTransaction().
 		SetTokenID(*tokenId).
 		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.TransactionIDGenerate(*payerId))
+		SetTransactionID(hedera.TransactionIDGenerate(*payerId)).
+		Freeze()
+	if err != nil {
+		return nil, nil, hErrors.ErrTransactionFreezeFailed
+	}
 
 	return tx, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) Parse(
-	transaction ITransaction,
-	signed bool,
-) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
+func (t *tokenDeleteTransactionConstructor) Parse(transaction ITransaction) (
+	[]*rTypes.Operation,
+	[]hedera.AccountID,
+	*rTypes.Error,
+) {
 	tokenDeleteTransaction, ok := transaction.(*hedera.TokenDeleteTransaction)
 	if !ok {
 		return nil, nil, hErrors.ErrTransactionInvalidType
@@ -65,7 +70,7 @@ func (t *tokenDeleteTransactionConstructor) Parse(
 	tokenId := tokenDeleteTransaction.GetTokenID()
 
 	if payerId == nil || isZeroAccountId(*payerId) || isZeroTokenId(tokenId) {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	dbToken, err := t.tokenRepo.Find(tokenId.String())

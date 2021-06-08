@@ -212,7 +212,7 @@ func TestParseOperationMetadata(t *testing.T) {
 	value := 10
 
 	expected := &data{
-		Name: name,
+		Name:  name,
 		Value: value,
 	}
 

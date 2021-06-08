@@ -45,10 +45,8 @@ func block() *types.Block {
 	}
 }
 
-func amount() *types.Amount {
-	return &types.Amount{
-		Value: int64(1000),
-	}
+func amount() []types.Amount {
+	return []types.Amount{&types.HbarAmount{Value: int64(1000)}}
 }
 
 func request(withBlockIdentifier bool) *rTypes.AccountBalanceRequest {
@@ -163,7 +161,7 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBlockFails
 func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), repository.NilError)
-	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(repository.NilAmount, &rTypes.Error{})
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return([]types.Amount{}, &rTypes.Error{})
 
 	// when:
 	actualResult, e := suite.accountService.AccountBalance(nil, request(true))

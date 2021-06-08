@@ -47,33 +47,42 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 ) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenKyc, err := t.preprocess(operations)
-	if err != nil {
-		return nil, nil, err
+	payer, tokenKyc, rErr := t.preprocess(operations)
+	if rErr != nil {
+		return nil, nil, rErr
 	}
 
 	var tx ITransaction
+	var err error
+
 	if t.operationType == config.OperationTypeTokenGrantKyc {
-		tx = hedera.NewTokenGrantKycTransaction().
+		tx, err = hedera.NewTokenGrantKycTransaction().
 			SetAccountID(*tokenKyc.Account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenID(tokenKyc.Token).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Freeze()
 	} else {
-		tx = hedera.NewTokenRevokeKycTransaction().
+		tx, err = hedera.NewTokenRevokeKycTransaction().
 			SetAccountID(*tokenKyc.Account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenID(tokenKyc.Token).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer))
+			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			Freeze()
+	}
+
+	if err != nil {
+		return nil, nil, hErrors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenGrantRevokeKycTransactionConstructor) Parse(
-	transaction ITransaction,
-	signed bool,
-) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
+func (t *tokenGrantRevokeKycTransactionConstructor) Parse(transaction ITransaction) (
+	[]*rTypes.Operation,
+	[]hedera.AccountID,
+	*rTypes.Error,
+) {
 	var account hedera.AccountID
 	var payer *hedera.AccountID
 	var tokenId hedera.TokenID
@@ -100,7 +109,7 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Parse(
 	}
 
 	if isZeroAccountId(account) || isZeroTokenId(tokenId) || payer == nil || isZeroAccountId(*payer) {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	dbToken, err := t.tokenRepo.Find(tokenId.String())

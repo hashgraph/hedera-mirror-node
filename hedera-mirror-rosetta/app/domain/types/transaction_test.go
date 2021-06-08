@@ -21,11 +21,12 @@
 package types
 
 import (
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func exampleTransaction() *Transaction {
@@ -43,7 +44,7 @@ func exampleTransaction() *Transaction {
 						EntityNum: 0,
 					},
 				},
-				Amount: &Amount{Value: int64(400)},
+				Amount: &HbarAmount{Value: int64(400)},
 			},
 		},
 	}

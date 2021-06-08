@@ -58,11 +58,13 @@ func expectedAccount() *types.AccountIdentifier {
 }
 
 func expectedAccountWith(shard int64, realm int64, number int64) *Account {
+	encoded, _ := entityid.Encode(shard, realm, number)
 	return &Account{
 		entityid.EntityId{
 			ShardNum:  shard,
 			RealmNum:  realm,
 			EntityNum: number,
+			EncodedId: encoded,
 		},
 	}
 }
@@ -109,38 +111,6 @@ func TestNewAccountFromEncodedIDThrows(t *testing.T) {
 	assert.Nil(t, res)
 	assert.NotNil(t, err)
 }
-
-// func TestComputeEncodedID(t *testing.T) {
-// 	var testData = []struct {
-// 		shard, realm, number, result int64
-// 	}{
-// 		{0, 0, 1, 1},
-// 		{0, 1, 1, 4294967297},
-// 		{123, 123, 123, 34621950416388219},
-// 	}
-//
-// 	for _, tt := range testData {
-// 		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
-// 		assert.Equal(t, tt.result, res)
-// 		assert.Nil(t, e)
-// 	}
-// }
-
-// func TestComputeEncodedIDThrows(t *testing.T) {
-// 	var testData = []struct {
-// 		shard, realm, number int64
-// 	}{
-// 		{-1, 123, 246},
-// 		{123, -123, 246},
-// 		{123, 23, -246},
-// 	}
-//
-// 	for _, tt := range testData {
-// 		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
-// 		assert.Zero(t, res)
-// 		assert.NotNil(t, e)
-// 	}
-// }
 
 func TestAccountString(t *testing.T) {
 	var testData = []struct {

@@ -106,6 +106,10 @@ func (t *tokenCreateTransactionConstructor) Construct(nodeAccountId hedera.Accou
 		tx.SetWipeKey(tokenCreate.WipeKey.PublicKey)
 	}
 
+	if _, err := tx.Freeze(); err != nil {
+		return nil, nil, hErrors.ErrTransactionFreezeFailed
+	}
+
 	return tx, signers, nil
 }
 
@@ -117,7 +121,7 @@ func (t *tokenCreateTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenCreateTransactionConstructor) Parse(transaction ITransaction, signed bool) (
+func (t *tokenCreateTransactionConstructor) Parse(transaction ITransaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -128,12 +132,12 @@ func (t *tokenCreateTransactionConstructor) Parse(transaction ITransaction, sign
 	}
 
 	if tokenCreateTransaction.GetTransactionID().AccountID == nil {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	if tokenCreateTransaction.GetTokenName() == "" ||
 		tokenCreateTransaction.GetTokenSymbol() == "" {
-		return nil, nil, hErrors.ErrTransactionInvalid
+		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
 	treasury := *tokenCreateTransaction.GetTransactionID().AccountID

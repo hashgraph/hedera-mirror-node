@@ -104,24 +104,24 @@ func validateOperations(operations []*types.Operation, size int, opType string, 
 	}
 
 	if size != 0 && len(operations) != size {
-		return errors.ErrOperationsInvalid
+		return errors.ErrInvalidOperations
 	}
 
 	for _, operation := range operations {
 		if operation.OperationIdentifier == nil {
-			return errors.ErrOperationsInvalid
+			return errors.ErrInvalidOperations
 		}
 
 		if operation.Account == nil {
-			return errors.ErrOperationsInvalid
+			return errors.ErrInvalidOperations
 		}
 
 		if expectNilAmount && operation.Amount != nil {
-			return errors.ErrOperationsInvalid
+			return errors.ErrInvalidOperations
 		}
 
 		if !expectNilAmount && (operation.Amount == nil || operation.Amount.Currency == nil) {
-			return errors.ErrOperationsInvalid
+			return errors.ErrInvalidOperations
 		}
 
 		if operation.Type != opType {

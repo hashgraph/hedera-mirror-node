@@ -94,7 +94,7 @@ func (c *cryptoTransferTransactionConstructor) GetSdkTransactionType() string {
 	return c.transactionType
 }
 
-func (c *cryptoTransferTransactionConstructor) Parse(transaction ITransaction, signed bool) (
+func (c *cryptoTransferTransactionConstructor) Parse(transaction ITransaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -105,7 +105,7 @@ func (c *cryptoTransferTransactionConstructor) Parse(transaction ITransaction, s
 	}
 
 	if transferTransaction.GetTransactionID().AccountID == nil {
-		return nil, nil, errors.ErrTransactionInvalid
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
 	hbarTransfers := transferTransaction.GetHbarTransfers()

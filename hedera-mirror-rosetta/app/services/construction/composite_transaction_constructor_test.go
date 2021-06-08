@@ -61,11 +61,11 @@ var (
 	signers = []hedera.AccountID{payerId}
 )
 
-type mockConstructor struct {
+type mockTransactionConstructor struct {
 	mock.Mock
 }
 
-func (m *mockConstructor) Construct(nodeAccountId hedera.AccountID, operations []*types.Operation) (
+func (m *mockTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*types.Operation) (
 	ITransaction,
 	[]hedera.AccountID,
 	*types.Error,
@@ -74,25 +74,25 @@ func (m *mockConstructor) Construct(nodeAccountId hedera.AccountID, operations [
 	return args.Get(0).(ITransaction), args.Get(1).([]hedera.AccountID), args.Get(2).(*types.Error)
 }
 
-func (m *mockConstructor) Parse(transaction ITransaction, signed bool) (
+func (m *mockTransactionConstructor) Parse(transaction ITransaction) (
 	[]*types.Operation,
 	[]hedera.AccountID,
 	*types.Error,
 ) {
-	args := m.Called(transaction, signed)
+	args := m.Called(transaction)
 	return args.Get(0).([]*types.Operation), args.Get(1).([]hedera.AccountID), args.Get(2).(*types.Error)
 }
 
-func (m *mockConstructor) Preprocess(operations []*types.Operation) ([]hedera.AccountID, *types.Error) {
+func (m *mockTransactionConstructor) Preprocess(operations []*types.Operation) ([]hedera.AccountID, *types.Error) {
 	args := m.Called(operations)
 	return args.Get(0).([]hedera.AccountID), args.Get(1).(*types.Error)
 }
 
-func (m *mockConstructor) GetOperationType() string {
+func (m *mockTransactionConstructor) GetOperationType() string {
 	return config.OperationTypeCryptoTransfer
 }
 
-func (m *mockConstructor) GetSdkTransactionType() string {
+func (m *mockTransactionConstructor) GetSdkTransactionType() string {
 	return "TransferTransaction"
 }
 
@@ -103,11 +103,11 @@ func TestCompositeTransactionConstructorSuite(t *testing.T) {
 type compositeTransactionConstructorSuite struct {
 	suite.Suite
 	constructor     TransactionConstructor
-	mockConstructor *mockConstructor
+	mockConstructor *mockTransactionConstructor
 }
 
 func (suite *compositeTransactionConstructorSuite) SetupTest() {
-	mockConstructor := &mockConstructor{}
+	mockConstructor := &mockTransactionConstructor{}
 	constructor := &compositeTransactionConstructor{
 		constructorsByOperationType:   map[string]transactionConstructorWithType{},
 		constructorsByTransactionType: map[string]transactionConstructorWithType{},
@@ -202,11 +202,11 @@ func (suite *compositeTransactionConstructorSuite) TestConstructMixedOperations(
 func (suite *compositeTransactionConstructorSuite) TestParse() {
 	// given
 	suite.mockConstructor.
-		On("Parse", cryptoTransferTransaction, true).
+		On("Parse", cryptoTransferTransaction).
 		Return(cryptoTransferOperations, signers, nilError)
 
 	// when
-	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction, true)
+	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -218,11 +218,11 @@ func (suite *compositeTransactionConstructorSuite) TestParse() {
 func (suite *compositeTransactionConstructorSuite) TestParseFail() {
 	// given
 	suite.mockConstructor.
-		On("Parse", cryptoTransferTransaction, true).
+		On("Parse", cryptoTransferTransaction).
 		Return(nilOperations, nilSigners, errors.ErrInternalServerError)
 
 	// when
-	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction, true)
+	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -235,7 +235,7 @@ func (suite *compositeTransactionConstructorSuite) TestParseUnsupportedTransacti
 	// given
 
 	// when
-	actualOperations, actualSigner, err := suite.constructor.Parse(tokenCreateTransaction, true)
+	actualOperations, actualSigner, err := suite.constructor.Parse(tokenCreateTransaction)
 
 	// then
 	assert.NotNil(suite.T(), err)

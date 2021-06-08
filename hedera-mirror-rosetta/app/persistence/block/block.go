@@ -26,7 +26,6 @@ import (
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	log "github.com/sirupsen/logrus"
@@ -138,7 +137,7 @@ type blockRepository struct {
 }
 
 // NewBlockRepository creates an instance of a blockRepository struct
-func NewBlockRepository(dbClient *gorm.DB) repositories.BlockRepository {
+func NewBlockRepository(dbClient *gorm.DB) *blockRepository {
 	return &blockRepository{dbClient: dbClient}
 }
 

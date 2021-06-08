@@ -29,27 +29,6 @@ import (
 
 const tableNameToken = "token"
 
-// type Token struct {
-// 	TokenID             int64  `gorm:"type:bigint;primaryKey"`
-// 	CreatedTimestamp    int64  `gorm:"type:bigint"`
-// 	Decimals            int64  `gorm:"type:bigint"`
-// 	FreezeDefault       bool   `gorm:"type:bool"`
-// 	FreezeKey           []byte `gorm:"type:bytea"`
-// 	FreezeKeyEd25519Hex string `gorm:"type:string"`
-// 	InitialSupply       int64  `gorm:"type:bigint"`
-// 	KycKey              []byte `gorm:"type:bytea"`
-// 	KycKeyEd25519Hex    string `gorm:"type:string"`
-// 	ModifiedTimestamp   int64  `gorm:"type:bigint"`
-// 	Name                string `gorm:"type:string"`
-// 	SupplyKey           []byte `gorm:"type:bytea"`
-// 	SupplyKeyEd25519Hex string `gorm:"type:string"`
-// 	Symbol              string `gorm:"type:string"`
-// 	TotalSupply         int64  `gorm:"type:bigint"`
-// 	TreasuryAccountId   int64  `gorm:"type:bigint"`
-// 	WipeKey             []byte `gorm:"type:bytea"`
-// 	WipeKeyEd25519Hex   string `gorm:"type:string"`
-// }
-
 type Token struct {
 	TokenID             int64 `gorm:"type:primaryKey"`
 	CreatedTimestamp    int64

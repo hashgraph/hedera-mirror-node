@@ -53,7 +53,7 @@ func (c *compositeTransactionConstructor) Construct(
 	return h.Construct(nodeAccountId, operations)
 }
 
-func (c *compositeTransactionConstructor) Parse(transaction ITransaction, signed bool) (
+func (c *compositeTransactionConstructor) Parse(transaction ITransaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -65,7 +65,7 @@ func (c *compositeTransactionConstructor) Parse(transaction ITransaction, signed
 		return nil, nil, errors.ErrInternalServerError
 	}
 
-	return h.Parse(transaction, signed)
+	return h.Parse(transaction)
 }
 
 func (c *compositeTransactionConstructor) Preprocess(operations []*rTypes.Operation) ([]hedera.AccountID, *rTypes.Error) {

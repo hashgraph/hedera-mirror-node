@@ -187,7 +187,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 			}
 
 			// when
-			operations, signers, err := h.Parse(tx, false)
+			operations, signers, err := h.Parse(tx)
 
 			// then
 			if tt.expectError {

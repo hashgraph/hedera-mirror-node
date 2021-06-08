@@ -21,1108 +21,34 @@
 package transaction
 
 import (
-	"encoding/hex"
-	"reflect"
-	"strconv"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
-	hexutils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 const (
-	resultSuccess = "SUCCESS"
+	consensusStart int64 = 1000
+	consensusEnd   int64 = 1100
+	resultSuccess        = "SUCCESS"
 )
 
 var (
-	firstAccount             = &types.Account{EntityId: entityid.EntityId{EntityNum: 12345}}
-	secondAccount            = &types.Account{EntityId: entityid.EntityId{EntityNum: 54321}}
-	nodeAccount              = &types.Account{EntityId: entityid.EntityId{EntityNum: 3}}
-	treasuryAccount          = &types.Account{EntityId: entityid.EntityId{EntityNum: 98}}
-	hashString               = "1a00223d0a140a0c0891d0fef905109688f3a701120418d8c307120218061880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f"
-	hash, _                  = hex.DecodeString(hexutils.SafeRemoveHexPrefix(hashString))
-	transactionColumns       = mocks.GetFieldsNamesToSnakeCase(transaction{})
-	transactionTypeColumns   = mocks.GetFieldsNamesToSnakeCase(transactionType{})
-	transactionResultColumns = mocks.GetFieldsNamesToSnakeCase(transactionResult{})
-	cryptoTransferColumns    = mocks.GetFieldsNamesToSnakeCase(dbTypes.CryptoTransfer{})
-	nonFeeTransferColumns    = mocks.GetFieldsNamesToSnakeCase(dbTypes.CryptoTransfer{})
-	consensusTimestamp       = int64(1)
-	dbTransactions           = []transaction{
-		{
-			ConsensusNS:     1,
-			Type:            14,
-			Result:          22,
-			PayerAccountID:  firstAccount.EntityNum,
-			TransactionHash: hash,
-		},
-		{
-			ConsensusNS:     2,
-			Type:            12,
-			Result:          22,
-			PayerAccountID:  secondAccount.EntityNum,
-			TransactionHash: hash,
-		},
-	}
-	mapTransactions = map[int64]transaction{
-		1: dbTransactions[0],
-		2: dbTransactions[1],
-	}
-	dbCryptoTransfers = []dbTypes.CryptoTransfer{
-		{EntityID: firstAccount.EntityNum, ConsensusTimestamp: 1, Amount: -30},
-		{EntityID: secondAccount.EntityNum, ConsensusTimestamp: 2, Amount: -40},
-		{EntityID: nodeAccount.EntityNum, ConsensusTimestamp: 1, Amount: 5},
-		{EntityID: nodeAccount.EntityNum, ConsensusTimestamp: 2, Amount: 5},
-	}
-	dbNonFeeTransfers = []dbTypes.CryptoTransfer{
-		{EntityID: firstAccount.EntityNum, ConsensusTimestamp: 1, Amount: -25},
-		{EntityID: secondAccount.EntityNum, ConsensusTimestamp: 2, Amount: -35},
-	}
-	dbTransactionTypes = []transactionType{
-		{
-			ProtoID: 12,
-			Name:    "CRYPTODELETE",
-		},
-		{
-			ProtoID: 14,
-			Name:    "CRYPTOTRANSFER",
-		},
-	}
-	dbTransactionResults = []transactionResult{
-		{ProtoID: 1, Result: "INVALID_TRANSACTION"},
-		{ProtoID: 11, Result: "DUPLICATE_TRANSACTION"},
-		{ProtoID: 22, Result: "SUCCESS"},
-	}
-	expectedTransaction = &types.Transaction{
-		Hash:       hexutils.SafeAddHexPrefix(hex.EncodeToString(hash)),
-		Operations: operations,
-	}
-	operations = []*types.Operation{
-		{
-			Type:    "CRYPTOTRANSFER",
-			Status:  resultSuccess,
-			Account: firstAccount,
-			Amount:  &types.HbarAmount{Value: -25},
-		},
-		{
-			Type:    "CRYPTOTRANSFER",
-			Status:  resultSuccess,
-			Account: firstAccount,
-			Amount:  &types.HbarAmount{Value: -5},
-		},
-		{
-			Type:    "CRYPTOTRANSFER",
-			Status:  resultSuccess,
-			Account: nodeAccount,
-			Amount:  &types.HbarAmount{Value: 5},
-		},
-		{
-			Type:    "CRYPTODELETE",
-			Status:  resultSuccess,
-			Account: secondAccount,
-			Amount:  &types.HbarAmount{Value: -35},
-		},
-		{
-			Type:    "CRYPTODELETE",
-			Status:  resultSuccess,
-			Account: secondAccount,
-			Amount:  &types.HbarAmount{Value: -5},
-		},
-		{
-			Type:    "CRYPTODELETE",
-			Status:  resultSuccess,
-			Account: nodeAccount,
-			Amount:  &types.HbarAmount{Value: 5},
-		},
-	}
-	tRepoResults = map[int]string{
-		1:  "INVALID_TRANSACTION",
-		11: "DUPLICATE_TRANSACTION",
-		22: resultSuccess,
-	}
-	tRepoTypes = map[int]string{
-		12: "CRYPTODELETE",
-		14: "CRYPTOTRANSFER",
-	}
-	tRepoTypesAsArray = []string{"CRYPTODELETE", "CRYPTOTRANSFER"}
+	firstAccount             = &types.Account{EntityId: entityid.EntityId{EntityNum: 12345, EncodedId: 12345}}
+	secondAccount            = &types.Account{EntityId: entityid.EntityId{EntityNum: 54321, EncodedId: 54321}}
+	nodeAccount              = &types.Account{EntityId: entityid.EntityId{EntityNum: 3, EncodedId: 3}}
+	treasuryAccount          = &types.Account{EntityId: entityid.EntityId{EntityNum: 98, EncodedId: 98}}
+	tokenId1                 = entityid.EntityId{EntityNum: 25636, EncodedId: 25636}
+	tokenId2                 = entityid.EntityId{EntityNum: 26700, EncodedId: 26700}
+	tokenDecimals      int64 = 10
+	tokenInitialSupply int64 = 50000
 )
-
-func TestTransactionHasTokenOperation(t *testing.T) {
-	var tests = []struct{
-		name string
-		txType int
-		expected bool
-	}{
-		{
-			name: "TokenCreation",
-			txType: 29,
-			expected: true,
-		},
-		{
-			name: "TokenDeletion",
-			txType: 35,
-			expected: true,
-		},
-		{
-			name: "TokenUpdate",
-			txType: 36,
-			expected: true,
-		},
-		{
-			name: "TokenAssociate",
-			txType: 40,
-		},
-		{
-			name: "CryptoTransfer",
-			txType: 14,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, transaction{Type: tt.txType}.hasTokenOperation())
-		})
-	}
-}
-
-func TestTransactionGetHashString(t *testing.T) {
-	tx := transaction{TransactionHash: []byte{1, 2, 3, 0xaa, 0xff}}
-	assert.Equal(t, "0x010203aaff", tx.getHashString())
-}
-
-func TestShouldSuccessFindBetween(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(whereClauseBetweenConsensus).
-		WithArgs(int64(1), int64(2)).
-		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
-	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
-	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers))
-	mock.ExpectQuery(selectTransactionTypes).
-		WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
-	mock.ExpectQuery(selectTransactionResults).
-		WillReturnRows(willReturnRows(transactionResultColumns, dbTransactionResults))
-
-	// when
-	result, err := tr.FindBetween(1, 2)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-	assertTransactions(t, []*types.Transaction{expectedTransaction}, result)
-}
-
-func TestShouldFailFindBetweenNoTypes(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(whereClauseBetweenConsensus).
-		WithArgs(int64(1), int64(2)).
-		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
-	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
-	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers))
-	mock.ExpectQuery(selectTransactionTypes).
-		WillReturnRows(willReturnRows(transactionTypeColumns))
-	mock.ExpectQuery(selectTransactionResults).
-		WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result, err := tr.FindBetween(1, 2)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.NotNil(t, err)
-}
-
-func TestShouldFailFindBetweenEndBeforeStart(t *testing.T) {
-	// given
-	tr, _ := setupRepository(t)
-
-	// when
-	result, err := tr.FindBetween(2, 1)
-
-	// then
-	assert.Nil(t, result)
-	assert.Equal(t, errors.ErrStartMustNotBeAfterEnd, err)
-}
-
-func TestShouldSuccessFindHashInBlock(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(whereTransactionsByHashAndConsensusTimestamps).
-		WithArgs(hash, int64(1), int64(2)).
-		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
-	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
-	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers))
-	mock.ExpectQuery(selectTransactionTypes).
-		WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
-	mock.ExpectQuery(selectTransactionResults).
-		WillReturnRows(willReturnRows(transactionResultColumns, dbTransactionResults))
-
-	// when
-	result, err := tr.FindByHashInBlock(hashString, 1, 2)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-
-	assert.Nil(t, err)
-	assertTransactions(t, []*types.Transaction{expectedTransaction}, []*types.Transaction{result})
-}
-
-func TestShouldFailFindHashInBlockNoTypes(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(whereTransactionsByHashAndConsensusTimestamps).
-		WithArgs(hash, int64(1), int64(2)).
-		WillReturnRows(willReturnRows(transactionColumns, dbTransactions))
-	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
-	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers))
-	mock.ExpectQuery(selectTransactionTypes).
-		WillReturnRows(willReturnRows(transactionTypeColumns))
-	mock.ExpectQuery(selectTransactionResults).
-		WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result, err := tr.FindByHashInBlock(hashString, 1, 2)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-
-	assert.Nil(t, result)
-	assert.NotNil(t, err)
-}
-
-func TestShouldFailFindHashInBlockNoReturnTransactions(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(whereTransactionsByHashAndConsensusTimestamps).
-		WithArgs(hash, int64(1), int64(2)).
-		WillReturnRows(willReturnRows(transactionColumns))
-
-	// when
-	result, err := tr.FindByHashInBlock(hashString, 1, 2)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-
-	assert.Nil(t, result)
-	assert.Equal(t, errors.ErrTransactionNotFound, err)
-}
-
-func TestShouldFailFindHashInBlockInvalidHash(t *testing.T) {
-	// given
-	tr, _ := setupRepository(t)
-
-	// when
-	result, err := tr.FindByHashInBlock("asd", 1, 2)
-
-	// then
-	assert.Nil(t, result)
-	assert.Equal(t, errors.ErrInvalidTransactionIdentifier, err)
-}
-
-func TestShouldFailConstructTransactionDueToNoResults(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
-	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers))
-	mock.ExpectQuery(selectTransactionTypes).
-		WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
-	mock.ExpectQuery(selectTransactionResults).
-		WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result, err := tr.constructTransaction(dbTransactions)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-
-	assert.Nil(t, result)
-	assert.NotNil(t, err)
-}
-
-func TestShouldSuccessConstructTransaction(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(cryptoTransferColumns, dbCryptoTransfers))
-	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
-		WithArgs("1,2").
-		WillReturnRows(willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers))
-	mock.ExpectQuery(selectTransactionTypes).
-		WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
-	mock.ExpectQuery(selectTransactionResults).
-		WillReturnRows(willReturnRows(transactionResultColumns, dbTransactionResults))
-
-	// when
-	result, err := tr.constructTransaction(dbTransactions)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-
-	assert.Nil(t, err)
-	assertTransactions(t, []*types.Transaction{expectedTransaction}, []*types.Transaction{result})
-}
-
-func TestShouldSuccessConstructionOperations(t *testing.T) {
-	var tests = []struct {
-		name            string
-		cryptoTransfers []dbTypes.CryptoTransfer
-		nonFeeTransfers []dbTypes.CryptoTransfer
-		transactions    map[int64]transaction
-		expected        []*types.Operation
-	}{
-		{
-			name:            "Default",
-			cryptoTransfers: dbCryptoTransfers,
-			nonFeeTransfers: dbNonFeeTransfers,
-			transactions:    mapTransactions,
-			expected:        operations,
-		},
-		{
-			name: "SingleTransaction",
-			cryptoTransfers: []dbTypes.CryptoTransfer{
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -158,
-				},
-				{
-					EntityID:           nodeAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             10,
-				},
-				{
-					EntityID:           treasuryAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             8,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-			},
-			nonFeeTransfers: []dbTypes.CryptoTransfer{
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -140,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-			},
-			transactions: map[int64]transaction{
-				100: {
-					ConsensusNS:          100,
-					Memo:                 nil,
-					NodeAccountID:        nodeAccount.EntityNum,
-					PayerAccountID:       firstAccount.EntityNum,
-					Result:               22,
-					Scheduled:            false,
-					TransactionHash:      hash,
-					Type:                 14,
-					ValidDurationSeconds: 120,
-				},
-			},
-			expected: []*types.Operation{
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -140},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: secondAccount,
-					Amount:  &types.HbarAmount{Value: 140},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -18},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: nodeAccount,
-					Amount:  &types.HbarAmount{Value: 10},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: treasuryAccount,
-					Amount:  &types.HbarAmount{Value: 8},
-				},
-			},
-		},
-		{
-			name: "SingleTransactionMultipleNonFeeTransferSameEntity",
-			cryptoTransfers: []dbTypes.CryptoTransfer{
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -158,
-				},
-				{
-					EntityID:           nodeAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             10,
-				},
-				{
-					EntityID:           treasuryAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             8,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-			},
-			nonFeeTransfers: []dbTypes.CryptoTransfer{
-				// there are two non fee transfers from the sender
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -100,
-				},
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -40,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-			},
-			transactions: map[int64]transaction{
-				100: {
-					ConsensusNS:          100,
-					Memo:                 nil,
-					NodeAccountID:        nodeAccount.EntityNum,
-					PayerAccountID:       firstAccount.EntityNum,
-					Result:               22,
-					Scheduled:            false,
-					TransactionHash:      hash,
-					Type:                 14,
-					ValidDurationSeconds: 120,
-				},
-			},
-			expected: []*types.Operation{
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -100},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -40},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: secondAccount,
-					Amount:  &types.HbarAmount{Value: 140},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -18},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: nodeAccount,
-					Amount:  &types.HbarAmount{Value: 10},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: treasuryAccount,
-					Amount:  &types.HbarAmount{Value: 8},
-				},
-			},
-		},
-		{
-			name: "SingleTransactionMultipleCryptoTransferSameEntity",
-			cryptoTransfers: []dbTypes.CryptoTransfer{
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -100,
-				},
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -58,
-				},
-				{
-					EntityID:           nodeAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             10,
-				},
-				{
-					EntityID:           treasuryAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             8,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-			},
-			nonFeeTransfers: []dbTypes.CryptoTransfer{
-				// there are two non fee transfers from the sender
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -100,
-				},
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -40,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-			},
-			transactions: map[int64]transaction{
-				100: {
-					ConsensusNS:          100,
-					Memo:                 nil,
-					NodeAccountID:        nodeAccount.EntityNum,
-					PayerAccountID:       firstAccount.EntityNum,
-					Result:               22,
-					Scheduled:            false,
-					TransactionHash:      hash,
-					Type:                 14,
-					ValidDurationSeconds: 120,
-				},
-			},
-			expected: []*types.Operation{
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -100},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -40},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: secondAccount,
-					Amount:  &types.HbarAmount{Value: 140},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -18},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: nodeAccount,
-					Amount:  &types.HbarAmount{Value: 10},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: treasuryAccount,
-					Amount:  &types.HbarAmount{Value: 8},
-				},
-			},
-		},
-		{
-			name: "OneSuccessfulOneFailed",
-			cryptoTransfers: []dbTypes.CryptoTransfer{
-				// transfers for the successful crypto transfer transaction
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -158,
-				},
-				{
-					EntityID:           nodeAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             10,
-				},
-				{
-					EntityID:           treasuryAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             8,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-				// transfers for the duplicated crypto transfer transaction
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 123,
-					Amount:             -18,
-				},
-				{
-					EntityID:           nodeAccount.EntityNum,
-					ConsensusTimestamp: 123,
-					Amount:             10,
-				},
-				{
-					EntityID:           treasuryAccount.EntityNum,
-					ConsensusTimestamp: 123,
-					Amount:             8,
-				},
-			},
-			nonFeeTransfers: []dbTypes.CryptoTransfer{
-				// only the successful transaction has non fee transfers
-				{
-					EntityID:           firstAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             -140,
-				},
-				{
-					EntityID:           secondAccount.EntityNum,
-					ConsensusTimestamp: 100,
-					Amount:             140,
-				},
-			},
-			transactions: map[int64]transaction{
-				100: {
-					ConsensusNS:          100,
-					Memo:                 nil,
-					NodeAccountID:        nodeAccount.EntityNum,
-					PayerAccountID:       firstAccount.EntityNum,
-					Result:               22,
-					Scheduled:            false,
-					TransactionHash:      hash,
-					Type:                 14,
-					ValidDurationSeconds: 120,
-				},
-				123: {
-					ConsensusNS:          123,
-					Memo:                 nil,
-					NodeAccountID:        nodeAccount.EntityNum,
-					PayerAccountID:       firstAccount.EntityNum,
-					Result:               11,
-					Scheduled:            false,
-					TransactionHash:      hash,
-					Type:                 14,
-					ValidDurationSeconds: 120,
-				},
-			},
-			expected: []*types.Operation{
-				// operations of the successful transaction
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -140},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: secondAccount,
-					Amount:  &types.HbarAmount{Value: 140},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -18},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: nodeAccount,
-					Amount:  &types.HbarAmount{Value: 10},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: treasuryAccount,
-					Amount:  &types.HbarAmount{Value: 8},
-				},
-				// operations of the failed transaction, only fees
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: firstAccount,
-					Amount:  &types.HbarAmount{Value: -18},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: nodeAccount,
-					Amount:  &types.HbarAmount{Value: 10},
-				},
-				{
-					Type:    "CRYPTOTRANSFER",
-					Status:  resultSuccess,
-					Account: treasuryAccount,
-					Amount:  &types.HbarAmount{Value: 8},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			tr, mock := setupRepository(t)
-			mock.ExpectQuery(selectTransactionTypes).
-				WillReturnRows(willReturnRows(transactionTypeColumns, dbTransactionTypes))
-			mock.ExpectQuery(selectTransactionResults).
-				WillReturnRows(willReturnRows(transactionResultColumns, dbTransactionResults))
-
-			// when
-			actual, err := tr.constructOperations(tt.cryptoTransfers, tt.nonFeeTransfers, tt.transactions)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, err)
-
-			assertOperationIndexes(t, actual)
-			assert.ElementsMatch(t, tt.expected, actual)
-		})
-	}
-}
-
-func TestShouldFailConstructionOperationsInvalidTransferEntityId(t *testing.T) {
-	invalidCryptoTransfers := []dbTypes.CryptoTransfer{
-		{EntityID: -1, ConsensusTimestamp: 1, Amount: 1},
-		{EntityID: -2, ConsensusTimestamp: 2, Amount: 1},
-	}
-
-	invalidNonFeeTransfers := []dbTypes.CryptoTransfer{
-		{EntityID: -1, ConsensusTimestamp: 1, Amount: 1},
-		{EntityID: -2, ConsensusTimestamp: 2, Amount: 1},
-	}
-
-	var tests = []struct {
-		name            string
-		cryptoTransfers []dbTypes.CryptoTransfer
-		nonFeeTransfers []dbTypes.CryptoTransfer
-	}{
-		{
-			name:            "InvalidEntityIdInCryptoTransfers",
-			cryptoTransfers: invalidCryptoTransfers,
-			nonFeeTransfers: dbNonFeeTransfers,
-		},
-		{
-			name:            "InvalidEntityIdInNonFeeTransfers",
-			cryptoTransfers: dbCryptoTransfers,
-			nonFeeTransfers: invalidNonFeeTransfers,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			tr, mock := setupRepository(t)
-			rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-			mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-			rows = willReturnRows(transactionResultColumns, dbTransactionResults)
-			mock.ExpectQuery(selectTransactionResults).WillReturnRows(rows)
-
-			// when
-			result, err := tr.constructOperations(tt.cryptoTransfers, tt.nonFeeTransfers, mapTransactions)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, result)
-			assert.NotNil(t, err)
-		})
-	}
-}
-
-func TestShouldFailConstructionOperationsDueToResultsError(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result, err := tr.constructOperations(dbCryptoTransfers, dbNonFeeTransfers, nil)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.NotNil(t, err)
-}
-
-func TestShouldFailConstructionOperationsDueToTypesError(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(willReturnRows(transactionTypeColumns))
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result, err := tr.constructOperations(dbCryptoTransfers, dbNonFeeTransfers, nil)
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.NotNil(t, err)
-}
-
-func TestShouldSuccessFindCryptoTransfers(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(cryptoTransferColumns, dbCryptoTransfers)
-	mock.ExpectQuery(whereCryptoTransferConsensusTimestampInTimestampsAsc).
-		WithArgs(strconv.FormatInt(consensusTimestamp, 10)).
-		WillReturnRows(rows)
-
-	// when
-	result := tr.findCryptoTransfersAsc([]int64{consensusTimestamp})
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, dbCryptoTransfers, result)
-}
-
-func TestShouldSuccessFindNonFeeTransfers(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(nonFeeTransferColumns, dbNonFeeTransfers)
-	mock.ExpectQuery(whereNonFeeTransferConsensusTimestampInTimestampsAsc).
-		WithArgs(strconv.FormatInt(consensusTimestamp, 10)).
-		WillReturnRows(rows)
-
-	// when
-	result := tr.findNonFeeTransfersAsc([]int64{consensusTimestamp})
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, dbNonFeeTransfers, result)
-}
-
-func TestShouldSuccessReturnResults(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(rows)
-
-	// when
-	results, err := tr.Results()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-
-	assert.Equal(t, tRepoResults, results)
-}
-
-func TestShouldFailReturnResults(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	results, err := tr.Results()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, results)
-	assert.NotNil(t, err)
-}
-
-func TestShouldFailReturnTypes(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result, err := tr.Types()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.NotNil(t, err)
-}
-
-func TestShouldFailReturnTypesAsArray(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result, err := tr.TypesAsArray()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.NotNil(t, err)
-}
-
-func TestShouldSuccessReturnTypesAsArray(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(rows)
-
-	// when
-	result, err := tr.TypesAsArray()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-
-	assert.ElementsMatch(t, tRepoTypesAsArray, result)
-}
-
-func TestShouldSuccessReturnTypes(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(rows)
-
-	// when
-	result, err := tr.Types()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-
-	assert.Equal(t, tRepoTypes, result)
-}
-
-func TestShouldSuccessSaveTransactionTypesAndResults(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	rows = willReturnRows(transactionResultColumns, dbTransactionResults)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(rows)
-
-	// when
-	result := tr.retrieveTransactionTypesAndResults()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-
-	assert.Equal(t, tRepoResults, tr.results)
-	assert.Equal(t, tRepoTypes, tr.types)
-}
-
-func TestShouldFailReturnTransactionTypesAndResultsDueToNoResults(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result := tr.retrieveTransactionTypesAndResults()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.ErrOperationResultsNotFound, result)
-}
-
-func TestShouldFailReturnTransactionTypesAndResultsDueToNoTypes(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(willReturnRows(transactionTypeColumns))
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(willReturnRows(transactionResultColumns))
-
-	// when
-	result := tr.retrieveTransactionTypesAndResults()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.ErrOperationTypesNotFound, result)
-}
-
-func TestShouldSuccessReturnTransactionResults(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionResultColumns, dbTransactionResults)
-	mock.ExpectQuery(selectTransactionResults).WillReturnRows(rows)
-
-	// when
-	result := tr.retrieveTransactionResults()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, dbTransactionResults, result)
-}
-
-func TestShouldSuccessReturnTransactionTypes(t *testing.T) {
-	// given
-	tr, mock := setupRepository(t)
-	rows := willReturnRows(transactionTypeColumns, dbTransactionTypes)
-	mock.ExpectQuery(selectTransactionTypes).WillReturnRows(rows)
-
-	// when
-	result := tr.retrieveTransactionTypes()
-
-	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, dbTransactionTypes, result)
-}
 
 func TestShouldSuccessReturnTransactionTypesTableName(t *testing.T) {
 	assert.Equal(t, tableNameTransactionTypes, transactionType{}.TableName())
@@ -1130,42 +56,6 @@ func TestShouldSuccessReturnTransactionTypesTableName(t *testing.T) {
 
 func TestShouldSuccessReturnTransactionResultsTableName(t *testing.T) {
 	assert.Equal(t, tableNameTransactionResults, transactionResult{}.TableName())
-}
-
-func TestShouldSuccessReturnRepository(t *testing.T) {
-	// given
-	gormDbClient, _ := mocks.DatabaseMock(t)
-
-	// when
-	result := NewTransactionRepository(gormDbClient)
-
-	// then
-	assert.IsType(t, &transactionRepository{}, result)
-	assert.Equal(t, result.dbClient, gormDbClient)
-}
-
-func TestShouldSuccessGetHashString(t *testing.T) {
-	// given
-	txStr := "0x967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507"
-	bytesTx, _ := hex.DecodeString(hexutils.SafeRemoveHexPrefix(txStr))
-	givenTx := transaction{
-		TransactionHash: bytesTx,
-	}
-
-	// when
-	result := givenTx.getHashString()
-
-	// then
-	assert.Equal(t, txStr, result)
-}
-
-func TestShouldSuccessIntsToString(t *testing.T) {
-	data := []int64{1, 2, 2394238471841, 2394143718391293}
-	expected := "1,2,2394238471841,2394143718391293"
-
-	result := intsToString(data)
-
-	assert.Equal(t, expected, result)
 }
 
 func TestShouldFailConstructAccount(t *testing.T) {
@@ -1185,6 +75,7 @@ func TestShouldSuccessConstructAccount(t *testing.T) {
 		ShardNum:  0,
 		RealmNum:  0,
 		EntityNum: 5,
+		EncodedId: 5,
 	}}
 
 	// when
@@ -1236,31 +127,273 @@ func assertTransactions(t *testing.T, expected, actual []*types.Transaction) {
 
 	assert.Len(t, actualTransactionMap, len(expectedTransactionMap))
 
-	for txHash, expectedTx := range actualTransactionMap {
+	for txHash, actualTx := range actualTransactionMap {
 		assert.Contains(t, expectedTransactionMap, txHash)
-		actualTx := actualTransactionMap[txHash]
+		expectedTx := expectedTransactionMap[txHash]
 		assert.ElementsMatch(t, actualTx.Operations, expectedTx.Operations)
 	}
 }
 
-func setupRepository(t *testing.T) (*transactionRepository, sqlmock.Sqlmock) {
-	gormDbClient, mock := mocks.DatabaseMock(t)
-
-	aber := NewTransactionRepository(gormDbClient)
-	return aber, mock
+func TestTransactionRepositorySuite(t *testing.T) {
+	suite.Run(t, new(transactionRepositorySuite))
 }
 
-func willReturnRows(columns []string, data ...interface{}) *sqlmock.Rows {
-	converter := sqlmock.NewRows(columns)
+type transactionRepositorySuite struct {
+	suite.Suite
+	dbResource db.DbResource
+}
 
-	for _, value := range data {
-		s := reflect.ValueOf(value)
+func (suite *transactionRepositorySuite) SetupSuite() {
+	suite.dbResource = db.SetupDb()
+}
 
-		for i := 0; i < s.Len(); i++ {
-			row := mocks.GetFieldsValuesAsDriverValue(s.Index(i).Interface())
-			converter.AddRow(row...)
-		}
+func (suite *transactionRepositorySuite) TearDownSuite() {
+	db.TeardownDb(suite.dbResource)
+}
+
+func (suite *transactionRepositorySuite) SetupTest() {
+	db.CleanupDb(suite.dbResource.GetDb())
+}
+
+func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	assert.NotNil(suite.T(), t)
+}
+
+func (suite *transactionRepositorySuite) TestTypes() {
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	actual, err := t.Types()
+	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), actual)
+}
+
+func (suite *transactionRepositorySuite) TestResults() {
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	actual, err := t.Results()
+	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), actual)
+}
+
+func (suite *transactionRepositorySuite) TestTypesAsArray() {
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	actual, err := t.TypesAsArray()
+	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetween() {
+	// given
+	expected := suite.setupDb(true)
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := t.FindBetween(consensusStart, consensusEnd)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assertTransactions(suite.T(), expected, actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
+	// given
+	expected := suite.setupDb(false)
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := t.FindBetween(consensusStart, consensusEnd)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assertTransactions(suite.T(), expected, actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd() {
+	// given
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := t.FindBetween(consensusStart, consensusStart-1)
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
+	// given
+	expected := suite.setupDb(true)
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := t.FindByHashInBlock(expected[0].Hash, consensusStart, consensusEnd)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assertTransactions(suite.T(), []*types.Transaction{expected[0]}, []*types.Transaction{actual})
+}
+
+func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
+	// given
+	expected := suite.setupDb(false)
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := t.FindByHashInBlock(expected[1].Hash, consensusStart, consensusEnd)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assertTransactions(suite.T(), []*types.Transaction{expected[1]}, []*types.Transaction{actual})
+}
+
+func (suite *transactionRepositorySuite) TestFindByHashThrowsInvalidHash() {
+	// given
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := t.FindByHashInBlock("invalid hash", consensusStart, consensusEnd)
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindByHashThrowsNotFound() {
+	// given
+	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := t.FindByHashInBlock("0x123456", consensusStart, consensusEnd)
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*types.Transaction {
+	dbClient := suite.dbResource.GetGormDb()
+
+	// successful crypto transfer transaction
+	consensusTimestamp := consensusStart + 1
+	validStartNs := consensusStart - 10
+	cryptoTransfers := []dbTypes.CryptoTransfer{
+		{Amount: -150, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
+		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+	}
+	nonFeeTransfers := []dbTypes.CryptoTransfer{
+		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
+		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
+	}
+	domain.AddTransaction(dbClient, consensusTimestamp, 0, 3, 12345, 22,
+		[]byte{0x1, 0x2, 0x3}, 14, validStartNs, cryptoTransfers, nonFeeTransfers, nil)
+
+	// duplicate transaction
+	consensusTimestamp += 1
+	cryptoTransfers = []dbTypes.CryptoTransfer{
+		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+	}
+	domain.AddTransaction(dbClient, consensusTimestamp, 0, 3, 12345, 11,
+		[]byte{0x1, 0x2, 0x3}, 14, validStartNs, cryptoTransfers, nil, nil)
+	operations1 := []*types.Operation{
+		{Account: firstAccount, Amount: &types.HbarAmount{Value: -135}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: secondAccount, Amount: &types.HbarAmount{Value: 135}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: firstAccount, Amount: &types.HbarAmount{Value: -15}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: nodeAccount, Amount: &types.HbarAmount{Value: 5}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: treasuryAccount, Amount: &types.HbarAmount{Value: 10}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: firstAccount, Amount: &types.HbarAmount{Value: -15}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: nodeAccount, Amount: &types.HbarAmount{Value: 5}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: treasuryAccount, Amount: &types.HbarAmount{Value: 10}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+	}
+	expectedTransaction1 := &types.Transaction{Hash: "0x010203", Operations: operations1}
+
+	// a successful crypto transfer + token transfer transaction
+	consensusTimestamp += 1
+	validStartNs += 2
+
+	if createTokenEntity {
+		domain.AddToken(dbClient, tokenId1.EncodedId, tokenDecimals, false, tokenInitialSupply, treasuryAccount.EncodedId)
 	}
 
-	return converter
+	cryptoTransfers = []dbTypes.CryptoTransfer{
+		{Amount: -230, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
+		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+	}
+	nonFeeTransfers = []dbTypes.CryptoTransfer{
+		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
+		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
+	}
+	tokenTransfers := []dbTypes.TokenTransfer{
+		{AccountId: 12345, Amount: -160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1.EncodedId},
+		{AccountId: 54321, Amount: 160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1.EncodedId},
+	}
+	domain.AddTransaction(dbClient, consensusTimestamp, 0, 3, 12345, 22,
+		[]byte{0xa, 0xb, 0xc}, 14, validStartNs, cryptoTransfers, nonFeeTransfers, tokenTransfers)
+	operations2 := []*types.Operation{
+		{Account: firstAccount, Amount: &types.HbarAmount{Value: -215}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: secondAccount, Amount: &types.HbarAmount{Value: 215}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: firstAccount, Amount: &types.HbarAmount{Value: -15}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: nodeAccount, Amount: &types.HbarAmount{Value: 5}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+		{Account: treasuryAccount, Amount: &types.HbarAmount{Value: 10}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
+	}
+	if createTokenEntity {
+		operations2 = append(
+			operations2,
+			&types.Operation{
+				Account: firstAccount,
+				Amount:  &types.TokenAmount{Value: -160, Decimals: tokenDecimals, TokenId: tokenId1},
+				Type:    "CRYPTOTRANSFER",
+				Status:  resultSuccess,
+			},
+			&types.Operation{
+				Account: secondAccount,
+				Amount:  &types.TokenAmount{Value: 160, Decimals: tokenDecimals, TokenId: tokenId1},
+				Type:    "CRYPTOTRANSFER",
+				Status:  resultSuccess,
+			},
+		)
+	}
+	expectedTransaction2 := &types.Transaction{Hash: "0x0a0b0c", Operations: operations2}
+
+	// token create transaction
+	domain.AddToken(dbClient, tokenId2.EncodedId, tokenDecimals, false, tokenInitialSupply, 12345)
+	// add tokencreate transaction
+	consensusTimestamp += 1
+	validStartNs += 1
+	cryptoTransfers = []dbTypes.CryptoTransfer{
+		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+	}
+	tokenTransfers = []dbTypes.TokenTransfer{
+		{AccountId: 12345, Amount: tokenInitialSupply, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId2.EncodedId},
+	}
+	domain.AddTransaction(dbClient, consensusTimestamp, tokenId2.EncodedId, 3, 12345, 22,
+		[]byte{0xaa, 0xcc, 0xdd}, dbTypes.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, tokenTransfers)
+	metadata := map[string]interface{}{
+		"decimals":       tokenDecimals,
+		"freeze_default": false,
+		"initial_supply": tokenInitialSupply,
+	}
+	expectedTransaction3 := &types.Transaction{
+		Hash: "0xaaccdd",
+		Operations: []*types.Operation{
+			{Account: firstAccount, Amount: &types.HbarAmount{Value: -15}, Type: "TOKENCREATION", Status: resultSuccess},
+			{Account: nodeAccount, Amount: &types.HbarAmount{Value: 5}, Type: "TOKENCREATION", Status: resultSuccess},
+			{Account: treasuryAccount, Amount: &types.HbarAmount{Value: 10}, Type: "TOKENCREATION", Status: resultSuccess},
+			{Account: firstAccount, Type: "TOKENCREATION", Status: resultSuccess, Metadata: metadata},
+			{
+				Account: firstAccount,
+				Amount:  &types.TokenAmount{Value: tokenInitialSupply, TokenId: tokenId2, Decimals: tokenDecimals},
+				Type:    "TOKENCREATION",
+				Status:  resultSuccess,
+			},
+		},
+	}
+
+	return []*types.Transaction{expectedTransaction1, expectedTransaction2, expectedTransaction3}
 }
