@@ -114,28 +114,30 @@ hedera:
 
 #### Feature Tags
 
-Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the @sanity tag
-are run. To run a different set of files different tags can be specified
+Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the `@critical`
+tag are run. To run a different set of files different tags can be specified
 
-Acceptance test cases
+`@critical` - Test cases to ensure the network is up and running and satisfies base scenarios.
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
+    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
 
-All cases
+`@release` - Test cases to verify a new deployed version satisfies core scenarios and is release worthy.
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@fullsuite"`
+    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
 
-Negative cases
+`@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria.
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@negative"`
+    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
 
-Edge cases
+`@fullsuite` - All cases - this will require some configuration of feature files.
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@edge"`
+    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@fullsuite"`
 
-Other (search for @? tags within the .feature files for further tags)
+Search for @? tags within the .feature files for other applicable tags.
 
-`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@balancecheck"`
+> **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a subset of tags
+> - `@acceptance and @topicmessagesbase` - all token acceptance scenarios
+> - `@acceptance and not @tokenbase` - all acceptance except token scenarios
 
 ### Test Layout
 

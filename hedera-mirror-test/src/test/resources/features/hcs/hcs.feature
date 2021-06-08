@@ -1,7 +1,7 @@
 @topicmessagesbase @fullsuite
 Feature: HCS Base Coverage Feature
 
-    @sanity @basicsubscribe @acceptance @extended
+    @critical @release @acceptance @basicsubscribe
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -12,7 +12,7 @@ Feature: HCS Base Coverage Feature
             | numMessages |
             | 10          |
 
-    @opensubscribe @extended
+    @opensubscribe @acceptance
     Scenario Outline: Validate Topic message submission to an open submit topic
         Given I successfully create a new open topic
         And I publish and verify <numMessages> messages sent
@@ -23,7 +23,7 @@ Feature: HCS Base Coverage Feature
             | numMessages |
             | 2           |
 
-    @subscribeonly @SubscribeOnly
+    @subscribeonly
     Scenario Outline: Validate topic message subscription only
         Given I provide a topic id <topicId>
         And I provide a starting timestamp <startTimestamp> and a number of messages <numMessages> I want to receive
@@ -53,17 +53,17 @@ Feature: HCS Base Coverage Feature
             | topicId  | numMessages |
             | "171231" | 340         |
 
-    @updatetopic @acceptance @extended
+    @release @acceptance @updatetopic
     Scenario: Validate Topic Updates
         Given I successfully create a new topic id
         Then I successfully update an existing topic
 
-    @deletetopic @acceptance @extended
+    @acceptance @deletetopic
     Scenario: Validate topic deletion
         Given I successfully create a new topic id
         Then I successfully delete the topic
 
-    @latency @extended
+    @acceptance @latency
     Scenario Outline: Validate Topic message listener latency
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -75,7 +75,7 @@ Feature: HCS Base Coverage Feature
             | 2           | 30      |
             | 5           | 30      |
 
-    @negative @extended
+    @acceptance @negative
     Scenario Outline: Validate topic subscription with missing topic id
         Given I provide a topic id <topicId>
         Then the network should observe an error <errorCode>

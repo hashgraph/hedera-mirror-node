@@ -1,7 +1,7 @@
 @accounts @fullsuite
 Feature: Account Coverage Feature
 
-    @balancecheck @sanity @acceptance @Acceptance
+    @critical @release @acceptance @balancecheck
     Scenario Outline: Validate account balance check scenario
         When I request balance info for this account
         Then the crypto balance should be greater than or equal to <threshold>
