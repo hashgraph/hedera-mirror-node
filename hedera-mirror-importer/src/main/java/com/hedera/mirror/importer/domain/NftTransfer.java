@@ -31,20 +31,25 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
-public class NFTTransfer implements Persistable<NFTTransfer.Id> {
+public class NftTransfer implements Persistable<NftTransfer.Id> {
 
     @JsonUnwrapped
     @EmbeddedId
     private Id id;
 
+    @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId receiverAccountId;
 
+    @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId senderAccountId;
 
     @JsonIgnore

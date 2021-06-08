@@ -18,16 +18,24 @@ package com.hedera.mirror.importer.domain;/*
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
 public class NFT {
 
+    @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId accountId;
 
     @Id
@@ -41,5 +49,7 @@ public class NFT {
 
     private long serialNumber;
 
+    @Convert(converter = TokenIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId tokenId;
 }
