@@ -3,14 +3,14 @@
 -------------------
 
 -- Create the enums for the new token columns
-CREATE TYPE supply_type AS ENUM ('INFINITE', 'FINITE');
+CREATE TYPE token_supply_type AS ENUM ('INFINITE', 'FINITE');
 CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 
 
 -- Update the token table
 alter table token
     add column max_supply bigint not null default 9223372036854775807, -- max long
-    add column supply_type supply_type not null default 'INFINITE',
+    add column supply_type token_supply_type not null default 'INFINITE',
     add column type token_type not null default 'FUNGIBLE_COMMON';
 
 -- Create nft table

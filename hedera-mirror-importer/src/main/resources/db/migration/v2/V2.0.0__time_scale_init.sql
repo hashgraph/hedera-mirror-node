@@ -4,7 +4,7 @@
 -------------------
 
 -- Create enums for tables
-CREATE TYPE supply_type AS ENUM ('INFINITE', 'FINITE');
+CREATE TYPE token_supply_type AS ENUM ('INFINITE', 'FINITE');
 CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 
 -- account_balance
@@ -261,11 +261,11 @@ create table if not exists token
     name                   character varying(100) not null,
     supply_key             bytea,
     supply_key_ed25519_hex varchar                null,
-    supply_type            character varying(10)  not null default 'INFINITE',
+    supply_type            token_supply_type      not null default 'INFINITE',
     symbol                 character varying(100) not null,
     total_supply           bigint                 not null default 0,
     treasury_account_id    bigint                 not null,
-    type                   character varying(20) not null default 'FUNGIBLE_COMMON',
+    type                   token_type             not null default 'FUNGIBLE_COMMON',
     wipe_key               bytea,
     wipe_key_ed25519_hex   varchar                null
 );
