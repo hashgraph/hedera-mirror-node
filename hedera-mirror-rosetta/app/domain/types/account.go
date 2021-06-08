@@ -38,7 +38,7 @@ func NewAccountFromEncodedID(encodedID int64) (*Account, error) {
 		return nil, err
 	}
 
-	return &Account{*entityId}, err
+	return &Account{entityId}, err
 }
 
 // ToRosetta returns Rosetta type Account from the current domain type Account
@@ -54,5 +54,5 @@ func AccountFromString(account string) (*Account, *rTypes.Error) {
 	if err != nil {
 		return nil, errors.ErrInvalidAccount
 	}
-	return &Account{*entityId}, nil
+	return &Account{entityId}, nil
 }

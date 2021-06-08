@@ -59,14 +59,13 @@ var (
 		Name:     nameB,
 		Symbol:   symbolB,
 	}
-	nilDbToken     *types.Token
-	nilErr         *rTypes.Error
-	nodeAccountId  = hedera.AccountID{Account: 7}
-	payerId        = hedera.AccountID{Account: 100}
-	tokenEntityIdA = entityid.EntityId{EntityNum: 212, EncodedId: 212}
-	tokenEntityIdB = entityid.EntityId{EntityNum: 252, EncodedId: 252}
-	tokenIdA       = hedera.TokenID{Token: 212}
-	tokenIdB       = hedera.TokenID{Token: 252}
+	nilErr            *rTypes.Error
+	nodeAccountId     = hedera.AccountID{Account: 7}
+	payerId           = hedera.AccountID{Account: 100}
+	tokenEntityIdA, _ = entityid.Decode(212)
+	tokenEntityIdB, _ = entityid.Decode(252)
+	tokenIdA          = hedera.TokenID{Token: 212}
+	tokenIdB          = hedera.TokenID{Token: 252}
 
 	defaultMockTokenRepoConfigs = []mockTokenRepoConfig{
 		{

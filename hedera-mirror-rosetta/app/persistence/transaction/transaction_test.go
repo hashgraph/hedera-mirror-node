@@ -40,12 +40,12 @@ const (
 )
 
 var (
-	firstAccount             = &types.Account{EntityId: entityid.EntityId{EntityNum: 12345, EncodedId: 12345}}
-	secondAccount            = &types.Account{EntityId: entityid.EntityId{EntityNum: 54321, EncodedId: 54321}}
-	nodeAccount              = &types.Account{EntityId: entityid.EntityId{EntityNum: 3, EncodedId: 3}}
-	treasuryAccount          = &types.Account{EntityId: entityid.EntityId{EntityNum: 98, EncodedId: 98}}
-	tokenId1                 = entityid.EntityId{EntityNum: 25636, EncodedId: 25636}
-	tokenId2                 = entityid.EntityId{EntityNum: 26700, EncodedId: 26700}
+	firstAccount, _          = types.NewAccountFromEncodedID(12345)
+	secondAccount, _         = types.NewAccountFromEncodedID(54321)
+	nodeAccount, _           = types.NewAccountFromEncodedID(3)
+	treasuryAccount, _       = types.NewAccountFromEncodedID(98)
+	tokenId1, _              = entityid.Decode(25636)
+	tokenId2, _              = entityid.Decode(26700)
 	tokenDecimals      int64 = 10
 	tokenInitialSupply int64 = 50000
 )
@@ -71,12 +71,7 @@ func TestShouldFailConstructAccount(t *testing.T) {
 func TestShouldSuccessConstructAccount(t *testing.T) {
 	// given
 	data := int64(5)
-	expected := &types.Account{EntityId: entityid.EntityId{
-		ShardNum:  0,
-		RealmNum:  0,
-		EntityNum: 5,
-		EncodedId: 5,
-	}}
+	expected, _ := types.NewAccountFromEncodedID(5)
 
 	// when
 	result, err := constructAccount(data)
@@ -276,26 +271,26 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	consensusTimestamp := consensusStart + 1
 	validStartNs := consensusStart - 10
 	cryptoTransfers := []dbTypes.CryptoTransfer{
-		{Amount: -150, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
-		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
-		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+		{Amount: -150, ConsensusTimestamp: consensusTimestamp, EntityID: firstAccount.EncodedId},
+		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityID: secondAccount.EncodedId},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: nodeAccount.EncodedId},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: treasuryAccount.EncodedId},
 	}
 	nonFeeTransfers := []dbTypes.CryptoTransfer{
-		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
-		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
+		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityID: firstAccount.EncodedId},
+		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityID: secondAccount.EncodedId},
 	}
-	domain.AddTransaction(dbClient, consensusTimestamp, 0, 3, 12345, 22,
+	domain.AddTransaction(dbClient, consensusTimestamp, 0, nodeAccount.EncodedId, firstAccount.EncodedId, 22,
 		[]byte{0x1, 0x2, 0x3}, 14, validStartNs, cryptoTransfers, nonFeeTransfers, nil)
 
 	// duplicate transaction
 	consensusTimestamp += 1
 	cryptoTransfers = []dbTypes.CryptoTransfer{
-		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
-		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityID: firstAccount.EncodedId},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: nodeAccount.EncodedId},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: treasuryAccount.EncodedId},
 	}
-	domain.AddTransaction(dbClient, consensusTimestamp, 0, 3, 12345, 11,
+	domain.AddTransaction(dbClient, consensusTimestamp, 0, nodeAccount.EncodedId, firstAccount.EncodedId, 11,
 		[]byte{0x1, 0x2, 0x3}, 14, validStartNs, cryptoTransfers, nil, nil)
 	operations1 := []*types.Operation{
 		{Account: firstAccount, Amount: &types.HbarAmount{Value: -135}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
@@ -318,20 +313,20 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 
 	cryptoTransfers = []dbTypes.CryptoTransfer{
-		{Amount: -230, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
-		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
-		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+		{Amount: -230, ConsensusTimestamp: consensusTimestamp, EntityID: firstAccount.EncodedId},
+		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityID: secondAccount.EncodedId},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: nodeAccount.EncodedId},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: treasuryAccount.EncodedId},
 	}
 	nonFeeTransfers = []dbTypes.CryptoTransfer{
-		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
-		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityID: 54321},
+		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityID: firstAccount.EncodedId},
+		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityID: secondAccount.EncodedId},
 	}
 	tokenTransfers := []dbTypes.TokenTransfer{
-		{AccountId: 12345, Amount: -160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1.EncodedId},
-		{AccountId: 54321, Amount: 160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1.EncodedId},
+		{AccountId: firstAccount.EncodedId, Amount: -160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1.EncodedId},
+		{AccountId: secondAccount.EncodedId, Amount: 160, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId1.EncodedId},
 	}
-	domain.AddTransaction(dbClient, consensusTimestamp, 0, 3, 12345, 22,
+	domain.AddTransaction(dbClient, consensusTimestamp, 0, nodeAccount.EncodedId, firstAccount.EncodedId, 22,
 		[]byte{0xa, 0xb, 0xc}, 14, validStartNs, cryptoTransfers, nonFeeTransfers, tokenTransfers)
 	operations2 := []*types.Operation{
 		{Account: firstAccount, Amount: &types.HbarAmount{Value: -215}, Type: "CRYPTOTRANSFER", Status: resultSuccess},
@@ -360,19 +355,19 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction2 := &types.Transaction{Hash: "0x0a0b0c", Operations: operations2}
 
 	// token create transaction
-	domain.AddToken(dbClient, tokenId2.EncodedId, tokenDecimals, false, tokenInitialSupply, 12345)
+	domain.AddToken(dbClient, tokenId2.EncodedId, tokenDecimals, false, tokenInitialSupply, firstAccount.EncodedId)
 	// add tokencreate transaction
 	consensusTimestamp += 1
 	validStartNs += 1
 	cryptoTransfers = []dbTypes.CryptoTransfer{
-		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityID: 12345},
-		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: 3},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: 98},
+		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityID: firstAccount.EncodedId},
+		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityID: nodeAccount.EncodedId},
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityID: treasuryAccount.EncodedId},
 	}
 	tokenTransfers = []dbTypes.TokenTransfer{
-		{AccountId: 12345, Amount: tokenInitialSupply, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId2.EncodedId},
+		{AccountId: firstAccount.EncodedId, Amount: tokenInitialSupply, ConsensusTimestamp: consensusTimestamp, TokenId: tokenId2.EncodedId},
 	}
-	domain.AddTransaction(dbClient, consensusTimestamp, tokenId2.EncodedId, 3, 12345, 22,
+	domain.AddTransaction(dbClient, consensusTimestamp, tokenId2.EncodedId, nodeAccount.EncodedId, firstAccount.EncodedId, 22,
 		[]byte{0xaa, 0xcc, 0xdd}, dbTypes.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, tokenTransfers)
 	metadata := map[string]interface{}{
 		"decimals":       tokenDecimals,

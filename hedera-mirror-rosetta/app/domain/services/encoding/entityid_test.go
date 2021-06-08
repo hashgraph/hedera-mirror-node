@@ -190,22 +190,22 @@ func TestEntityIdEncodeThrows(t *testing.T) {
 
 func TestEntityIdFromString(t *testing.T) {
 	var testData = []struct {
-		expected *EntityId
+		expected EntityId
 		entity   string
 	}{
-		{&EntityId{
+		{EntityId{
 			ShardNum:  0,
 			RealmNum:  0,
 			EntityNum: 0,
 			EncodedId: 0,
 		}, "0.0.0"},
-		{&EntityId{
+		{EntityId{
 			ShardNum:  0,
 			RealmNum:  0,
 			EntityNum: 10,
 			EncodedId: 10,
 		}, "0.0.10"},
-		{&EntityId{
+		{EntityId{
 			ShardNum:  0,
 			RealmNum:  0,
 			EntityNum: 4294967295,
@@ -223,7 +223,7 @@ func TestEntityIdFromString(t *testing.T) {
 func TestEntityIdFromStringThrows(t *testing.T) {
 	for _, tt := range invalidEntityIdStrs {
 		res, err := FromString(tt)
-		assert.Nil(t, res)
+		assert.Equal(t, EntityId{}, res)
 		assert.Error(t, err)
 	}
 }
@@ -231,42 +231,25 @@ func TestEntityIdFromStringThrows(t *testing.T) {
 func TestEntityIdDecoding(t *testing.T) {
 	var testData = []struct {
 		input    int64
-		expected *EntityId
+		expected EntityId
 	}{
-		{0, &EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 0,
-			EncodedId: 0,
-		}},
-		{10, &EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 10,
-			EncodedId: 10,
-		}},
-		{4294967295, &EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 4294967295,
-			EncodedId: 4294967295,
-		}},
-		{2814792716779530, &EntityId{
+		{0, EntityId{}},
+		{10, EntityId{EntityNum: 10, EncodedId: 10}},
+		{4294967295, EntityId{EntityNum: 4294967295, EncodedId: 4294967295}},
+		{2814792716779530, EntityId{
 			ShardNum:  10,
 			RealmNum:  10,
 			EntityNum: 10,
 			EncodedId: 2814792716779530,
 		}},
-		{9223372036854775807, &EntityId{
+		{9223372036854775807, EntityId{
 			ShardNum:  32767,
 			RealmNum:  65535,
 			EntityNum: 4294967295,
 			EncodedId: 9223372036854775807,
 		}},
-		{9223090561878065152, &EntityId{
+		{9223090561878065152, EntityId{
 			ShardNum:  32767,
-			RealmNum:  0,
-			EntityNum: 0,
 			EncodedId: 9223090561878065152,
 		}},
 	}
@@ -281,7 +264,7 @@ func TestEntityIdDecoding(t *testing.T) {
 
 func TestEntityIdDecodeThrows(t *testing.T) {
 	res, err := Decode(-1)
-	assert.Nil(t, res)
+	assert.Equal(t, EntityId{}, res)
 	assert.Error(t, err)
 }
 

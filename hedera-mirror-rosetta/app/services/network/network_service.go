@@ -25,7 +25,7 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/coinbase/rosetta-sdk-go/types"
-	repositories2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/transaction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
@@ -35,7 +35,7 @@ import (
 // NetworkAPIService implements the server.NetworkAPIServicer interface.
 type NetworkAPIService struct {
 	base.BaseService
-	addressBookEntryRepo repositories2.AddressBookEntryRepository
+	addressBookEntryRepo repositories.AddressBookEntryRepository
 	network              *types.NetworkIdentifier
 	version              *types.Version
 }
@@ -122,7 +122,7 @@ func (n *NetworkAPIService) NetworkStatus(
 // NewNetworkAPIService creates a new instance of a NetworkAPIService.
 func NewNetworkAPIService(
 	commons base.BaseService,
-	addressBookEntryRepo repositories2.AddressBookEntryRepository,
+	addressBookEntryRepo repositories.AddressBookEntryRepository,
 	network *types.NetworkIdentifier,
 	version *types.Version,
 ) server.NetworkAPIServicer {

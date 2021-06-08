@@ -21,11 +21,12 @@
 package types
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"testing"
 )
 
 func exampleAddressBookEntries() *AddressBookEntries {
@@ -69,12 +70,14 @@ func TestToRosettaPeers(t *testing.T) {
 }
 
 func newDummyPeer(shard, realm, entity int64, metadata map[string]interface{}) *types.Peer {
+	encoded, _ := entityid.Encode(shard, realm, entity)
 	return &types.Peer{
 		PeerID: (&Account{
 			entityid.EntityId{
 				ShardNum:  shard,
 				RealmNum:  realm,
 				EntityNum: entity,
+				EncodedId: encoded,
 			},
 		}).String(),
 		Metadata: metadata,
@@ -82,12 +85,14 @@ func newDummyPeer(shard, realm, entity int64, metadata map[string]interface{}) *
 }
 
 func newDummyAddressBookEntry(shard, realm, entity int64, metadata map[string]interface{}) *AddressBookEntry {
+	encoded, _ := entityid.Encode(shard, realm, entity)
 	return &AddressBookEntry{
 		PeerId: &Account{
 			entityid.EntityId{
 				ShardNum:  shard,
 				RealmNum:  realm,
 				EntityNum: entity,
+				EncodedId: encoded,
 			},
 		},
 		Metadata: metadata,

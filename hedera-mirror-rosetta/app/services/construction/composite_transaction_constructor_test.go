@@ -36,29 +36,17 @@ import (
 var (
 	cryptoTransferTransaction = hedera.NewTransferTransaction()
 	tokenCreateTransaction    = hedera.NewTokenCreateTransaction()
-	cryptoTransferOperations  = []*types.Operation{
-		{
-			Type: config.OperationTypeCryptoTransfer,
-		},
-	}
-	mixedOperations = []*types.Operation{
-		{
-			Type: config.OperationTypeCryptoTransfer,
-		},
-		{
-			Type: config.OperationTypeTokenCreate,
-		},
+	cryptoTransferOperations  = []*types.Operation{{Type: config.OperationTypeCryptoTransfer}}
+	mixedOperations           = []*types.Operation{
+		{Type: config.OperationTypeCryptoTransfer},
+		{Type: config.OperationTypeTokenCreate},
 	}
 	nilError              *types.Error
 	nilOperations         []*types.Operation
 	nilSigners            []hedera.AccountID
-	nilTransaction        *hedera.TransferTransaction = nil
-	unsupportedOperations                             = []*types.Operation{
-		{
-			Type: config.OperationTypeTokenCreate,
-		},
-	}
-	signers = []hedera.AccountID{payerId}
+	nilTransaction        *hedera.TransferTransaction
+	unsupportedOperations = []*types.Operation{{Type: config.OperationTypeTokenCreate}}
+	signers               = []hedera.AccountID{payerId}
 )
 
 type mockTransactionConstructor struct {

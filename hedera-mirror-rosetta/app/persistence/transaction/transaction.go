@@ -91,7 +91,7 @@ func (t tokenTransfer) getTokenAmount() (*types.TokenAmount, error) {
 	}
 
 	return &types.TokenAmount{
-		TokenId:  *token,
+		TokenId:  token,
 		Decimals: t.Decimals,
 		Value:    t.Amount,
 	}, nil
@@ -569,7 +569,7 @@ func getTokenOperation(
 		Status:  operationStatus,
 		Account: payerId,
 		Amount: &types.TokenAmount{
-			TokenId:  *tokenId,
+			TokenId:  tokenId,
 			Decimals: token.Decimals,
 			Value:    0,
 		},

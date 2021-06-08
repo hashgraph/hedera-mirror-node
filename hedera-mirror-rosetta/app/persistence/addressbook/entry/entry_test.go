@@ -50,8 +50,6 @@ var (
 		NodeCertHash:       nil,
 	}
 	entityId = &entityid.EntityId{
-		ShardNum:  0,
-		RealmNum:  0,
 		EntityNum: 5,
 		EncodedId: 5,
 	}

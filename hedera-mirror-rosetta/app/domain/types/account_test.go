@@ -30,21 +30,17 @@ import (
 )
 
 func exampleAccount() *Account {
-	return &Account{
-		entityid.EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 0,
-		},
-	}
+	return &Account{entityid.EntityId{}}
 }
 
 func exampleAccountWith(shard, realm, entity int64) *Account {
+	encoded, _ := entityid.Encode(shard, realm, entity)
 	return &Account{
 		entityid.EntityId{
 			ShardNum:  shard,
 			RealmNum:  realm,
 			EntityNum: entity,
+			EncodedId: encoded,
 		},
 	}
 }
@@ -54,18 +50,6 @@ func expectedAccount() *types.AccountIdentifier {
 		Address:    "0.0.0",
 		SubAccount: nil,
 		Metadata:   nil,
-	}
-}
-
-func expectedAccountWith(shard int64, realm int64, number int64) *Account {
-	encoded, _ := entityid.Encode(shard, realm, number)
-	return &Account{
-		entityid.EntityId{
-			ShardNum:  shard,
-			RealmNum:  realm,
-			EntityNum: number,
-			EncodedId: encoded,
-		},
 	}
 }
 
@@ -95,7 +79,7 @@ func TestNewAccountFromEncodedID(t *testing.T) {
 		res, e := NewAccountFromEncodedID(tt.input)
 
 		// then:
-		assert.Equal(t, expectedAccountWith(tt.shard, tt.realm, tt.number), res)
+		assert.Equal(t, exampleAccountWith(tt.shard, tt.realm, tt.number), res)
 		assert.Nil(t, e)
 	}
 }
@@ -149,7 +133,7 @@ func TestAccountFromString(t *testing.T) {
 		res, e := AccountFromString(tt.input)
 
 		// then:
-		assert.Equal(t, expectedAccountWith(tt.shard, tt.realm, tt.number), res)
+		assert.Equal(t, exampleAccountWith(tt.shard, tt.realm, tt.number), res)
 		assert.Nil(t, e)
 	}
 }

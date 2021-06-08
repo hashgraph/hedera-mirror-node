@@ -59,7 +59,7 @@ func (e *EntityId) String() string {
 func (e *EntityId) UnmarshalJSON(data []byte) error {
 	str := parse.SafeUnquote(string(data))
 
-	var entityId *EntityId
+	var entityId EntityId
 	var err error
 	if strings.Contains(str, ".") {
 		entityId, err = FromString(str)
@@ -77,7 +77,7 @@ func (e *EntityId) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	*e = *entityId
+	*e = entityId
 	return nil
 }
 
@@ -94,12 +94,12 @@ func Encode(shardNum int64, realmNum int64, entityNum int64) (int64, error) {
 }
 
 // Decode - decodes the Entity DB id into Account struct
-func Decode(encodedID int64) (*EntityId, error) {
+func Decode(encodedID int64) (EntityId, error) {
 	if encodedID < 0 {
-		return nil, fmt.Errorf("encodedID cannot be negative: %d", encodedID)
+		return EntityId{}, fmt.Errorf("encodedID cannot be negative: %d", encodedID)
 	}
 
-	return &EntityId{
+	return EntityId{
 		ShardNum:  encodedID >> (realmBits + numberBits),
 		RealmNum:  (encodedID >> numberBits) & realmMask,
 		EntityNum: encodedID & numberMask,
@@ -107,33 +107,33 @@ func Decode(encodedID int64) (*EntityId, error) {
 	}, nil
 }
 
-func FromString(entityId string) (*EntityId, error) {
+func FromString(entityId string) (EntityId, error) {
 	inputs := strings.Split(entityId, ".")
 	if len(inputs) != 3 {
-		return nil, errorEntity
+		return EntityId{}, errorEntity
 	}
 
 	shardNum, err := parse.ToInt64(inputs[0])
 	if err != nil {
-		return nil, errorShardId
+		return EntityId{}, errorShardId
 	}
 
 	realmNum, err := parse.ToInt64(inputs[1])
 	if err != nil {
-		return nil, errorRealmId
+		return EntityId{}, errorRealmId
 	}
 
 	entityNum, err := parse.ToInt64(inputs[2])
 	if err != nil {
-		return nil, errorEntityId
+		return EntityId{}, errorEntityId
 	}
 
 	encodedId, err := Encode(shardNum, realmNum, entityNum)
 	if err != nil {
-		return nil, err
+		return EntityId{}, err
 	}
 
-	return &EntityId{
+	return EntityId{
 		ShardNum:  shardNum,
 		RealmNum:  realmNum,
 		EntityNum: entityNum,

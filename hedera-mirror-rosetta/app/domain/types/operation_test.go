@@ -30,17 +30,11 @@ import (
 
 func exampleOperation(amount Amount) *Operation {
 	return &Operation{
-		Index:  1,
-		Type:   "transfer",
-		Status: "pending",
-		Account: &Account{
-			entityid.EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
-				EntityNum: 0,
-			},
-		},
-		Amount: amount,
+		Index:   1,
+		Type:    "transfer",
+		Status:  "pending",
+		Account: &Account{entityid.EntityId{}},
+		Amount:  amount,
 	}
 }
 
