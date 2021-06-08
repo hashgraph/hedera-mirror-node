@@ -28,7 +28,7 @@ const (
 	OperationTypeTokenBurn       = "TOKENBURN"
 	OperationTypeTokenCreate     = "TOKENCREATION"
 	OperationTypeTokenDelete     = "TOKENDELETION"
-	OperationTypeTokenDissociate = "TOKENDISSOCIATE"
+	OperationTypeTokenDissociate = "TOKENDISSOCIATE" // #nosec
 	OperationTypeTokenFreeze     = "TOKENFREEZE"
 	OperationTypeTokenGrantKyc   = "TOKENGRANTKYC"
 	OperationTypeTokenMint       = "TOKENMINT"

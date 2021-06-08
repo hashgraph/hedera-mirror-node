@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 
 	_ "github.com/lib/pq"
@@ -87,7 +88,7 @@ func (d dbParams) toJdbcUrl(endpoint string) string {
 
 // CleanupDb cleans the data written to the db during tests
 func CleanupDb(db *sql.DB) {
-	filename := path.Join(moduleRoot, "..", dbCleanupScript)
+	filename := filepath.Clean(path.Join(moduleRoot, "..", dbCleanupScript))
 	script, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatalf("Failed to read cleanup.sql: %s", err)

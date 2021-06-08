@@ -54,6 +54,7 @@ const (
 	whereNonFeeTransferConsensusTimestampInTimestampsAsc string = `SELECT * FROM non_fee_transfer
                                                                    WHERE consensus_timestamp IN @timestamps
                                                                    ORDER BY consensus_timestamp`
+	/* #nosec */
 	whereTokenTransferConsensusTimestampInTimestampsAsc string = `SELECT tt.*, t.decimals FROM token_transfer tt
                                                                   JOIN token t on t.token_id = tt.token_id
                                                                   WHERE tt.consensus_timestamp IN @timestamps
