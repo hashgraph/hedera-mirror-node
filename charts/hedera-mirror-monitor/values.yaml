@@ -88,6 +88,7 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 image:
   pullPolicy: IfNotPresent
@@ -107,6 +108,8 @@ livenessProbe:
   timeoutSeconds: 2
 
 nodeSelector: {}
+
+podAnnotations: {}
 
 podSecurityContext:
   fsGroup: 1000
@@ -152,10 +155,10 @@ prometheusRules:
 
   MonitorNoPodsReady:
     annotations:
-      description: "No monitor instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "No monitor instances are currently running in {{ $labels.namespace }}"
       summary: No monitor instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace, pod) < 1
+    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace) < 1
     for: 2m
     labels:
       severity: critical

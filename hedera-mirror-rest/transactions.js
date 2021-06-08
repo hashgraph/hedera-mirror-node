@@ -333,7 +333,7 @@ const getTransactionsInnerQuery = function (
         FULL OUTER JOIN (${ctlQuery}) AS ctl
         ON t.consensus_timestamp = ctl.consensus_timestamp
         FULL OUTER JOIN (${ttlQuery}) AS ttl
-        ON t.consensus_timestamp = ttl.consensus_timestamp
+        ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
         ${namedLimitQuery}`;
   }

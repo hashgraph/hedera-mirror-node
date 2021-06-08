@@ -53,6 +53,7 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 hpa:
   enabled: true
@@ -98,6 +99,8 @@ livenessProbe:
 
 nodeSelector: {}
 
+podAnnotations: {}
+
 podSecurityContext:
   fsGroup: 1000
 
@@ -130,11 +133,11 @@ prometheusRules:
 
   RestNoPodsReady:
     annotations:
-      description: "No REST API instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: No rest instances running
+      description: "No REST API instances are currently running in {{ $labels.namespace }}"
+      summary: No REST API instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="rest"}) by (namespace, pod) < 1
-    for: 30s
+    expr: sum(kube_pod_container_status_ready{container="rest"}) by (namespace) < 1
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-rest

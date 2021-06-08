@@ -1,3 +1,6 @@
+# Base64 encoded contents of a bootstrap address book
+addressBook: ""
+
 affinity:
   podAntiAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
@@ -126,6 +129,7 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 image:
   pullPolicy: IfNotPresent
@@ -151,6 +155,8 @@ networkPolicy:
 
 nodeSelector: {}
 
+podAnnotations: {}
+
 podDisruptionBudget:
   enabled: false
   # maxUnavailable: 0
@@ -164,28 +170,6 @@ podSecurityContext:
   fsGroup: 1000
 
 priorityClassName: ""
-
-rbac:
-  enabled: true
-
-readinessProbe:
-  httpGet:
-    path: /actuator/health/readiness
-    port: http
-  initialDelaySeconds: 60
-  timeoutSeconds: 2
-
-replicas: 1
-
-resources:
-  limits:
-    cpu: 1.8
-    memory: 3072Mi
-  requests:
-    cpu: 200m
-    memory: 512Mi
-
-revisionHistoryLimit: 3
 
 prometheusRules:
   enabled: false
@@ -325,11 +309,11 @@ prometheusRules:
 
   ImporterNoPodsReady:
     annotations:
-      description: "No importer instances are currently ready in {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "No importer instances are currently ready in {{ $labels.namespace }}"
       summary: No importer instances are ready
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="importer"}) by (namespace, pod) < 1
-    for: 30s
+    expr: sum(kube_pod_container_status_ready{container="importer"}) by (namespace) < 1
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-importer
@@ -410,6 +394,28 @@ prometheusRules:
       application: hedera-mirror-importer
       type: RECORD
       area: downloader
+
+rbac:
+  enabled: true
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 60
+  timeoutSeconds: 2
+
+replicas: 1
+
+resources:
+  limits:
+    cpu: 1.8
+    memory: 3072Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+revisionHistoryLimit: 3
 
 securityContext:
   capabilities:
