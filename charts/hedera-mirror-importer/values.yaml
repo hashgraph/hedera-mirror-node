@@ -1,3 +1,6 @@
+# Base64 encoded contents of a bootstrap address book
+addressBook: ""
+
 affinity:
   podAntiAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:
@@ -126,6 +129,7 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 image:
   pullPolicy: IfNotPresent
@@ -136,14 +140,13 @@ imagePullSecrets: []
 
 labels: {}
 
-# Spring boot probes are started after Flyway migration, must correct this to prevent unnecessary restarts
-livenessProbe: null
-#  httpGet:
-#    path: /actuator/health/liveness
-#    port: http
-#  initialDelaySeconds: 60
-#  periodSeconds: 30
-#  timeoutSeconds: 2
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 2
 
 nameOverride: ""
 
@@ -151,6 +154,8 @@ networkPolicy:
   enabled: false
 
 nodeSelector: {}
+
+podAnnotations: {}
 
 podDisruptionBudget:
   enabled: false
@@ -166,37 +171,15 @@ podSecurityContext:
 
 priorityClassName: ""
 
-rbac:
-  enabled: true
-
-readinessProbe:
-  httpGet:
-    path: /actuator/health/readiness
-    port: http
-  initialDelaySeconds: 60
-  timeoutSeconds: 2
-
-replicas: 1
-
-resources:
-  limits:
-    cpu: 1.8
-    memory: 3072Mi
-  requests:
-    cpu: 200m
-    memory: 512Mi
-
-revisionHistoryLimit: 3
-
 prometheusRules:
   enabled: false
   ImporterBalanceParseLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Took longer than 6.5s to parse balance stream files
+      summary: Took longer than 16s to parse balance stream files
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 6.5
-    for: 1m
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 16
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-importer
@@ -231,10 +214,10 @@ prometheusRules:
   ImporterCloudStorageLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} cloud storage latency trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Cloud storage latency exceeds 1s
+      summary: Cloud storage latency exceeds 2s
     enabled: true
-    expr: sum(rate(hedera_mirror_download_request_seconds_sum{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) > 1
-    for: 1m
+    expr: sum(rate(hedera_mirror_download_request_seconds_sum{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) / sum(rate(hedera_mirror_download_request_seconds_count{application="hedera-mirror-importer", status=~"^2.*"}[2m])) by (namespace, pod, type, action) > 2
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-importer
@@ -326,11 +309,11 @@ prometheusRules:
 
   ImporterNoPodsReady:
     annotations:
-      description: "No importer instances are currently ready in {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "No importer instances are currently ready in {{ $labels.namespace }}"
       summary: No importer instances are ready
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="importer"}) by (namespace, pod) < 1
-    for: 30s
+    expr: sum(kube_pod_container_status_ready{container="importer"}) by (namespace) < 1
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-importer
@@ -411,6 +394,28 @@ prometheusRules:
       application: hedera-mirror-importer
       type: RECORD
       area: downloader
+
+rbac:
+  enabled: true
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 60
+  timeoutSeconds: 2
+
+replicas: 1
+
+resources:
+  limits:
+    cpu: 1.8
+    memory: 3072Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+revisionHistoryLimit: 3
 
 securityContext:
   capabilities:

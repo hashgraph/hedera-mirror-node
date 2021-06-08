@@ -79,7 +79,7 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
         pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
         pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
 
-        Timer.Builder parseDurationTimerBuilder = Timer.builder("hedera.mirror.parse.duration")
+        Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
                 .description("The duration in seconds it took to parse the file and store it in the database")
                 .tag("type", parserProperties.getStreamType().toString());
         parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);

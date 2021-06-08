@@ -20,7 +20,6 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
@@ -41,9 +40,9 @@ public class SubscribeMetrics {
 
     static final String METRIC_DURATION = "hedera.mirror.monitor.subscribe.duration";
     static final String METRIC_E2E = "hedera.mirror.monitor.subscribe.e2e";
+    static final String TAG_PROTOCOL = "protocol";
     static final String TAG_SCENARIO = "scenario";
     static final String TAG_SUBSCRIBER = "subscriber";
-    static final String TAG_TYPE = "type";
 
     private final Map<Subscription, TimeGauge> durationMetrics = new ConcurrentHashMap<>();
     private final Map<Subscription, Timer> latencyMetrics = new ConcurrentHashMap<>();
@@ -63,21 +62,20 @@ public class SubscribeMetrics {
     }
 
     private TimeGauge newDurationGauge(Subscription subscription) {
-        return TimeGauge.builder(METRIC_DURATION, subscription, TimeUnit.NANOSECONDS, s -> s.getStopwatch()
-                .elapsed(TimeUnit.NANOSECONDS))
+        return TimeGauge.builder(METRIC_DURATION, subscription, TimeUnit.NANOSECONDS, s -> s.getElapsed().toNanos())
                 .description("How long the subscriber has been running")
-                .tag(TAG_SCENARIO, subscription.getProperties().getName())
+                .tag(TAG_PROTOCOL, subscription.getProtocol().toString())
+                .tag(TAG_SCENARIO, subscription.getName())
                 .tag(TAG_SUBSCRIBER, String.valueOf(subscription.getId()))
-                .tag(TAG_TYPE, subscription.getType().name())
                 .register(meterRegistry);
     }
 
     private final Timer newLatencyTimer(Subscription subscription) {
         return Timer.builder(METRIC_E2E)
                 .description("The end to end transaction latency starting from publish and ending at receive")
-                .tag(TAG_SCENARIO, subscription.getProperties().getName())
+                .tag(TAG_PROTOCOL, subscription.getProtocol().toString())
+                .tag(TAG_SCENARIO, subscription.getName())
                 .tag(TAG_SUBSCRIBER, String.valueOf(subscription.getId()))
-                .tag(TAG_TYPE, subscription.getType().name())
                 .register(meterRegistry);
     }
 
@@ -88,11 +86,10 @@ public class SubscribeMetrics {
         }
     }
 
-    private void status(Subscription subscription) {
-        Stopwatch stopwatch = subscription.getStopwatch();
-        if (stopwatch.isRunning()) {
-            log.info("{}: {} transactions in {} at {}/s. Errors: {}", subscription,
-                    subscription.getCount(), stopwatch, subscription.getRate(), subscription.getErrors());
+    private void status(Subscription s) {
+        if (s.getStatus() == SubscriptionStatus.RUNNING) {
+            log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
+                    s.getProtocol(), s, s.getCount(), s.getElapsed(), s.getRate(), s.getErrors());
         }
     }
 }

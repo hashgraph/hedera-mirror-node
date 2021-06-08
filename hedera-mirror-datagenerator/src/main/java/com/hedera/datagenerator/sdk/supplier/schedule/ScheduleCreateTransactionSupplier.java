@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.datagenerator.common.Utility;
+import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -43,7 +44,7 @@ import com.hedera.hashgraph.sdk.TransactionId;
 
 @Data
 @Log4j2
-public class ScheduleCreateTransactionSupplier implements TransactionSupplier<ScheduleCreateTransaction> {
+public class ScheduleCreateTransactionSupplier implements TransactionSupplier<ScheduleCreateTransaction>, AdminKeyable {
 
     private String adminKey;
 

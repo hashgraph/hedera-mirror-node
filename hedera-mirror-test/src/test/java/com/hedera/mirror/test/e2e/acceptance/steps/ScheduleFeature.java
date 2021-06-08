@@ -23,7 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -66,7 +65,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ScheduleClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
@@ -78,8 +76,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 public class ScheduleFeature {
     private final static int DEFAULT_TINY_HBAR = 1_000;
 
-    @Autowired
-    private AcceptanceTestProperties acceptanceProps;
     @Autowired
     private ScheduleClient scheduleClient;
     @Autowired
@@ -501,15 +497,6 @@ public class ScheduleFeature {
     public void recover(PrecheckStatusException t) throws PrecheckStatusException {
         log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
         throw t;
-    }
-
-    @After("@schedulebase")
-    public void closeClients() {
-        log.debug("Closing schedule feature clients");
-        accountClient.close();
-        mirrorClient.close();
-        tokenClient.close();
-        topicClient.close();
     }
 
     @RequiredArgsConstructor

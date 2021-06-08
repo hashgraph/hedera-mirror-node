@@ -26,6 +26,7 @@ import javax.validation.constraints.NotBlank;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
+import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -33,7 +34,7 @@ import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenCreateTransaction;
 
 @Data
-public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction> {
+public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction>, AdminKeyable {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 

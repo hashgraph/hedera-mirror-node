@@ -20,17 +20,16 @@ package com.hedera.datagenerator.sdk.supplier.consensus;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TopicId;
@@ -42,6 +41,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Min(1)
     private long maxTransactionFee = 1_000_000;
 
+    @NotNull
     private String message = StringUtils.EMPTY;
 
     @Min(8)
@@ -55,29 +55,12 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Getter(lazy = true)
     private final TopicId consensusTopicId = TopicId.fromString(topicId);
 
-    @Getter(lazy = true)
-    private final byte[] messageSuffix = randomByteArray();
-
     @Override
     public TopicMessageSubmitTransaction get() {
         return new TopicMessageSubmitTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setMessage(generateMessage())
+                .setMessage(!message.isEmpty() ? message.getBytes(StandardCharsets.UTF_8) : Utility
+                        .generateMessage(messageSize))
                 .setTopicId(getConsensusTopicId());
-    }
-
-    private byte[] generateMessage() {
-        byte[] timestamp = Longs.toByteArray(System.currentTimeMillis());
-        return ArrayUtils.addAll(timestamp, getMessageSuffix());
-    }
-
-    private byte[] randomByteArray() {
-        if (StringUtils.isNotBlank(message)) {
-            return message.getBytes(StandardCharsets.UTF_8);
-        }
-
-        byte[] bytes = new byte[messageSize - Long.BYTES];
-        new SecureRandom().nextBytes(bytes);
-        return bytes;
     }
 }

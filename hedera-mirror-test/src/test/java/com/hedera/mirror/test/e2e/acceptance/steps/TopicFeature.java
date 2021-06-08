@@ -22,7 +22,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -354,7 +353,7 @@ public class TopicFeature {
                             "backgroundMessage".getBytes(StandardCharsets.UTF_8),
                             getSubmitKeys());
                 } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
-                    e.printStackTrace();
+                    log.error("Error publishing to topic", e);
                 }
             }, 0, 1, TimeUnit.SECONDS);
         }
@@ -411,12 +410,5 @@ public class TopicFeature {
     public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
         log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
         throw t;
-    }
-
-    @After("@TopicMessagesBase or @TopicMessagesFilter")
-    public void closeClients() {
-        log.debug("Closing topic feature clients");
-        mirrorClient.close();
-        topicClient.close();
     }
 }

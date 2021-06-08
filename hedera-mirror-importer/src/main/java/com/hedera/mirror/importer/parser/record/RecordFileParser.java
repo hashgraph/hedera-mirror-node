@@ -76,7 +76,7 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
 
         // build parse metrics
         ImmutableMap.Builder<Boolean, Timer> parseDurationMetricsBuilder = ImmutableMap.builder();
-        Timer.Builder parseDurationTimerBuilder = Timer.builder("hedera.mirror.parse.duration")
+        Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
                 .description("The duration in seconds it took to parse the file and store it in the database")
                 .tag("type", parserProperties.getStreamType().toString());
 

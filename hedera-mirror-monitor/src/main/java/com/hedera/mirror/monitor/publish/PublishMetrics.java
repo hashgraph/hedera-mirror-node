@@ -64,14 +64,16 @@ public class PublishMetrics {
     private final AtomicLong lastCount = new AtomicLong();
     private final AtomicLong lastElapsed = new AtomicLong();
 
-    public void onSuccess(PublishRequest request, PublishResponse response) {
+    public void onSuccess(PublishResponse response) {
         counter.incrementAndGet();
-        recordMetric(request, response, SUCCESS);
+        recordMetric(response.getRequest(), response, SUCCESS);
     }
 
-    public void onError(PublishRequest request, Throwable throwable) {
+    public void onError(PublishException publishException) {
+        PublishRequest request = publishException.getPublishRequest();
         String status;
         TransactionType type = request.getType();
+        Throwable throwable = publishException.getCause() != null ? publishException.getCause() : publishException;
 
         if (throwable instanceof PrecheckStatusException) {
             PrecheckStatusException pse = (PrecheckStatusException) throwable;
@@ -166,10 +168,6 @@ public class PublishMetrics {
 
     private double getRate(long count, long elapsedMicros) {
         return Precision.round(elapsedMicros > 0 ? (count * 1000000.0) / elapsedMicros : 0.0, 1);
-    }
-
-    private double toSeconds(long micros) {
-        return Precision.round(micros * 1.0 / 1_000_000, 2);
     }
 
     @Value

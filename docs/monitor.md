@@ -51,17 +51,17 @@ hedera:
 ### Publish
 
 The monitor can be configured to publish multiple transaction types concurrently. It does this by specifying a list of
-scenarios that should actively publish. A unique scenario name is used as a label for metrics so that each scenario can
-be monitored separately. Each scenario has a target transactions per second (TPS) and uses a client side rate limiter to
-achieve the desired rate. Additionally, a percentage of receipts or records can be requested for each transaction to
-verify transactions are reaching consensus.
+scenarios that should actively publish. A unique scenario name should be used as a label for logs, metrics, and the REST
+API so that each scenario can be monitored separately. Each scenario has a target transactions per second (TPS) and uses
+a client-side rate limiter to achieve the desired rate. Additionally, a percentage of receipts or records can be
+requested for each transaction to verify transactions are reaching consensus.
 
-The monitor can be used to publish at very high TPS, with a single monitor being able to max out the current capability
-of the Hedera network. To publish at higher rates, the `hedera.mirror.monitor.publish.clients` and
-`hedera.mirror.monitor.publish.threads` properties will need to be increased. For example, to achieve 10K TPS we set the
-number of clients to 4, and the number of threads to 40. Please adjust accordingly per your needs. The transaction
-publisher will round-robin the list of clients to send transactions to the Hedera Network, and every transaction is sent
-to a randomly chosen node, ensuring the load is distributed evenly across all nodes.
+The monitor can be used to publish at a very high TPS, with a single monitor able to achieve 10K TPS on the Hedera
+network. To publish at higher rates, the `hedera.mirror.monitor.publish.clients` and
+`hedera.mirror.monitor.publish.responseThreads` properties can be adjusted. With the default values of four clients and
+40 response threads, the monitor can already achieve 10K TPS out of the box. The transaction publisher will round-robin
+the list of clients to send transactions to the Hedera Network, and every transaction is sent to a randomly chosen node,
+ensuring the load is distributed evenly across all nodes.
 
 The `type` property specifies which transaction type to publish. It also affects which `properties` need to be
 specified, with different transaction types requiring different properties to be set. See the
@@ -153,13 +153,13 @@ hedera:
             tps: 1
             type: TOKEN_ASSOCIATE
           - name: HTS transfer
-          properties:
-            recipientAccountId: ${account.them}
-            senderAccountId: ${account.me}
-            tokenId: ${token.foobar}
-            transferType: BOTH
-          tps: 1
-          type: CRYPTO_TRANSFER
+            properties:
+              recipientAccountId: ${account.them}
+              senderAccountId: ${account.me}
+              tokenId: ${token.foobar}
+              transferType: BOTH
+            tps: 1
+            type: CRYPTO_TRANSFER
 ```
 
 ### Subscribe
@@ -194,6 +194,104 @@ control the pool of client connections to the server. Since the communication is
 should suffice. Additionally, the
 `hedera.mirror.monitor.subscribe.grpc.subscribers` property can be adjusted to increase the number of concurrent
 subscribers for that scenario.
+
+## REST API
+
+The monitor REST API provides a way to query the status of the scenarios currently publishing and subscribing to various
+Hedera APIs. The monitor [OpenAPI](https://www.openapis.org) specification is available at `/api/v1/docs/openapi`
+and `/api/v1/docs/openapi.yaml`. The [Swagger UI](https://swagger.io/tools/swagger-ui) is also available
+at `/api/v1/docs`. This UI provides a form of documentation, and an interactive way to explore the monitor's REST API.
+
+### Get Subscribers
+
+Lists all subscriber scenarios. If no scenarios can be found with the given input a 404 status code will be returned.
+A `protocol` and `status` query parameter can be optionally supplied. The `protocol` query parameter can be
+either `GRPC` or `REST`. The `status` flag can be one of the below:
+
+- `COMPLETED`: The scenario has completed normally due to reaching the configured duration or limit
+- `IDLE`: The scenario has not completed but is not currently receiving any responses
+- `RUNNING`: The scenario is still actively receiving responses
+
+`GET /api/v1/subscriber`
+
+Example response:
+
+```json
+[
+  {
+    "count": 74,
+    "status": "RUNNING",
+    "errors": {},
+    "elapsed": "PT12M14.906846353S",
+    "rate": 0.2,
+    "name": "HCS Subscribe",
+    "id": 1,
+    "protocol": "GRPC"
+  },
+  {
+    "count": 72,
+    "status": "RUNNING",
+    "errors": {
+      "TimeoutException": 1
+    },
+    "elapsed": "PT12M13.303710674S",
+    "rate": 0.1,
+    "name": "HCS REST",
+    "id": 1,
+    "protocol": "REST"
+  }
+]
+```
+
+### Get Subscribers by Name
+
+Lists all subscriber scenarios with a given name. Also supports the aforementioned `status` query parameter. If no
+scenarios can be found with the given input a 404 status code will be returned.
+
+`GET /api/v1/subscriber/{name}`
+
+Example response:
+
+```json
+[
+  {
+    "count": 72,
+    "status": "RUNNING",
+    "errors": {
+      "TimeoutException": 1
+    },
+    "elapsed": "PT12M13.303710674S",
+    "rate": 0.1,
+    "name": "HCS REST",
+    "id": 1,
+    "protocol": "REST"
+  }
+]
+```
+
+### Get Subscriber
+
+Gets a subscriber scenario by its unique name and index. If no scenario can be found with the given input a 404 status
+code will be returned.
+
+`GET /api/v1/subscriber/{name}/{index}`
+
+Example response:
+
+```json
+{
+  "count": 72,
+  "status": "RUNNING",
+  "errors": {
+    "TimeoutException": 1
+  },
+  "elapsed": "PT12M13.303710674S",
+  "rate": 0.1,
+  "name": "HCS REST",
+  "id": 1,
+  "protocol": "REST"
+}
+```
 
 ## Dashboard & Metrics
 

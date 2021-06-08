@@ -46,15 +46,20 @@ class GrpcSubscriber implements MirrorSubscriber {
     private final ExpressionConverter expressionConverter;
     private final GrpcClient grpcClient;
     private final SubscribeProperties subscribeProperties;
+    private final Flux<GrpcSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
 
     @Override
     public Flux<SubscribeResponse> subscribe() {
-        return Flux.fromIterable(getSubscriptions())
-                .flatMap(this::clientSubscribe);
+        return subscriptions.flatMap(this::clientSubscribe);
     }
 
-    private Iterable<GrpcSubscription> getSubscriptions() {
-        Collection<GrpcSubscription> subscriptions = new ArrayList<>();
+    @Override
+    public Flux<GrpcSubscription> getSubscriptions() {
+        return subscriptions;
+    }
+
+    private Flux<GrpcSubscription> createSubscriptions() {
+        Collection<GrpcSubscription> subscriptionList = new ArrayList<>();
 
         for (GrpcSubscriberProperties properties : subscribeProperties.getGrpc()) {
             if (subscribeProperties.isEnabled() && properties.isEnabled()) {
@@ -62,12 +67,12 @@ class GrpcSubscriber implements MirrorSubscriber {
                 properties.setTopicId(topicId);
 
                 for (int i = 1; i <= properties.getSubscribers(); ++i) {
-                    subscriptions.add(new GrpcSubscription(i, properties));
+                    subscriptionList.add(new GrpcSubscription(i, properties));
                 }
             }
         }
 
-        return subscriptions;
+        return Flux.fromIterable(subscriptionList);
     }
 
     private Flux<SubscribeResponse> clientSubscribe(GrpcSubscription subscription) {
@@ -78,7 +83,9 @@ class GrpcSubscriber implements MirrorSubscriber {
                 .doOnError(t -> log.error("Error subscribing {}: ", subscription, t))
                 .retryWhen(Retry.backoff(retry.getMaxAttempts(), retry.getMinBackoff())
                         .maxBackoff(retry.getMaxBackoff())
-                        .filter(this::shouldRetry))
+                        .filter(this::shouldRetry)
+                        .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
+                                r.totalRetries() + 1, r.failure().getMessage())))
                 .doOnSubscribe(s -> log.info("Starting subscriber {}: {}", subscription, subscriberProperties));
     }
 

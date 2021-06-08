@@ -48,17 +48,20 @@ applicationResource:
   partnerName: ""
   solutionId: ""
 
-global:
-  namespaceOverride: ""
-  useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
-
 db:
   host: "{{ .Release.Name }}"
   name: mirror_node
-  schema: mirrornode
+  schema: public
   owner:
     password: ""  # Randomly generated if left blank
     username: mirror_node
+
+global:
+  hostname: ""
+  image: {}
+  namespaceOverride: ""
+  podAnnotations: {}
+  useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
 grpc:
   db:
@@ -115,6 +118,7 @@ monitor:
   env:
     HEDERA_MIRROR_MONITOR_MIRROR_NODE_GRPC_HOST: "{{ .Release.Name }}-grpc"
     HEDERA_MIRROR_MONITOR_MIRROR_NODE_REST_HOST: "{{ .Release.Name }}-rest"
+    HEDERA_MIRROR_MONITOR_MIRROR_NODE_REST_PORT: "80"
 
 networkPolicy:
   enabled: false
@@ -165,7 +169,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.2.0-debian-10-r83
+    tag: 13.3.0-debian-10-r11
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -259,11 +263,34 @@ rest:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
+test:
+  config:
+    hedera:
+      mirror:
+        test:
+          acceptance:
+            existingTopicNum:
+            # grpc endpoint
+            mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
+            network:
+            # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
+            operatorId:
+            operatorKey:
+            rest:
+              baseUrl: "http://{{ .Release.Name }}-rest/api/v1"
+            retrieveAddressBook: false
+  cucumberTags: "@acceptance"
+  enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    repository: gcr.io/mirrornode/hedera-mirror-test
+    tag: ""  # Defaults to the chart's app version
+
 timescaledb:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    tag: pg13-ts2.2-latest
+    tag: pg13.3-ts2.3.0-p0
   loadBalancer:
     enabled: false
   patroni:

@@ -20,88 +20,67 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import static com.hedera.mirror.monitor.subscribe.AbstractSubscriber.METRIC_DURATION;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Instant;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.mirror.monitor.MirrorNodeProperties;
-import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
-import com.hedera.mirror.monitor.subscribe.rest.RestSubscriber;
-import com.hedera.mirror.monitor.subscribe.rest.RestSubscriberProperties;
 
+@ExtendWith(MockitoExtension.class)
 class CompositeSubscriberTest {
 
-    private MonitorProperties monitorProperties;
-    private SubscribeProperties subscribeProperties;
-    private RestSubscriberProperties restSubscriberProperties;
-    private MeterRegistry meterRegistry;
-    private WebClient.Builder webClient;
+    @Mock
+    private MirrorSubscriber mirrorSubscriber1;
+
+    @Mock
+    private MirrorSubscriber mirrorSubscriber2;
+
     private CompositeSubscriber compositeSubscriber;
 
     @BeforeEach
     void setup() {
-        MirrorNodeProperties mirrorNodeProperties = new MirrorNodeProperties();
-        mirrorNodeProperties.getGrpc().setHost("127.0.0.1");
-        mirrorNodeProperties.getRest().setHost("127.0.0.1");
-        monitorProperties = new MonitorProperties();
-        monitorProperties.setMirrorNode(mirrorNodeProperties);
-        subscribeProperties = new SubscribeProperties();
-        meterRegistry = new SimpleMeterRegistry();
-        webClient = WebClient.builder();
-        compositeSubscriber = new CompositeSubscriber(monitorProperties, subscribeProperties, meterRegistry, webClient);
-
-        restSubscriberProperties = new RestSubscriberProperties();
-        restSubscriberProperties.setName("rest");
-        subscribeProperties.getRest().add(restSubscriberProperties);
-    }
-
-    @Test
-    void close() {
-        compositeSubscriber.close();
-        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).isEmpty();
+        compositeSubscriber = new CompositeSubscriber(Arrays.asList(mirrorSubscriber1, mirrorSubscriber2));
     }
 
     @Test
     void onPublish() {
-        PublishResponse response = PublishResponse.builder()
-                .request(PublishRequest.builder()
-                        .timestamp(Instant.now())
-                        .type(TransactionType.CONSENSUS_SUBMIT_MESSAGE)
-                        .build())
-                .timestamp(Instant.now())
-                .transactionId(TransactionId.withValidStart(AccountId.fromString("0.0.1000"), Instant.ofEpochSecond(1)))
-                .build();
-        compositeSubscriber.onPublish(response);
-        assertThat(meterRegistry.find(METRIC_DURATION).timeGauges()).hasSize(1);
+        PublishResponse publishResponse = PublishResponse.builder().build();
+        compositeSubscriber.onPublish(publishResponse);
+        verify(mirrorSubscriber1).onPublish(publishResponse);
+        verify(mirrorSubscriber2).onPublish(publishResponse);
     }
 
     @Test
-    void allEnabled() {
-        assertThat(compositeSubscriber.subscribers.get())
-                .hasSize(1)
-                .hasAtLeastOneElementOfType(RestSubscriber.class);
+    void subscribe() {
+        SubscribeResponse subscribeResponse1 = SubscribeResponse.builder().build();
+        SubscribeResponse subscribeResponse2 = SubscribeResponse.builder().build();
+        when(mirrorSubscriber1.subscribe()).thenReturn(Flux.just(subscribeResponse1));
+        when(mirrorSubscriber2.subscribe()).thenReturn(Flux.just(subscribeResponse2));
+
+        compositeSubscriber.subscribe()
+                .as(StepVerifier::create)
+                .expectNext(subscribeResponse1, subscribeResponse2)
+                .verifyComplete();
     }
 
     @Test
-    void allDisabled() {
-        restSubscriberProperties.setEnabled(false);
-        assertThat(compositeSubscriber.subscribers.get()).isEmpty();
-    }
+    void subscriptions() {
+        TestSubscription subscription1 = new TestSubscription();
+        TestSubscription subscription2 = new TestSubscription();
+        when(mirrorSubscriber1.getSubscriptions()).thenReturn(Flux.just(subscription1));
+        when(mirrorSubscriber2.getSubscriptions()).thenReturn(Flux.just(subscription2));
 
-    @Test
-    void subscribeDisabled() {
-        subscribeProperties.setEnabled(false);
-        assertThat(compositeSubscriber.subscribers.get()).isEmpty();
+        compositeSubscriber.getSubscriptions()
+                .as(StepVerifier::create)
+                .expectNext(subscription1, subscription2)
+                .verifyComplete();
     }
 }

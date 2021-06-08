@@ -30,10 +30,10 @@ monitor:
   alertmanager:
     inhibitRules:
       enabled: true
-  podMonitor:
-    enabled: true
   priorityClassName: medium
   prometheusRules:
+    enabled: true
+  serviceMonitor:
     enabled: true
 
 postgresql:

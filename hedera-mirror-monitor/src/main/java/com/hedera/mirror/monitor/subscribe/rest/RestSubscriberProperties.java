@@ -36,7 +36,7 @@ public class RestSubscriberProperties extends AbstractSubscriberProperties {
 
     @NotNull
     @DurationMin(millis = 500)
-    private Duration timeout = Duration.ofSeconds(2);
+    private Duration timeout = Duration.ofSeconds(5);
 
     @Min(0)
     @Max(1)

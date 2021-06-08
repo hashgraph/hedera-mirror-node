@@ -30,7 +30,7 @@ complex code underneath.
 
 Tests can be compiled and run by running the following command from the root folder:
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests`
+`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags=@acceptance`
 
 ### Image Execution
 

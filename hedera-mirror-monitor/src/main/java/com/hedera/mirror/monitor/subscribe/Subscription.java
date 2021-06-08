@@ -20,24 +20,32 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import com.google.common.base.Stopwatch;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.time.Duration;
 import java.util.Map;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-
+@JsonSerialize(as = Subscription.class)
 public interface Subscription {
 
     long getCount();
+
+    Duration getElapsed();
 
     Map<String, Integer> getErrors();
 
     int getId();
 
+    default String getName() {
+        return getProperties().getName();
+    }
+
+    @JsonIgnore
     <T extends AbstractSubscriberProperties> T getProperties();
+
+    SubscriberProtocol getProtocol();
 
     double getRate();
 
-    Stopwatch getStopwatch();
-
-    TransactionType getType();
+    SubscriptionStatus getStatus();
 }

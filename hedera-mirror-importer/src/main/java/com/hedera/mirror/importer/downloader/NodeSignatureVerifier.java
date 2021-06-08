@@ -55,7 +55,7 @@ public class NodeSignatureVerifier {
 
     // Metrics
     private final MeterRegistry meterRegistry;
-    private final Map<EntityId, Counter> nodeSignatureStatusMetricMap = new ConcurrentHashMap<>();
+    private final Map<String, Counter> nodeSignatureStatusMetricMap = new ConcurrentHashMap<>();
 
     public NodeSignatureVerifier(AddressBookService addressBookService,
                                  CommonDownloaderProperties commonDownloaderProperties,
@@ -181,25 +181,24 @@ public class NodeSignatureVerifier {
         return false;
     }
 
-    private Map<String, Collection<EntityId>> statusMap(Collection<FileStreamSignature> signatures, Map<String,
+    private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures, Map<String,
             PublicKey> nodeAccountIDPubKeyMap) {
-        Map<String, Collection<EntityId>> statusMap = signatures.stream()
+        Map<String, Collection<String>> statusMap = signatures.stream()
                 .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
-                        Collectors.mapping(FileStreamSignature::getNodeAccountId, Collectors
+                        Collectors.mapping(fss -> fss.getNodeAccountIdString(), Collectors
                                 .toCollection(TreeSet::new))));
 
-        Set<EntityId> seenNodes = new HashSet<>();
-        signatures.forEach(signature -> seenNodes.add(signature.getNodeAccountId()));
+        Set<String> seenNodes = new HashSet<>();
+        signatures.forEach(signature -> seenNodes.add(signature.getNodeAccountId().entityIdToString()));
 
-        Set<EntityId> missingNodes = new TreeSet<>(Sets.difference(
-                nodeAccountIDPubKeyMap.keySet().stream().map(x -> EntityId.of(x, EntityTypeEnum.ACCOUNT))
-                        .collect(Collectors.toSet()),
+        Set<String> missingNodes = new TreeSet<>(Sets.difference(
+                nodeAccountIDPubKeyMap.keySet().stream().collect(Collectors.toSet()),
                 seenNodes));
         statusMap.put(SignatureStatus.NOT_FOUND.toString(), missingNodes);
 
         String streamType = CollectionUtils.isEmpty(signatures) ? "unknown" :
                 signatures.stream().map(FileStreamSignature::getStreamType).findFirst().toString();
-        for (Map.Entry<String, Collection<EntityId>> entry : statusMap.entrySet()) {
+        for (Map.Entry<String, Collection<String>> entry : statusMap.entrySet()) {
             entry.getValue().forEach(nodeAccountId -> {
                 Counter counter = nodeSignatureStatusMetricMap.computeIfAbsent(
                         nodeAccountId,
@@ -208,10 +207,13 @@ public class NodeSignatureVerifier {
             });
         }
 
+        // remove CONSENSUS_REACHED for logging purposes
+        statusMap.remove(SignatureStatus.CONSENSUS_REACHED.toString());
         return statusMap;
     }
 
-    private Counter newStatusMetric(EntityId entityId, String streamType, String status) {
+    private Counter newStatusMetric(String entityIdString, String streamType, String status) {
+        EntityId entityId = EntityId.of(entityIdString, EntityTypeEnum.ACCOUNT);
         return Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
                 .tag("nodeAccount", entityId.getEntityNum().toString())

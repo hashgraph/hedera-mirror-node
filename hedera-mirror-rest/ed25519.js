@@ -39,7 +39,7 @@ const derToEd25519 = function (der) {
     const {valueBlock} = asn1Result.valueBlock.value[0].valueBlock.value[0];
     if (valueBlock.blockName == 'ObjectIdentifierValueBlock' && valueBlock.value == ID_Ed25519) {
       const ed25519Key = asn1Result.valueBlock.value[1].valueBlock.valueHex;
-      return ed25519Key;
+      return ed25519Key.toLowerCase();
     }
     return null;
   } catch (err) {

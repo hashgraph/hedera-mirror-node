@@ -22,7 +22,6 @@ package com.hedera.mirror.monitor.subscribe.grpc;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
@@ -67,8 +66,7 @@ class GrpcClientSDK implements GrpcClient {
         int clientIndex = secureRandom.nextInt(subscribeProperties.getClients());
         log.info("Starting '{}' subscription to client {}", subscription, clientIndex);
         return clients.elementAt(clientIndex)
-                .flatMapMany(client -> subscribeToClient(client, subscription))
-                .doFinally(s -> log.info("Stopping '{}' subscription to client {}", subscription, clientIndex));
+                .flatMapMany(client -> subscribeToClient(client, subscription));
     }
 
     private Flux<SubscribeResponse> subscribeToClient(Client client, GrpcSubscription subscription) {
@@ -92,7 +90,8 @@ class GrpcClientSDK implements GrpcClient {
         Instant publishedTimestamp = Utility.getTimestamp(topicMessage.contents);
 
         if (publishedTimestamp == null) {
-            log.warn("Invalid published timestamp in message: {}", Base64.getEncoder().encode(topicMessage.contents));
+            log.warn("{} Invalid published timestamp for message with consensus timestamp {}", subscription,
+                    topicMessage.consensusTimestamp);
         }
 
         return SubscribeResponse.builder()

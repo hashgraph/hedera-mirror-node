@@ -216,7 +216,7 @@ paths:
                     - message: "Invalid parameter: timestamp"
       tags:
         - transactions
-  /api/v1/transactions/{id}:
+  /api/v1/transactions/{transactionId}:
     get:
       summary: Get transaction by id
       description: Returns transaction information based on the given transaction id
@@ -254,7 +254,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - transactions
-  /api/v1/transactions/{id}/stateproof:
+  /api/v1/transactions/{transactionId}/stateproof:
     get:
       summary: Get stateproof information
       description: Returns the  contents of the address book file, signature files, and record file that can be used to validate the transaction occurred on the Hedera network given transaction id.
@@ -550,7 +550,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.35.0-SNAPSHOT
+  version: 0.36.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1074,7 +1074,6 @@ components:
       name: account.id
       in: query
       description: The ID of the account to return information for
-      example: 0.0.8
       explode: true
       examples:
         entityNumNoOperator:

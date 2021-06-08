@@ -66,13 +66,7 @@ alertmanager:
 
 annotations: {}
 
-config:
-  hedera:
-    mirror:
-      monitor:
-        mirrorNode:
-          rest:
-            port: 80
+config: {}
 
 # Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
 env:
@@ -94,6 +88,7 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 image:
   pullPolicy: IfNotPresent
@@ -114,9 +109,7 @@ livenessProbe:
 
 nodeSelector: {}
 
-podMonitor:
-  enabled: false
-  interval: 30s
+podAnnotations: {}
 
 podSecurityContext:
   fsGroup: 1000
@@ -162,11 +155,11 @@ prometheusRules:
 
   MonitorNoPodsReady:
     annotations:
-      description: "No monitor instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "No monitor instances are currently running in {{ $labels.namespace }}"
       summary: No monitor instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace, pod) < 1
-    for: 30s
+    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace) < 1
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-monitor
@@ -187,9 +180,9 @@ prometheusRules:
   MonitorPublishLatency:
     annotations:
       description: "Averaging {{ $value | humanizeDuration }} publish latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Publish latency exceeds 2s"
+      summary: "Publish latency exceeds 5s"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 2
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 5
     for: 2m
     labels:
       severity: critical
@@ -222,10 +215,10 @@ prometheusRules:
 
   MonitorSubscribeLatency:
     annotations:
-      description: "{{ $labels.subscriber }} latency averaging {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "End to end latency exceeds 10s"
+      description: "Latency averaging {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "End to end latency exceeds 12s"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) > 10
+    expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario, subscriber) > 12
     for: 2m
     labels:
       severity: critical
@@ -233,7 +226,7 @@ prometheusRules:
 
   MonitorSubscribeStopped:
     annotations:
-      description: "{{ $labels.subscriber }} TPS dropped to {{ $value }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "TPS dropped to {{ $value }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Subscription stopped"
     enabled: true
     expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) <= 0
@@ -256,11 +249,11 @@ replicas: 1
 
 resources:
   limits:
-    cpu: 200m
-    memory: 512Mi
+    cpu: 300m
+    memory: 768Mi
   requests:
-    cpu: 50m
-    memory: 128Mi
+    cpu: 100m
+    memory: 256Mi
 
 revisionHistoryLimit: 3
 
@@ -272,10 +265,19 @@ securityContext:
   runAsNonRoot: true
   runAsUser: 1000
 
+service:
+  annotations: {}
+  port: 80
+  type: ClusterIP
+
 serviceAccount:
   create: true
   # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name:
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
 
 terminationGracePeriodSeconds: 60
 

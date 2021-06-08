@@ -48,11 +48,6 @@ public abstract class AbstractSubscriberProperties {
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
-    @Deprecated
-    @DurationMin(seconds = 1L)
-    @NotNull
-    protected Duration statusFrequency = Duration.ofSeconds(10L);
-
     @Min(1)
     @Max(1024)
     protected int subscribers = 1;

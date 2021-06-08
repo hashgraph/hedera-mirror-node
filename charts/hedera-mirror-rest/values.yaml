@@ -53,11 +53,12 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 hpa:
   enabled: true
   minReplicas: 3
-  maxReplicas: 10
+  maxReplicas: 15
   utilization: 80
 
 image:
@@ -75,7 +76,7 @@ ingress:
     - host: ""
       paths: ["/api/v1"]
   middleware:
-    circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+    circuitBreaker: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
     connectionsPerIP: 5
     enabled: false
     ipWhitelist:
@@ -97,6 +98,8 @@ livenessProbe:
   timeoutSeconds: 2
 
 nodeSelector: {}
+
+podAnnotations: {}
 
 podSecurityContext:
   fsGroup: 1000
@@ -130,11 +133,11 @@ prometheusRules:
 
   RestNoPodsReady:
     annotations:
-      description: "No REST API instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: No rest instances running
+      description: "No REST API instances are currently running in {{ $labels.namespace }}"
+      summary: No REST API instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="rest"}) by (namespace, pod) < 1
-    for: 30s
+    expr: sum(kube_pod_container_status_ready{container="rest"}) by (namespace) < 1
+    for: 2m
     labels:
       severity: critical
       application: hedera-mirror-rest
@@ -174,11 +177,11 @@ readinessProbe:
 
 resources:
   limits:
-    cpu: 500m
-    memory: 128Mi
+    cpu: 750m
+    memory: 350Mi
   requests:
-    cpu: 20m
-    memory: 32Mi
+    cpu: 50m
+    memory: 64Mi
 
 revisionHistoryLimit: 3
 

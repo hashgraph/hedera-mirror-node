@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-monitor",
-  "version": "0.35.0-SNAPSHOT",
+  "version": "0.36.0-SNAPSHOT",
   "description": "Hedera Mirror Node Monitor",
   "main": "server.js",
   "private": true,
@@ -22,12 +22,12 @@
     "http-errors": "^1.8.0",
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
-    "mathjs": "^9.4.0",
+    "mathjs": "^9.4.2",
     "node-fetch": "^2.6.1",
     "pretty-ms": "^7.0.1"
   },
   "devDependencies": {
-    "jest": "^26.6.3",
+    "jest": "^27.0.4",
     "nodemon": "^2.0.7"
   }
 }

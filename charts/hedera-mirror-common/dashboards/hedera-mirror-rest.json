@@ -1391,7 +1391,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "description": "Node.js process memory",
+      "description": "The average Node.js process memory",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1441,7 +1441,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(nodejs_process_memory_external_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_external_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1451,7 +1451,7 @@
           "step": 2
         },
         {
-          "expr": "sum(nodejs_process_memory_rss_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_rss_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1461,7 +1461,7 @@
           "step": 2
         },
         {
-          "expr": "sum(nodejs_process_memory_heap_used_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_heap_used_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1471,7 +1471,7 @@
           "step": 2
         },
         {
-          "expr": "sum(nodejs_process_memory_heap_total_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_heap_total_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1528,7 +1528,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "description": "Node.js process CPU utilization",
+      "description": "The average Node.js process CPU utilization",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1578,7 +1578,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(nodejs_process_cpu_usage_percentage{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_cpu_usage_percentage{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",

@@ -77,6 +77,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.balance.retry.maxBackoff`             | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.minBackoff`             | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.multiplier`             | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.balance.processingTimeout`            | 10s                     | The additional timeout to allow after the last balance stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.event.bufferSize`                     | 32768                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
 | `hedera.mirror.importer.parser.event.frequency`                      | 100ms                   | How often to poll for new messages                                                             |
@@ -87,6 +88,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.event.retry.maxBackoff`               | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.event.retry.minBackoff`               | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.event.retry.multiplier`               | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.event.processingTimeout`              | 10s                     | The additional timeout to allow after the last event stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.exclude`                              | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`                       | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
 | `hedera.mirror.importer.parser.exclude.transaction`                  | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
@@ -122,6 +124,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.retry.maxBackoff`                     | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.record.retry.minBackoff`                     | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.record.retry.multiplier`                     | 2                       | Used to generate the next delay for backoff                                                    |
+| `hedera.mirror.importer.parser.record.processingTimeout`                    | 10s                     | The additional timeout to allow after the last record stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 | `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
@@ -229,6 +232,7 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.batchDivisor`                | 100        | The divisor used to calculate batch size when generating transactions
 `hedera.mirror.monitor.publish.clients`                     | 4          | How many total SDK clients to publish transactions. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.publish.enabled`                     | true       | Whether to enable transaction publishing
+`hedera.mirror.monitor.publish.responseThreads`             | 40         | How many threads to use to resolve the asynchronous responses
 `hedera.mirror.monitor.publish.scenarios[].duration`        |            | How long this scenario should publish transactions. Leave empty for infinite
 `hedera.mirror.monitor.publish.scenarios[].enabled`         | true       | Whether this publish scenario is enabled
 `hedera.mirror.monitor.publish.scenarios[].limit`           | 0          | How many transactions to publish before halting. 0 for unlimited
@@ -238,34 +242,32 @@ Name                                                        | Default    | Descr
 `hedera.mirror.monitor.publish.scenarios[].properties`      | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
 `hedera.mirror.monitor.publish.scenarios[].receiptPercent`  | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios[].recordPercent`   | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
-`hedera.mirror.monitor.publish.scenarios[].timeout`         | 10s        | How long to wait for the transaction result
+`hedera.mirror.monitor.publish.scenarios[].timeout`         | 12s        | How long to wait for the transaction result
 `hedera.mirror.monitor.publish.scenarios[].tps`             | 1.0        | The rate at which transactions will publish
 `hedera.mirror.monitor.publish.scenarios[].type`            |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
 `hedera.mirror.monitor.publish.statusFrequency`             | 10s        | How often to log publishing statistics
-`hedera.mirror.monitor.publish.threads`                     | 5          | How many threads to use to resolve the asynchronous responses
 `hedera.mirror.monitor.publish.warmupPeriod`                | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
 `hedera.mirror.monitor.subscribe.clients`                   | 1          | How many SDK clients should be created to subscribe to mirror node APIs. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.subscribe.enabled`                   | true       | Whether to enable subscribing to mirror node APIs to verify published transactions
-`hedera.mirror.monitor.subscribe.grpc[].duration`           |            | How long to stay subscribed to the gRPC API
+`hedera.mirror.monitor.subscribe.grpc[].duration`           |            | How long to stay subscribed to the API
 `hedera.mirror.monitor.subscribe.grpc[].enabled`            | true       | Whether this subscribe scenario is enabled
 `hedera.mirror.monitor.subscribe.grpc[].limit`              | 0          | How many transactions to receive before halting. 0 for unlimited
 `hedera.mirror.monitor.subscribe.grpc[].name`               | ""         | The subscribe scenario name. Used to tag logs and metrics
-`hedera.mirror.monitor.subscribe.grpc[].retry.maxAttempts`  | 16         | How many consecutive retry attempts before giving up connecting to the mirror gRPC API
+`hedera.mirror.monitor.subscribe.grpc[].retry.maxAttempts`  | 16         | How many consecutive retry attempts before giving up connecting to the API
 `hedera.mirror.monitor.subscribe.grpc[].retry.maxBackoff`   | 8s         | The maximum amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.grpc[].retry.minBackoff`   | 250ms      | The initial amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.grpc[].startTime`          |            | The start time passed to the gRPC API. Defaults to current time if not set
 `hedera.mirror.monitor.subscribe.grpc[].subscribers`        | 1          | How many concurrent subscribers should be instantiated for this scenario
 `hedera.mirror.monitor.subscribe.grpc[].topicId`            |            | Which topic to subscribe to
-`hedera.mirror.monitor.subscribe.rest[].duration`           |            | How long to stay subscribed to the gRPC API
+`hedera.mirror.monitor.subscribe.rest[].duration`           |            | How long to stay subscribed to the API
 `hedera.mirror.monitor.subscribe.rest[].enabled`            | true       | Whether this subscribe scenario is enabled
 `hedera.mirror.monitor.subscribe.rest[].limit`              | 0          | How many transactions to receive before halting. 0 for unlimited
 `hedera.mirror.monitor.subscribe.rest[].name`               | ""         | The subscribe scenario name. Used to tag logs and metrics
-`hedera.mirror.monitor.subscribe.rest[].retry.maxAttempts`  | 16         | How many consecutive retry attempts before giving up connecting to the mirror gRPC API
+`hedera.mirror.monitor.subscribe.rest[].retry.maxAttempts`  | 16         | How many consecutive retry attempts before giving up connecting to the API
 `hedera.mirror.monitor.subscribe.rest[].retry.maxBackoff`   | 8s         | The maximum amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.rest[].retry.minBackoff`   | 250ms      | The initial amount of time to wait between retry attempts
-`hedera.mirror.monitor.subscribe.rest[].samplePercent`      | 1.0        | The percentage of transactions to verify against the REST API. Accepts values between 0-1
-`hedera.mirror.monitor.subscribe.rest[].statusFrequency`    | 10s        | How often to log subscription statistics
-`hedera.mirror.monitor.subscribe.rest[].timeout`            | 2s         | Maximum amount of time to wait for a REST API call to retrieve data
+`hedera.mirror.monitor.subscribe.rest[].samplePercent`      | 1.0        | The percentage of transactions to verify against the API. Accepts values between 0-1
+`hedera.mirror.monitor.subscribe.rest[].timeout`            | 5s         | Maximum amount of time to wait for a API call to retrieve data
 `hedera.mirror.monitor.subscribe.statusFrequency`           | 10s        | How often to log subscription statistics
 `hedera.mirror.monitor.validateNodes`                       | true       | Whether to validate and remove invalid or down nodes permanently before publishing
 
@@ -317,7 +319,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
 | `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
-| `hedera.mirror.rest.shutdown.timeout`                    | 20000                   | The amount of time (in ms) to give the process to gracefully shut down                         |
 
 ### Enable State Proof Alpha
 

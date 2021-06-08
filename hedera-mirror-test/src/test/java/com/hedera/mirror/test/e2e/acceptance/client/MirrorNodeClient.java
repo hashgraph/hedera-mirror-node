@@ -21,43 +21,29 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
-import io.grpc.StatusRuntimeException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorBalancesResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
+@Named
 public class MirrorNodeClient extends AbstractNetworkClient {
 
-    @Autowired
-    private WebClient webClient;
+    private final WebClient webClient;
 
-    // REST ENDPOINTS
-    private static final String ACCOUNTS_ENDPOINT = "accounts";
-    private static final String BALANCES_ENDPOINT = "balances";
-    private static final String SCHEDULES_ENDPOINT = "schedules";
-    private static final String TOKENS_ENDPOINT = "tokens";
-    private static final String TOPICS_ENDPOINT = "topics";
-    private static final String TRANSACTIONS_ENDPOINT = "transactions";
-
-    // FILTER QUERIES
-    private static final String ACCOUNTS_ID_QUERY = "account.id";
-
-    public MirrorNodeClient(SDKClient sdkClient) {
+    public MirrorNodeClient(SDKClient sdkClient, WebClient webClient) {
         super(sdkClient);
-        String mirrorNodeAddress = sdkClient.getMirrorNodeAddress();
-        log.debug("Creating Mirror Node client for {}", mirrorNodeAddress);
+        this.webClient = webClient;
+        log.info("Creating Mirror Node client for {}", sdkClient.getMirrorNodeAddress());
     }
 
     public SubscriptionResponse subscribeToTopic(TopicMessageQuery topicMessageQuery) throws Throwable {
@@ -115,43 +101,26 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
-    public MirrorBalancesResponse getAccountBalances(String accountId) {
-        log.debug("Verify balance for account '{}' is returned by Mirror Node", accountId);
-        // build /balances?account.id=<accountId>
-        return callRestEndpoint("/{endpoint}?{key}={accountId}",
-                MirrorBalancesResponse.class, BALANCES_ENDPOINT,
-                ACCOUNTS_ID_QUERY, accountId);
-    }
-
     public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
-        // build /transactions/<timestamp>
-        return callRestEndpoint("/{endpoint}?timestamp={timestamp}",
-                MirrorTransactionsResponse.class, TRANSACTIONS_ENDPOINT,
-                timestamp);
+        return callRestEndpoint("/transactions?timestamp={timestamp}",
+                MirrorTransactionsResponse.class, timestamp);
     }
 
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
-        // build /transactions/<transactionId>
-        return callRestEndpoint("/{endpoint}/{transactionId}",
-                MirrorTransactionsResponse.class, TRANSACTIONS_ENDPOINT,
-                transactionId);
+        return callRestEndpoint("/transactions/{transactionId}",
+                MirrorTransactionsResponse.class, transactionId);
     }
 
     public MirrorTokenResponse getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
-        // build /tokens/<tokenId>
-        return callRestEndpoint("/{endpoint}/{tokenId}", MirrorTokenResponse.class,
-                TOKENS_ENDPOINT, tokenId);
+        return callRestEndpoint("/tokens/{tokenId}", MirrorTokenResponse.class, tokenId);
     }
 
     public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
         log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
-        // build /schedules/<scheduleId>
-        return (MirrorScheduleResponse) callRestEndpoint("/{endpoint}/{scheduleId}", MirrorScheduleResponse.class,
-                SCHEDULES_ENDPOINT,
-                scheduleId);
+        return callRestEndpoint("/schedules/{scheduleId}", MirrorScheduleResponse.class, scheduleId);
     }
 
     public <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
@@ -170,37 +139,5 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
-    }
-
-    /**
-     * Recover method of subscribeToTopic retry logic. Method parameters of retry method must match this method after
-     * exception parameter
-     *
-     * @param t
-     * @param topicMessageQuery
-     * @throws InterruptedException
-     */
-    @Recover
-    public void recover(StatusRuntimeException t, TopicMessageQuery topicMessageQuery) throws InterruptedException {
-        log.error("Subscription w retry failure: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method of subscribeToTopicAndRetrieveMessages retry logic. Method parameters of retry method must match
-     * this method after exception parameter
-     *
-     * @param t
-     * @param topicMessageQuery
-     * @param numMessages
-     * @param latency
-     * @throws InterruptedException
-     */
-    @Recover
-    public void recover(StatusRuntimeException t, TopicMessageQuery topicMessageQuery,
-                        int numMessages,
-                        long latency) throws InterruptedException {
-        log.error("Subscription w retry failure: {}", t.getMessage());
-        throw t;
     }
 }

@@ -4,20 +4,17 @@ hedera:
       publish:
         scenarios:
           - name: HCS Pinger
-            enabled: true
             properties:
               topicId: ${topic.ping}
-            recordPercent: 1.0
+            receiptPercent: 1.0
             tps: 0.1
             type: CONSENSUS_SUBMIT_MESSAGE
       subscribe:
         grpc:
           - name: HCS Subscribe
-            enabled: true
             topicId: ${topic.ping}
         rest:
           - name: HCS REST
-            enabled: true
             samplePercent: 1.0
 logging:
   level:
@@ -50,8 +47,10 @@ management:
         readiness:
           include: ping
 server:
-  shutdown: graceful
+  http2:
+    enabled: true
   port: 8082
+  shutdown: graceful
 spring:
   application:
     name: hedera-mirror-monitor
@@ -63,4 +62,9 @@ spring:
         paths: /usr/etc/${spring.application.name}
   lifecycle:
     timeout-per-shutdown-phase: 20s
-
+springdoc:
+  api-docs:
+    path: /api/v1/docs/openapi
+  swagger-ui:
+    path: /api/v1/docs
+    disable-swagger-default-url: true

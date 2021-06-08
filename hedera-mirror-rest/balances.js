@@ -105,7 +105,6 @@ const getBalances = async (req, res) => {
       ? `
       JOIN entity e
         ON e.id = ab.account_id
-          AND e.shard = ${config.shard}
           AND e.type < ${utils.ENTITY_TYPE_FILE}`
       : '';
 
