@@ -69,11 +69,11 @@ alter table live_hash
 
 -- nft
 create unique index if not exists nft__token_id_serial_num_timestamp
-    on nft (token_id, serial_number, created_timestamp desc);
+    on nft (token_id desc, serial_number desc, created_timestamp desc);
 
 -- nft_transfer
 create unique index if not exists nft_transfer__timestamp_token_id_serial_num
-    on nft_transfer (consensus_timestamp, token_id, serial_number);
+    on nft_transfer (consensus_timestamp desc, token_id desc, serial_number desc);
 
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp

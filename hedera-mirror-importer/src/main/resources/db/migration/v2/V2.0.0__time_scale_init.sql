@@ -3,6 +3,10 @@
 -- Supports mirror nodes migrated from v1.0
 -------------------
 
+-- Create enums for tables
+CREATE TYPE supply_type AS ENUM ('INFINITE', 'FINITE');
+CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
+
 -- account_balance
 create table if not exists account_balance
 (
@@ -148,7 +152,7 @@ create table if not exists nft
   serial_number         bigint                  not null,
   token_id              bigint                  not null
 );
-comment on table nft is 'NFT';
+comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
 -- nft_transfer
 create table if not exists nft_transfer
@@ -261,7 +265,7 @@ create table if not exists token
     symbol                 character varying(100) not null,
     total_supply           bigint                 not null default 0,
     treasury_account_id    bigint                 not null,
-    type                   character varying(20) not null default 'NON_FUNGIBLE_UNIQUE',
+    type                   character varying(20) not null default 'FUNGIBLE_COMMON',
     wipe_key               bytea,
     wipe_key_ed25519_hex   varchar                null
 );
