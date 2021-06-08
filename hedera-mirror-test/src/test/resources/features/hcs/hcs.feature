@@ -1,7 +1,7 @@
 @topicmessagesbase @fullsuite
 Feature: HCS Base Coverage Feature
 
-    @sanity @basicsubscribe @acceptance @Acceptance
+    @sanity @basicsubscribe @acceptance @extended
     Scenario Outline: Validate Topic message submission
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -12,7 +12,7 @@ Feature: HCS Base Coverage Feature
             | numMessages |
             | 10          |
 
-    @opensubscribe @acceptance @Acceptance
+    @opensubscribe @extended
     Scenario Outline: Validate Topic message submission to an open submit topic
         Given I successfully create a new open topic
         And I publish and verify <numMessages> messages sent
@@ -53,17 +53,17 @@ Feature: HCS Base Coverage Feature
             | topicId  | numMessages |
             | "171231" | 340         |
 
-    @updatetopic @acceptance @Acceptance
+    @updatetopic @acceptance @extended
     Scenario: Validate Topic Updates
         Given I successfully create a new topic id
         Then I successfully update an existing topic
 
-    @deletetopic @acceptance @Acceptance
+    @deletetopic @acceptance @extended
     Scenario: Validate topic deletion
         Given I successfully create a new topic id
         Then I successfully delete the topic
 
-    @acceptance @latency @Acceptance
+    @latency @extended
     Scenario Outline: Validate Topic message listener latency
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -75,7 +75,7 @@ Feature: HCS Base Coverage Feature
             | 2           | 30      |
             | 5           | 30      |
 
-    @negative @acceptance @Acceptance
+    @negative @extended
     Scenario Outline: Validate topic subscription with missing topic id
         Given I provide a topic id <topicId>
         Then the network should observe an error <errorCode>

@@ -1,7 +1,7 @@
 @topicmessagesfilter @fullsuite
 Feature: HCS Message Filter Coverage Feature
 
-    @sanity @acceptance @filter @Acceptance
+    @sanity @acceptance @filter @extended
     Scenario Outline: Validate topic filtering with past date and get X previous
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent
@@ -37,7 +37,7 @@ Feature: HCS Message Filter Coverage Feature
             | publishCount | startSequence | endSequence | numMessages |
             | 50           | 25            | 30          | 5           |
 
-    @acceptance @Acceptance
+    @extended
     Scenario Outline: Validate topic filtering with past date and a specified limit
         Given I successfully create a new topic id
         And I publish and verify <numMessages> messages sent

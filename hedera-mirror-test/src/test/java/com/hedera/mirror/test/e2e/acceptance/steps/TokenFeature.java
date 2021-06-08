@@ -23,6 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -272,6 +273,24 @@ public class TokenFeature {
 
         // publish background message to network to reduce possibility of stale info in low TPS environment
         topicClient.publishMessageToDefaultTopic();
+    }
+
+    @After
+    public void dissociateAccountsPostTests() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        // dissociate all applicable accounts from token to reduce likelihood of max token association error
+        dissociateAccountPostTests(accountClient.getTokenTreasuryAccount());
+        dissociateAccountPostTests(sender);
+        dissociateAccountPostTests(recipient);
+    }
+
+    private void dissociateAccountPostTests(ExpandedAccountId accountId) {
+        if (accountId != null) {
+            try {
+                tokenClient.disssociate(accountId, tokenId);
+                log.info("Successfully dissociated account {} from token {}", accountId, tokenId);
+            } catch (Exception ex) {
+            }
+        }
     }
 
     private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws PrecheckStatusException,

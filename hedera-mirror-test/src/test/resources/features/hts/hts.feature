@@ -1,7 +1,7 @@
 @tokenbase @fullsuite @TokenBase
 Feature: HTS Base Coverage Feature
 
-    @acceptance @sanity @Acceptance
+    @sanity @extended
     Scenario Outline: Validate Base Token Flow - Create, Associate, Fund
         Given I successfully create a new token
         Then the mirror node REST API should return status <httpStatusCode>
@@ -13,7 +13,7 @@ Feature: HTS Base Coverage Feature
             | amount | httpStatusCode |
             | 2350   | 200            |
 
-    @acceptance @Acceptance
+    @acceptance @extended
     Scenario Outline: Validate Freeze and KYC Flow - Create, Unfreeze, GrantKyc
         Given I successfully onboard a new token account with freeze status <initialFreezeStatus> and kyc status <initialKycStatus>
         When I associate a new recipient account with token
@@ -25,7 +25,7 @@ Feature: HTS Base Coverage Feature
             | initialFreezeStatus | initialKycStatus | newFreezeStatus | newKycStatus | httpStatusCode |
             | 1                   | 2                | 2               | 1            | 200            |
 
-    @acceptance @Acceptance
+    @acceptance @extended
     Scenario Outline: Validate Token Modification Flow - Create, Associate, Transfer, Update, Burn, Mint and Wipe
         Given I successfully onboard a new token account
         When I associate a new recipient account with token
@@ -43,7 +43,7 @@ Feature: HTS Base Coverage Feature
             | amount | httpStatusCode | modifySupplyAmount |
             | 2350   | 200            | 100                |
 
-    @acceptance @Acceptance
+    @extended
     Scenario Outline: Validate Token ramp down Flow - Create, Associate, Dissociate, Delete
         Given I successfully onboard a new token account
         When I associate a new recipient account with token

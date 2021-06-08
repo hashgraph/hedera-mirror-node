@@ -1,7 +1,7 @@
 @schedulebase @fullsuite
 Feature: Schedule Base Coverage Feature
 
-    @acceptance @sanity @Acceptance
+    @acceptance @sanity @extended
     Scenario Outline: Validate Base Schedule Flow - ScheduleCreate of CryptoTransfer and ScheduleSign
         Given I successfully schedule a treasury HBAR disbursement to <accountName>
         When the network confirms schedule presence
@@ -32,7 +32,7 @@ Feature: Schedule Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @acceptance @Acceptance
+    @extended
     Scenario Outline: Validate Base Schedule Flow - MultiSig ScheduleCreate of CryptoAccountCreate and ScheduleSign
         Given I schedule a crypto transfer with <initialSignatureCount> initial signatures but require an additional signature from <accountName>
         When the network confirms schedule presence
@@ -47,7 +47,7 @@ Feature: Schedule Base Coverage Feature
             | 3                     | "ALICE"     | 200            |
 #            | 10                    | "DAVE"      | 200            |
 
-    @acceptance @Acceptance
+    @acceptance @extended
     Scenario Outline: Validate scheduled Hbar and Token transfer - ScheduleCreate of TokenTransfer and multi ScheduleSign
         Given I successfully schedule a token transfer from <sender> to <receiver>
         And the network confirms schedule presence
@@ -65,7 +65,7 @@ Feature: Schedule Base Coverage Feature
             | sender  | receiver | httpStatusCode |
             | "ALICE" | "DAVE"   | 200            |
 
-    @acceptance @Acceptance
+    @acceptance @extended
     Scenario Outline: Validate scheduled HCS message - ScheduleCreate of TopicMessageSubmit and ScheduleSign
         Given I successfully schedule a topic message submit with <accountName>'s submit key
         And the network confirms schedule presence
