@@ -276,14 +276,14 @@ public class TokenFeature {
     }
 
     @After
-    public void dissociateAccountsPostTests() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void dissociateAccounts() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         // dissociate all applicable accounts from token to reduce likelihood of max token association error
-        dissociateAccountPostTests(accountClient.getTokenTreasuryAccount());
-        dissociateAccountPostTests(sender);
-        dissociateAccountPostTests(recipient);
+        dissociateAccount(accountClient.getTokenTreasuryAccount());
+        dissociateAccount(sender);
+        dissociateAccount(recipient);
     }
 
-    private void dissociateAccountPostTests(ExpandedAccountId accountId) {
+    private void dissociateAccount(ExpandedAccountId accountId) {
         if (accountId != null) {
             try {
                 tokenClient.disssociate(accountId, tokenId);
