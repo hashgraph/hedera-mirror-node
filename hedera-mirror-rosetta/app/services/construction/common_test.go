@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const accountAddress = "0.0.123"
+
 func TestCompareCurrency(t *testing.T) {
 	var tests = []struct {
 		name      string
@@ -312,7 +314,7 @@ func TestValidateOperationsWithType(t *testing.T) {
 			operations: []*rTypes.Operation{
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: "0.0.123"},
+					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
 					Type:                config.OperationTypeCryptoTransfer,
 				},
 			},
@@ -325,7 +327,7 @@ func TestValidateOperationsWithType(t *testing.T) {
 			operations: []*rTypes.Operation{
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: "0.0.123"},
+					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
 					Type:                config.OperationTypeCryptoTransfer,
 					Amount:              &rTypes.Amount{},
 				},
@@ -371,7 +373,7 @@ func TestValidateOperationsWithType(t *testing.T) {
 			name: "OperationMissingOperationIdentifier",
 			operations: []*rTypes.Operation{
 				{
-					Account: &rTypes.AccountIdentifier{Address: "0.0.123"},
+					Account: &rTypes.AccountIdentifier{Address: accountAddress},
 					Amount: &rTypes.Amount{
 						Value: "0",
 						Currency: &rTypes.Currency{
@@ -410,7 +412,7 @@ func TestValidateOperationsWithType(t *testing.T) {
 			operations: []*rTypes.Operation{
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: "0.0.123"},
+					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
 					Type:                config.OperationTypeCryptoTransfer,
 				},
 			},
@@ -423,7 +425,7 @@ func TestValidateOperationsWithType(t *testing.T) {
 			operations: []*rTypes.Operation{
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: "0.0.123"},
+					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
 					Amount:              &rTypes.Amount{Value: "0"},
 					Type:                config.OperationTypeCryptoTransfer,
 				},

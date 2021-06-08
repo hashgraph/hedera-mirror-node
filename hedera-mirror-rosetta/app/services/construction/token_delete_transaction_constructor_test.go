@@ -145,11 +145,9 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 		{
 			name: "TokenIDNotSet",
 			getTransaction: func() ITransaction {
-				// TODO SDK bug, once SDK is fixed, remove the SetTokenID call
 				return hedera.NewTokenDeleteTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId)).
-					SetTokenID(hedera.TokenID{})
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
 			},
 			expectError: true,
 		},

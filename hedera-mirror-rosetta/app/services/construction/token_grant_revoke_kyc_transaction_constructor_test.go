@@ -215,17 +215,16 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionAccountIDNotSet",
 			getTransaction: func(operationType string) ITransaction {
-				// TODO once SDK PR to fix nil pointer dereference is merged, remove the SetAccountID call
 				if operationType == config.OperationTypeTokenGrantKyc {
 					return hedera.NewTokenGrantKycTransaction().
-						SetAccountID(hedera.AccountID{}).
+						// SetAccountID(hedera.AccountID{}).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 						SetTokenID(tokenIdA).
 						SetTransactionID(hedera.TransactionIDGenerate(payerId))
 				}
 
 				return hedera.NewTokenRevokeKycTransaction().
-					SetAccountID(hedera.AccountID{}).
+					// SetAccountID(hedera.AccountID{}).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenID(tokenIdA).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId))
@@ -235,19 +234,16 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionTokenIDNotSet",
 			getTransaction: func(operationType string) ITransaction {
-				// TODO once SDK PR to fix nil pointer dereference is merged, remove the SetTokenID call
 				if operationType == config.OperationTypeTokenGrantKyc {
 					return hedera.NewTokenGrantKycTransaction().
 						SetAccountID(accountId).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTokenID(hedera.TokenID{}).
 						SetTransactionID(hedera.TransactionIDGenerate(payerId))
 				}
 
 				return hedera.NewTokenRevokeKycTransaction().
 					SetAccountID(accountId).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenID(hedera.TokenID{}).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId))
 			},
 			expectError: true,
@@ -259,13 +255,13 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 					return hedera.NewTokenGrantKycTransaction().
 						SetAccountID(accountId).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTokenID(hedera.TokenID{})
+						SetTokenID(tokenIdA)
 				}
 
 				return hedera.NewTokenRevokeKycTransaction().
 					SetAccountID(accountId).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenID(hedera.TokenID{})
+					SetTokenID(tokenIdA)
 			},
 			expectError: true,
 		},

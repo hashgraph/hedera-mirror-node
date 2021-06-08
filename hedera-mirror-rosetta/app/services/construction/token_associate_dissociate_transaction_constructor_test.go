@@ -290,17 +290,14 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionAccountNotSet",
 			getTransaction: func(operationType string) ITransaction {
-				// TODO once SDK PR is merged, remove the SetAccountID call
 				if operationType == config.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
-						SetAccountID(hedera.AccountID{}).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 						SetTokenIDs(tokenIdA, tokenIdB).
 						SetTransactionID(hedera.TransactionIDGenerate(payerId))
 				}
 
 				return hedera.NewTokenDissociateTransaction().
-					SetAccountID(hedera.AccountID{}).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenIDs(tokenIdA, tokenIdB).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId))

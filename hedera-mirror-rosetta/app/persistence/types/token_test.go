@@ -28,6 +28,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	tokenName   = "foobar name"
+	tokenSymbol = "foobar symbol"
+)
+
 func TestTokenTableName(t *testing.T) {
 	assert.Equal(t, "token", Token{}.TableName())
 }
@@ -44,14 +49,14 @@ func TestTokenToDomainToken(t *testing.T) {
 			token: Token{
 				TokenID:  1001,
 				Decimals: 10,
-				Name:     "token name",
-				Symbol:   "token symbol",
+				Name:     tokenName,
+				Symbol:   tokenSymbol,
 			},
 			expected: &types.Token{
 				TokenId:  entityid.EntityId{EntityNum: 1001, EncodedId: 1001},
 				Decimals: 10,
-				Name:     "token name",
-				Symbol:   "token symbol",
+				Name:     tokenName,
+				Symbol:   tokenSymbol,
 			},
 		},
 		{
@@ -59,8 +64,8 @@ func TestTokenToDomainToken(t *testing.T) {
 			token: Token{
 				TokenID:  -1,
 				Decimals: 10,
-				Name:     "token name",
-				Symbol:   "token symbol",
+				Name:     tokenName,
+				Symbol:   tokenSymbol,
 			},
 			expectError: true,
 		},

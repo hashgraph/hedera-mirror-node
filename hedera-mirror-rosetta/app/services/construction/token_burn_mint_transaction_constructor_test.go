@@ -218,19 +218,16 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionTokenIDNotSet",
 			getTransaction: func(operationType string) ITransaction {
-				// TODO once SDK PR to fix nil pointer dereference is merged, remove the SetTokenID call
 				if operationType == config.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
 						SetAmount(amount).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTokenID(hedera.TokenID{}).
 						SetTransactionID(hedera.TransactionIDGenerate(payerId))
 				}
 
 				return hedera.NewTokenMintTransaction().
 					SetAmount(amount).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenID(hedera.TokenID{}).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId))
 			},
 			expectError: true,

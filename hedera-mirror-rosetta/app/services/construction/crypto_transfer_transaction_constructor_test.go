@@ -132,12 +132,12 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 	}
 
 	expectedTransfers := []string{
-		fmt.Sprintf("%s_%d_%s", accountIdA, -15, config.CurrencySymbol),
-		fmt.Sprintf("%s_%d_%s", accountIdB, 15, config.CurrencySymbol),
-		fmt.Sprintf("%s_%d_%s", accountIdA, -25, tokenIdA),
-		fmt.Sprintf("%s_%d_%s", accountIdB, 25, tokenIdA),
-		fmt.Sprintf("%s_%d_%s", accountIdB, -35, tokenIdB),
-		fmt.Sprintf("%s_%d_%s", accountIdA, 35, tokenIdB),
+		transferStringify(accountIdA, -15, config.CurrencySymbol),
+		transferStringify(accountIdB, 15, config.CurrencySymbol),
+		transferStringify(accountIdA, -25, tokenIdA.String()),
+		transferStringify(accountIdB, 25, tokenIdA.String()),
+		transferStringify(accountIdB, -35, tokenIdB.String()),
+		transferStringify(accountIdA, 35, tokenIdB.String()),
 	}
 
 	var tests = []struct {
@@ -202,12 +202,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 				for _, operation := range operations {
 					actualTransfers = append(
 						actualTransfers,
-						fmt.Sprintf(
-							"%s_%s_%s",
-							operation.Account.Address,
-							operation.Amount.Value,
-							operation.Amount.Currency.Symbol,
-						),
+						operationTransferStringify(operation),
 					)
 				}
 				assert.ElementsMatch(t, expectedTransfers, actualTransfers)
@@ -397,12 +392,7 @@ func assertCryptoTransferTransaction(
 	for _, operation := range operations {
 		expectedTransfers = append(
 			expectedTransfers,
-			fmt.Sprintf(
-				"%s_%s_%s",
-				operation.Account.Address,
-				operation.Amount.Value,
-				operation.Amount.Currency.Symbol,
-			),
+			operationTransferStringify(operation),
 		)
 	}
 
@@ -414,7 +404,7 @@ func assertCryptoTransferTransaction(
 	for accountId, amount := range actualHbarTransfers {
 		actualTransfers = append(
 			actualTransfers,
-			fmt.Sprintf("%s_%d_%s", accountId, amount.AsTinybar(), config.CurrencySymbol),
+			transferStringify(accountId, amount.AsTinybar(), config.CurrencySymbol),
 		)
 	}
 
@@ -429,4 +419,13 @@ func assertCryptoTransferTransaction(
 
 	assert.ElementsMatch(t, expectedTransfers, actualTransfers)
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
+}
+
+func operationTransferStringify(operation *rTypes.Operation) string {
+	amount := operation.Amount
+	return fmt.Sprintf("%s_%s_%s", operation.Account.Address, amount.Value, amount.Currency.Symbol)
+}
+
+func transferStringify(account hedera.AccountID, amount int64, symbol string) string {
+	return fmt.Sprintf("%s_%d_%s", account, amount, symbol)
 }
