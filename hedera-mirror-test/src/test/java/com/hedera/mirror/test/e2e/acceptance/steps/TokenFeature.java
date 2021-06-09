@@ -209,6 +209,7 @@ public class TokenFeature {
                 .delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+        tokenId = null;
     }
 
     @Then("the mirror node REST API should return status {int}")
@@ -270,12 +271,20 @@ public class TokenFeature {
     }
 
     @After
-    public void dissociateAccounts() {
+    public void cleanup() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         // dissociate all applicable accounts from token to reduce likelihood of max token association error
         if (tokenId != null) {
-            dissociateAccount(tokenClient.getSdkClient().getExpandedOperatorAccountId());
-            dissociateAccount(sender);
-            dissociateAccount(recipient);
+            // a nonzero balance will result in a TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES error
+            // not possible to wipe a treasury account as it results in CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT error
+            // as a result to dissociate first delete token
+            try {
+                tokenClient.delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
+                tokenId = null;
+                dissociateAccount(sender);
+                dissociateAccount(recipient);
+            } catch (Exception ex) {
+                log.warn("Error cleaning up token {} and associations error: {}", tokenId, ex);
+            }
         }
     }
 
@@ -285,6 +294,7 @@ public class TokenFeature {
                 tokenClient.disssociate(accountId, tokenId);
                 log.info("Successfully dissociated account {} from token {}", accountId, tokenId);
             } catch (Exception ex) {
+                log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
             }
         }
     }
@@ -345,9 +355,11 @@ public class TokenFeature {
     }
 
     private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+        long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
         networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + amount);
     }
 
     private void onboardNewTokenAccount(int freezeStatus, int kycStatus) throws ReceiptStatusException,

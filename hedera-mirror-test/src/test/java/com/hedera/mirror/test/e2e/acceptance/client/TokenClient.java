@@ -31,6 +31,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
+import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -345,5 +346,16 @@ public class TokenClient extends AbstractNetworkClient {
         log.debug("Deleted token {}", accountId, token);
 
         return networkTransactionResponse;
+    }
+
+    public long getTokenBalance(AccountId accountId, TokenId tokenId) throws TimeoutException, PrecheckStatusException {
+        long balance = new AccountBalanceQuery()
+                .setAccountId(accountId)
+                .execute(client)
+                .token.get(tokenId);
+
+        log.debug("{}'s token balance is {} {} tokens", accountId, balance, tokenId);
+
+        return balance;
     }
 }
