@@ -117,23 +117,24 @@ hedera:
 Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the `@critical`
 tag are run. To run a different set of files different tags can be specified
 
-`@critical` - Test cases to ensure the network is up and running and satisfies base scenarios.
+Test Suite Tags
 
-    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
+- `@critical` - Test cases to ensure the network is up and running and satisfies base scenarios.
+- `@release` - Test cases to verify a new deployed version satisfies core scenarios and is release worthy.
+- `@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria.
+- `@fullsuite` - All cases - this will require some configuration of feature files.
 
-`@release` - Test cases to verify a new deployed version satisfies core scenarios and is release worthy.
+Feature based Tags
 
-    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
+- `@accounts` - Crypto account focused tests.
+- `@topicmessagesbase` - Simple HCS focused tests.
+- `@topicmessagesfilter` - HCS focused tests wth varied subscription filters.
+- `@tokenbase` - HTS focused tests.
+- `@schedulebase` - Scheduled transactions focused tests.
 
-`@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria.
+To execute run
 
-    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
-
-`@fullsuite` - All cases - this will require some configuration of feature files.
-
-    `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@fullsuite"`
-
-Search for @? tags within the .feature files for other applicable tags.
+    ./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="<tag name>"
 
 > **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a subset of tags
 > - `@acceptance and @topicmessagesbase` - all token acceptance scenarios

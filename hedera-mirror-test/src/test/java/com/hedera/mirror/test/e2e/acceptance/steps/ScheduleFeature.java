@@ -381,6 +381,7 @@ public class ScheduleFeature {
             tokenClient.delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
             dissociateAccount(tokenTreasuryAccount);
             dissociateAccount(tokenClient.getSdkClient().getExpandedOperatorAccountId());
+            tokenId = null;
         }
     }
 
