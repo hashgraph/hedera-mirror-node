@@ -46,6 +46,14 @@ select create_hypertable('file_data', 'consensus_timestamp', chunk_time_interval
 select create_hypertable('live_hash', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
+-- nft
+select create_hypertable('nft', 'created_timestamp', chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
+-- nft_transfer
+select create_hypertable('nft_transfer', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
 -- non_fee_transfer
 select create_hypertable('non_fee_transfer', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);

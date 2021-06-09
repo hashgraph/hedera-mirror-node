@@ -3,6 +3,10 @@
 -- Supports mirror nodes migrated from v1.0
 -------------------
 
+-- Create enums for tables
+CREATE TYPE token_supply_type AS ENUM ('INFINITE', 'FINITE');
+CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
+
 -- account_balance
 create table if not exists account_balance
 (
@@ -137,6 +141,30 @@ create table if not exists live_hash
     consensus_timestamp bigint not null
 );
 
+-- nft
+create table if not exists nft
+(
+  account_id            bigint                  not null,
+  created_timestamp     bigint  primary key     not null,
+  deleted               boolean default false   not null,
+  modified_timestamp    bigint                  not null,
+  metadata              bytea   default ''      not null,
+  serial_number         bigint                  not null,
+  token_id              bigint                  not null
+);
+comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
+
+-- nft_transfer
+create table if not exists nft_transfer
+(
+  consensus_timestamp   bigint  not null,
+  receiver_account_id   bigint  not null,
+  sender_account_id     bigint  not null,
+  serial_number         bigint  not null,
+  token_id              bigint  not null
+);
+comment on table nft_transfer is 'Crypto account nft transfers';
+
 -- non_fee_transfer
 create table if not exists non_fee_transfer
 (
@@ -228,13 +256,16 @@ create table if not exists token
     initial_supply         bigint                 not null,
     kyc_key                bytea,
     kyc_key_ed25519_hex    varchar                null,
+    max_supply             bigint                 not null default 9223372036854775807, -- max long
     modified_timestamp     bigint                 not null,
     name                   character varying(100) not null,
     supply_key             bytea,
     supply_key_ed25519_hex varchar                null,
+    supply_type            token_supply_type      not null default 'INFINITE',
     symbol                 character varying(100) not null,
     total_supply           bigint                 not null default 0,
     treasury_account_id    bigint                 not null,
+    type                   token_type             not null default 'FUNGIBLE_COMMON',
     wipe_key               bytea,
     wipe_key_ed25519_hex   varchar                null
 );
