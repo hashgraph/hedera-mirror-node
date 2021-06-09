@@ -119,10 +119,17 @@ tag are run. To run a different set of files different tags can be specified
 
 Test Suite Tags
 
-- `@critical` - Test cases to ensure the network is up and running and satisfies base scenarios.
-- `@release` - Test cases to verify a new deployed version satisfies core scenarios and is release worthy.
-- `@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria.
-- `@fullsuite` - All cases - this will require some configuration of feature files.
+- `@critical` - Test cases to ensure the network is up and running and satisfies base scenarios. Total cost to run 31.6
+  ℏ.
+- `@release` - Test cases to verify a new deployed version satisfies core scenarios and is release worthy. Total cost to
+  run 19.2 ℏ.
+- `@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria. Total cost to run 6.5
+  ℏ.
+- `@fullsuite` - All cases - this will require some configuration of feature files and may include some disabled tests
+  that will fail on execution. Total cost to run 33.9 ℏ.
+
+> **_NOTE:_** Any noted total costs are estimates.
+> They will fluctuate with test coverage expansion, improvements and network fee schedule changes.
 
 Feature based Tags
 
