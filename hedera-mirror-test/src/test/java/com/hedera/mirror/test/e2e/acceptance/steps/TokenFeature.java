@@ -279,9 +279,9 @@ public class TokenFeature {
             // as a result to dissociate first delete token
             try {
                 tokenClient.delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
-                tokenId = null;
                 dissociateAccount(sender);
                 dissociateAccount(recipient);
+                tokenId = null;
             } catch (Exception ex) {
                 log.warn("Error cleaning up token {} and associations error: {}", tokenId, ex);
             }
