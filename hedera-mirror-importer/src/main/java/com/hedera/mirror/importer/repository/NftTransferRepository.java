@@ -1,10 +1,8 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
+package com.hedera.mirror.importer.repository;/*
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +18,10 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.util.Arrays;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.CrudRepository;
 
-@Getter
-@RequiredArgsConstructor
-public enum TokenSupplyTypeEnum {
+import com.hedera.mirror.importer.domain.NftTransfer;
 
-    INFINITE(0),
-    FINITE(1);
+public interface NftTransferRepository extends CrudRepository<NftTransfer, NftTransfer.Id> {
 
-    private final int id;
-
-    public static TokenSupplyTypeEnum fromId(int id) {
-        return Arrays.stream(TokenSupplyTypeEnum.values()).filter(tokenTypeEnum -> tokenTypeEnum.id == id)
-                .findFirst()
-                .orElseThrow();
-    }
 }

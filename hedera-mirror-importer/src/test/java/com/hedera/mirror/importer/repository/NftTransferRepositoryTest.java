@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.domain.NftTransfer;
 public class NftTransferRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
-    NFTTransferRepository repository;
+    NftTransferRepository repository;
 
     @Test
     void save() {

@@ -71,6 +71,8 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
@@ -93,6 +95,12 @@ class TransactionSignatureTest {
 
     @Mock
     private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
+
+    @Mock
+    private NftRepository nftExtractionStrategy;
+
+    @Mock
+    private NftTransferRepository nftTransferExtractionStrategy;
 
     @Mock
     private TokenAccountRepository tokenAccountRepository;
@@ -123,7 +131,8 @@ class TransactionSignatureTest {
         EntityProperties entityProperties = new EntityProperties();
         entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
                 addressBookService, entityRepository, nonFeeTransferExtractionStrategy, entityListener,
-                transactionHandlerFactory, tokenRepository, tokenAccountRepository, scheduleRepository);
+                transactionHandlerFactory, tokenRepository, tokenAccountRepository, scheduleRepository,
+                nftExtractionStrategy, nftTransferExtractionStrategy);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()

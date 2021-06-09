@@ -25,6 +25,8 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
@@ -57,6 +59,12 @@ public interface EntityListener {
     }
 
     default void onLiveHash(LiveHash liveHash) throws ImporterException {
+    }
+
+    default void onNft(Nft nft) throws ImporterException {
+    }
+
+    default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {

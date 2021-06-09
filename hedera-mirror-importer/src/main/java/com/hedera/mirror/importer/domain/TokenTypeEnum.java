@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -31,4 +32,9 @@ public enum TokenTypeEnum {
     NON_FUNGIBLE_UNIQUE(1);
 
     private final int id;
+
+    public static TokenTypeEnum fromId(int id) {
+        return Arrays.stream(TokenTypeEnum.values()).filter(tokenTypeEnum -> tokenTypeEnum.id == id).findFirst()
+                .orElseThrow();
+    }
 }

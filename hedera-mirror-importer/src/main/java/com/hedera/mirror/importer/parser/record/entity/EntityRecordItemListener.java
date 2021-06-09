@@ -63,13 +63,17 @@ import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
+import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
@@ -85,6 +89,8 @@ import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
@@ -103,8 +109,13 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final ScheduleRepository scheduleRepository;
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final NftRepository nftRepository;
+    private final NftTransferRepository nftTransferRepository;
     private final Predicate<TransactionFilterFields> transactionFilter;
     private static final String MISSING_TOKEN_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
+            "{} with timestamp {}";
+    //TODO Rewrite, currently copy paste
+    private static final String MISSING_NFT_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
             "{} with timestamp {}";
     private static final String MISSING_TOKEN_ACCOUNT_MESSAGE = "Missing token_account for token {} and account {}, " +
             "unable to persist transaction type {} with timestamp {}";
@@ -115,7 +126,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     EntityListener entityListener,
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     TokenRepository tokenRepository, TokenAccountRepository tokenAccountRepository,
-                                    ScheduleRepository scheduleRepository) {
+                                    ScheduleRepository scheduleRepository, NftRepository nftRepository,
+                                    NftTransferRepository nftTransferRepository) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
         this.entityRepository = entityRepository;
@@ -125,6 +137,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         this.tokenRepository = tokenRepository;
         this.tokenAccountRepository = tokenAccountRepository;
         this.scheduleRepository = scheduleRepository;
+        this.nftRepository = nftRepository;
+        this.nftTransferRepository = nftTransferRepository;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -513,6 +527,21 @@ public class EntityRecordItemListener implements RecordItemListener {
                     tokenBurnTransactionBody.getToken(),
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     recordItem.getConsensusTimestamp());
+
+            //TODO Look into ways to improve efficiency here.
+            if (tokenBurnTransactionBody.getSerialNumbersCount() != 0) {
+                long consensusTimeStamp = recordItem.getConsensusTimestamp();
+                TokenID tokenID = tokenBurnTransactionBody.getToken();
+                tokenBurnTransactionBody.getSerialNumbersList().stream().forEach(serialNumber -> {
+                    Optional<Nft> optionalNFT = retrieveNFT(tokenID, serialNumber, TransactionTypeEnum.TOKENBURN,
+                            consensusTimeStamp);
+                    if (optionalNFT.isPresent()) {
+                        Nft nft = optionalNFT.get();
+                        nft.setDeleted(true);
+                        entityListener.onNft(nft);
+                    }
+                });
+            }
         }
     }
 
@@ -553,6 +582,10 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (tokenCreateTransactionBody.hasWipeKey()) {
                 token.setWipeKey(tokenCreateTransactionBody.getWipeKey().toByteArray());
             }
+
+            token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenType().getNumber()));
+            token.setSupplyType(TokenSupplyTypeEnum.fromId(tokenCreateTransactionBody.getSupplyTypeValue()));
+            token.setMaxSupply(tokenCreateTransactionBody.getMaxSupply());
 
             entityListener.onToken(token);
         }
@@ -628,6 +661,20 @@ public class EntityRecordItemListener implements RecordItemListener {
                     tokenMintTransactionBody.getToken(),
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     recordItem.getConsensusTimestamp());
+
+            if (recordItem.getRecord().getReceipt().getSerialNumbersCount() != 0) {
+                long consensusTimeStamp = recordItem.getConsensusTimestamp();
+                TokenID tokenID = tokenMintTransactionBody.getToken();
+                recordItem.getRecord().getReceipt().getSerialNumbersList().stream().forEach(serialNumber -> {
+                    Optional<Nft> optionalNFT = retrieveNFT(tokenID, serialNumber, TransactionTypeEnum.TOKENBURN,
+                            consensusTimeStamp);
+                    if (optionalNFT.isPresent()) {
+                        Nft nft = optionalNFT.get();
+                        nft.setDeleted(true);
+                        entityListener.onNft(nft);
+                    }
+                });
+            }
         }
     }
 
@@ -664,6 +711,16 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     entityListener.onTokenTransfer(new TokenTransfer(consensusTimeStamp, accountAmount
                             .getAmount(), tokenId, accountId));
+                });
+
+                tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
+                    EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
+                    entityListener.onEntityId(receiverId);
+                    EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
+                    entityListener.onEntityId(senderId);
+
+                    entityListener.onNftTransfer(new NftTransfer(consensusTimeStamp, tokenId, nftTransfer
+                            .getSerialNumber(), receiverId, senderId));
                 });
             });
         }
@@ -778,6 +835,18 @@ public class EntityRecordItemListener implements RecordItemListener {
         return optionalToken;
     }
 
+    private Optional<Nft> retrieveNFT(TokenID tokenID, long serialNumber, TransactionTypeEnum transactionTypeEnum,
+                                      long currentTransactionTimestamp) {
+        Optional<Nft> optionalNft = nftRepository
+                .findByTokenIdAndSerialNumber(new Token.Id(EntityId.of(tokenID)), serialNumber);
+
+        if (optionalNft.isEmpty()) {
+            log.warn(MISSING_NFT_MESSAGE, tokenID, serialNumber, transactionTypeEnum, currentTransactionTimestamp);
+        }
+
+        return optionalNft;
+    }
+
     private void insertScheduleCreate(RecordItem recordItem) {
         if (entityProperties.getPersist().isSchedules()) {
             ScheduleCreateTransactionBody scheduleCreateTransactionBody = recordItem.getTransactionBody()
@@ -802,7 +871,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
-                                          List<SignaturePair> signaturePairList) {
+                                             List<SignaturePair> signaturePairList) {
         HashSet<ByteString> publicKeyPrefixes = new HashSet<>();
         signaturePairList.forEach(signaturePair -> {
             // currently only Ed25519 signature is supported

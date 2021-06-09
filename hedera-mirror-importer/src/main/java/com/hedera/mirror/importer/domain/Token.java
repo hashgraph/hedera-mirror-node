@@ -73,7 +73,7 @@ public class Token {
     private String kycKeyEd25519Hex;
 
     @Min(0)
-    private long maxSSupply;
+    private long maxSupply;
 
     private long modifiedTimestamp;
 

@@ -1,4 +1,6 @@
-package com.hedera.mirror.importer.repository;/*
+package com.hedera.mirror.importer.repository;
+
+/*-
  * ‌
  * Hedera Mirror Node
  * ​
@@ -18,10 +20,13 @@ package com.hedera.mirror.importer.repository;/*
  * ‍
  */
 
+import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.Token;
 
-public interface NFTTransferRepository extends CrudRepository<NftTransfer, NftTransfer.Id> {
+public interface NftRepository extends CrudRepository<Nft, Long> {
 
+    Optional<Nft> findByTokenIdAndSerialNumber(Token.Id tokenId, long serialNumber);
 }
