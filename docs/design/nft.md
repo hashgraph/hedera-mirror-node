@@ -23,7 +23,7 @@ the mirror node can be updated to add support for NFTs.
 
 - Update `t_transaction_results` with new response codes
 
-- Add to `token` table fields `type` (enum, values `FUNGIBLE_COMMON` and `NON_FUNGIBLE_UNIQUE`), `token_supply_type` (
+- Add to `token` table fields `type` (enum, values `FUNGIBLE_COMMON` and `NON_FUNGIBLE_UNIQUE`), `supply_type` (
   enum, values `INFINITE` and `FINITE`), and `max_supply` (bigint).
   - Default values will be `FUNGIBLE_COMMON`, `INFINITE`, and max long, respectively.
 

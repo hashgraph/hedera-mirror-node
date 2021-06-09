@@ -57,8 +57,10 @@ db:
     username: mirror_node
 
 global:
+  hostname: ""
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
 grpc:
