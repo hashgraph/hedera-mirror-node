@@ -1,4 +1,4 @@
-name: Release Development
+name: Release Integration
 
 on:
   push:

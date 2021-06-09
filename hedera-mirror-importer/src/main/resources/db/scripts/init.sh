@@ -3,10 +3,11 @@ set -e
 
 PGCONF="${PGCONF:-/var/lib/postgresql/data}"
 PGHBA="${PGCONF}/pg_hba.conf"
-USER_SQL="alter user :ownerUsername with createrole;"
+DB_SPECIFIC_SQL="alter user :ownerUsername with createrole;"
 
+# TimescaleDB v2 schema no longer creates the REST API user, while v1 schema still does
 if [[ "${TIMESCALEDB}" == "true" ]]; then
-  USER_SQL="create user :restUsername with login password :'restPassword' in role readonly;"
+  DB_SPECIFIC_SQL="create user :restUsername with login password :'restPassword' in role readonly;"
 fi
 
 cp "${PGHBA}" "${PGHBA}.bak"
@@ -44,7 +45,7 @@ create role readwrite in role readonly;
 create user :grpcUsername with login password :'grpcPassword' in role readonly;
 create user :importerUsername with login password :'importerPassword' in role readwrite;
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
-${USER_SQL}
+${DB_SPECIFIC_SQL}
 
 \connect :dbName
 alter schema public owner to :ownerUsername;

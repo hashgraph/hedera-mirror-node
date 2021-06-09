@@ -46,8 +46,8 @@ $ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enab
 
 ### Non-Production Environments
 
-When running against a network other than a public network (e.g., demo/previewnet/testnet/mainnet), the network must be
-updated with an initial address book file prior to deploying the chart.
+When running against a network other than a public network (e.g., demo, previewnet, testnet, or mainnet), the network
+must be updated with an initial address book file prior to deploying the chart.
 
 1. First acquire the address book file and encode its contents to Base64:
 
@@ -154,7 +154,7 @@ helm test "${RELEASE} " --timeout 10m
 All the public APIs can be accessed via a single IP. First, get the load balancer IP address:
 
 ```shell script
-export SERVICE_IP=$(kubectl get service -n common "${RELEASE}-traefik" -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+export SERVICE_IP=$(kubectl get service "${RELEASE}-traefik" -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
 ```
 
 To access the GRPC API (using [grpcurl](https://github.com/fullstorydev/grpcurl)):
@@ -172,7 +172,7 @@ curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
 To view the Grafana dashboard:
 
 ```shell
-kubectl port-forward -n common service/${RELEASE}-grafana 8080:80 &
+kubectl port-forward service/${RELEASE}-grafana 8080:80 &
 open "http://localhost:8080"
 ```
 
@@ -238,6 +238,6 @@ silence or suppress the alert it will need to be done via the AlertManager UI. T
 via kubectl:
 
 ```shell script
-kubectl port-forward -n common service/${RELEASE}-prometheus-alertmanager 9093:9093 &
+kubectl port-forward service/${RELEASE}-prometheus-alertmanager 9093:9093 &
 open http://localhost:9093
 ```
