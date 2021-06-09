@@ -95,17 +95,11 @@ public class TokenFeature {
                 TokenKycStatus.KycNotApplicable_VALUE);
     }
 
-    @Given("I successfully onboard a new token account with freeze status {int} and kyc status {int}")
+    @Given("I successfully create a new token account with freeze status {int} and kyc status {int}")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewToken(int freezeStatus, int kycStatus) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
-    }
-
-    @Given("I successfully onboard a new token account")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void onboardNewTokenAccount() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        onboardNewTokenAccount(TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I associate with token")
@@ -149,7 +143,7 @@ public class TokenFeature {
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void fundPayerAccountWithTokens(int amount) throws PrecheckStatusException, ReceiptStatusException,
             TimeoutException {
-        transferTokens(tokenId, amount, accountClient.getTokenTreasuryAccount(), tokenClient.getSdkClient()
+        transferTokens(tokenId, amount, recipient, tokenClient.getSdkClient()
                 .getOperatorId());
     }
 
@@ -276,11 +270,13 @@ public class TokenFeature {
     }
 
     @After
-    public void dissociateAccounts() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void dissociateAccounts() {
         // dissociate all applicable accounts from token to reduce likelihood of max token association error
-        dissociateAccount(accountClient.getTokenTreasuryAccount());
-        dissociateAccount(sender);
-        dissociateAccount(recipient);
+        if (tokenId != null) {
+            dissociateAccount(tokenClient.getSdkClient().getExpandedOperatorAccountId());
+            dissociateAccount(sender);
+            dissociateAccount(recipient);
+        }
     }
 
     private void dissociateAccount(ExpandedAccountId accountId) {
@@ -299,12 +295,13 @@ public class TokenFeature {
         PublicKey tokenPublicKey = tokenKey.getPublicKey();
         log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
 
+        sender = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 symbol,
                 freezeStatus,
                 kycStatus,
-                accountClient.getTokenTreasuryAccount(),
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 INITIAL_SUPPLY);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());

@@ -237,7 +237,7 @@ public class ScheduleFeature {
         // create topic w submit key
         log.debug("Create new topic with {}'s submit key", accountName);
         networkTransactionResponse = topicClient
-                .createTopic(accountClient.getTokenTreasuryAccount(), submitAdmin.getPublicKey());
+                .createTopic(scheduleClient.getSdkClient().getExpandedOperatorAccountId(), submitAdmin.getPublicKey());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
