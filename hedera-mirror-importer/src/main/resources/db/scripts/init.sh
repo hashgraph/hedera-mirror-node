@@ -1,15 +1,16 @@
 #!/bin/bash
 set -e
 
-CONF="/var/lib/postgresql/data/pg_hba.conf"
+PGCONF="${PGCONF:-/var/lib/postgresql/data}"
+PGHBA="${PGCONF}/pg_hba.conf"
 USER_SQL="alter user :ownerUsername with createrole;"
 
 if [[ "${TIMESCALEDB}" == "true" ]]; then
   USER_SQL="create user :restUsername with login password :'restPassword' in role readonly;"
 fi
 
-cp "${CONF}" "${CONF}.bak"
-echo "local all all trust" > "${CONF}"
+cp "${PGHBA}" "${PGHBA}.bak"
+echo "local all all trust" > "${PGHBA}"
 pg_ctl reload
 
 psql -d "user=postgres connect_timeout=3" \
@@ -73,5 +74,5 @@ alter default privileges in schema :dbSchema grant usage on sequences to readwri
 alter database :dbName set search_path = :dbSchema, public;
 __SQL__
 
-mv "${CONF}.bak" "${CONF}"
+mv "${PGHBA}.bak" "${PGHBA}"
 pg_ctl reload
