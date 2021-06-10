@@ -20,16 +20,16 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.util.Utility;
 
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class AbstractStreamFileParser<T extends StreamFile> implements StreamFileParser<T> {
 
     protected final ParserProperties parserProperties;
-
-    public AbstractStreamFileParser(ParserProperties parserProperties) {
-        this.parserProperties = parserProperties;
-    }
 
     public void parse(T streamFile) {
         if (parserProperties.isEnabled()) {
