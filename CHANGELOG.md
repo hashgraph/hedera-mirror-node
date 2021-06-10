@@ -1,3 +1,86 @@
+# Hedera Mirror Node Changelog
+
+## 0.35.0 (2021-06-10)
+
+
+
+### Enhancements
+
+- Add a monitor service & change threads property [#2065](https://github.com/hashgraph/hedera-mirror-node/pull/2065)
+- Support liveness probe delay flyway [#2051](https://github.com/hashgraph/hedera-mirror-node/pull/2051)
+- Various production improvements [#2029](https://github.com/hashgraph/hedera-mirror-node/pull/2029)
+- Show rosetta container log when validation fails [#2022](https://github.com/hashgraph/hedera-mirror-node/pull/2022)
+- Simplify NodeSignatureVerifier statusMap [#2016](https://github.com/hashgraph/hedera-mirror-node/pull/2016)
+- Improve automated release process [#2003](https://github.com/hashgraph/hedera-mirror-node/pull/2003)
+- Helm acceptance tests [#2002](https://github.com/hashgraph/hedera-mirror-node/pull/2002)
+- Bump versions for v0.35.0-SNAPSHOT [#1999](https://github.com/hashgraph/hedera-mirror-node/pull/1999)
+- Streamfile parsing health check [#1993](https://github.com/hashgraph/hedera-mirror-node/pull/1993)
+- Upgrade to latest rosetta sdk [#1975](https://github.com/hashgraph/hedera-mirror-node/pull/1975)
+- Monitor Subscriber REST API [#1937](https://github.com/hashgraph/hedera-mirror-node/issues/1937)
+- Upgrade to latest Rosetta SDK [#1918](https://github.com/hashgraph/hedera-mirror-node/issues/1918)
+- Helm acceptance tests [#1917](https://github.com/hashgraph/hedera-mirror-node/issues/1917)
+- Support using liveness probes for importer [#1898](https://github.com/hashgraph/hedera-mirror-node/issues/1898)
+- Add file processing status to importer health checks [#1892](https://github.com/hashgraph/hedera-mirror-node/issues/1892)
+
+### Bug Fixes
+
+- Add shebang to fix husky pre-commit hook on windows [#2062](https://github.com/hashgraph/hedera-mirror-node/pull/2062)
+- Optimize rest account balance query [#2060](https://github.com/hashgraph/hedera-mirror-node/pull/2060)
+- fix semantic error for openapi.yml [#2053](https://github.com/hashgraph/hedera-mirror-node/pull/2053)
+- Git pre-commit fails on windows [#2052](https://github.com/hashgraph/hedera-mirror-node/issues/2052)
+- Rename windows-incompatible files [#2028](https://github.com/hashgraph/hedera-mirror-node/pull/2028)
+- Git checkout fails on windows [#2027](https://github.com/hashgraph/hedera-mirror-node/issues/2027)
+- Fix accounts REST API with DER encoded public key [#2026](https://github.com/hashgraph/hedera-mirror-node/pull/2026)
+- Account REST API doesn't support ED25519 DER encoded prefix [#2025](https://github.com/hashgraph/hedera-mirror-node/issues/2025)
+- Slow get single account balance and token balances query [#2020](https://github.com/hashgraph/hedera-mirror-node/issues/2020)
+- Fix TopicMessageServiceTest.startTimeAfterNow [#2005](https://github.com/hashgraph/hedera-mirror-node/pull/2005)
+- Workaround lack of TLS support in SDK & acceptance test cleanup [#2000](https://github.com/hashgraph/hedera-mirror-node/pull/2000)
+
+### Dependency Upgrades
+
+- Bump aws-sdk from 2.913.0 to 2.918.0 in /hedera-mirror-rest [#2050](https://github.com/hashgraph/hedera-mirror-node/pull/2050)
+- Bump eslint-plugin-import from 2.23.3 to 2.23.4 in /hedera-mirror-rest [#2049](https://github.com/hashgraph/hedera-mirror-node/pull/2049)
+- Bump mathjs from 9.4.0 to 9.4.1 in /hedera-mirror-rest [#2048](https://github.com/hashgraph/hedera-mirror-node/pull/2048)
+- Bump github.com/caarlos0/env/v6 from 6.6.0 to 6.6.2 in /hedera-mirror-rosetta [#2047](https://github.com/hashgraph/hedera-mirror-node/pull/2047)
+- Bump jest from 26.6.3 to 27.0.3 in /hedera-mirror-rest/check-state-proof [#2046](https://github.com/hashgraph/hedera-mirror-node/pull/2046)
+- Bump jest-circus from 26.6.3 to 27.0.3 in /hedera-mirror-rest [#2045](https://github.com/hashgraph/hedera-mirror-node/pull/2045)
+- Bump sinon from 10.0.0 to 11.1.1 in /hedera-mirror-rest [#2044](https://github.com/hashgraph/hedera-mirror-node/pull/2044)
+- Bump jest-junit from 12.0.0 to 12.1.0 in /hedera-mirror-rest [#2043](https://github.com/hashgraph/hedera-mirror-node/pull/2043)
+- Bump jest from 26.6.3 to 27.0.3 in /hedera-mirror-rest [#2042](https://github.com/hashgraph/hedera-mirror-node/pull/2042)
+- Bump mathjs from 9.4.0 to 9.4.1 in /hedera-mirror-rest/monitoring/monitor_apis [#2041](https://github.com/hashgraph/hedera-mirror-node/pull/2041)
+- Bump testcontainers from 7.11.0 to 7.11.1 in /hedera-mirror-rest [#2040](https://github.com/hashgraph/hedera-mirror-node/pull/2040)
+- Bump dependency-check-maven from 6.1.6 to 6.2.0 [#2038](https://github.com/hashgraph/hedera-mirror-node/pull/2038)
+- Bump software.amazon.awssdk:bom from 2.16.63 to 2.16.74 [#2037](https://github.com/hashgraph/hedera-mirror-node/pull/2037)
+- Bump protobuf-java from 3.17.0 to 3.17.1 [#2036](https://github.com/hashgraph/hedera-mirror-node/pull/2036)
+- Bump commons-io from 2.8.0 to 2.9.0 [#2035](https://github.com/hashgraph/hedera-mirror-node/pull/2035)
+- Bump ws from 7.4.4 to 7.4.6 in /hedera-mirror-rest/check-state-proof [#2034](https://github.com/hashgraph/hedera-mirror-node/pull/2034)
+- Bump spring-cloud-dependencies from 2020.0.2 to 2020.0.3 [#2033](https://github.com/hashgraph/hedera-mirror-node/pull/2033)
+- Bump springdoc-openapi-webflux-ui from 1.5.8 to 1.5.9 [#2032](https://github.com/hashgraph/hedera-mirror-node/pull/2032)
+- Bump ws from 7.4.0 to 7.4.6 in /hedera-mirror-rest/monitoring/monitor_apis [#2031](https://github.com/hashgraph/hedera-mirror-node/pull/2031)
+- Bump ws from 7.4.0 to 7.4.6 in /hedera-mirror-rest [#2030](https://github.com/hashgraph/hedera-mirror-node/pull/2030)
+- Bump aws-sdk from 2.907.0 to 2.913.0 in /hedera-mirror-rest [#2019](https://github.com/hashgraph/hedera-mirror-node/pull/2019)
+- Bump browserslist from 4.16.3 to 4.16.6 in /hedera-mirror-rest/check-state-proof [#2018](https://github.com/hashgraph/hedera-mirror-node/pull/2018)
+- Bump grpc.version from 1.37.1 to 1.38.0 [#2013](https://github.com/hashgraph/hedera-mirror-node/pull/2013)
+- Bump reporting-plugin from 4.0.102 to 4.0.103 [#2012](https://github.com/hashgraph/hedera-mirror-node/pull/2012)
+- Bump docker-maven-plugin from 0.35.0 to 0.36.0 [#2011](https://github.com/hashgraph/hedera-mirror-node/pull/2011)
+- Bump `@godaddy`/terminus from 4.7.2 to 4.8.0 in /hedera-mirror-rest [#2010](https://github.com/hashgraph/hedera-mirror-node/pull/2010)
+- Bump testcontainers from 7.10.0 to 7.11.0 in /hedera-mirror-rest [#2009](https://github.com/hashgraph/hedera-mirror-node/pull/2009)
+- Bump eslint-plugin-import from 2.23.2 to 2.23.3 in /hedera-mirror-rest [#2007](https://github.com/hashgraph/hedera-mirror-node/pull/2007)
+- Bump github.com/caarlos0/env/v6 from 6.5.0 to 6.6.0 in /hedera-mirror-rosetta [#2001](https://github.com/hashgraph/hedera-mirror-node/pull/2001)
+
+### Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@si618](https://github.com/si618)
+- [@hedera-github-bot](https://github.com/hedera-github-bot)
+- [@xin-hedera](https://github.com/xin-hedera)
+- [@Nana-EC](https://github.com/Nana-EC)
+- [@dependabot[bot]](https://github.com/apps/dependabot)
+- [@ijungmann](https://github.com/ijungmann)
+- [@steven-sheehy](https://github.com/steven-sheehy)
+- [@safinbot](https://github.com/safinbot)
+
 # Changelog
 
 Besides bug fixes, some features may have changed with this release which need your attention, these will be listed here.
