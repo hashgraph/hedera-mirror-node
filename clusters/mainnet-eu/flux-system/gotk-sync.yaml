@@ -7,7 +7,7 @@ metadata:
 spec:
   interval: 1m0s
   ref:
-    branch: deploy-flux2
+    branch: deploy
   secretRef:
     name: flux-system
   url: ssh://git@github.com/hashgraph/hedera-mirror-node
