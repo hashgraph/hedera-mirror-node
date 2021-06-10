@@ -263,7 +263,6 @@ func (tr *transactionRepository) findTokenTransfersAsc(timestamps []int64) []tok
 }
 
 func (tr *transactionRepository) findTransfersAsc(query string, timestamps []int64, out interface{}) {
-	// timestampsStr := intsToString(timestamps)
 	tr.dbClient.Raw(query, sql.Named("timestamps", timestamps)).Find(out)
 }
 
