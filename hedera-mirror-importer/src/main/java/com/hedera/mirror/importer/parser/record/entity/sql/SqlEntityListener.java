@@ -62,7 +62,6 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.EntityIdRepositoryCustomImpl;
 import com.hedera.mirror.importer.repository.EntityRepositoryCustomImpl;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepositoryCustomImpl;
@@ -91,7 +90,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<Transaction> transactionPgCopy;
     private final PgCopy<TransactionSignature> transactionSignaturePgCopy;
 
-    private final UpsertPgCopy<Entity> entityIdPgCopy;
     private final UpsertPgCopy<Entity> entityPgCopy;
     private final UpsertPgCopy<Schedule> schedulePgCopy;
     private final UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
@@ -111,7 +109,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // maps of upgradable domains
     private final Map<Long, Entity> entities;
-    private final Map<Long, Entity> entityIdEntities;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<TokenAccountId, TokenAccount> tokenAccounts;
@@ -121,7 +118,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              ApplicationEventPublisher eventPublisher,
                              EntityRepositoryCustomImpl entityRepositoryCustom,
-                             EntityIdRepositoryCustomImpl entityIdRepositoryCustom,
                              ScheduleRepositoryCustomImpl scheduleRepositoryCustom,
                              TokenRepositoryCustomImpl tokenRepositoryCustom,
                              TokenAccountRepositoryCustomImpl tokenAccountRepositoryCustom) {
@@ -143,8 +139,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         // updatable tables
         entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, entityRepositoryCustom);
-        entityIdPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
-                entityIdRepositoryCustom);
         schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
                 scheduleRepositoryCustom);
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
@@ -162,7 +156,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
-        entityIdEntities = new HashMap<>();
         entities = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
@@ -196,7 +189,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractResults.clear();
         cryptoTransfers.clear();
         entities.clear();
-        entityIdEntities.clear();
         entityIds.clear();
         fileData.clear();
         liveHashes.clear();
@@ -234,7 +226,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert operations with conflict management for updates
             entityPgCopy.copy(entities.values(), connection);
-            entityIdPgCopy.copy(entityIdEntities.values(), connection);
             schedulePgCopy.copy(schedules.values(), connection);
             tokenPgCopy.copy(tokens.values(), connection);
             tokenAccountPgCopy.copy(tokenAccounts.values(), connection);

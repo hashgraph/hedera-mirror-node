@@ -36,7 +36,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class UtilityTest {
 
@@ -56,6 +55,18 @@ class UtilityTest {
     void convertSimpleKeyToHexWhenEd25519() throws Exception {
         var bytes = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build().toByteArray();
         assertThat(Utility.convertSimpleKeyToHex(bytes)).isEqualTo(ED25519);
+    }
+
+    @Test
+    void convertDefaultInstanceKeyToHex() {
+        byte[] keyBytes = Key.getDefaultInstance().toByteArray();
+        assertThat(Utility.convertSimpleKeyToHex(keyBytes)).isEmpty();
+    }
+
+    @Test
+    void convertEmptyKeyToHex() {
+        byte[] keyBytes = Key.newBuilder().setEd25519(ByteString.EMPTY).build().toByteArray();
+        assertThat(Utility.convertSimpleKeyToHex(keyBytes)).isEmpty();
     }
 
     @Test
