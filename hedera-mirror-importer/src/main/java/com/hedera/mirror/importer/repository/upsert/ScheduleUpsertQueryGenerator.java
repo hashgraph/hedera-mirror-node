@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.repository.upsert;
 
 /*-
  * ‌
@@ -30,7 +30,7 @@ import com.hedera.mirror.importer.domain.Schedule_;
 
 @Named
 @RequiredArgsConstructor
-public class ScheduleRepositoryCustomImpl extends AbstractUpdatableDomainRepositoryCustom<Schedule_> {
+public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Schedule_> {
     public static final String TABLE = "schedule";
     public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(Schedule_.SCHEDULE_ID);

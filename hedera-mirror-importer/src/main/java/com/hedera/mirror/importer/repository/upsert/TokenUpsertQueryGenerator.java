@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.repository.upsert;
 
 /*-
  * ‌
@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.domain.Token_;
 
 @Named
 @RequiredArgsConstructor
-public class TokenRepositoryCustomImpl extends AbstractUpdatableDomainRepositoryCustom<Token_> {
+public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Token_> {
     public static final String TABLE = "token";
     public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(TokenId_.TOKEN_ID);

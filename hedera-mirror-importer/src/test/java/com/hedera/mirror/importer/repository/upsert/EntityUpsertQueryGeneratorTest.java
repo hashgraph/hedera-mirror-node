@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.repository.upsert;
 
 /*-
  * ‌
@@ -25,12 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-class EntityRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest {
+class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Resource
-    private EntityRepositoryCustomImpl entityRepositoryCustom;
+    private EntityUpsertQueryGenerator entityRepositoryCustom;
 
     @Override
-    public UpdatableDomainRepositoryCustom getUpdatableDomainRepositoryCustom() {
+    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
         return entityRepositoryCustom;
     }
 

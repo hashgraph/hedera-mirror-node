@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.repository.upsert;
 
 /*-
  * ‌
@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.domain.Token_;
 
 @Named
 @RequiredArgsConstructor
-public class TokenAccountRepositoryCustomImpl extends AbstractUpdatableDomainRepositoryCustom<TokenAccount_> {
+public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerator<TokenAccount_> {
     public static final String TABLE = "token_account";
     public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(TokenAccountId_.TOKEN_ID,
@@ -68,9 +68,9 @@ public class TokenAccountRepositoryCustomImpl extends AbstractUpdatableDomainRep
         StringBuilder insertWhereQueryBuilder = new StringBuilder();
 
         // ignore entries where token not in db
-        insertWhereQueryBuilder.append(String.format(" join %s on %s = %s", TokenRepositoryCustomImpl.TABLE,
+        insertWhereQueryBuilder.append(String.format(" join %s on %s = %s", TokenUpsertQueryGenerator.TABLE,
                 getTableColumnName(getTemporaryTableName(), Token_.TOKEN_ID),
-                getTableColumnName(TokenRepositoryCustomImpl.TABLE, TokenAccountId_.TOKEN_ID)));
+                getTableColumnName(TokenUpsertQueryGenerator.TABLE, TokenAccountId_.TOKEN_ID)));
 
         // ignore entries where token not in db
         insertWhereQueryBuilder.append(String.format(" where %s is not null ",

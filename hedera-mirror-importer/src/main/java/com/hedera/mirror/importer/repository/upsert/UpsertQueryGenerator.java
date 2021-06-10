@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.repository.upsert;
 
 /*-
  * ‌
@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.repository;
 import java.util.List;
 import javax.persistence.metamodel.SingularAttribute;
 
-public interface UpdatableDomainRepositoryCustom {
+public interface UpsertQueryGenerator {
     List<String> getConflictIdColumns();
 
     String getCreateTempTableQuery();

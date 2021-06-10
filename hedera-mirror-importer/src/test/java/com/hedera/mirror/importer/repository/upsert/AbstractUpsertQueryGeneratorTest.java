@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.repository.upsert;
 
 /*-
  * ‌
@@ -25,10 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
+import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
 
-public abstract class AbstractRepositoryCustomImplTest extends AbstractRepositoryTest {
+public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
 
-    protected abstract UpdatableDomainRepositoryCustom getUpdatableDomainRepositoryCustom();
+    protected abstract UpsertQueryGenerator getUpdatableDomainRepositoryCustom();
 
     protected abstract String getInsertQuery();
 

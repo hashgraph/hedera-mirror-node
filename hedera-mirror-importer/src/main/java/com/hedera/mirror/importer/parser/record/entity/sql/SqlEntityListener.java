@@ -62,11 +62,11 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.EntityRepositoryCustomImpl;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.ScheduleRepositoryCustomImpl;
-import com.hedera.mirror.importer.repository.TokenAccountRepositoryCustomImpl;
-import com.hedera.mirror.importer.repository.TokenRepositoryCustomImpl;
+import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.TokenAccountUpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
 @Log4j2
 @Named
@@ -117,10 +117,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              ApplicationEventPublisher eventPublisher,
-                             EntityRepositoryCustomImpl entityRepositoryCustom,
-                             ScheduleRepositoryCustomImpl scheduleRepositoryCustom,
-                             TokenRepositoryCustomImpl tokenRepositoryCustom,
-                             TokenAccountRepositoryCustomImpl tokenAccountRepositoryCustom) {
+                             EntityUpsertQueryGenerator entityUpsertQueryGenerator,
+                             ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator,
+                             TokenUpsertQueryGenerator tokenUpsertQueryGenerator,
+                             TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
@@ -138,13 +138,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, recordParserProperties);
 
         // updatable tables
-        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties, entityRepositoryCustom);
+        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
+                entityUpsertQueryGenerator);
         schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
-                scheduleRepositoryCustom);
+                scheduleUpsertQueryGenerator);
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
-                tokenAccountRepositoryCustom);
+                tokenAccountUpsertQueryGenerator);
         tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
-                tokenRepositoryCustom);
+                tokenUpsertQueryGenerator);
 
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();

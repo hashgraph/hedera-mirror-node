@@ -31,7 +31,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.repository.UpdatableDomainRepositoryCustom;
+import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 
 /**
  * Stateless writer to upsert rows into PostgreSQL using COPY into a temp table then insert and update into final table
@@ -48,12 +48,12 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
 //    protected Timer copyDurationMetric;
 
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
-                        UpdatableDomainRepositoryCustom updatableDomainRepositoryCustom) {
-        super(entityClass, meterRegistry, properties, updatableDomainRepositoryCustom.getTemporaryTableName());
-        createTempTableSql = updatableDomainRepositoryCustom.getCreateTempTableQuery();
-        finalTableName = updatableDomainRepositoryCustom.getTableName();
-        insertSql = updatableDomainRepositoryCustom.getInsertQuery();
-        updateSql = updatableDomainRepositoryCustom.getUpdateQuery();
+                        UpsertQueryGenerator upsertQueryGenerator) {
+        super(entityClass, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
+        createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
+        finalTableName = upsertQueryGenerator.getTableName();
+        insertSql = upsertQueryGenerator.getInsertQuery();
+        updateSql = upsertQueryGenerator.getUpdateQuery();
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert parsed transactions information into table")
                 .tag("table", finalTableName)
