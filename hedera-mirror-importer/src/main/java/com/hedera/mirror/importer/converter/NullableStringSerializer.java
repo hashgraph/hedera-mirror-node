@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.UUID;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 
 @Log4j2
 @Named
@@ -36,6 +37,6 @@ public class NullableStringSerializer extends JsonSerializer<String> {
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         // empty strings are serialized as null, set to reserved space character and rely on db update sql to parse
-        gen.writeString(value.equals("") ? String.valueOf(NULLABLE_STRING_REPLACEMENT) : value);
+        gen.writeString(StringUtils.EMPTY.equals(value) ? NULLABLE_STRING_REPLACEMENT : value);
     }
 }

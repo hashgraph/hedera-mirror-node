@@ -34,6 +34,15 @@ class NullableStringSerializerTest {
     JsonGenerator jsonGenerator;
 
     @Test
+    void testNull() throws Exception {
+        // when
+        new NullableStringSerializer().serialize(null, jsonGenerator, null);
+
+        // then
+        verify(jsonGenerator).writeString((String) null);
+    }
+
+    @Test
     void testEmptyString() throws Exception {
         // when
         new NullableStringSerializer().serialize("", jsonGenerator, null);
