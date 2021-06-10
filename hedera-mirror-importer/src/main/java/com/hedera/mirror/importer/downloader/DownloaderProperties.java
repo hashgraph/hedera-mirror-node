@@ -33,29 +33,33 @@ public interface DownloaderProperties {
 
     MirrorProperties getMirrorProperties();
 
+    String getPrefix();
+
+    default Path getSignaturesPath() {
+        return getStreamPath().resolve(getStreamType().getSignatures());
+    }
+
+    Path getStreamPath();
+
+    StreamType getStreamType();
+
     /**
      * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes
      * change
      */
     int getThreads();
 
-    String getPrefix();
-
-    Path getStreamPath();
-
-    StreamType getStreamType();
-
-    default Path getSignaturesPath() {
-        return getStreamPath().resolve(getStreamType().getSignatures());
-    }
-
     boolean isEnabled();
+
+    boolean isKeepBytes();
+
+    boolean isKeepSignatures();
 
     void setBatchSize(int batchSize);
 
     void setEnabled(boolean enabled);
 
-    boolean isKeepSignatures();
+    void setKeepBytes(boolean keepBytes);
 
     void setKeepSignatures(boolean keepSignatures);
 }

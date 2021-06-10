@@ -40,7 +40,7 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-public class AccountBalanceFile implements StreamFile {
+public class AccountBalanceFile implements StreamFile<AccountBalance> {
 
     @ToString.Exclude
     private byte[] bytes;

@@ -40,6 +40,4 @@ public interface ParserProperties {
     boolean isEnabled();
 
     boolean isKeepFiles();
-
-    boolean isPersistBytes();
 }

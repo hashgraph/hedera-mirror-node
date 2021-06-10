@@ -413,6 +413,9 @@ public abstract class Downloader<T extends StreamFile> {
                     StreamFileData streamFileData = new StreamFileData(dataFilename, pendingDownload.getBytes());
                     T streamFile = streamFileReader.read(streamFileData);
                     streamFile.setNodeAccountId(signature.getNodeAccountId());
+                    if (!downloaderProperties.isKeepBytes()) {
+                        streamFile.setBytes(null);
+                    }
 
                     verify(streamFile, signature);
 

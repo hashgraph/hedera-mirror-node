@@ -43,16 +43,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.parser.StreamFileParser;
+import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @MessageEndpoint
 @ConditionalOnRecordParser
-public class RecordFileParser implements StreamFileParser<RecordFile> {
+public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
-    private final RecordParserProperties parserProperties;
+//    private final RecordParserProperties parserProperties;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -69,7 +69,7 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
                             RecordItemListener recordItemListener,
                             RecordStreamFileListener recordStreamFileListener,
                             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        this.parserProperties = parserProperties;
+        super(parserProperties);
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
@@ -137,10 +137,11 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
     )
     @Transactional
     public void parse(RecordFile recordFile) {
-        if (!parserProperties.isEnabled()) {
-            return;
-        }
+        super.parse(recordFile);
+    }
 
+    @Override
+    protected void parseStreamFile(RecordFile recordFile) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
                 .getDateRangeFilter(parserProperties.getStreamType());
@@ -155,18 +156,9 @@ public class RecordFileParser implements StreamFileParser<RecordFile> {
                 }
             });
 
-            byte[] bytes = recordFile.getBytes();
-            if (!parserProperties.isPersistBytes()) {
-                recordFile.setBytes(null);
-            }
-
             Instant loadEnd = Instant.now();
             recordFile.setLoadEnd(loadEnd.getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
-
-            if (parserProperties.isKeepFiles()) {
-                Utility.archiveFile(recordFile.getName(), bytes, parserProperties.getParsedPath());
-            }
 
             Instant consensusEnd = Instant.ofEpochSecond(0L, recordFile.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusEnd, loadEnd));

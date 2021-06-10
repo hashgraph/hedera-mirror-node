@@ -28,8 +28,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -58,6 +56,7 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -95,16 +94,16 @@ class RecordFileParserTest {
     void parse() throws Exception {
         // given
         RecordFile recordFile = recordFile();
+        RecordItem firstItem = recordFile.getItems().get(0);
 
         // when
         recordFileParser.parse(recordFile);
 
         // then
-        verify(recordItemListener).onItem(recordFile.getItems().get(0));
+        verify(recordItemListener).onItem(firstItem);
         verify(recordStreamFileListener).onEnd(recordFile);
         verify(recordStreamFileListener, never()).onError();
-        assertFilesArchived();
-        assertThat(recordFile.getBytes()).isNull();
+        assertPostParseState(recordFile, true);
     }
 
     @Test
@@ -119,23 +118,7 @@ class RecordFileParserTest {
 
         // then
         verify(recordStreamFileListener, never()).onStart();
-        assertFilesArchived();
-    }
-
-    @Test
-    void persistBytes() throws Exception {
-        // given
-        parserProperties.setPersistBytes(true);
-        RecordFile recordFile = recordFile();
-
-        // when
-        recordFileParser.parse(recordFile);
-
-        // then
-        verify(recordItemListener).onItem(recordFile.getItems().get(0));
-        verify(recordStreamFileListener).onEnd(recordFile);
-        verify(recordStreamFileListener, never()).onError();
-        assertThat(recordFile.getBytes()).isNotNull();
+        assertPostParseState(recordFile, true);
     }
 
     @Test
@@ -143,15 +126,16 @@ class RecordFileParserTest {
         // given
         parserProperties.setKeepFiles(true);
         RecordFile recordFile = recordFile();
+        RecordItem firstItem = recordFile.getItems().get(0);
 
         // when
         recordFileParser.parse(recordFile);
 
         // then
-        verify(recordItemListener).onItem(recordFile.getItems().get(0));
+        verify(recordItemListener).onItem(firstItem);
         verify(recordStreamFileListener).onEnd(recordFile);
         verify(recordStreamFileListener, never()).onError();
-        assertFilesArchived(recordFile.getName());
+        assertPostParseState(recordFile, true, recordFile.getName());
     }
 
     @Test
@@ -168,14 +152,15 @@ class RecordFileParserTest {
         // then
         verify(recordStreamFileListener, never()).onEnd(recordFile);
         verify(recordStreamFileListener).onError();
-        assertFilesArchived();
+        assertPostParseState(recordFile, false);
     }
 
     @ParameterizedTest(name = "endDate with offset {0}ns")
     @CsvSource({"-1", "0", "1"})
-    void endDate(long offset) {
+    void endDate(long offset) throws Exception {
         // given
         RecordFile recordFile = recordFile();
+        RecordItem firstItem = recordFile.getItems().get(0);
         long end = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
         doReturn(filter).when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
@@ -186,16 +171,18 @@ class RecordFileParserTest {
         // then
         verify(recordStreamFileListener).onStart();
         if (offset >= 0) {
-            verify(recordItemListener).onItem(recordFile.getItems().get(0));
+            verify(recordItemListener).onItem(firstItem);
         }
         verify(recordStreamFileListener).onEnd(recordFile);
+        assertPostParseState(recordFile, true);
     }
 
     @ParameterizedTest(name = "startDate with offset {0}ns")
     @CsvSource({"-1", "0", "1"})
-    void startDate(long offset) {
+    void startDate(long offset) throws Exception {
         // given
         RecordFile recordFile = recordFile();
+        RecordItem firstItem = recordFile.getItems().get(0);
         long start = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
         doReturn(filter).when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
@@ -206,9 +193,10 @@ class RecordFileParserTest {
         // then
         verify(recordStreamFileListener).onStart();
         if (offset < 0) {
-            verify(recordItemListener).onItem(recordFile.getItems().get(0));
+            verify(recordItemListener).onItem(firstItem);
         }
         verify(recordStreamFileListener).onEnd(recordFile);
+        assertPostParseState(recordFile, true);
     }
 
     // Asserts that parsed directory contains exactly the files with given fileNames
@@ -223,6 +211,19 @@ class RecordFileParserTest {
                 .extracting(Path::getFileName)
                 .extracting(Path::toString)
                 .contains(fileNames);
+    }
+
+    private void assertPostParseState(RecordFile recordFile, boolean success,
+                                      String... archivedFileNames) throws Exception {
+        if (success) {
+            assertThat(recordFile.getBytes()).isNull();
+            assertThat(recordFile.getItems()).isNull();
+        } else {
+            assertThat(recordFile.getBytes()).isNotNull();
+            assertThat(recordFile.getItems()).isNotNull();
+        }
+
+        assertFilesArchived(archivedFileNames);
     }
 
     private RecordFile recordFile() {

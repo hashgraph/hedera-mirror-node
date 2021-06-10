@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.event;
 
 import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_EVENT;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.Poller;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -31,16 +30,18 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.EventFile;
-import com.hedera.mirror.importer.parser.StreamFileParser;
+import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.repository.EventFileRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @MessageEndpoint
-@RequiredArgsConstructor
-public class EventFileParser implements StreamFileParser<EventFile> {
+public class EventFileParser extends AbstractStreamFileParser<EventFile> {
 
     private final EventFileRepository eventFileRepository;
-    private final EventParserProperties parserProperties;
+
+    public EventFileParser(EventFileRepository eventFileRepository, EventParserProperties parserProperties) {
+        super(parserProperties);
+        this.eventFileRepository = eventFileRepository;
+    }
 
     @Override
     @Retryable(backoff = @Backoff(
@@ -53,19 +54,11 @@ public class EventFileParser implements StreamFileParser<EventFile> {
     )
     @Transactional
     public void parse(EventFile eventFile) {
-        if (!parserProperties.isEnabled()) {
-            return;
-        }
+        super.parse(eventFile);
+    }
 
-        byte[] bytes = eventFile.getBytes();
-        if (!parserProperties.isPersistBytes()) {
-            eventFile.setBytes(null);
-        }
-
+    @Override
+    protected void parseStreamFile(EventFile eventFile) {
         eventFileRepository.save(eventFile);
-
-        if (parserProperties.isKeepFiles()) {
-            Utility.archiveFile(eventFile.getName(), bytes, parserProperties.getParsedPath());
-        }
     }
 }

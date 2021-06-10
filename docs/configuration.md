@@ -37,7 +37,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`             |                         | Whether the cloud storage bucket allows for anonymous access.                                  |
 | `hedera.mirror.importer.downloader.balance.batchSize`                | 30                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.balance.enabled`                  | true                    | Whether to enable balance file downloads                                                       |
-| `hedera.mirror.importer.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.          |
+| `hedera.mirror.importer.downloader.balance.frequency`                | 30s                     | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.         |
+| `hedera.mirror.importer.downloader.balance.keepBytes`                | false                   | Whether to keep the balance file bytes so later the parser can persist it to the database.     |
 | `hedera.mirror.importer.downloader.balance.keepSignatures`           | false                   | Whether to keep balance signature files after successful verification. If false, files are deleted. |
 | `hedera.mirror.importer.downloader.balance.prefix`                   | accountBalances/balance | The prefix to search cloud storage for balance files                                           |
 | `hedera.mirror.importer.downloader.balance.threads`                  | 15                      | The number of threads to search for new files to download                                      |
@@ -48,6 +49,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.event.batchSize`                  | 100                     | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.event.enabled`                    | false                   | Whether to enable event file downloads                                                         |
 | `hedera.mirror.importer.downloader.event.frequency`                  | 5s                      | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.          |
+| `hedera.mirror.importer.downloader.event.keepBytes`                  | false                   | Whether to keep the event file bytes so later the parser can persist it to the database.       |
 | `hedera.mirror.importer.downloader.event.keepSignatures`             | false                   | Whether to keep event signature files after successful verification. If false, files are deleted. |
 | `hedera.mirror.importer.downloader.event.prefix`                     | eventsStreams/events\_  | The prefix to search cloud storage for event files                                             |
 | `hedera.mirror.importer.downloader.event.threads`                    | 15                      | The number of threads to search for new files to download                                      |
@@ -55,7 +57,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.downloader.maxConcurrency`                   | 1000                    | The maximum number of allowed open HTTP connections. Used by AWS SDK directly.                 |
 | `hedera.mirror.importer.downloader.record.batchSize`                 | 40                      | The number of signature files to download per node before downloading the signed files         |
 | `hedera.mirror.importer.downloader.record.enabled`                   | true                    | Whether to enable record file downloads                                                        |
-| `hedera.mirror.importer.downloader.record.frequency`                 | 500ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.          |
+| `hedera.mirror.importer.downloader.record.frequency`                 | 500ms                   | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.         |
+| `hedera.mirror.importer.downloader.record.keepBytes`                 | false                   | Whether to keep the record file bytes so later the parser can persist it to the database.      |
 | `hedera.mirror.importer.downloader.record.keepSignatures`            | false                   | Whether to keep record signature files after successful verification. If false, files are deleted. |
 | `hedera.mirror.importer.downloader.record.prefix`                    | recordstreams/record    | The prefix to search cloud storage for record files                                            |
 | `hedera.mirror.importer.downloader.record.threads`                   | 15                      | The number of threads to search for new files to download                                      |
@@ -71,7 +74,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
 | `hedera.mirror.importer.parser.balance.frequency`                    | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
 | `hedera.mirror.importer.parser.balance.keepFiles`                    | false                   | Whether to keep parsed files after successful parsing.                                         |
-| `hedera.mirror.importer.parser.balance.persistBytes`                 | false                   | Whether to persist the balance file bytes to the database after successful parsing.            |
 | `hedera.mirror.importer.parser.balance.queueCapacity`                | 10                      | How many balance files to queue in memory while waiting to be persisted by the parser          |
 | `hedera.mirror.importer.parser.balance.retry.maxAttempts`            | 3                       | How many attempts should be made to retry file parsing errors                                  |
 | `hedera.mirror.importer.parser.balance.retry.maxBackoff`             | 10s                     | The maximum amount of time to wait between retries                                             |
@@ -82,7 +84,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
 | `hedera.mirror.importer.parser.event.frequency`                      | 100ms                   | How often to poll for new messages                                                             |
 | `hedera.mirror.importer.parser.event.keepFiles`                      | false                   | Whether to keep parsed files after successful parsing.                                         |
-| `hedera.mirror.importer.parser.event.persistBytes`                   | false                   | Whether to persist the event file bytes to the database after successful parsing.              |
 | `hedera.mirror.importer.parser.event.queueCapacity`                  | 10                      | How many event files to queue in memory while waiting to be persisted by the parser            |
 | `hedera.mirror.importer.parser.event.retry.maxAttempts`              | Integer.MAX_VALUE       | How many attempts should be made to retry file parsing errors                                  |
 | `hedera.mirror.importer.parser.event.retry.maxBackoff`               | 10s                     | The maximum amount of time to wait between retries                                             |
@@ -116,7 +117,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.sql.enabled`                   | true                    | Whether to use PostgreSQL Copy mechanism to insert into the database                           |
 | `hedera.mirror.importer.parser.record.frequency`                            | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
 | `hedera.mirror.importer.parser.record.keepFiles`                            | false                   | Whether to keep parsed files after successful parsing.                                         |
-| `hedera.mirror.importer.parser.record.persistBytes`                         | false                   | Whether to persist the record file bytes to the database after successful parsing.             |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.parser.record.queueCapacity`                        | 10                      | How many record files to queue in memory while waiting to be persisted by the parser           |

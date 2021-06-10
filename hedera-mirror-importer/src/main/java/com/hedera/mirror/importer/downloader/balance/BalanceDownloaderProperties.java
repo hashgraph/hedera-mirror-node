@@ -51,6 +51,8 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     @NotNull
     private Duration frequency = Duration.ofSeconds(30);
 
+    private boolean keepBytes = false;
+
     private boolean keepSignatures = false;
 
     @NotBlank

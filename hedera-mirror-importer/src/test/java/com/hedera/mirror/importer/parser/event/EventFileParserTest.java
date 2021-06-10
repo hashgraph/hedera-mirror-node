@@ -30,9 +30,6 @@ import static org.mockito.Mockito.verify;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-
-import com.hedera.mirror.importer.domain.StreamFilename;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +43,7 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.EventItem;
 import com.hedera.mirror.importer.repository.EventFileRepository;
@@ -82,8 +80,7 @@ class EventFileParserTest {
 
         // then
         verify(eventFileRepository).save(eventFile);
-        assertFilesArchived();
-        assertThat(eventFile.getBytes()).isNull();
+        assertPostParseState(eventFile, true);
     }
 
     @Test
@@ -98,21 +95,7 @@ class EventFileParserTest {
 
         // then
         verify(eventFileRepository, never()).save(any());
-        assertFilesArchived();
-    }
-
-    @Test
-    void persistBytes() throws Exception {
-        // given
-        parserProperties.setPersistBytes(true);
-        EventFile eventFile = eventFile();
-
-        // when
-        eventFileParser.parse(eventFile);
-
-        // then
-        verify(eventFileRepository).save(eventFile);
-        assertThat(eventFile.getBytes()).isNotNull();
+        assertPostParseState(eventFile, true);
     }
 
     @Test
@@ -126,7 +109,7 @@ class EventFileParserTest {
 
         // then
         verify(eventFileRepository).save(eventFile);
-        assertFilesArchived(eventFile.getName());
+        assertPostParseState(eventFile, true, eventFile.getName());
     }
 
     @Test
@@ -141,7 +124,7 @@ class EventFileParserTest {
         });
 
         // then
-        assertFilesArchived();
+        assertPostParseState(eventFile, false);
     }
 
     // Asserts that parsed directory contains exactly the files with given fileNames
@@ -156,6 +139,19 @@ class EventFileParserTest {
                 .extracting(Path::getFileName)
                 .extracting(Path::toString)
                 .contains(fileNames);
+    }
+
+    private void assertPostParseState(EventFile eventFile, boolean success,
+                                      String... archivedFileNames) throws Exception {
+        if (success) {
+            assertThat(eventFile.getBytes()).isNull();
+            assertThat(eventFile.getItems()).isNull();
+        } else {
+            assertThat(eventFile.getBytes()).isNotNull();
+            assertThat(eventFile.getItems()).isNotNull();
+        }
+
+        assertFilesArchived(archivedFileNames);
     }
 
     private EventFile eventFile() {

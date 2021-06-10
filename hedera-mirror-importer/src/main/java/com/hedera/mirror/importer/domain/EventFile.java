@@ -38,7 +38,7 @@ import com.hedera.mirror.importer.parser.domain.EventItem;
 @Data
 @Entity
 @NoArgsConstructor
-public class EventFile implements StreamFile {
+public class EventFile implements StreamFile<EventItem> {
 
     @ToString.Exclude
     private byte[] bytes;

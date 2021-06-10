@@ -51,6 +51,8 @@ public class RecordDownloaderProperties implements DownloaderProperties {
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
 
+    private boolean keepBytes = false;
+
     private boolean keepSignatures = false;
 
     @NotBlank

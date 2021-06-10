@@ -45,8 +45,6 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     protected boolean keepFiles = false;
 
-    protected boolean persistBytes = false;
-
     @DurationMin(seconds = 5)
     @NotNull
     protected Duration processingTimeout = Duration.ofSeconds(10L);

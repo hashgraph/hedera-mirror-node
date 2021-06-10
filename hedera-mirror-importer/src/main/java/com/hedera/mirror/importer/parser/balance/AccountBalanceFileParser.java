@@ -46,19 +46,18 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
+import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.PgCopy;
-import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 /**
  * Parse an account balances file and load it into the database.
  */
 @Log4j2
 @MessageEndpoint
-public class AccountBalanceFileParser implements StreamFileParser<AccountBalanceFile> {
+public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
-    private final BalanceParserProperties parserProperties;
+//    private final BalanceParserProperties parserProperties;
     private final DataSource dataSource;
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
@@ -72,7 +71,8 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
                                     MeterRegistry meterRegistry,
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
                                     AccountBalanceFileRepository accountBalanceFileRepository) {
-        this.parserProperties = parserProperties;
+        super(parserProperties);
+//        this.parserProperties = parserProperties;
         this.dataSource = dataSource;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
@@ -106,10 +106,11 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
     )
     @Transactional
     public void parse(AccountBalanceFile accountBalanceFile) {
-        if (!parserProperties.isEnabled()) {
-            return;
-        }
+        super.parse(accountBalanceFile);
+    }
 
+    @Override
+    protected void parseStreamFile(AccountBalanceFile accountBalanceFile) {
         long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
         long count = 0L;
         String name = accountBalanceFile.getName();
@@ -133,19 +134,10 @@ public class AccountBalanceFileParser implements StreamFileParser<AccountBalance
                 count = accountBalances.size();
             }
 
-            byte[] bytes = accountBalanceFile.getBytes();
-            if (!parserProperties.isPersistBytes()) {
-                accountBalanceFile.setBytes(null);
-            }
-
             Instant loadEnd = Instant.now();
             accountBalanceFile.setCount(count);
             accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
             accountBalanceFileRepository.save(accountBalanceFile);
-
-            if (parserProperties.isKeepFiles()) {
-                Utility.archiveFile(name, bytes, parserProperties.getParsedPath());
-            }
 
             log.info("Successfully processed {} account balances from {} in {}", count, name, stopwatch);
             Instant consensusInstant = Instant.ofEpochSecond(0L, consensusTimestamp);
