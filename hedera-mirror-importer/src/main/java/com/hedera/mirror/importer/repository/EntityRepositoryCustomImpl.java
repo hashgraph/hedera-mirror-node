@@ -25,16 +25,14 @@ import java.util.List;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import com.hedera.mirror.importer.domain.Entity_;
 
-@Component
 @Named
 @RequiredArgsConstructor
 public class EntityRepositoryCustomImpl extends AbstractUpdatableDomainRepositoryCustom<Entity_> {
     public static final String TABLE = "entity";
-    public static final String TEMP_TABLE = "entity_temp";
+    public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(Entity_.ID);
     private static final List<String> nullableColumns = List.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
             Entity_.AUTO_RENEW_PERIOD, Entity_.CREATED_TIMESTAMP, Entity_.DELETED, Entity_.EXPIRATION_TIMESTAMP,

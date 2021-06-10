@@ -25,16 +25,14 @@ import java.util.List;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import com.hedera.mirror.importer.domain.Schedule_;
 
-@Component
 @Named
 @RequiredArgsConstructor
 public class ScheduleRepositoryCustomImpl extends AbstractUpdatableDomainRepositoryCustom<Schedule_> {
     public static final String TABLE = "schedule";
-    public static final String TEMP_TABLE = "schedule_temp";
+    public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(Schedule_.SCHEDULE_ID);
     private static final List<String> nullableColumns = List.of(Schedule_.EXECUTED_TIMESTAMP);
     private static final List<SingularAttribute> updatableColumns = Lists.newArrayList(Schedule_.executedTimestamp);

@@ -322,27 +322,12 @@ public abstract class AbstractTransactionHandlerTest {
         }
 
         // set created_timestamp and deleted based on transaction body type
-        int dataCase = defaultBody.getDataCase().getNumber();
-        switch (dataCase) {
-            case 8: // contractCreate
-            case 11: // cryptoCreate
-            case 17: // fileCreate
-            case 24: // consensusCreate
-            case 29: // tokenCreate
-            case 42: // scheduleCreate
-                entity.setCreatedTimestamp(DEFAULT_CREATED_TIMESTAMP);
-                entity.setDeleted(DEFAULT_DELETED);
-                break;
-            case 12: // cryptoDelete
-            case 22: // contractDelete
-            case 18: // fileDelete
-            case 26: // consensusDelete
-            case 35: // tokenDelete
-            case 43: // scheduleDelete
-                entity.setDeleted(true);
-                break;
-            default:
-                break;
+        String dataCaseName = defaultBody.getDataCase().name().toLowerCase();
+        if (dataCaseName.contains("creat")) { // some names use creation vs create
+            entity.setCreatedTimestamp(DEFAULT_CREATED_TIMESTAMP);
+            entity.setDeleted(DEFAULT_DELETED);
+        } else if (dataCaseName.contains("delete")) {
+            entity.setDeleted(true);
         }
 
         entity.setMemo("");

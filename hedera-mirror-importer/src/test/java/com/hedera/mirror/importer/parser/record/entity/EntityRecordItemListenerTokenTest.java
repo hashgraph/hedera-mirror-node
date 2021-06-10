@@ -90,10 +90,6 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     @Resource
     private CacheManager cacheManager;
 
-    void beforeAll() {
-        cacheManager.getCache("tokenaccounts").clear();
-    }
-
     @BeforeEach
     void before() {
         entityProperties.getPersist().setTokens(true);

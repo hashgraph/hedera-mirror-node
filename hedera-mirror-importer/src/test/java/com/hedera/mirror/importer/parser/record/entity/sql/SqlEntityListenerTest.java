@@ -249,7 +249,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
 
         // when
-        sqlEntityListener.onEntityId(entityId);
+        sqlEntityListener.onEntity(entityId.toEntity());
         completeFileAndCommit();
 
         // then
@@ -264,13 +264,13 @@ public class SqlEntityListenerTest extends IntegrationTest {
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
 
         // when:
-        sqlEntityListener.onEntityId(entityId);
-        sqlEntityListener.onEntityId(entityId); // duplicate within file
+        sqlEntityListener.onEntity(entityId.toEntity());
+        sqlEntityListener.onEntity(entityId.toEntity()); // duplicate within file
         completeFileAndCommit();
 
         RecordFile recordFile2 = recordFile(2L, UUID.randomUUID().toString(), null, 1L, null);
         sqlEntityListener.onStart();
-        sqlEntityListener.onEntityId(entityId); // duplicate across files
+        sqlEntityListener.onEntity(entityId.toEntity()); // duplicate across files
         completeFileAndCommit(recordFile2);
 
         // then

@@ -37,8 +37,9 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import software.amazon.awssdk.utils.CollectionUtils;
+import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
@@ -46,7 +47,7 @@ import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements UpdatableDomainRepositoryCustom {
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
-    private static final String RESERVED_SPACE_CHAR = "\' \'";
+    protected static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
 
     private static final Comparator<Field> FIELD_COMPARATOR = Comparator
             .comparing(Field::getName);
@@ -94,7 +95,7 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
     }
 
     private String generateUpdateQuery() {
-        if (CollectionUtils.isNullOrEmpty(getUpdatableColumns())) {
+        if (CollectionUtils.isEmpty(getUpdatableColumns())) {
             return "";
         }
 
@@ -111,7 +112,7 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
     }
 
     private String getColumnListFromSelectableColumns() {
-        if (CollectionUtils.isNullOrEmpty(getSelectableColumns())) {
+        if (CollectionUtils.isEmpty(getSelectableColumns())) {
             return getColumnListFromAllColumns();
         }
 
@@ -184,9 +185,10 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
         String finalFormattedColumnName = getTableColumnName(getTableName(), column);
         String tempFormattedColumnName = getTableColumnName(getTemporaryTableName(), column);
         return String.format(
-                "%s = case when %s = ' ' then '' else coalesce(%s, %s) end",
+                "%s = case when %s = %s then '' else coalesce(%s, %s) end",
                 getFormattedColumnName(column),
                 tempFormattedColumnName,
+                RESERVED_CHAR,
                 tempFormattedColumnName,
                 finalFormattedColumnName);
     }
@@ -197,7 +199,7 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
 
     private String getSelectableFieldsClause() {
         List<SingularAttribute> selectableAttributes = getSelectableColumns();
-        if (CollectionUtils.isNullOrEmpty(selectableAttributes)) {
+        if (CollectionUtils.isEmpty(selectableAttributes)) {
             return getSelectableFieldsThroughReflection();
         } else {
             Collections.sort(selectableAttributes, ATTRIBUTE_COMPARATOR);
@@ -256,17 +258,17 @@ public abstract class AbstractUpdatableDomainRepositoryCustom<T> implements Upda
 
     private String getStringColumnTypeSelect(String attributeName) {
         // String columns need extra logic since their default value and empty value are both serialized as null
-        // Domain serializer adds a special scenario to set ' ' as the placeholder for an empty. Null is null
+        // Domain serializer adds a special scenario to set a placeholder for an empty. Null is null
         if (isNullableColumn(attributeName)) {
             return getSelectCaseQuery(
                     attributeName,
-                    RESERVED_SPACE_CHAR,
+                    RESERVED_CHAR,
                     EMPTY_STRING,
                     getSelectCoalesceQuery(attributeName, NULL_STRING));
         } else {
             return getSelectCaseQuery(
                     attributeName,
-                    RESERVED_SPACE_CHAR,
+                    RESERVED_CHAR,
                     EMPTY_STRING,
                     getSelectCoalesceQuery(attributeName, EMPTY_STRING));
         }

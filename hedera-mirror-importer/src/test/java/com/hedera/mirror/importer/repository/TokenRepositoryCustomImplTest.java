@@ -40,35 +40,45 @@ class TokenRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest {
                 "initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, name, supply_key, " +
                 "supply_key_ed25519_hex, symbol, token_id, total_supply, treasury_account_id, wipe_key, " +
                 "wipe_key_ed25519_hex) select token_temp.created_timestamp, token_temp.decimals, token_temp" +
-                ".freeze_default, token_temp.freeze_key, case when token_temp.freeze_key_ed25519_hex = ' ' then '' " +
+                ".freeze_default, token_temp.freeze_key, case when token_temp.freeze_key_ed25519_hex = '<uuid>' then " +
+                "'' " +
                 "else coalesce(token_temp.freeze_key_ed25519_hex, null) end, token_temp.initial_supply, token_temp" +
-                ".kyc_key, case when token_temp.kyc_key_ed25519_hex = ' ' then '' else coalesce(token_temp" +
-                ".kyc_key_ed25519_hex, null) end, token_temp.modified_timestamp, case when token_temp.name = ' ' then" +
+                ".kyc_key, case when token_temp.kyc_key_ed25519_hex = '<uuid>' then '' else coalesce(token_temp" +
+                ".kyc_key_ed25519_hex, null) end, token_temp.modified_timestamp, case when token_temp.name = '<uuid>'" +
+                " then" +
                 " '' else coalesce(token_temp.name, '') end, token_temp.supply_key, case when token_temp" +
-                ".supply_key_ed25519_hex = ' ' then '' else coalesce(token_temp.supply_key_ed25519_hex, null) end, " +
-                "case when token_temp.symbol = ' ' then '' else coalesce(token_temp.symbol, '') end, token_temp" +
+                ".supply_key_ed25519_hex = '<uuid>' then '' else coalesce(token_temp.supply_key_ed25519_hex, null) " +
+                "end, " +
+                "case when token_temp.symbol = '<uuid>' then '' else coalesce(token_temp.symbol, '') end, token_temp" +
                 ".token_id, token_temp.total_supply, token_temp.treasury_account_id, token_temp.wipe_key, case when " +
-                "token_temp.wipe_key_ed25519_hex = ' ' then '' else coalesce(token_temp.wipe_key_ed25519_hex, null) " +
+                "token_temp.wipe_key_ed25519_hex = '<uuid>' then '' else coalesce(token_temp.wipe_key_ed25519_hex, " +
+                "null) " +
                 "end from token_temp where token_temp.created_timestamp is not null  on conflict (token_id) do nothing";
     }
 
     @Override
     public String getUpdateQuery() {
         return "update token set freeze_key = coalesce(token_temp.freeze_key, token.freeze_key), " +
-                "freeze_key_ed25519_hex = case when token_temp.freeze_key_ed25519_hex = ' ' then '' else coalesce" +
+                "freeze_key_ed25519_hex = case when token_temp.freeze_key_ed25519_hex = '<uuid>' then '' else " +
+                "coalesce" +
                 "(token_temp.freeze_key_ed25519_hex, token.freeze_key_ed25519_hex) end, kyc_key = coalesce(token_temp" +
-                ".kyc_key, token.kyc_key), kyc_key_ed25519_hex = case when token_temp.kyc_key_ed25519_hex = ' ' then " +
+                ".kyc_key, token.kyc_key), kyc_key_ed25519_hex = case when token_temp.kyc_key_ed25519_hex = '<uuid>' " +
+                "then " +
                 "'' else coalesce(token_temp.kyc_key_ed25519_hex, token.kyc_key_ed25519_hex) end, modified_timestamp " +
                 "= coalesce(token_temp.modified_timestamp, token.modified_timestamp), name = case when token_temp" +
-                ".name = ' ' then '' else coalesce(token_temp.name, token.name) end, supply_key = coalesce(token_temp" +
+                ".name = '<uuid>' then '' else coalesce(token_temp.name, token.name) end, supply_key = coalesce" +
+                "(token_temp" +
                 ".supply_key, token.supply_key), supply_key_ed25519_hex = case when token_temp.supply_key_ed25519_hex" +
-                " = ' ' then '' else coalesce(token_temp.supply_key_ed25519_hex, token.supply_key_ed25519_hex) end, " +
-                "symbol = case when token_temp.symbol = ' ' then '' else coalesce(token_temp.symbol, token.symbol) " +
+                " = '<uuid>' then '' else coalesce(token_temp.supply_key_ed25519_hex, token.supply_key_ed25519_hex) " +
+                "end, " +
+                "symbol = case when token_temp.symbol = '<uuid>' then '' else coalesce(token_temp.symbol, token" +
+                ".symbol) " +
                 "end, total_supply = coalesce(token_temp.total_supply, token.total_supply), treasury_account_id = " +
                 "coalesce(token_temp.treasury_account_id, token.treasury_account_id), wipe_key = coalesce(token_temp" +
-                ".wipe_key, token.wipe_key), wipe_key_ed25519_hex = case when token_temp.wipe_key_ed25519_hex = ' ' " +
+                ".wipe_key, token.wipe_key), wipe_key_ed25519_hex = case when token_temp.wipe_key_ed25519_hex = " +
+                "'<uuid>' " +
                 "then '' else coalesce(token_temp.wipe_key_ed25519_hex, token.wipe_key_ed25519_hex) end from " +
-                "token_temp where token.token_id = token_temp.token_id  and token_temp.created_timestamp is null";
+                "token_temp where token.token_id = token_temp.token_id and token_temp.created_timestamp is null";
     }
 
     @Test

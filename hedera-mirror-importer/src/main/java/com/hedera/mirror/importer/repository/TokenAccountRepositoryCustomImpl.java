@@ -26,18 +26,16 @@ import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenAccount_;
 import com.hedera.mirror.importer.domain.Token_;
 
-@Component
 @Named
 @RequiredArgsConstructor
 public class TokenAccountRepositoryCustomImpl extends AbstractUpdatableDomainRepositoryCustom<TokenAccount_> {
     public static final String TABLE = "token_account";
-    public static final String TEMP_TABLE = "token_account_temp";
+    public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(TokenAccountId_.TOKEN_ID,
             TokenAccountId_.ACCOUNT_ID);
     private static final List<String> nullableColumns = List.of();

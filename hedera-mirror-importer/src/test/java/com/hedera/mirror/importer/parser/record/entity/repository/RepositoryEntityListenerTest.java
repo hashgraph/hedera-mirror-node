@@ -112,12 +112,6 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onEntityId() {
-        repositoryEntityListener.onEntityId(ENTITY_ID);
-        assertThat(entityRepository.findAll()).contains(getEntityWithDefaultMemo(ENTITY_ID));
-    }
-
-    @Test
     void onFileData() {
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(1L);

@@ -60,11 +60,11 @@ public class Entity {
 
     private Long num;
 
-    @JsonSerialize(using = NullableStringSerializer.class)
-    private String publicKey;
-
     @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
+
+    @JsonSerialize(using = NullableStringSerializer.class)
+    private String publicKey;
 
     private Long realm;
 

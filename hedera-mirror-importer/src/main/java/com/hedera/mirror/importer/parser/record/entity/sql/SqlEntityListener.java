@@ -28,17 +28,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entity;
@@ -100,13 +97,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
     private final UpsertPgCopy<Token> tokenPgCopy;
 
-    // used to optimize inserts into entity table so node and treasury ids are not tried for every transaction
-    private final Cache entityCache;
-
     // lists of insert only domains
     private final Collection<ContractResult> contractResults;
     private final Collection<CryptoTransfer> cryptoTransfers;
-    private final Collection<EntityId> entityIds;
+    private final Set<Long> entityIds;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
@@ -125,7 +119,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
                              DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
-                             @Qualifier(CacheConfiguration.NEVER_EXPIRE_LARGE) CacheManager cacheManager,
                              ApplicationEventPublisher eventPublisher,
                              EntityRepositoryCustomImpl entityRepositoryCustom,
                              EntityIdRepositoryCustomImpl entityIdRepositoryCustom,
@@ -135,7 +128,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-        entityCache = cacheManager.getCache(CacheConfiguration.NEVER_EXPIRE_LARGE);
         this.eventPublisher = eventPublisher;
 
         // insert only tables
@@ -267,25 +259,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntity(Entity entity) throws ImporterException {
-        // entity could experience multiple updates in a single record file, handle updates in memory for this case
-        if (entities.containsKey(entity.getId())) {
-            updateCachedEntity(entity);
+        EntityId entityId = entity.toEntityId();
+        // handle empty id case
+        if (EntityId.isEmpty(entityId)) {
             return;
         }
 
-        entities.put(entity.getId(), entity);
-    }
-
-    @Override
-    public void onEntityId(EntityId entityId) throws ImporterException {
-        // only insert entities not found in cache
-        if (EntityId.isEmpty(entityId) || entityCache.get(entityId.getId()) != null ||
-                entities.containsKey(entityId.getId())) {
-            return;
-        }
-
-        entityIds.add(entityId);
-        entityIdEntities.put(entityId.getId(), entityId.toEntity());
+        entities.merge(entity.getId(), entity, this::mergeEntity);
     }
 
     @Override
@@ -321,24 +301,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onToken(Token token) throws ImporterException {
         // tokens could experience multiple updates in a single record file, handle updates in memory for this case
-        long tokenId = token.getTokenId().getTokenId().getId();
-        if (tokens.containsKey(tokenId)) {
-            updateCachedToken(token);
-            return;
-        }
-
-        tokens.put(tokenId, token);
+        tokens.merge(token.getTokenId().getTokenId().getId(), token, this::mergeToken);
     }
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         // tokenAccounts may experience multiple updates in a single record file, handle updates in memory for this case
-        if (tokenAccounts.containsKey(tokenAccount.getId())) {
-            updateCachedTokenAccount(tokenAccount);
-            return;
-        }
-
-        tokenAccounts.put(tokenAccount.getId(), tokenAccount);
+        tokenAccounts.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
     }
 
     @Override
@@ -349,12 +318,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
         // schedules could experience multiple updates in a single record file, handle updates in memory for this case
-        if (schedules.containsKey(schedule.getScheduleId().getId())) {
-            updateCachedSchedule(schedule);
-            return;
-        }
-
-        schedules.put(schedule.getScheduleId().getId(), schedule);
+        schedules.merge(schedule.getScheduleId().getId(), schedule, this::mergeSchedule);
     }
 
     @Override
@@ -362,9 +326,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures.add(transactionSignature);
     }
 
-    private void updateCachedEntity(Entity newEntity) {
-        Entity cachedEntity = entities.get(newEntity.getId());
-        cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
+    private Entity mergeEntity(Entity cachedEntity, Entity newEntity) {
+        if (newEntity.getAutoRenewAccountId() != null) {
+            cachedEntity.setAutoRenewAccountId(newEntity.getAutoRenewAccountId());
+        }
+
+        if (newEntity.getAutoRenewPeriod() != null) {
+            cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
+        }
 
         if (newEntity.getDeleted() != null) {
             cachedEntity.setDeleted(newEntity.getDeleted());
@@ -382,11 +351,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (newEntity.getMemo() != null) {
             cachedEntity.setMemo(newEntity.getMemo());
         }
+
+        if (newEntity.getModifiedTimestamp() != null) {
+            cachedEntity.setModifiedTimestamp(newEntity.getModifiedTimestamp());
+        }
+
+        if (newEntity.getProxyAccountId() != null) {
+            cachedEntity.setProxyAccountId(newEntity.getProxyAccountId());
+        }
+
+        if (newEntity.getSubmitKey() != null) {
+            cachedEntity.setSubmitKey(newEntity.getSubmitKey());
+        }
+
+        return cachedEntity;
     }
 
-    private void updateCachedToken(Token newToken) {
-        Token cachedToken = tokens.get(newToken.getTokenId().getTokenId().getId());
-
+    private Token mergeToken(Token cachedToken, Token newToken) {
         if (newToken.getFreezeKey() != null) {
             cachedToken.setFreezeKey(newToken.getFreezeKey());
         }
@@ -420,11 +401,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         cachedToken.setModifiedTimestamp(newToken.getModifiedTimestamp());
+        return cachedToken;
     }
 
-    private void updateCachedTokenAccount(TokenAccount newTokenAccount) {
-        TokenAccount cachedTokenAccount = tokenAccounts.get(newTokenAccount.getId());
-
+    private TokenAccount mergeTokenAccount(TokenAccount cachedTokenAccount, TokenAccount newTokenAccount) {
         if (newTokenAccount.getAssociated() != null) {
             cachedTokenAccount.setAssociated(newTokenAccount.getAssociated());
         }
@@ -438,10 +418,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());
+        return cachedTokenAccount;
     }
 
-    private void updateCachedSchedule(Schedule schedule) {
-        Schedule cachedSchedule = schedules.get(schedule.getScheduleId().getId());
+    private Schedule mergeSchedule(Schedule cachedSchedule, Schedule schedule) {
         cachedSchedule.setExecutedTimestamp(schedule.getExecutedTimestamp());
+        return cachedSchedule;
     }
 }

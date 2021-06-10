@@ -45,8 +45,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private final String insertSql;
     private final String updateSql;
 
-    protected Timer copyDurationMetric;
-    protected Timer updateDurationMetric;
+//    protected Timer copyDurationMetric;
 
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
                         UpdatableDomainRepositoryCustom updatableDomainRepositoryCustom) {
@@ -57,10 +56,6 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         updateSql = updatableDomainRepositoryCustom.getUpdateQuery();
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert parsed transactions information into table")
-                .tag("table", finalTableName)
-                .register(meterRegistry);
-        updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.update")
-                .description("Time to update parsed transactions information into table")
                 .tag("table", finalTableName)
                 .register(meterRegistry);
     }
@@ -92,43 +87,31 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
 
     @Override
     protected Timer getCopyDurationMetric() {
-        if (copyDurationMetric == null) {
-            copyDurationMetric = Timer.builder("hedera.mirror.importer.parse.copy")
-                    .description("Time to insert transactions into temp table")
-                    .tag("table", finalTableName)
-                    .register(meterRegistry);
-        }
-
-        return copyDurationMetric;
+        return null;
     }
 
     private void createTempTable(Connection connection) throws SQLException {
         // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
-        Stopwatch stopwatch = Stopwatch.createStarted();
         try (PreparedStatement preparedStatement = connection.prepareStatement(createTempTableSql)) {
             preparedStatement.executeUpdate();
         }
-        log.trace("Created temp table {} in {}", tableName, stopwatch);
+        log.trace("Created temp table {}", tableName);
     }
 
     public int insertToFinalTable(Connection connection) throws SQLException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
         int insertCount = 0;
         try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
             insertCount = preparedStatement.executeUpdate();
         }
-        log.info("Inserted {} rows from {} table to {} table in {}", insertCount, tableName, finalTableName,
-                stopwatch);
+        log.trace("Inserted {} rows from {} table to {} table", insertCount, tableName, finalTableName);
         return insertCount;
     }
 
     public void updateFinalTable(Connection connection) throws SQLException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
         try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
             preparedStatement.execute();
         }
-        updateDurationMetric.record(stopwatch.elapsed());
-        log.info("Updated rows from {} table to {} table in {}", tableName, finalTableName, stopwatch);
+        log.trace("Updated rows from {} table to {} table", tableName, finalTableName);
     }
 }
 

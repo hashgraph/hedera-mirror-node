@@ -69,8 +69,8 @@ public class PgCopy<T> {
                 tableName);
         var mapper = new CsvMapper();
         SimpleModule module = new SimpleModule();
-        module.addSerializer(byte[].class, new ByteArrayToHexSerializer());
-        module.addSerializer(EntityId.class, new EntityIdSerializer());
+        module.addSerializer(byte[].class, ByteArrayToHexSerializer.INSTANCE);
+        module.addSerializer(EntityId.class, EntityIdSerializer.INSTANCE);
         mapper.registerModule(module);
         var schema = mapper.schemaFor(entityClass);
         writer = mapper.writer(schema);
@@ -98,7 +98,11 @@ public class PgCopy<T> {
         }
 
         try {
-            Stopwatch stopwatch = Stopwatch.createStarted();
+            Stopwatch stopwatch = null;
+            if (getCopyDurationMetric() != null) {
+                stopwatch = Stopwatch.createStarted();
+            }
+
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
             CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
@@ -110,8 +114,10 @@ public class PgCopy<T> {
                 }
             }
 
-            getCopyDurationMetric().record(stopwatch.elapsed());
-            log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
+            if (getCopyDurationMetric() != null) {
+                getCopyDurationMetric().record(stopwatch.elapsed());
+                log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
+            }
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }

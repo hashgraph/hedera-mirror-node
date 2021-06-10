@@ -24,16 +24,18 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
+import java.util.UUID;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 @Named
 public class NullableStringSerializer extends JsonSerializer<String> {
+    public static final String NULLABLE_STRING_REPLACEMENT = UUID.randomUUID().toString();
 
     @Override
     public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         // empty strings are serialized as null, set to reserved space character and rely on db update sql to parse
-        gen.writeString(value.equals("") ? " " : value);
+        gen.writeString(value.equals("") ? String.valueOf(NULLABLE_STRING_REPLACEMENT) : value);
     }
 }

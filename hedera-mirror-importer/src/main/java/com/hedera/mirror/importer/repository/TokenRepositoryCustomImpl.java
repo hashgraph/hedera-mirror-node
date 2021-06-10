@@ -26,17 +26,15 @@ import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 import com.hedera.mirror.importer.domain.TokenId_;
 import com.hedera.mirror.importer.domain.Token_;
 
-@Component
 @Named
 @RequiredArgsConstructor
 public class TokenRepositoryCustomImpl extends AbstractUpdatableDomainRepositoryCustom<Token_> {
     public static final String TABLE = "token";
-    public static final String TEMP_TABLE = "token_temp";
+    public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(TokenId_.TOKEN_ID);
     private static final List<String> nullableColumns = List.of(Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX, Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
@@ -77,7 +75,7 @@ public class TokenRepositoryCustomImpl extends AbstractUpdatableDomainRepository
 
     @Override
     public String getUpdateWhereClause() {
-        return String.format(" where %s = %s  and %s is null",
+        return String.format(" where %s = %s and %s is null",
                 getTableColumnName(getTableName(), Token_.TOKEN_ID),
                 getTableColumnName(getTemporaryTableName(), Token_.TOKEN_ID),
                 getTableColumnName(getTemporaryTableName(), Token_.CREATED_TIMESTAMP));

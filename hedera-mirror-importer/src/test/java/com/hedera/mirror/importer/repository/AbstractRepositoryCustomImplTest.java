@@ -24,6 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.converter.NullableStringSerializer;
+
 public abstract class AbstractRepositoryCustomImplTest extends AbstractRepositoryTest {
 
     protected abstract UpdatableDomainRepositoryCustom getUpdatableDomainRepositoryCustom();
@@ -34,13 +36,15 @@ public abstract class AbstractRepositoryCustomImplTest extends AbstractRepositor
 
     @Test
     void insert() {
-        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery();
+        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery()
+                .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
         assertThat(insertQuery).isEqualTo(getInsertQuery());
     }
 
     @Test
     void update() {
-        String updateQuery = getUpdatableDomainRepositoryCustom().getUpdateQuery();
+        String updateQuery = getUpdatableDomainRepositoryCustom().getUpdateQuery()
+                .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
         assertThat(updateQuery).isEqualTo(getUpdateQuery());
     }
 }

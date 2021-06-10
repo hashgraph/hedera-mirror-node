@@ -28,7 +28,6 @@ import org.springframework.core.annotation.Order;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -96,11 +95,6 @@ public class RepositoryEntityListener implements EntityListener {
     @Override
     public void onEntity(Entity entity) throws ImporterException {
         entityRepository.save(entity);
-    }
-
-    @Override
-    public void onEntityId(EntityId entityId) throws ImporterException {
-        entityRepository.insertEntityId(entityId);
     }
 
     @Override

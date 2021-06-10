@@ -40,24 +40,30 @@ class EntityRepositoryCustomImplTest extends AbstractRepositoryCustomImplTest {
                 "expiration_timestamp, id, key, memo, modified_timestamp, num, proxy_account_id, public_key, realm, " +
                 "shard, submit_key, type) select entity_temp.auto_renew_account_id, entity_temp.auto_renew_period, " +
                 "entity_temp.created_timestamp, entity_temp.deleted, entity_temp.expiration_timestamp, entity_temp" +
-                ".id, entity_temp.key, case when entity_temp.memo = ' ' then '' else coalesce(entity_temp.memo, '') " +
+                ".id, entity_temp.key, case when entity_temp.memo = '<uuid>' then '' else coalesce(entity_temp.memo, " +
+                "'') " +
                 "end, entity_temp.modified_timestamp, entity_temp.num, entity_temp.proxy_account_id, case when " +
-                "entity_temp.public_key = ' ' then '' else coalesce(entity_temp.public_key, null) end, entity_temp" +
+                "entity_temp.public_key = '<uuid>' then '' else coalesce(entity_temp.public_key, null) end, " +
+                "entity_temp" +
                 ".realm, entity_temp.shard, entity_temp.submit_key, entity_temp.type from entity_temp on conflict " +
                 "(id) do nothing";
     }
 
     @Override
     public String getUpdateQuery() {
-        return "update entity set auto_renew_account_id = coalesce(entity_temp.auto_renew_account_id, entity" +
-                ".auto_renew_account_id), auto_renew_period = coalesce(entity_temp.auto_renew_period, entity" +
-                ".auto_renew_period), deleted = coalesce(entity_temp.deleted, entity.deleted), expiration_timestamp =" +
-                " coalesce(entity_temp.expiration_timestamp, entity.expiration_timestamp), key = coalesce(entity_temp" +
-                ".key, entity.key), memo = case when entity_temp.memo = ' ' then '' else coalesce(entity_temp.memo, " +
-                "entity.memo) end, proxy_account_id = coalesce(entity_temp.proxy_account_id, entity.proxy_account_id)" +
-                ", public_key = case when entity_temp.public_key = ' ' then '' else coalesce(entity_temp.public_key, " +
-                "entity.public_key) end, submit_key = coalesce(entity_temp.submit_key, entity.submit_key) from " +
-                "entity_temp where entity.id = entity_temp.id and entity_temp.created_timestamp is null";
+        return "update entity set " +
+                "auto_renew_account_id = coalesce(entity_temp.auto_renew_account_id, entity.auto_renew_account_id), " +
+                "auto_renew_period = coalesce(entity_temp.auto_renew_period, entity.auto_renew_period), " +
+                "deleted = coalesce(entity_temp.deleted, entity.deleted), " +
+                "expiration_timestamp = coalesce(entity_temp.expiration_timestamp, entity.expiration_timestamp), " +
+                "key = coalesce(entity_temp.key, entity.key), " +
+                "memo = case when entity_temp.memo = '<uuid>' then '' else " +
+                "coalesce(entity_temp.memo, entity.memo) end, " +
+                "proxy_account_id = coalesce(entity_temp.proxy_account_id, entity.proxy_account_id), " +
+                "public_key = case when entity_temp.public_key = '<uuid>' then '' else " +
+                "coalesce(entity_temp.public_key, entity.public_key) end, " +
+                "submit_key = coalesce(entity_temp.submit_key, entity.submit_key) " +
+                "from entity_temp where entity.id = entity_temp.id and entity_temp.created_timestamp is null";
     }
 
     @Test
