@@ -34,7 +34,9 @@ spec:
   values:
     global:
       image:
-        tag: master-f70575c0138706a5ef6c29f2be221ffc52fb463a
+        pullPolicy: Always
+      podAnnotations:
+        git.commit: f70575c0138706a5ef6c29f2be221ffc52fb463a
     importer:
       config:
         hedera:
