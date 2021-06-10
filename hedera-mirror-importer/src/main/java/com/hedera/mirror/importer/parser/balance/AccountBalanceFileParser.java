@@ -57,7 +57,6 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 @MessageEndpoint
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
-//    private final BalanceParserProperties parserProperties;
     private final DataSource dataSource;
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
@@ -72,7 +71,6 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
                                     AccountBalanceFileRepository accountBalanceFileRepository) {
         super(parserProperties);
-//        this.parserProperties = parserProperties;
         this.dataSource = dataSource;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.accountBalanceFileRepository = accountBalanceFileRepository;

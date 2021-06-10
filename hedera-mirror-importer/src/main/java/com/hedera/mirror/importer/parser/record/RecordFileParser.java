@@ -52,7 +52,6 @@ import com.hedera.mirror.importer.util.Utility;
 @ConditionalOnRecordParser
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
-//    private final RecordParserProperties parserProperties;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
