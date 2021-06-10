@@ -28,6 +28,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
@@ -107,6 +108,9 @@ func SetupDb() DbResource {
 	if err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
+
+	// set max wait to 5 minutes, used in pool.Retry to timeout
+	pool.MaxWait = 5 * time.Minute
 
 	// create a dedicated network for the containers, so flyway can connect to db using hostname
 	log.Info("Create network for docker containers")
