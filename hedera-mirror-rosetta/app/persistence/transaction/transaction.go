@@ -273,7 +273,7 @@ func (tr *transactionRepository) findToken(transaction dbTypes.Transaction) (*to
 	}
 
 	token := &token{}
-	err := tr.dbClient.Raw(selectToken, sql.Named("token_id", transaction.EntityID)).First(token).Error
+	err := tr.dbClient.Raw(selectToken, sql.Named("token_id", transaction.EntityId)).First(token).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	} else if err != nil {
@@ -304,8 +304,8 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []dbT
 	transactionsMap := make(map[int64]dbTypes.Transaction)
 	timestamps := make([]int64, len(sameHashTransactions))
 	for i, t := range sameHashTransactions {
-		transactionsMap[t.ConsensusNS] = t
-		timestamps[i] = t.ConsensusNS
+		transactionsMap[t.ConsensusNs] = t
+		timestamps[i] = t.ConsensusNs
 	}
 	cryptoTransfers := tr.findCryptoTransfersAsc(timestamps)
 	nonFeeTransfers := tr.findNonFeeTransfersAsc(timestamps)
@@ -422,12 +422,12 @@ func adjustCryptoTransfers(
 ) []dbTypes.CryptoTransfer {
 	cryptoTransferMap := make(map[string]*aggregatedCryptoTransfer)
 	for _, transfer := range cryptoTransfers {
-		key := makeTransferKey(transfer.ConsensusTimestamp, transfer.EntityID)
+		key := makeTransferKey(transfer.ConsensusTimestamp, transfer.EntityId)
 		if aggregated, ok := cryptoTransferMap[key]; ok {
 			aggregated.amount += transfer.Amount
 		} else {
 			cryptoTransferMap[key] = &aggregatedCryptoTransfer{
-				entityId:  transfer.EntityID,
+				entityId:  transfer.EntityId,
 				amount:    transfer.Amount,
 				timestamp: transfer.ConsensusTimestamp,
 			}
@@ -440,7 +440,7 @@ func adjustCryptoTransfers(
 		if amount != 0 {
 			adjusted = append(adjusted, dbTypes.CryptoTransfer{
 				Amount:             amount,
-				EntityID:           aggregated.entityId,
+				EntityId:           aggregated.entityId,
 				ConsensusTimestamp: aggregated.timestamp,
 			})
 		}
@@ -455,7 +455,7 @@ func aggregateNonFeeTransfers(nonFeeTransfers []dbTypes.CryptoTransfer) map[stri
 	// the original transfer list from the transaction body
 	for _, transfer := range nonFeeTransfers {
 		// the original transfer list may have multiple entries for one entity, so accumulate it
-		nonFeeTransferMap[makeTransferKey(transfer.ConsensusTimestamp, transfer.EntityID)] += transfer.Amount
+		nonFeeTransferMap[makeTransferKey(transfer.ConsensusTimestamp, transfer.EntityId)] += transfer.Amount
 	}
 
 	return nonFeeTransferMap
@@ -477,7 +477,7 @@ func getTransferOperations(
 	hbarTransfers = append(hbarTransfers, cryptoTransfers...)
 
 	for i, transfer := range hbarTransfers {
-		account, err := constructAccount(transfer.EntityID)
+		account, err := constructAccount(transfer.EntityId)
 		if err != nil {
 			return nil, err
 		}
@@ -542,7 +542,7 @@ func getTokenOperation(
 	transactionResult := 0
 	payer := int64(0)
 	for _, transaction := range transactionsMap {
-		payer = transaction.PayerAccountID
+		payer = transaction.PayerAccountId
 		transactionType = transaction.Type
 		transactionResult = transaction.Result
 		if transactionResult == transactionResultSuccess {

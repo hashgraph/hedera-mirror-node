@@ -24,10 +24,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"reflect"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,12 +40,7 @@ var invalidEntityIdStrs = []string{
 }
 
 func TestEntityIdString(t *testing.T) {
-	entityId := EntityId{
-		ShardNum:  0,
-		RealmNum:  0,
-		EntityNum: 7,
-		EncodedId: 7,
-	}
+	entityId := EntityId{EntityNum: 7, EncodedId: 7}
 
 	assert.Equal(t, "0.0.7", entityId.String())
 }
@@ -62,28 +55,16 @@ func TestEntityIdUnmarshalJSON(t *testing.T) {
 		expected EntityId
 	}{
 		{
-			entity: "0",
-			expected: EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
-				EntityNum: 0,
-				EncodedId: 0,
-			},
+			entity:   "0",
+			expected: EntityId{},
 		},
 		{
-			entity: "\"0.0.0\"",
-			expected: EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
-				EntityNum: 0,
-				EncodedId: 0,
-			},
+			entity:   "\"0.0.0\"",
+			expected: EntityId{},
 		},
 		{
 			entity: "10",
 			expected: EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
 				EntityNum: 10,
 				EncodedId: 10,
 			},
@@ -91,8 +72,6 @@ func TestEntityIdUnmarshalJSON(t *testing.T) {
 		{
 			entity: "\"0.0.10\"",
 			expected: EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
 				EntityNum: 10,
 				EncodedId: 10,
 			},
@@ -100,8 +79,6 @@ func TestEntityIdUnmarshalJSON(t *testing.T) {
 		{
 			entity: "4294967295",
 			expected: EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
 				EntityNum: 4294967295,
 				EncodedId: 4294967295,
 			},
@@ -109,10 +86,26 @@ func TestEntityIdUnmarshalJSON(t *testing.T) {
 		{
 			entity: "\"0.0.4294967295\"",
 			expected: EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
 				EntityNum: 4294967295,
 				EncodedId: 4294967295,
+			},
+		},
+		{
+			entity: "281483566645258",
+			expected: EntityId{
+				ShardNum:  1,
+				RealmNum:  2,
+				EntityNum: 10,
+				EncodedId: 281483566645258,
+			},
+		},
+		{
+			entity: "\"1.2.10\"",
+			expected: EntityId{
+				ShardNum:  1,
+				RealmNum:  2,
+				EntityNum: 10,
+				EncodedId: 281483566645258,
 			},
 		},
 	}
@@ -193,24 +186,9 @@ func TestEntityIdFromString(t *testing.T) {
 		expected EntityId
 		entity   string
 	}{
-		{EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 0,
-			EncodedId: 0,
-		}, "0.0.0"},
-		{EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 10,
-			EncodedId: 10,
-		}, "0.0.10"},
-		{EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 4294967295,
-			EncodedId: 4294967295,
-		}, "0.0.4294967295"},
+		{EntityId{}, "0.0.0"},
+		{EntityId{EntityNum: 10, EncodedId: 10}, "0.0.10"},
+		{EntityId{EntityNum: 4294967295, EncodedId: 4294967295}, "0.0.4294967295"},
 	}
 
 	for _, tt := range testData {
@@ -266,37 +244,4 @@ func TestEntityIdDecodeThrows(t *testing.T) {
 	res, err := Decode(-1)
 	assert.Equal(t, EntityId{}, res)
 	assert.Error(t, err)
-}
-
-type foobar struct {
-	Value int
-}
-
-func demo(records ...interface{}) {
-	for _, r := range records {
-		rt := reflect.TypeOf(r)
-		switch rt.Kind() {
-		case reflect.Slice:
-			v := reflect.ValueOf(r)
-
-			for i := 0; i < v.Len(); i++ {
-				log.Infof("value at %d - %+v", i, v.Index(i))
-			}
-			log.Info("slice")
-		case reflect.Array:
-			log.Info("Array")
-		default:
-			log.Infof("value - %+v", r)
-		}
-	}
-}
-
-func TestReflection(t *testing.T) {
-	f1 := &foobar{10}
-	f2 := []*foobar{
-		{Value: 1},
-		{Value: 2},
-	}
-
-	demo(f1, f2)
 }

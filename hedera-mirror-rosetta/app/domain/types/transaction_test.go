@@ -34,17 +34,11 @@ func exampleTransaction() *Transaction {
 		Hash: "somehash",
 		Operations: []*Operation{
 			{
-				Index:  1,
-				Type:   "transfer",
-				Status: "pending",
-				Account: &Account{
-					entityid.EntityId{
-						ShardNum:  0,
-						RealmNum:  0,
-						EntityNum: 0,
-					},
-				},
-				Amount: &HbarAmount{Value: int64(400)},
+				Index:   1,
+				Type:    "transfer",
+				Status:  "pending",
+				Account: &Account{entityid.EntityId{}},
+				Amount:  &HbarAmount{Value: int64(400)},
 			},
 		},
 	}
@@ -56,26 +50,14 @@ func expectedTransaction() *types.Transaction {
 		TransactionIdentifier: &types.TransactionIdentifier{Hash: "somehash"},
 		Operations: []*types.Operation{
 			{
-				OperationIdentifier: &types.OperationIdentifier{
-					Index:        1,
-					NetworkIndex: nil,
-				},
-				RelatedOperations: []*types.OperationIdentifier{},
-				Type:              "transfer",
-				Status:            &status,
-				Account: &types.AccountIdentifier{
-					Address:    "0.0.0",
-					SubAccount: nil,
-					Metadata:   nil,
-				},
-				Amount: &types.Amount{
-					Value:    "400",
-					Currency: config.CurrencyHbar,
-					Metadata: nil,
-				},
+				OperationIdentifier: &types.OperationIdentifier{Index: 1},
+				RelatedOperations:   []*types.OperationIdentifier{},
+				Type:                "transfer",
+				Status:              &status,
+				Account:             &types.AccountIdentifier{Address: "0.0.0"},
+				Amount:              &types.Amount{Value: "400", Currency: config.CurrencyHbar},
 			},
 		},
-		Metadata: nil,
 	}
 }
 

@@ -38,7 +38,7 @@ type tokenRepository struct {
 	dbClient *gorm.DB
 }
 
-// NewTokenRepository creates an instance of a TransactionRepository struct
+// NewTokenRepository creates an instance of a tokenRepository struct
 func NewTokenRepository(dbClient *gorm.DB) repositories.TokenRepository {
 	return &tokenRepository{dbClient: dbClient}
 }

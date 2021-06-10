@@ -98,17 +98,17 @@ var (
 	// the last crypto transfer is after consensusEnd
 	cryptoTransfers = []*dbTypes.CryptoTransfer{
 		{
-			EntityID:           account,
+			EntityId:           account,
 			Amount:             cryptoTransferAmounts[0],
 			ConsensusTimestamp: snapshotTimestamp + 1,
 		},
 		{
-			EntityID:           account,
+			EntityId:           account,
 			Amount:             cryptoTransferAmounts[1],
 			ConsensusTimestamp: snapshotTimestamp + 5,
 		},
 		{
-			EntityID:           account,
+			EntityId:           account,
 			Amount:             155,
 			ConsensusTimestamp: consensusEnd + 1,
 		},
@@ -116,12 +116,12 @@ var (
 	// crypto transfers at or before snapshot timestamp
 	cryptoTransfersLTESnapshot = []*dbTypes.CryptoTransfer{
 		{
-			EntityID:           account,
+			EntityId:           account,
 			Amount:             110,
 			ConsensusTimestamp: snapshotTimestamp - 1,
 		},
 		{
-			EntityID:           account,
+			EntityId:           account,
 			Amount:             170,
 			ConsensusTimestamp: snapshotTimestamp,
 		},

@@ -49,7 +49,8 @@ const (
                                             'value', sum(tt.amount::bigint)
                                         ) change
                                         from token_transfer tt
-                                        join token t on t.token_id = tt.token_id
+                                        join token t
+                                          on t.token_id = tt.token_id
                                         where
                                           consensus_timestamp > @start and
                                           consensus_timestamp <= @end and
@@ -72,7 +73,8 @@ const (
                                                  'value', tb.balance
                                                ))
                                                from token_balance tb
-                                               join token t on t.token_id = tb.token_id
+                                               join token t
+                                                 on t.token_id = tb.token_id
                                                where tb.consensus_timestamp = abm.max and tb.account_id = @account_id
                                              ), '[]') token_balances
                                            from abm

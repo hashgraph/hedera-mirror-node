@@ -723,49 +723,20 @@ func TestAddSignature(t *testing.T) {
 		transaction ITransaction
 		expectError bool
 	}{
-		{
-			transaction: hedera.NewTokenAssociateTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenBurnTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenCreateTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenDeleteTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenDissociateTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenFreezeTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenGrantKycTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenMintTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenRevokeKycTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenUnfreezeTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenUpdateTransaction(),
-		},
-		{
-			transaction: hedera.NewTokenWipeTransaction(),
-		},
-		{
-			transaction: hedera.NewTransferTransaction(),
-		},
-		{
-			transaction: hedera.NewTopicCreateTransaction(),
-			expectError: true,
-		},
+		{transaction: hedera.NewTokenAssociateTransaction()},
+		{transaction: hedera.NewTokenBurnTransaction()},
+		{transaction: hedera.NewTokenCreateTransaction()},
+		{transaction: hedera.NewTokenDeleteTransaction()},
+		{transaction: hedera.NewTokenDissociateTransaction()},
+		{transaction: hedera.NewTokenFreezeTransaction()},
+		{transaction: hedera.NewTokenGrantKycTransaction()},
+		{transaction: hedera.NewTokenMintTransaction()},
+		{transaction: hedera.NewTokenRevokeKycTransaction()},
+		{transaction: hedera.NewTokenUnfreezeTransaction()},
+		{transaction: hedera.NewTokenUpdateTransaction()},
+		{transaction: hedera.NewTokenWipeTransaction()},
+		{transaction: hedera.NewTransferTransaction()},
+		{transaction: hedera.NewTopicCreateTransaction(), expectError: true},
 	}
 
 	for _, tt := range tests {

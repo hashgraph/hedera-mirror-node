@@ -35,21 +35,21 @@ const (
 )
 
 type Transaction struct {
-	ConsensusNS          int64 `gorm:"primaryKey"`
+	ConsensusNs          int64 `gorm:"primaryKey"`
 	ChargedTxFee         int64
-	EntityID             int64
+	EntityId             int64
 	InitialBalance       int64
 	MaxFee               int64
 	Memo                 []byte
-	NodeAccountID        int64
-	PayerAccountID       int64
+	NodeAccountId        int64
+	PayerAccountId       int64
 	Result               int
 	Scheduled            bool
 	TransactionBytes     []byte
 	TransactionHash      []byte
 	Type                 int
 	ValidDurationSeconds int64
-	ValidStartNS         int64
+	ValidStartNs         int64
 }
 
 func (Transaction) TableName() string {
@@ -58,6 +58,8 @@ func (Transaction) TableName() string {
 
 func (t Transaction) HasTokenOperation() bool {
 	// these three transaction types have token id saved and require an extra operation in addition to any transfer
+	// token mint, token burn, and token wipe can be fully represented by the operation built from the token transfer
+	// record so they don't need an extra operation
 	return t.Type == TransactionTypeTokenCreation ||
 		t.Type == TransactionTypeTokenDeletion ||
 		t.Type == TransactionTypeTokenUpdate

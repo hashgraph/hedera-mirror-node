@@ -47,18 +47,10 @@ func TestCompareCurrency(t *testing.T) {
 			expected:  true,
 		},
 		{
-			name: "SameValue",
-			currencyA: &rTypes.Currency{
-				Symbol:   "foobar",
-				Decimals: 12,
-				Metadata: nil,
-			},
-			currencyB: &rTypes.Currency{
-				Symbol:   "foobar",
-				Decimals: 12,
-				Metadata: nil,
-			},
-			expected: true,
+			name:      "SameValue",
+			currencyA: &rTypes.Currency{Symbol: "foobar", Decimals: 12},
+			currencyB: &rTypes.Currency{Symbol: "foobar", Decimals: 12},
+			expected:  true,
 		},
 		{
 			name: "SameValueWithMetadata",
@@ -233,12 +225,8 @@ func TestParseOperationMetadata(t *testing.T) {
 		{
 			name: "SuccessMultiple",
 			metadatas: []map[string]interface{}{
-				{
-					"name": name,
-				},
-				{
-					"value": value,
-				},
+				{"name": name},
+				{"value": value},
 			},
 		},
 		{
@@ -257,9 +245,7 @@ func TestParseOperationMetadata(t *testing.T) {
 		{
 			name: "MissingField",
 			metadatas: []map[string]interface{}{
-				{
-					"value": value,
-				},
+				{"value": value},
 			},
 			expectError: true,
 		},
@@ -467,11 +453,8 @@ func TestValidateToken(t *testing.T) {
 			expectError:  true,
 		},
 		{
-			name: "DecimalsMismatch",
-			currency: &rTypes.Currency{
-				Symbol:   "0.0.212",
-				Decimals: 19867,
-			},
+			name:        "DecimalsMismatch",
+			currency:    &rTypes.Currency{Symbol: "0.0.212", Decimals: 19867},
 			expectError: true,
 		},
 	}
@@ -504,11 +487,8 @@ func getOperation(index int64, operationType string) *rTypes.Operation {
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: index},
 		Account:             &rTypes.AccountIdentifier{Address: "0.0.100"},
 		Amount: &rTypes.Amount{
-			Value: "20",
-			Currency: &rTypes.Currency{
-				Symbol:   "foobar",
-				Decimals: 9,
-			},
+			Value:    "20",
+			Currency: &rTypes.Currency{Symbol: "foobar", Decimals: 9},
 		},
 		Type: operationType,
 	}

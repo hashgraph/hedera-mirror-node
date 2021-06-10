@@ -51,16 +51,16 @@ func AddTransaction(
 	tokenTransfers []dbTypes.TokenTransfer,
 ) {
 	tx := &dbTypes.Transaction{
-		ConsensusNS:          consensusNs,
+		ConsensusNs:          consensusNs,
 		ChargedTxFee:         17,
-		EntityID:             entityId,
-		NodeAccountID:        nodeAccountId,
-		PayerAccountID:       payerAccountId,
+		EntityId:             entityId,
+		NodeAccountId:        nodeAccountId,
+		PayerAccountId:       payerAccountId,
 		Result:               result,
 		TransactionHash:      transactionHash,
 		Type:                 transactionType,
 		ValidDurationSeconds: 120,
-		ValidStartNS:         validStartNs,
+		ValidStartNs:         validStartNs,
 	}
 	dbClient.Create(tx)
 

@@ -291,6 +291,7 @@ func NewConstructionAPIService(
 
 func addSignature(transaction ITransaction, pubKey hedera.PublicKey, signature []byte) *rTypes.Error {
 	switch tx := transaction.(type) {
+	// these transaction types are what the construction service supports
 	case *hedera.TokenAssociateTransaction:
 		tx.AddSignature(pubKey, signature)
 	case *hedera.TokenBurnTransaction:
@@ -345,6 +346,7 @@ func unmarshallTransactionFromHexString(transactionString string) (ITransaction,
 	}
 
 	switch tx := transaction.(type) {
+	// these transaction types are what the construction service supports
 	case hedera.TokenAssociateTransaction:
 		return &tx, nil
 	case hedera.TokenBurnTransaction:

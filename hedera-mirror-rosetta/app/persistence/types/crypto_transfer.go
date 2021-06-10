@@ -25,7 +25,7 @@ const cryptoTransferTableName = "crypto_transfer"
 type CryptoTransfer struct {
 	Amount             int64
 	ConsensusTimestamp int64
-	EntityID           int64
+	EntityId           int64
 }
 
 func (CryptoTransfer) TableName() string {

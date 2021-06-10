@@ -31,21 +31,15 @@ import (
 
 var (
 	hbarAmount        = &HbarAmount{Value: 400}
-	hbarRosettaAmount = &types.Amount{
-		Value:    "400",
-		Currency: config.CurrencyHbar,
-	}
-	tokenAmount = &TokenAmount{
+	hbarRosettaAmount = &types.Amount{Value: "400", Currency: config.CurrencyHbar}
+	tokenAmount       = &TokenAmount{
 		TokenId:  entityid.EntityId{EntityNum: 1580, EncodedId: 1580},
 		Decimals: 9,
 		Value:    6000,
 	}
 	tokenRosettaAmount = &types.Amount{
-		Value: "6000",
-		Currency: &types.Currency{
-			Symbol:   "0.0.1580",
-			Decimals: 9,
-		},
+		Value:    "6000",
+		Currency: &types.Currency{Symbol: "0.0.1580", Decimals: 9},
 	}
 )
 

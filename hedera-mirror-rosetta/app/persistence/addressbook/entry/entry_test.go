@@ -42,18 +42,10 @@ var (
 		Id:                 1,
 		ConsensusTimestamp: 1,
 		Ip:                 LocalIp,
-		Port:               0,
 		Memo:               "0.0.5",
-		PublicKey:          "",
-		NodeId:             0,
-		NodeAccountId:      0,
-		NodeCertHash:       nil,
 	}
-	entityId = &entityid.EntityId{
-		EntityNum: 5,
-		EncodedId: 5,
-	}
-	peerId                   = &types.Account{EntityId: *entityId}
+	entityId, _              = entityid.Decode(5)
+	peerId                   = &types.Account{EntityId: entityId}
 	expectedAddressBookEntry = &types.AddressBookEntry{
 		PeerId: peerId,
 		Metadata: map[string]interface{}{

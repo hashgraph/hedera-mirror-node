@@ -223,7 +223,7 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.O
 
 	for symbol, sum := range sums {
 		if sum != 0 {
-			log.Errorf("Transfer sum for symbo %s is not 0", symbol)
+			log.Errorf("Transfer sum for symbol %s is not 0", symbol)
 			return nil, nil, errors.ErrInvalidOperationsTotalAmount
 		}
 	}
