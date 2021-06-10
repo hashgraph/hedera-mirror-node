@@ -66,9 +66,8 @@ The beta mirror node works as follows:
 ### Rosetta API
 
 In addition to the REST API which exposes the persisted network entities, the Mirror Node also provides a
-[Rosetta API](https://www.rosetta-api.org/docs/welcome.html) compliant REST API server.
-This exposes a subset of data with a focus on blockchain data integration.
-See [rosetta-server](docs/rosetta-server.md) for more details.
+[Rosetta API](https://www.rosetta-api.org/docs/welcome.html) compliant REST API server. This exposes a subset of data
+with a focus on blockchain data integration. See [rosetta-server](docs/rosetta-server.md) for more details.
 
 ## Getting Started
 
@@ -246,12 +245,7 @@ To manually verify the Rosetta API endpoints follow the [Operations](docs/operat
 
 ## Releasing
 
-To prepare for a new release, first update `release.version` and `release.chartVersion` in the root `pom.xml`. Then run:
-
-```
-./mvnw clean package -N -P=release
-helm dependency update charts/hedera-mirror
-```
+To perform a new release, run the `Automated Release` GitHub workflow.
 
 ## Contributing
 

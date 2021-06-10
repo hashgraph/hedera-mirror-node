@@ -462,6 +462,11 @@
                                     <replacements>
                                         <replacement>
                                             <token>
+                                                <![CDATA[(?<=<docker.tag.version>)[0-9a-zA-Z.-]+(?=</docker.tag.version)]]></token>
+                                            <value>${docker.tag.version}</value>
+                                        </replacement>
+                                        <replacement>
+                                            <token>
                                                 <![CDATA[(?<=<release.version>)[0-9a-zA-Z.-]+(?=</release.version>)]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
@@ -490,7 +495,7 @@
                                     <replacements>
                                         <replacement>
                                             <token><![CDATA[(?<=^appVersion: ")[0-9a-zA-Z.-]+]]></token>
-                                            <value>${release.version}</value>
+                                            <value>${docker.tag.version}</value>
                                         </replacement>
                                         <replacement>
                                             <token><![CDATA[(?<=^version: )[0-9a-zA-Z.-]+]]></token>
@@ -527,7 +532,7 @@
                                         <replacement>
                                             <token>
                                                 <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
-                                            <value>${release.version}</value>
+                                            <value>${docker.tag.version}</value>
                                         </replacement>
                                     </replacements>
                                 </configuration>
