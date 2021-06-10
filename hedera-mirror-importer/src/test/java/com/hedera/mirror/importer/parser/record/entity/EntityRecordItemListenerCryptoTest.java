@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.Optional;
-import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +58,6 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
 public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
@@ -662,27 +660,6 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setReceiveRecordThreshold(5001L)
                 .setReceiverSigRequired(false)
                 .setSendRecordThreshold(6001L));
-    }
-
-    private RecordItem getCreateAccountRecordItem(int accountNum) throws Exception {
-        Transaction createTransaction = cryptoCreateTransaction();
-        TransactionBody createTransactionBody = getTransactionBody(createTransaction);
-        TransactionRecord createRecord = transactionRecord(
-                createTransactionBody,
-                ResponseCodeEnum.SUCCESS.getNumber(),
-                accountNum);
-        return new RecordItem(createTransaction, createRecord);
-    }
-
-    private RecordItem getUpdateAccountRecordItem(int accountNum) throws Exception {
-        Transaction updateTransaction = cryptoUpdateTransaction(AccountID.newBuilder().setShardNum(0).setRealmNum(0)
-                .setAccountNum(accountNum).build());
-        TransactionBody updateTransactionBody = getTransactionBody(updateTransaction);
-        TransactionRecord createRecord = transactionRecord(
-                updateTransactionBody,
-                ResponseCodeEnum.SUCCESS.getNumber(),
-                accountNum);
-        return new RecordItem(updateTransaction, createRecord);
     }
 
     private Transaction cryptoDeleteTransaction() {

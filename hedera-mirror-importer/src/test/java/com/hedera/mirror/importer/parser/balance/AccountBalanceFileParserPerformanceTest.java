@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.balance;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -76,7 +75,7 @@ class AccountBalanceFileParserPerformanceTest extends IntegrationTest {
 
     @Test
     @Timeout(10)
-    void parse() throws SQLException {
+    void parse() {
         AccountBalanceFileParser accountBalanceFileParser = balanceFileParser;
         for (AccountBalanceFile accountBalanceFile : accountBalanceFiles) {
             accountBalanceFileParser.parse(accountBalanceFile);

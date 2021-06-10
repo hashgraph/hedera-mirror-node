@@ -204,10 +204,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractResults.clear();
         cryptoTransfers.clear();
         entities.clear();
+        entityIdEntities.clear();
         entityIds.clear();
         fileData.clear();
         liveHashes.clear();
-        entityIdEntities.clear();
         nonFeeTransfers.clear();
         schedules.clear();
         topicMessages.clear();
@@ -320,7 +320,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onToken(Token token) throws ImporterException {
-        // entity could experience multiple updates in a single record file, handle updates in memory for this case
+        // tokens could experience multiple updates in a single record file, handle updates in memory for this case
         long tokenId = token.getTokenId().getTokenId().getId();
         if (tokens.containsKey(tokenId)) {
             updateCachedToken(token);
@@ -332,6 +332,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        // tokenAccounts may experience multiple updates in a single record file, handle updates in memory for this case
         if (tokenAccounts.containsKey(tokenAccount.getId())) {
             updateCachedTokenAccount(tokenAccount);
             return;
@@ -347,6 +348,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
+        // schedules could experience multiple updates in a single record file, handle updates in memory for this case
         if (schedules.containsKey(schedule.getScheduleId().getId())) {
             updateCachedSchedule(schedule);
             return;
@@ -374,7 +376,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (newEntity.getKey() != null) {
             cachedEntity.setKey(newEntity.getKey());
-            cachedEntity.setMemo(newEntity.getMemo());
+            cachedEntity.setPublicKey(newEntity.getPublicKey());
         }
 
         if (newEntity.getMemo() != null) {
@@ -392,8 +394,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (newToken.getKycKey() != null) {
             cachedToken.setKycKey(newToken.getKycKey());
         }
-
-        cachedToken.setModifiedTimestamp(newToken.getModifiedTimestamp());
 
         if (newToken.getName() != null) {
             cachedToken.setName(newToken.getName());
@@ -418,6 +418,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (newToken.getWipeKey() != null) {
             cachedToken.setWipeKey(newToken.getWipeKey());
         }
+
+        cachedToken.setModifiedTimestamp(newToken.getModifiedTimestamp());
     }
 
     private void updateCachedTokenAccount(TokenAccount newTokenAccount) {

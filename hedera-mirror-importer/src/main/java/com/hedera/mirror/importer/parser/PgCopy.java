@@ -54,8 +54,8 @@ public class PgCopy<T> {
     private final ObjectWriter writer;
     private final ParserProperties properties;
     protected final MeterRegistry meterRegistry;
-    protected Timer insertDurationMetric;
     protected final String tableName;
+    protected Timer insertDurationMetric;
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
         this(entityClass, meterRegistry, properties, entityClass.getSimpleName());
@@ -84,12 +84,10 @@ public class PgCopy<T> {
 
     protected Timer getCopyDurationMetric() {
         // in PgCopy copy and insert are synonymous
-        if (insertDurationMetric == null) {
-            insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
-                    .description("Time to insert transactions into table")
-                    .tag("table", tableName)
-                    .register(meterRegistry);
-        }
+        insertDurationMetric = insertDurationMetric == null ? Timer.builder("hedera.mirror.importer.parse.insert")
+                .description("Time to insert transactions into table")
+                .tag("table", tableName)
+                .register(meterRegistry) : insertDurationMetric;
 
         return insertDurationMetric;
     }
