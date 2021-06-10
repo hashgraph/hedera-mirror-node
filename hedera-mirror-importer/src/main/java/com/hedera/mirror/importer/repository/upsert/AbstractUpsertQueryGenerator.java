@@ -179,8 +179,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 formattedColumnName);
     }
 
-    private String getUpsertNullableStringConflictCaseCoalesceAssign(String column,
-                                                                     String tempTableName) {
+    private String getUpsertNullableStringConflictCaseCoalesceAssign(String column) {
         // e.g. "case when excluded.memo = ' ' then '' else coalesce(excluded.memo, entity.memo) end "
         String finalFormattedColumnName = getTableColumnName(getTableName(), column);
         String tempFormattedColumnName = getTableColumnName(getTemporaryTableName(), column);
@@ -208,13 +207,12 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String getSelectableFieldsFromDomainModel(List<SingularAttribute> selectableAttributes) {
-        List<String> selectableColumns = new ArrayList<>();
-        selectableAttributes.forEach(attribute -> {
-            selectableColumns.add(getColumnSelectQuery(attribute.getType().getJavaType(), attribute.getName()));
-        });
+        List<String> selectableFields = new ArrayList<>();
+        selectableAttributes.forEach(attribute -> selectableFields
+                .add(getColumnSelectQuery(attribute.getType().getJavaType(), attribute.getName())));
 
         // sort and add update statements to string builder
-        return StringUtils.join(selectableColumns, ", ");
+        return StringUtils.join(selectableFields, ", ");
     }
 
     private String getSelectableFieldsThroughReflection() {
@@ -304,16 +302,14 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         List<SingularAttribute> updatableAttributes = getUpdatableColumns();
         Collections.sort(updatableAttributes, ATTRIBUTE_COMPARATOR); // sort fields alphabetically
         updatableAttributes.forEach(attribute -> {
-            String updateQuery = "";
+            String attributeUpdateQuery = "";
             if (attribute.getType().getJavaType() == String.class) {
-                updateQuery = getUpsertNullableStringConflictCaseCoalesceAssign(
-                        attribute.getName(),
-                        tempTableName);
+                attributeUpdateQuery = getUpsertNullableStringConflictCaseCoalesceAssign(attribute.getName());
             } else {
-                updateQuery = getUpsertConflictCoalesceAssign(attribute.getName(), tempTableName);
+                attributeUpdateQuery = getUpsertConflictCoalesceAssign(attribute.getName(), tempTableName);
             }
 
-            updateQueries.add(updateQuery);
+            updateQueries.add(attributeUpdateQuery);
         });
 
         // sort and add update statements to string builder
@@ -324,7 +320,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private String getConflictClause(String action) {
         return String.format(
                 " on conflict (%s) do %s",
-                getConflictIdColumns().stream().map(x -> getFormattedColumnName(x)).collect(Collectors.joining(", ")),
+                getConflictIdColumns().stream().map(this::getFormattedColumnName).collect(Collectors.joining(", ")),
                 action);
     }
 }

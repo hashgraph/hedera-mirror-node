@@ -29,7 +29,9 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
@@ -80,16 +82,10 @@ public class PgCopy<T> {
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
         sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", this.tableName, columnsCsv);
-    }
-
-    protected Timer getCopyDurationMetric() {
-        // in PgCopy copy and insert are synonymous
         insertDurationMetric = insertDurationMetric == null ? Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
                 .tag("table", tableName)
                 .register(meterRegistry) : insertDurationMetric;
-
-        return insertDurationMetric;
     }
 
     public void copy(Collection<T> items, Connection connection) {
@@ -98,28 +94,25 @@ public class PgCopy<T> {
         }
 
         try {
-            Stopwatch stopwatch = null;
-            if (getCopyDurationMetric() != null) {
-                stopwatch = Stopwatch.createStarted();
-            }
-
-            PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
-
-            try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
-                writer.writeValue(pgCopyOutputStream, items);
-            } finally {
-                if (copyIn.isActive()) {
-                    copyIn.cancelCopy();
-                }
-            }
-
-            if (getCopyDurationMetric() != null) {
-                getCopyDurationMetric().record(stopwatch.elapsed());
-                log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
-            }
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            persistItems(items, connection);
+            insertDurationMetric.record(stopwatch.elapsed());
+            log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
+        }
+    }
+
+    protected void persistItems(Collection<T> items, Connection connection) throws SQLException, IOException {
+        PGConnection pgConnection = connection.unwrap(PGConnection.class);
+        CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
+
+        try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
+            writer.writeValue(pgCopyOutputStream, items);
+        } finally {
+            if (copyIn.isActive()) {
+                copyIn.cancelCopy();
+            }
         }
     }
 }
