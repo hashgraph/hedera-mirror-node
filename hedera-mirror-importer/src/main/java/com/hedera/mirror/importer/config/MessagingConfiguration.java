@@ -49,9 +49,10 @@ public class MessagingConfiguration {
     private static final String CHANNEL_BALANCE = CHANNEL_STREAM + ".balance";
     private static final String CHANNEL_EVENT = CHANNEL_STREAM + ".event";
     private static final String CHANNEL_RECORD = CHANNEL_STREAM + ".record";
-    private static final String INTEGRATION_FLOW_BALANCE = "flow." + CHANNEL_BALANCE;
-    private static final String INTEGRATION_FLOW_EVENT = "flow." + CHANNEL_EVENT;
-    private static final String INTEGRATION_FLOW_RECORD = "flow." + CHANNEL_RECORD;
+    private static final String INTEGRATION_FLOW_PREFIX = "flow.";
+    private static final String INTEGRATION_FLOW_BALANCE = INTEGRATION_FLOW_PREFIX + CHANNEL_BALANCE;
+    private static final String INTEGRATION_FLOW_EVENT = INTEGRATION_FLOW_PREFIX + CHANNEL_EVENT;
+    private static final String INTEGRATION_FLOW_RECORD = INTEGRATION_FLOW_PREFIX + CHANNEL_RECORD;
 
     @Bean(CHANNEL_BALANCE)
     MessageChannel channelBalance(BalanceParserProperties properties) {
