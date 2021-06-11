@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_RECORD;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
 import com.google.common.base.Stopwatch;
@@ -34,8 +33,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.integration.annotation.MessageEndpoint;
-import org.springframework.integration.annotation.Poller;
-import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +46,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @MessageEndpoint
-@ConditionalOnRecordParser
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     private final RecordItemListener recordItemListener;
@@ -64,11 +60,11 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final DistributionSummary unknownSizeMetric;
     private final Timer parseLatencyMetric;
 
-    public RecordFileParser(RecordParserProperties parserProperties, MeterRegistry meterRegistry,
+    public RecordFileParser(RecordParserProperties properties, MeterRegistry meterRegistry,
                             RecordItemListener recordItemListener,
                             RecordStreamFileListener recordStreamFileListener,
                             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        super(parserProperties);
+        super(properties);
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
@@ -77,7 +73,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         ImmutableMap.Builder<Boolean, Timer> parseDurationMetricsBuilder = ImmutableMap.builder();
         Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
                 .description("The duration in seconds it took to parse the file and store it in the database")
-                .tag("type", parserProperties.getStreamType().toString());
+                .tag("type", properties.getStreamType().toString());
 
         parseDurationMetricsBuilder.put(true, parseDurationTimerBuilder
                 .tag("success", "true")
@@ -91,7 +87,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file " +
                         "and the time at which the file was processed successfully")
-                .tag("type", parserProperties.getStreamType().toString())
+                .tag("type", properties.getStreamType().toString())
                 .register(meterRegistry);
 
         // build transaction latency metrics
@@ -131,19 +127,16 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
-    @ServiceActivator(inputChannel = CHANNEL_RECORD,
-            poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.record.frequency:100}")
-    )
     @Transactional
     public void parse(RecordFile recordFile) {
         super.parse(recordFile);
     }
 
     @Override
-    protected void parseStreamFile(RecordFile recordFile) {
+    protected void doParse(RecordFile recordFile) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
-                .getDateRangeFilter(parserProperties.getStreamType());
+                .getDateRangeFilter(properties.getStreamType());
         AtomicInteger counter = new AtomicInteger(0);
         boolean success = false;
 

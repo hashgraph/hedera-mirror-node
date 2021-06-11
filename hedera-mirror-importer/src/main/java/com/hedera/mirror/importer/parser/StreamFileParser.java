@@ -26,4 +26,6 @@ public interface StreamFileParser<T extends StreamFile> {
     String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
     void parse(T streamFile);
+
+    ParserProperties getProperties();
 }

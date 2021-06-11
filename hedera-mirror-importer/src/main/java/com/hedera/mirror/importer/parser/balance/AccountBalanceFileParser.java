@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_BALANCE;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
 import com.google.common.base.Stopwatch;
@@ -34,8 +33,6 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.integration.annotation.MessageEndpoint;
-import org.springframework.integration.annotation.Poller;
-import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -66,27 +63,27 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
     private final PgCopy<AccountBalance> pgCopyAccountBalance;
     private final PgCopy<TokenBalance> pgCopyTokenBalance;
 
-    public AccountBalanceFileParser(BalanceParserProperties parserProperties, DataSource dataSource,
+    public AccountBalanceFileParser(BalanceParserProperties properties, DataSource dataSource,
                                     MeterRegistry meterRegistry,
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
                                     AccountBalanceFileRepository accountBalanceFileRepository) {
-        super(parserProperties);
+        super(properties);
         this.dataSource = dataSource;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
-        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
-        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
+        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, properties);
+        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, properties);
 
         Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
                 .description("The duration in seconds it took to parse the file and store it in the database")
-                .tag("type", parserProperties.getStreamType().toString());
+                .tag("type", properties.getStreamType().toString());
         parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
         parseDurationMetricSuccess = parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
 
         parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file " +
                         "and the time at which the file was processed successfully")
-                .tag("type", parserProperties.getStreamType().toString())
+                .tag("type", properties.getStreamType().toString())
                 .register(meterRegistry);
     }
 
@@ -99,16 +96,13 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
-    @ServiceActivator(inputChannel = CHANNEL_BALANCE,
-            poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.balance.frequency:100}")
-    )
     @Transactional
     public void parse(AccountBalanceFile accountBalanceFile) {
         super.parse(accountBalanceFile);
     }
 
     @Override
-    protected void parseStreamFile(AccountBalanceFile accountBalanceFile) {
+    protected void doParse(AccountBalanceFile accountBalanceFile) {
         long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
         long count = 0L;
         String name = accountBalanceFile.getName();

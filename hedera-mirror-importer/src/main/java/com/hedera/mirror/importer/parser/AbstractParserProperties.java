@@ -49,7 +49,6 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @NotNull
     protected Duration processingTimeout = Duration.ofSeconds(10L);
 
-    @Min(1)
     protected int queueCapacity = 10;
 
     @NotNull

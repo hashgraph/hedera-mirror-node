@@ -20,11 +20,7 @@ package com.hedera.mirror.importer.parser.event;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_EVENT;
-
 import org.springframework.integration.annotation.MessageEndpoint;
-import org.springframework.integration.annotation.Poller;
-import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,8 +34,8 @@ public class EventFileParser extends AbstractStreamFileParser<EventFile> {
 
     private final EventFileRepository eventFileRepository;
 
-    public EventFileParser(EventFileRepository eventFileRepository, EventParserProperties parserProperties) {
-        super(parserProperties);
+    public EventFileParser(EventFileRepository eventFileRepository, EventParserProperties properties) {
+        super(properties);
         this.eventFileRepository = eventFileRepository;
     }
 
@@ -49,16 +45,13 @@ public class EventFileParser extends AbstractStreamFileParser<EventFile> {
             maxDelayExpression = "#{@eventParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@eventParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@eventParserProperties.getRetry().getMaxAttempts()}")
-    @ServiceActivator(inputChannel = CHANNEL_EVENT,
-            poller = @Poller(fixedDelay = "${hedera.mirror.importer.parser.event.frequency:100}")
-    )
     @Transactional
     public void parse(EventFile eventFile) {
         super.parse(eventFile);
     }
 
     @Override
-    protected void parseStreamFile(EventFile eventFile) {
+    protected void doParse(EventFile eventFile) {
         eventFileRepository.save(eventFile);
     }
 }

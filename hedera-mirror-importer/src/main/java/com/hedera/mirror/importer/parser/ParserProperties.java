@@ -29,6 +29,8 @@ public interface ParserProperties {
 
     int getBufferSize();
 
+    Duration getFrequency();
+
     Path getParsedPath();
 
     Duration getProcessingTimeout();
