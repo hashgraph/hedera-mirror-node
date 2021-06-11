@@ -42,26 +42,6 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
                         .get());
     }
 
-    @Test
-    void findByTokenIdAndSerialNumber() {
-        Nft nftOne = repository.save(nft("0.0.2", 1, 1));
-        Nft nftTwo = repository.save(nft("0.0.2", 2, 2));
-        Nft nftThree = repository.save(nft("0.0.3", 1, 3));
-        //TODO Clean up, just have this for coverage
-        assertThat(nftOne)
-                .isEqualTo(repository
-                        .findById(new Nft.Id(1L, EntityId.of("0.0.2", EntityTypeEnum.TOKEN)))
-                        .get());
-        assertThat(nftTwo)
-                .isEqualTo(repository
-                        .findById(new Nft.Id(2L, EntityId.of("0.0.2", EntityTypeEnum.TOKEN)))
-                        .get());
-        assertThat(nftThree)
-                .isEqualTo(repository
-                        .findById(new Nft.Id(1L, EntityId.of("0.0.3", EntityTypeEnum.TOKEN)))
-                        .get());
-    }
-
     private Nft nft(String tokenId, long serialNumber, long consensusTimestamp) {
         Nft nft = new Nft();
         nft.setCreatedTimestamp(consensusTimestamp);
