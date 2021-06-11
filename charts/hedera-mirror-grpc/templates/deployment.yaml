@@ -17,6 +17,9 @@ spec:
     metadata:
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- if or .Values.podAnnotations .Values.global.podAnnotations }}
+        {{- tpl (mergeOverwrite .Values.podAnnotations .Values.global.podAnnotations | toYaml) $ | nindent 8 }}
+        {{- end }}
       labels: {{ include "hedera-mirror-grpc.selectorLabels" . | nindent 8 }}
     spec:
       affinity: {{ toYaml .Values.affinity | nindent 8 }}
@@ -33,7 +36,7 @@ spec:
             {{- end }}
           envFrom: {{ tpl (toYaml .Values.envFrom) . | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy | default .Values.image.pullPolicy }}
           livenessProbe: {{ toYaml .Values.livenessProbe | nindent 12 }}
           ports:
             - containerPort: 5600

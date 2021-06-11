@@ -23,6 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -77,30 +78,27 @@ public class ScheduleFeature {
     private final static int DEFAULT_TINY_HBAR = 1_000;
 
     @Autowired
-    private ScheduleClient scheduleClient;
-    @Autowired
     private AccountClient accountClient;
+    @Autowired
+    private MirrorNodeClient mirrorClient;
+    @Autowired
+    private TokenClient tokenClient;
     @Autowired
     private TopicClient topicClient;
     @Autowired
-    private TokenClient tokenClient;
+    private ScheduleClient scheduleClient;
 
-    private ScheduleId scheduleId;
-
-    @Autowired
-    private MirrorNodeClient mirrorClient;
-
-    private NetworkTransactionResponse networkTransactionResponse;
-    private TransactionId scheduledTransactionId;
-
-    private ScheduleInfo scheduleInfo;
-
-    private Transaction scheduledTransaction;
-
-    private int expectedSignersCount;
     private int currentSignersCount;
+    private int expectedSignersCount;
+    private NetworkTransactionResponse networkTransactionResponse;
+    private ScheduleId scheduleId;
+    private ScheduleInfo scheduleInfo;
+    private Transaction scheduledTransaction;
+    private TransactionId scheduledTransactionId;
     private final int signatoryCountOffset = 1; // Schedule map includes payer account which may not be a required
     // signatory
+    private TokenId tokenId;
+    private ExpandedAccountId tokenTreasuryAccount;
 
     @Given("I successfully schedule a treasury HBAR disbursement to {string}")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
@@ -187,7 +185,7 @@ public class ScheduleFeature {
             TimeoutException {
         expectedSignersCount = 2;
         currentSignersCount = 0 + signatoryCountOffset;
-        ExpandedAccountId sender = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
+        tokenTreasuryAccount = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
         ExpandedAccountId receiver = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(receiverName));
 
         // create token
@@ -200,11 +198,11 @@ public class ScheduleFeature {
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
-                sender,
+                tokenTreasuryAccount,
                 DEFAULT_TINY_HBAR);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
+        tokenId = networkTransactionResponse.getReceipt().tokenId;
         assertNotNull(tokenId);
 
         // associate new account, sender as treasury is auto associated
@@ -216,12 +214,12 @@ public class ScheduleFeature {
         scheduledTransaction = tokenClient
                 .getTokenTransferTransaction(
                         tokenId,
-                        sender.getAccountId(),
+                        tokenTreasuryAccount.getAccountId(),
                         receiver.getAccountId(),
                         10)
                 // add Hbar transfer logic
-                .addHbarTransfer(receiver.getAccountId(), hbarAmount.negated())
-                .addHbarTransfer(sender.getAccountId(), hbarAmount);
+                .addHbarTransfer(receiver.getAccountId(), hbarAmount)
+                .addHbarTransfer(tokenTreasuryAccount.getAccountId(), hbarAmount.negated());
 
         createNewSchedule(scheduledTransaction, null);
     }
@@ -237,7 +235,7 @@ public class ScheduleFeature {
         // create topic w submit key
         log.debug("Create new topic with {}'s submit key", accountName);
         networkTransactionResponse = topicClient
-                .createTopic(accountClient.getTokenTreasuryAccount(), submitAdmin.getPublicKey());
+                .createTopic(scheduleClient.getSdkClient().getExpandedOperatorAccountId(), submitAdmin.getPublicKey());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
@@ -371,6 +369,31 @@ public class ScheduleFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyDeletedScheduleFromMirror() {
         verifyScheduleFromMirror(ScheduleStatus.DELETED);
+    }
+
+    @After
+    public void cleanup() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        // dissociate all applicable accounts from token to reduce likelihood of max token association error
+        if (tokenId != null) {
+            // a nonzero balance will result in a TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES error
+            // not possible to wipe a treasury account as it results in CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT error
+            // as a result to dissociate first delete token
+            tokenClient.delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
+            dissociateAccount(tokenTreasuryAccount);
+            dissociateAccount(tokenClient.getSdkClient().getExpandedOperatorAccountId());
+            tokenId = null;
+        }
+    }
+
+    private void dissociateAccount(ExpandedAccountId accountId) {
+        if (accountId != null) {
+            try {
+                tokenClient.disssociate(accountId, tokenId);
+                log.info("Successfully dissociated account {} from token {}", accountId, tokenId);
+            } catch (Exception ex) {
+                log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
+            }
+        }
     }
 
     private void validateScheduleInfo(ScheduleInfo scheduleInfo) {

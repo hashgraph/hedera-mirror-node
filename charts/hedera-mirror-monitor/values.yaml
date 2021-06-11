@@ -88,6 +88,7 @@ fullnameOverride: ""
 global:
   image: {}
   namespaceOverride: ""
+  podAnnotations: {}
 
 image:
   pullPolicy: IfNotPresent
@@ -95,6 +96,19 @@ image:
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
+
+ingress:
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-monitor.namespace" . }}-{{ include "hedera-mirror-monitor.fullname" . }}@kubernetescrd'
+  enabled: true
+  hosts:
+    - host: ""
+      paths: ["/monitor/api"]
+  middleware:
+    enabled: false
+  tls:
+    enabled: false
+    secretName: ""
 
 labels: {}
 
@@ -107,6 +121,8 @@ livenessProbe:
   timeoutSeconds: 2
 
 nodeSelector: {}
+
+podAnnotations: {}
 
 podSecurityContext:
   fsGroup: 1000
@@ -152,10 +168,10 @@ prometheusRules:
 
   MonitorNoPodsReady:
     annotations:
-      description: "No monitor instances are currently running in {{ $labels.namespace }}/{{ $labels.pod }}"
+      description: "No monitor instances are currently running in {{ $labels.namespace }}"
       summary: No monitor instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace, pod) < 1
+    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace) < 1
     for: 2m
     labels:
       severity: critical

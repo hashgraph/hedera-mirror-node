@@ -23,6 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -94,17 +95,11 @@ public class TokenFeature {
                 TokenKycStatus.KycNotApplicable_VALUE);
     }
 
-    @Given("I successfully onboard a new token account with freeze status {int} and kyc status {int}")
+    @Given("I successfully create a new token account with freeze status {int} and kyc status {int}")
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewToken(int freezeStatus, int kycStatus) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
-    }
-
-    @Given("I successfully onboard a new token account")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void onboardNewTokenAccount() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        onboardNewTokenAccount(TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I associate with token")
@@ -148,7 +143,7 @@ public class TokenFeature {
     @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void fundPayerAccountWithTokens(int amount) throws PrecheckStatusException, ReceiptStatusException,
             TimeoutException {
-        transferTokens(tokenId, amount, accountClient.getTokenTreasuryAccount(), tokenClient.getSdkClient()
+        transferTokens(tokenId, amount, recipient, tokenClient.getSdkClient()
                 .getOperatorId());
     }
 
@@ -214,6 +209,7 @@ public class TokenFeature {
                 .delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+        tokenId = null;
     }
 
     @Then("the mirror node REST API should return status {int}")
@@ -274,18 +270,48 @@ public class TokenFeature {
         topicClient.publishMessageToDefaultTopic();
     }
 
+    @After
+    public void cleanup() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        // dissociate all applicable accounts from token to reduce likelihood of max token association error
+        if (tokenId != null) {
+            // a nonzero balance will result in a TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES error
+            // not possible to wipe a treasury account as it results in CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT error
+            // as a result to dissociate first delete token
+            try {
+                tokenClient.delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
+                dissociateAccount(sender);
+                dissociateAccount(recipient);
+                tokenId = null;
+            } catch (Exception ex) {
+                log.warn("Error cleaning up token {} and associations error: {}", tokenId, ex);
+            }
+        }
+    }
+
+    private void dissociateAccount(ExpandedAccountId accountId) {
+        if (accountId != null) {
+            try {
+                tokenClient.disssociate(accountId, tokenId);
+                log.info("Successfully dissociated account {} from token {}", accountId, tokenId);
+            } catch (Exception ex) {
+                log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
+            }
+        }
+    }
+
     private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws PrecheckStatusException,
             ReceiptStatusException, TimeoutException {
         tokenKey = PrivateKey.generate();
         PublicKey tokenPublicKey = tokenKey.getPublicKey();
         log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
 
+        sender = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 symbol,
                 freezeStatus,
                 kycStatus,
-                accountClient.getTokenTreasuryAccount(),
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 INITIAL_SUPPLY);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -329,9 +355,11 @@ public class TokenFeature {
     }
 
     private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+        long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
         networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + amount);
     }
 
     private void onboardNewTokenAccount(int freezeStatus, int kycStatus) throws ReceiptStatusException,

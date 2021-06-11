@@ -23,8 +23,9 @@ the mirror node can be updated to add support for NFTs.
 
 - Update `t_transaction_results` with new response codes
 
-- Add to `token` table fields `type` (enum, values `FUNGIBLE` and `NON_FUNGIBLE`) and `max_supply` (bigint),
-  - Default values will be `FUNGIBLE` and max long, respectively.
+- Add to `token` table fields `type` (enum, values `FUNGIBLE_COMMON` and `NON_FUNGIBLE_UNIQUE`), `supply_type` (
+  enum, values `INFINITE` and `FINITE`), and `max_supply` (bigint).
+  - Default values will be `FUNGIBLE_COMMON`, `INFINITE`, and max long, respectively.
 
 - Add a new `nft` table
 
@@ -35,7 +36,7 @@ create table if not exists nft
   created_timestamp     bigint  primary key     not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
-  memo                  text    default ''      not null,
+  metadata              bytea   default ''      not null,
   serial_number         bigint                  not null,
   token_id              bigint                  not null
 );
@@ -75,12 +76,12 @@ create table if not exists nft_transfer
 #### Entity Record Item Listener
 
 - If transaction is successful, persist any NFT Transfers.
-- `insertTokenCreate()` must be updated to set `tokenType` and `maxSupply`
-- `insertTokenMint()` must be updated to handle the new field `amountOrMemo` create and persist the `NFTs` if the memo
-  is set.
-- `insertTokenBurn` must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deleted, and
+- `insertTokenCreate()` must be updated to set `tokenType`, `tokenSupplyType` and `maxSupply`
+- `insertTokenMint()` must be updated to handle the new field `metadata` and create and persist the `NFTs` if type
+  is `NON_FUNGIBLE_UNIQUE`. Multiple `NFTs` can be minted in one transaction.
+- `insertTokenBurn` must be updated to handle the new field `serialNumbers`, mark the `NFTs` as deleted, and
   update `modifiedTimestamp` if the `serialNumbers` list is set.
-- `insertTokenWipe` must be updated to handle the new field `amountOrSerialNumbers`, mark the `NFTs` as deleted and
+- `insertTokenWipe` must be updated to handle the new field `serialNumbers`, mark the `NFTs` as deleted and
   update `modifiedTimestamp` if the `serialNumbers` list is set.
 
 ### REST API
@@ -158,7 +159,7 @@ create table if not exists nft_transfer
     {
       "token_id": "0.0.1000",
       "symbol": "F",
-      "type": "FUNGIBLE",
+      "type": "FUNGIBLE_COMMON",
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -167,7 +168,7 @@ create table if not exists nft_transfer
     {
       "token_id": "0.0.10001",
       "symbol": "N",
-      "type": "NON_FUNGIBLE",
+      "type": "NON_FUNGIBLE_UNIQUE",
       "admin_key": {
         "_type": "ED25519",
         "key": "31c4647554640c464c854337570217269a1fc0f8bc30591c349a410269090920"
@@ -179,11 +180,13 @@ create table if not exists nft_transfer
 
 Add optional filters
 
-- `/api/v1/tokens?type=FUNGIBLE` - All fungible tokens (other values are `NON_FUNGIBLE` and `ALL` (default))
+- `/api/v1/tokens?type=FUNGIBLE_COMMON` - All fungible tokens (other values are `NON_FUNGIBLE_UNIQUE` and `ALL` (
+  default))
 
 #### Get Token by id
 
-- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `type` field.
+- Update `/api/v1/tokens/{id}` response to show NFTs by adding the `type` field. Also display the new `supply_type`
+  and `max_supply` fields.
 
 ```json
 {
@@ -211,9 +214,10 @@ Add optional filters
     "_type": "ProtobufEncoded",
     "key": "9c2233222c2233222c2233227d"
   },
+  "supply_type": "FINITE",
   "symbol": "FOOCOIN",
   "token_id": "0.15.3",
-  "type": "NON_FUNGIBLE",
+  "type": "NON_FUNGIBLE_UNIQUE",
   "total_supply": "2",
   "treasury_account": "0.15.10",
   "wipe_key": {
@@ -223,19 +227,15 @@ Add optional filters
 }
 ```
 
-### Token Supply distribution
-
-- Update `/api/v1/tokens/{id}/balances` response to return an error code 409 for `NON_FUNGIBLE` tokens that indicates
-  users should go to `/api/v1/tokens/{id}/nfts`.
-
 #### List NFTs
 
 - GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
   - NFTs should only display if the token has not been deleted (e.g. `token.deleted` is false) Otherwise, display empty
     list.
   - `account_id` should not display when the NFT has been deleted.
-  - This endpoint should return a 409 for `FUNGIBLE` tokens with a message that indicates users should go
-    to `/api/v1/tokens/{id}/balances`.
+  - This endpoint should return a 409 for tokens that are not of type `NON_FUNGIBLE_UNIQUE` with a message that
+    indicates that this endpoint is not valid for this token type.
+  - `metadata` should be base64 encoded before returning.
 
 ```json
 {
@@ -244,7 +244,7 @@ Add optional filters
       "account_id": "0.0.111",
       "created_timestamp": "1610682445.003266000",
       "deleted": false,
-      "memo": "This is a test NFT",
+      "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
       "modified_timestamp": "1610682445.003266001",
       "serial_number": 124
     }
@@ -266,13 +266,14 @@ Optional Filters
 
 - GET `/api/v1/tokens/{id}/nfts/{serialNumber}` will show information about an individual NFT.
   - `account_id` should not display when the NFT or Token has been deleted.
+  - `metadata` should be base64 encoded before returning.
 
 ```json
 {
   "account_id": "0.0.111",
   "created_timestamp": "1610682445.003266000",
   "deleted": false,
-  "memo": "This is a test NFT",
+  "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
   "modified_timestamp": "1610682445.003266000",
   "serial_number": 124
 }
@@ -315,9 +316,9 @@ Optional Filters
 
 - Make changes to the `ExpressionConverter`
   - Add a new `nft` expression
-    - Creating an NFT requires the `tokenType` field to be set to `NON-FUNGIBLE`. `TokenCreate` for an NFT also cannot
-      create serial numbers as part of the initial supply, so a `TokenMint` should follow to have serial numbers created
-      for the transaction suppliers.
+    - Creating an NFT requires the `tokenType` field to be set to `NON_FUNGIBLE_UNIQUE`. `TokenCreate` for an NFT also
+      cannot create serial numbers as part of the initial supply, so a `TokenMint` should follow to have serial numbers
+      created for the transaction suppliers.
     - Serial numbers are auto-incremented per token, so minting a hardcoded or configured (one universal value) number
       of serial numbers per NFT should give the transaction suppliers a guaranteed set of serial numbers to use without
       having to save the actual serial numbers anywhere. The drawback to this is the NFT scenarios will be less
@@ -327,21 +328,21 @@ Optional Filters
   - Update the `token` expression logic to set the new fields (`tokenType` and `maxSupply`).
 
 - Update the `TransactionSuppliers`
-  - `TokenCreateTransactionSupplier` will need an enum `tokenType` attribute (with values FUNGIBLE and NON_FUNGIBLE) and
-    a long `maxSupply` attribute.
+  - `TokenCreateTransactionSupplier` will need an enum `tokenType` attribute (with values `FUNGIBLE_COMMON` and
+    `NON_FUNGIBLE_UNIQUE`), an enum `tokenSupplyType` (with values `INFINITE` and `FINITE`), and a long `maxSupply`
+    attribute.
     - Some fields will now have stricter requirements now, such as for NFTs `decimals` has to be 0, as
       does `initialSupply`. We could simply abide by the user config values, regardless of if they are valid, but most
       likely we should have logic to enforce those requirements based on the `tokenType`.
-  - `TokenMintTransactionSupplier` will need an enum `tokenType` attribute, as well as a String `memo` attribute. The
-    supplier should only set `amount` for fungible tokens, and only `memo` for NFTs
-    - Alternatively, the `tokenType` can be removed, and the supplier just sets whichever of `memo` or `amount` is set,
-      but this relies on users configuring things correctly.
+  - `TokenMintTransactionSupplier` will need an enum `tokenType` attribute, as well as a List<String> `metadata`
+    attribute. The supplier should only set `amount` for fungible tokens, and only `metadata` for NFTs
+    - Alternatively, the `tokenType` can be removed, and the supplier just sets whichever of `metadata` or `amount` is
+      set, but this relies on users configuring things correctly.
   - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need an enum `tokenType` attribute, and it
     will need to set the `serialNumbers` list for NFTs (hardcoded based on the `initialSupply` value used in
-    the `ExpressionConverter`)
-    - The list could be configurable using the compound expression mentioned earlier if desired.
+    the `ExpressionConverter`).
 
-- Add support for transfering NFTs in `CryptoTransferTransactionSupplier`.
+- Add support for transferring NFTs in `CryptoTransferTransactionSupplier`.
   - Add a new `tokenType` enum attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to use
     the `amount` attribute or the `serial numbers` list.
   - Because a serial number can only be transferred once out of a given account (unless it is transferred back), custom
@@ -362,7 +363,7 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 
 1. Basic NFT transfer flow
 
-- Create a token with type `NON-FUNGIBLE`
+- Create a token with type `NON_FUNGIBLE_UNIQUE`
 - Mint a serial number
 - Associate the token to an account
 - Transfer the serial number to the account.
@@ -371,7 +372,7 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 
 2. NFT Burn/Wipe/Delete flow
 
-- Create a token with type `NON-FUNGIBLE`
+- Create a token with type `NON_FUNGIBLE_UNIQUE`
 - Mint three serial numbers, associate the token with
 - Associate the token to an account
 - Transfer one serial number to the account.
@@ -383,7 +384,7 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 
 3. Scheduled NFT transfer flow
 
-- Create a token with type `NON-FUNGIBLE`
+- Create a token with type `NON_FUNGIBLE_UNIQUE`
 - Mint a serial number
 - Create an account with receiverSigRequired=true
 - Associate the token to an account
@@ -391,8 +392,3 @@ Add acceptance tests that verify all transactions are handled appropriately. Thi
 - Submit a ScheduleSign from the receiving account
 - Verify response codes and data from /tokens, /tokens/{id}/nfts, /tokens/{id}/nfts/{serialNumber}/transactions,
   /schedules/{id}, and /transactions
-
-# Outstanding Questions and Concerns:
-
-1. How will NFT balances be represented in the balance file?
-2. Will NFT balances be added to the csv version of the balance file, or just the proto version?

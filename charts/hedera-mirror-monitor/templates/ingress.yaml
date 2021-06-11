@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled -}}
-{{- $fullName := include "hedera-mirror-grpc.fullname" $ -}}
+{{- $fullName := include "hedera-mirror-monitor.fullname" $ -}}
 {{- $hostname := .Values.global.hostname -}}
 {{- $servicePort := .Values.service.port -}}
 apiVersion: networking.k8s.io/v1
@@ -11,9 +11,9 @@ metadata:
     {{ $key }}: {{ tpl $value $ | quote }}
     {{- end }}
   {{- end }}
-  labels: {{ include "hedera-mirror-grpc.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-monitor.labels" . | nindent 4 }}
   name: {{ $fullName }}
-  namespace: {{ include "hedera-mirror-grpc.namespace" . }}
+  namespace: {{ include "hedera-mirror-monitor.namespace" . }}
 spec:
   rules:
   {{- range .Values.ingress.hosts }}

@@ -49,7 +49,7 @@ public class CommonDownloaderProperties {
 
     @Max(1)
     @Min(0)
-    private float consensusRatio = 0.333f;
+    private float consensusRatio = (float) 1 / 3;
 
     @NotNull
     private CloudProvider cloudProvider = CloudProvider.S3;

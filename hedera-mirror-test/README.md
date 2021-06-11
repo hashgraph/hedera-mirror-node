@@ -114,28 +114,38 @@ hedera:
 
 #### Feature Tags
 
-Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the @sanity tag
-are run. To run a different set of files different tags can be specified
+Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the `@critical`
+tag are run. To run a different set of files different tags can be specified
 
-Acceptance test cases
+Test Suite Tags
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance"`
+- `@critical` - Test cases to ensure the network is up and running and satisfies base scenarios. Total cost to run 31.6
+  ℏ.
+- `@release` - Test cases to verify a new deployed version satisfies core scenarios and is release worthy. Total cost to
+  run 19.2 ℏ.
+- `@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria. Total cost to run 6.5
+  ℏ.
+- `@fullsuite` - All cases - this will require some configuration of feature files and may include some disabled tests
+  that will fail on execution. Total cost to run 33.9 ℏ.
 
-All cases
+> **_NOTE:_** Any noted total costs are estimates.
+> They will fluctuate with test coverage expansion, improvements and network fee schedule changes.
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@fullsuite"`
+Feature based Tags
 
-Negative cases
+- `@accounts` - Crypto account focused tests.
+- `@topicmessagesbase` - Simple HCS focused tests.
+- `@topicmessagesfilter` - HCS focused tests wth varied subscription filters.
+- `@tokenbase` - HTS focused tests.
+- `@schedulebase` - Scheduled transactions focused tests.
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@negative"`
+To execute run
 
-Edge cases
+    ./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="<tag name>"
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@edge"`
-
-Other (search for @? tags within the .feature files for further tags)
-
-`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@balancecheck"`
+> **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a subset of tags
+> - `@acceptance and @topicmessagesbase` - all token acceptance scenarios
+> - `@acceptance and not @tokenbase` - all acceptance except token scenarios
 
 ### Test Layout
 

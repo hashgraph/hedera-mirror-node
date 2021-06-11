@@ -48,7 +48,8 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AccountClient extends AbstractNetworkClient {
 
-    private static final long DEFAULT_INITIAL_BALANCE = 1_000_000_000L;
+    private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
+    private static final long SMALL_INITIAL_BALANCE = 1_000L; // 1000 tℏ
 
     private ExpandedAccountId tokenTreasuryAccount = null;
 
@@ -74,7 +75,7 @@ public class AccountClient extends AbstractNetworkClient {
         ExpandedAccountId accountId = accountMap
                 .computeIfAbsent(accountNameEnum, x -> {
                     try {
-                        return createNewAccount(DEFAULT_INITIAL_BALANCE,
+                        return createNewAccount(SMALL_INITIAL_BALANCE,
                                 accountNameEnum);
                     } catch (Exception e) {
                         log.trace("Issue creating additional account: {}, ex: {}", accountNameEnum, e);

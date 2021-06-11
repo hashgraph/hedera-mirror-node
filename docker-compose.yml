@@ -1,23 +1,33 @@
-version: "3.3"
+# To switch db to TimescaleDB, change TIMESCALEDB=true, SPRING_PROFILES_ACTIVE=v2 and change db image
+version: "3.7"
 services:
   db:
-    image: postgres:9.6-alpine
+    image: postgres:13.3-alpine # Or timescale/timescaledb-ha:pg13.3-ts2.3.0-p0
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM
     tty: true
     environment:
-      POSTGRES_DB: mirror_node
-      POSTGRES_PASSWORD: mirror_node_pass
-      POSTGRES_USER: mirror_node
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      TIMESCALEDB: "false"
+      # These should all be changed from the default before running in production
+      GRPC_PASSWORD: mirror_grpc_pass
+      IMPORTER_PASSWORD: mirror_importer_pass
+      OWNER_PASSWORD: mirror_node_pass
+      POSTGRES_PASSWORD: postgres_password
+      REST_PASSWORD: mirror_api_pass
+      ROSETTA_PASSWORD: mirror_rosetta_pass
     volumes:
       - ./db:/var/lib/postgresql/data
-      - ./hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
     ports:
       - 5432:5432
 
   grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc:0.36.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-grpc:master
+    pull_policy: always
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_GRPC_DB_HOST: db
@@ -29,11 +39,13 @@ services:
       - 5600:5600
 
   importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer:0.36.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-importer:master
+    pull_policy: always
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_IMPORTER_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
+      SPRING_PROFILES_ACTIVE: "v1"
       SPRING_REDIS_HOST: redis
     volumes:
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
@@ -41,7 +53,8 @@ services:
   monitor:
     deploy:
       replicas: 0
-    image: gcr.io/mirrornode/hedera-mirror-monitor:0.36.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-monitor:master
+    pull_policy: always
     restart: unless-stopped
     environment:
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-monitor/
@@ -58,7 +71,8 @@ services:
       - 6379:6379
 
   rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest:0.36.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-rest:master
+    pull_policy: always
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
     restart: unless-stopped
@@ -67,7 +81,8 @@ services:
       - 5551:5551
 
   rosetta:
-    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.36.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-rosetta:master
+    pull_policy: always
     environment:
       HEDERA_MIRROR_ROSETTA_DB_HOST: db
     restart: unless-stopped
@@ -76,24 +91,3 @@ services:
       - ./application.yml:/src/hedera-mirror-rosetta/application.yml
     ports:
       - 5700:5700
-    depends_on:
-      - "db"
-
-  timescaledb:
-    deploy:
-      replicas: 0
-    image: timescale/timescaledb-ha:pg13.3-ts2.3.0-p0
-    restart: unless-stopped
-    stop_grace_period: 2m
-    stop_signal: SIGTERM
-    tty: true
-    environment:
-      PGDATA: /var/lib/postgresql/data
-      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-      POSTGRES_PASSWORD: mirror_node_pass
-    volumes:
-      - ./timescaledb:/var/lib/postgresql/data
-      - ./hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql:/docker-entrypoint-initdb.d/init_v2.sql
-    ports:
-      - 5432:5432
