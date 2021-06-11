@@ -53,7 +53,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.LimeChain</groupId>
-            <artifactId>hedera-protobuf-java</artifactId>
+            <artifactId>hedera-protobufs-java</artifactId>
             <version>a08199008c</version>
             <exclusions>
                 <exclusion>
