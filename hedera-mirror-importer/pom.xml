@@ -52,9 +52,9 @@
             <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.hedera.hashgraph</groupId>
+            <groupId>com.github.LimeChain</groupId>
             <artifactId>hedera-protobuf-java-api</artifactId>
-            <version>${hedera-protobuf.version}</version>
+            <version>a08199008c</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -67,9 +67,9 @@
             <artifactId>spring-cloud-gcp-starter-pubsub</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.LimeChain</groupId>
-            <artifactId>hedera-protobufs-java</artifactId>
-            <version>a08199008c</version>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf.version}</version>
         </dependency>
         <dependency>
             <groupId>com.vladmihalcea</groupId>
