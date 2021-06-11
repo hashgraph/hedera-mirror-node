@@ -22,12 +22,20 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
 
 public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
+    @Resource
+    private DataSource dataSource;
 
     protected abstract UpsertQueryGenerator getUpdatableDomainRepositoryCustom();
 
@@ -43,8 +51,26 @@ public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositor
     }
 
     @Test
-    void insertContainsAllFields() {
+    protected void insertContainsAllFields() {
         // verify all fields in a domain are captured to ensure we don't miss schema updates
+        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery()
+                .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
+
+        // get tables from db
+        List<String> columnsFromDb = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             ResultSet rs = connection.getMetaData()
+                     .getColumns(null, null, getUpdatableDomainRepositoryCustom().getTableName(), null)) {
+
+            while (rs.next()) {
+                columnsFromDb.add(rs.getString("COLUMN_NAME"));
+            }
+        } catch (Exception e) {
+            log.error("Unable to retrieve details from database", e);
+        }
+
+        // verify
+        assertThat(insertQuery).contains(columnsFromDb);
     }
 
     @Test

@@ -82,10 +82,10 @@ public class PgCopy<T> {
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
         sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", this.tableName, columnsCsv);
-        insertDurationMetric = insertDurationMetric == null ? Timer.builder("hedera.mirror.importer.parse.insert")
+        insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
                 .tag("table", tableName)
-                .register(meterRegistry) : insertDurationMetric;
+                .register(meterRegistry);
     }
 
     public void copy(Collection<T> items, Connection connection) {

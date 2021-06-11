@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -38,10 +40,13 @@ import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
  */
 @Log4j2
 public class UpsertPgCopy<T> extends PgCopy<T> {
-    private final String finalTableName;
     private final String createTempTableSql;
+    private final String finalTableName;
     private final String insertSql;
     private final String updateSql;
+    private final Timer copyDurationMetric;
+    private final Timer finalInsertDurationMetric;
+    private final Timer updateDurationMetric;
 
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
                         UpsertQueryGenerator upsertQueryGenerator) {
@@ -50,10 +55,22 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         finalTableName = upsertQueryGenerator.getTableName();
         insertSql = upsertQueryGenerator.getInsertQuery();
         updateSql = upsertQueryGenerator.getUpdateQuery();
+        copyDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.copy")
+                .description("Time to copy transaction information from importer to temp table")
+                .tag("table", upsertQueryGenerator.getTemporaryTableName())
+                .register(meterRegistry);
+        finalInsertDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.insert")
+                .description("Time to insert transaction information from temp to final table")
+                .tag("table", finalTableName)
+                .register(meterRegistry);
+        updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.update")
+                .description("Time to update parsed transactions information into table")
+                .tag("table", finalTableName)
+                .register(meterRegistry);
     }
 
     @Override
-    public void persistItems(Collection<T> items, Connection connection) {
+    protected void persistItems(Collection<T> items, Connection connection) {
         if (CollectionUtils.isEmpty(items)) {
             return;
         }
@@ -61,11 +78,22 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         try {
             // create temp table to copy into
             createTempTable(connection);
-            super.persistItems(items, connection);
 
-            // from temp table upsert to final table
+            // copy items to temp table
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            super.persistItems(items, connection);
+            copyDurationMetric.record(stopwatch.elapsed());
+
+            // insert items from temp table to final table
+            stopwatch = Stopwatch.createStarted();
             int insertCount = insertToFinalTable(connection);
+            finalInsertDurationMetric.record(stopwatch.elapsed());
+
+            // update items in final table from temp table
+            stopwatch = Stopwatch.createStarted();
             updateFinalTable(connection);
+            updateDurationMetric.record(stopwatch.elapsed());
+
             log.debug("Inserted {} and updated from a total of {} rows to {}", insertCount, items
                     .size(), finalTableName);
         } catch (Exception e) {

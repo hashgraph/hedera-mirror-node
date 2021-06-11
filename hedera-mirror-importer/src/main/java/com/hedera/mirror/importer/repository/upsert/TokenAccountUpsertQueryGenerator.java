@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
+import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
@@ -35,7 +36,7 @@ import com.hedera.mirror.importer.domain.Token_;
 public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerator<TokenAccount_> {
     public static final String TABLE = "token_account";
     public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final Set<String> conflictTargetColumns = Set.of(TokenAccountId_.TOKEN_ID,
+    private static final List<String> conflictTargetColumns = List.of(TokenAccountId_.TOKEN_ID,
             TokenAccountId_.ACCOUNT_ID);
     private static final Set<String> nullableColumns = Set.of();
     private static final Set<SingularAttribute> updatableColumns = Set.of(TokenAccount_.associated,
@@ -52,7 +53,7 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     }
 
     @Override
-    public Set<String> getConflictIdColumns() {
+    public List<String> getConflictIdColumns() {
         return conflictTargetColumns;
     }
 

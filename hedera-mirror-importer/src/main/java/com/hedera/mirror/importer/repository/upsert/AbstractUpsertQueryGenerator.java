@@ -51,7 +51,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
     protected static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
-    
     private final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator
             .comparing(DomainField::getName);
 
@@ -216,6 +215,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         List<String> selectableFields = new ArrayList<>();
         domainFields.forEach(d -> selectableFields
                 .add(getColumnSelectQuery(d.getType(), d.getName())));
+
         return StringUtils.join(selectableFields, ", ");
     }
 
@@ -308,7 +308,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 " on conflict (%s) do %s",
                 getConflictIdColumns()
                         .stream()
-                        .sequential() // preserve order of conflict columns for performance
                         .map(this::getFormattedColumnName)
                         .collect(Collectors.joining(", ")),
                 action);

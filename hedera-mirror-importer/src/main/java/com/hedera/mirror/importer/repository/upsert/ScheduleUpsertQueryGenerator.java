@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
+import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
@@ -32,7 +33,7 @@ import com.hedera.mirror.importer.domain.Schedule_;
 public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Schedule_> {
     public static final String TABLE = "schedule";
     public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final Set<String> conflictTargetColumns = Set.of(Schedule_.SCHEDULE_ID);
+    private static final List<String> conflictTargetColumns = List.of(Schedule_.SCHEDULE_ID);
     private static final Set<String> nullableColumns = Set.of(Schedule_.EXECUTED_TIMESTAMP);
     private static final Set<SingularAttribute> updatableColumns = Set.of(Schedule_.executedTimestamp);
 
@@ -47,7 +48,7 @@ public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<S
     }
 
     @Override
-    public Set<String> getConflictIdColumns() {
+    public List<String> getConflictIdColumns() {
         return conflictTargetColumns;
     }
 
