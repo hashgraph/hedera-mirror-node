@@ -60,7 +60,7 @@ public interface EntityListener {
 
     default void onLiveHash(LiveHash liveHash) throws ImporterException {
     }
-
+    
     default void onNft(Nft nft) throws ImporterException {
     }
 

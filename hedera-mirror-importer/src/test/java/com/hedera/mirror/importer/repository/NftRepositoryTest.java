@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.Token;
 
 public class NftRepositoryTest extends AbstractRepositoryTest {
 
@@ -39,7 +38,7 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
     void save() {
         Nft savedNft = repository.save(nft("0.0.2", 1, 1));
         assertThat(savedNft)
-                .isEqualTo(repository.findById(savedNft.getCreatedTimestamp())
+                .isEqualTo(repository.findById(new Nft.Id(1L, EntityId.of("0.0.2", EntityTypeEnum.TOKEN)))
                         .get());
     }
 
@@ -51,15 +50,15 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
         //TODO Clean up, just have this for coverage
         assertThat(nftOne)
                 .isEqualTo(repository
-                        .findByTokenIdAndSerialNumber(new Token.Id(EntityId.of("0.0.2", EntityTypeEnum.TOKEN)), 1)
+                        .findById(new Nft.Id(1L, EntityId.of("0.0.2", EntityTypeEnum.TOKEN)))
                         .get());
         assertThat(nftTwo)
                 .isEqualTo(repository
-                        .findByTokenIdAndSerialNumber(new Token.Id(EntityId.of("0.0.2", EntityTypeEnum.TOKEN)), 2)
+                        .findById(new Nft.Id(2L, EntityId.of("0.0.2", EntityTypeEnum.TOKEN)))
                         .get());
         assertThat(nftThree)
                 .isEqualTo(repository
-                        .findByTokenIdAndSerialNumber(new Token.Id(EntityId.of("0.0.3", EntityTypeEnum.TOKEN)), 1)
+                        .findById(new Nft.Id(1L, EntityId.of("0.0.3", EntityTypeEnum.TOKEN)))
                         .get());
     }
 
@@ -67,8 +66,7 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
         Nft nft = new Nft();
         nft.setCreatedTimestamp(consensusTimestamp);
         nft.setMetadata(new byte[] {1});
-        nft.setSerialNumber(serialNumber);
-        nft.setTokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN));
+        nft.setId(new Nft.Id(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         nft.setAccountId(EntityId.of("0.0.1", EntityTypeEnum.ACCOUNT));
         return nft;
     }

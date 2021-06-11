@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -34,6 +35,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
@@ -43,6 +46,10 @@ import com.hedera.mirror.importer.util.Utility;
 @Data
 @Entity
 @NoArgsConstructor
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
+)
 public class Token {
 
     @EmbeddedId
@@ -86,7 +93,8 @@ public class Token {
     @ToString.Exclude
     private String supplyKeyEd25519Hex;
 
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
     private TokenSupplyTypeEnum supplyType;
 
     private String symbol;
@@ -94,7 +102,8 @@ public class Token {
     @Convert(converter = AccountIdConverter.class)
     private EntityId treasuryAccountId;
 
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
     private TokenTypeEnum type;
 
     @ToString.Exclude

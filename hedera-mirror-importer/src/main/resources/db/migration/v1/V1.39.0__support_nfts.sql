@@ -17,15 +17,16 @@ alter table token
 create table if not exists nft
 (
   account_id            bigint                  not null,
-  created_timestamp     bigint  primary key     not null,
+  created_timestamp     bigint                  not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
   metadata              bytea   default ''      not null,
   serial_number         bigint                  not null,
   token_id              bigint                  not null
 );
-create unique index if not exists nft__token_id_serial_num
-    on nft (token_id desc, serial_number desc);
+alter table nft
+    add primary key (token_id, serial_number);
+
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
 -- Create nft_transfer table

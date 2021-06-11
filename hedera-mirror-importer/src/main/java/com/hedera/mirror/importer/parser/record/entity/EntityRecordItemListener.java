@@ -110,7 +110,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final NftRepository nftRepository;
-    private final NftTransferRepository nftTransferRepository;
     private final Predicate<TransactionFilterFields> transactionFilter;
     private static final String MISSING_TOKEN_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
             "{} with timestamp {}";
@@ -138,7 +137,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         this.tokenAccountRepository = tokenAccountRepository;
         this.scheduleRepository = scheduleRepository;
         this.nftRepository = nftRepository;
-        this.nftTransferRepository = nftTransferRepository;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -538,6 +536,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     if (optionalNFT.isPresent()) {
                         Nft nft = optionalNFT.get();
                         nft.setDeleted(true);
+                        nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
                         entityListener.onNft(nft);
                     }
                 });
@@ -656,24 +655,33 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenMint(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenMintTransactionBody tokenMintTransactionBody = recordItem.getTransactionBody().getTokenMint();
+            long consensusTimeStamp = recordItem.getConsensusTimestamp();
+            TokenID tokenID = tokenMintTransactionBody.getToken();
 
-            updateTokenSupply(
-                    tokenMintTransactionBody.getToken(),
-                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
-                    recordItem.getConsensusTimestamp());
+            //TODO This is needed to get the treasury id.  Nana has a SQL way to do this, will add when syncing with
+            //his PR.
+            Optional<Token> optionalToken = retrieveToken(tokenID, TransactionTypeEnum.TOKENMINT,
+                    consensusTimeStamp);
+            if (optionalToken.isPresent()) {
+                Token token = optionalToken.get();
+                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
+                token.setModifiedTimestamp(consensusTimeStamp);
+                tokenRepository.save(token);
 
-            if (recordItem.getRecord().getReceipt().getSerialNumbersCount() != 0) {
-                long consensusTimeStamp = recordItem.getConsensusTimestamp();
-                TokenID tokenID = tokenMintTransactionBody.getToken();
-                recordItem.getRecord().getReceipt().getSerialNumbersList().stream().forEach(serialNumber -> {
-                    Optional<Nft> optionalNFT = retrieveNFT(tokenID, serialNumber, TransactionTypeEnum.TOKENBURN,
-                            consensusTimeStamp);
-                    if (optionalNFT.isPresent()) {
-                        Nft nft = optionalNFT.get();
-                        nft.setDeleted(true);
-                        entityListener.onNft(nft);
+                if (recordItem.getRecord().getReceipt().getSerialNumbersCount() != 0) {
+
+                    List<Long> serialNumbers = recordItem.getRecord().getReceipt().getSerialNumbersList();
+                    for (int i = 0; i < serialNumbers.size(); i++) {
+                        Nft nft = new Nft();
+                        nft.setId(new Nft.Id(serialNumbers.get(i), EntityId.of(tokenID)));
+                        //TODO If order isn't gauranteed, we have a problem here
+                        nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
+                        nft.setCreatedTimestamp(consensusTimeStamp);
+                        nft.setModifiedTimestamp(consensusTimeStamp);
+                        nft.setAccountId(token.getTreasuryAccountId());
+                        nftRepository.save(nft);
                     }
-                });
+                }
             }
         }
     }
@@ -802,6 +810,21 @@ public class EntityRecordItemListener implements RecordItemListener {
                     tokenWipeAccountTransactionBody.getToken(),
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     recordItem.getConsensusTimestamp());
+
+            if (tokenWipeAccountTransactionBody.getSerialNumbersCount() != 0) {
+                long consensusTimeStamp = recordItem.getConsensusTimestamp();
+                TokenID tokenID = tokenWipeAccountTransactionBody.getToken();
+                for (Long serialNumber : tokenWipeAccountTransactionBody.getSerialNumbersList()) {
+                    Optional<Nft> optionalNFT = retrieveNFT(tokenID, serialNumber, TransactionTypeEnum.TOKENBURN,
+                            consensusTimeStamp);
+                    if (optionalNFT.isPresent()) {
+                        Nft nft = optionalNFT.get();
+                        nft.setDeleted(true);
+                        nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+                        entityListener.onNft(nft);
+                    }
+                }
+            }
         }
     }
 
@@ -838,7 +861,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private Optional<Nft> retrieveNFT(TokenID tokenID, long serialNumber, TransactionTypeEnum transactionTypeEnum,
                                       long currentTransactionTimestamp) {
         Optional<Nft> optionalNft = nftRepository
-                .findByTokenIdAndSerialNumber(new Token.Id(EntityId.of(tokenID)), serialNumber);
+                .findById(new Nft.Id(serialNumber, EntityId.of(tokenID)));
 
         if (optionalNft.isEmpty()) {
             log.warn(MISSING_NFT_MESSAGE, tokenID, serialNumber, transactionTypeEnum, currentTransactionTimestamp);

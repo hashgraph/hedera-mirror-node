@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
+import com.hedera.mirror.importer.domain.TokenTypeEnum;
 
 public class TokenRepositoryTest extends AbstractRepositoryTest {
     @Resource
@@ -100,6 +102,9 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         token.setTotalSupply(INITIAL_SUPPLY);
         token.setTreasuryAccountId(treasuryAccount);
         token.setWipeKey(hexKey);
+
+        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
+        token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         return token;
     }
 }

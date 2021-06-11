@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,6 +47,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
@@ -63,6 +66,8 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
@@ -82,6 +87,8 @@ public class SqlEntityListenerTest extends IntegrationTest {
     private final NonFeeTransferRepository nonFeeTransferRepository;
     private final ContractResultRepository contractResultRepository;
     private final LiveHashRepository liveHashRepository;
+    private final NftRepository nftRepository;
+    private final NftTransferRepository nftTransferRepository;
     private final FileDataRepository fileDataRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final RecordFileRepository recordFileRepository;
@@ -265,6 +272,21 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onNft() throws Exception {
+        Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 1L);
+        Nft nft2 = getNft("0.0.3", 3L, "0.0.3", 3L);
+
+        sqlEntityListener.onNft(nft1);
+        sqlEntityListener.onNft(nft2);
+        completeFileAndCommit();
+
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(2, nftRepository.count());
+        assertExistsAndEquals(nftRepository, nft1, nft1.getId());
+        assertExistsAndEquals(nftRepository, nft2, nft2.getId());
+    }
+
+    @Test
     void onToken() throws Exception {
         Token token1 = getToken("0.0.3", "0.0.5", 1);
         Token token2 = getToken("0.0.7", "0.0.11", 2);
@@ -299,9 +321,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, tokenAccountRepository.count());
         assertExistsAndEquals(tokenAccountRepository, tokenAccount1, new TokenAccount.Id(EntityId
-                .of(tokenId1, EntityTypeEnum.TOKEN), EntityId.of(accountId1, ACCOUNT)));
+                .of(tokenId1, TOKEN), EntityId.of(accountId1, ACCOUNT)));
         assertExistsAndEquals(tokenAccountRepository, tokenAccount2, new TokenAccount.Id(EntityId
-                .of(tokenId2, EntityTypeEnum.TOKEN), EntityId.of(accountId2, ACCOUNT)));
+                .of(tokenId2, TOKEN), EntityId.of(accountId2, ACCOUNT)));
     }
 
     @Test
@@ -319,13 +341,35 @@ public class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(3, tokenTransferRepository.count());
-        EntityId tokenId1 = EntityId.of("0.0.3", EntityTypeEnum.TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.7", EntityTypeEnum.TOKEN);
+        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
+        EntityId tokenId2 = EntityId.of("0.0.7", TOKEN);
         EntityId accountId1 = EntityId.of("0.0.5", ACCOUNT);
         EntityId accountId2 = EntityId.of("0.0.9", ACCOUNT);
         assertExistsAndEquals(tokenTransferRepository, tokenTransfer1, new TokenTransfer.Id(2L, tokenId1, accountId1));
         assertExistsAndEquals(tokenTransferRepository, tokenTransfer2, new TokenTransfer.Id(2L, tokenId2, accountId2));
         assertExistsAndEquals(tokenTransferRepository, tokenTransfer3, new TokenTransfer.Id(4L, tokenId1, accountId1));
+    }
+
+    @Test
+    void onNftTransfer() throws Exception {
+        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer2 = getNftTransfer(2L, "0.0.1", 2L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer3 = getNftTransfer(3L, "0.0.2", 1L, "0.0.2", "0.0.3");
+
+        // when
+        sqlEntityListener.onNftTransfer(nftTransfer1);
+        sqlEntityListener.onNftTransfer(nftTransfer2);
+        sqlEntityListener.onNftTransfer(nftTransfer3);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(3, nftTransferRepository.count());
+        EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
+        EntityId tokenId2 = EntityId.of("0.0.2", TOKEN);
+        assertExistsAndEquals(nftTransferRepository, nftTransfer1, new NftTransfer.Id(1L, 1L, tokenId1));
+        assertExistsAndEquals(nftTransferRepository, nftTransfer2, new NftTransfer.Id(2L, 2L, tokenId1));
+        assertExistsAndEquals(nftTransferRepository, nftTransfer3, new NftTransfer.Id(3L, 1L, tokenId2));
     }
 
     @Test
@@ -357,9 +401,12 @@ public class SqlEntityListenerTest extends IntegrationTest {
         byte[] pubKeyPrefix2 = "pubKeyPrefix2".getBytes();
         byte[] pubKeyPrefix3 = "pubKeyPrefix3".getBytes();
 
-        TransactionSignature transactionSignature1 = getTransactionSignature(1, entityId1.entityIdToString(), pubKeyPrefix1);
-        TransactionSignature transactionSignature2 = getTransactionSignature(2, entityId2.entityIdToString(), pubKeyPrefix2);
-        TransactionSignature transactionSignature3 = getTransactionSignature(3, entityId3.entityIdToString(), pubKeyPrefix3);
+        TransactionSignature transactionSignature1 = getTransactionSignature(1, entityId1
+                .entityIdToString(), pubKeyPrefix1);
+        TransactionSignature transactionSignature2 = getTransactionSignature(2, entityId2
+                .entityIdToString(), pubKeyPrefix2);
+        TransactionSignature transactionSignature3 = getTransactionSignature(3, entityId3
+                .entityIdToString(), pubKeyPrefix3);
 
         // when
         sqlEntityListener.onTransactionSignature(transactionSignature1);
@@ -466,16 +513,37 @@ public class SqlEntityListenerTest extends IntegrationTest {
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(hexKey);
         token.setSymbol("FOOTOK");
-        token.setTokenId(new Token.Id(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        token.setTokenId(new Token.Id(EntityId.of(tokenId, TOKEN)));
         token.setTreasuryAccountId(EntityId.of(accountId, ACCOUNT));
         token.setWipeKey(hexKey);
 
         return token;
     }
 
+    private Nft getNft(String tokenId, long serialNumber, String accountId, long createdTimestamp) throws DecoderException {
+        Nft nft = new Nft();
+        nft.setAccountId(EntityId.of(accountId, ACCOUNT));
+        nft.setCreatedTimestamp(createdTimestamp);
+        nft.setDeleted(false);
+        nft.setMetadata(new byte[0]);
+        nft.setId(new Nft.Id(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        nft.setModifiedTimestamp(createdTimestamp);
+
+        return nft;
+    }
+
+    private NftTransfer getNftTransfer(long consensusTimestamp, String tokenId, long serialNumber, String receiverId,
+                                       String senderId) {
+        NftTransfer nftTransfer = new NftTransfer();
+        nftTransfer.setId(new NftTransfer.Id(consensusTimestamp, serialNumber, EntityId.of(tokenId, TOKEN)));
+        nftTransfer.setReceiverAccountId(EntityId.of(receiverId, ACCOUNT));
+        nftTransfer.setSenderAccountId(EntityId.of(senderId, ACCOUNT));
+        return nftTransfer;
+    }
+
     private TokenAccount getTokenAccount(String tokenId, String accountId, long createdTimestamp) {
         TokenAccount tokenAccount = new TokenAccount(EntityId
-                .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
+                .of(tokenId, TOKEN), EntityId.of(accountId, ACCOUNT));
         tokenAccount.setAssociated(true);
         tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
@@ -489,7 +557,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         TokenTransfer tokenTransfer = new TokenTransfer();
         tokenTransfer.setAmount(amount);
         tokenTransfer
-                .setId(new TokenTransfer.Id(consensusTimestamp, EntityId.of(tokenId, EntityTypeEnum.TOKEN), EntityId
+                .setId(new TokenTransfer.Id(consensusTimestamp, EntityId.of(tokenId, TOKEN), EntityId
                         .of(accountId, ACCOUNT)));
 
         return tokenTransfer;

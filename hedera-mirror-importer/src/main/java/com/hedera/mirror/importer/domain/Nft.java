@@ -18,10 +18,14 @@ package com.hedera.mirror.importer.domain;/*
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serializable;
 import javax.persistence.Convert;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -34,11 +38,14 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class Nft {
 
+    @JsonUnwrapped
+    @EmbeddedId
+    private Nft.Id id;
+
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId accountId;
 
-    @Id
     private long createdTimestamp;
 
     private boolean deleted;
@@ -47,9 +54,18 @@ public class Nft {
 
     private byte[] metadata;
 
-    private long serialNumber;
+    @Data
+    @Embeddable
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id implements Serializable {
 
-    @Convert(converter = TokenIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
-    private EntityId tokenId;
+        private static final long serialVersionUID = 5331079486441254789L;
+
+        private long serialNumber;
+
+        @Convert(converter = TokenIdConverter.class)
+        @JsonSerialize(using = EntityIdSerializer.class)
+        private EntityId tokenId;
+    }
 }

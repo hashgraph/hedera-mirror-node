@@ -158,8 +158,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         nft.setCreatedTimestamp(1L);
         nft.setMetadata(new byte[1]);
         nft.setModifiedTimestamp(2L);
-        nft.setSerialNumber(3L);
-        nft.setTokenId(EntityId.of("0.0.456", EntityTypeEnum.TOKEN));
+        nft.setId(new Nft.Id(3L, EntityId.of("0.0.456", EntityTypeEnum.TOKEN)));
         repositoryEntityListener.onNft(nft);
         assertThat(nftRepository.findAll()).contains(nft);
     }
