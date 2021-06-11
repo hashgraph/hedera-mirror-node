@@ -20,8 +20,7 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import com.google.common.collect.Lists;
-import java.util.List;
+import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +32,11 @@ import com.hedera.mirror.importer.domain.Entity_;
 public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Entity_> {
     public static final String TABLE = "entity";
     public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final List<String> conflictTargetColumns = List.of(Entity_.ID);
-    private static final List<String> nullableColumns = List.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
+    private static final Set<String> conflictTargetColumns = Set.of(Entity_.ID);
+    private static final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
             Entity_.AUTO_RENEW_PERIOD, Entity_.CREATED_TIMESTAMP, Entity_.DELETED, Entity_.EXPIRATION_TIMESTAMP,
             Entity_.KEY, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY, Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY);
-    private static final List<SingularAttribute> updatableColumns = Lists.newArrayList(Entity_.autoRenewAccountId,
+    private static final Set<SingularAttribute> updatableColumns = Set.of(Entity_.autoRenewAccountId,
             Entity_.autoRenewPeriod, Entity_.deleted, Entity_.expirationTimestamp, Entity_.key, Entity_.memo,
             Entity_.proxyAccountId, Entity_.publicKey, Entity_.submitKey);
 
@@ -52,7 +51,7 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
     }
 
     @Override
-    public List<String> getConflictIdColumns() {
+    public Set<String> getConflictIdColumns() {
         return conflictTargetColumns;
     }
 
@@ -70,7 +69,7 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
     }
 
     @Override
-    public List<SingularAttribute> getUpdatableColumns() {
+    public Set<SingularAttribute> getUpdatableColumns() {
         return updatableColumns;
     }
 

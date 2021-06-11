@@ -20,11 +20,11 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import java.util.List;
+import java.util.Set;
 import javax.persistence.metamodel.SingularAttribute;
 
 public interface UpsertQueryGenerator {
-    List<String> getConflictIdColumns();
+    Set<String> getConflictIdColumns();
 
     String getCreateTempTableQuery();
 
@@ -32,13 +32,13 @@ public interface UpsertQueryGenerator {
 
     String getInsertWhereClause();
 
-    List<SingularAttribute> getSelectableColumns();
+    Set<SingularAttribute> getSelectableColumns();
 
     String getTableName();
 
     String getTemporaryTableName();
 
-    List<SingularAttribute> getUpdatableColumns();
+    Set<SingularAttribute> getUpdatableColumns();
 
     String getUpdateQuery();
 

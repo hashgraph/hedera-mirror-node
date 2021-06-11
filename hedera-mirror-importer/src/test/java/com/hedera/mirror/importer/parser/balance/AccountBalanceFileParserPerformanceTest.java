@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,7 +37,6 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
-import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -57,9 +54,6 @@ class AccountBalanceFileParserPerformanceTest extends IntegrationTest {
     @Autowired
     private BalanceParserProperties balanceParserProperties;
 
-    @Autowired
-    private AccountBalanceFileRepository accountBalanceFileRepository;
-
     private final List<AccountBalanceFile> accountBalanceFiles = new ArrayList<>();
 
     @BeforeAll
@@ -76,10 +70,6 @@ class AccountBalanceFileParserPerformanceTest extends IntegrationTest {
     @Test
     @Timeout(10)
     void parse() {
-        AccountBalanceFileParser accountBalanceFileParser = balanceFileParser;
-        for (AccountBalanceFile accountBalanceFile : accountBalanceFiles) {
-            accountBalanceFileParser.parse(accountBalanceFile);
-        }
-        assertThat(accountBalanceFileRepository.count()).isEqualTo(accountBalanceFiles.size());
+        accountBalanceFiles.forEach(balanceFileParser::parse);
     }
 }

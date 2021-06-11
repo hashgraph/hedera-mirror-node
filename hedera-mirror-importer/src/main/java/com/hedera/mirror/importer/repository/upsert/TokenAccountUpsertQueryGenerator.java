@@ -20,8 +20,7 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import com.google.common.collect.Lists;
-import java.util.List;
+import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
@@ -36,10 +35,10 @@ import com.hedera.mirror.importer.domain.Token_;
 public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerator<TokenAccount_> {
     public static final String TABLE = "token_account";
     public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final List<String> conflictTargetColumns = List.of(TokenAccountId_.TOKEN_ID,
+    private static final Set<String> conflictTargetColumns = Set.of(TokenAccountId_.TOKEN_ID,
             TokenAccountId_.ACCOUNT_ID);
-    private static final List<String> nullableColumns = List.of();
-    private static final List<SingularAttribute> updatableColumns = Lists.newArrayList(TokenAccount_.associated,
+    private static final Set<String> nullableColumns = Set.of();
+    private static final Set<SingularAttribute> updatableColumns = Set.of(TokenAccount_.associated,
             TokenAccount_.modifiedTimestamp, TokenAccount_.freezeStatus, TokenAccount_.kycStatus);
 
     @Override
@@ -53,13 +52,13 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     }
 
     @Override
-    public List<String> getConflictIdColumns() {
+    public Set<String> getConflictIdColumns() {
         return conflictTargetColumns;
     }
 
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final List<SingularAttribute> selectableColumns = Lists.newArrayList(TokenAccountId_.accountId,
+    private final Set<SingularAttribute> selectableColumns = Set.of(TokenAccountId_.accountId,
             TokenAccount_.associated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
             TokenAccount_.kycStatus, TokenAccount_.modifiedTimestamp, TokenAccountId_.tokenId);
 
@@ -90,7 +89,7 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     }
 
     @Override
-    public List<SingularAttribute> getUpdatableColumns() {
+    public Set<SingularAttribute> getUpdatableColumns() {
         return updatableColumns;
     }
 

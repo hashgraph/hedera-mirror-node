@@ -31,8 +31,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.persistence.metamodel.SingularAttribute;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -48,11 +51,9 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
     protected static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
-
-    private static final Comparator<Field> FIELD_COMPARATOR = Comparator
-            .comparing(Field::getName);
-    private static final Comparator<SingularAttribute> ATTRIBUTE_COMPARATOR = Comparator
-            .comparing(SingularAttribute::getName);
+    
+    private final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator
+            .comparing(DomainField::getName);
 
     private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
     }.getRawType();
@@ -63,7 +64,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
     @Getter(lazy = true)
     // Note JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final List<SingularAttribute> selectableColumns = Collections.emptyList();
+    private final Set<SingularAttribute> selectableColumns = Collections.EMPTY_SET;
 
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
@@ -112,23 +113,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String getColumnListFromSelectableColumns() {
-        if (CollectionUtils.isEmpty(getSelectableColumns())) {
-            return getColumnListFromAllColumns();
-        }
+        List<DomainField> domainFields = getSelectableDomainFields();
 
-        return getSelectableColumns().stream()
-                .sorted(ATTRIBUTE_COMPARATOR)
-                .map(x -> getFormattedColumnName(x.getName()))
-                .collect(Collectors.joining(", "));
-    }
-
-    private String getColumnListFromAllColumns() {
-        return Arrays.stream(metaModelClass.getDeclaredFields())
-                .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
-                .collect(Collectors.toList())
+        // loop over fields to create select clause
+        return domainFields
                 .stream()
-                .sorted(FIELD_COMPARATOR)
-                .map(x -> getFormattedColumnName(x.getName())).collect(Collectors.joining(", "));
+                .map(d -> getFormattedColumnName(d.getName()))
+                .collect(Collectors.joining(", "));
     }
 
     protected String getTableColumnName(String tableName, String camelCaseName) {
@@ -196,50 +187,43 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return getConflictClause("nothing");
     }
 
-    private String getSelectableFieldsClause() {
-        List<SingularAttribute> selectableAttributes = getSelectableColumns();
+    private List<DomainField> getSelectableDomainFields() {
+        Set<SingularAttribute> selectableAttributes = getSelectableColumns();
+        List<DomainField> domainFields;
         if (CollectionUtils.isEmpty(selectableAttributes)) {
-            return getSelectableFieldsThroughReflection();
+            // extract fields using reflection
+            domainFields = Arrays.stream(metaModelClass.getDeclaredFields())
+                    // get SingularAttributes which are both static and volatile
+                    .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
+                    .map(f -> new DomainField(extractJavaType(f), f.getName()))
+                    .collect(Collectors.toList());
         } else {
-            Collections.sort(selectableAttributes, ATTRIBUTE_COMPARATOR);
-            return getSelectableFieldsFromDomainModel(selectableAttributes);
+            // use provided fields
+            domainFields = getSelectableColumns().stream()
+                    .map(a -> new DomainField(a.getType().getJavaType(), a.getName()))
+                    .collect(Collectors.toList());
         }
+
+        // ensure columns are in order to avoid inconsistencies with db but also improve readability
+        Collections.sort(domainFields, DOMAIN_FIELD_COMPARATOR);
+        return domainFields;
     }
 
-    private String getSelectableFieldsFromDomainModel(List<SingularAttribute> selectableAttributes) {
-        List<String> selectableFields = new ArrayList<>();
-        selectableAttributes.forEach(attribute -> selectableFields
-                .add(getColumnSelectQuery(attribute.getType().getJavaType(), attribute.getName())));
+    private String getSelectableFieldsClause() {
+        List<DomainField> domainFields = getSelectableDomainFields();
 
-        // sort and add update statements to string builder
+        // loop over fields to create select clause
+        List<String> selectableFields = new ArrayList<>();
+        domainFields.forEach(d -> selectableFields
+                .add(getColumnSelectQuery(d.getType(), d.getName())));
         return StringUtils.join(selectableFields, ", ");
     }
 
-    private String getSelectableFieldsThroughReflection() {
-        List<Field> entityFields = Arrays.stream(metaModelClass.getDeclaredFields())
-                // get SingularAttributes which are both static and volatile
-                .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
-                .collect(Collectors.toList());
-
-        Collections.sort(entityFields, FIELD_COMPARATOR); // sort fields alphabetically
-
-        // add selection for columns
-        List<String> selectQueries = new ArrayList<>();
-        entityFields.forEach(field -> {
-            String selectQuery = "";
-            Type[] parameterizedTypes = ((ParameterizedType) field
-                    .getGenericType())
-                    .getActualTypeArguments(); // [<domainType>, <attributeClass>]
-            Type attributeClass = parameterizedTypes[1];
-            selectQuery = getColumnSelectQuery(
-                    attributeClass,
-                    field.getName());
-
-            selectQueries.add(selectQuery);
-        });
-
-        // add select statements to string builder
-        return StringUtils.join(selectQueries, ", ");
+    private Type extractJavaType(Field field) {
+        Type[] parameterizedTypes = ((ParameterizedType) field
+                .getGenericType())
+                .getActualTypeArguments(); // [<domainType>, <attributeClass>]
+        return parameterizedTypes[1];
     }
 
     private String getColumnSelectQuery(Type attributeType, String attributeName) {
@@ -299,14 +283,16 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         StringBuilder updateQueryBuilder = new StringBuilder();
 
         List<String> updateQueries = new ArrayList<>();
-        List<SingularAttribute> updatableAttributes = getUpdatableColumns();
-        Collections.sort(updatableAttributes, ATTRIBUTE_COMPARATOR); // sort fields alphabetically
-        updatableAttributes.forEach(attribute -> {
+        List<DomainField> updatableAttributes = getUpdatableColumns().stream()
+                .map(a -> new DomainField(a.getType().getJavaType(), a.getName()))
+                .collect(Collectors.toList());
+        Collections.sort(updatableAttributes, DOMAIN_FIELD_COMPARATOR); // sort fields alphabetically
+        updatableAttributes.forEach(d -> {
             String attributeUpdateQuery = "";
-            if (attribute.getType().getJavaType() == String.class) {
-                attributeUpdateQuery = getUpsertNullableStringConflictCaseCoalesceAssign(attribute.getName());
+            if (d.getType() == String.class) {
+                attributeUpdateQuery = getUpsertNullableStringConflictCaseCoalesceAssign(d.getName());
             } else {
-                attributeUpdateQuery = getUpsertConflictCoalesceAssign(attribute.getName(), tempTableName);
+                attributeUpdateQuery = getUpsertConflictCoalesceAssign(d.getName(), tempTableName);
             }
 
             updateQueries.add(attributeUpdateQuery);
@@ -320,7 +306,18 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private String getConflictClause(String action) {
         return String.format(
                 " on conflict (%s) do %s",
-                getConflictIdColumns().stream().map(this::getFormattedColumnName).collect(Collectors.joining(", ")),
+                getConflictIdColumns()
+                        .stream()
+                        .sequential() // preserve order of conflict columns for performance
+                        .map(this::getFormattedColumnName)
+                        .collect(Collectors.joining(", ")),
                 action);
+    }
+
+    @Data
+    @AllArgsConstructor
+    private class DomainField {
+        private Type type;
+        private String name;
     }
 }

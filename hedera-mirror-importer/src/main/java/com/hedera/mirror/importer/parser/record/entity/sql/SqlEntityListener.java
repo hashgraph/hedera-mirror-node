@@ -26,9 +26,7 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -98,7 +96,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // lists of insert only domains
     private final Collection<ContractResult> contractResults;
     private final Collection<CryptoTransfer> cryptoTransfers;
-    private final Set<Long> entityIds;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
@@ -161,8 +158,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccounts = new HashMap<>();
-
-        entityIds = new HashSet<>();
     }
 
     @Override
@@ -190,7 +185,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractResults.clear();
         cryptoTransfers.clear();
         entities.clear();
-        entityIds.clear();
         fileData.clear();
         liveHashes.clear();
         nonFeeTransfers.clear();

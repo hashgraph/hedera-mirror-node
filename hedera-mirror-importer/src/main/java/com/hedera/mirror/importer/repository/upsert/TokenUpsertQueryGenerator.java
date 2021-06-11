@@ -20,8 +20,7 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import com.google.common.collect.Lists;
-import java.util.List;
+import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
@@ -35,11 +34,11 @@ import com.hedera.mirror.importer.domain.Token_;
 public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Token_> {
     public static final String TABLE = "token";
     public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final List<String> conflictTargetColumns = List.of(TokenId_.TOKEN_ID);
-    private static final List<String> nullableColumns = List.of(Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
+    private static final Set<String> conflictTargetColumns = Set.of(TokenId_.TOKEN_ID);
+    private static final Set<String> nullableColumns = Set.of(Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX, Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
             Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
-    private static final List<SingularAttribute> updatableColumns = Lists.newArrayList(Token_.freezeKey,
+    private static final Set<SingularAttribute> updatableColumns = Set.of(Token_.freezeKey,
             Token_.freezeKeyEd25519Hex, Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name,
             Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.totalSupply, Token_.treasuryAccountId,
             Token_.wipeKey, Token_.wipeKeyEd25519Hex);
@@ -55,13 +54,13 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     }
 
     @Override
-    public List<String> getConflictIdColumns() {
+    public Set<String> getConflictIdColumns() {
         return conflictTargetColumns;
     }
 
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final List<SingularAttribute> selectableColumns = Lists.newArrayList(Token_.createdTimestamp,
+    private final Set<SingularAttribute> selectableColumns = Set.of(Token_.createdTimestamp,
             Token_.decimals, Token_.freezeDefault, Token_.freezeKey, Token_.freezeKeyEd25519Hex, Token_.initialSupply,
             Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name, Token_.supplyKey,
             Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.tokenId, Token_.totalSupply, Token_.treasuryAccountId,
@@ -82,7 +81,7 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     }
 
     @Override
-    public List<SingularAttribute> getUpdatableColumns() {
+    public Set<SingularAttribute> getUpdatableColumns() {
         return updatableColumns;
     }
 

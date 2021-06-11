@@ -37,7 +37,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -61,7 +60,6 @@ import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator
 import com.hedera.mirror.importer.repository.upsert.TokenAccountUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UpsertPgCopyTest extends IntegrationTest {
 
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();

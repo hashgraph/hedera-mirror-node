@@ -43,6 +43,11 @@ public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositor
     }
 
     @Test
+    void insertContainsAllFields() {
+        // verify all fields in a domain are captured to ensure we don't miss schema updates
+    }
+
+    @Test
     void update() {
         String updateQuery = getUpdatableDomainRepositoryCustom().getUpdateQuery()
                 .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
