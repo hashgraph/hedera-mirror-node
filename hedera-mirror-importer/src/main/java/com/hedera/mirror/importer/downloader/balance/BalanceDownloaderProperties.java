@@ -51,9 +51,11 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     @NotNull
     private Duration frequency = Duration.ofSeconds(30);
 
-    private boolean keepBytes = false;
+    private boolean keepFiles = false;
 
     private boolean keepSignatures = false;
+
+    private boolean persistBytes = false;
 
     @NotBlank
     private String prefix = "accountBalances/balance";

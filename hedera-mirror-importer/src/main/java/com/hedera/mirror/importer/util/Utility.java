@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -184,10 +183,8 @@ public class Utility {
         return convertToNanosMax(timestamp.getSeconds(), timestamp.getNanos());
     }
 
-    // Moves a file in the form 2019-08-30T18_10_00.419072Z.rcd to destinationRoot/2019/08/30
     public static void archiveFile(String filename, byte[] contents, Path destinationRoot) {
-        String date = filename.substring(0, 10).replace("-", File.separator);
-        Path destination = destinationRoot.resolve(date).resolve(filename);
+        Path destination = destinationRoot.resolve(filename);
 
         try {
             destination.getParent().toFile().mkdirs();

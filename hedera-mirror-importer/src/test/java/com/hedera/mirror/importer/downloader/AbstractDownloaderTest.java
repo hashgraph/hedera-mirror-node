@@ -174,7 +174,19 @@ public abstract class AbstractDownloaderTest {
     protected abstract Duration getCloseInterval();
 
     boolean isSigFile(Path path) {
-        return path.toString().contains(StreamType.SIGNATURE_SUFFIX);
+        return path.toString().endsWith(StreamType.SIGNATURE_SUFFIX);
+    }
+
+    boolean isStreamFile(Path path) {
+        StreamType streamType = downloaderProperties.getStreamType();
+
+        for (StreamType.Extension extension : streamType.getDataExtensions()) {
+            if (path.toString().endsWith(extension.getName())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @BeforeAll
@@ -259,7 +271,7 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
     @Test
@@ -346,13 +358,26 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
+    @DisplayName("Keep files")
+    void keepFiles() throws Exception {
+        downloaderProperties.setKeepFiles(true);
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+        assertThat(Files.walk(downloaderProperties.getStreamPath()))
+                .filteredOn(p -> !p.toFile().isDirectory())
+                .hasSizeGreaterThan(0)
+                .allMatch(p -> isStreamFile(p));
+    }
+
+    @Test
     @DisplayName("Keep signature files")
     void keepSignatureFiles() throws Exception {
         downloaderProperties.setKeepSignatures(true);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getSignaturesPath()))
+        assertThat(Files.walk(downloaderProperties.getStreamPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(p -> isSigFile(p));
@@ -369,7 +394,7 @@ public abstract class AbstractDownloaderTest {
 
         Mockito.reset(dateRangeProcessor);
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getSignaturesPath())
+        Files.walk(downloaderProperties.getStreamPath())
                 .filter(this::isSigFile)
                 .forEach(AbstractDownloaderTest::corruptFile);
 
@@ -421,7 +446,7 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
     @Test
@@ -546,14 +571,14 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    void keepBytes() throws Exception {
-        downloaderProperties.setKeepBytes(true);
+    void persistBytes() throws Exception {
+        downloaderProperties.setPersistBytes(true);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
     private void differentFilenames(Duration offset) throws Exception {
@@ -603,7 +628,7 @@ public abstract class AbstractDownloaderTest {
         verify(streamFileNotifier, times(files.size())).verified(captor.capture());
         assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
                 .allMatch(s -> s.getIndex() == null || s.getIndex() == index.getAndIncrement())
-                .allMatch(s -> downloaderProperties.isKeepBytes() ^ (s.getBytes() == null));
+                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
     }
 
     private Instant chooseFileInstant(String choice) {

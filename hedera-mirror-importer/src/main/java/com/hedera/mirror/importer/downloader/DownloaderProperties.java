@@ -35,8 +35,8 @@ public interface DownloaderProperties {
 
     String getPrefix();
 
-    default Path getSignaturesPath() {
-        return getStreamPath().resolve(getStreamType().getSignatures());
+    default Path getNodeStreamPath(String nodeAccountId) {
+        return getStreamPath().resolve(getStreamType().getNodePrefix() + nodeAccountId);
     }
 
     Path getStreamPath();
@@ -51,15 +51,19 @@ public interface DownloaderProperties {
 
     boolean isEnabled();
 
-    boolean isKeepBytes();
+    boolean isKeepFiles();
 
     boolean isKeepSignatures();
+
+    boolean isPersistBytes();
 
     void setBatchSize(int batchSize);
 
     void setEnabled(boolean enabled);
 
-    void setKeepBytes(boolean keepBytes);
+    void setKeepFiles(boolean keepFiles);
 
     void setKeepSignatures(boolean keepSignatures);
+
+    void setPersistBytes(boolean keepBytes);
 }

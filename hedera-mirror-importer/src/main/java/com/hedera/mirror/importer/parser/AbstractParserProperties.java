@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import java.nio.file.Path;
 import java.time.Duration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -43,8 +42,6 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @NotNull
     protected Duration frequency = Duration.ofMillis(100L);
 
-    protected boolean keepFiles = false;
-
     @DurationMin(seconds = 5)
     @NotNull
     protected Duration processingTimeout = Duration.ofSeconds(10L);
@@ -53,13 +50,6 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     @NotNull
     protected RetryProperties retry = new RetryProperties();
-
-    @Override
-    public Path getParsedPath() {
-        return getMirrorProperties().getDataPath()
-                .resolve(getStreamType().getPath())
-                .resolve(getStreamType().getParsed());
-    }
 
     // Due to Lombok requiring default constructor in base class, we have to keep this in sub-classes.
     protected abstract MirrorProperties getMirrorProperties();

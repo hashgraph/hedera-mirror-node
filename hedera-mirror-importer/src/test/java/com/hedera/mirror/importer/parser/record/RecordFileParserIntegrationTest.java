@@ -91,7 +91,6 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         recordFileDescriptor1 = new RecordFileDescriptor(93, 8, recordFile1);
         recordFileDescriptor2 = new RecordFileDescriptor(75, 5, recordFile2);
         parserProperties = new RecordParserProperties(new MirrorProperties());
-        parserProperties.setKeepFiles(false);
     }
 
     @Test

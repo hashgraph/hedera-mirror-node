@@ -21,140 +21,54 @@ package com.hedera.mirror.importer.parser.event;
  */
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.parser.domain.EventItem;
 import com.hedera.mirror.importer.repository.EventFileRepository;
 
-@ExtendWith(MockitoExtension.class)
-class EventFileParserTest {
-
-    @TempDir
-    Path dataDir;
+class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> {
 
     @Mock
     private EventFileRepository eventFileRepository;
 
-    private EventFileParser eventFileParser;
-    private EventParserProperties parserProperties;
     private long count = 0;
 
-    @BeforeEach
-    void before() {
-        MirrorProperties mirrorProperties = new MirrorProperties();
-        mirrorProperties.setDataPath(dataDir);
-        parserProperties = new EventParserProperties(mirrorProperties);
-        parserProperties.setEnabled(true);
-        eventFileParser = new EventFileParser(eventFileRepository, parserProperties);
+    @Override
+    protected EventFileParser getParser() {
+        EventParserProperties parserProperties = new EventParserProperties(new MirrorProperties());
+        return new EventFileParser(eventFileRepository, parserProperties);
     }
 
-    @Test
-    void parse() throws Exception {
-        // given
-        EventFile eventFile = eventFile();
+    @Override
+    protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
+        EventFile eventFile = (EventFile) streamFile;
 
-        // when
-        eventFileParser.parse(eventFile);
-
-        // then
-        verify(eventFileRepository).save(eventFile);
-        assertPostParseState(eventFile, true);
-    }
-
-    @Test
-    void disabled() throws Exception {
-        // given
-        parserProperties.setEnabled(false);
-        parserProperties.setKeepFiles(true);
-        EventFile eventFile = eventFile();
-
-        // when
-        eventFileParser.parse(eventFile);
-
-        // then
-        verify(eventFileRepository, never()).save(any());
-        assertPostParseState(eventFile, true);
-    }
-
-    @Test
-    void keepFiles() throws Exception {
-        // given
-        parserProperties.setKeepFiles(true);
-        EventFile eventFile = eventFile();
-
-        // when
-        eventFileParser.parse(eventFile);
-
-        // then
-        verify(eventFileRepository).save(eventFile);
-        assertPostParseState(eventFile, true, eventFile.getName());
-    }
-
-    @Test
-    void failureShouldRollback() throws Exception {
-        // given
-        EventFile eventFile = eventFile();
-        doThrow(ParserException.class).when(eventFileRepository).save(any());
-
-        // when
-        Assertions.assertThrows(ParserException.class, () -> {
-            eventFileParser.parse(eventFile);
-        });
-
-        // then
-        assertPostParseState(eventFile, false);
-    }
-
-    // Asserts that parsed directory contains exactly the files with given fileNames
-    private void assertFilesArchived(String... fileNames) throws Exception {
-        if (fileNames == null || fileNames.length == 0) {
-            assertThat(parserProperties.getParsedPath()).doesNotExist();
-            return;
-        }
-        assertThat(Files.walk(parserProperties.getParsedPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(fileNames.length)
-                .extracting(Path::getFileName)
-                .extracting(Path::toString)
-                .contains(fileNames);
-    }
-
-    private void assertPostParseState(EventFile eventFile, boolean success,
-                                      String... archivedFileNames) throws Exception {
-        if (success) {
-            assertThat(eventFile.getBytes()).isNull();
-            assertThat(eventFile.getItems()).isNull();
+        if (parsed) {
+            verify(eventFileRepository).save(eventFile);
         } else {
-            assertThat(eventFile.getBytes()).isNotNull();
-            assertThat(eventFile.getItems()).isNotNull();
+            if (!dbError) {
+                verify(eventFileRepository, never()).save(any());
+            }
         }
-
-        assertFilesArchived(archivedFileNames);
     }
 
-    private EventFile eventFile() {
+    @Override
+    protected StreamFile getStreamFile() {
         long id = ++count;
         Instant instant = Instant.ofEpochSecond(0L, id);
         String filename = StreamFilename.getFilename(parserProperties.getStreamType(), DATA, instant);
@@ -175,5 +89,10 @@ class EventFileParserTest {
         eventFile.setVersion(1);
         eventFile.getItems().add(new EventItem());
         return eventFile;
+    }
+
+    @Override
+    protected void mockDbFailure() {
+        doThrow(ParserException.class).when(eventFileRepository).save(any());
     }
 }

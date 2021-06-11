@@ -45,6 +45,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
+@ConditionalOnRecordParser
 @MessageEndpoint
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 

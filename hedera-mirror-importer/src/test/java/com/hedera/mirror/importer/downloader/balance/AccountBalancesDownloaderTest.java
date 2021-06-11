@@ -98,6 +98,6 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 }
