@@ -64,9 +64,9 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
     @Override
     public String getUpdateWhereClause() {
         return String.format(" where %s = %s and %s is null",
-                getTableColumnName(getTableName(), Entity_.ID),
-                getTableColumnName(getTemporaryTableName(), Entity_.ID),
-                getTableColumnName(getTemporaryTableName(), Entity_.CREATED_TIMESTAMP));
+                getFullFinalTableColumnName(Entity_.ID),
+                getFullTempTableColumnName(Entity_.ID),
+                getFullTempTableColumnName(Entity_.CREATED_TIMESTAMP));
     }
 
     @Override

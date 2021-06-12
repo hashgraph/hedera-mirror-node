@@ -162,8 +162,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
             updated = true;
         }
 
-        if (entity.getMemo() == null ||
-                (entity.getMemo().isEmpty() && accountInfo.getMemo() != null)) {
+        if (StringUtils.isEmpty(entity.getMemo())) {
             entity.setMemo(accountInfo.getMemo());
             updated = true;
         }

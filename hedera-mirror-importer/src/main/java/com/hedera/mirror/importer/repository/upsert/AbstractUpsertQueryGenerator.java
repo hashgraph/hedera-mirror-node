@@ -101,7 +101,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
         StringBuilder updateQueryBuilder = new StringBuilder("update " + getTableName() + " set ");
 
-        updateQueryBuilder.append(getUpdateClause(getTemporaryTableName()));
+        updateQueryBuilder.append(getUpdateClause());
 
         updateQueryBuilder.append(" from " + getTemporaryTableName());
 
@@ -121,12 +121,20 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 .collect(Collectors.joining(", "));
     }
 
-    protected String getTableColumnName(String tableName, String camelCaseName) {
+    protected String getFullFinalTableColumnName(String camelCaseColumnName) {
+        return getFullTableColumnName(getTableName(), camelCaseColumnName);
+    }
+
+    protected String getFullTempTableColumnName(String camelCaseColumnName) {
+        return getFullTableColumnName(getTemporaryTableName(), camelCaseColumnName);
+    }
+
+    protected String getFullTableColumnName(String tableName, String camelCaseColumnName) {
         return String.format("%s.%s",
                 tableName,
                 CaseFormat.UPPER_CAMEL.to(
                         CaseFormat.LOWER_UNDERSCORE,
-                        camelCaseName));
+                        camelCaseColumnName));
     }
 
     protected String getFormattedColumnName(String camelCaseName) {
@@ -137,13 +145,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     private String getSelectCoalesceQuery(String column, String defaultValue) {
         // e.g. "coalesce(delete, 'false')"
-        String formattedColumnName = getTableColumnName(getTemporaryTableName(), column);
+        String formattedColumnName = getFullTempTableColumnName(column);
         return String.format("coalesce(%s, %s)", formattedColumnName, defaultValue);
     }
 
     private String getSelectCoalesceQueryWithDefaultAlias(String column, String defaultValue) {
         // e.g. "coalesce(delete, 'false') as deleted"
-        String formattedColumnName = getTableColumnName(getTemporaryTableName(), column);
+        String formattedColumnName = getFullTempTableColumnName(column);
         return String.format("coalesce(%s, %s) as %s",
                 formattedColumnName,
                 defaultValue,
@@ -151,8 +159,8 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String getSelectCaseQuery(String column, String expectedValue, String value, String defaultValue) {
-        // e.g. "coalesce(delete, 'false') as deleted"
-        String formattedColumnName = getTableColumnName(getTemporaryTableName(), column);
+        // e.g. "case when entity_temp.memo = ' ' then '' else <value> end"
+        String formattedColumnName = getFullTempTableColumnName(column);
         return String.format("case when %s = %s then %s else %s end",
                 formattedColumnName,
                 expectedValue,
@@ -160,19 +168,19 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 defaultValue);
     }
 
-    private String getUpsertConflictCoalesceAssign(String column, String tempTableName) {
-        // e.g. "memo = coalesce(excluded.memo, entity.memo)"
-        String formattedColumnName = getTableColumnName(getTableName(), column);
+    private String getUpdateCoalesceAssign(String column) {
+        // e.g. "memo = coalesce(entity_temp.memo, entity.memo)"
+        String formattedColumnName = getFullFinalTableColumnName(column);
         return String.format("%s = coalesce(%s, %s)",
                 getFormattedColumnName(column),
-                getTableColumnName(tempTableName, column),
+                getFullTempTableColumnName(column),
                 formattedColumnName);
     }
 
-    private String getUpsertNullableStringConflictCaseCoalesceAssign(String column) {
-        // e.g. "case when excluded.memo = ' ' then '' else coalesce(excluded.memo, entity.memo) end "
-        String finalFormattedColumnName = getTableColumnName(getTableName(), column);
-        String tempFormattedColumnName = getTableColumnName(getTemporaryTableName(), column);
+    private String getUpdateNullableStringCaseCoalesceAssign(String column) {
+        // e.g. "case when entity_temp.memo = ' ' then '' else coalesce(entity_temp.memo, entity.memo) end"
+        String finalFormattedColumnName = getFullFinalTableColumnName(column);
+        String tempFormattedColumnName = getFullTempTableColumnName(column);
         return String.format(
                 "%s = case when %s = %s then '' else coalesce(%s, %s) end",
                 getFormattedColumnName(column),
@@ -234,7 +242,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         } else if (attributeType == TokenKycStatusEnum.class) {
             return getTokenKycEnumColumnTypeSelect(attributeName);
         } else {
-            return getTableColumnName(getTemporaryTableName(), attributeName);
+            return getFullTempTableColumnName(attributeName);
         }
     }
 
@@ -263,7 +271,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
             // non-applicable for insert but needed to prevent "violates not-null constraint" error on updates
             String freezeValue = String.format(
                     "getNewAccountFreezeStatus(%s)",
-                    getTableColumnName(getTemporaryTableName(), TokenAccountId_.TOKEN_ID));
+                    getFullTempTableColumnName(TokenAccountId_.TOKEN_ID));
             return getSelectCoalesceQueryWithDefaultAlias(attributeName, freezeValue);
         }
     }
@@ -274,12 +282,12 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         } else {
             String kycValue = String.format(
                     "getNewAccountKycStatus(%s)",
-                    getTableColumnName(getTemporaryTableName(), TokenAccountId_.TOKEN_ID));
+                    getFullTempTableColumnName(TokenAccountId_.TOKEN_ID));
             return getSelectCoalesceQueryWithDefaultAlias(attributeName, kycValue);
         }
     }
 
-    private String getUpdateClause(String tempTableName) {
+    private String getUpdateClause() {
         StringBuilder updateQueryBuilder = new StringBuilder();
 
         List<String> updateQueries = new ArrayList<>();
@@ -290,9 +298,9 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         updatableAttributes.forEach(d -> {
             String attributeUpdateQuery = "";
             if (d.getType() == String.class) {
-                attributeUpdateQuery = getUpsertNullableStringConflictCaseCoalesceAssign(d.getName());
+                attributeUpdateQuery = getUpdateNullableStringCaseCoalesceAssign(d.getName());
             } else {
-                attributeUpdateQuery = getUpsertConflictCoalesceAssign(d.getName(), tempTableName);
+                attributeUpdateQuery = getUpdateCoalesceAssign(d.getName());
             }
 
             updateQueries.add(attributeUpdateQuery);

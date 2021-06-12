@@ -26,10 +26,8 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import java.util.UUID;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 
-@Log4j2
 @Named
 public class NullableStringSerializer extends JsonSerializer<String> {
     public static final String NULLABLE_STRING_REPLACEMENT = UUID.randomUUID().toString();

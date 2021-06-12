@@ -69,12 +69,12 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
 
         // ignore entries where token not in db
         insertWhereQueryBuilder.append(String.format(" join %s on %s = %s", TokenUpsertQueryGenerator.TABLE,
-                getTableColumnName(getTemporaryTableName(), Token_.TOKEN_ID),
-                getTableColumnName(TokenUpsertQueryGenerator.TABLE, TokenAccountId_.TOKEN_ID)));
+                getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),
+                getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, Token_.TOKEN_ID)));
 
         // ignore entries where token created timestamp is noted
         insertWhereQueryBuilder.append(String.format(" where %s is not null ",
-                getTableColumnName(getTemporaryTableName(), TokenAccount_.CREATED_TIMESTAMP)));
+                getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP)));
 
         return insertWhereQueryBuilder.toString();
     }
@@ -82,11 +82,11 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     @Override
     public String getUpdateWhereClause() {
         return String.format(" where %s = %s and %s = %s and %s is null",
-                getTableColumnName(getTableName(), TokenAccountId_.TOKEN_ID),
-                getTableColumnName(getTemporaryTableName(), TokenAccountId_.TOKEN_ID),
-                getTableColumnName(getTableName(), TokenAccountId_.ACCOUNT_ID),
-                getTableColumnName(getTemporaryTableName(), TokenAccountId_.ACCOUNT_ID),
-                getTableColumnName(getTemporaryTableName(), TokenAccount_.CREATED_TIMESTAMP));
+                getFullFinalTableColumnName(TokenAccountId_.TOKEN_ID),
+                getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),
+                getFullFinalTableColumnName(TokenAccountId_.ACCOUNT_ID),
+                getFullTempTableColumnName(TokenAccountId_.ACCOUNT_ID),
+                getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP));
     }
 
     @Override

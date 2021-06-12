@@ -70,15 +70,15 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     @Override
     public String getInsertWhereClause() {
         return String.format(" where %s is not null ",
-                getTableColumnName(getTemporaryTableName(), Token_.CREATED_TIMESTAMP));
+                getFullTempTableColumnName(Token_.CREATED_TIMESTAMP));
     }
 
     @Override
     public String getUpdateWhereClause() {
         return String.format(" where %s = %s and %s is null",
-                getTableColumnName(getTableName(), Token_.TOKEN_ID),
-                getTableColumnName(getTemporaryTableName(), Token_.TOKEN_ID),
-                getTableColumnName(getTemporaryTableName(), Token_.CREATED_TIMESTAMP));
+                getFullFinalTableColumnName(Token_.TOKEN_ID),
+                getFullTempTableColumnName(Token_.TOKEN_ID),
+                getFullTempTableColumnName(Token_.CREATED_TIMESTAMP));
     }
 
     @Override
