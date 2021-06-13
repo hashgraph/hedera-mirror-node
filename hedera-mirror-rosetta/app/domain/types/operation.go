@@ -29,7 +29,7 @@ type Operation struct {
 	Index    int64
 	Type     string
 	Status   string
-	Account  *Account
+	Account  Account
 	Amount   Amount
 	Metadata map[string]interface{}
 }

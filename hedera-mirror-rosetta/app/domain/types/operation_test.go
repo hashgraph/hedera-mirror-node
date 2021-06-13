@@ -33,7 +33,7 @@ func exampleOperation(amount Amount) *Operation {
 		Index:   1,
 		Type:    "transfer",
 		Status:  "pending",
-		Account: &Account{entityid.EntityId{}},
+		Account: Account{entityid.EntityId{}},
 		Amount:  amount,
 	}
 }

@@ -20,16 +20,10 @@
 
 package types
 
-import (
-	"encoding/hex"
-
-	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
-)
-
 const (
-	TransactionTypeTokenCreation = 29
-	TransactionTypeTokenDeletion = 35
-	TransactionTypeTokenUpdate   = 36
+	TransactionTypeTokenCreation int16 = 29
+	TransactionTypeTokenDeletion int16 = 35
+	TransactionTypeTokenUpdate   int16 = 36
 
 	transactionTableName = "transaction"
 )
@@ -43,28 +37,15 @@ type Transaction struct {
 	Memo                 []byte
 	NodeAccountId        int64
 	PayerAccountId       int64
-	Result               int
+	Result               int16
 	Scheduled            bool
 	TransactionBytes     []byte
 	TransactionHash      []byte
-	Type                 int
+	Type                 int16
 	ValidDurationSeconds int64
 	ValidStartNs         int64
 }
 
 func (Transaction) TableName() string {
 	return transactionTableName
-}
-
-func (t Transaction) HasTokenOperation() bool {
-	// these three transaction types have token id saved and require an extra operation in addition to any transfer
-	// token mint, token burn, and token wipe can be fully represented by the operation built from the token transfer
-	// record so they don't need an extra operation
-	return t.Type == TransactionTypeTokenCreation ||
-		t.Type == TransactionTypeTokenDeletion ||
-		t.Type == TransactionTypeTokenUpdate
-}
-
-func (t Transaction) GetHashString() string {
-	return hexUtils.SafeAddHexPrefix(hex.EncodeToString(t.TransactionHash))
 }

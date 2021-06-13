@@ -37,7 +37,7 @@ func exampleTransaction() *Transaction {
 				Index:   1,
 				Type:    "transfer",
 				Status:  "pending",
-				Account: &Account{entityid.EntityId{}},
+				Account: Account{entityid.EntityId{}},
 				Amount:  &HbarAmount{Value: int64(400)},
 			},
 		},

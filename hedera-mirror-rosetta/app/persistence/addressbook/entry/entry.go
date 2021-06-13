@@ -84,11 +84,11 @@ func (aber *addressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 		Entries: entries}, nil
 }
 
-func (abe *addressBookEntry) getPeerId() (*types.Account, *rTypes.Error) {
+func (abe *addressBookEntry) getPeerId() (types.Account, *rTypes.Error) {
 	acc, err := types.AccountFromString(abe.Memo)
 	if err != nil {
 		log.Errorf(errors.CreateAccountDbIdFailed, abe.Memo)
-		return nil, errors.ErrInternalServerError
+		return types.Account{}, errors.ErrInternalServerError
 	}
 	return acc, nil
 }

@@ -46,8 +46,8 @@ func (h *HbarAmount) ToRosetta() *rTypes.Amount {
 
 // TokenAmount holds token amount unmarshalled from aggregated json string built by db query
 type TokenAmount struct {
-	TokenId  entityid.EntityId `json:"token_id"`
 	Decimals int64             `json:"decimals"`
+	TokenId  entityid.EntityId `json:"token_id"`
 	Value    int64             `json:"value"`
 }
 

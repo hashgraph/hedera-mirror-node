@@ -26,7 +26,7 @@ import (
 
 // AddressBookEntry is domain level struct used to represent Rosetta Peer
 type AddressBookEntry struct {
-	PeerId   *Account
+	PeerId   Account
 	Metadata map[string]interface{}
 }
 

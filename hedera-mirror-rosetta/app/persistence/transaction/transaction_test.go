@@ -58,13 +58,45 @@ func TestShouldSuccessReturnTransactionResultsTableName(t *testing.T) {
 	assert.Equal(t, tableNameTransactionResults, transactionResult{}.TableName())
 }
 
+func TestTransactionGetHashString(t *testing.T) {
+	tx := transaction{Hash: []byte{1, 2, 3, 0xaa, 0xff}}
+	assert.Equal(t, "0x010203aaff", tx.getHashString())
+}
+
+func TestHbarTransferGetAccount(t *testing.T) {
+	hbarTransfer := hbarTransfer{AccountId: entityid.EntityId{EntityNum: 1, EncodedId: 1}}
+	assert.Equal(t, types.Account{EntityId: entityid.EntityId{EntityNum: 1, EncodedId: 1}}, hbarTransfer.getAccount())
+}
+
+func TestHbarTransferGetAmount(t *testing.T) {
+	hbarTransfer := hbarTransfer{Amount: 10}
+	assert.Equal(t, &types.HbarAmount{Value: 10}, hbarTransfer.getAmount())
+}
+
+func TestTokenTransferGetAccount(t *testing.T) {
+	tokenTransfer := tokenTransfer{AccountId: entityid.EntityId{EntityNum: 1, EncodedId: 1}}
+	assert.Equal(t, types.Account{EntityId: entityid.EntityId{EntityNum: 1, EncodedId: 1}}, tokenTransfer.getAccount())
+}
+
+func TestTokenTransferGetAmount(t *testing.T) {
+	tokenId := entityid.EntityId{EntityNum: 123, EncodedId: 123}
+	tokenTransfer := tokenTransfer{Amount: 10, Decimals: 3, TokenId: tokenId}
+	assert.Equal(t, &types.TokenAmount{Decimals: 3, Value: 10, TokenId: tokenId}, tokenTransfer.getAmount())
+}
+
+func TestTokenGetAmount(t *testing.T) {
+	tokenId := entityid.EntityId{EntityNum: 123, EncodedId: 123}
+	token := token{Decimals: 5, TokenId: tokenId}
+	assert.Equal(t, &types.TokenAmount{Decimals: 5, TokenId: tokenId}, token.getAmount())
+}
+
 func TestShouldFailConstructAccount(t *testing.T) {
 	data := int64(-1)
 	expected := errors.ErrInternalServerError
 
 	result, err := constructAccount(data)
 
-	assert.Nil(t, result)
+	assert.Equal(t, types.Account{}, result)
 	assert.Equal(t, expected, err)
 }
 

@@ -29,13 +29,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var zeroAccount Account
+
 func exampleAccount() *Account {
 	return &Account{entityid.EntityId{}}
 }
 
-func exampleAccountWith(shard, realm, entity int64) *Account {
+func exampleAccountWith(shard, realm, entity int64) Account {
 	encoded, _ := entityid.Encode(shard, realm, entity)
-	return &Account{
+	return Account{
 		entityid.EntityId{
 			ShardNum:  shard,
 			RealmNum:  realm,
@@ -92,7 +94,7 @@ func TestNewAccountFromEncodedIDThrows(t *testing.T) {
 	res, err := NewAccountFromEncodedID(testData)
 
 	// then:
-	assert.Nil(t, res)
+	assert.Equal(t, zeroAccount, res)
 	assert.NotNil(t, err)
 }
 
@@ -109,8 +111,8 @@ func TestAccountString(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		res := exampleAccountWith(tt.shard, tt.realm, tt.number).String()
-		assert.Equal(t, tt.result, res)
+		actual := exampleAccountWith(tt.shard, tt.realm, tt.number)
+		assert.Equal(t, tt.result, actual.String())
 	}
 }
 
@@ -149,14 +151,14 @@ func TestAccountFromStringThrows(t *testing.T) {
 		{"0.0.c"},
 	}
 
-	var expectedNil *Account = nil
+	var zeroAccount Account
 
 	for _, tt := range testData {
 		// when:
 		res, err := AccountFromString(tt.input)
 
 		// then:
-		assert.Equal(t, expectedNil, res)
+		assert.Equal(t, zeroAccount, res)
 		assert.Equal(t, errors.ErrInvalidAccount, err)
 	}
 }

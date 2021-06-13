@@ -87,7 +87,7 @@ func newDummyPeer(shard, realm, entity int64, metadata map[string]interface{}) *
 func newDummyAddressBookEntry(shard, realm, entity int64, metadata map[string]interface{}) *AddressBookEntry {
 	encoded, _ := entityid.Encode(shard, realm, entity)
 	return &AddressBookEntry{
-		PeerId: &Account{
+		PeerId: Account{
 			entityid.EntityId{
 				ShardNum:  shard,
 				RealmNum:  realm,

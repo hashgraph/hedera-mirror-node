@@ -45,7 +45,7 @@ var (
 		Memo:               "0.0.5",
 	}
 	entityId, _              = entityid.Decode(5)
-	peerId                   = &types.Account{EntityId: entityId}
+	peerId                   = types.Account{EntityId: entityId}
 	expectedAddressBookEntry = &types.AddressBookEntry{
 		PeerId: peerId,
 		Metadata: map[string]interface{}{
@@ -56,6 +56,7 @@ var (
 	expectedResult = &types.AddressBookEntries{
 		Entries: []*types.AddressBookEntry{expectedAddressBookEntry, expectedAddressBookEntry},
 	}
+	zeroPeerId types.Account
 )
 
 func TestShouldSuccessReturnAddressBookEntryTableName(t *testing.T) {
@@ -147,7 +148,7 @@ func TestShouldFailReturnPeerId(t *testing.T) {
 	result, err := abe.getPeerId()
 
 	// then
-	assert.Nil(t, result)
+	assert.Equal(t, zeroPeerId, result)
 	assert.NotNil(t, err)
 	assert.Equal(t, errors.ErrInternalServerError, err)
 }
@@ -162,7 +163,7 @@ func TestShouldFailReturnPeerIdNegative(t *testing.T) {
 	result, err := abe.getPeerId()
 
 	// then
-	assert.Nil(t, result)
+	assert.Equal(t, zeroPeerId, result)
 	assert.NotNil(t, err)
 	assert.Equal(t, errors.ErrInternalServerError, err)
 }

@@ -52,6 +52,10 @@ type EntityId struct {
 	EncodedId int64
 }
 
+func (e *EntityId) IsZero() bool {
+	return e.EncodedId == 0
+}
+
 func (e *EntityId) String() string {
 	return fmt.Sprintf("%d.%d.%d", e.ShardNum, e.RealmNum, e.EntityNum)
 }

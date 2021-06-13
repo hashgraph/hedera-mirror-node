@@ -32,27 +32,25 @@ type Account struct {
 }
 
 // NewAccountFromEncodedID - creates new instance of Account struct
-func NewAccountFromEncodedID(encodedID int64) (*Account, error) {
+func NewAccountFromEncodedID(encodedID int64) (Account, error) {
 	entityId, err := entityid.Decode(encodedID)
 	if err != nil {
-		return nil, err
+		return Account{}, err
 	}
 
-	return &Account{entityId}, err
+	return Account{entityId}, err
 }
 
 // ToRosetta returns Rosetta type Account from the current domain type Account
-func (a *Account) ToRosetta() *rTypes.AccountIdentifier {
-	return &rTypes.AccountIdentifier{
-		Address: a.String(),
-	}
+func (a Account) ToRosetta() *rTypes.AccountIdentifier {
+	return &rTypes.AccountIdentifier{Address: a.String()}
 }
 
 // AccountFromString populates domain type Account from String Account
-func AccountFromString(account string) (*Account, *rTypes.Error) {
+func AccountFromString(account string) (Account, *rTypes.Error) {
 	entityId, err := entityid.FromString(account)
 	if err != nil {
-		return nil, errors.ErrInvalidAccount
+		return Account{}, errors.ErrInvalidAccount
 	}
-	return &Account{entityId}, nil
+	return Account{entityId}, nil
 }

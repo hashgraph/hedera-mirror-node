@@ -39,6 +39,16 @@ var invalidEntityIdStrs = []string{
 	"0.0.-1",
 }
 
+func TestEntityIdIsZero(t *testing.T) {
+	entityId := &EntityId{}
+	assert.True(t, entityId.IsZero())
+}
+
+func TestEntityIdIsNotZero(t *testing.T) {
+	entityId, _ := Decode(12)
+	assert.False(t, entityId.IsZero())
+}
+
 func TestEntityIdString(t *testing.T) {
 	entityId := EntityId{EntityNum: 7, EncodedId: 7}
 
