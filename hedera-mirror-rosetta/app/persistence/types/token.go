@@ -30,7 +30,7 @@ import (
 const tableNameToken = "token"
 
 type Token struct {
-	TokenID             int64 `gorm:"type:primaryKey"`
+	TokenId             int64 `gorm:"type:primaryKey"`
 	CreatedTimestamp    int64
 	Decimals            int64
 	FreezeDefault       bool
@@ -57,7 +57,7 @@ func (Token) TableName() string {
 
 // ToDomainToken converts db token to domain token
 func (t Token) ToDomainToken() (*types.Token, *rTypes.Error) {
-	tokenId, err := entityid.Decode(t.TokenID)
+	tokenId, err := entityid.Decode(t.TokenId)
 	if err != nil {
 		return nil, hErrors.ErrInvalidToken
 	}

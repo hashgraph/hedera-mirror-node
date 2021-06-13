@@ -60,7 +60,7 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	dbClient := suite.dbResource.GetGormDb()
 
 	token := &dbTypes.Token{
-		TokenID:             1200,
+		TokenId:             1200,
 		CreatedTimestamp:    10001,
 		Decimals:            9,
 		FreezeDefault:       true,

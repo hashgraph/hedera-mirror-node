@@ -61,30 +61,3 @@ func TestPublicKeyUnmarshalJSONInvalidInput(t *testing.T) {
 	// then
 	assert.Error(t, err)
 }
-
-type T struct {
-	Token tokenID `json:"token"`
-}
-
-func TestTokenIDUnmarshalJSONSuccess(t *testing.T) {
-	// given
-
-	// when
-	actual := &T{}
-	err := json.Unmarshal([]byte(`{"token": "0.0.123"}`), actual)
-
-	// then
-	assert.NoError(t, err)
-	assert.Equal(t, "0.0.123", actual.Token.String())
-}
-
-func TestTokenIDUnmarshalJSONInvalidTokenString(t *testing.T) {
-	// given
-
-	// when
-	actual := &T{}
-	err := json.Unmarshal([]byte(`{"token": "a.b.c"}`), actual)
-
-	// then
-	assert.Error(t, err)
-}

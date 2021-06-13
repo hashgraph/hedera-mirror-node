@@ -67,13 +67,3 @@ func (pk *publicKey) UnmarshalJSON(data []byte) error {
 func (pk *publicKey) isEmpty() bool {
 	return len(pk.PublicKey.Bytes()) == 0
 }
-
-// embed SDK TokenID and implement the Unmarshaler interface
-type tokenID struct {
-	hedera.TokenID
-}
-
-func (t *tokenID) UnmarshalJSON(data []byte) (err error) {
-	t.TokenID, err = hedera.TokenIDFromString(parse.SafeUnquote(string(data)))
-	return err
-}

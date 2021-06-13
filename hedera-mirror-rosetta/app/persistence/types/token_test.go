@@ -47,7 +47,7 @@ func TestTokenToDomainToken(t *testing.T) {
 		{
 			name: "Success",
 			token: Token{
-				TokenID:  1001,
+				TokenId:  1001,
 				Decimals: 10,
 				Name:     tokenName,
 				Symbol:   tokenSymbol,
@@ -62,7 +62,7 @@ func TestTokenToDomainToken(t *testing.T) {
 		{
 			name: "InvalidTokenId",
 			token: Token{
-				TokenID:  -1,
+				TokenId:  -1,
 				Decimals: 10,
 				Name:     tokenName,
 				Symbol:   tokenSymbol,

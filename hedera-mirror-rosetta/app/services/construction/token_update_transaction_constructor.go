@@ -25,7 +25,6 @@ import (
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
@@ -51,7 +50,6 @@ type tokenUpdate struct {
 type tokenUpdateTransactionConstructor struct {
 	transactionType string
 	tokenRepo       repositories.TokenRepository
-	validate        *validator.Validate
 }
 
 func (t *tokenUpdateTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*rTypes.Operation) (
@@ -252,7 +250,7 @@ func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Oper
 	}
 
 	tokenUpdate := &tokenUpdate{tokenId: *tokenId}
-	if rErr = parseOperationMetadata(t.validate, tokenUpdate, operation.Metadata); rErr != nil {
+	if rErr = parseOperationMetadata(nil, tokenUpdate, operation.Metadata); rErr != nil {
 		return nil, nil, rErr
 	}
 
@@ -266,42 +264,8 @@ func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Oper
 
 func newTokenUpdateTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenUpdateTransaction{}).Name()
-	validate := validator.New()
-	validate.RegisterStructValidation(tokenUpdateValidation, tokenUpdate{})
 	return &tokenUpdateTransactionConstructor{
 		transactionType: transactionType,
 		tokenRepo:       tokenRepo,
-		validate:        validate,
-	}
-}
-
-func tokenUpdateValidation(structLevel validator.StructLevel) {
-	tokenUpdate := structLevel.Current().Interface().(tokenUpdate)
-
-	if tokenUpdate.AdminKey.isEmpty() &&
-		isZeroAccountId(tokenUpdate.AutoRenewAccount) &&
-		tokenUpdate.AutoRenewPeriod == 0 &&
-		tokenUpdate.Expiry == 0 &&
-		tokenUpdate.FreezeKey.isEmpty() &&
-		tokenUpdate.KycKey.isEmpty() &&
-		tokenUpdate.Memo == "" &&
-		tokenUpdate.Name == "" &&
-		tokenUpdate.SupplyKey.isEmpty() &&
-		tokenUpdate.Symbol == "" &&
-		isZeroAccountId(tokenUpdate.Treasury) &&
-		tokenUpdate.WipeKey.isEmpty() {
-		structLevel.ReportError(tokenUpdate.AdminKey, "admin_key", "AdminKey", "", "")
-		structLevel.ReportError(tokenUpdate.AutoRenewAccount, "auto_renew_account", "AutoRenewAccount", "", "")
-		structLevel.ReportError(tokenUpdate.AutoRenewPeriod, "auto_renew_period", "AutoRenewPeriod", "", "")
-		structLevel.ReportError(tokenUpdate.Expiry, "expiry", "Expiry", "", "")
-		structLevel.ReportError(tokenUpdate.FreezeKey, "freeze_key", "FreezeKey", "", "")
-		structLevel.ReportError(tokenUpdate.KycKey, "kyc_key", "KycKey", "", "")
-		structLevel.ReportError(tokenUpdate.Memo, "memo", "Memo", "", "")
-		structLevel.ReportError(tokenUpdate.Name, "name", "Name", "", "")
-		structLevel.ReportError(tokenUpdate.SupplyKey, "supply_key", "SupplyKey", "", "")
-		structLevel.ReportError(tokenUpdate.Symbol, "symbol", "Symbol", "", "")
-		structLevel.ReportError(tokenUpdate.Treasury, "treasury", "Treasury", "", "")
-		structLevel.ReportError(tokenUpdate.WipeKey, "wipe_key", "WipeKey", "", "")
-
 	}
 }

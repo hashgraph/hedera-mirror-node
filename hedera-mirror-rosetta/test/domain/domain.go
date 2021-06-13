@@ -86,7 +86,7 @@ func AddToken(
 	treasury int64,
 ) {
 	token := &dbTypes.Token{
-		TokenID:           tokenId,
+		TokenId:           tokenId,
 		Decimals:          decimals,
 		FreezeDefault:     freezeDefault,
 		InitialSupply:     initialSupply,

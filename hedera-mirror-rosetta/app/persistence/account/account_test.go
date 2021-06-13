@@ -38,7 +38,7 @@ var (
 	snapshotTimestamp     int64 = 100
 	cryptoTransferAmounts       = []int64{150, -178}
 	token1                      = &dbTypes.Token{
-		TokenID:           1001,
+		TokenId:           1001,
 		CreatedTimestamp:  10,
 		Decimals:          8,
 		InitialSupply:     100000,
@@ -48,7 +48,7 @@ var (
 		TotalSupply:       200000,
 	}
 	token2 = &dbTypes.Token{
-		TokenID:           1002,
+		TokenId:           1002,
 		CreatedTimestamp:  12,
 		Decimals:          9,
 		InitialSupply:     200000,
@@ -58,12 +58,12 @@ var (
 		TotalSupply:       800000,
 	}
 	token1EntityId = entityid.EntityId{
-		EntityNum: token1.TokenID,
-		EncodedId: token1.TokenID,
+		EntityNum: token1.TokenId,
+		EncodedId: token1.TokenId,
 	}
 	token2EntityId = entityid.EntityId{
-		EntityNum: token2.TokenID,
-		EncodedId: token2.TokenID,
+		EntityNum: token2.TokenId,
+		EncodedId: token2.TokenId,
 	}
 	token1TransferAmounts      = []int64{10, -5}
 	token2TransferAmounts      = []int64{20, -7}
@@ -81,13 +81,13 @@ var (
 			AccountId:          account,
 			ConsensusTimestamp: snapshotTimestamp,
 			Balance:            112,
-			TokenId:            token1.TokenID,
+			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			ConsensusTimestamp: snapshotTimestamp,
 			Balance:            280,
-			TokenId:            token2.TokenID,
+			TokenId:            token2.TokenId,
 		},
 	}
 	initialAccountBalance = &accountBalance{
@@ -132,37 +132,37 @@ var (
 			AccountId:          account,
 			Amount:             token1TransferAmounts[0],
 			ConsensusTimestamp: snapshotTimestamp + 2,
-			TokenId:            token1.TokenID,
+			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token1TransferAmounts[1],
 			ConsensusTimestamp: snapshotTimestamp + 4,
-			TokenId:            token1.TokenID,
+			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             153,
 			ConsensusTimestamp: consensusEnd + 1,
-			TokenId:            token1.TokenID,
+			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token2TransferAmounts[0],
 			ConsensusTimestamp: snapshotTimestamp + 5,
-			TokenId:            token2.TokenID,
+			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token2TransferAmounts[1],
 			ConsensusTimestamp: snapshotTimestamp + 8,
-			TokenId:            token2.TokenID,
+			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             157,
 			ConsensusTimestamp: consensusEnd + 1,
-			TokenId:            token2.TokenID,
+			TokenId:            token2.TokenId,
 		},
 	}
 	// token transfers at or before snapshot timestamp
@@ -171,25 +171,25 @@ var (
 			AccountId:          account,
 			Amount:             17,
 			ConsensusTimestamp: snapshotTimestamp - 1,
-			TokenId:            token1.TokenID,
+			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             -2,
 			ConsensusTimestamp: snapshotTimestamp,
-			TokenId:            token1.TokenID,
+			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             25,
 			ConsensusTimestamp: snapshotTimestamp - 1,
-			TokenId:            token2.TokenID,
+			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             -9,
 			ConsensusTimestamp: snapshotTimestamp,
-			TokenId:            token2.TokenID,
+			TokenId:            token2.TokenId,
 		},
 	}
 )

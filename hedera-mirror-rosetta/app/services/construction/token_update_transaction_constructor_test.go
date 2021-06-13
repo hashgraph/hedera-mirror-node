@@ -374,14 +374,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 			expectError: true,
 		},
 		{
-			name: "MissingMetadata",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata = nil
-				return operations
-			},
-			expectError: true,
-		},
-		{
 			name: "MultipleOperations",
 			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
 				return append(operations, &rTypes.Operation{})

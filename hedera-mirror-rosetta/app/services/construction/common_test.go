@@ -196,7 +196,7 @@ func TestIsZeroTokenId(t *testing.T) {
 	}
 }
 
-func TestParseOperationMetadata(t *testing.T) {
+func TestParseOperationMetadataWithValidate(t *testing.T) {
 	type data struct {
 		Name  string `json:"name" validate:"required"`
 		Value int    `json:"value" validate:"required"`
@@ -269,6 +269,32 @@ func TestParseOperationMetadata(t *testing.T) {
 
 		})
 	}
+}
+
+func TestParseOperationMetadataWithoutValidate(t *testing.T) {
+	type data struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+
+	// given
+	name := "foobar"
+	expected := &data{
+		Name:  name,
+		Value: 0,
+	}
+
+	metadata := map[string]interface{}{
+		"name": name,
+	}
+
+	// when
+	output := &data{}
+	err := parseOperationMetadata(nil, output, metadata)
+
+	// then
+	assert.Nil(t, err)
+	assert.Equal(t, expected, output)
 }
 
 func TestValidateOperationsWithType(t *testing.T) {

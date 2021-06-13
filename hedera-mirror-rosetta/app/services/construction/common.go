@@ -90,9 +90,11 @@ func parseOperationMetadata(
 		return errors.ErrInvalidOperationMetadata
 	}
 
-	if err := validate.Struct(out); err != nil {
-		log.Errorf("Failed to validate metadata: %s", err)
-		return errors.ErrInvalidOperationMetadata
+	if validate != nil {
+		if err := validate.Struct(out); err != nil {
+			log.Errorf("Failed to validate metadata: %s", err)
+			return errors.ErrInvalidOperationMetadata
+		}
 	}
 
 	return nil
