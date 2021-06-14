@@ -56,7 +56,9 @@ import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
+import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
@@ -516,6 +518,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
         token.setTokenId(new Token.Id(EntityId.of(tokenId, TOKEN)));
         token.setTreasuryAccountId(EntityId.of(accountId, ACCOUNT));
         token.setWipeKey(hexKey);
+
+        token.setMaxSupply(0L);
+        token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
+        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
 
         return token;
     }
