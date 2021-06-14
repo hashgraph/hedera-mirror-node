@@ -73,7 +73,9 @@ class GrpcClientSDK implements GrpcClient {
         Sinks.Many<TopicMessage> sink = Sinks.many().multicast().directBestEffort();
 
         TopicMessageQuery topicMessageQuery = subscription.getTopicMessageQuery();
+        topicMessageQuery.setCompletionHandler(sink::tryEmitComplete);
         topicMessageQuery.setErrorHandler((throwable, topicMessage) -> sink.tryEmitError(throwable));
+        topicMessageQuery.setMaxAttempts(0); // Disable since we use our own retry logic to capture errors
         SubscriptionHandle subscriptionHandle = topicMessageQuery.subscribe(client, sink::tryEmitNext);
 
         return sink.asFlux()
