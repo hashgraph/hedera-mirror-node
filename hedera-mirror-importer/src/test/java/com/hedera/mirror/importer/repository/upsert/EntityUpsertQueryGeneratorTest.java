@@ -59,6 +59,7 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "key = coalesce(entity_temp.key, entity.key), " +
                 "memo = case when entity_temp.memo = '<uuid>' then '' else " +
                 "coalesce(entity_temp.memo, entity.memo) end, " +
+                "modified_timestamp = coalesce(entity_temp.modified_timestamp, entity.modified_timestamp), " +
                 "proxy_account_id = coalesce(entity_temp.proxy_account_id, entity.proxy_account_id), " +
                 "public_key = case when entity_temp.public_key = '<uuid>' then '' else " +
                 "coalesce(entity_temp.public_key, entity.public_key) end, " +
@@ -68,7 +69,7 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Test
     void tableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getTableName();
+        String upsertQuery = getUpdatableDomainRepositoryCustom().getFinalTableName();
         assertThat(upsertQuery).isEqualTo("entity");
     }
 

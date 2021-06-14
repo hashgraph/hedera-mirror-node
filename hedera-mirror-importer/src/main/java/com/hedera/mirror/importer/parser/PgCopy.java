@@ -57,7 +57,7 @@ public class PgCopy<T> {
     private final ParserProperties properties;
     protected final MeterRegistry meterRegistry;
     protected final String tableName;
-    protected Timer insertDurationMetric;
+    protected final Timer insertDurationMetric;
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
         this(entityClass, meterRegistry, properties, entityClass.getSimpleName());

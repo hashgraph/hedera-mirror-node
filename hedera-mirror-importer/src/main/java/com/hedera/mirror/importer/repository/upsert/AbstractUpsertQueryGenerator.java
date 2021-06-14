@@ -50,6 +50,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     protected static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
     private final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator
             .comparing(DomainField::getName);
+    private Set<Field> attributes = null;
 
     private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
     }.getRawType();
@@ -70,7 +71,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     @Override
     public String getCreateTempTableQuery() {
         return String.format("create temporary table %s on commit drop as table %s limit 0",
-                getTemporaryTableName(), getTableName());
+                getTemporaryTableName(), getFinalTableName());
     }
 
     @Override
@@ -79,7 +80,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String generateInsertQuery() {
-        StringBuilder insertQueryBuilder = new StringBuilder("insert into " + getTableName());
+        StringBuilder insertQueryBuilder = new StringBuilder("insert into " + getFinalTableName());
 
         // build target column list
         insertQueryBuilder.append(String.format(" (%s) select ", getColumnListFromSelectableColumns()));
@@ -97,11 +98,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String generateUpdateQuery() {
-        if (CollectionUtils.isEmpty(getUpdatableColumns())) {
-            return "";
-        }
-
-        StringBuilder updateQueryBuilder = new StringBuilder("update " + getTableName() + " set ");
+        StringBuilder updateQueryBuilder = new StringBuilder("update " + getFinalTableName() + " set ");
 
         updateQueryBuilder.append(getUpdateClause());
 
@@ -124,7 +121,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     protected String getFullFinalTableColumnName(String camelCaseColumnName) {
-        return getFullTableColumnName(getTableName(), camelCaseColumnName);
+        return getFullTableColumnName(getFinalTableName(), camelCaseColumnName);
     }
 
     protected String getFullTempTableColumnName(String camelCaseColumnName) {
@@ -187,14 +184,22 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return getConflictClause("nothing");
     }
 
-    private List<DomainField> getSelectableDomainFields() {
-        Set<SingularAttribute> selectableAttributes = getSelectableColumns();
-        List<DomainField> domainFields;
-        if (CollectionUtils.isEmpty(selectableAttributes)) {
-            // extract fields using reflection
-            domainFields = Arrays.stream(metaModelClass.getDeclaredFields())
+    private Set<Field> getAttributes() {
+        if (attributes == null) {
+            attributes = Arrays.stream(metaModelClass.getDeclaredFields())
                     // get SingularAttributes which are both static and volatile
                     .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
+                    .collect(Collectors.toSet());
+        }
+
+        return attributes;
+    }
+
+    private List<DomainField> getSelectableDomainFields() {
+        List<DomainField> domainFields;
+        if (CollectionUtils.isEmpty(getSelectableColumns())) {
+            // extract fields using reflection
+            domainFields = getAttributes().stream()
                     .map(f -> new DomainField(extractJavaType(f), f.getName()))
                     .collect(Collectors.toList());
         } else {
@@ -264,8 +269,9 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         StringBuilder updateQueryBuilder = new StringBuilder();
 
         List<String> updateQueries = new ArrayList<>();
-        List<DomainField> updatableAttributes = getUpdatableColumns().stream()
-                .map(a -> new DomainField(a.getType().getJavaType(), a.getName()))
+        List<DomainField> updatableAttributes = getAttributes().stream()
+                .filter(x -> !getNonUpdatableColumns().contains(x.getName())) // filter out non-updatable fields
+                .map(a -> new DomainField(extractJavaType(a), a.getName()))
                 .collect(Collectors.toList());
         Collections.sort(updatableAttributes, DOMAIN_FIELD_COMPARATOR); // sort fields alphabetically
         updatableAttributes.forEach(d -> {

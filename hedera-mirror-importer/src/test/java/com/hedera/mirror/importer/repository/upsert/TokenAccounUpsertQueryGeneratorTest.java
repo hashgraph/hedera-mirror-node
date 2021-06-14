@@ -61,7 +61,7 @@ class TokenAccounUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTe
 
     @Test
     void tableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getTableName();
+        String upsertQuery = getUpdatableDomainRepositoryCustom().getFinalTableName();
         assertThat(upsertQuery).isEqualTo("token_account");
     }
 

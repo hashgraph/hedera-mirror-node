@@ -39,13 +39,11 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     private static final Set<String> nullableColumns = Set.of(Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX, Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
             Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
-    private static final Set<SingularAttribute> updatableColumns = Set.of(Token_.freezeKey,
-            Token_.freezeKeyEd25519Hex, Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name,
-            Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.totalSupply, Token_.treasuryAccountId,
-            Token_.wipeKey, Token_.wipeKeyEd25519Hex);
+    private static final Set<String> nonUpdatableColumns = Set.of(Token_.CREATED_TIMESTAMP, Token_.DECIMALS,
+            Token_.FREEZE_DEFAULT, Token_.INITIAL_SUPPLY, Token_.TOKEN_ID);
 
     @Override
-    public String getTableName() {
+    public String getFinalTableName() {
         return TABLE;
     }
 
@@ -82,8 +80,8 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     }
 
     @Override
-    public Set<SingularAttribute> getUpdatableColumns() {
-        return updatableColumns;
+    public Set<String> getNonUpdatableColumns() {
+        return nonUpdatableColumns;
     }
 
     @Override

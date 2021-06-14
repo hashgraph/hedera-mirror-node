@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.repository.upsert;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
-import javax.persistence.metamodel.SingularAttribute;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Schedule_;
@@ -35,10 +34,12 @@ public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<S
     public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(Schedule_.SCHEDULE_ID);
     private static final Set<String> nullableColumns = Set.of(Schedule_.EXECUTED_TIMESTAMP);
-    private static final Set<SingularAttribute> updatableColumns = Set.of(Schedule_.executedTimestamp);
+    private static final Set<String> nonUpdatableColumns = Set.of(Schedule_.CONSENSUS_TIMESTAMP,
+            Schedule_.CREATOR_ACCOUNT_ID, Schedule_.PAYER_ACCOUNT_ID, Schedule_.SCHEDULE_ID,
+            Schedule_.TRANSACTION_BODY);
 
     @Override
-    public String getTableName() {
+    public String getFinalTableName() {
         return TABLE;
     }
 
@@ -67,8 +68,8 @@ public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<S
     }
 
     @Override
-    public Set<SingularAttribute> getUpdatableColumns() {
-        return updatableColumns;
+    public Set<String> getNonUpdatableColumns() {
+        return nonUpdatableColumns;
     }
 
     @Override

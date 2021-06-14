@@ -31,17 +31,17 @@ public interface UpsertQueryGenerator {
 
     String getCreateTempTableQuery();
 
+    String getFinalTableName();
+
     String getInsertQuery();
 
     String getInsertWhereClause();
 
+    Set<String> getNonUpdatableColumns();
+
     Set<SingularAttribute> getSelectableColumns();
 
-    String getTableName();
-
     String getTemporaryTableName();
-
-    Set<SingularAttribute> getUpdatableColumns();
 
     String getUpdateQuery();
 

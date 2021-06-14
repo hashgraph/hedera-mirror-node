@@ -52,7 +52,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
                         UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
-        finalTableName = upsertQueryGenerator.getTableName();
+        finalTableName = upsertQueryGenerator.getFinalTableName();
         insertSql = upsertQueryGenerator.getInsertQuery();
         updateSql = upsertQueryGenerator.getUpdateQuery();
         copyDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.copy")

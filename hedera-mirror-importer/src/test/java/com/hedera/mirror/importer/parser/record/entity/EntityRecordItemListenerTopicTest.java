@@ -201,6 +201,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
         var expectedEntity = createTopicEntity(topicId, updatedExpirationTimeSeconds, updatedExpirationTimeNanos,
                 updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccountId, autoRenewPeriod);
+        expectedEntity.setModifiedTimestamp(consensusTimestamp);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -321,6 +322,8 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
             ++entityCount;
             topic.setAutoRenewAccountId(EntityId.of(0L, 0L, updatedAutoRenewAccountNum, EntityTypeEnum.ACCOUNT));
         }
+        topic.setModifiedTimestamp(consensusTimestamp);
+
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(entityCount, entityRepository.count());
@@ -338,6 +341,7 @@ public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemL
 
         // Setup expected data
         topic.setDeleted(true);
+        topic.setModifiedTimestamp(consensusTimestamp);
 
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);

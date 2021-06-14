@@ -42,11 +42,11 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     private static final List<String> conflictTargetColumns = List.of(TokenAccountId_.TOKEN_ID,
             TokenAccountId_.ACCOUNT_ID);
     private static final Set<String> nullableColumns = Set.of();
-    private static final Set<SingularAttribute> updatableColumns = Set.of(TokenAccount_.associated,
-            TokenAccount_.modifiedTimestamp, TokenAccount_.freezeStatus, TokenAccount_.kycStatus);
+    private static final Set<String> nonUpdatableColumns = Set.of(TokenAccountId_.ACCOUNT_ID,
+            TokenAccount_.CREATED_TIMESTAMP, TokenAccount_.ID, TokenAccountId_.TOKEN_ID);
 
     @Override
-    public String getTableName() {
+    public String getFinalTableName() {
         return TABLE;
     }
 
@@ -93,8 +93,8 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     }
 
     @Override
-    public Set<SingularAttribute> getUpdatableColumns() {
-        return updatableColumns;
+    public Set<String> getNonUpdatableColumns() {
+        return nonUpdatableColumns;
     }
 
     @Override

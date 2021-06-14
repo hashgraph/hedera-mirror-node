@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.repository.upsert;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
-import javax.persistence.metamodel.SingularAttribute;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity_;
@@ -37,12 +36,11 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
     private static final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
             Entity_.AUTO_RENEW_PERIOD, Entity_.CREATED_TIMESTAMP, Entity_.DELETED, Entity_.EXPIRATION_TIMESTAMP,
             Entity_.KEY, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY, Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY);
-    private static final Set<SingularAttribute> updatableColumns = Set.of(Entity_.autoRenewAccountId,
-            Entity_.autoRenewPeriod, Entity_.deleted, Entity_.expirationTimestamp, Entity_.key, Entity_.memo,
-            Entity_.proxyAccountId, Entity_.publicKey, Entity_.submitKey);
+    private static final Set<String> nonUpdatableColumns = Set.of(Entity_.CREATED_TIMESTAMP, Entity_.ID,
+            Entity_.NUM, Entity_.REALM, Entity_.SHARD, Entity_.TYPE);
 
     @Override
-    public String getTableName() {
+    public String getFinalTableName() {
         return TABLE;
     }
 
@@ -70,8 +68,8 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
     }
 
     @Override
-    public Set<SingularAttribute> getUpdatableColumns() {
-        return updatableColumns;
+    public Set<String> getNonUpdatableColumns() {
+        return nonUpdatableColumns;
     }
 
     @Override

@@ -60,7 +60,7 @@ public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositor
         List<String> columnsFromDb = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
              ResultSet rs = connection.getMetaData()
-                     .getColumns(null, null, getUpdatableDomainRepositoryCustom().getTableName(), null)) {
+                     .getColumns(null, null, getUpdatableDomainRepositoryCustom().getFinalTableName(), null)) {
 
             while (rs.next()) {
                 columnsFromDb.add(rs.getString("COLUMN_NAME"));
