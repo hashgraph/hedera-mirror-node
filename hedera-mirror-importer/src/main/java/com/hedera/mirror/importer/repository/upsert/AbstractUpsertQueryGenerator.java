@@ -43,9 +43,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
-import com.hedera.mirror.importer.domain.TokenAccountId_;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
     private static final String EMPTY_STRING = "\'\'";
@@ -74,6 +71,11 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     public String getCreateTempTableQuery() {
         return String.format("create temporary table %s on commit drop as table %s limit 0",
                 getTemporaryTableName(), getTableName());
+    }
+
+    @Override
+    public String getAttributeSelectQuery(String attributeName) {
+        return null;
     }
 
     private String generateInsertQuery() {
@@ -149,15 +151,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return String.format("coalesce(%s, %s)", formattedColumnName, defaultValue);
     }
 
-    private String getSelectCoalesceQueryWithDefaultAlias(String column, String defaultValue) {
-        // e.g. "coalesce(delete, 'false') as deleted"
-        String formattedColumnName = getFullTempTableColumnName(column);
-        return String.format("coalesce(%s, %s) as %s",
-                formattedColumnName,
-                defaultValue,
-                getFormattedColumnName(column));
-    }
-
     private String getSelectCaseQuery(String column, String expectedValue, String value, String defaultValue) {
         // e.g. "case when entity_temp.memo = ' ' then '' else <value> end"
         String formattedColumnName = getFullTempTableColumnName(column);
@@ -222,7 +215,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         // loop over fields to create select clause
         List<String> selectableFields = new ArrayList<>();
         domainFields.forEach(d -> selectableFields
-                .add(getColumnSelectQuery(d.getType(), d.getName())));
+                .add(getDefaultColumnSelectQuery(d.getType(), d.getName())));
 
         return StringUtils.join(selectableFields, ", ");
     }
@@ -234,13 +227,16 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return parameterizedTypes[1];
     }
 
-    private String getColumnSelectQuery(Type attributeType, String attributeName) {
+    private String getDefaultColumnSelectQuery(Type attributeType, String attributeName) {
+        // get column custom select implementations
+        String columnSelectQuery = getAttributeSelectQuery(attributeName);
+        if (!StringUtils.isEmpty(columnSelectQuery)) {
+            return columnSelectQuery;
+        }
+
+        // default implementations per type
         if (attributeType == String.class) {
             return getStringColumnTypeSelect(attributeName);
-        } else if (attributeType == TokenFreezeStatusEnum.class) {
-            return getTokenFreezeEnumColumnTypeSelect(attributeName);
-        } else if (attributeType == TokenKycStatusEnum.class) {
-            return getTokenKycEnumColumnTypeSelect(attributeName);
         } else {
             return getFullTempTableColumnName(attributeName);
         }
@@ -261,29 +257,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                     RESERVED_CHAR,
                     EMPTY_STRING,
                     getSelectCoalesceQuery(attributeName, EMPTY_STRING));
-        }
-    }
-
-    private String getTokenFreezeEnumColumnTypeSelect(String attributeName) {
-        if (isNullableColumn(attributeName)) {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, NULL_STRING);
-        } else {
-            // non-applicable for insert but needed to prevent "violates not-null constraint" error on updates
-            String freezeValue = String.format(
-                    "getNewAccountFreezeStatus(%s)",
-                    getFullTempTableColumnName(TokenAccountId_.TOKEN_ID));
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, freezeValue);
-        }
-    }
-
-    private String getTokenKycEnumColumnTypeSelect(String attributeName) {
-        if (isNullableColumn(attributeName)) {
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, NULL_STRING);
-        } else {
-            String kycValue = String.format(
-                    "getNewAccountKycStatus(%s)",
-                    getFullTempTableColumnName(TokenAccountId_.TOKEN_ID));
-            return getSelectCoalesceQueryWithDefaultAlias(attributeName, kycValue);
         }
     }
 

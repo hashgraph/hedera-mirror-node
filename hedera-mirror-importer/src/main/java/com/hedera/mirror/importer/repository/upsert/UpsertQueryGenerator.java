@@ -25,6 +25,8 @@ import java.util.Set;
 import javax.persistence.metamodel.SingularAttribute;
 
 public interface UpsertQueryGenerator {
+    String getAttributeSelectQuery(String attributeName);
+
     List<String> getConflictIdColumns();
 
     String getCreateTempTableQuery();

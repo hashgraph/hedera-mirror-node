@@ -29,11 +29,14 @@ import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenAccount_;
+import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.Token_;
 
 @Named
 @RequiredArgsConstructor
 public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerator<TokenAccount_> {
+    public static final String JOIN_TABLE = "token";
     public static final String TABLE = "token_account";
     public static final String TEMP_TABLE = TABLE + "_temp";
     private static final List<String> conflictTargetColumns = List.of(TokenAccountId_.TOKEN_ID,
@@ -97,5 +100,33 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     @Override
     public boolean isNullableColumn(String columnName) {
         return nullableColumns.contains(columnName);
+    }
+
+    @Override
+    public String getAttributeSelectQuery(String attributeName) {
+        if (attributeName.equalsIgnoreCase(TokenAccount_.FREEZE_STATUS)) {
+            String freezeStatusInsert = "case when %s is not null then %s when" +
+                    " %s is null then %s when %s = true then %s else %s end %s";
+            return String.format(freezeStatusInsert,
+                    getFullTempTableColumnName(TokenAccount_.FREEZE_STATUS),
+                    getFullTempTableColumnName(TokenAccount_.FREEZE_STATUS),
+                    getFullTableColumnName(JOIN_TABLE, Token_.FREEZE_KEY),
+                    TokenFreezeStatusEnum.NOT_APPLICABLE.getId(),
+                    getFullTableColumnName(JOIN_TABLE, Token_.FREEZE_DEFAULT),
+                    TokenFreezeStatusEnum.FROZEN.getId(),
+                    TokenFreezeStatusEnum.UNFROZEN.getId(),
+                    getFormattedColumnName(TokenAccount_.FREEZE_STATUS));
+        } else if (attributeName.equalsIgnoreCase(TokenAccount_.KYC_STATUS)) {
+            String kycInsert = "case when %s is not null then %s when %s is null then %s else %s end %s";
+            return String.format(kycInsert,
+                    getFullTempTableColumnName(TokenAccount_.KYC_STATUS),
+                    getFullTempTableColumnName(TokenAccount_.KYC_STATUS),
+                    getFullTableColumnName(JOIN_TABLE, Token_.KYC_KEY),
+                    TokenKycStatusEnum.NOT_APPLICABLE.getId(),
+                    TokenKycStatusEnum.REVOKED.getId(),
+                    getFormattedColumnName(TokenAccount_.KYC_STATUS));
+        }
+
+        return null;
     }
 }
