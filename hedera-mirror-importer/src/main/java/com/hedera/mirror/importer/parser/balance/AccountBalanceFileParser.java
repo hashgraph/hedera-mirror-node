@@ -30,9 +30,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -51,7 +51,7 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
  * Parse an account balances file and load it into the database.
  */
 @Log4j2
-@MessageEndpoint
+@Named
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
     private final DataSource dataSource;

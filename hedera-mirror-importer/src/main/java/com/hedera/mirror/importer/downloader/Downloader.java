@@ -409,12 +409,12 @@ public abstract class Downloader<T extends StreamFile> {
 
                     verify(streamFile, signature);
 
-                    if (downloaderProperties.isKeepFiles()) {
+                    if (downloaderProperties.isWriteFiles()) {
                         Utility.archiveFile(streamFile.getName(), streamFile.getBytes(),
                                 downloaderProperties.getNodeStreamPath(signature.getNodeAccountIdString()));
                     }
 
-                    if (downloaderProperties.isKeepSignatures()) {
+                    if (downloaderProperties.isWriteSignatures()) {
                         signatures.forEach(s -> {
                             Path destination = downloaderProperties.getNodeStreamPath(s.getNodeAccountIdString());
                             Utility.archiveFile(s.getFilename(), s.getBytes(), destination);

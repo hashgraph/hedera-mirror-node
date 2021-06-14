@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -90,7 +89,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         RecordFile recordFile2 = recordFile(recordFilePath2.toFile(), 1L);
         recordFileDescriptor1 = new RecordFileDescriptor(93, 8, recordFile1);
         recordFileDescriptor2 = new RecordFileDescriptor(75, 5, recordFile2);
-        parserProperties = new RecordParserProperties(new MirrorProperties());
+        parserProperties = new RecordParserProperties();
     }
 
     @Test

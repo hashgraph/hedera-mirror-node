@@ -27,8 +27,6 @@ import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.MirrorProperties;
-
 @Data
 @Validated
 public abstract class AbstractParserProperties implements ParserProperties {
@@ -46,13 +44,12 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @NotNull
     protected Duration processingTimeout = Duration.ofSeconds(10L);
 
+    @Min(0)
     protected int queueCapacity = 10;
 
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
-    // Due to Lombok requiring default constructor in base class, we have to keep this in sub-classes.
-    protected abstract MirrorProperties getMirrorProperties();
 
     @Data
     @Validated

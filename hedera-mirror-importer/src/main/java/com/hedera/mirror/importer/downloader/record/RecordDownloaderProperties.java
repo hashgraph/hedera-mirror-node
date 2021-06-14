@@ -51,11 +51,11 @@ public class RecordDownloaderProperties implements DownloaderProperties {
     @NotNull
     private Duration frequency = Duration.ofMillis(500L);
 
-    private boolean keepFiles = false;
-
-    private boolean keepSignatures = false;
-
     private boolean persistBytes = false;
+
+    private boolean writeFiles = false;
+
+    private boolean writeSignatures = false;
 
     @NotBlank
     private String prefix = "recordstreams/record";

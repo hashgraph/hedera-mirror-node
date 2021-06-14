@@ -358,9 +358,9 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("Keep files")
-    void keepFiles() throws Exception {
-        downloaderProperties.setKeepFiles(true);
+    @DisplayName("Write stream files")
+    void writeFiles() throws Exception {
+        downloaderProperties.setWriteFiles(true);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -371,9 +371,9 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("Keep signature files")
-    void keepSignatureFiles() throws Exception {
-        downloaderProperties.setKeepSignatures(true);
+    @DisplayName("Write signature files")
+    void writeSignatureFiles() throws Exception {
+        downloaderProperties.setWriteSignatures(true);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -386,7 +386,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("overwrite on download")
     void overwriteOnDownload() throws Exception {
-        downloaderProperties.setKeepSignatures(true);
+        downloaderProperties.setWriteSignatures(true);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();

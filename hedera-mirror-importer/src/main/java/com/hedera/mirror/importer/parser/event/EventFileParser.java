@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.event;
  * ‍
  */
 
-import org.springframework.integration.annotation.MessageEndpoint;
+import javax.inject.Named;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.repository.EventFileRepository;
 
-@MessageEndpoint
+@Named
 public class EventFileParser extends AbstractStreamFileParser<EventFile> {
 
     private final EventFileRepository eventFileRepository;

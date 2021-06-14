@@ -36,7 +36,6 @@ import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.parser.event.EventFileParser;
 import com.hedera.mirror.importer.parser.event.EventParserProperties;
-import com.hedera.mirror.importer.parser.record.ConditionalOnRecordParser;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
@@ -80,7 +79,6 @@ public class MessagingConfiguration {
     }
 
     @Bean(INTEGRATION_FLOW_RECORD)
-    @ConditionalOnRecordParser
     IntegrationFlow integrationFlowRecord(RecordFileParser parser) {
         return integrationFlow(parser);
     }
@@ -88,7 +86,7 @@ public class MessagingConfiguration {
     @Bean
     IntegrationFlow streamFileRouter() {
         return IntegrationFlows.from(CHANNEL_STREAM)
-                .route(StreamFile.class, s -> s.getType().toString().toLowerCase(), s -> s.prefix(CHANNEL_STREAM + "."))
+                .route(StreamFile.class, s -> channelName(s.getType()))
                 .get();
     }
 

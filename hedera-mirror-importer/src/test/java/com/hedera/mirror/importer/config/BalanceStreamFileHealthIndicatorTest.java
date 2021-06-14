@@ -26,6 +26,6 @@ import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 public class BalanceStreamFileHealthIndicatorTest extends AbstractStreamFileHealthIndicatorTest {
     @Override
     public AbstractParserProperties getParserProperties() {
-        return new BalanceParserProperties(mirrorProperties);
+        return new BalanceParserProperties();
     }
 }

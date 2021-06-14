@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import java.time.Instant;
 import org.mockito.Mock;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -50,7 +49,7 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
 
     @Override
     protected EventFileParser getParser() {
-        EventParserProperties parserProperties = new EventParserProperties(new MirrorProperties());
+        EventParserProperties parserProperties = new EventParserProperties();
         return new EventFileParser(eventFileRepository, parserProperties);
     }
 

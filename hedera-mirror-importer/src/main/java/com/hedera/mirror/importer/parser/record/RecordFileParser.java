@@ -31,8 +31,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,8 +45,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
-@ConditionalOnRecordParser
-@MessageEndpoint
+@Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     private final RecordItemListener recordItemListener;

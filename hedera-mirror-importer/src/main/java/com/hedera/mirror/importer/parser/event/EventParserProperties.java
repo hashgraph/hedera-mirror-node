@@ -25,7 +25,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
@@ -35,12 +34,7 @@ import com.hedera.mirror.importer.parser.AbstractParserProperties;
 @ConfigurationProperties("hedera.mirror.importer.parser.event")
 public class EventParserProperties extends AbstractParserProperties {
 
-    private final MirrorProperties mirrorProperties;
-
-    public EventParserProperties(MirrorProperties mirrorProperties) {
-        this.mirrorProperties = mirrorProperties;
-        setEnabled(false);
-    }
+    protected boolean enabled = false;
 
     @Override
     public StreamType getStreamType() {

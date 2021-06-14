@@ -51,19 +51,19 @@ public interface DownloaderProperties {
 
     boolean isEnabled();
 
-    boolean isKeepFiles();
-
-    boolean isKeepSignatures();
-
     boolean isPersistBytes();
+
+    boolean isWriteFiles();
+
+    boolean isWriteSignatures();
 
     void setBatchSize(int batchSize);
 
     void setEnabled(boolean enabled);
 
-    void setKeepFiles(boolean keepFiles);
-
-    void setKeepSignatures(boolean keepSignatures);
-
     void setPersistBytes(boolean keepBytes);
+
+    void setWriteFiles(boolean keepFiles);
+
+    void setWriteSignatures(boolean keepSignatures);
 }

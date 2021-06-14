@@ -26,6 +26,6 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 public class RecordStreamFileHealthIndicatorTest extends AbstractStreamFileHealthIndicatorTest {
     @Override
     public AbstractParserProperties getParserProperties() {
-        return new RecordParserProperties(mirrorProperties);
+        return new RecordParserProperties();
     }
 }

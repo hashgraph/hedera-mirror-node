@@ -40,7 +40,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
@@ -88,7 +87,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Override
     protected RecordFileParser getParser() {
-        RecordParserProperties parserProperties = new RecordParserProperties(new MirrorProperties());
+        RecordParserProperties parserProperties = new RecordParserProperties();
         return new RecordFileParser(parserProperties, new SimpleMeterRegistry(), recordItemListener,
                 recordStreamFileListener, mirrorDateRangePropertiesProcessor);
     }

@@ -70,7 +70,6 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
-        parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.setEnabled(true);
     }
 
