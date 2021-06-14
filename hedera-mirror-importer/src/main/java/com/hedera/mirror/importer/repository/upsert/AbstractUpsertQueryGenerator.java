@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.converter.NullableStringSerializer;
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
-    protected static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
+    private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
     private final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator
             .comparing(DomainField::getName);
     private Set<Field> attributes = null;
@@ -58,15 +58,18 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
 
-    // using Lombok getter to implement getSelectableColumns, null or empty list implies select all fields
-    @Getter(lazy = true)
-    // Note JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final Set<SingularAttribute> selectableColumns = Collections.EMPTY_SET;
-
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
 
     protected final Logger log = LogManager.getLogger(getClass());
+
+    protected abstract List<String> getConflictIdColumns();
+
+    protected abstract String getInsertWhereClause();
+
+    protected abstract Set<String> getNonUpdatableColumns();
+
+    protected abstract String getUpdateWhereClause();
 
     @Override
     public String getCreateTempTableQuery() {
@@ -74,9 +77,21 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 getTemporaryTableName(), getFinalTableName());
     }
 
-    @Override
-    public String getAttributeSelectQuery(String attributeName) {
+    protected String getAttributeSelectQuery(String attributeName) {
         return null;
+    }
+
+    protected Set<String> getNullableColumns() {
+        return null;
+    }
+
+    // Note JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
+    protected Set<SingularAttribute> getSelectableColumns() {
+        return Collections.emptySet();
+    }
+
+    private boolean isNullableColumn(String columnName) {
+        return getNullableColumns() == null ? false : getNullableColumns().contains(columnName);
     }
 
     private String generateInsertQuery() {

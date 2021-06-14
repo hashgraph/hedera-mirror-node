@@ -26,6 +26,7 @@ import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenAccount_;
@@ -35,30 +36,15 @@ import com.hedera.mirror.importer.domain.Token_;
 
 @Named
 @RequiredArgsConstructor
+@Value
 public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerator<TokenAccount_> {
-    public static final String JOIN_TABLE = "token";
-    public static final String TABLE = "token_account";
-    public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final List<String> conflictTargetColumns = List.of(TokenAccountId_.TOKEN_ID,
+    private static final String JOIN_TABLE = "token";
+    private final String finalTableName = "token_account";
+    private final String temporaryTableName = getFinalTableName() + "_temp";
+    private final List<String> conflictIdColumns = List.of(TokenAccountId_.TOKEN_ID,
             TokenAccountId_.ACCOUNT_ID);
-    private static final Set<String> nullableColumns = Set.of();
-    private static final Set<String> nonUpdatableColumns = Set.of(TokenAccountId_.ACCOUNT_ID,
+    private final Set<String> nonUpdatableColumns = Set.of(TokenAccountId_.ACCOUNT_ID,
             TokenAccount_.CREATED_TIMESTAMP, TokenAccount_.ID, TokenAccountId_.TOKEN_ID);
-
-    @Override
-    public String getFinalTableName() {
-        return TABLE;
-    }
-
-    @Override
-    public String getTemporaryTableName() {
-        return TEMP_TABLE;
-    }
-
-    @Override
-    public List<String> getConflictIdColumns() {
-        return conflictTargetColumns;
-    }
 
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
@@ -90,16 +76,6 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
                 getFullFinalTableColumnName(TokenAccountId_.ACCOUNT_ID),
                 getFullTempTableColumnName(TokenAccountId_.ACCOUNT_ID),
                 getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP));
-    }
-
-    @Override
-    public Set<String> getNonUpdatableColumns() {
-        return nonUpdatableColumns;
-    }
-
-    @Override
-    public boolean isNullableColumn(String columnName) {
-        return nullableColumns.contains(columnName);
     }
 
     @Override

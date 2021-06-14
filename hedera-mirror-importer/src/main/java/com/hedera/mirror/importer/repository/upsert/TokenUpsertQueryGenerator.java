@@ -26,36 +26,23 @@ import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.TokenId_;
 import com.hedera.mirror.importer.domain.Token_;
 
 @Named
 @RequiredArgsConstructor
+@Value
 public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Token_> {
     public static final String TABLE = "token";
-    public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final List<String> conflictTargetColumns = List.of(TokenId_.TOKEN_ID);
-    private static final Set<String> nullableColumns = Set.of(Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
+    public final String temporaryTableName = getFinalTableName() + "_temp";
+    private final List<String> conflictIdColumns = List.of(TokenId_.TOKEN_ID);
+    private final Set<String> nullableColumns = Set.of(Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX, Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
             Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
-    private static final Set<String> nonUpdatableColumns = Set.of(Token_.CREATED_TIMESTAMP, Token_.DECIMALS,
+    private final Set<String> nonUpdatableColumns = Set.of(Token_.CREATED_TIMESTAMP, Token_.DECIMALS,
             Token_.FREEZE_DEFAULT, Token_.INITIAL_SUPPLY, Token_.TOKEN_ID);
-
-    @Override
-    public String getFinalTableName() {
-        return TABLE;
-    }
-
-    @Override
-    public String getTemporaryTableName() {
-        return TEMP_TABLE;
-    }
-
-    @Override
-    public List<String> getConflictIdColumns() {
-        return conflictTargetColumns;
-    }
 
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
@@ -64,6 +51,11 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
             Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name,
             Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.tokenId,
             Token_.totalSupply, Token_.treasuryAccountId, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
+
+    @Override
+    public String getFinalTableName() {
+        return TABLE;
+    }
 
     @Override
     public String getInsertWhereClause() {
@@ -77,15 +69,5 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
                 getFullFinalTableColumnName(Token_.TOKEN_ID),
                 getFullTempTableColumnName(Token_.TOKEN_ID),
                 getFullTempTableColumnName(Token_.CREATED_TIMESTAMP));
-    }
-
-    @Override
-    public Set<String> getNonUpdatableColumns() {
-        return nonUpdatableColumns;
-    }
-
-    @Override
-    public boolean isNullableColumn(String columnName) {
-        return nullableColumns.contains(columnName);
     }
 }

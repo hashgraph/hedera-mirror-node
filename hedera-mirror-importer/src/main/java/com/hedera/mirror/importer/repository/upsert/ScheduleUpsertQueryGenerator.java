@@ -24,34 +24,21 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.Schedule_;
 
 @Named
 @RequiredArgsConstructor
+@Value
 public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Schedule_> {
-    public static final String TABLE = "schedule";
-    public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final List<String> conflictTargetColumns = List.of(Schedule_.SCHEDULE_ID);
-    private static final Set<String> nullableColumns = Set.of(Schedule_.EXECUTED_TIMESTAMP);
-    private static final Set<String> nonUpdatableColumns = Set.of(Schedule_.CONSENSUS_TIMESTAMP,
+    public final String finalTableName = "schedule";
+    public final String temporaryTableName = getFinalTableName() + "_temp";
+    private final List<String> conflictIdColumns = List.of(Schedule_.SCHEDULE_ID);
+    private final Set<String> nullableColumns = Set.of(Schedule_.EXECUTED_TIMESTAMP);
+    private final Set<String> nonUpdatableColumns = Set.of(Schedule_.CONSENSUS_TIMESTAMP,
             Schedule_.CREATOR_ACCOUNT_ID, Schedule_.PAYER_ACCOUNT_ID, Schedule_.SCHEDULE_ID,
             Schedule_.TRANSACTION_BODY);
-
-    @Override
-    public String getFinalTableName() {
-        return TABLE;
-    }
-
-    @Override
-    public String getTemporaryTableName() {
-        return TEMP_TABLE;
-    }
-
-    @Override
-    public List<String> getConflictIdColumns() {
-        return conflictTargetColumns;
-    }
 
     @Override
     public String getInsertWhereClause() {
@@ -65,15 +52,5 @@ public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<S
                 getFullFinalTableColumnName(Schedule_.SCHEDULE_ID),
                 getFullTempTableColumnName(Schedule_.SCHEDULE_ID),
                 getFullTempTableColumnName(Schedule_.EXECUTED_TIMESTAMP));
-    }
-
-    @Override
-    public Set<String> getNonUpdatableColumns() {
-        return nonUpdatableColumns;
-    }
-
-    @Override
-    public boolean isNullableColumn(String columnName) {
-        return nullableColumns.contains(columnName);
     }
 }

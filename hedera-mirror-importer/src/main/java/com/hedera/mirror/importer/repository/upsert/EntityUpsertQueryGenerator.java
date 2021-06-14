@@ -24,35 +24,22 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 import com.hedera.mirror.importer.domain.Entity_;
 
 @Named
 @RequiredArgsConstructor
+@Value
 public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Entity_> {
-    public static final String TABLE = "entity";
-    public static final String TEMP_TABLE = TABLE + "_temp";
-    private static final List<String> conflictTargetColumns = List.of(Entity_.ID);
-    private static final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
+    public final String finalTableName = "entity";
+    public final String temporaryTableName = getFinalTableName() + "_temp";
+    private final List<String> conflictIdColumns = List.of(Entity_.ID);
+    private final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
             Entity_.AUTO_RENEW_PERIOD, Entity_.CREATED_TIMESTAMP, Entity_.DELETED, Entity_.EXPIRATION_TIMESTAMP,
             Entity_.KEY, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY, Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY);
-    private static final Set<String> nonUpdatableColumns = Set.of(Entity_.CREATED_TIMESTAMP, Entity_.ID,
+    private final Set<String> nonUpdatableColumns = Set.of(Entity_.CREATED_TIMESTAMP, Entity_.ID,
             Entity_.NUM, Entity_.REALM, Entity_.SHARD, Entity_.TYPE);
-
-    @Override
-    public String getFinalTableName() {
-        return TABLE;
-    }
-
-    @Override
-    public String getTemporaryTableName() {
-        return TEMP_TABLE;
-    }
-
-    @Override
-    public List<String> getConflictIdColumns() {
-        return conflictTargetColumns;
-    }
 
     @Override
     public String getInsertWhereClause() {
@@ -65,15 +52,5 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
                 getFullFinalTableColumnName(Entity_.ID),
                 getFullTempTableColumnName(Entity_.ID),
                 getFullTempTableColumnName(Entity_.CREATED_TIMESTAMP));
-    }
-
-    @Override
-    public Set<String> getNonUpdatableColumns() {
-        return nonUpdatableColumns;
-    }
-
-    @Override
-    public boolean isNullableColumn(String columnName) {
-        return nullableColumns.contains(columnName);
     }
 }
