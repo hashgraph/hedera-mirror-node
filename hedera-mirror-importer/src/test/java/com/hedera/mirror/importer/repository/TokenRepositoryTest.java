@@ -97,14 +97,13 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         token.setModifiedTimestamp(consensusTimestamp);
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(hexKey);
+        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK");
         token.setTokenId(new Token.Id(FOO_COIN_ID));
         token.setTotalSupply(INITIAL_SUPPLY);
         token.setTreasuryAccountId(treasuryAccount);
-        token.setWipeKey(hexKey);
-
-        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
+        token.setWipeKey(hexKey);
         return token;
     }
 }
