@@ -36,6 +36,7 @@ import com.hedera.mirror.importer.parser.AbstractParserProperties;
 public class BalanceParserProperties extends AbstractParserProperties {
 
     public BalanceParserProperties() {
+        queueCapacity = 0;
         retry.setMaxAttempts(3);
     }
 
@@ -44,9 +45,6 @@ public class BalanceParserProperties extends AbstractParserProperties {
 
     @Min(1)
     private int fileBufferSize = 200_000;
-
-    @Min(0)
-    protected int queueCapacity = 0;
 
     @Override
     public StreamType getStreamType() {

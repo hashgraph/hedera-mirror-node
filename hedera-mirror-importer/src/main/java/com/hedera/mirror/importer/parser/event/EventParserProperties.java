@@ -34,7 +34,9 @@ import com.hedera.mirror.importer.parser.AbstractParserProperties;
 @ConfigurationProperties("hedera.mirror.importer.parser.event")
 public class EventParserProperties extends AbstractParserProperties {
 
-    protected boolean enabled = false;
+    public EventParserProperties() {
+        enabled = false;
+    }
 
     @Override
     public StreamType getStreamType() {

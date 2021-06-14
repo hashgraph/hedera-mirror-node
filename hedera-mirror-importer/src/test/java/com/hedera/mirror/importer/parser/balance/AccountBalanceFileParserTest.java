@@ -25,14 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Longs;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -49,9 +47,6 @@ import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
 class AccountBalanceFileParserTest extends IntegrationTest {
-
-    @TempDir
-    Path dataPath;
 
     @Resource
     private StreamFileParser<AccountBalanceFile> accountBalanceFileParser;
