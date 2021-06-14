@@ -1,6 +1,6 @@
 FROM adoptopenjdk:11-jdk-hotspot
 
-ENV cucumberFlags "@balancecheck"
+ENV cucumberFlags "@critical"
 WORKDIR /usr/etc/hedera-mirror-node
 
 COPY .mvn/ .mvn/

@@ -35,7 +35,6 @@ import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Flux;
@@ -101,13 +100,13 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
-                .thenCancel()
+                .expectComplete()
                 .verify(Duration.ofSeconds(5L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(Map.of(), GrpcSubscription::getErrors)
                 .extracting(GrpcSubscription::getStopwatch)
-                .matches(s -> s.isRunning());
+                .matches(s -> !s.isRunning());
         assertThat(subscription.getLast()).get().matches(p -> p.sequenceNumber == 2L);
     }
 
@@ -117,7 +116,7 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
-                .thenCancel()
+                .expectComplete()
                 .verify(Duration.ofSeconds(2L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
@@ -130,7 +129,7 @@ class GrpcClientSDKTest {
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofSeconds(1L))
                 .expectNextCount(2L)
-                .thenCancel()
+                .expectComplete()
                 .verify(Duration.ofSeconds(5L));
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
@@ -146,7 +145,7 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
-                .thenCancel()
+                .expectComplete()
                 .verify(Duration.ofSeconds(2L));
 
         restartClient();
@@ -159,7 +158,7 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
-                .thenCancel()
+                .expectComplete()
                 .verify(Duration.ofSeconds(5L));
         assertThat(subscription)
                 .returns(2L, GrpcSubscription::getCount)
@@ -172,7 +171,7 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
-                .thenCancel()
+                .expectComplete()
                 .verify(Duration.ofSeconds(2L));
     }
 
@@ -182,14 +181,13 @@ class GrpcClientSDKTest {
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
-                .thenCancel()
+                .expectComplete()
                 .verify(Duration.ofSeconds(2L));
     }
 
-    @Disabled("Need to fix SDK to call error handler for non-retryable errors")
     @Test
-    void nonRetryableError() {
-        consensusServiceStub.setResponses(Flux.error(new StatusRuntimeException(Status.INTERNAL)));
+    void error() {
+        consensusServiceStub.setResponses(Flux.error(new StatusRuntimeException(Status.NOT_FOUND)));
         grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectError(StatusRuntimeException.class)
@@ -197,10 +195,9 @@ class GrpcClientSDKTest {
         assertThat(subscription)
                 .returns(0L, GrpcSubscription::getCount)
                 .extracting(GrpcSubscription::getErrors)
-                .matches(ms -> ms.get(Status.INTERNAL.toString()) == 1);
+                .matches(ms -> ms.get(Status.NOT_FOUND.getCode().toString()) == 1);
     }
 
-    @Disabled("Need to fix SDK to expose a completion callback")
     @Test
     void noMessages() {
         consensusServiceStub.setResponses(Flux.empty());
@@ -213,16 +210,6 @@ class GrpcClientSDKTest {
                 .returns(Map.of(), GrpcSubscription::getErrors)
                 .extracting(GrpcSubscription::getStopwatch)
                 .matches(s -> !s.isRunning());
-    }
-
-    @Disabled("Need to enhance SDK to expose maxAttempts so this doesn't take minutes to occur")
-    @Test
-    void retriesExhausted() {
-        consensusServiceStub.setResponses(Flux.error(new StatusRuntimeException(Status.NOT_FOUND)));
-        grpcClientSDK.subscribe(subscription)
-                .as(StepVerifier::create)
-                .expectError(Error.class)
-                .verify(Duration.ofSeconds(2L));
     }
 
     private ConsensusTopicResponse response(Long sequenceNumber) {

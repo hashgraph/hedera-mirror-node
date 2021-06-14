@@ -29,6 +29,7 @@ import java.util.Collection;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.util.retry.Retry;
 
@@ -85,7 +86,7 @@ class GrpcSubscriber implements MirrorSubscriber {
                         .maxBackoff(retry.getMaxBackoff())
                         .filter(this::shouldRetry)
                         .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
-                                r.totalRetries() + 1, r.failure().getMessage())))
+                                r.totalRetries() + 1, StringUtils.substringBefore(r.failure().getMessage(), "\n"))))
                 .doOnSubscribe(s -> log.info("Starting subscriber {}: {}", subscription, subscriberProperties));
     }
 

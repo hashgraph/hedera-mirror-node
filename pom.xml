@@ -73,7 +73,7 @@
         <grpc.version>1.38.0</grpc.version>
         <guava.version>30.1.1-jre</guava.version>
         <hedera-protobuf.version>a08199008c</hedera-protobuf.version>
-        <hedera-sdk.version>2.0.5</hedera-sdk.version>
+        <hedera-sdk.version>2.0.6</hedera-sdk.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
@@ -469,6 +469,11 @@
                                     <replacements>
                                         <replacement>
                                             <token>
+                                                <![CDATA[(?<=<docker.tag.version>)[0-9a-zA-Z.-]+(?=</docker.tag.version)]]></token>
+                                            <value>${docker.tag.version}</value>
+                                        </replacement>
+                                        <replacement>
+                                            <token>
                                                 <![CDATA[(?<=<release.version>)[0-9a-zA-Z.-]+(?=</release.version>)]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
@@ -497,7 +502,7 @@
                                     <replacements>
                                         <replacement>
                                             <token><![CDATA[(?<=^appVersion: ")[0-9a-zA-Z.-]+]]></token>
-                                            <value>${release.version}</value>
+                                            <value>${docker.tag.version}</value>
                                         </replacement>
                                         <replacement>
                                             <token><![CDATA[(?<=^version: )[0-9a-zA-Z.-]+]]></token>
@@ -534,7 +539,7 @@
                                         <replacement>
                                             <token>
                                                 <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
-                                            <value>${release.version}</value>
+                                            <value>${docker.tag.version}</value>
                                         </replacement>
                                     </replacements>
                                 </configuration>

@@ -4,7 +4,7 @@
 -- drop tables, views, indexes, data types, functions, stored procedures and operators associated with db
 drop schema if exists public cascade;
 
--- recreate schema used by init_v1.sql
+-- recreate schema used by init script
 create schema public;
 grant usage on schema public to public;
 

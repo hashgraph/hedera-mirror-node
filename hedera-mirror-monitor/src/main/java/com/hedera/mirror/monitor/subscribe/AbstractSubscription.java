@@ -105,8 +105,10 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
     }
 
     public void onComplete() {
-        stopwatch.stop();
-        log.info("Stopping '{}' subscription", this);
+        if (stopwatch.isRunning()) {
+            stopwatch.stop();
+            log.info("Stopping '{}' subscription", this);
+        }
     }
 
     public void onError(Throwable t) {

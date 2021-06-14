@@ -46,18 +46,18 @@ RUN ln -s /data/db/main /var/lib/postgresql/9.6/main
 
 # ---------------------------  Supervisord  --------------------------- #
 
-COPY hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql /scripts/init_v1.sql
+COPY hedera-mirror-importer/src/main/resources/db/scripts/init.sh /scripts/init.sh
 USER postgres
+ENV PATH="/usr/lib/postgresql/9.6/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PGCONF="/etc/postgresql/9.6/main"
+ENV PGDATA="/var/lib/postgresql/9.6/main"
 
 # Init db script
-RUN /etc/init.d/postgresql start &&\
-    createdb mirror_node &&\
-    psql --command "create user mirror_node with SUPERUSER password 'mirror_node_pass'" &&\
-    PGPASSWORD=mirror_node_pass psql -d mirror_node -U mirror_node -h 127.0.0.1 -f /scripts/init_v1.sql
+RUN /etc/init.d/postgresql start && /scripts/init.sh
 
-RUN echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
+RUN echo "listen_addresses='*'" >> "${PGCONF}/postgresql.conf"
 # Allow PG Admin access
-RUN echo "host    all             all             172.17.0.1/16           trust" >> /etc/postgresql/9.6/main/pg_hba.conf
+RUN echo "host    all             all             172.17.0.1/16           trust" >> "${PGCONF}/pg_hba.conf"
 
 USER root
 

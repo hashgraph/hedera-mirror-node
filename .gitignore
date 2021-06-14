@@ -41,7 +41,6 @@ application*.yml
 Chart.lock
 /data/
 /db/
-/timescaledb/
 *.log
 
 ### VisualStudioCode ###

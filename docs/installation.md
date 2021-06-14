@@ -21,35 +21,18 @@ runnable Mirror Node JAR file in the `target` directory.
 ### Database Setup
 
 In addition to OpenJDK 11, you will need to install a database and initialize it. The Mirror Node
-utilizes [PostgreSQL](https://postgresql.org) v9.6 or [TimescaleDB](https://docs.timescale.com/latest/main) v2 depending
-on the version of its database schema.
+utilizes [PostgreSQL](https://postgresql.org) v9.6 or [TimescaleDB](https://docs.timescale.com/latest/main) depending on
+the version of its database schema.
 
-For both databases, since [Flyway](https://flywaydb.org) will manage the database schema, the only required setup steps
-include:
-
-* creating the database, users, schema, and extensions.
-* ensuring all permissions are set.
-
-Scripts for v1 and v2 are provided to accomplish this. Make sure the application [configuration](configuration.md)
-matches the values in the script. Run the script as a super user and check the output carefully to ensure no errors
+For both databases, since [Flyway](https://flywaydb.org) will manage the database schema, the only required step is to
+run the database initialization script. Locate the SQL script
+at `hedera-mirror-importer/src/main/resources/db/scripts/init.sh` and edit the file to change the name and password
+variables at the top of the file as appropriate. Then make sure the application [configuration](configuration.md)
+matches the values in the script. Run the SQL script as a super user and check the output carefully to ensure no errors
 occurred.
 
-#### PostgreSQL (V1)
-
-Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql`. Edit the file and
-change the name and password variables at the top of the file as appropriate.
-
 ```console
-psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v1.sql
-```
-
-#### TimescaleDB (V2)
-
-Run the SQL script located at `hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql`. Edit the file and
-change the db usernames, passwords, and schema as appropriate.
-
-```console
-psql postgres -f hedera-mirror-importer/src/main/resources/db/scripts/init_v2.sql
+./hedera-mirror-importer/src/main/resources/db/scripts/init.sh
 ```
 
 ### Importer

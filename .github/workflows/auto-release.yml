@@ -126,7 +126,7 @@ jobs:
           fi
 
       - name: Maven Release
-        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -N -P=release
+        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -Ddocker.tag.version=$VERSION -N -P=release
         env:
           VERSION: ${{ steps.version_parser.outputs.version }}
           CHART_VERSION: ${{ steps.chart_version_parser.outputs.version }}
@@ -236,7 +236,7 @@ jobs:
           git reset --hard $RELEASE_BRANCH
 
       - name: Maven Release for Next Minor Snapshot
-        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -N -P=release
+        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -Ddocker.tag.version=master -N -P=release
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3

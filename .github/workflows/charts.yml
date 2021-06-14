@@ -31,15 +31,14 @@ jobs:
           fetch-depth: 0
 
       - name: Build images
-        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests
+        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=master
 
       - name: Create k3d cluster
         run: |
           set -ex
-          version=$(docker images gcr.io/mirrornode/hedera-mirror-importer --format "{{.Tag}}" | head -n 1)
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           k3d cluster create mirror --agents 1 --timeout 5m
-          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:${version}" "gcr.io/mirrornode/hedera-mirror-importer:${version}" "gcr.io/mirrornode/hedera-mirror-rest:${version}"
+          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:master" "gcr.io/mirrornode/hedera-mirror-importer:master" "gcr.io/mirrornode/hedera-mirror-rest:master"
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.0.1
