@@ -12,13 +12,7 @@
         <Logger name="com.hedera.mirror.test" level="info" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
-        <Logger name="com.hedera.mirror.test.e2e.acceptance" level="debug" additivity="false">
-            <AppenderRef ref="console"/>
-        </Logger>
         <Logger name="org.springframework.retry.support" level="debug" additivity="false">
-            <AppenderRef ref="console"/>
-        </Logger>
-        <Logger name="org.springframework.retry.listener" level="debug" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
         <Logger name="reactor.netty.http.client" level="debug" additivity="false">

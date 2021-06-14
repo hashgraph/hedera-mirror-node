@@ -160,8 +160,8 @@ public class AccountClient extends AbstractNetworkClient {
         PrivateKey privateKey = PrivateKey.generate();
         PublicKey publicKey = privateKey.getPublicKey();
 
-        log.debug("Private key = {}", privateKey);
-        log.debug("Public key = {}", publicKey);
+        log.trace("Private key = {}", privateKey);
+        log.trace("Public key = {}", publicKey);
 
         KeyList publicKeyList = KeyList.of(privateKey.getPublicKey());
         if (keyList != null) {
