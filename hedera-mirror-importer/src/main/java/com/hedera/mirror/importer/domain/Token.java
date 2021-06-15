@@ -30,7 +30,6 @@ import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -79,7 +78,6 @@ public class Token {
     @ToString.Exclude
     private String kycKeyEd25519Hex;
 
-    @Min(0)
     private long maxSupply;
 
     private long modifiedTimestamp;
