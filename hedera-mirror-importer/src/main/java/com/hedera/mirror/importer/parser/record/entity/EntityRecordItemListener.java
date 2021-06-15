@@ -522,9 +522,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                     recordItem.getConsensusTimestamp());
 
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
-            TokenID tokenID = tokenBurnTransactionBody.getToken();
+            EntityId tokenId = EntityId.of(tokenBurnTransactionBody.getToken());
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.updateDeleted(new Nft.Id(serialNumber, EntityId.of(tokenID)), consensusTimeStamp)
+                    nftRepository.updateDeleted(new Nft.Id(serialNumber, tokenId), consensusTimeStamp)
             );
         }
     }
