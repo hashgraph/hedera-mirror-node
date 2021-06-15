@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
@@ -43,11 +44,29 @@ public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositor
 
     protected abstract String getUpdateQuery();
 
+    protected abstract String getV1InsertOnConflict();
+
+    protected abstract String getV2InsertOnConflict();
+
     @Test
     void insert() {
         String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery()
                 .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
-        assertThat(insertQuery).isEqualTo(getInsertQuery());
+        assertThat(insertQuery).contains(getInsertQuery());
+    }
+
+    @Tag("v1")
+    @Test
+    void insertOnConflictV1() {
+        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery();
+        assertThat(insertQuery).contains(getV1InsertOnConflict());
+    }
+
+    @Tag("v2")
+    @Test
+    void insertOnConflictV2() {
+        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery();
+        assertThat(insertQuery).contains(getV2InsertOnConflict());
     }
 
     @Test

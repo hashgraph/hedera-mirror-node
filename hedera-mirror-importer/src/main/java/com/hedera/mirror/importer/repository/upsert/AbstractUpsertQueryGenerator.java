@@ -37,13 +37,16 @@ import javax.persistence.metamodel.SingularAttribute;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
+import com.hedera.mirror.importer.db.FlywayProperties;
 
+@RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
@@ -61,9 +64,9 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    private final FlywayProperties flywayProperties;
 
-    protected abstract List<String> getConflictIdColumns();
+    protected final Logger log = LogManager.getLogger(getClass());
 
     protected abstract String getInsertWhereClause();
 
@@ -81,6 +84,14 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return null;
     }
 
+    protected List<String> getV1ConflictIdColumns() {
+        return Collections.emptyList();
+    }
+
+    protected List<String> getV2ConflictIdColumns() {
+        return Collections.emptyList();
+    }
+
     protected Set<String> getNullableColumns() {
         return null;
     }
@@ -88,10 +99,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     // Note JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
     protected Set<SingularAttribute> getSelectableColumns() {
         return Collections.emptySet();
-    }
-
-    private boolean isNullableColumn(String columnName) {
-        return getNullableColumns() == null ? false : getNullableColumns().contains(columnName);
     }
 
     private String generateInsertQuery() {
@@ -123,6 +130,20 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         updateQueryBuilder.append(getUpdateWhereClause());
 
         return updateQueryBuilder.toString();
+    }
+
+    private boolean isNullableColumn(String columnName) {
+        return getNullableColumns() == null ? false : getNullableColumns().contains(columnName);
+    }
+
+    private List<String> getConflictIdColumns() {
+        if (flywayProperties.getLocations().contains(FlywayProperties.V1)) {
+            return getV1ConflictIdColumns();
+        } else if (flywayProperties.getLocations().contains(FlywayProperties.V2)) {
+            return getV2ConflictIdColumns();
+        }
+
+        return Collections.emptyList();
     }
 
     private String getColumnListFromSelectableColumns() {

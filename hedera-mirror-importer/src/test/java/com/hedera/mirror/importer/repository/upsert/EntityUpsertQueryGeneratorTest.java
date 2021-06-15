@@ -45,8 +45,17 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "end, entity_temp.modified_timestamp, entity_temp.num, entity_temp.proxy_account_id, case when " +
                 "entity_temp.public_key = '<uuid>' then '' else coalesce(entity_temp.public_key, null) end, " +
                 "entity_temp" +
-                ".realm, entity_temp.shard, entity_temp.submit_key, entity_temp.type from entity_temp on conflict " +
-                "(id) do nothing";
+                ".realm, entity_temp.shard, entity_temp.submit_key, entity_temp.type from entity_temp";
+    }
+
+    @Override
+    public String getV1InsertOnConflict() {
+        return "on conflict (id) do nothing";
+    }
+
+    @Override
+    public String getV2InsertOnConflict() {
+        return "on conflict (id) do nothing";
     }
 
     @Override

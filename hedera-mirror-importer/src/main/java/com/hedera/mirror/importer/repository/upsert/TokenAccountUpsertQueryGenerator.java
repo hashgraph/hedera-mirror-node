@@ -25,9 +25,9 @@ import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
+import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenAccount_;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -35,14 +35,15 @@ import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.Token_;
 
 @Named
-@RequiredArgsConstructor
 @Value
 public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerator<TokenAccount_> {
     private static final String JOIN_TABLE = "token";
     private final String finalTableName = "token_account";
     private final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> conflictIdColumns = List.of(TokenAccountId_.TOKEN_ID,
-            TokenAccountId_.ACCOUNT_ID);
+    private final List<String> v1ConflictIdColumns = List.of(TokenAccountId_.TOKEN_ID, TokenAccountId_.ACCOUNT_ID);
+    // createdTimestamp is needed for v2 schema compliance as it's used in index
+    private final List<String> v2ConflictIdColumns = List.of(TokenAccountId_.TOKEN_ID,
+            TokenAccountId_.ACCOUNT_ID, TokenAccount_.CREATED_TIMESTAMP);
     private final Set<String> nonUpdatableColumns = Set.of(TokenAccountId_.ACCOUNT_ID,
             TokenAccount_.CREATED_TIMESTAMP, TokenAccount_.ID, TokenAccountId_.TOKEN_ID);
 
@@ -51,6 +52,10 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     private final Set<SingularAttribute> selectableColumns = Set.of(TokenAccountId_.accountId,
             TokenAccount_.associated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
             TokenAccount_.kycStatus, TokenAccount_.modifiedTimestamp, TokenAccountId_.tokenId);
+
+    public TokenAccountUpsertQueryGenerator(FlywayProperties flywayProperties) {
+        super(flywayProperties);
+    }
 
     @Override
     public String getInsertWhereClause() {

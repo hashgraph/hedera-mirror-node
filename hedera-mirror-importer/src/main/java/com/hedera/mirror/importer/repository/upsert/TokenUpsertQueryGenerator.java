@@ -25,19 +25,20 @@ import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
+import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.TokenId_;
 import com.hedera.mirror.importer.domain.Token_;
 
 @Named
-@RequiredArgsConstructor
 @Value
 public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Token_> {
     public static final String TABLE = "token";
     public final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> conflictIdColumns = List.of(TokenId_.TOKEN_ID);
+    private final List<String> v1ConflictIdColumns = List.of(TokenId_.TOKEN_ID);
+    // createdTimestamp is needed for v2 schema compliance as it's used in index
+    private final List<String> v2ConflictIdColumns = List.of(TokenId_.TOKEN_ID, Token_.CREATED_TIMESTAMP);
     private final Set<String> nullableColumns = Set.of(Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX, Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
             Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
@@ -51,6 +52,10 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
             Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name,
             Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.tokenId,
             Token_.totalSupply, Token_.treasuryAccountId, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
+
+    public TokenUpsertQueryGenerator(FlywayProperties flywayProperties) {
+        super(flywayProperties);
+    }
 
     @Override
     public String getFinalTableName() {

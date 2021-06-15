@@ -23,22 +23,27 @@ package com.hedera.mirror.importer.repository.upsert;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
+import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.Schedule_;
 
 @Named
-@RequiredArgsConstructor
 @Value
 public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Schedule_> {
     public final String finalTableName = "schedule";
     public final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> conflictIdColumns = List.of(Schedule_.SCHEDULE_ID);
+    // scheduleId is used for completeness
+    private final List<String> v1ConflictIdColumns = List.of(Schedule_.SCHEDULE_ID);
+    private final List<String> v2ConflictIdColumns = List.of(Schedule_.CONSENSUS_TIMESTAMP, Schedule_.SCHEDULE_ID);
     private final Set<String> nullableColumns = Set.of(Schedule_.EXECUTED_TIMESTAMP);
     private final Set<String> nonUpdatableColumns = Set.of(Schedule_.CONSENSUS_TIMESTAMP,
             Schedule_.CREATOR_ACCOUNT_ID, Schedule_.PAYER_ACCOUNT_ID, Schedule_.SCHEDULE_ID,
             Schedule_.TRANSACTION_BODY);
+
+    public ScheduleUpsertQueryGenerator(FlywayProperties flywayProperties) {
+        super(flywayProperties);
+    }
 
     @Override
     public String getInsertWhereClause() {

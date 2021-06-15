@@ -23,23 +23,27 @@ package com.hedera.mirror.importer.repository.upsert;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
+import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.Entity_;
 
 @Named
-@RequiredArgsConstructor
 @Value
 public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Entity_> {
     public final String finalTableName = "entity";
     public final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> conflictIdColumns = List.of(Entity_.ID);
+    private final List<String> v1ConflictIdColumns = List.of(Entity_.ID);
+    private final List<String> v2ConflictIdColumns = List.of(Entity_.ID);
     private final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
             Entity_.AUTO_RENEW_PERIOD, Entity_.CREATED_TIMESTAMP, Entity_.DELETED, Entity_.EXPIRATION_TIMESTAMP,
             Entity_.KEY, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY, Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY);
     private final Set<String> nonUpdatableColumns = Set.of(Entity_.CREATED_TIMESTAMP, Entity_.ID,
             Entity_.NUM, Entity_.REALM, Entity_.SHARD, Entity_.TYPE);
+
+    public EntityUpsertQueryGenerator(FlywayProperties flywayProperties) {
+        super(flywayProperties);
+    }
 
     @Override
     public String getInsertWhereClause() {

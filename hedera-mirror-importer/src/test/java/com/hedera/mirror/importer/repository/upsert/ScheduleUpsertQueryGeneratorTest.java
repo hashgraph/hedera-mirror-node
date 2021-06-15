@@ -40,7 +40,17 @@ class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
                 "schedule_id, transaction_body) select schedule_temp.consensus_timestamp, schedule_temp" +
                 ".creator_account_id, schedule_temp.executed_timestamp, schedule_temp.payer_account_id, schedule_temp" +
                 ".schedule_id, schedule_temp.transaction_body from schedule_temp where schedule_temp" +
-                ".consensus_timestamp is not null  on conflict (schedule_id) do nothing";
+                ".consensus_timestamp is not null";
+    }
+
+    @Override
+    public String getV1InsertOnConflict() {
+        return "on conflict (schedule_id) do nothing";
+    }
+
+    @Override
+    public String getV2InsertOnConflict() {
+        return "on conflict (consensus_timestamp, schedule_id) do nothing";
     }
 
     @Override
