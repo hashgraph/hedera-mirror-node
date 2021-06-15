@@ -47,7 +47,7 @@ public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<S
 
     @Override
     public String getInsertWhereClause() {
-        return String.format(" where %s is not null ",
+        return String.format(" where %s is not null",
                 getFullTempTableColumnName(Schedule_.CONSENSUS_TIMESTAMP));
     }
 

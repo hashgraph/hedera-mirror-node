@@ -67,7 +67,7 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
                 getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, Token_.TOKEN_ID)));
 
         // ignore entries where token created timestamp is noted
-        insertWhereQueryBuilder.append(String.format(" where %s is not null ",
+        insertWhereQueryBuilder.append(String.format(" where %s is not null",
                 getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP)));
 
         return insertWhereQueryBuilder.toString();

@@ -20,47 +20,16 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import javax.annotation.Resource;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
-@Tag("v1")
-class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
-    @Resource
-    private ScheduleUpsertQueryGenerator scheduleRepositoryCustom;
-
-    @Override
-    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
-        return scheduleRepositoryCustom;
-    }
-
+@Tag("v2")
+class ScheduleUpsertQueryGeneratorV2Test extends ScheduleUpsertQueryGeneratorTest {
     @Override
     public String getInsertQuery() {
         return "insert into schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, " +
                 "schedule_id, transaction_body) select schedule_temp.consensus_timestamp, schedule_temp" +
                 ".creator_account_id, schedule_temp.executed_timestamp, schedule_temp.payer_account_id, schedule_temp" +
                 ".schedule_id, schedule_temp.transaction_body from schedule_temp where schedule_temp" +
-                ".consensus_timestamp is not null on conflict (schedule_id) do nothing";
-    }
-
-    @Override
-    public String getUpdateQuery() {
-        return "update schedule set executed_timestamp = coalesce(schedule_temp.executed_timestamp, schedule" +
-                ".executed_timestamp) from schedule_temp where schedule.schedule_id = schedule_temp.schedule_id and " +
-                "schedule_temp.executed_timestamp is not null";
-    }
-
-    @Test
-    void tableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getFinalTableName();
-        assertThat(upsertQuery).isEqualTo("schedule");
-    }
-
-    @Test
-    void tempTableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
-        assertThat(upsertQuery).isEqualTo("schedule_temp");
+                ".consensus_timestamp is not null on conflict (consensus_timestamp, schedule_id) do nothing";
     }
 }

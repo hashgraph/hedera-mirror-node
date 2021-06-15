@@ -20,22 +20,10 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import javax.annotation.Resource;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
-@Tag("v1")
-class TokenAccounUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
-    @Resource
-    private TokenAccountUpsertQueryGenerator tokenAccountRepositoryCustom;
-
-    @Override
-    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
-        return tokenAccountRepositoryCustom;
-    }
-
+@Tag("v2")
+class TokenAccounUpsertQueryGeneratorV2Test extends TokenAccounUpsertQueryGeneratorTest {
     @Override
     public String getInsertQuery() {
         return "insert into token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, " +
@@ -47,29 +35,6 @@ class TokenAccounUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTe
                 ".kyc_key is null then 0 else 2 end kyc_status, " +
                 "token_account_temp.modified_timestamp, token_account_temp.token_id from token_account_temp join " +
                 "token on token_account_temp.token_id = token.token_id where token_account_temp.created_timestamp is " +
-                "not null on conflict (token_id, account_id) do nothing";
-    }
-
-    @Override
-    public String getUpdateQuery() {
-        return "update token_account set associated = coalesce(token_account_temp.associated, token_account" +
-                ".associated), freeze_status = coalesce(token_account_temp.freeze_status, token_account" +
-                ".freeze_status), kyc_status = coalesce(token_account_temp.kyc_status, token_account.kyc_status), " +
-                "modified_timestamp = coalesce(token_account_temp.modified_timestamp, token_account" +
-                ".modified_timestamp) from token_account_temp " +
-                "where token_account.token_id = token_account_temp.token_id and token_account.account_id = " +
-                "token_account_temp.account_id and token_account_temp.created_timestamp is null";
-    }
-
-    @Test
-    void tableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getFinalTableName();
-        assertThat(upsertQuery).isEqualTo("token_account");
-    }
-
-    @Test
-    void tempTableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
-        assertThat(upsertQuery).isEqualTo("token_account_temp");
+                "not null on conflict (token_id, account_id, created_timestamp) do nothing";
     }
 }
