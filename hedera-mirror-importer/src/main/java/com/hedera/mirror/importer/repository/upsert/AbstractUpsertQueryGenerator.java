@@ -41,19 +41,24 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
-import com.hedera.mirror.importer.db.FlywayProperties;
 
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
     private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
+    private static final String V1_DIRECTORY = "/v1";
+    private static final String V2_DIRECTORY = "/v2";
     private final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator
             .comparing(DomainField::getName);
     private Set<Field> attributes = null;
+
+    @Value("${spring.flyway.locations:v1}")
+    private String version;
 
     private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
     }.getRawType();
@@ -63,8 +68,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
-
-    private final FlywayProperties flywayProperties;
 
     protected final Logger log = LogManager.getLogger(getClass());
 
@@ -137,9 +140,9 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private List<String> getConflictIdColumns() {
-        if (flywayProperties.getLocations().contains(FlywayProperties.V1)) {
+        if (version.contains(V1_DIRECTORY)) {
             return getV1ConflictIdColumns();
-        } else if (flywayProperties.getLocations().contains(FlywayProperties.V2)) {
+        } else if (version.contains(V2_DIRECTORY)) {
             return getV2ConflictIdColumns();
         }
 

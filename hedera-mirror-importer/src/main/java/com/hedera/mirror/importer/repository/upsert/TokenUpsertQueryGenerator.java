@@ -27,7 +27,6 @@ import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.TokenId_;
 import com.hedera.mirror.importer.domain.Token_;
 
@@ -52,10 +51,6 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
             Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name,
             Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.tokenId,
             Token_.totalSupply, Token_.treasuryAccountId, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
-
-    public TokenUpsertQueryGenerator(FlywayProperties flywayProperties) {
-        super(flywayProperties);
-    }
 
     @Override
     public String getFinalTableName() {

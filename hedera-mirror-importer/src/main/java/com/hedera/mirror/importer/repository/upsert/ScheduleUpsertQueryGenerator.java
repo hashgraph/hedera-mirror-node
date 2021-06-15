@@ -25,7 +25,6 @@ import java.util.Set;
 import javax.inject.Named;
 import lombok.Value;
 
-import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.Schedule_;
 
 @Named
@@ -40,10 +39,6 @@ public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<S
     private final Set<String> nonUpdatableColumns = Set.of(Schedule_.CONSENSUS_TIMESTAMP,
             Schedule_.CREATOR_ACCOUNT_ID, Schedule_.PAYER_ACCOUNT_ID, Schedule_.SCHEDULE_ID,
             Schedule_.TRANSACTION_BODY);
-
-    public ScheduleUpsertQueryGenerator(FlywayProperties flywayProperties) {
-        super(flywayProperties);
-    }
 
     @Override
     public String getInsertWhereClause() {

@@ -27,7 +27,6 @@ import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.TokenAccountId_;
 import com.hedera.mirror.importer.domain.TokenAccount_;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -52,10 +51,6 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     private final Set<SingularAttribute> selectableColumns = Set.of(TokenAccountId_.accountId,
             TokenAccount_.associated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
             TokenAccount_.kycStatus, TokenAccount_.modifiedTimestamp, TokenAccountId_.tokenId);
-
-    public TokenAccountUpsertQueryGenerator(FlywayProperties flywayProperties) {
-        super(flywayProperties);
-    }
 
     @Override
     public String getInsertWhereClause() {

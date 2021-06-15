@@ -25,7 +25,6 @@ import java.util.Set;
 import javax.inject.Named;
 import lombok.Value;
 
-import com.hedera.mirror.importer.db.FlywayProperties;
 import com.hedera.mirror.importer.domain.Entity_;
 
 @Named
@@ -40,10 +39,6 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
             Entity_.KEY, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY, Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY);
     private final Set<String> nonUpdatableColumns = Set.of(Entity_.CREATED_TIMESTAMP, Entity_.ID,
             Entity_.NUM, Entity_.REALM, Entity_.SHARD, Entity_.TYPE);
-
-    public EntityUpsertQueryGenerator(FlywayProperties flywayProperties) {
-        super(flywayProperties);
-    }
 
     @Override
     public String getInsertWhereClause() {
