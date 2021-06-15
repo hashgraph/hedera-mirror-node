@@ -43,6 +43,5 @@ public class TokenDeleteTransactionsHandler implements TransactionHandler {
     @Override
     public void updateEntity(Entity entity, RecordItem recordItem) {
         entity.setDeleted(true);
-        entity.setModifiedTimestamp(recordItem.getConsensusTimestamp());
     }
 }
