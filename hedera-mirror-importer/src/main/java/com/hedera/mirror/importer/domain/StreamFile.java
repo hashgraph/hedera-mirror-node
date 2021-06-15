@@ -25,7 +25,7 @@ import lombok.NonNull;
 
 import com.hedera.mirror.importer.parser.domain.StreamItem;
 
-public interface StreamFile {
+public interface StreamFile<T extends StreamItem> {
 
     byte[] getBytes();
 
@@ -46,7 +46,7 @@ public interface StreamFile {
         return null;
     }
 
-    <T extends StreamItem> List<T> getItems();
+    List<T> getItems();
 
     Long getLoadEnd();
 
@@ -69,6 +69,10 @@ public interface StreamFile {
 
     default void setHash(String hash) {
     }
+
+    void setBytes(byte[] bytes);
+
+    void setItems(List<T> items);
 
     void setName(String name);
 

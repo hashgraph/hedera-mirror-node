@@ -49,7 +49,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
 
     @Override
     protected Downloader getDownloader() {
-        BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(mirrorProperties),
+        BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(),
                 new AccountBalanceLineParserV1(mirrorProperties));
         return new AccountBalancesDownloader(s3AsyncClient, addressBookService,
                 (BalanceDownloaderProperties) downloaderProperties, meterRegistry, nodeSignatureVerifier,
@@ -98,6 +98,6 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 }

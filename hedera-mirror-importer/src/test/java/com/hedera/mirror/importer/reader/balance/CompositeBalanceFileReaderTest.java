@@ -26,7 +26,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.function.Consumer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +41,7 @@ public class CompositeBalanceFileReaderTest {
 
     private static final String BALANCE_FILENAME_PREFIX = "2021-03-15T14_30_00Z_Balances";
 
-    @Mock
+    @Mock(lenient = true)
     private BalanceFileReaderImplV1 readerImplV1;
 
     @Mock
@@ -56,12 +56,16 @@ public class CompositeBalanceFileReaderTest {
     private final Consumer<AccountBalance> consumer = accountBalance -> {
     };
 
+    private final AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder().count(1L).build();
+
     @Test
     void defaultsToVersion1Reader() {
         StreamFileData streamFileData = StreamFileData.from(BALANCE_FILENAME_PREFIX + ".csv", "timestamp:1");
-        when(protoBalanceFileReader.supports(streamFileData)).thenReturn(false);
-        when(readerImplV2.supports(streamFileData)).thenReturn(false);
+        configMockReader(protoBalanceFileReader, streamFileData, false);
+        configMockReader(readerImplV1, streamFileData, true);
+
         compositeBalanceFileReader.read(streamFileData, consumer);
+
         verify(readerImplV1, times(1)).read(streamFileData, consumer);
         verify(readerImplV2, never()).read(streamFileData, consumer);
         verify(protoBalanceFileReader, never()).read(streamFileData, consumer);
@@ -70,9 +74,11 @@ public class CompositeBalanceFileReaderTest {
     @Test
     void usesVersion2Reader() {
         StreamFileData streamFileData = StreamFileData.from(BALANCE_FILENAME_PREFIX + ".csv", "# version:2");
-        when(protoBalanceFileReader.supports(streamFileData)).thenReturn(false);
-        when(readerImplV2.supports(streamFileData)).thenReturn(true);
+        configMockReader(protoBalanceFileReader, streamFileData, false);
+        configMockReader(readerImplV2, streamFileData, true);
+
         compositeBalanceFileReader.read(streamFileData, consumer);
+
         verify(readerImplV2, times(1)).read(streamFileData, consumer);
         verify(readerImplV1, never()).read(streamFileData, consumer);
         verify(protoBalanceFileReader, never()).read(streamFileData, consumer);
@@ -81,10 +87,21 @@ public class CompositeBalanceFileReaderTest {
     @Test
     void usesProtoBalanceFileReader() {
         StreamFileData streamFileData = StreamFileData.from(BALANCE_FILENAME_PREFIX + ".pb.gz", "proto-based balance file");
-        when(protoBalanceFileReader.supports(streamFileData)).thenReturn(true);
+        configMockReader(protoBalanceFileReader, streamFileData, true);
+
         compositeBalanceFileReader.read(streamFileData, consumer);
+
         verify(protoBalanceFileReader, times(1)).read(streamFileData, consumer);
         verify(readerImplV1, never()).read(streamFileData, consumer);
         verify(readerImplV2, never()).read(streamFileData, consumer);
+    }
+
+    private void configMockReader(BalanceFileReader reader, StreamFileData streamFileData, boolean supports) {
+        if (supports) {
+            when(reader.supports(streamFileData)).thenReturn(true);
+            when(reader.read(streamFileData, consumer)).thenReturn(accountBalanceFile);
+        } else {
+            when(reader.supports(streamFileData)).thenReturn(false);
+        }
     }
 }

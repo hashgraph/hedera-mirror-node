@@ -27,25 +27,18 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hederahashgraph.api.proto.java.NodeAddressBook;
-import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -90,7 +83,6 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -182,7 +174,19 @@ public abstract class AbstractDownloaderTest {
     protected abstract Duration getCloseInterval();
 
     boolean isSigFile(Path path) {
-        return path.toString().contains(StreamType.SIGNATURE_SUFFIX);
+        return path.toString().endsWith(StreamType.SIGNATURE_SUFFIX);
+    }
+
+    boolean isStreamFile(Path path) {
+        StreamType streamType = downloaderProperties.getStreamType();
+
+        for (StreamType.Extension extension : streamType.getDataExtensions()) {
+            if (path.toString().endsWith(extension.getName())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @BeforeAll
@@ -267,7 +271,7 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
     @Test
@@ -354,13 +358,26 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
-    @DisplayName("Keep signature files")
-    void keepSignatureFiles() throws Exception {
-        downloaderProperties.setKeepSignatures(true);
+    @DisplayName("Write stream files")
+    void writeFiles() throws Exception {
+        downloaderProperties.setWriteFiles(true);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(downloaderProperties.getSignaturesPath()))
+        assertThat(Files.walk(downloaderProperties.getStreamPath()))
+                .filteredOn(p -> !p.toFile().isDirectory())
+                .hasSizeGreaterThan(0)
+                .allMatch(p -> isStreamFile(p));
+    }
+
+    @Test
+    @DisplayName("Write signature files")
+    void writeSignatureFiles() throws Exception {
+        downloaderProperties.setWriteSignatures(true);
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+        assertThat(Files.walk(downloaderProperties.getStreamPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(p -> isSigFile(p));
@@ -369,7 +386,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("overwrite on download")
     void overwriteOnDownload() throws Exception {
-        downloaderProperties.setKeepSignatures(true);
+        downloaderProperties.setWriteSignatures(true);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -377,7 +394,7 @@ public abstract class AbstractDownloaderTest {
 
         Mockito.reset(dateRangeProcessor);
         // Corrupt the downloaded signatures to test that they get overwritten by good ones on re-download.
-        Files.walk(downloaderProperties.getSignaturesPath())
+        Files.walk(downloaderProperties.getStreamPath())
                 .filter(this::isSigFile)
                 .forEach(AbstractDownloaderTest::corruptFile);
 
@@ -429,7 +446,7 @@ public abstract class AbstractDownloaderTest {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(downloaderProperties.getSignaturesPath()).doesNotExist();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
     @Test
@@ -553,6 +570,17 @@ public abstract class AbstractDownloaderTest {
         verifyForSuccess(Collections.emptyList(), true);
     }
 
+    @Test
+    void persistBytes() throws Exception {
+        downloaderProperties.setPersistBytes(true);
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        verifyForSuccess();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+    }
+
     private void differentFilenames(Duration offset) throws Exception {
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
         fileCopier.filterFiles(file2 + "*").copy();
@@ -599,7 +627,8 @@ public abstract class AbstractDownloaderTest {
         AtomicLong index = new AtomicLong(firstIndex);
         verify(streamFileNotifier, times(files.size())).verified(captor.capture());
         assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
-                .allMatch(s -> s.getIndex() == null || s.getIndex() == index.getAndIncrement());
+                .allMatch(s -> s.getIndex() == null || s.getIndex() == index.getAndIncrement())
+                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
     }
 
     private Instant chooseFileInstant(String choice) {
@@ -664,45 +693,6 @@ public abstract class AbstractDownloaderTest {
                 addressBookBytes,
                 entityId,
                 TransactionTypeEnum.FILECREATE.getProtoId()));
-    }
-
-    protected static AddressBook addressBookFromBytes(byte[] contents, long consensusTimestamp, EntityId entityId)
-            throws InvalidProtocolBufferException, UnknownHostException {
-        AddressBook.AddressBookBuilder addressBookBuilder = AddressBook.builder()
-                .fileData(contents)
-                .startConsensusTimestamp(consensusTimestamp + 1)
-                .fileId(entityId);
-
-        NodeAddressBook nodeAddressBook = NodeAddressBook.parseFrom(contents);
-        List<AddressBookEntry> addressBookEntries = new ArrayList<>();
-        addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
-        for (com.hederahashgraph.api.proto.java.NodeAddress nodeAddressProto : nodeAddressBook
-                .getNodeAddressList()) {
-            EntityId nodeAccountId = EntityId.of(nodeAddressProto.getNodeAccountId());
-            AddressBookEntry.AddressBookEntryBuilder addressBookEntryBuilder = AddressBookEntry.builder()
-                    .id(new AddressBookEntry.Id(consensusTimestamp, nodeAddressProto.getNodeId()))
-                    .memo(nodeAddressProto.getMemo().toStringUtf8())
-                    .publicKey(nodeAddressProto.getRSAPubKey())
-                    .nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray())
-                    .nodeAccountId(nodeAccountId);
-
-            // create an AddressBookServiceEndpoint for each ServiceEndpoint
-            Set<AddressBookServiceEndpoint> serviceEndpoints = new HashSet<>();
-            for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
-                serviceEndpoints.add(new AddressBookServiceEndpoint(
-                        consensusTimestamp,
-                        InetAddress.getByAddress(serviceEndpoint.getIpAddressV4().toByteArray()).getHostAddress(),
-                        serviceEndpoint.getPort(),
-                        nodeAccountId));
-            }
-
-            addressBookEntryBuilder.serviceEndpoints(serviceEndpoints);
-            addressBookEntries.add(addressBookEntryBuilder.build());
-        }
-
-        addressBookBuilder.entries(addressBookEntries);
-
-        return addressBookBuilder.build();
     }
 
     private static Stream<Arguments> provideAllNodeAccountIds() {

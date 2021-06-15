@@ -352,13 +352,6 @@ public abstract class Downloader<T extends StreamFile> {
         return new PendingDownload(future, streamFilename, s3Key);
     }
 
-    private void moveSignatureFile(FileStreamSignature signature) {
-        if (downloaderProperties.isKeepSignatures()) {
-            Path destination = downloaderProperties.getSignaturesPath().resolve(signature.getNodeAccountIdString());
-            Utility.archiveFile(signature.getFilename(), signature.getBytes(), destination);
-        }
-    }
-
     /**
      * For each group of signature files with the same file name: (1) verify that the signature files are signed by
      * corresponding node's PublicKey; (2) For valid signature files, we compare their Hashes to see if at least 1/3 of
@@ -416,13 +409,28 @@ public abstract class Downloader<T extends StreamFile> {
 
                     verify(streamFile, signature);
 
+                    if (downloaderProperties.isWriteFiles()) {
+                        Utility.archiveFile(streamFile.getName(), streamFile.getBytes(),
+                                downloaderProperties.getNodeStreamPath(signature.getNodeAccountIdString()));
+                    }
+
+                    if (downloaderProperties.isWriteSignatures()) {
+                        signatures.forEach(s -> {
+                            Path destination = downloaderProperties.getNodeStreamPath(s.getNodeAccountIdString());
+                            Utility.archiveFile(s.getFilename(), s.getBytes(), destination);
+                        });
+                    }
+
+                    if (!downloaderProperties.isPersistBytes()) {
+                        streamFile.setBytes(null);
+                    }
+
                     if (dataFilename.getInstant().isAfter(endDate)) {
                         downloaderProperties.setEnabled(false);
                         log.warn("Disabled polling after downloading all files <= endDate ({})", endDate);
                         return;
                     }
 
-                    signatures.forEach(this::moveSignatureFile);
                     onVerified(pendingDownload, streamFile);
                     valid = true;
                     break;

@@ -25,17 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Longs;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -52,9 +47,6 @@ import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
 class AccountBalanceFileParserTest extends IntegrationTest {
-
-    @TempDir
-    Path dataPath;
 
     @Resource
     private StreamFileParser<AccountBalanceFile> accountBalanceFileParser;
@@ -73,18 +65,20 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
-        parserProperties.getMirrorProperties().setDataPath(dataPath);
         parserProperties.setEnabled(true);
-        parserProperties.setKeepFiles(false);
     }
 
     @Test
     void disabled() throws Exception {
+        // given
         parserProperties.setEnabled(false);
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+
+        // when
         accountBalanceFileParser.parse(accountBalanceFile);
-        assertFilesystem();
-        assertAccountBalances();
+
+        // then
+        assertPostParseAccountBalanceFile(accountBalanceFile, true);
     }
 
     @Disabled("Fails in CI")
@@ -92,58 +86,52 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     void success() throws Exception {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         accountBalanceFileParser.parse(accountBalanceFile);
-        assertFilesystem();
-        assertAccountBalances(accountBalanceFile);
+        assertPostParseAccountBalanceFile(accountBalanceFile, true);
     }
 
     @Disabled("Fails in CI")
     @Test
-    void duplicateFile() {
-        AccountBalanceFile accountBalanceFile1 = accountBalanceFile(1);
-        AccountBalanceFile accountBalanceFile2 = accountBalanceFile(1);
-
-        accountBalanceFileParser.parse(accountBalanceFile1);
-        assertThrows(ParserException.class, () -> accountBalanceFileParser.parse(accountBalanceFile2));
-
-        assertAccountBalances(accountBalanceFile1);
-    }
-
-    @Disabled("Fails in CI")
-    @Test
-    void keepFiles() throws Exception {
-        parserProperties.setKeepFiles(true);
+    void duplicateFile() throws Exception {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        AccountBalanceFile duplicate = accountBalanceFile(1);
+
+        accountBalanceFileParser.parse(accountBalanceFile);
+        assertThrows(ParserException.class, () -> accountBalanceFileParser.parse(duplicate));
+
+        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+    }
+
+    @Disabled("Fails in CI")
+    @Test
+    void keepFiles() {
+        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        AccountBalanceFile intact = accountBalanceFile(1);
         accountBalanceFileParser.parse(accountBalanceFile);
 
-        assertFilesystem(accountBalanceFile);
-        assertAccountBalances(accountBalanceFile);
+        assertAccountBalances(intact);
+        assertPostParseAccountBalanceFile(accountBalanceFile, true);
     }
 
     @Test
-    void beforeStartDate() throws Exception {
+    void beforeStartDate() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(-1L);
         accountBalanceFileParser.parse(accountBalanceFile);
 
-        assertFilesystem();
-        assertThat(accountBalanceFileRepository.findAll()).containsExactly(accountBalanceFile);
+        assertThat(accountBalanceFileRepository.findAll())
+                .usingElementComparatorIgnoringFields("bytes", "items")
+                .containsExactly(accountBalanceFile);
         assertThat(accountBalanceRepository.count()).isZero();
+        assertPostParseAccountBalanceFile(accountBalanceFile, true);
     }
 
-    void assertFilesystem(AccountBalanceFile... balanceFiles) throws Exception {
-        if (balanceFiles.length == 0) {
-            assertThat(parserProperties.getParsedPath()).doesNotExist();
-            return;
+    void assertPostParseAccountBalanceFile(AccountBalanceFile accountBalanceFile, boolean success) {
+        if (success) {
+            assertThat(accountBalanceFile.getBytes()).isNull();
+            assertThat(accountBalanceFile.getItems()).isNull();
+        } else {
+            assertThat(accountBalanceFile.getBytes()).isNotNull();
+            assertThat(accountBalanceFile.getItems()).isNotNull();
         }
-
-        List<String> filenames = Arrays.stream(balanceFiles)
-                .map(AccountBalanceFile::getName)
-                .collect(Collectors.toList());
-        assertThat(Files.walk(parserProperties.getParsedPath()))
-                .filteredOn(p -> !p.toFile().isDirectory())
-                .hasSize(balanceFiles.length)
-                .extracting(Path::getFileName)
-                .extracting(Path::toString)
-                .containsAll(filenames);
     }
 
     void assertAccountBalances(AccountBalanceFile... accountBalanceFiles) {

@@ -20,23 +20,30 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import java.time.Duration;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.domain.StreamFile;
 
-public interface ParserProperties {
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class AbstractStreamFileParser<T extends StreamFile> implements StreamFileParser<T> {
 
-    int getBufferSize();
+    @Getter
+    protected final ParserProperties properties;
 
-    Duration getFrequency();
+    public void parse(T streamFile) {
+        if (properties.isEnabled()) {
+            doParse(streamFile);
+        }
 
-    Duration getProcessingTimeout();
+        postParse(streamFile);
+    }
 
-    StreamType getStreamType();
+    protected abstract void doParse(T streamFile);
 
-    int getQueueCapacity();
-
-    boolean isEnabled();
-
-    void setEnabled(boolean enabled);
+    private void postParse(T streamFile) {
+        streamFile.setBytes(null);
+        streamFile.setItems(null);
+    }
 }
