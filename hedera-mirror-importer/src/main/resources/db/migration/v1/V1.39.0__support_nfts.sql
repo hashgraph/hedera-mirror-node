@@ -26,7 +26,6 @@ create table if not exists nft
 );
 create unique index if not exists nft__token_id_serial_num
     on nft (token_id desc, serial_number desc);
-
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
 -- Create nft_transfer table
