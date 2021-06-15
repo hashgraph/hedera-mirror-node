@@ -17,15 +17,15 @@ alter table token
 create table if not exists nft
 (
   account_id            bigint                  not null,
-  created_timestamp     bigint                  not null,
+  created_timestamp     bigint  primary key     not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
   metadata              bytea   default ''      not null,
   serial_number         bigint                  not null,
   token_id              bigint                  not null
 );
-alter table nft
-    add primary key (token_id, serial_number);
+create unique index if not exists nft__token_id_serial_num
+    on nft (token_id desc, serial_number desc);
 
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
@@ -33,8 +33,8 @@ comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 create table if not exists nft_transfer
 (
   consensus_timestamp   bigint  not null,
-  receiver_account_id   bigint,
-  sender_account_id     bigint,
+  receiver_account_id   bigint  not null,
+  sender_account_id     bigint  not null,
   serial_number         bigint  not null,
   token_id              bigint  not null
 );
