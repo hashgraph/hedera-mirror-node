@@ -515,14 +515,14 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenBurn(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenBurnTransactionBody tokenBurnTransactionBody = recordItem.getTransactionBody().getTokenBurn();
+            EntityId tokenId = EntityId.of(tokenBurnTransactionBody.getToken());
 
             updateTokenSupply(
-                    tokenBurnTransactionBody.getToken(),
+                    tokenId,
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     recordItem.getConsensusTimestamp());
 
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
-            EntityId tokenId = EntityId.of(tokenBurnTransactionBody.getToken());
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
                     nftRepository.updateDeleted(new Nft.Id(serialNumber, tokenId), consensusTimeStamp)
             );
@@ -800,22 +800,21 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenWipeAccountTransactionBody tokenWipeAccountTransactionBody = recordItem.getTransactionBody()
                     .getTokenWipe();
+            EntityId tokenId = EntityId.of(tokenWipeAccountTransactionBody.getToken());
 
             updateTokenSupply(
-                    tokenWipeAccountTransactionBody.getToken(),
+                    tokenId,
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     recordItem.getConsensusTimestamp());
 
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
-            TokenID tokenID = tokenWipeAccountTransactionBody.getToken();
-            //TODO should we set accountId to null or just leave it since deleted is already set?
             tokenWipeAccountTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.updateDeleted(new Nft.Id(serialNumber, EntityId.of(tokenID)), consensusTimeStamp));
+                    nftRepository.updateDeleted(new Nft.Id(serialNumber, tokenId), consensusTimeStamp));
         }
     }
 
-    private void updateTokenSupply(TokenID tokenID, long newTotalSupply, long modifiedTimestamp) {
-        tokenRepository.updateTokenSupply(new Token.Id(EntityId.of(tokenID)), newTotalSupply, modifiedTimestamp);
+    private void updateTokenSupply(EntityId tokenId, long newTotalSupply, long modifiedTimestamp) {
+        tokenRepository.updateTokenSupply(new Token.Id(tokenId), newTotalSupply, modifiedTimestamp);
     }
 
     private Optional<TokenAccount> retrieveTokenAccount(TokenID tokenID, AccountID accountID,
