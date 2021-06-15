@@ -37,7 +37,6 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
-@NoArgsConstructor
 public class Nft {
 
     @JsonUnwrapped

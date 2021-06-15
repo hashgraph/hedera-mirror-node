@@ -39,15 +39,7 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
-@NoArgsConstructor
 public class NftTransfer implements Persistable<NftTransfer.Id> {
-
-    public NftTransfer(long consensusTimestamp, long serialNumber, EntityId tokenId,
-                       EntityId receiverAccountId, EntityId senderAccountId) {
-        id = new NftTransfer.Id(consensusTimestamp, serialNumber, tokenId);
-        this.receiverAccountId = receiverAccountId;
-        this.senderAccountId = senderAccountId;
-    }
 
     @JsonUnwrapped
     @EmbeddedId

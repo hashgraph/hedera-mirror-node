@@ -713,9 +713,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                     }
 
                     long serialNumber = nftTransfer.getSerialNumber();
+                    NftTransfer nftTransferDomain = new NftTransfer();
+                    nftTransferDomain.setId(new NftTransfer.Id(consensusTimeStamp, serialNumber, tokenId));
+                    nftTransferDomain.setReceiverAccountId(receiverId);
+                    nftTransferDomain.setSenderAccountId(senderId);
+
                     entityListener
-                            .onNftTransfer(new NftTransfer(consensusTimeStamp, serialNumber, tokenId, receiverId,
-                                    senderId));
+                            .onNftTransfer(nftTransferDomain);
                     if (receiverId != null) {
                         nftRepository
                                 .updateAccountId(new Nft.Id(serialNumber, tokenId), receiverId, consensusTimeStamp);
