@@ -34,7 +34,9 @@ public enum TokenTypeEnum {
     private final int id;
 
     public static TokenTypeEnum fromId(int id) {
-        return Arrays.stream(TokenTypeEnum.values()).filter(tokenTypeEnum -> tokenTypeEnum.id == id).findFirst()
-                .orElseThrow();
+        return Arrays.stream(TokenTypeEnum.values())
+                .filter(tokenTypeEnum -> tokenTypeEnum.id == id)
+                .findFirst()
+                .orElse(null);
     }
 }

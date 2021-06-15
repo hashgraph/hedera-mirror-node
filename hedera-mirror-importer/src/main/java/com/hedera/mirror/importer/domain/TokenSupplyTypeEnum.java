@@ -34,8 +34,9 @@ public enum TokenSupplyTypeEnum {
     private final int id;
 
     public static TokenSupplyTypeEnum fromId(int id) {
-        return Arrays.stream(TokenSupplyTypeEnum.values()).filter(tokenTypeEnum -> tokenTypeEnum.id == id)
+        return Arrays.stream(TokenSupplyTypeEnum.values())
+                .filter(tokenTypeEnum -> tokenTypeEnum.id == id)
                 .findFirst()
-                .orElseThrow();
+                .orElse(null);
     }
 }
