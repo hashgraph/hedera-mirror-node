@@ -289,6 +289,28 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onNftTransfer() throws Exception {
+        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer2 = getNftTransfer(2L, "0.0.1", 2L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer3 = getNftTransfer(3L, "0.0.2", 1L, "0.0.2", "0.0.3");
+
+        // when
+        sqlEntityListener.onNftTransfer(nftTransfer1);
+        sqlEntityListener.onNftTransfer(nftTransfer2);
+        sqlEntityListener.onNftTransfer(nftTransfer3);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(3, nftTransferRepository.count());
+        EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
+        EntityId tokenId2 = EntityId.of("0.0.2", TOKEN);
+        assertExistsAndEquals(nftTransferRepository, nftTransfer1, new NftTransfer.Id(1L, 1L, tokenId1));
+        assertExistsAndEquals(nftTransferRepository, nftTransfer2, new NftTransfer.Id(2L, 2L, tokenId1));
+        assertExistsAndEquals(nftTransferRepository, nftTransfer3, new NftTransfer.Id(3L, 1L, tokenId2));
+    }
+
+    @Test
     void onToken() throws Exception {
         Token token1 = getToken("0.0.3", "0.0.5", 1);
         Token token2 = getToken("0.0.7", "0.0.11", 2);
@@ -350,28 +372,6 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertExistsAndEquals(tokenTransferRepository, tokenTransfer1, new TokenTransfer.Id(2L, tokenId1, accountId1));
         assertExistsAndEquals(tokenTransferRepository, tokenTransfer2, new TokenTransfer.Id(2L, tokenId2, accountId2));
         assertExistsAndEquals(tokenTransferRepository, tokenTransfer3, new TokenTransfer.Id(4L, tokenId1, accountId1));
-    }
-
-    @Test
-    void onNftTransfer() throws Exception {
-        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
-        NftTransfer nftTransfer2 = getNftTransfer(2L, "0.0.1", 2L, "0.0.2", "0.0.3");
-        NftTransfer nftTransfer3 = getNftTransfer(3L, "0.0.2", 1L, "0.0.2", "0.0.3");
-
-        // when
-        sqlEntityListener.onNftTransfer(nftTransfer1);
-        sqlEntityListener.onNftTransfer(nftTransfer2);
-        sqlEntityListener.onNftTransfer(nftTransfer3);
-        completeFileAndCommit();
-
-        // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
-        assertEquals(3, nftTransferRepository.count());
-        EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.2", TOKEN);
-        assertExistsAndEquals(nftTransferRepository, nftTransfer1, new NftTransfer.Id(1L, 1L, tokenId1));
-        assertExistsAndEquals(nftTransferRepository, nftTransfer2, new NftTransfer.Id(2L, 2L, tokenId1));
-        assertExistsAndEquals(nftTransferRepository, nftTransfer3, new NftTransfer.Id(3L, 1L, tokenId2));
     }
 
     @Test
