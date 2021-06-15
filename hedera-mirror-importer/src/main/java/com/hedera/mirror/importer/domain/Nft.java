@@ -50,9 +50,9 @@ public class Nft {
 
     private boolean deleted;
 
-    private long modifiedTimestamp;
-
     private byte[] metadata;
+
+    private long modifiedTimestamp;
 
     @Data
     @Embeddable
