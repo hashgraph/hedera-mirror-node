@@ -37,6 +37,6 @@ public enum TokenSupplyTypeEnum {
         return Arrays.stream(TokenSupplyTypeEnum.values())
                 .filter(tokenTypeEnum -> tokenTypeEnum.id == id)
                 .findFirst()
-                .orElse(null);
+                .orElse(INFINITE);
     }
 }

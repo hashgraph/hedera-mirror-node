@@ -1,10 +1,10 @@
 package com.hedera.mirror.importer.domain;
 
-/*-
+/*
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,23 +20,14 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.util.Arrays;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Getter
-@RequiredArgsConstructor
-public enum TokenTypeEnum {
+import org.junit.Test;
 
-    FUNGIBLE_COMMON(0),
-    NON_FUNGIBLE_UNIQUE(1);
+class TokenTypeEnumTest {
 
-    private final int id;
-
-    public static TokenTypeEnum fromId(int id) {
-        return Arrays.stream(TokenTypeEnum.values())
-                .filter(tokenTypeEnum -> tokenTypeEnum.id == id)
-                .findFirst()
-                .orElse(FUNGIBLE_COMMON);
+    @Test
+    void fromId() {
+        assertThat(TokenTypeEnum.fromId(1))
     }
 }
