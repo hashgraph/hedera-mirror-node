@@ -37,8 +37,7 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         Nft savedNft = repository.save(nft("0.0.2", 1, 1));
-        assertThat(savedNft)
-                .isEqualTo(repository.findById(savedNft.getId()).get());
+        assertThat(repository.findById(savedNft.getId()).get()).isEqualTo(savedNft);
     }
 
     @Test
@@ -47,8 +46,7 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
         repository.updateDeleted(savedNft.getId(), 3L);
         savedNft.setDeleted(true);
         savedNft.setModifiedTimestamp(3L);
-        assertThat(savedNft)
-                .isEqualTo(repository.findById(savedNft.getId()).get());
+        assertThat(repository.findById(savedNft.getId()).get()).isEqualTo(savedNft);
     }
 
     @Test
@@ -65,8 +63,7 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
         repository.updateAccountId(savedNft.getId(), accountId, 3L);
         savedNft.setAccountId(accountId);
         savedNft.setModifiedTimestamp(3L);
-        assertThat(savedNft)
-                .isEqualTo(repository.findById(savedNft.getId()).get());
+        assertThat(repository.findById(savedNft.getId()).get()).isEqualTo(savedNft);
     }
 
     @Test
