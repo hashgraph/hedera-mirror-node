@@ -41,6 +41,42 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
                 .isEqualTo(repository.findById(savedNft.getId()).get());
     }
 
+    @Test
+    void updateDeleted() {
+        Nft savedNft = repository.save(nft("0.0.3", 2, 2));
+        repository.updateDeleted(savedNft.getId(), 3L);
+        savedNft.setDeleted(true);
+        savedNft.setModifiedTimestamp(3L);
+        assertThat(savedNft)
+                .isEqualTo(repository.findById(savedNft.getId()).get());
+    }
+
+    @Test
+    void updateDeletedMissingNft() {
+        Nft.Id nftId = new Nft.Id(1L, EntityId.of("0.0.1", EntityTypeEnum.TOKEN));
+        repository.updateDeleted(nftId, 1L);
+        assertThat(repository.findById(nftId)).isNotPresent();
+    }
+
+    @Test
+    void updateAccountId() {
+        Nft savedNft = repository.save(nft("0.0.3", 2, 2));
+        EntityId accountId = EntityId.of("0.0.10", EntityTypeEnum.ACCOUNT);
+        repository.updateAccountId(savedNft.getId(), accountId, 3L);
+        savedNft.setAccountId(accountId);
+        savedNft.setModifiedTimestamp(3L);
+        assertThat(savedNft)
+                .isEqualTo(repository.findById(savedNft.getId()).get());
+    }
+
+    @Test
+    void updateAccountIdMissingNft() {
+        Nft.Id nftId = new Nft.Id(1L, EntityId.of("0.0.1", EntityTypeEnum.TOKEN));
+        EntityId accountId = EntityId.of("0.0.10", EntityTypeEnum.ACCOUNT);
+        repository.updateAccountId(nftId, accountId, 3L);
+        assertThat(repository.findById(nftId)).isNotPresent();
+    }
+
     private Nft nft(String tokenId, long serialNumber, long consensusTimestamp) {
         Nft nft = new Nft();
         nft.setCreatedTimestamp(consensusTimestamp);

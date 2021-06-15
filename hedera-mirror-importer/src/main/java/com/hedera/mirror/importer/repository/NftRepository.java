@@ -20,9 +20,24 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import javax.transaction.Transactional;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Nft;
 
+@Transactional
 public interface NftRepository extends CrudRepository<Nft, Nft.Id> {
+
+    @Modifying
+    @Query("update Nft set accountId = :accountId, modifiedTimestamp = :timestamp where id = :id")
+    void updateAccountId(@Param("id") Nft.Id nftId, @Param("accountId") EntityId newAccountId,
+                         @Param("timestamp") long modifiedTimestamp);
+
+    @Modifying
+    @Query("update Nft set deleted = true, modifiedTimestamp = :timestamp where id = :id")
+    void updateDeleted(@Param("id") Nft.Id nftId, @Param("timestamp") long modifiedTimestamp);
 }
