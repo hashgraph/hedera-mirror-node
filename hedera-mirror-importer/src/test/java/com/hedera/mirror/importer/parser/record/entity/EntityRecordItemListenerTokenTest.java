@@ -73,6 +73,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     private static final Timestamp EXPIRY_TIMESTAMP = Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
     private static final long INITIAL_SUPPLY = 1_000_000L;
+    private static final String METADATA = "METADATA";
+    private static final long SERIAL_NUMBER_1 = 1L;
+    private static final long SERIAL_NUMBER_2 = 2L;
+    private static final List SERIAL_NUMBER_LIST = Arrays.asList(SERIAL_NUMBER_1, SERIAL_NUMBER_2);
     private static final String SYMBOL = "FOOCOIN";
     private static final String TOKEN_CREATE_MEMO = "TokenCreate memo";
     private static final TokenID TOKEN_ID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(2).build();
@@ -334,25 +338,53 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @Test
     void tokenBurnNft() throws InvalidProtocolBufferException {
-        //TODO Need to understand structure of NftTransfer for create/delete NFTs to further test.
+        //TODO Need to understand structure of NftTransfer for mint/burn NFTs to add transfer checks.
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0L);
 
         long mintTimestamp = 10L;
-        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0, Arrays
-                .asList(1L, 2L));
+        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
+                SERIAL_NUMBER_LIST);
 
-        insertAndParseTransaction(mintTransaction, mintTimestamp, 1, Arrays.asList(1L, 2L));
+        insertAndParseTransaction(mintTransaction, mintTimestamp, SERIAL_NUMBER_LIST.size(), SERIAL_NUMBER_LIST);
 
         long burnTimestamp = 15L;
         Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, false, 0, Arrays
-                .asList(1L));
+                .asList(SERIAL_NUMBER_1));
         insertAndParseTransaction(burnTransaction, burnTimestamp, 0, null);
 
         // Verify
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
-        assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, burnTimestamp, "Metadata".getBytes(), true);
-        assertNftInRepository(TOKEN_ID, 2L, true, mintTimestamp, mintTimestamp, "Metadata".getBytes(), false);
+        assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, burnTimestamp, METADATA.getBytes(), EntityId
+                .of(PAYER), true);
+        assertNftInRepository(TOKEN_ID, 2L, true, mintTimestamp, mintTimestamp, METADATA.getBytes(), EntityId
+                .of(PAYER), false);
+    }
+
+    @Test
+    void tokenBurnNftMissingNft() throws InvalidProtocolBufferException {
+        //TODO Need to understand structure of NftTransfer for mint/burn NFTs to add transfer checks.
+        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER, false, false, 0L);
+
+        long mintTimestamp = 10L;
+        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
+                Arrays.asList(SERIAL_NUMBER_2));
+
+        insertAndParseTransaction(mintTransaction, mintTimestamp, SERIAL_NUMBER_LIST.size(), Arrays
+                .asList(SERIAL_NUMBER_2));
+
+        long burnTimestamp = 15L;
+        Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, false, 0, Arrays
+                .asList(SERIAL_NUMBER_1));
+        insertAndParseTransaction(burnTransaction, burnTimestamp, 0, null);
+
+        // Verify
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, false, mintTimestamp, burnTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), true);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), false);
     }
 
     @Test
@@ -385,9 +417,28 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .asList(1L));
 
         // Verify
-        insertAndParseTransaction(transaction, mintTimestamp, 1, Arrays.asList(1L));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 1);
-        assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, mintTimestamp, "Metadata".getBytes(), false);
+        insertAndParseTransaction(transaction, mintTimestamp, 2, SERIAL_NUMBER_LIST);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 2);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp, mintTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), false);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), false);
+    }
+
+    @Test
+    void tokenMintNftsMissingToken() throws InvalidProtocolBufferException {
+        //TODO Need to understand structure of NftTransfer for create/delete NFTs to further test.
+        long mintTimestamp = 10L;
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 2,
+                SERIAL_NUMBER_LIST);
+
+        // Verify
+        insertAndParseTransaction(transaction, mintTimestamp, 1, SERIAL_NUMBER_LIST);
+        assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 1);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, false, mintTimestamp, mintTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), false);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, false, mintTimestamp, mintTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), false);
     }
 
     @Test
@@ -432,27 +483,77 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         String symbol2 = "MIRROR";
         createTokenEntity(tokenID2, TokenType.FUNGIBLE_COMMON, symbol2, 15L, false, false);
 
-        AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
+        long mintTimestamp1 = 20L;
+        Transaction mintTransaction1 = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0, Arrays
+                .asList(SERIAL_NUMBER_1));
+
+        // Verify
+        insertAndParseTransaction(mintTransaction1, mintTimestamp1, 2, Arrays.asList(SERIAL_NUMBER_1));
+
+        long mintTimestamp2 = 30L;
+        Transaction mintTransaction2 = tokenSupplyTransaction(tokenID2, TokenType.NON_FUNGIBLE_UNIQUE, true, 0, Arrays
+                .asList(SERIAL_NUMBER_2));
+
+        // Verify
+        insertAndParseTransaction(mintTransaction2, mintTimestamp2, 2, Arrays.asList(SERIAL_NUMBER_2));
 
         // token transfer
         Transaction transaction = tokenTransferTransaction();
 
         TokenTransferList transferList1 = TokenTransferList.newBuilder()
                 .setToken(TOKEN_ID)
-                .addNftTransfers(NftTransfer.newBuilder().setReceiverAccountID(accountId).setSenderAccountID(PAYER)
-                        .setSerialNumber(1L).build())
+                .addNftTransfers(NftTransfer.newBuilder().setReceiverAccountID(RECEIVER).setSenderAccountID(PAYER)
+                        .setSerialNumber(SERIAL_NUMBER_1).build())
                 .build();
         TokenTransferList transferList2 = TokenTransferList.newBuilder()
                 .setToken(tokenID2)
-                .addNftTransfers(NftTransfer.newBuilder().setReceiverAccountID(accountId).setSenderAccountID(PAYER)
-                        .setSerialNumber(2L).build())
+                .addNftTransfers(NftTransfer.newBuilder().setReceiverAccountID(RECEIVER).setSenderAccountID(PAYER)
+                        .setSerialNumber(SERIAL_NUMBER_2).build())
+                .build();
+
+        long transferTimeStamp = 40L;
+        insertAndParseTransaction(transaction, transferTimeStamp, 0, null, transferList1, transferList2);
+
+        assertNftTransferInRepository(transferTimeStamp, 1L, TOKEN_ID, RECEIVER, PAYER);
+        assertNftTransferInRepository(transferTimeStamp, 2L, tokenID2, RECEIVER, PAYER);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp1, transferTimeStamp, METADATA
+                .getBytes(), EntityId.of(RECEIVER), false);
+        assertNftInRepository(tokenID2, SERIAL_NUMBER_2, true, mintTimestamp2, transferTimeStamp, METADATA
+                .getBytes(), EntityId.of(RECEIVER), false);
+    }
+
+    @Test
+    void nftTransferMissingNft() throws InvalidProtocolBufferException {
+        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER, false, false, 0);
+
+        TokenID tokenID2 = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(7).build();
+        String symbol2 = "MIRROR";
+        createTokenEntity(tokenID2, TokenType.FUNGIBLE_COMMON, symbol2, 15L, false, false);
+
+        // token transfer
+        Transaction transaction = tokenTransferTransaction();
+
+        TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                .setToken(TOKEN_ID)
+                .addNftTransfers(NftTransfer.newBuilder().setReceiverAccountID(RECEIVER).setSenderAccountID(PAYER)
+                        .setSerialNumber(SERIAL_NUMBER_1).build())
+                .build();
+        TokenTransferList transferList2 = TokenTransferList.newBuilder()
+                .setToken(tokenID2)
+                .addNftTransfers(NftTransfer.newBuilder().setReceiverAccountID(RECEIVER).setSenderAccountID(PAYER)
+                        .setSerialNumber(SERIAL_NUMBER_2).build())
                 .build();
 
         long transferTimeStamp = 25L;
         insertAndParseTransaction(transaction, transferTimeStamp, 0, null, transferList1, transferList2);
 
-        assertNftTransferInRepository(transferTimeStamp, 1L, TOKEN_ID, accountId, PAYER);
-        assertNftTransferInRepository(transferTimeStamp, 2L, tokenID2, accountId, PAYER);
+        assertNftTransferInRepository(transferTimeStamp, 1L, TOKEN_ID, RECEIVER, PAYER);
+        assertNftTransferInRepository(transferTimeStamp, 2L, tokenID2, RECEIVER, PAYER);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, false, transferTimeStamp, transferTimeStamp, METADATA
+                .getBytes(), EntityId.of(RECEIVER), false);
+        assertNftInRepository(tokenID2, SERIAL_NUMBER_2, false, transferTimeStamp, transferTimeStamp, METADATA
+                .getBytes(), EntityId.of(RECEIVER), false);
     }
 
     @Test
@@ -491,8 +592,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         // Verify
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 0);
-        assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, wipeTimestamp, "Metadata".getBytes(), true);
-        assertNftInRepository(TOKEN_ID, 2L, true, mintTimestamp, mintTimestamp, "Metadata".getBytes(), false);
+        assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, wipeTimestamp, METADATA.getBytes(), EntityId
+                .of(PAYER), true);
+        assertNftInRepository(TOKEN_ID, 2L, true, mintTimestamp, mintTimestamp, METADATA.getBytes(), EntityId
+                .of(PAYER), false);
     }
 
     @Test
@@ -501,6 +604,22 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(transaction, 10L, INITIAL_SUPPLY, null);
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+    }
+
+    @Test
+    void tokenWipeNftMissingNft() throws InvalidProtocolBufferException {
+        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER, false, false, 0);
+
+        long wipeTimestamp = 15L;
+        Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, 0, Arrays
+                .asList(SERIAL_NUMBER_1));
+        insertAndParseTransaction(transaction, wipeTimestamp, 0, Arrays.asList(SERIAL_NUMBER_1));
+
+        // Verify
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 0);
+        assertNftInRepository(TOKEN_ID, 1L, false, wipeTimestamp, wipeTimestamp, METADATA.getBytes(), EntityId
+                .of(PAYER), true);
     }
 
     @Test
@@ -674,7 +793,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     builder.getTokenMintBuilder().setAmount(amount);
                 } else {
                     builder.getTokenMintBuilder().addAllMetadata(Collections
-                            .nCopies(serialNumbers.size(), ByteString.copyFromUtf8("Metadata")));
+                            .nCopies(serialNumbers.size(), ByteString.copyFromUtf8(METADATA)));
                 }
             });
         } else {
@@ -758,13 +877,14 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void assertNftInRepository(TokenID tokenID, long serialNumber, boolean present, long createdTimestamp,
-                                       long modifiedTimestamp, byte[] metadata, boolean deleted) {
+                                       long modifiedTimestamp, byte[] metadata, EntityId accountId, boolean deleted) {
         Optional<Nft> nftOptional = nftRepository.findById(new Nft.Id(serialNumber, EntityId.of(tokenID)));
         if (present) {
             assertThat(nftOptional.get())
                     .returns(createdTimestamp, from(Nft::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(Nft::getModifiedTimestamp))
                     .returns(metadata, from(Nft::getMetadata))
+                    .returns(accountId, from(Nft::getAccountId))
                     .returns(deleted, from(Nft::isDeleted));
         } else {
             assertThat(nftOptional.isPresent()).isFalse();
@@ -841,21 +961,5 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .setToken(tokenId)
                 .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(amount).build())
                 .build();
-    }
-
-    private TokenTransferList nftTransfer(TokenID tokenId, AccountID receiverAccountId, AccountID senderAccountId,
-                                          List<Long> serialNumbers) {
-        TokenTransferList.Builder builder = TokenTransferList.newBuilder();
-        builder.setToken(tokenId);
-        for (Long serialNumber : serialNumbers) {
-            builder.addNftTransfers(
-                    NftTransfer.newBuilder()
-                            .setSerialNumber(serialNumber)
-                            .setReceiverAccountID(receiverAccountId)
-                            .setSenderAccountID(senderAccountId)
-                            .build()
-            );
-        }
-        return builder.build();
     }
 }
