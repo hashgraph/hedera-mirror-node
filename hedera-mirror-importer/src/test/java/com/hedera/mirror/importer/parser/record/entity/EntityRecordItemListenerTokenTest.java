@@ -887,7 +887,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .returns(accountId, from(Nft::getAccountId))
                     .returns(deleted, from(Nft::isDeleted));
         } else {
-            assertThat(tokenOptional).isNotPresent();
+            assertThat(nftOptional).isNotPresent();
         }
     }
 
