@@ -193,7 +193,10 @@ values ('OK', 0),
        ('ACCOUNT_EXPIRED_AND_PENDING_REMOVAL', 223),
        ('INVALID_TOKEN_MAX_SUPPLY', 224),
        ('INVALID_TOKEN_NFT_SERIAL_NUMBER', 225),
-       ('INVALID_NFT_ID', 226);
+       ('INVALID_NFT_ID', 226),
+       ('METADATA_TOO_LONG', 227),
+       ('BATCH_SIZE_LIMIT_EXCEEDED', 228),
+       ('QUERY_RANGE_LIMIT_EXCEEDED', 229);
 
 -- t_transaction_types
 insert into t_transaction_types (proto_id, name, entity_type)

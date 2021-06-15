@@ -524,7 +524,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
             TokenID tokenID = tokenBurnTransactionBody.getToken();
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    //TODO should we set accountId to null or just leave it since deleted is already set?
                     nftRepository.updateDeleted(new Nft.Id(serialNumber, EntityId.of(tokenID)), consensusTimeStamp)
             );
         }
@@ -643,8 +642,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
             TokenID tokenID = tokenMintTransactionBody.getToken();
 
-            //TODO This is needed for setting the initial accountId (via treasury id).  Nana has mentioned this could
-            //be done with SQL
             Optional<Token> optionalToken = retrieveToken(tokenID, TransactionTypeEnum.TOKENMINT,
                     consensusTimeStamp);
             if (optionalToken.isPresent()) {
@@ -659,7 +656,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                     nft.setAccountId(token.getTreasuryAccountId());
                     nft.setCreatedTimestamp(consensusTimeStamp);
                     nft.setId(new Nft.Id(serialNumbers.get(i), EntityId.of(tokenID)));
-                    //TODO If order isn't guaranteed, this will need to be looked at
                     nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
                     nft.setModifiedTimestamp(consensusTimeStamp);
                     nftRepository.save(nft);
