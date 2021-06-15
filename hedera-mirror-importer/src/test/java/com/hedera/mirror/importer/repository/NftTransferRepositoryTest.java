@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.NftTransfer;
 
-public class NftTransferRepositoryTest extends AbstractRepositoryTest {
+class NftTransferRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     NftTransferRepository repository;

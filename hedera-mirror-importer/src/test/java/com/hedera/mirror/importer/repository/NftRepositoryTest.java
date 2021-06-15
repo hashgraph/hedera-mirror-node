@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Nft;
 
-public class NftRepositoryTest extends AbstractRepositoryTest {
+class NftRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     protected NftRepository repository;
