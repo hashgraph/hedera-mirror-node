@@ -838,18 +838,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         return optionalToken;
     }
 
-    private Optional<Nft> retrieveNFT(TokenID tokenID, long serialNumber, TransactionTypeEnum transactionTypeEnum,
-                                      long currentTransactionTimestamp) {
-        Optional<Nft> optionalNft = nftRepository
-                .findById(new Nft.Id(serialNumber, EntityId.of(tokenID)));
-
-        if (optionalNft.isEmpty()) {
-            log.warn(MISSING_NFT_MESSAGE, tokenID, serialNumber, transactionTypeEnum, currentTransactionTimestamp);
-        }
-
-        return optionalNft;
-    }
-
     private void insertScheduleCreate(RecordItem recordItem) {
         if (entityProperties.getPersist().isSchedules()) {
             ScheduleCreateTransactionBody scheduleCreateTransactionBody = recordItem.getTransactionBody()

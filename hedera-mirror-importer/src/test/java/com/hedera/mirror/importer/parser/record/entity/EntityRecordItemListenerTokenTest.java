@@ -872,7 +872,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .returns(symbol, from(Token::getSymbol))
                     .returns(totalSupply, from(Token::getTotalSupply));
         } else {
-            assertThat(tokenOptional.isPresent()).isFalse();
+            assertThat(tokenOptional).isNotPresent();
         }
     }
 
@@ -887,7 +887,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .returns(accountId, from(Nft::getAccountId))
                     .returns(deleted, from(Nft::isDeleted));
         } else {
-            assertThat(nftOptional.isPresent()).isFalse();
+            assertThat(tokenOptional).isNotPresent();
         }
     }
 

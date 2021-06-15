@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.junit.jupiter.api.Test;
 
-public class TokenTypeEnumTest {
+class TokenTypeEnumTest {
 
     @Test
     void fromId() {
