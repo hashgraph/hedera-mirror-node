@@ -112,9 +112,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final Predicate<TransactionFilterFields> transactionFilter;
     private static final String MISSING_TOKEN_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
             "{} with timestamp {}";
-    //TODO Rewrite, currently copy paste
-    private static final String MISSING_NFT_MESSAGE = "Missing nft {} for token entity {}, unable to persist " +
-            "transaction type {} with timestamp {}";
     private static final String MISSING_TOKEN_ACCOUNT_MESSAGE = "Missing token_account for token {} and account {}, " +
             "unable to persist transaction type {} with timestamp {}";
 
@@ -707,17 +704,26 @@ public class EntityRecordItemListener implements RecordItemListener {
                 });
 
                 tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
-                    EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
-                    entityListener.onEntityId(receiverId);
-                    EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
-                    entityListener.onEntityId(senderId);
+                    EntityId receiverId = null;
+                    if (!nftTransfer.getReceiverAccountID().equals(AccountID.getDefaultInstance())) {
+                        receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
+                        entityListener.onEntityId(receiverId);
+                    }
+
+                    EntityId senderId = null;
+                    if (!nftTransfer.getSenderAccountID().equals(AccountID.getDefaultInstance())) {
+                        senderId = EntityId.of(nftTransfer.getSenderAccountID());
+                        entityListener.onEntityId(senderId);
+                    }
 
                     long serialNumber = nftTransfer.getSerialNumber();
                     entityListener
                             .onNftTransfer(new NftTransfer(consensusTimeStamp, serialNumber, tokenId, receiverId,
                                     senderId));
-
-                    nftRepository.updateAccountId(new Nft.Id(serialNumber, tokenId), receiverId, consensusTimeStamp);
+                    if (receiverId != null) {
+                        nftRepository
+                                .updateAccountId(new Nft.Id(serialNumber, tokenId), receiverId, consensusTimeStamp);
+                    }
                 });
             });
         }

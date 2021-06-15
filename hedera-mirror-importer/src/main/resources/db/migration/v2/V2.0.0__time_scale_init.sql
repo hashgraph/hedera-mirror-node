@@ -158,8 +158,8 @@ comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 create table if not exists nft_transfer
 (
   consensus_timestamp   bigint  not null,
-  receiver_account_id   bigint  not null,
-  sender_account_id     bigint  not null,
+  receiver_account_id   bigint,
+  sender_account_id     bigint,
   serial_number         bigint  not null,
   token_id              bigint  not null
 );

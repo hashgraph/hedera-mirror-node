@@ -46,6 +46,7 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
     @Override
     public void updateEntity(Entity entity, RecordItem recordItem) {
         TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
+        entity.setModifiedTimestamp(recordItem.getConsensusTimestamp());
         if (tokenUpdateTransactionBody.hasAdminKey()) {
             entity.setKey(tokenUpdateTransactionBody.getAdminKey().toByteArray());
         }
