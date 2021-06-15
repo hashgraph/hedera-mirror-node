@@ -413,8 +413,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 PAYER, false, false, 0);
 
         long mintTimestamp = 10L;
-        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0, Arrays
-                .asList(1L));
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
+                SERIAL_NUMBER_LIST);
 
         // Verify
         insertAndParseTransaction(transaction, mintTimestamp, 2, SERIAL_NUMBER_LIST);
