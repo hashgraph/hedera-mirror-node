@@ -43,9 +43,7 @@ public class TokenTest {
                 () -> assertNotNull(token.getKycKeyEd25519Hex()),
                 () -> assertNotNull(token.getSupplyKeyEd25519Hex()),
                 () -> assertNotNull(token.getWipeKeyEd25519Hex()),
-                () -> assertNotEquals(0, token.getTotalSupply()),
-                () -> assertNotEquals(TokenFreezeStatusEnum.NOT_APPLICABLE, token.getNewAccountFreezeStatus()),
-                () -> assertNotEquals(TokenKycStatusEnum.NOT_APPLICABLE, token.getNewAccountKycStatus())
+                () -> assertNotEquals(0, token.getTotalSupply())
         );
     }
 
@@ -61,41 +59,6 @@ public class TokenTest {
         assertNull(token.getKycKeyEd25519Hex());
         assertNull(token.getSupplyKeyEd25519Hex());
         assertNull(token.getWipeKeyEd25519Hex());
-    }
-
-    @Test
-    void verifyNewAccountFreezeStatusWithNoFreezeKey() {
-        Token token = new Token();
-        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.NOT_APPLICABLE);
-    }
-
-    @Test
-    void verifyNewAccountFreezeStatusWithNoFreezeKeyTrueFreezeDefault() {
-        Token token = new Token();
-        token.setFreezeKey("freezekey".getBytes());
-        token.setFreezeDefault(true);
-        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.FROZEN);
-    }
-
-    @Test
-    void verifyNewAccountFreezeStatusWithNoFreezeKeyFalseFreezeDefault() {
-        Token token = new Token();
-        token.setFreezeKey("freezekey".getBytes());
-        token.setFreezeDefault(false);
-        assertEquals(token.getNewAccountFreezeStatus(), TokenFreezeStatusEnum.UNFROZEN);
-    }
-
-    @Test
-    void verifyNewAccountKycStatusWithNoKycKey() {
-        Token token = new Token();
-        assertEquals(token.getNewAccountKycStatus(), TokenKycStatusEnum.NOT_APPLICABLE);
-    }
-
-    @Test
-    void verifyNewAccountKycStatusWithKycKey() {
-        Token token = new Token();
-        token.setKycKey("kyckey".getBytes());
-        assertEquals(token.getNewAccountKycStatus(), TokenKycStatusEnum.REVOKED);
     }
 
     @Test

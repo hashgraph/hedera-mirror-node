@@ -84,6 +84,8 @@ import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class SqlEntityListenerTest extends IntegrationTest {
+    private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
+    private static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
 
     private final TransactionRepository transactionRepository;
     private final EntityRepository entityRepository;
@@ -280,9 +282,70 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onEntityMerge() throws Exception {
+        // given
+        Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
+                null, null, false, null, null);
+        sqlEntityListener.onEntity(entity);
+
+        Entity entityAutoUpdated = getEntity(1, null, 5L, null, null,
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, null, null, null);
+        sqlEntityListener.onEntity(entityAutoUpdated);
+
+        Entity entityExpirationUpdated = getEntity(1, null, 10L, null, null,
+                null, null, null, 720L, null);
+        sqlEntityListener.onEntity(entityExpirationUpdated);
+
+        Entity entitySubmitKeyUpdated = getEntity(1, null, 15L, null, null,
+                null, null, null, null, keyFromString(KEY2));
+        sqlEntityListener.onEntity(entitySubmitKeyUpdated);
+
+        Entity entityMemoDeleteUpdated = getEntity(1, null, 20L, "memo-deleted", null,
+                null, null, true, null, null);
+        sqlEntityListener.onEntity(entityMemoDeleteUpdated);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        Entity entityMerged = getEntity(1, 1L, 20L, "memo-deleted", keyFromString(KEY),
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, true, 720L, keyFromString(KEY2));
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(1, entityRepository.count());
+        assertExistsAndEquals(entityRepository, entityMerged, 1L);
+    }
+
+    @Test
+    void onEntityEntityIdMerge() throws Exception {
+        // given
+        Entity entity = getEntity(1, 1L, 1L, "memo-updated", keyFromString(KEY),
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, keyFromString(KEY2));
+        sqlEntityListener.onEntity(entity);
+
+        EntityId entityId1 = EntityId.of(0L, 0L, 1L, ACCOUNT);
+        sqlEntityListener.onEntity(entityId1.toEntity());
+
+        Entity entityUpdated = getEntity(1, null, 5L, "memo-updated");
+        sqlEntityListener.onEntity(entityUpdated);
+
+        EntityId entityId2 = EntityId.of(0L, 0L, 1L, ACCOUNT);
+        sqlEntityListener.onEntity(entityId2.toEntity());
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        Entity entityMerged = getEntity(1, 1L, 5L, "memo-updated", keyFromString(KEY),
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, keyFromString(KEY2));
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(1, entityRepository.count());
+        assertExistsAndEquals(entityRepository, entityMerged, 1L);
+    }
+
+    @Test
     void onToken() throws Exception {
-        Token token1 = getToken("0.0.3", "0.0.5", 1);
-        Token token2 = getToken("0.0.7", "0.0.11", 2);
+        Token token1 = getToken("0.0.3", "0.0.5", 1L, 1L);
+        Token token2 = getToken("0.0.7", "0.0.11", 2L, 2L);
 
         // when
         sqlEntityListener.onToken(token1);
@@ -297,21 +360,46 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onTokenMerge() throws Exception {
+        String tokenId = "0.0.3";
+        String accountId = "0.0.500";
+
+        // save token entities first
+        Token token = getToken(tokenId, accountId, 1L, 1L, 1000, false, keyFromString(KEY),
+                1_000_000_000L, null, "FOO COIN TOKEN", null, "FOOTOK", null);
+        sqlEntityListener.onToken(token);
+
+        Token tokenUpdated = getToken(tokenId, accountId, null, 5L, null, null, null,
+                null, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK", keyFromString(KEY2));
+        sqlEntityListener.onToken(tokenUpdated);
+        completeFileAndCommit();
+
+        // then
+        Token tokenMerged = getToken(tokenId, accountId, 1L, 5L, 1000, false, keyFromString(KEY),
+                1_000_000_000L, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK",
+                keyFromString(KEY2));
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertExistsAndEquals(tokenRepository, tokenMerged, new TokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+    }
+
+    @Test
     void onTokenAccount() throws Exception {
         String tokenId1 = "0.0.3";
         String tokenId2 = "0.0.5";
 
         // save token entities first
-        Token token1 = getToken(tokenId1, "0.0.500", 1);
-        Token token2 = getToken(tokenId2, "0.0.110", 2);
+        Token token1 = getToken(tokenId1, "0.0.500", 1L, 1L);
+        Token token2 = getToken(tokenId2, "0.0.110", 2L, 2L);
         sqlEntityListener.onToken(token1);
         sqlEntityListener.onToken(token2);
         completeFileAndCommit();
 
         String accountId1 = "0.0.7";
         String accountId2 = "0.0.11";
-        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 5);
-        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11", 6);
+        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 5L, 5L, false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
+        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11", 6L, 6L, false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
@@ -325,6 +413,39 @@ public class SqlEntityListenerTest extends IntegrationTest {
                 .of(tokenId1, EntityTypeEnum.TOKEN), EntityId.of(accountId1, ACCOUNT)));
         assertExistsAndEquals(tokenAccountRepository, tokenAccount2, new TokenAccountId(EntityId
                 .of(tokenId2, EntityTypeEnum.TOKEN), EntityId.of(accountId2, ACCOUNT)));
+    }
+
+    @Test
+    void onTokenAccountMerge() throws Exception {
+        String tokenId1 = "0.0.3";
+
+        // save token entities first
+        Token token = getToken(tokenId1, "0.0.500", 1L, 1L);
+        sqlEntityListener.onToken(token);
+
+        // when
+        String accountId1 = "0.0.7";
+        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true,
+                null, null);
+        sqlEntityListener.onTokenAccount(tokenAccountAssociate);
+
+        TokenAccount tokenAccountFreeze = getTokenAccount(tokenId1, accountId1, null, 10L, null,
+                TokenFreezeStatusEnum.UNFROZEN, null);
+        sqlEntityListener.onTokenAccount(tokenAccountFreeze);
+
+        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, 15L, null,
+                null, TokenKycStatusEnum.GRANTED);
+        sqlEntityListener.onTokenAccount(tokenAccountKyc);
+
+        completeFileAndCommit();
+
+        // then
+        TokenAccount tokenAccountMerged = getTokenAccount(tokenId1, accountId1, 5L, 15L, true,
+                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED);
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(1, tokenAccountRepository.count());
+        assertExistsAndEquals(tokenAccountRepository, tokenAccountMerged, new TokenAccountId(EntityId
+                .of(tokenId1, EntityTypeEnum.TOKEN), EntityId.of(accountId1, ACCOUNT)));
     }
 
     @Test
@@ -404,6 +525,30 @@ public class SqlEntityListenerTest extends IntegrationTest {
                 pubKeyPrefix3));
     }
 
+    @Test
+    void onScheduleMerge() throws Exception {
+        String scheduleId = "0.0.100";
+        EntityId entityId = EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE);
+
+        Schedule schedule = getSchedule(1, entityId.entityIdToString());
+        sqlEntityListener.onSchedule(schedule);
+
+        Schedule scheduleUpdated = new Schedule();
+        scheduleUpdated.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        scheduleUpdated.setExecutedTimestamp(5L);
+        sqlEntityListener.onSchedule(scheduleUpdated);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        Schedule scheduleMerged = getSchedule(1, entityId.entityIdToString());
+        scheduleMerged.setExecutedTimestamp(5L);
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(1, scheduleRepository.count());
+        assertExistsAndEquals(scheduleRepository, scheduleMerged, 1L);
+    }
+
     private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
@@ -444,6 +589,35 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return rf;
     }
 
+    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {
+        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, null, null, null, null, null, null);
+    }
+
+    private static Key keyFromString(String key) {
+        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
+    }
+
+    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
+                             Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
+                             Boolean deleted, Long expiryTimeNs, Key submitKey) {
+        Entity entity = new Entity();
+        entity.setId(id);
+        entity.setAutoRenewAccountId(autoRenewAccountId);
+        entity.setAutoRenewPeriod(autoRenewPeriod);
+        entity.setCreatedTimestamp(createdTimestamp);
+        entity.setDeleted(deleted);
+        entity.setExpirationTimestamp(expiryTimeNs);
+        entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
+        entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setNum(id);
+        entity.setRealm(0L);
+        entity.setShard(0L);
+        entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
+        entity.setType(1);
+        entity.setMemo(memo);
+        return entity;
+    }
+
     private Transaction makeTransaction() {
         EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
         Transaction transaction = new Transaction();
@@ -482,35 +656,44 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return topicMessage;
     }
 
-    private Token getToken(String tokenId, String accountId, long createdTimestamp) throws DecoderException {
+    private Token getToken(String tokenId, String accountId, Long createdTimestamp, long modifiedTimestamp) throws DecoderException {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build().toByteArray();
+        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
+        return getToken(tokenId, accountId, createdTimestamp, modifiedTimestamp, 1000, false, hexKey,
+                1_000_000_000L, hexKey, "FOO COIN TOKEN", hexKey, "FOOTOK", hexKey);
+    }
+
+    private Token getToken(String tokenId, String accountId, Long createdTimestamp, long modifiedTimestamp,
+                           Integer decimals, Boolean freezeDefault, Key freezeKey, Long initialSupply, Key kycKey,
+                           String name, Key supplyKey, String symbol, Key wipeKey) throws DecoderException {
         Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
-        token.setDecimals(1000);
-        token.setFreezeDefault(false);
-        token.setFreezeKey(hexKey);
-        token.setInitialSupply(1_000_000_000L);
-        token.setKycKey(hexKey);
-        token.setModifiedTimestamp(createdTimestamp);
-        token.setName("FOO COIN TOKEN");
-        token.setSupplyKey(hexKey);
-        token.setSymbol("FOOTOK");
+        token.setDecimals(decimals);
+        token.setFreezeDefault(freezeDefault);
+        token.setFreezeKey(freezeKey != null ? freezeKey.toByteArray() : null);
+        token.setInitialSupply(initialSupply);
+        token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
+        token.setModifiedTimestamp(modifiedTimestamp);
+        token.setName(name);
+        token.setSupplyKey(supplyKey != null ? supplyKey.toByteArray() : null);
+        token.setSymbol(symbol);
         token.setTokenId(new TokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         token.setTreasuryAccountId(EntityId.of(accountId, ACCOUNT));
-        token.setWipeKey(hexKey);
+        token.setWipeKey(wipeKey != null ? wipeKey.toByteArray() : null);
 
         return token;
     }
 
-    private TokenAccount getTokenAccount(String tokenId, String accountId, long createdTimestamp) {
+    private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp,
+                                         long modifiedTimeStamp, Boolean associated, TokenFreezeStatusEnum freezeStatus,
+                                         TokenKycStatusEnum kycStatus) {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
-        tokenAccount.setAssociated(true);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setAssociated(associated);
+        tokenAccount.setFreezeStatus(freezeStatus);
+        tokenAccount.setKycStatus(kycStatus);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
-        tokenAccount.setModifiedTimestamp(createdTimestamp);
+        tokenAccount.setModifiedTimestamp(modifiedTimeStamp);
 
         return tokenAccount;
     }
@@ -527,10 +710,10 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     private Schedule getSchedule(long consensusTimestamp, String scheduleId) {
         Schedule schedule = new Schedule();
+        schedule.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
         schedule.setConsensusTimestamp(consensusTimestamp);
         schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
         schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
-        schedule.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
         schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }

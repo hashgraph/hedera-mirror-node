@@ -20,14 +20,12 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Transient;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -48,9 +46,9 @@ public class Token {
 
     private Long createdTimestamp;
 
-    private long decimals;
+    private Integer decimals;
 
-    private boolean freezeDefault;
+    private Boolean freezeDefault;
 
     private byte[] freezeKey;
 
@@ -58,7 +56,7 @@ public class Token {
     @JsonSerialize(using = NullableStringSerializer.class)
     private String freezeKeyEd25519Hex;
 
-    private long initialSupply;
+    private Long initialSupply;
 
     private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
 
@@ -114,40 +112,6 @@ public class Token {
     public void setWipeKey(byte[] key) {
         wipeKey = key;
         wipeKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
-    }
-
-    /**
-     * Get initial freeze status for an account being associated with this token. If the token does not have a
-     * freezeKey, FreezeNotApplicable is returned, if it does account frozen status is set based on freezeDefault.
-     * FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2
-     *
-     * @return Freeze status code
-     */
-    @JsonIgnore
-    @Transient
-    public TokenFreezeStatusEnum getNewAccountFreezeStatus() {
-        if (freezeKey == null) {
-            return TokenFreezeStatusEnum.NOT_APPLICABLE;
-        }
-
-        return freezeDefault ? TokenFreezeStatusEnum.FROZEN : TokenFreezeStatusEnum.UNFROZEN;
-    }
-
-    /**
-     * Get initial kyc status for an account being associated with this token. If the token does not have a kycKey,
-     * KycNotApplicable is returned, if it does account should be set to Revoked as kyc must be performed.
-     * KycNotApplicable = 0, Granted = 1, Revoked = 2
-     *
-     * @return Kyc status code
-     */
-    @JsonIgnore
-    @Transient
-    public TokenKycStatusEnum getNewAccountKycStatus() {
-        if (kycKey == null) {
-            return TokenKycStatusEnum.NOT_APPLICABLE;
-        }
-
-        return TokenKycStatusEnum.REVOKED;
     }
 
     public void setName(String name) {

@@ -63,6 +63,7 @@ import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 class UpsertPgCopyTest extends IntegrationTest {
 
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
 
     @Resource
     private DataSource dataSource;
@@ -213,6 +214,100 @@ class UpsertPgCopyTest extends IntegrationTest {
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
+        assertThat(tokenAccountRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(4)
+                .extracting(TokenAccount::getModifiedTimestamp)
+                .containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
+    }
+
+    @Test
+    void tokenAccountInsertFreezeStatus() throws SQLException, DecoderException {
+        // inserts token first
+        var tokens = new HashSet<Token>();
+        tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
+        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, true, Key.newBuilder()
+                .setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build(), null));
+        tokens.add(getToken("0.0.4000", "0.0.1001", 3L, false, Key.newBuilder()
+                .setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build(), null));
+
+        copyWithTransactionSupport(tokenPgCopy, tokens);
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
+
+        // associate
+        var tokenAccounts = new HashSet<TokenAccount>();
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, 5L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, 6L));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", 7L, true, 7L));
+
+        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
+        assertThat(tokenAccountRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(3)
+                .extracting(TokenAccount::getFreezeStatus)
+                .containsExactlyInAnyOrder(TokenFreezeStatusEnum.NOT_APPLICABLE, TokenFreezeStatusEnum.FROZEN,
+                        TokenFreezeStatusEnum.UNFROZEN);
+
+        // reverse freeze status
+        tokenAccounts.clear();
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null, 10L,
+                TokenFreezeStatusEnum.UNFROZEN, null));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", null, null, 11L,
+                TokenFreezeStatusEnum.FROZEN, null));
+
+        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+
+        assertThat(tokenAccountRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(3)
+                .extracting(TokenAccount::getFreezeStatus)
+                .containsExactlyInAnyOrder(TokenFreezeStatusEnum.NOT_APPLICABLE, TokenFreezeStatusEnum.UNFROZEN,
+                        TokenFreezeStatusEnum.FROZEN);
+    }
+
+    @Test
+    void tokenAccountInsertKycStatus() throws SQLException, DecoderException {
+        // inserts token first
+        var tokens = new HashSet<Token>();
+        tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
+        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, false, null, Key.newBuilder()
+                .setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build()));
+
+        copyWithTransactionSupport(tokenPgCopy, tokens);
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
+
+        var tokenAccounts = new HashSet<TokenAccount>();
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, 5L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, 6L));
+
+        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
+        assertThat(tokenAccountRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(2)
+                .extracting(TokenAccount::getKycStatus)
+                .containsExactlyInAnyOrder(TokenKycStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.REVOKED);
+
+        // grant KYC
+        tokenAccounts.clear();
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null, 11L,
+                null, TokenKycStatusEnum.GRANTED));
+
+        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+
+        assertThat(tokenAccountRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(2)
+                .extracting(TokenAccount::getKycStatus)
+                .containsExactlyInAnyOrder(TokenKycStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.GRANTED);
     }
 
     @Test
@@ -336,15 +431,20 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp) throws DecoderException {
+        return getToken(tokenId, treasuryAccountId, createdTimestamp, false, null, null);
+    }
+
+    private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp,
+                           Boolean freezeDefault, Key freezeKey, Key kycKey) throws DecoderException {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build().toByteArray();
         Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(1000);
-        token.setFreezeDefault(false);
-        token.setFreezeKey(hexKey);
+        token.setFreezeDefault(freezeDefault);
+        token.setFreezeKey(freezeKey != null ? freezeKey.toByteArray() : null);
         token.setInitialSupply(1_000_000_000L);
-        token.setKycKey(hexKey);
+        token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
         token.setModifiedTimestamp(3L);
         token.setName("FOO COIN TOKEN" + tokenId);
         token.setSupplyKey(hexKey);
@@ -355,14 +455,20 @@ class UpsertPgCopyTest extends IntegrationTest {
         return token;
     }
 
-    private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, boolean associated,
+    private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
                                          Long modifiedTimestamp) {
+        return getTokenAccount(tokenId, accountId, createdTimestamp, associated, modifiedTimestamp, null, null);
+    }
+
+    private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
+                                         Long modifiedTimestamp, TokenFreezeStatusEnum freezeStatus,
+                                         TokenKycStatusEnum kycStatus) {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
         tokenAccount.setAssociated(associated);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
+        tokenAccount.setFreezeStatus(freezeStatus);
+        tokenAccount.setKycStatus(kycStatus);
         tokenAccount.setModifiedTimestamp(modifiedTimestamp);
 
         return tokenAccount;
