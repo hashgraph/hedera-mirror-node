@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.domain;
  */
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -33,10 +36,11 @@ public enum TokenTypeEnum {
 
     private final int id;
 
+    private static final Map<Integer, TokenTypeEnum> ID_MAP = Arrays.stream(values())
+            .collect(Collectors.toUnmodifiableMap(TokenTypeEnum::getId, Function
+                    .identity()));
+
     public static TokenTypeEnum fromId(int id) {
-        return Arrays.stream(TokenTypeEnum.values())
-                .filter(tokenTypeEnum -> tokenTypeEnum.id == id)
-                .findFirst()
-                .orElse(FUNGIBLE_COMMON);
+        return ID_MAP.getOrDefault(id, FUNGIBLE_COMMON);
     }
 }
