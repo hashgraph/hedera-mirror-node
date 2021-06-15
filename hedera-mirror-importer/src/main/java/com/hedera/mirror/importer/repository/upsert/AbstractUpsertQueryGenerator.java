@@ -96,7 +96,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     protected Set<String> getNullableColumns() {
-        return null;
+        return Collections.emptySet();
     }
 
     // Note JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
@@ -136,7 +136,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private boolean isNullableColumn(String columnName) {
-        return getNullableColumns() == null ? false : getNullableColumns().contains(columnName);
+        return getNullableColumns() != null && getNullableColumns().contains(columnName);
     }
 
     private List<String> getConflictIdColumns() {

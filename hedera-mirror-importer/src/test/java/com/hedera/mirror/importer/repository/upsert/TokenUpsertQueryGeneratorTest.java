@@ -95,9 +95,8 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     }
 
     @Override
-    @Ignore
+    @Ignore("ignore token case as max_supply, supply_type and type have missing implementation details incoming")
     @Test
     protected void insertContainsAllFields() {
-        // ignore token case as max_supply, supply_type and type have missing implementations details incoming
     }
 }
