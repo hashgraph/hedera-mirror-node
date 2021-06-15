@@ -38,8 +38,7 @@ public class NftRepositoryTest extends AbstractRepositoryTest {
     void save() {
         Nft savedNft = repository.save(nft("0.0.2", 1, 1));
         assertThat(savedNft)
-                .isEqualTo(repository.findById(new Nft.Id(1L, EntityId.of("0.0.2", EntityTypeEnum.TOKEN)))
-                        .get());
+                .isEqualTo(repository.findById(savedNft.getId()).get());
     }
 
     private Nft nft(String tokenId, long serialNumber, long consensusTimestamp) {
