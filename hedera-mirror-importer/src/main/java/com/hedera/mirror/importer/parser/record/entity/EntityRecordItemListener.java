@@ -700,17 +700,11 @@ public class EntityRecordItemListener implements RecordItemListener {
                 });
 
                 tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
-                    EntityId receiverId = null;
-                    if (!nftTransfer.getReceiverAccountID().equals(AccountID.getDefaultInstance())) {
-                        receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
-                        entityListener.onEntityId(receiverId);
-                    }
+                    EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
+                    entityListener.onEntityId(receiverId);
 
-                    EntityId senderId = null;
-                    if (!nftTransfer.getSenderAccountID().equals(AccountID.getDefaultInstance())) {
-                        senderId = EntityId.of(nftTransfer.getSenderAccountID());
-                        entityListener.onEntityId(senderId);
-                    }
+                    EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
+                    entityListener.onEntityId(senderId);
 
                     long serialNumber = nftTransfer.getSerialNumber();
                     NftTransfer nftTransferDomain = new NftTransfer();
@@ -720,7 +714,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     entityListener
                             .onNftTransfer(nftTransferDomain);
-                    if (receiverId != null) {
+                    if (!nftTransfer.getReceiverAccountID().equals(AccountID.getDefaultInstance())) {
                         nftRepository
                                 .updateAccountId(new Nft.Id(serialNumber, tokenId), receiverId, consensusTimeStamp);
                     }
