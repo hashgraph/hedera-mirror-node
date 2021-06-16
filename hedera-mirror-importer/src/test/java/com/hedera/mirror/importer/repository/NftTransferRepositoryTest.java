@@ -42,7 +42,7 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
         nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT));
         nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
         NftTransfer saved = repository.save(nftTransfer);
-        assertThat(repository.findById(saved.getId()).get()).isEqualTo(saved);
+        assertThat(repository.findById(saved.getId())).contains(saved);
     }
 
     @Test
@@ -51,7 +51,7 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
         nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
         nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT));
         NftTransfer saved = repository.save(nftTransfer);
-        assertThat(repository.findById(saved.getId()).get()).isEqualTo(saved);
+        assertThat(repository.findById(saved.getId())).contains(saved);
     }
 
     @Test
@@ -60,6 +60,6 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
         nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
         nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
         NftTransfer saved = repository.save(nftTransfer);
-        assertThat(repository.findById(saved.getId()).get()).isEqualTo(saved);
+        assertThat(repository.findById(saved.getId())).contains(saved);
     }
 }
