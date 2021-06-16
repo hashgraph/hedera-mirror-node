@@ -730,7 +730,7 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFile(record.getReceipt().getFileID(), actualFile),
-                () -> assertEquals(deleted, actualFile.isDeleted()));
+                () -> assertEntity(actualFile));
     }
 
     private void assertFailedFileTransaction(TransactionBody transactionBody, TransactionRecord record) {

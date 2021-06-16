@@ -96,8 +96,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, payer, SCHEDULE_ID);
 
         // verify entity count
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, SCHEDULE_CREATE_MEMO, null);
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
+                false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         int expectedEntityCount = 4; // node, payer, schedule and autorenew
         if (!expectedPayer.equals(PAYER)) {
             expectedEntityCount += 1;
@@ -123,8 +123,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID);
 
         // verify entity count
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, SCHEDULE_CREATE_MEMO, null);
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
+                false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 
@@ -164,8 +164,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // verify entity count
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, SCHEDULE_CREATE_MEMO, null);
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
+                false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 
@@ -226,8 +226,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduledTransaction(EXECUTE_TIMESTAMP, SCHEDULE_ID, responseCodeEnum);
 
         // verify entity count
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null,
-                null, false, null, SCHEDULE_CREATE_MEMO, null);
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
+                false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
         assertEntity(expected);
 

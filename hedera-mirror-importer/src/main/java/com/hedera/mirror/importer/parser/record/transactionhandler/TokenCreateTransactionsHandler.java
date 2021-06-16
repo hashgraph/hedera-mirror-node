@@ -54,10 +54,13 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
             entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod().getSeconds());
         }
 
+        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
+
         if (tokenCreateTransactionBody.hasExpiry()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(tokenCreateTransactionBody.getExpiry()));
         }
 
+        entity.setDeleted(false);
         entity.setMemo(tokenCreateTransactionBody.getMemo());
     }
 

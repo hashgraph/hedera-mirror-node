@@ -46,6 +46,8 @@ public class FileCreateTransactionHandler implements TransactionHandler {
     @Override
     public void updateEntity(Entity entity, RecordItem recordItem) {
         FileCreateTransactionBody txMessage = recordItem.getTransactionBody().getFileCreate();
+        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
+        entity.setDeleted(false);
         if (txMessage.hasExpirationTime()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
         }

@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
@@ -34,7 +33,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
@@ -42,7 +40,7 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
 
     public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId) {
-        this.id = new CryptoTransfer.Id(amount, consensusTimestamp, entityId);
+        id = new CryptoTransfer.Id(amount, consensusTimestamp, entityId);
     }
 
     /*
@@ -74,7 +72,6 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
         private long consensusTimestamp;
 
         @Convert(converter = AccountIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId entityId;
     }
 }

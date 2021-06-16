@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -68,8 +68,8 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onEntityId(EntityId entityId) throws ImporterException {
-        onEach(EntityListener::onEntityId, entityId);
+    public void onEntity(Entity entity) throws ImporterException {
+        onEach(EntityListener::onEntity, entity);
     }
 
     @Override

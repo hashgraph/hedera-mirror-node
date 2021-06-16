@@ -20,64 +20,60 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
-import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.converter.TokenIdConverter;
+import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
 @Entity
 @NoArgsConstructor
+@ToString(exclude = {"freezeKey", "freezeKeyEd25519Hex", "kycKey", "kycKeyEd25519Hex", "supplyKey",
+        "supplyKeyEd25519Hex", "wipeKey", "wipeKeyEd25519Hex"})
 public class Token {
-
     @EmbeddedId
-    private Token.Id tokenId;
+    @JsonUnwrapped
+    private TokenId tokenId;
 
-    private long createdTimestamp;
+    private Long createdTimestamp;
 
-    private long decimals;
+    private Integer decimals;
 
-    private boolean freezeDefault;
+    private Boolean freezeDefault;
 
-    @ToString.Exclude
     private byte[] freezeKey;
 
     @Column(name = "freeze_key_ed25519_hex")
-    @ToString.Exclude
+    @JsonSerialize(using = NullableStringSerializer.class)
     private String freezeKeyEd25519Hex;
 
-    private long initialSupply;
+    private Long initialSupply;
 
-    private long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
+    private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
 
-    @ToString.Exclude
     private byte[] kycKey;
 
     @Column(name = "kyc_key_ed25519_hex")
-    @ToString.Exclude
+    @JsonSerialize(using = NullableStringSerializer.class)
     private String kycKeyEd25519Hex;
 
     private long modifiedTimestamp;
 
     private String name;
 
-    @ToString.Exclude
     private byte[] supplyKey;
 
     @Column(name = "supply_key_ed25519_hex")
-    @ToString.Exclude
+    @JsonSerialize(using = NullableStringSerializer.class)
     private String supplyKeyEd25519Hex;
 
     private String symbol;
@@ -85,11 +81,10 @@ public class Token {
     @Convert(converter = AccountIdConverter.class)
     private EntityId treasuryAccountId;
 
-    @ToString.Exclude
     private byte[] wipeKey;
 
     @Column(name = "wipe_key_ed25519_hex")
-    @ToString.Exclude
+    @JsonSerialize(using = NullableStringSerializer.class)
     private String wipeKeyEd25519Hex;
 
     public void setInitialSupply(Long initialSupply) {
@@ -119,54 +114,11 @@ public class Token {
         wipeKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
     }
 
-    /**
-     * Get initial freeze status for an account being associated with this token. If the token does not have a
-     * freezeKey, FreezeNotApplicable is returned, if it does account frozen status is set based on freezeDefault.
-     * FreezeNotApplicable = 0, Frozen = 1, Unfrozen = 2
-     *
-     * @return Freeze status code
-     */
-    public TokenFreezeStatusEnum getNewAccountFreezeStatus() {
-        if (freezeKey == null) {
-            return TokenFreezeStatusEnum.NOT_APPLICABLE;
-        }
-
-        return freezeDefault ? TokenFreezeStatusEnum.FROZEN : TokenFreezeStatusEnum.UNFROZEN;
-    }
-
-    /**
-     * Get initial kyc status for an account being associated with this token. If the token does not have a kycKey,
-     * KycNotApplicable is returned, if it does account should be set to Revoked as kyc must be performed.
-     * KycNotApplicable = 0, Granted = 1, Revoked = 2
-     *
-     * @return Kyc status code
-     */
-    public TokenKycStatusEnum getNewAccountKycStatus() {
-        if (kycKey == null) {
-            return TokenKycStatusEnum.NOT_APPLICABLE;
-        }
-
-        return TokenKycStatusEnum.REVOKED;
-    }
-
     public void setName(String name) {
         this.name = Utility.sanitize(name);
     }
 
     public void setSymbol(String symbol) {
         this.symbol = Utility.sanitize(symbol);
-    }
-
-    @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Id implements Serializable {
-
-        private static final long serialVersionUID = -4595724698253758379L;
-
-        @Convert(converter = TokenIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId tokenId;
     }
 }

@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -29,7 +28,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 
 @Data
@@ -40,17 +38,14 @@ public class Schedule {
     private Long consensusTimestamp;
 
     @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId creatorAccountId;
 
     private Long executedTimestamp;
 
     @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
     @Convert(converter = ScheduleIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId scheduleId;
 
     @ToString.Exclude

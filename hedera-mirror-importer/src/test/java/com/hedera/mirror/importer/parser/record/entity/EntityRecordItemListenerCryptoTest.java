@@ -194,7 +194,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         createAccount();
 
         // now update
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoUpdateTransactionBody cryptoUpdateTransactionBody = transactionBody.getCryptoUpdateAccount();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
@@ -232,7 +232,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
      */
     @Test
     void samePayerAndUpdateAccount() throws Exception {
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         transactionBody = TransactionBody.newBuilder()
                 .mergeFrom(transactionBody)
@@ -253,7 +253,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     @Test
     void proxyAccountIdSetTo0() throws Exception {
         // given
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         var bodyBuilder = transactionBody.toBuilder();
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
@@ -308,7 +308,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
 
         // now update
-        Transaction transaction = cryptoUpdateTransaction();
+        Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
@@ -594,7 +594,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertAccount(record.getReceipt().getAccountID(), actualAccount),
-                () -> assertEquals(deleted, actualAccount.isDeleted()));
+                () -> assertEntity(actualAccount));
     }
 
     private void assertCryptoEntity(CryptoCreateTransactionBody expected, Timestamp consensusTimestamp) {
@@ -608,7 +608,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
                 () -> assertNull(actualAccount.getExpirationTimestamp()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccountId),
-                () -> assertNull(actualAccount.getExpirationTimestamp())
+                () -> assertNotNull(actualAccount.getModifiedTimestamp())
         );
     }
 
@@ -623,6 +623,15 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     private TransactionRecord transactionRecord(TransactionBody transactionBody, int status) {
         return buildTransactionRecord(recordBuilder -> recordBuilder.getReceiptBuilder().setAccountID(accountId),
                 transactionBody, status);
+    }
+
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, int status, int accountNum) {
+        return buildTransactionRecord(
+                recordBuilder -> recordBuilder
+                        .getReceiptBuilder()
+                        .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(accountNum)),
+                transactionBody,
+                status);
     }
 
     private Transaction cryptoCreateTransaction() {
@@ -640,10 +649,10 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .setSendRecordThreshold(3000L));
     }
 
-    private Transaction cryptoUpdateTransaction() {
+    private Transaction cryptoUpdateTransaction(AccountID accountNum) {
         return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
-                .setAccountIDToUpdate(accountId)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(5001L))
+                .setAccountIDToUpdate(accountNum)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
                 .setMemo(StringValue.of("CryptoUpdateAccount memo"))

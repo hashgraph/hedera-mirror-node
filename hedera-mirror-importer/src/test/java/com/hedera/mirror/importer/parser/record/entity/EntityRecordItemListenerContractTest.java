@@ -470,7 +470,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContract(record.getReceipt().getContractID(), actualContract),
-                () -> assertEquals(deleted, actualContract.isDeleted()));
+                () -> assertEntity(actualContract));
     }
 
     private void assertFailedContractCreate(TransactionBody transactionBody, TransactionRecord record) {

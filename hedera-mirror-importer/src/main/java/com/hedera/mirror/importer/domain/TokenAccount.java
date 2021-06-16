@@ -21,21 +21,12 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
@@ -43,11 +34,11 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 public class TokenAccount {
     @EmbeddedId
     @JsonUnwrapped
-    private TokenAccount.Id id;
+    private TokenAccountId id;
 
-    private boolean associated;
+    private Boolean associated;
 
-    private long createdTimestamp;
+    private Long createdTimestamp;
 
     @Enumerated(EnumType.ORDINAL)
     private TokenFreezeStatusEnum freezeStatus;
@@ -58,22 +49,6 @@ public class TokenAccount {
     private long modifiedTimestamp;
 
     public TokenAccount(EntityId tokenId, EntityId accountId) {
-        id = new TokenAccount.Id(tokenId, accountId);
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Embeddable
-    public static class Id implements Serializable {
-        private static final long serialVersionUID = -4069569824910871771L;
-
-        @Convert(converter = TokenIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId tokenId;
-
-        @Convert(converter = AccountIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId accountId;
+        id = new TokenAccountId(tokenId, accountId);
     }
 }

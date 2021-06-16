@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +42,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.parser.domain.StreamItem;
 
 @Data
@@ -85,7 +83,6 @@ public class AccountBalance implements Persistable<AccountBalance.Id>, StreamIte
         private long consensusTimestamp;
 
         @Convert(converter = AccountIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
         private EntityId accountId;
     }
 }

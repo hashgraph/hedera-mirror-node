@@ -38,7 +38,11 @@ jobs:
           path: ~/.m2
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Set environment
+      - name: Set v1 environment
+        if: matrix.schema == 'v1'
+        run: echo 'groups=!v2' >> $GITHUB_ENV
+
+      - name: Set v2 environment
         if: matrix.schema == 'v2'
         run: echo 'groups=!v1' >> $GITHUB_ENV
 
