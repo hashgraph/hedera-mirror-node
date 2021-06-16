@@ -88,8 +88,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @Override
     protected RecordFileParser getParser() {
         RecordParserProperties parserProperties = new RecordParserProperties();
-        return new RecordFileParser(parserProperties, new SimpleMeterRegistry(), recordItemListener,
-                recordStreamFileListener, mirrorDateRangePropertiesProcessor);
+        return new RecordFileParser(new SimpleMeterRegistry(), parserProperties, streamFileRepository,
+                recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
     }
 
     @Override

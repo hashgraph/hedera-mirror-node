@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.channel.NullChannel;
+import org.springframework.integration.context.IntegrationContextUtils;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
@@ -44,14 +46,9 @@ public class MessagingConfiguration {
 
     // Shared channel containing all stream types until they're routed to the individual channels
     public static final String CHANNEL_STREAM = "stream";
-
     private static final String CHANNEL_BALANCE = CHANNEL_STREAM + ".balance";
     private static final String CHANNEL_EVENT = CHANNEL_STREAM + ".event";
     private static final String CHANNEL_RECORD = CHANNEL_STREAM + ".record";
-    private static final String INTEGRATION_FLOW_PREFIX = "flow.";
-    private static final String INTEGRATION_FLOW_BALANCE = INTEGRATION_FLOW_PREFIX + CHANNEL_BALANCE;
-    private static final String INTEGRATION_FLOW_EVENT = INTEGRATION_FLOW_PREFIX + CHANNEL_EVENT;
-    private static final String INTEGRATION_FLOW_RECORD = INTEGRATION_FLOW_PREFIX + CHANNEL_RECORD;
 
     @Bean(CHANNEL_BALANCE)
     MessageChannel channelBalance(BalanceParserProperties properties) {
@@ -68,17 +65,22 @@ public class MessagingConfiguration {
         return channel(properties);
     }
 
-    @Bean(INTEGRATION_FLOW_BALANCE)
+    @Bean(IntegrationContextUtils.ERROR_CHANNEL_BEAN_NAME)
+    MessageChannel errorChannel() {
+        return new NullChannel();
+    }
+
+    @Bean
     IntegrationFlow integrationFlowBalance(AccountBalanceFileParser parser) {
         return integrationFlow(parser);
     }
 
-    @Bean(INTEGRATION_FLOW_EVENT)
+    @Bean
     IntegrationFlow integrationFlowEvent(EventFileParser parser) {
         return integrationFlow(parser);
     }
 
-    @Bean(INTEGRATION_FLOW_RECORD)
+    @Bean
     IntegrationFlow integrationFlowRecord(RecordFileParser parser) {
         return integrationFlow(parser);
     }

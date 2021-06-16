@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -32,7 +31,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,11 +38,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
@@ -53,42 +52,20 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     // Metrics
-    private final Map<Boolean, Timer> parseDurationMetrics;
     private final Map<Integer, Timer> latencyMetrics;
     private final Map<Integer, DistributionSummary> sizeMetrics;
     private final Timer unknownLatencyMetric;
     private final DistributionSummary unknownSizeMetric;
-    private final Timer parseLatencyMetric;
 
-    public RecordFileParser(RecordParserProperties properties, MeterRegistry meterRegistry,
+    public RecordFileParser(MeterRegistry meterRegistry, RecordParserProperties parserProperties,
+                            StreamFileRepository<RecordFile, Long> streamFileRepository,
                             RecordItemListener recordItemListener,
                             RecordStreamFileListener recordStreamFileListener,
                             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        super(properties);
+        super(meterRegistry, parserProperties, streamFileRepository);
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
-
-        // build parse metrics
-        ImmutableMap.Builder<Boolean, Timer> parseDurationMetricsBuilder = ImmutableMap.builder();
-        Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
-                .description("The duration in seconds it took to parse the file and store it in the database")
-                .tag("type", properties.getStreamType().toString());
-
-        parseDurationMetricsBuilder.put(true, parseDurationTimerBuilder
-                .tag("success", "true")
-                .register(meterRegistry));
-
-        parseDurationMetricsBuilder.put(false, parseDurationTimerBuilder
-                .tag("success", "false")
-                .register(meterRegistry));
-        parseDurationMetrics = parseDurationMetricsBuilder.build();
-
-        parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
-                .description("The difference in ms between the consensus time of the last transaction in the file " +
-                        "and the time at which the file was processed successfully")
-                .tag("type", properties.getStreamType().toString())
-                .register(meterRegistry);
 
         // build transaction latency metrics
         ImmutableMap.Builder<Integer, Timer> latencyMetricsBuilder = ImmutableMap.builder();
@@ -122,6 +99,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
      * @param recordFile containing information about file to be processed
      */
     @Override
+    @Leader
     @Retryable(backoff = @Backoff(
             delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
@@ -134,11 +112,9 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     @Override
     protected void doParse(RecordFile recordFile) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
-                .getDateRangeFilter(properties.getStreamType());
+                .getDateRangeFilter(parserProperties.getStreamType());
         AtomicInteger counter = new AtomicInteger(0);
-        boolean success = false;
 
         try {
             recordStreamFileListener.onStart();
@@ -148,21 +124,11 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                 }
             });
 
-            Instant loadEnd = Instant.now();
-            recordFile.setLoadEnd(loadEnd.getEpochSecond());
+            recordFile.setLoadEnd(Instant.now().getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
-
-            Instant consensusEnd = Instant.ofEpochSecond(0L, recordFile.getConsensusEnd());
-            parseLatencyMetric.record(Duration.between(consensusEnd, loadEnd));
-            success = true;
         } catch (Exception ex) {
-            log.error("Error parsing file {}", recordFile.getName(), ex);
             recordStreamFileListener.onError();
             throw ex;
-        } finally {
-            log.info("Finished parsing {} transactions from record file {} in {}. Success: {}",
-                    counter, recordFile.getName(), stopwatch, success);
-            parseDurationMetrics.get(success).record(stopwatch.elapsed());
         }
     }
 

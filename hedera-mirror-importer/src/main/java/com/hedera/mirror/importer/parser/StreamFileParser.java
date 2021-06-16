@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser;
 import com.hedera.mirror.importer.domain.StreamFile;
 
 public interface StreamFileParser<T extends StreamFile> {
-    String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
     void parse(T streamFile);
 

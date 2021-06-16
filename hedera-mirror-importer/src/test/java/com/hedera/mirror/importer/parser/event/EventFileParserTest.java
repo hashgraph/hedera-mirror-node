@@ -26,8 +26,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
-import org.mockito.Mock;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -38,19 +38,15 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.parser.domain.EventItem;
-import com.hedera.mirror.importer.repository.EventFileRepository;
 
 class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> {
-
-    @Mock
-    private EventFileRepository eventFileRepository;
 
     private long count = 0;
 
     @Override
     protected EventFileParser getParser() {
         EventParserProperties parserProperties = new EventParserProperties();
-        return new EventFileParser(eventFileRepository, parserProperties);
+        return new EventFileParser(new SimpleMeterRegistry(), parserProperties, streamFileRepository);
     }
 
     @Override
@@ -58,10 +54,10 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
         EventFile eventFile = (EventFile) streamFile;
 
         if (parsed) {
-            verify(eventFileRepository).save(eventFile);
+            verify(streamFileRepository).save(eventFile);
         } else {
             if (!dbError) {
-                verify(eventFileRepository, never()).save(any());
+                verify(streamFileRepository, never()).save(any());
             }
         }
     }
@@ -92,6 +88,6 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
 
     @Override
     protected void mockDbFailure() {
-        doThrow(ParserException.class).when(eventFileRepository).save(any());
+        doThrow(ParserException.class).when(streamFileRepository).save(any());
     }
 }
