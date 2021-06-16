@@ -16,11 +16,16 @@
   "editable": true,
   "gnetId": 3091,
   "graphTooltip": 0,
-  "iteration": 1617727957140,
+  "id": 33,
+  "iteration": 1623862505935,
   "links": [],
   "panels": [
     {
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -34,19 +39,12 @@
     {
       "cacheTimeout": null,
       "datasource": "Prometheus",
-      "description": "The rate of incoming requests",
+      "description": "The number of pods that are up and ready for processing",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
-          "mappings": [
-            {
-              "id": 0,
-              "op": "=",
-              "text": "N/A",
-              "type": 1,
-              "value": "null"
-            }
-          ],
+          "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -70,6 +68,81 @@
         "x": 0,
         "y": 1
       },
+      "id": 6,
+      "interval": null,
+      "links": [],
+      "maxDataPoints": 100,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.0.1",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(kube_pod_status_ready{namespace=~\"$namespace\",pod=~\"$pod\",pod=~\".*-rest-.*\",condition=\"true\"})",
+          "format": "time_series",
+          "interval": "1m",
+          "intervalFactor": 2,
+          "legendFormat": "",
+          "refId": "A",
+          "step": 20
+        }
+      ],
+      "title": "Ready Pods",
+      "type": "stat"
+    },
+    {
+      "cacheTimeout": null,
+      "datasource": "Prometheus",
+      "description": "The rate of incoming requests",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
       "id": 1,
       "interval": null,
       "links": [],
@@ -89,7 +162,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "targets": [
         {
           "expr": "sum(rate(api_all_request_total{container=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))  ",
@@ -110,14 +183,15 @@
       "description": "The total number of all API requests currently in processing (no response yet)",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [
             {
-              "id": 0,
-              "op": "=",
-              "text": "N/A",
-              "type": 1,
-              "value": "null"
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
             }
           ],
           "thresholds": {
@@ -140,7 +214,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 3,
+        "x": 6,
         "y": 1
       },
       "id": 4,
@@ -162,7 +236,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "targets": [
         {
           "expr": "sum(api_all_request_in_processing_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
@@ -183,14 +257,16 @@
       "description": "The average response size",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [
             {
-              "id": 0,
-              "op": "=",
-              "text": "0B",
-              "type": 1,
-              "value": "null"
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "green",
+                  "text": "0B"
+                }
+              },
+              "type": "special"
             }
           ],
           "noValue": "0B",
@@ -210,7 +286,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 6,
+        "x": 9,
         "y": 1
       },
       "id": 21,
@@ -232,7 +308,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "targets": [
         {
           "expr": "sum(rate(api_response_size_bytes_sum{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval])) / \nsum(rate(api_response_size_bytes_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval]))",
@@ -253,14 +329,16 @@
       "description": "The total number of all API requests with server error response",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [
             {
-              "id": 0,
-              "op": "=",
-              "text": "0%",
-              "type": 1,
-              "value": "null"
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "green",
+                  "text": "0%"
+                }
+              },
+              "type": "special"
             }
           ],
           "max": 100,
@@ -289,7 +367,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 9,
+        "x": 12,
         "y": 1
       },
       "id": 3,
@@ -311,7 +389,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "targets": [
         {
           "expr": "sum(rate(api_all_errors_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / \nsum(rate(api_all_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
@@ -331,14 +409,16 @@
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [
             {
-              "id": 0,
-              "op": "=",
-              "text": "0",
-              "type": 1,
-              "value": "null"
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "green",
+                  "text": "0"
+                }
+              },
+              "type": "special"
             }
           ],
           "thresholds": {
@@ -361,7 +441,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 12,
+        "x": 15,
         "y": 1
       },
       "id": 2,
@@ -383,7 +463,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "targets": [
         {
           "expr": "(sum(rate(api_request_duration_milliseconds_bucket{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",le=\"100\",code=~\"^2..$\"}[$__rate_interval])) +\nsum(rate(api_request_duration_milliseconds_bucket{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",le=\"250\",code=~\"^2..$\"}[$__rate_interval])))\n/ 2 / sum(rate(api_request_duration_milliseconds_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
@@ -401,164 +481,12 @@
       "type": "stat"
     },
     {
-      "cacheTimeout": null,
-      "datasource": "Prometheus",
-      "description": "Node.js process CPU usage percentage",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "mappings": [
-            {
-              "id": 0,
-              "op": "=",
-              "text": "0%",
-              "type": 1,
-              "value": "null"
-            }
-          ],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "percentage",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "rgba(237, 129, 40, 0.89)",
-                "value": 50
-              },
-              {
-                "color": "rgba(245, 54, 54, 0.9)",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 15,
-        "y": 1
-      },
-      "id": 6,
-      "interval": null,
-      "links": [],
-      "maxDataPoints": 100,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.4.5",
-      "targets": [
-        {
-          "expr": "avg(nodejs_process_cpu_usage_percentage{container=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"})",
-          "format": "time_series",
-          "interval": "1m",
-          "intervalFactor": 2,
-          "legendFormat": "",
-          "refId": "A",
-          "step": 20
-        }
-      ],
-      "title": "CPU",
-      "type": "stat"
-    },
-    {
-      "cacheTimeout": null,
-      "datasource": "Prometheus",
-      "description": "Average Node.js process used heap memory ",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "mappings": [
-            {
-              "id": 0,
-              "op": "=",
-              "text": "N/A",
-              "type": 1,
-              "value": "null"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 157286400
-              },
-              {
-                "color": "red",
-                "value": 209715200
-              }
-            ]
-          },
-          "unit": "decbytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 18,
-        "y": 1
-      },
-      "id": 5,
-      "interval": null,
-      "links": [],
-      "maxDataPoints": 100,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.4.5",
-      "targets": [
-        {
-          "expr": "avg(nodejs_process_memory_heap_used_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "format": "time_series",
-          "interval": "1m",
-          "intervalFactor": 2,
-          "legendFormat": "",
-          "refId": "A",
-          "step": 20
-        }
-      ],
-      "title": "Heap Used",
-      "type": "stat"
-    },
-    {
       "collapsed": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -577,12 +505,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "The rate of all API requests received",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -614,7 +536,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -681,12 +603,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "The total number of all API requests with error response",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -720,7 +636,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -818,12 +734,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "How long a request took to process and return a response",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -853,7 +763,7 @@
         "alertThreshold": true
       },
       "percentage": true,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -927,7 +837,6 @@
       "description": "API request duration distributed into buckets",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "decimals": 0,
           "mappings": [],
           "min": 0,
@@ -967,7 +876,7 @@
         "showUnfilled": true,
         "text": {}
       },
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "targets": [
         {
           "expr": "sum(increase(api_request_duration_milliseconds_bucket{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..$\"}[$__rate_interval])) by (le)",
@@ -993,12 +902,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "API request size in bytes",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1032,7 +935,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1100,12 +1003,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "The total number of all API requests with error response",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1139,7 +1036,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1207,12 +1104,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "API response size in bytes by path",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1246,7 +1137,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1312,7 +1203,6 @@
       "description": "API response size distributed into buckets",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [],
           "min": 0,
           "thresholds": {
@@ -1351,7 +1241,7 @@
         "showUnfilled": true,
         "text": {}
       },
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "repeat": null,
       "targets": [
         {
@@ -1374,6 +1264,10 @@
     {
       "collapsed": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1392,12 +1286,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "The average Node.js process memory",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1431,7 +1319,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1529,12 +1417,6 @@
       "dashes": false,
       "datasource": "Prometheus",
       "description": "The average Node.js process CPU utilization",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1568,7 +1450,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1632,6 +1514,10 @@
     {
       "collapsed": false,
       "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1652,12 +1538,6 @@
       "description": "",
       "fieldConfig": {
         "defaults": {
-          "color": {},
-          "custom": {},
-          "thresholds": {
-            "mode": "absolute",
-            "steps": []
-          },
           "unit": "short"
         },
         "overrides": []
@@ -1688,7 +1568,7 @@
         "alertThreshold": false
       },
       "percentage": false,
-      "pluginVersion": "7.4.5",
+      "pluginVersion": "8.0.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1751,12 +1631,6 @@
     {
       "datasource": "Loki",
       "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -1765,6 +1639,8 @@
       },
       "id": 27,
       "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
         "showLabels": false,
         "showTime": false,
         "sortOrder": "Descending",
@@ -1785,7 +1661,7 @@
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 27,
+  "schemaVersion": 30,
   "style": "dark",
   "tags": [
     "api",
@@ -1809,7 +1685,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "All",
           "value": "$__all"
         },
@@ -1832,7 +1708,6 @@
         "skipUrlSync": false,
         "sort": 1,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -1840,7 +1715,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "All",
           "value": "$__all"
         },
@@ -1863,7 +1738,6 @@
         "skipUrlSync": false,
         "sort": 1,
         "tagValuesQuery": "",
-        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -1901,6 +1775,6 @@
   },
   "timezone": "",
   "title": "Hedera / Mirror / REST API",
-  "uid": "IcqsUmcGz4",
-  "version": 2
+  "uid": "0vnSftR7z",
+  "version": 1
 }

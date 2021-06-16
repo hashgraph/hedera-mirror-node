@@ -81,7 +81,8 @@ const getV1OpenApiObject = () => {
 const serveSwaggerDocs = (app) => {
   const options = {
     explorer: true,
-    customCss: '.topbar-wrapper img { content:url(https://s3.amazonaws.com/hedera-com/hedera_hashgraph.png); }',
+    customCss:
+      '.topbar-wrapper img { content:url(https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067); }',
   };
   app.use(`/api/v1/${config.openapi.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getV1OpenApiObject(), options));
 };
