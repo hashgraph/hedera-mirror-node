@@ -134,6 +134,7 @@ jobs:
           commit: ${{ env.RELEASE_BRANCH }}
           draft: true
           name: ${{ env.RELEASE_TAG }}
+          omitBody: ${{ steps.milestone.outputs.number == '' }}
           prerelease: ${{ steps.version_parser.outputs.pre-release != '' }}
           tag: ${{ env.RELEASE_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
