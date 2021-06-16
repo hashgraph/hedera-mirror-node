@@ -92,10 +92,7 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.repository.ScheduleRepository;
-import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -118,7 +115,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     AddressBookService addressBookService,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
-                                    TransactionHandlerFactory transactionHandlerFactory, TokenRepository tokenRepository,
+                                    TransactionHandlerFactory transactionHandlerFactory,
+                                    TokenRepository tokenRepository,
                                     NftRepository nftRepository) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
@@ -678,10 +676,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                     nftTransferDomain.setSenderAccountId(senderId);
 
                     entityListener.onNftTransfer(nftTransferDomain);
-                    if (receiverId != EntityId.EMPTY) {
-                        nftRepository
-                                .transferNftOwnership(new NftId(serialNumber, tokenId), receiverId,
-                                        consensusTimeStamp);
+                    if (EntityId.isEmpty(receiverId)) {
+                        nftRepository.transferNftOwnership(new NftId(serialNumber, tokenId), receiverId,
+                                consensusTimeStamp);
                     }
                 });
             });
