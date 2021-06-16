@@ -90,7 +90,7 @@ create table if not exists entity
     auto_renew_account_id bigint,
     auto_renew_period     bigint,
     created_timestamp     bigint,
-    deleted               boolean default false not null,
+    deleted               boolean,
     expiration_timestamp  bigint,
     id                    bigint                not null,
     key                   bytea,

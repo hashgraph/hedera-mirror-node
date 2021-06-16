@@ -21,6 +21,9 @@
 package account
 
 import (
+	"testing"
+
+	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -28,12 +31,8 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/suite"
 )
-
-func getSubject() *AccountAPIService {
-	return NewAccountAPIService(baseService(), repository.MAccountRepository)
-}
 
 func block() *types.Block {
 	return &types.Block{
@@ -46,10 +45,8 @@ func block() *types.Block {
 	}
 }
 
-func amount() *types.Amount {
-	return &types.Amount{
-		Value: int64(1000),
-	}
+func amount() []types.Amount {
+	return []types.Amount{&types.HbarAmount{Value: int64(1000)}}
 }
 
 func request(withBlockIdentifier bool) *rTypes.AccountBalanceRequest {
@@ -68,10 +65,6 @@ func request(withBlockIdentifier bool) *rTypes.AccountBalanceRequest {
 	}
 }
 
-func baseService() base.BaseService {
-	return base.NewBaseService(repository.MBlockRepository, repository.MTransactionRepository)
-}
-
 func expectedAccountBalanceResponse() *rTypes.AccountBalanceResponse {
 	return &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
@@ -87,97 +80,102 @@ func expectedAccountBalanceResponse() *rTypes.AccountBalanceResponse {
 	}
 }
 
-func TestNewAccountAPIService(t *testing.T) {
-	repository.Setup()
-	assert.IsType(t, &AccountAPIService{}, getSubject())
-	assert.Equal(t, baseService(), getSubject().BaseService, "BaseService was not populated correctly")
-	assert.Equal(
-		t,
-		repository.MAccountRepository,
-		getSubject().accountRepo,
-		"AccountsRepository was not populated correctly",
-	)
+func TestAccountServiceSuite(t *testing.T) {
+	suite.Run(t, new(accountServiceSuite))
 }
 
-func TestAccountBalance(t *testing.T) {
+type accountServiceSuite struct {
+	suite.Suite
+	accountService      server.AccountAPIServicer
+	mockAccountRepo     *repository.MockAccountRepository
+	mockBlockRepo       *repository.MockBlockRepository
+	mockTransactionRepo *repository.MockTransactionRepository
+}
+
+func (suite *accountServiceSuite) SetupTest() {
+	suite.mockAccountRepo = &repository.MockAccountRepository{}
+	suite.mockBlockRepo = &repository.MockBlockRepository{}
+	suite.mockTransactionRepo = &repository.MockTransactionRepository{}
+
+	baseService := base.NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	suite.accountService = NewAccountAPIService(baseService, suite.mockAccountRepo)
+}
+
+func (suite *accountServiceSuite) TestAccountBalance() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveLatest").Return(block(), repository.NilError)
-	repository.MAccountRepository.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
+
+	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
 
 	// when:
-	actualResult, e := getSubject().AccountBalance(nil, request(false))
+	actualResult, e := suite.accountService.AccountBalance(nil, request(false))
 
 	// then:
-	assert.Equal(t, expectedAccountBalanceResponse(), actualResult)
-	assert.Nil(t, e)
-	repository.MBlockRepository.AssertNotCalled(t, "FindByIdentifier")
-	repository.MBlockRepository.AssertNotCalled(t, "FindByHash")
+	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actualResult)
+	assert.Nil(suite.T(), e)
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByIdentifier")
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByHash")
 }
 
-func TestAccountBalanceWithBlockIdentifier(t *testing.T) {
+func (suite *accountServiceSuite) TestAccountBalanceWithBlockIdentifier() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIdentifier").Return(block(), repository.NilError)
-	repository.MAccountRepository.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
 
 	// when:
-	actualResult, e := getSubject().AccountBalance(nil, request(true))
+	actualResult, e := suite.accountService.AccountBalance(nil, request(true))
 
 	// then:
-	assert.Equal(t, expectedAccountBalanceResponse(), actualResult)
-	assert.Nil(t, e)
-	repository.MBlockRepository.AssertNotCalled(t, "RetrieveLatest")
+	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actualResult)
+	assert.Nil(suite.T(), e)
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveLatest")
 }
 
-func TestAccountBalanceThrowsWhenRetrieveLatestFails(t *testing.T) {
+func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveLatestFails() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveLatest").Return(repository.NilBlock, &rTypes.Error{})
+	suite.mockBlockRepo.On("RetrieveLatest").Return(repository.NilBlock, &rTypes.Error{})
 
 	// when:
-	actualResult, e := getSubject().AccountBalance(nil, request(false))
+	actualResult, e := suite.accountService.AccountBalance(nil, request(false))
 
 	// then:
-	assert.Nil(t, actualResult)
-	assert.NotNil(t, e)
-	repository.MAccountRepository.AssertNotCalled(t, "RetrieveBalanceAtBlock")
+	assert.Nil(suite.T(), actualResult)
+	assert.NotNil(suite.T(), e)
+	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveBalanceAtBlock")
 }
 
-func TestAccountBalanceThrowsWhenRetrieveBlockFails(t *testing.T) {
+func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBlockFails() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIdentifier").Return(repository.NilBlock, &rTypes.Error{})
+	suite.mockBlockRepo.On("FindByIdentifier").Return(repository.NilBlock, &rTypes.Error{})
 
 	// when:
-	actualResult, e := getSubject().AccountBalance(nil, request(true))
+	actualResult, e := suite.accountService.AccountBalance(nil, request(true))
 
 	// then:
-	assert.Nil(t, actualResult)
-	assert.NotNil(t, e)
-	repository.MAccountRepository.AssertNotCalled(t, "RetrieveBalanceAtBlock")
-	repository.MBlockRepository.AssertNotCalled(t, "RetrieveLatest")
+	assert.Nil(suite.T(), actualResult)
+	assert.NotNil(suite.T(), e)
+	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveBalanceAtBlock")
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveLatest")
 }
 
-func TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails(t *testing.T) {
+func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIdentifier").Return(block(), repository.NilError)
-	repository.MAccountRepository.On("RetrieveBalanceAtBlock").Return(repository.NilAmount, &rTypes.Error{})
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return([]types.Amount{}, &rTypes.Error{})
 
 	// when:
-	actualResult, e := getSubject().AccountBalance(nil, request(true))
+	actualResult, e := suite.accountService.AccountBalance(nil, request(true))
 
 	// then:
-	assert.Nil(t, actualResult)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), actualResult)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestAccountCoins(t *testing.T) {
+func (suite *accountServiceSuite) TestAccountCoins() {
 	// when:
-	result, err := getSubject().AccountCoins(nil, &rTypes.AccountCoinsRequest{})
+	result, err := suite.accountService.AccountCoins(nil, &rTypes.AccountCoinsRequest{})
 
 	// then:
-	assert.Nil(t, result)
-	assert.Equal(t, errors.ErrNotImplemented, err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), errors.ErrNotImplemented, err)
 }

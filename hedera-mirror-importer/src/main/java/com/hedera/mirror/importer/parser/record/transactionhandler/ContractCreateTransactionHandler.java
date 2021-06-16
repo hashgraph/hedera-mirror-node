@@ -64,6 +64,9 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
             entity.setKey(txMessage.getAdminKey().toByteArray());
         }
 
+        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
+        entity.setDeleted(false);
+
         entity.setMemo(txMessage.getMemo());
     }
 }

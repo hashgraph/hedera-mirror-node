@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -41,19 +42,10 @@ var (
 		Id:                 1,
 		ConsensusTimestamp: 1,
 		Ip:                 LocalIp,
-		Port:               0,
 		Memo:               "0.0.5",
-		PublicKey:          "",
-		NodeId:             0,
-		NodeAccountId:      0,
-		NodeCertHash:       nil,
 	}
-	entityId = &entityid.EntityId{
-		ShardNum:  0,
-		RealmNum:  0,
-		EntityNum: 5,
-	}
-	peerId                   = &types.Account{EntityId: *entityId}
+	entityId, _              = entityid.Decode(5)
+	peerId                   = types.Account{EntityId: entityId}
 	expectedAddressBookEntry = &types.AddressBookEntry{
 		PeerId: peerId,
 		Metadata: map[string]interface{}{
@@ -64,6 +56,7 @@ var (
 	expectedResult = &types.AddressBookEntries{
 		Entries: []*types.AddressBookEntry{expectedAddressBookEntry, expectedAddressBookEntry},
 	}
+	zeroPeerId types.Account
 )
 
 func TestShouldSuccessReturnAddressBookEntryTableName(t *testing.T) {
@@ -78,8 +71,7 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 	result := NewAddressBookEntryRepository(gormDbClient)
 
 	// then
-	assert.IsType(t, &AddressBookEntryRepository{}, result)
-	assert.Equal(t, result.dbClient, gormDbClient)
+	assert.NotNil(t, result)
 }
 
 func TestShouldSuccessReturnAddressBookEntries(t *testing.T) {
@@ -156,7 +148,7 @@ func TestShouldFailReturnPeerId(t *testing.T) {
 	result, err := abe.getPeerId()
 
 	// then
-	assert.Nil(t, result)
+	assert.Equal(t, zeroPeerId, result)
 	assert.NotNil(t, err)
 	assert.Equal(t, errors.ErrInternalServerError, err)
 }
@@ -171,12 +163,12 @@ func TestShouldFailReturnPeerIdNegative(t *testing.T) {
 	result, err := abe.getPeerId()
 
 	// then
-	assert.Nil(t, result)
+	assert.Equal(t, zeroPeerId, result)
 	assert.NotNil(t, err)
 	assert.Equal(t, errors.ErrInternalServerError, err)
 }
 
-func setupRepository(t *testing.T) (*AddressBookEntryRepository, []string, sqlmock.Sqlmock) {
+func setupRepository(t *testing.T) (repositories.AddressBookEntryRepository, []string, sqlmock.Sqlmock) {
 	gormDbClient, mock := mocks.DatabaseMock(t)
 
 	columns := mocks.GetFieldsNamesToSnakeCase(addressBookEntry{})

@@ -25,11 +25,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
+import org.springframework.integration.dsl.Pollers;
 import org.springframework.messaging.MessageChannel;
 
 import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.importer.parser.ParserProperties;
+import com.hedera.mirror.importer.parser.StreamFileParser;
+import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.parser.event.EventFileParser;
 import com.hedera.mirror.importer.parser.event.EventParserProperties;
+import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @Configuration
@@ -37,29 +44,75 @@ public class MessagingConfiguration {
 
     // Shared channel containing all stream types until they're routed to the individual channels
     public static final String CHANNEL_STREAM = "stream";
-    public static final String CHANNEL_BALANCE = CHANNEL_STREAM + ".balance";
-    public static final String CHANNEL_EVENT = CHANNEL_STREAM + ".event";
-    public static final String CHANNEL_RECORD = CHANNEL_STREAM + ".record";
+
+    private static final String CHANNEL_BALANCE = CHANNEL_STREAM + ".balance";
+    private static final String CHANNEL_EVENT = CHANNEL_STREAM + ".event";
+    private static final String CHANNEL_RECORD = CHANNEL_STREAM + ".record";
+    private static final String INTEGRATION_FLOW_PREFIX = "flow.";
+    private static final String INTEGRATION_FLOW_BALANCE = INTEGRATION_FLOW_PREFIX + CHANNEL_BALANCE;
+    private static final String INTEGRATION_FLOW_EVENT = INTEGRATION_FLOW_PREFIX + CHANNEL_EVENT;
+    private static final String INTEGRATION_FLOW_RECORD = INTEGRATION_FLOW_PREFIX + CHANNEL_RECORD;
 
     @Bean(CHANNEL_BALANCE)
     MessageChannel channelBalance(BalanceParserProperties properties) {
-        return MessageChannels.queue(properties.getQueueCapacity()).get();
+        return channel(properties);
     }
 
     @Bean(CHANNEL_EVENT)
     MessageChannel channelEvent(EventParserProperties properties) {
-        return MessageChannels.queue(properties.getQueueCapacity()).get();
+        return channel(properties);
     }
 
     @Bean(CHANNEL_RECORD)
     MessageChannel channelRecord(RecordParserProperties properties) {
-        return MessageChannels.queue(properties.getQueueCapacity()).get();
+        return channel(properties);
+    }
+
+    @Bean(INTEGRATION_FLOW_BALANCE)
+    IntegrationFlow integrationFlowBalance(AccountBalanceFileParser parser) {
+        return integrationFlow(parser);
+    }
+
+    @Bean(INTEGRATION_FLOW_EVENT)
+    IntegrationFlow integrationFlowEvent(EventFileParser parser) {
+        return integrationFlow(parser);
+    }
+
+    @Bean(INTEGRATION_FLOW_RECORD)
+    IntegrationFlow integrationFlowRecord(RecordFileParser parser) {
+        return integrationFlow(parser);
     }
 
     @Bean
     IntegrationFlow streamFileRouter() {
         return IntegrationFlows.from(CHANNEL_STREAM)
-                .route(StreamFile.class, s -> s.getType().toString().toLowerCase(), s -> s.prefix(CHANNEL_STREAM + "."))
+                .route(StreamFile.class, s -> channelName(s.getType()))
                 .get();
+    }
+
+    private MessageChannel channel(ParserProperties properties) {
+        if (properties.getQueueCapacity() <= 0) {
+            return MessageChannels.direct().get();
+        }
+
+        return MessageChannels.queue(properties.getQueueCapacity()).get();
+    }
+
+    private IntegrationFlow integrationFlow(StreamFileParser parser) {
+        ParserProperties properties = parser.getProperties();
+        return IntegrationFlows.from(channelName(properties.getStreamType()))
+                .handle(StreamFile.class, (s, h) -> {
+                    parser.parse(s);
+                    return null;
+                }, e -> {
+                    if (properties.getQueueCapacity() > 0) {
+                        e.poller(Pollers.fixedDelay(properties.getFrequency()));
+                    }
+                })
+                .get();
+    }
+
+    private String channelName(StreamType streamType) {
+        return CHANNEL_STREAM + "." + streamType.toString().toLowerCase();
     }
 }

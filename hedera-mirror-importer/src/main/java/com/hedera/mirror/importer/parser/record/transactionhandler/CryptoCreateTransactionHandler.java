@@ -60,6 +60,9 @@ public class CryptoCreateTransactionHandler implements TransactionHandler {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
 
+        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
+        entity.setDeleted(false);
+
         if (txMessage.hasKey()) {
             entity.setKey(txMessage.getKey().toByteArray());
         }

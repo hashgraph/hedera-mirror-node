@@ -43,9 +43,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -120,6 +122,9 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
 
+    @Resource
+    private TransactionTemplate transactionTemplate;
+
     private long nextIndex = 0L;
 
     private static SignatureMap getDefaultSigMap() {
@@ -176,33 +181,37 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
-        Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-        String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-        long consensusStart = recordItem.getConsensusTimestamp();
-        RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
+        transactionTemplate.executeWithoutResult(status -> {
+            Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
+            long consensusStart = recordItem.getConsensusTimestamp();
+            RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
 
-        recordStreamFileListener.onStart();
-        entityRecordItemListener.onItem(recordItem);
-        // commit, close connection
-        recordStreamFileListener.onEnd(recordFile);
+            recordStreamFileListener.onStart();
+            entityRecordItemListener.onItem(recordItem);
+            // commit, close connection
+            recordStreamFileListener.onEnd(recordFile);
+        });
     }
 
-    protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
-        Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
-        String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-        long consensusStart = recordItems[0].getConsensusTimestamp();
-        long consensusEnd = recordItems[recordItems.length - 1].getConsensusTimestamp();
-        RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);
+    protected void parseRecordItemsAndCommit(List<RecordItem> recordItems) {
+        transactionTemplate.executeWithoutResult(status -> {
+            Instant instant = Instant.ofEpochSecond(0, recordItems.get(0).getConsensusTimestamp());
+            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
+            long consensusStart = recordItems.get(0).getConsensusTimestamp();
+            long consensusEnd = recordItems.get(recordItems.size() - 1).getConsensusTimestamp();
+            RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);
 
-        recordStreamFileListener.onStart();
+            recordStreamFileListener.onStart();
 
-        // process each record item
-        for (RecordItem recordItem : recordItems) {
-            entityRecordItemListener.onItem(recordItem);
-        }
+            // process each record item
+            for (RecordItem recordItem : recordItems) {
+                entityRecordItemListener.onItem(recordItem);
+            }
 
-        // commit, close connection
-        recordStreamFileListener.onEnd(recordFile);
+            // commit, close connection
+            recordStreamFileListener.onEnd(recordFile);
+        });
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {
@@ -344,9 +353,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected Entity createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-                                  boolean deleted, Long expiryTimeNs, String memo, Key submitKey) {
+                                  Boolean deleted, Long expiryTimeNs, String memo, Key submitKey,
+                                  Long createdTimestamp, Long modifiedTimestamp) {
         if (autoRenewAccountId != null) {
-            entityRepository.save(autoRenewAccountId.toEntity());
+            entityRepository.save(getEntityWithDefaultMemo(autoRenewAccountId));
         }
 
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
@@ -355,9 +365,11 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
         Entity entity = entityId.toEntity();
         entity.setAutoRenewAccountId(autoRenewAccountId);
         entity.setAutoRenewPeriod(autoRenewPeriod);
+        entity.setCreatedTimestamp(createdTimestamp);
         entity.setDeleted(deleted);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
+        entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
 
@@ -396,6 +408,12 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void assertEntity(Entity expected) {
         Entity actual = getEntity(expected.getId());
         assertThat(actual).isEqualTo(expected);
+    }
+
+    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
+        Entity entity = entityId.toEntity();
+        entity.setMemo("");
+        return entity;
     }
 
     private RecordFile recordFile(long consensusStart, long consensusEnd, String filename) {

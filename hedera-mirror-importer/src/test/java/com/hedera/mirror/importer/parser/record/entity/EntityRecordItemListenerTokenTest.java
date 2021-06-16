@@ -49,8 +49,11 @@ import java.util.Optional;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Nft;
@@ -58,6 +61,7 @@ import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.NftRepository;
@@ -101,6 +105,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     @Resource
     protected NftTransferRepository nftTransferRepository;
 
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
+    @Resource
+    private CacheManager cacheManager;
+
     @BeforeEach
     void before() {
         entityProperties.getPersist().setTokens(true);
@@ -111,7 +119,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
 
         Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
-                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
@@ -186,9 +194,11 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         // delete token
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
         insertAndParseTransaction(deleteTransaction, 10L, INITIAL_SUPPLY, null);
+        long deleteTimeStamp = 10L;
+        insertAndParseTransaction(deleteTransaction, deleteTimeStamp, INITIAL_SUPPLY, null);
 
         Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
-                true, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
+                true, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, deleteTimeStamp);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
@@ -211,7 +221,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         insertAndParseTransaction(transaction, updateTimeStamp, INITIAL_SUPPLY, null);
 
         Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
-                TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null);
+                TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null, CREATE_TIMESTAMP,
+                updateTimeStamp);
         assertEquals(5, entityRepository.count()); // Node, payer, token, old autorenew, and new autorenew
         assertEntity(expected);
 
@@ -693,10 +704,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 null, wipeTokenTransfer);
 
         // process all record items in a single file
-        parseRecordItemsAndCommit(
+        parseRecordItemsAndCommit(List.of(
                 new RecordItem(createTransaction, createTransactionRecord),
                 new RecordItem(associateTransaction, associateRecord),
-                new RecordItem(wipeTransaction, wipeRecord));
+                new RecordItem(wipeTransaction, wipeRecord)));
 
         // Verify token, tokenAccount and tokenTransfer
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, newTotalSupply);
@@ -900,7 +911,10 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
                                          long modifiedTimestamp, String symbol, long totalSupply) {
-        Optional<Token> tokenOptional = tokenRepository.findById(new Token.Id(EntityId.of(tokenID)));
+        // clear cache for PgCopy scenarios which don't utilize it
+        cacheManager.getCache("tokens").clear();
+
+        Optional<Token> tokenOptional = tokenRepository.findById(new TokenId(EntityId.of(tokenID)));
         if (present) {
             assertThat(tokenOptional.get())
                     .returns(createdTimestamp, from(Token::getCreatedTimestamp))
@@ -930,13 +944,16 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, boolean present,
                                                 long createdTimestamp, long modifiedTimestamp, boolean associated,
                                                 TokenFreezeStatusEnum frozenStatus, TokenKycStatusEnum kycStatus) {
+        // clear cache for PgCopy scenarios which don't utilize it
+        cacheManager.getCache("tokenaccounts").clear();
+
         Optional<TokenAccount> tokenAccountOptional = tokenAccountRepository
                 .findByTokenIdAndAccountId(EntityId.of(tokenID).getId(), EntityId.of(accountId).getId());
         if (present) {
             assertThat(tokenAccountOptional.get())
                     .returns(createdTimestamp, from(TokenAccount::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(TokenAccount::getModifiedTimestamp))
-                    .returns(associated, from(TokenAccount::isAssociated))
+                    .returns(associated, from(TokenAccount::getAssociated))
                     .returns(frozenStatus, from(TokenAccount::getFreezeStatus))
                     .returns(kycStatus, from(TokenAccount::getKycStatus));
         } else {

@@ -43,7 +43,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-public class RecordFile implements StreamFile {
+public class RecordFile implements StreamFile<RecordItem> {
 
     @ToString.Exclude
     private byte[] bytes;

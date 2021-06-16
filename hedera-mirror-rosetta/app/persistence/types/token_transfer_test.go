@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.parser.record;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,16 +18,14 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+package types
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
-// default value same as in RecordParserProperties.enabled
-@ConditionalOnProperty(name = "hedera.mirror.importer.parser.record.enabled", havingValue = "true",
-        matchIfMissing = true)
-public @interface ConditionalOnRecordParser {
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestTokenTransferTableName(t *testing.T) {
+	assert.Equal(t, "token_transfer", TokenTransfer{}.TableName())
 }

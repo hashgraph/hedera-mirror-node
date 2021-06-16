@@ -34,13 +34,14 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenId;
 
 @Transactional
 @CacheConfig(cacheNames = "tokens", cacheManager = EXPIRE_AFTER_30M)
-public interface TokenRepository extends CrudRepository<Token, Token.Id> {
+public interface TokenRepository extends CrudRepository<Token, TokenId> {
     @Cacheable(key = "{#p0.tokenId.id}")
     @Override
-    Optional<Token> findById(Token.Id id);
+    Optional<Token> findById(TokenId id);
 
     @CachePut(key = "{#p0.tokenId.tokenId.id}")
     @Override
@@ -49,6 +50,6 @@ public interface TokenRepository extends CrudRepository<Token, Token.Id> {
     @Modifying
     @CacheEvict(key = "{#p0.tokenId.id}")
     @Query("update Token set totalSupply = :supply, modifiedTimestamp = :timestamp where tokenId = :token")
-    void updateTokenSupply(@Param("token") Token.Id tokenId, @Param("supply") long newTotalSupply,
+    void updateTokenSupply(@Param("token") TokenId tokenId, @Param("supply") long newTotalSupply,
                            @Param("timestamp") long modifiedTimestamp);
 }

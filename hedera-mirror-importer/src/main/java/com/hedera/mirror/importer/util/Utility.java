@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -78,7 +77,11 @@ public class Utility {
      * @return converted HexString
      */
     public static String bytesToHex(byte[] bytes) {
-        return ArrayUtils.isNotEmpty(bytes) ? Hex.encodeHexString(bytes) : null;
+        if (bytes == null) {
+            return null;
+        }
+
+        return ArrayUtils.isNotEmpty(bytes) ? Hex.encodeHexString(bytes) : "";
     }
 
     /**
@@ -90,8 +93,12 @@ public class Utility {
      */
     public static String convertSimpleKeyToHex(@Nullable byte[] protobufKey) {
         try {
-            if (ArrayUtils.isEmpty(protobufKey)) {
+            if (protobufKey == null) {
                 return null;
+            }
+
+            if (ArrayUtils.isEmpty(protobufKey)) {
+                return ""; // Key.getDefaultInstance() case
             }
 
             Key key = Key.parseFrom(protobufKey);
@@ -151,9 +158,8 @@ public class Utility {
     }
 
     /**
-     * Converts instant to time in only nanos, with a fallback if overflow: If positive overflow, return
-     * the max time in the future (Long.MAX_VALUE). If negative overflow, return the max time in the past
-     * (Long.MIN_VALUE).
+     * Converts instant to time in only nanos, with a fallback if overflow: If positive overflow, return the max time in
+     * the future (Long.MAX_VALUE). If negative overflow, return the max time in the past (Long.MIN_VALUE).
      */
     public static long convertToNanosMax(Instant instant) {
         if (instant == null) {
@@ -184,10 +190,8 @@ public class Utility {
         return convertToNanosMax(timestamp.getSeconds(), timestamp.getNanos());
     }
 
-    // Moves a file in the form 2019-08-30T18_10_00.419072Z.rcd to destinationRoot/2019/08/30
     public static void archiveFile(String filename, byte[] contents, Path destinationRoot) {
-        String date = filename.substring(0, 10).replace("-", File.separator);
-        Path destination = destinationRoot.resolve(date).resolve(filename);
+        Path destination = destinationRoot.resolve(filename);
 
         try {
             destination.getParent().toFile().mkdirs();

@@ -38,7 +38,6 @@ public class CacheConfiguration {
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
     public static final String EXPIRE_AFTER_30M = "cacheManagerExpireAfter30m";
-    public static final String NEVER_EXPIRE_LARGE = "cacheManagerNeverExpireLarge";
 
     @Bean(EXPIRE_AFTER_5M)
     @Primary
@@ -52,13 +51,6 @@ public class CacheConfiguration {
     CacheManager cacheManager30m() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=10000,expireAfterWrite=30m");
-        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
-    }
-
-    @Bean(NEVER_EXPIRE_LARGE)
-    CacheManager cacheManagerNeverExpireLarge() {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=2000000"); // 2 million 120MB
         return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 }

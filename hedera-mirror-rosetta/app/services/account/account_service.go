@@ -22,6 +22,7 @@ package account
 
 import (
 	"context"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -61,7 +62,7 @@ func (a *AccountAPIService) AccountBalance(
 		return nil, err
 	}
 
-	balance, err := a.accountRepo.RetrieveBalanceAtBlock(request.AccountIdentifier.Address, block.ConsensusEndNanos)
+	balances, err := a.accountRepo.RetrieveBalanceAtBlock(request.AccountIdentifier.Address, block.ConsensusEndNanos)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +72,17 @@ func (a *AccountAPIService) AccountBalance(
 			Index: block.Index,
 			Hash:  hexUtils.SafeAddHexPrefix(block.Hash),
 		},
-		Balances: []*rTypes.Amount{balance.ToRosetta()},
+		Balances: a.toRosettaBalances(balances),
 	}, nil
+}
+
+func (a *AccountAPIService) toRosettaBalances(balances []types.Amount) []*rTypes.Amount {
+	rosettaBalances := make([]*rTypes.Amount, 0, len(balances))
+	for _, balance := range balances {
+		rosettaBalances = append(rosettaBalances, balance.ToRosetta())
+	}
+
+	return rosettaBalances
 }
 
 func (a *AccountAPIService) AccountCoins(

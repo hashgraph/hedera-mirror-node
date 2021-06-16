@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import java.nio.file.Path;
 import java.time.Duration;
 
 import com.hedera.mirror.importer.domain.StreamType;
@@ -29,7 +28,7 @@ public interface ParserProperties {
 
     int getBufferSize();
 
-    Path getParsedPath();
+    Duration getFrequency();
 
     Duration getProcessingTimeout();
 
@@ -39,7 +38,5 @@ public interface ParserProperties {
 
     boolean isEnabled();
 
-    boolean isKeepFiles();
-
-    boolean isPersistBytes();
+    void setEnabled(boolean enabled);
 }

@@ -31,9 +31,9 @@ type MockAccountRepository struct {
 }
 
 func (m *MockAccountRepository) RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (
-	*types.Amount,
+	[]types.Amount,
 	*rTypes.Error,
 ) {
 	args := m.Called()
-	return args.Get(0).(*types.Amount), args.Get(1).(*rTypes.Error)
+	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
 }

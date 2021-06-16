@@ -26,11 +26,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-import com.hedera.mirror.importer.parser.record.ConditionalOnRecordParser;
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
-@ConditionalOnRecordParser
 @ConditionalOnProperty(name = "spring.cloud.gcp.pubsub.enabled", havingValue = "true")
 public @interface ConditionalOnPubSubRecordParser {
 }

@@ -20,13 +20,16 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Id;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -34,9 +37,6 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @ToString(exclude = {"key", "submitKey"})
 public class Entity {
-    @Id
-    private Long id;
-
     @Convert(converter = AccountIdConverter.class)
     private EntityId autoRenewAccountId;
 
@@ -44,13 +44,17 @@ public class Entity {
 
     private Long createdTimestamp;
 
-    private boolean deleted;
+    private Boolean deleted;
 
     private Long expirationTimestamp;
 
+    @Id
+    private Long id;
+
     private byte[] key;
 
-    private String memo = "";
+    @JsonSerialize(using = NullableStringSerializer.class)
+    private String memo;
 
     private Long modifiedTimestamp;
 
@@ -59,6 +63,7 @@ public class Entity {
     @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
 
+    @JsonSerialize(using = NullableStringSerializer.class)
     private String publicKey;
 
     private Long realm;
@@ -75,7 +80,7 @@ public class Entity {
     }
 
     public void setMemo(String memo) {
-        this.memo = Utility.sanitize(memo);
+        this.memo = StringUtils.isEmpty(memo) ? "" : Utility.sanitize(memo);
     }
 
     public EntityId toEntityId() {

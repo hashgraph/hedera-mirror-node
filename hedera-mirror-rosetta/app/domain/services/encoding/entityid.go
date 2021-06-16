@@ -22,8 +22,10 @@ package entityid
 
 import (
 	"fmt"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
+	"strconv"
 	"strings"
+
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
 )
 
 const (
@@ -47,6 +49,40 @@ type EntityId struct {
 	ShardNum  int64
 	RealmNum  int64
 	EntityNum int64
+	EncodedId int64
+}
+
+func (e *EntityId) IsZero() bool {
+	return e.EncodedId == 0
+}
+
+func (e *EntityId) String() string {
+	return fmt.Sprintf("%d.%d.%d", e.ShardNum, e.RealmNum, e.EntityNum)
+}
+
+func (e *EntityId) UnmarshalJSON(data []byte) error {
+	str := parse.SafeUnquote(string(data))
+
+	var entityId EntityId
+	var err error
+	if strings.Contains(str, ".") {
+		entityId, err = FromString(str)
+	} else {
+		var encodedId int64
+		encodedId, err = strconv.ParseInt(str, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		entityId, err = Decode(encodedId)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	*e = entityId
+	return nil
 }
 
 // Encode - encodes the shard, realm and entity id into a Entity DB Id
@@ -62,47 +98,49 @@ func Encode(shardNum int64, realmNum int64, entityNum int64) (int64, error) {
 }
 
 // Decode - decodes the Entity DB id into Account struct
-func Decode(encodedID int64) (*EntityId, error) {
+func Decode(encodedID int64) (EntityId, error) {
 	if encodedID < 0 {
-		return nil, fmt.Errorf("encodedID cannot be negative: %d", encodedID)
+		return EntityId{}, fmt.Errorf("encodedID cannot be negative: %d", encodedID)
 	}
 
-	return &EntityId{
+	return EntityId{
 		ShardNum:  encodedID >> (realmBits + numberBits),
 		RealmNum:  (encodedID >> numberBits) & realmMask,
 		EntityNum: encodedID & numberMask,
+		EncodedId: encodedID,
 	}, nil
 }
 
-func FromString(entityId string) (*EntityId, error) {
+func FromString(entityId string) (EntityId, error) {
 	inputs := strings.Split(entityId, ".")
 	if len(inputs) != 3 {
-		return nil, errorEntity
+		return EntityId{}, errorEntity
 	}
 
 	shardNum, err := parse.ToInt64(inputs[0])
 	if err != nil {
-		return nil, errorShardId
+		return EntityId{}, errorShardId
 	}
 
 	realmNum, err := parse.ToInt64(inputs[1])
 	if err != nil {
-		return nil, errorRealmId
+		return EntityId{}, errorRealmId
 	}
 
 	entityNum, err := parse.ToInt64(inputs[2])
 	if err != nil {
-		return nil, errorEntityId
+		return EntityId{}, errorEntityId
 	}
 
-	_, err = Encode(shardNum, realmNum, entityNum)
+	encodedId, err := Encode(shardNum, realmNum, entityNum)
 	if err != nil {
-		return nil, err
+		return EntityId{}, err
 	}
 
-	return &EntityId{
+	return EntityId{
 		ShardNum:  shardNum,
 		RealmNum:  realmNum,
 		EntityNum: entityNum,
+		EncodedId: encodedId,
 	}, nil
 }

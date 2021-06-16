@@ -21,29 +21,28 @@
 package types
 
 import (
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
+var zeroAccount Account
+
 func exampleAccount() *Account {
-	return &Account{
-		entityid.EntityId{
-			ShardNum:  0,
-			RealmNum:  0,
-			EntityNum: 0,
-		},
-	}
+	return &Account{entityid.EntityId{}}
 }
 
-func exampleAccountWith(shard, realm, entity int64) *Account {
-	return &Account{
+func exampleAccountWith(shard, realm, entity int64) Account {
+	encoded, _ := entityid.Encode(shard, realm, entity)
+	return Account{
 		entityid.EntityId{
 			ShardNum:  shard,
 			RealmNum:  realm,
 			EntityNum: entity,
+			EncodedId: encoded,
 		},
 	}
 }
@@ -53,16 +52,6 @@ func expectedAccount() *types.AccountIdentifier {
 		Address:    "0.0.0",
 		SubAccount: nil,
 		Metadata:   nil,
-	}
-}
-
-func expectedAccountWith(shard int64, realm int64, number int64) *Account {
-	return &Account{
-		entityid.EntityId{
-			ShardNum:  shard,
-			RealmNum:  realm,
-			EntityNum: number,
-		},
 	}
 }
 
@@ -92,7 +81,7 @@ func TestNewAccountFromEncodedID(t *testing.T) {
 		res, e := NewAccountFromEncodedID(tt.input)
 
 		// then:
-		assert.Equal(t, expectedAccountWith(tt.shard, tt.realm, tt.number), res)
+		assert.Equal(t, exampleAccountWith(tt.shard, tt.realm, tt.number), res)
 		assert.Nil(t, e)
 	}
 }
@@ -105,40 +94,8 @@ func TestNewAccountFromEncodedIDThrows(t *testing.T) {
 	res, err := NewAccountFromEncodedID(testData)
 
 	// then:
-	assert.Nil(t, res)
+	assert.Equal(t, zeroAccount, res)
 	assert.NotNil(t, err)
-}
-
-func TestComputeEncodedID(t *testing.T) {
-	var testData = []struct {
-		shard, realm, number, result int64
-	}{
-		{0, 0, 1, 1},
-		{0, 1, 1, 4294967297},
-		{123, 123, 123, 34621950416388219},
-	}
-
-	for _, tt := range testData {
-		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
-		assert.Equal(t, tt.result, res)
-		assert.Nil(t, e)
-	}
-}
-
-func TestComputeEncodedIDThrows(t *testing.T) {
-	var testData = []struct {
-		shard, realm, number int64
-	}{
-		{-1, 123, 246},
-		{123, -123, 246},
-		{123, 23, -246},
-	}
-
-	for _, tt := range testData {
-		res, e := exampleAccountWith(tt.shard, tt.realm, tt.number).ComputeEncodedID()
-		assert.Zero(t, res)
-		assert.NotNil(t, e)
-	}
 }
 
 func TestAccountString(t *testing.T) {
@@ -154,8 +111,8 @@ func TestAccountString(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		res := exampleAccountWith(tt.shard, tt.realm, tt.number).String()
-		assert.Equal(t, tt.result, res)
+		actual := exampleAccountWith(tt.shard, tt.realm, tt.number)
+		assert.Equal(t, tt.result, actual.String())
 	}
 }
 
@@ -178,7 +135,7 @@ func TestAccountFromString(t *testing.T) {
 		res, e := AccountFromString(tt.input)
 
 		// then:
-		assert.Equal(t, expectedAccountWith(tt.shard, tt.realm, tt.number), res)
+		assert.Equal(t, exampleAccountWith(tt.shard, tt.realm, tt.number), res)
 		assert.Nil(t, e)
 	}
 }
@@ -194,14 +151,14 @@ func TestAccountFromStringThrows(t *testing.T) {
 		{"0.0.c"},
 	}
 
-	var expectedNil *Account = nil
+	var zeroAccount Account
 
 	for _, tt := range testData {
 		// when:
 		res, err := AccountFromString(tt.input)
 
 		// then:
-		assert.Equal(t, expectedNil, res)
+		assert.Equal(t, zeroAccount, res)
 		assert.Equal(t, errors.ErrInvalidAccount, err)
 	}
 }

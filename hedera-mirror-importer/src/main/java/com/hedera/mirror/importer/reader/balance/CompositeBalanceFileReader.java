@@ -20,15 +20,18 @@ package com.hedera.mirror.importer.reader.balance;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 
+@Log4j2
 @Named
 @Primary
 @RequiredArgsConstructor
@@ -45,8 +48,19 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
 
     @Override
     public AccountBalanceFile read(StreamFileData streamFileData, Consumer<AccountBalance> itemConsumer) {
-        BalanceFileReader balanceFileReader = getReader(streamFileData);
-        return balanceFileReader.read(streamFileData, itemConsumer);
+        long count = -1;
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
+        try {
+            BalanceFileReader balanceFileReader = getReader(streamFileData);
+            AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData, itemConsumer);
+            count = accountBalanceFile.getCount();
+            return accountBalanceFile;
+        } finally {
+            boolean success = count != -1;
+            log.info("Loaded {} items {}successfully from account balance file {} in {}", count, success ? "" : "un",
+                    streamFileData.getFilename(), stopwatch);
+        }
     }
 
     private BalanceFileReader getReader(StreamFileData streamFileData) {

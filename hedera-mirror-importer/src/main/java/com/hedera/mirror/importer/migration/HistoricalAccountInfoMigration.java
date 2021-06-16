@@ -146,7 +146,8 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         }
 
         // Accounts can't be undeleted
-        if (entity.isDeleted() != accountInfo.getDeleted() && accountInfo.getDeleted()) {
+        if (entity.getDeleted() == null ||
+                (entity.getDeleted() != accountInfo.getDeleted() && accountInfo.getDeleted())) {
             entity.setDeleted(accountInfo.getDeleted());
             updated = true;
         }
@@ -161,7 +162,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
             updated = true;
         }
 
-        if (entity.getMemo().isEmpty() && accountInfo.getMemo() != null) {
+        if (StringUtils.isEmpty(entity.getMemo())) {
             entity.setMemo(accountInfo.getMemo());
             updated = true;
         }

@@ -99,13 +99,7 @@ class TransactionSignatureTest {
     private NftRepository nftExtractionStrategy;
 
     @Mock
-    private TokenAccountRepository tokenAccountRepository;
-
-    @Mock
     private TokenRepository tokenRepository;
-
-    @Mock
-    private ScheduleRepository scheduleRepository;
 
     @Mock
     private TransactionHandler transactionHandler;
@@ -126,9 +120,8 @@ class TransactionSignatureTest {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
         EntityProperties entityProperties = new EntityProperties();
         entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
-                addressBookService, entityRepository, nonFeeTransferExtractionStrategy, entityListener,
-                transactionHandlerFactory, tokenRepository, tokenAccountRepository, scheduleRepository,
-                nftExtractionStrategy);
+                addressBookService, nonFeeTransferExtractionStrategy, entityListener,
+                transactionHandlerFactory, tokenRepository, nftExtractionStrategy);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()

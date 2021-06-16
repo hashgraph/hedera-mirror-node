@@ -169,7 +169,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
-                .returns(accountInfo.getDeleted(), from(Entity::isDeleted))
+                .returns(accountInfo.getDeleted(), from(Entity::getDeleted))
                 .returns(publicKey, from(Entity::getPublicKey))
                 .returns(Utility
                         .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
@@ -189,7 +189,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
-                .returns(accountInfo.getDeleted(), from(Entity::isDeleted))
+                .returns(accountInfo.getDeleted(), from(Entity::getDeleted))
                 .returns(publicKey, from(Entity::getPublicKey))
                 .returns(Utility
                         .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
@@ -207,7 +207,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
                 .returns(null, from(Entity::getAutoRenewPeriod))
-                .returns(false, from(Entity::isDeleted))
+                .returns(false, from(Entity::getDeleted))
                 .returns(null, from(Entity::getPublicKey))
                 .returns(null, from(Entity::getExpirationTimestamp))
                 .returns(null, from(Entity::getKey))
@@ -223,7 +223,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
         assertThat(entityRepository.findById(ACCOUNT_ID1))
                 .get()
-                .extracting(Entity::isDeleted)
+                .extracting(Entity::getDeleted)
                 .isEqualTo(true);
     }
 
@@ -269,6 +269,8 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         entity.setShard(0L);
         entity.setType(type.getId());
         entity.setId(num);
+        entity.setDeleted(false);
+        entity.setMemo("");
 
         if (afterReset) {
             Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build();

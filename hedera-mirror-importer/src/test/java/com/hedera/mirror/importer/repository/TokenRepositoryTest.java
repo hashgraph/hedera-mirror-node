@@ -35,6 +35,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
+import com.hedera.mirror.importer.domain.TokenId;
 
 public class TokenRepositoryTest extends AbstractRepositoryTest {
     @Resource
@@ -78,7 +79,7 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         Token token = tokenRepository.save(token(createdTimestamp));
         long newTotalSupply = INITIAL_SUPPLY - 1000;
         long modifiedTimestamp = 5L;
-        Token.Id missingTokenId = new Token.Id(EntityId.of("0.0.555", EntityTypeEnum.TOKEN));
+        TokenId missingTokenId = new TokenId(EntityId.of("0.0.555", EntityTypeEnum.TOKEN));
         tokenRepository.updateTokenSupply(missingTokenId, newTotalSupply, modifiedTimestamp);
         assertThat(tokenRepository.findById(token.getTokenId()).get())
                 .returns(createdTimestamp, from(Token::getModifiedTimestamp))
@@ -99,7 +100,7 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         token.setSupplyKey(hexKey);
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK");
-        token.setTokenId(new Token.Id(FOO_COIN_ID));
+        token.setTokenId(new TokenId(FOO_COIN_ID));
         token.setTotalSupply(INITIAL_SUPPLY);
         token.setTreasuryAccountId(treasuryAccount);
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);

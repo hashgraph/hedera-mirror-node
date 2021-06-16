@@ -26,11 +26,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-import com.hedera.mirror.importer.parser.record.ConditionalOnRecordParser;
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
-@ConditionalOnRecordParser
 @ConditionalOnProperty(name = "hedera.mirror.importer.parser.record.entity.enabled", havingValue = "true",
         matchIfMissing = true)
 public @interface ConditionOnEntityRecordParser {

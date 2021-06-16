@@ -51,7 +51,11 @@ public class EventDownloaderProperties implements DownloaderProperties {
     @NotNull
     private Duration frequency = Duration.ofMillis(5000L);
 
-    private boolean keepSignatures = false;
+    private boolean persistBytes = false;
+
+    private boolean writeFiles = false;
+
+    private boolean writeSignatures = false;
 
     @NotBlank
     private String prefix = "eventsStreams/events_";

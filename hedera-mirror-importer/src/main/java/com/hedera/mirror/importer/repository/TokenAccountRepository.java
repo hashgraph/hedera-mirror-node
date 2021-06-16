@@ -29,8 +29,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenAccountId;
 
-public interface TokenAccountRepository extends CrudRepository<TokenAccount, TokenAccount.Id> {
+public interface TokenAccountRepository extends CrudRepository<TokenAccount, TokenAccountId> {
     @Cacheable(cacheNames = "tokenaccounts", cacheManager = EXPIRE_AFTER_30M, key = "{#p0, #p1}")
     @Query(value = "select * from token_account where token_id = ?1 and account_id = ?2", nativeQuery = true)
     Optional<TokenAccount> findByTokenIdAndAccountId(long encodedTokenId, long encodedAccountId);
