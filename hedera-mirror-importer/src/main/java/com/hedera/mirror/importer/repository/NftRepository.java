@@ -34,10 +34,10 @@ public interface NftRepository extends CrudRepository<Nft, Nft.Id> {
 
     @Modifying
     @Query("update Nft set accountId = :accountId, modifiedTimestamp = :timestamp where id = :id")
-    void updateAccountId(@Param("id") Nft.Id nftId, @Param("accountId") EntityId newAccountId,
-                         @Param("timestamp") long modifiedTimestamp);
+    void transferNftOwnership(@Param("id") Nft.Id nftId, @Param("accountId") EntityId newAccountId,
+                              @Param("timestamp") long modifiedTimestamp);
 
     @Modifying
     @Query("update Nft set deleted = true, modifiedTimestamp = :timestamp where id = :id")
-    void updateDeleted(@Param("id") Nft.Id nftId, @Param("timestamp") long modifiedTimestamp);
+    void burnOrWipeNft(@Param("id") Nft.Id nftId, @Param("timestamp") long modifiedTimestamp);
 }

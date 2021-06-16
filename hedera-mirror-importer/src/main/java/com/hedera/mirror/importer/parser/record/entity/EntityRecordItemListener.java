@@ -524,7 +524,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.updateDeleted(new Nft.Id(serialNumber, tokenId), consensusTimeStamp)
+                    nftRepository.burnOrWipeNft(new Nft.Id(serialNumber, tokenId), consensusTimeStamp)
             );
         }
     }
@@ -716,7 +716,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                             .onNftTransfer(nftTransferDomain);
                     if (receiverId != EntityId.EMPTY) {
                         nftRepository
-                                .updateAccountId(new Nft.Id(serialNumber, tokenId), receiverId, consensusTimeStamp);
+                                .transferNftOwnership(new Nft.Id(serialNumber, tokenId), receiverId,
+                                        consensusTimeStamp);
                     }
                 });
             });
@@ -803,7 +804,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
             tokenWipeAccountTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.updateDeleted(new Nft.Id(serialNumber, tokenId), consensusTimeStamp));
+                    nftRepository.burnOrWipeNft(new Nft.Id(serialNumber, tokenId), consensusTimeStamp));
         }
     }
 
