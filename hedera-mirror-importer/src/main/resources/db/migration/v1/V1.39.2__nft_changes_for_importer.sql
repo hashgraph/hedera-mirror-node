@@ -13,6 +13,7 @@ alter table nft
 
 -- Remove not null constraints on nft created timestamp to allow for partial data flag
 alter table nft alter column created_timestamp drop not null;
+alter table nft alter column account_id drop not null;
 
 -- Remove not null constraints on nft_tranfer account ids for mint/burn/wipe transfers
 alter table nft_transfer alter column receiver_account_id drop not null;

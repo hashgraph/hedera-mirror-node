@@ -144,7 +144,7 @@ create table if not exists live_hash
 -- nft
 create table if not exists nft
 (
-  account_id            bigint                  not null,
+  account_id            bigint,
   created_timestamp     bigint,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,

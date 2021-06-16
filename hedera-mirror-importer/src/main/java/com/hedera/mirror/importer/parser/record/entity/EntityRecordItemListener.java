@@ -199,9 +199,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
             }
 
-            // Record token transfers can be populated for multiple transaction types
-            insertTokenTransfers(recordItem);
-
             if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
                 insertTransactionSignatures(
                         tx.getEntityId(),
@@ -248,6 +245,9 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasScheduleCreate()) {
                 insertScheduleCreate(recordItem);
             }
+
+            // Record token transfers can be populated for multiple transaction types
+            insertTokenTransfers(recordItem);
         }
 
         entityListener.onTransaction(tx);
@@ -607,27 +607,22 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
             EntityId tokenId = EntityId.of(tokenMintTransactionBody.getToken());
 
-            Optional<Token> optionalToken = retrieveToken(tokenId, TransactionTypeEnum.TOKENMINT,
+            updateTokenSupply(
+                    tokenId,
+                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     consensusTimeStamp);
-            if (optionalToken.isPresent()) {
-                Token token = optionalToken.get();
-                token.setTotalSupply(recordItem.getRecord().getReceipt().getNewTotalSupply());
-                token.setModifiedTimestamp(consensusTimeStamp);
-                tokenRepository.save(token);
 
-                List<Long> serialNumbers = recordItem.getRecord().getReceipt().getSerialNumbersList();
-                List<Nft> nfts = new ArrayList<>();
-                for (int i = 0; i < serialNumbers.size(); i++) {
-                    Nft nft = new Nft();
-                    nft.setAccountId(token.getTreasuryAccountId());
-                    nft.setCreatedTimestamp(consensusTimeStamp);
-                    nft.setId(new NftId(serialNumbers.get(i), tokenId));
-                    nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
-                    nft.setModifiedTimestamp(consensusTimeStamp);
-                    nfts.add(nft);
-                }
-                nftRepository.saveAll(nfts);
+            List<Long> serialNumbers = recordItem.getRecord().getReceipt().getSerialNumbersList();
+            List<Nft> nfts = new ArrayList<>();
+            for (int i = 0; i < serialNumbers.size(); i++) {
+                Nft nft = new Nft();
+                nft.setCreatedTimestamp(consensusTimeStamp);
+                nft.setId(new NftId(serialNumbers.get(i), tokenId));
+                nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
+                nft.setModifiedTimestamp(consensusTimeStamp);
+                nfts.add(nft);
             }
+            nftRepository.saveAll(nfts);
         }
     }
 
