@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
@@ -38,19 +37,10 @@ public enum TokenTypeEnum {
     private final int id;
 
     private static final Map<Integer, TokenTypeEnum> ID_MAP = Arrays.stream(values())
-            .collect(Collectors.toUnmodifiableMap(TokenTypeEnum::getIdAsInt, Function
+            .collect(Collectors.toUnmodifiableMap(TokenTypeEnum::getId, Function
                     .identity()));
 
     public static TokenTypeEnum fromId(int id) {
         return ID_MAP.getOrDefault(id, FUNGIBLE_COMMON);
-    }
-
-    @JsonValue
-    public String getId() {
-        return String.valueOf(id);
-    }
-
-    private int getIdAsInt() {
-        return id;
     }
 }

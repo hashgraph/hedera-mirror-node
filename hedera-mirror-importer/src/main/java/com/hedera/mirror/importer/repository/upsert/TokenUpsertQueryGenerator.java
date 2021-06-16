@@ -42,15 +42,16 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX, Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
             Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
     private final Set<String> nonUpdatableColumns = Set.of(Token_.CREATED_TIMESTAMP, Token_.DECIMALS,
-            Token_.FREEZE_DEFAULT, Token_.INITIAL_SUPPLY, Token_.TOKEN_ID);
+            Token_.FREEZE_DEFAULT, Token_.INITIAL_SUPPLY, Token_.MAX_SUPPLY, Token_.SUPPLY_TYPE, Token_.TOKEN_ID,
+            Token_.TYPE);
 
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
     private final Set<SingularAttribute> selectableColumns = Set.of(Token_.createdTimestamp,
             Token_.decimals, Token_.freezeDefault, Token_.freezeKey, Token_.freezeKeyEd25519Hex, Token_.initialSupply,
-            Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.modifiedTimestamp, Token_.name,
-            Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.symbol, Token_.tokenId,
-            Token_.totalSupply, Token_.treasuryAccountId, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
+            Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.maxSupply, Token_.modifiedTimestamp, Token_.name,
+            Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.supplyType, Token_.symbol, Token_.tokenId,
+            Token_.totalSupply, Token_.treasuryAccountId, Token_.type, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
 
     @Override
     public String getFinalTableName() {
