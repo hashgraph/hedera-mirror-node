@@ -100,7 +100,6 @@ public class Token {
     @Type(type = "pgsql_enum")
     private TokenTypeEnum type;
 
-    @ToString.Exclude
     private byte[] wipeKey;
 
     @Column(name = "wipe_key_ed25519_hex")
