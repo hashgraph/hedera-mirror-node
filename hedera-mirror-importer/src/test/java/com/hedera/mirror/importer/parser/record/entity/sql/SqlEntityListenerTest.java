@@ -289,6 +289,26 @@ public class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onNftTransferOwnershipAndDelete() throws Exception {
+        Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 1L);
+        Nft nft2 = getNft("0.0.3", 3L, "0.0.3", 3L);
+
+        sqlEntityListener.onNft(nft1);
+        sqlEntityListener.onNft(nft2);
+
+        nft1.setAccountId(EntityId.of("0.0.10", ACCOUNT));
+        nft1.setDeleted(true);
+        sqlEntityListener.onNft(nft1);
+        sqlEntityListener.onNft(nft2);
+        completeFileAndCommit();
+
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(2, nftRepository.count());
+        assertExistsAndEquals(nftRepository, nft1, nft1.getId());
+        assertExistsAndEquals(nftRepository, nft2, nft2.getId());
+    }
+
+    @Test
     void onNftTransfer() throws Exception {
         NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
         NftTransfer nftTransfer2 = getNftTransfer(2L, "0.0.1", 2L, "0.0.2", "0.0.3");
