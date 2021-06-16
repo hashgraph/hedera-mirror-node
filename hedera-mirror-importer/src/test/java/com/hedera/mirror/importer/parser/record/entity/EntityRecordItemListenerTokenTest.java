@@ -467,7 +467,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 1);
         assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
-        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, false, mintTimestamp, mintTimestamp, METADATA
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
     }
 
