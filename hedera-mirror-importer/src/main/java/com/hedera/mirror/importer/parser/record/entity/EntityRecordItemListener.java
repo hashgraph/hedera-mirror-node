@@ -64,7 +64,9 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
@@ -524,7 +526,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.burnOrWipeNft(new Nft.Id(serialNumber, tokenId), consensusTimeStamp)
+                    nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimeStamp)
             );
         }
     }
@@ -655,7 +657,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     Nft nft = new Nft();
                     nft.setAccountId(token.getTreasuryAccountId());
                     nft.setCreatedTimestamp(consensusTimeStamp);
-                    nft.setId(new Nft.Id(serialNumbers.get(i), EntityId.of(tokenID)));
+                    nft.setId(new NftId(serialNumbers.get(i), EntityId.of(tokenID)));
                     nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
                     nft.setModifiedTimestamp(consensusTimeStamp);
                     nftRepository.save(nft);
@@ -708,7 +710,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     long serialNumber = nftTransfer.getSerialNumber();
                     NftTransfer nftTransferDomain = new NftTransfer();
-                    nftTransferDomain.setId(new NftTransfer.Id(consensusTimeStamp, serialNumber, tokenId));
+                    nftTransferDomain.setId(new NftTransferId(consensusTimeStamp, serialNumber, tokenId));
                     nftTransferDomain.setReceiverAccountId(receiverId);
                     nftTransferDomain.setSenderAccountId(senderId);
 
@@ -716,7 +718,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                             .onNftTransfer(nftTransferDomain);
                     if (receiverId != EntityId.EMPTY) {
                         nftRepository
-                                .transferNftOwnership(new Nft.Id(serialNumber, tokenId), receiverId,
+                                .transferNftOwnership(new NftId(serialNumber, tokenId), receiverId,
                                         consensusTimeStamp);
                     }
                 });
@@ -804,7 +806,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
             tokenWipeAccountTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.burnOrWipeNft(new Nft.Id(serialNumber, tokenId), consensusTimeStamp));
+                    nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimeStamp));
         }
     }
 

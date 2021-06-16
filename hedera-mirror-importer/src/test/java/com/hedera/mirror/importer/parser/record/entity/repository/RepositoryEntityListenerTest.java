@@ -38,7 +38,9 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
@@ -158,7 +160,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         nft.setCreatedTimestamp(1L);
         nft.setMetadata(new byte[1]);
         nft.setModifiedTimestamp(2L);
-        nft.setId(new Nft.Id(3L, EntityId.of("0.0.456", EntityTypeEnum.TOKEN)));
+        nft.setId(new NftId(3L, EntityId.of("0.0.456", EntityTypeEnum.TOKEN)));
         repositoryEntityListener.onNft(nft);
         assertThat(nftRepository.findAll()).contains(nft);
     }
@@ -166,7 +168,7 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     @Test
     void onNftTransfer() {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransfer.Id(1L, 1L, EntityId.of("0.0.123", EntityTypeEnum.TOKEN)));
+        nftTransfer.setId(new NftTransferId(1L, 1L, EntityId.of("0.0.123", EntityTypeEnum.TOKEN)));
         nftTransfer.setReceiverAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
         nftTransfer.setSenderAccountId(EntityId.of("0.0.789", EntityTypeEnum.ACCOUNT));
         repositoryEntityListener.onNftTransfer(nftTransfer);

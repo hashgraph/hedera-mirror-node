@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 
 class NftTransferRepositoryTest extends AbstractRepositoryTest {
 
@@ -37,7 +38,7 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransfer.Id(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
+        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
         nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT));
         nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
         NftTransfer saved = repository.save(nftTransfer);
@@ -47,7 +48,7 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void saveMintTransfer() {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransfer.Id(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
+        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
         nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT));
         NftTransfer saved = repository.save(nftTransfer);
         assertThat(repository.findById(saved.getId()).get()).isEqualTo(saved);
@@ -56,7 +57,7 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void saveBurnTransfer() {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransfer.Id(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
+        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
         nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
         NftTransfer saved = repository.save(nftTransfer);
         assertThat(repository.findById(saved.getId()).get()).isEqualTo(saved);

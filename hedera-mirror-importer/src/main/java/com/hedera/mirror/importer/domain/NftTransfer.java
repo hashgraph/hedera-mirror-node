@@ -23,27 +23,22 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.io.Serializable;
 import javax.persistence.Convert;
-import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
 @Entity
-public class NftTransfer implements Persistable<NftTransfer.Id> {
+public class NftTransfer implements Persistable<NftTransferId> {
 
     @JsonUnwrapped
     @EmbeddedId
-    private Id id;
+    private NftTransferId id;
 
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
@@ -57,22 +52,5 @@ public class NftTransfer implements Persistable<NftTransfer.Id> {
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
-    }
-
-    @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Id implements Serializable {
-
-        private static final long serialVersionUID = -5289483288889859240L;
-
-        private long consensusTimestamp;
-
-        private long serialNumber;
-
-        @Convert(converter = TokenIdConverter.class)
-        @JsonSerialize(using = EntityIdSerializer.class)
-        private EntityId tokenId;
     }
 }

@@ -54,6 +54,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
@@ -913,7 +914,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     private void assertNftInRepository(TokenID tokenID, long serialNumber, boolean present, long createdTimestamp,
                                        long modifiedTimestamp, byte[] metadata, EntityId accountId, boolean deleted) {
-        Optional<Nft> nftOptional = nftRepository.findById(new Nft.Id(serialNumber, EntityId.of(tokenID)));
+        Optional<Nft> nftOptional = nftRepository.findById(new NftId(serialNumber, EntityId.of(tokenID)));
         if (present) {
             assertThat(nftOptional.get())
                     .returns(createdTimestamp, from(Nft::getCreatedTimestamp))
@@ -958,7 +959,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         EntityId sender = senderId != null ? EntityId.of(senderId) : null;
 
         com.hedera.mirror.importer.domain.NftTransfer nftTransfer = nftTransferRepository
-                .findById(new com.hedera.mirror.importer.domain.NftTransfer.Id(consensusTimestamp, serialNumber,
+                .findById(new com.hedera.mirror.importer.domain.NftTransferId(consensusTimestamp, serialNumber,
                         EntityId
                                 .of(tokenID))).get();
         assertThat(nftTransfer)

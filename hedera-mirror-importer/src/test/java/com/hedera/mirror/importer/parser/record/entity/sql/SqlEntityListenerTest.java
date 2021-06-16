@@ -48,7 +48,9 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
@@ -325,9 +327,9 @@ public class SqlEntityListenerTest extends IntegrationTest {
         assertEquals(3, nftTransferRepository.count());
         EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.2", TOKEN);
-        assertExistsAndEquals(nftTransferRepository, nftTransfer1, new NftTransfer.Id(1L, 1L, tokenId1));
-        assertExistsAndEquals(nftTransferRepository, nftTransfer2, new NftTransfer.Id(2L, 2L, tokenId1));
-        assertExistsAndEquals(nftTransferRepository, nftTransfer3, new NftTransfer.Id(3L, 1L, tokenId2));
+        assertExistsAndEquals(nftTransferRepository, nftTransfer1, new NftTransferId(1L, 1L, tokenId1));
+        assertExistsAndEquals(nftTransferRepository, nftTransfer2, new NftTransferId(2L, 2L, tokenId1));
+        assertExistsAndEquals(nftTransferRepository, nftTransfer3, new NftTransferId(3L, 1L, tokenId2));
     }
 
     @Test
@@ -552,7 +554,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(false);
         nft.setMetadata(new byte[0]);
-        nft.setId(new Nft.Id(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         nft.setModifiedTimestamp(createdTimestamp);
 
         return nft;
@@ -561,7 +563,7 @@ public class SqlEntityListenerTest extends IntegrationTest {
     private NftTransfer getNftTransfer(long consensusTimestamp, String tokenId, long serialNumber, String receiverId,
                                        String senderId) {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransfer.Id(consensusTimestamp, serialNumber, EntityId.of(tokenId, TOKEN)));
+        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(tokenId, TOKEN)));
         nftTransfer.setReceiverAccountId(EntityId.of(receiverId, ACCOUNT));
         nftTransfer.setSenderAccountId(EntityId.of(senderId, ACCOUNT));
         return nftTransfer;

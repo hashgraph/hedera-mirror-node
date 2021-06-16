@@ -1,10 +1,8 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
+package com.hedera.mirror.importer.domain;/*
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,33 +18,30 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serializable;
 import javax.persistence.Convert;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
+import javax.persistence.Embeddable;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
-@Entity
-public class Nft {
+@Embeddable
+@AllArgsConstructor
+@NoArgsConstructor
+public class NftTransferId implements Serializable {
 
-    @JsonUnwrapped
-    @EmbeddedId
-    private NftId id;
+    private static final long serialVersionUID = -5289483288889859240L;
 
-    @Convert(converter = AccountIdConverter.class)
+    private long consensusTimestamp;
+
+    private long serialNumber;
+
+    @Convert(converter = TokenIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
-    private EntityId accountId;
-
-    private Long createdTimestamp;
-
-    private boolean deleted;
-
-    private byte[] metadata;
-
-    private long modifiedTimestamp;
+    private EntityId tokenId;
 }

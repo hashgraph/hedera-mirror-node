@@ -28,16 +28,17 @@ import org.springframework.data.repository.query.Param;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
 
 @Transactional
-public interface NftRepository extends CrudRepository<Nft, Nft.Id> {
+public interface NftRepository extends CrudRepository<Nft, NftId> {
 
     @Modifying
     @Query("update Nft set accountId = :accountId, modifiedTimestamp = :timestamp where id = :id")
-    void transferNftOwnership(@Param("id") Nft.Id nftId, @Param("accountId") EntityId newAccountId,
+    void transferNftOwnership(@Param("id") NftId nftId, @Param("accountId") EntityId newAccountId,
                               @Param("timestamp") long modifiedTimestamp);
 
     @Modifying
     @Query("update Nft set deleted = true, modifiedTimestamp = :timestamp where id = :id")
-    void burnOrWipeNft(@Param("id") Nft.Id nftId, @Param("timestamp") long modifiedTimestamp);
+    void burnOrWipeNft(@Param("id") NftId nftId, @Param("timestamp") long modifiedTimestamp);
 }
