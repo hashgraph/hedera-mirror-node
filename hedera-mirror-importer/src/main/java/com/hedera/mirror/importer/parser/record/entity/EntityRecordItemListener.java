@@ -676,7 +676,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     nftTransferDomain.setSenderAccountId(senderId);
 
                     entityListener.onNftTransfer(nftTransferDomain);
-                    if (EntityId.isEmpty(receiverId)) {
+                    if (!EntityId.isEmpty(receiverId)) {
                         nftRepository.transferNftOwnership(new NftId(serialNumber, tokenId), receiverId,
                                 consensusTimeStamp);
                     }

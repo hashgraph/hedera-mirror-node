@@ -193,7 +193,6 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         // delete token
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
-        insertAndParseTransaction(deleteTransaction, 10L, INITIAL_SUPPLY, null);
         long deleteTimeStamp = 10L;
         insertAndParseTransaction(deleteTransaction, deleteTimeStamp, INITIAL_SUPPLY, null);
 
