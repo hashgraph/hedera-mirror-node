@@ -51,6 +51,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @ExtendWith(MockitoExtension.class)
 class RedisEntityListenerTest {
 
+    private static final long TIMEOUT_MILLIS = 2000L;
+
     @Mock
     private RedisOperations<String, StreamMessage> redisOperations;
 
@@ -100,13 +102,13 @@ class RedisEntityListenerTest {
 
         //then
         //Thread is blocked because queue is full, and publisher is blocked on first message.
-        verify(redisOperations, timeout(500).times(1))
+        verify(redisOperations, timeout(TIMEOUT_MILLIS).times(1))
                 .executePipelined(any(SessionCallback.class));
         assertThat(saveCount.get()).isEqualTo(redisProperties.getQueueCapacity() + 1);
 
         latch.countDown();
         //All messages should be queued and published
-        verify(redisOperations, timeout(500).times(redisProperties.getQueueCapacity() + 2))
+        verify(redisOperations, timeout(TIMEOUT_MILLIS).times(redisProperties.getQueueCapacity() + 2))
                 .executePipelined(any(SessionCallback.class));
         assertThat(saveCount.get()).isEqualTo(redisProperties.getQueueCapacity() + 2);
     }
@@ -120,21 +122,21 @@ class RedisEntityListenerTest {
         //submitAndSave two messages, verify publish logic called twice
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
-        verify(redisOperations, timeout(500).times(2))
+        verify(redisOperations, timeout(TIMEOUT_MILLIS).times(2))
                 .executePipelined(any(SessionCallback.class));
 
         //submitAndSave two duplicate messages, verify publish was not attempted
         Mockito.reset(redisOperations);
         submitAndSave(topicMessage1);
         submitAndSave(topicMessage2);
-        verify(redisOperations, timeout(500).times(0))
+        verify(redisOperations, timeout(TIMEOUT_MILLIS).times(0))
                 .executePipelined(any(SessionCallback.class));
 
         //submitAndSave third new unique message, verify publish called once.
         Mockito.reset(redisOperations);
         submitAndSave(topicMessage3);
         entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-        verify(redisOperations, timeout(500).times(1))
+        verify(redisOperations, timeout(TIMEOUT_MILLIS).times(1))
                 .executePipelined(any(SessionCallback.class));
     }
 
