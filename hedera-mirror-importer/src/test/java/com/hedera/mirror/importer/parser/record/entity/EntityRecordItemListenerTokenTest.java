@@ -144,7 +144,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         createTokenEntity(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, false, false);
 
         Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
-                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null);
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
