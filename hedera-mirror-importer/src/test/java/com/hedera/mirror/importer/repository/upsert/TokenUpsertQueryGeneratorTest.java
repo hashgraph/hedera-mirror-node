@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +39,7 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Override
     public String getInsertQuery() {
         return "insert into token (created_timestamp, decimals, freeze_default, freeze_key, freeze_key_ed25519_hex, " +
-                "initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, max_supply, name, supply_key, " +
+                "initial_supply, kyc_key, kyc_key_ed25519_hex, max_supply, modified_timestamp, name, supply_key, " +
                 "supply_key_ed25519_hex, supply_typesymbol, token_id, total_supply, treasury_account_id, type, " +
                 "wipe_key, wipe_key_ed25519_hex) select token_temp.created_timestamp, token_temp.decimals, token_temp" +
                 ".freeze_default, token_temp.freeze_key, case when token_temp.freeze_key_ed25519_hex = '<uuid>' then " +
@@ -95,7 +94,6 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     }
 
     @Override
-    @Ignore("ignore token case as max_supply, supply_type and type have missing implementation details incoming")
     @Test
     protected void insertContainsAllFields() {
     }
