@@ -92,7 +92,6 @@ import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -105,24 +104,19 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final Predicate<TransactionFilterFields> transactionFilter;
-    private final TokenRepository tokenRepository;
     private final NftRepository nftRepository;
-    private static final String MISSING_TOKEN_MESSAGE = "Missing token entity {}, unable to persist transaction type " +
-            "{} with timestamp {}";
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
                                     TransactionHandlerFactory transactionHandlerFactory,
-                                    TokenRepository tokenRepository,
                                     NftRepository nftRepository) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
-        this.tokenRepository = tokenRepository;
         this.nftRepository = nftRepository;
         transactionFilter = commonParserProperties.getFilter();
     }
