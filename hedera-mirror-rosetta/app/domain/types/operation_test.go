@@ -21,30 +21,24 @@
 package types
 
 import (
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
-func exampleOperation() *Operation {
+func exampleOperation(amount Amount) *Operation {
 	return &Operation{
-		Index:  1,
-		Type:   "transfer",
-		Status: "pending",
-		Account: &Account{
-			entityid.EntityId{
-				ShardNum:  0,
-				RealmNum:  0,
-				EntityNum: 0,
-			},
-		},
-		Amount: &Amount{Value: int64(400)},
+		Index:   1,
+		Type:    "transfer",
+		Status:  "pending",
+		Account: Account{entityid.EntityId{}},
+		Amount:  amount,
 	}
 }
 
-func expectedOperation() *types.Operation {
+func expectedOperation(amount *types.Amount) *types.Operation {
 	status := "pending"
 	return &types.Operation{
 		OperationIdentifier: &types.OperationIdentifier{
@@ -59,18 +53,41 @@ func expectedOperation() *types.Operation {
 			SubAccount: nil,
 			Metadata:   nil,
 		},
-		Amount: &types.Amount{
-			Value:    "400",
-			Currency: config.CurrencyHbar,
-			Metadata: nil,
-		},
+		Amount: amount,
 	}
 }
 
 func TestToRosettaOperation(t *testing.T) {
-	// when:
-	rosettaOperation := exampleOperation().ToRosetta()
+	var tests = []struct {
+		name     string
+		input    *Operation
+		expected *types.Operation
+	}{
+		{
+			name:     "HbarAmount",
+			input:    exampleOperation(hbarAmount),
+			expected: expectedOperation(hbarRosettaAmount),
+		},
+		{
+			name:     "TokenAmount",
+			input:    exampleOperation(tokenAmount),
+			expected: expectedOperation(tokenRosettaAmount),
+		},
+		{
+			name:     "NilAmount",
+			input:    exampleOperation(nil),
+			expected: expectedOperation(nil),
+		},
+	}
 
-	// then:
-	assert.Equal(t, expectedOperation(), rosettaOperation)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// when:
+			rosettaOperation := tt.input.ToRosetta()
+
+			// then:
+			assert.Equal(t, tt.expected, rosettaOperation)
+		})
+	}
+
 }

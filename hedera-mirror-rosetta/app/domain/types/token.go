@@ -18,27 +18,33 @@
  * ‍
  */
 
-package repository
+package types
 
 import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
-var MBlockRepository *MockBlockRepository
-var MTransactionRepository *MockTransactionRepository
-var MAccountRepository *MockAccountRepository
-var MAddressBookEntryRepository *MockAddressBookEntryRepository
+// Token is domain level struct used to represent Token conceptual mapping in Hedera
+type Token struct {
+	TokenId  entityid.EntityId
+	Decimals uint32
+	Name     string
+	Symbol   string
+}
 
-var NilBlock *types.Block = nil
-var NilError *rTypes.Error = nil
-var NilAmount *types.Amount = nil
-var NilTransaction *types.Transaction = nil
-var NilEntries *types.AddressBookEntries = nil
+func (t Token) ToHederaTokenId() *hedera.TokenID {
+	return &hedera.TokenID{
+		Shard: uint64(t.TokenId.ShardNum),
+		Realm: uint64(t.TokenId.RealmNum),
+		Token: uint64(t.TokenId.EntityNum),
+	}
+}
 
-func Setup() {
-	MBlockRepository = &MockBlockRepository{}
-	MTransactionRepository = &MockTransactionRepository{}
-	MAccountRepository = &MockAccountRepository{}
-	MAddressBookEntryRepository = &MockAddressBookEntryRepository{}
+func (t Token) ToRosettaCurrency() *rTypes.Currency {
+	return &rTypes.Currency{
+		Symbol:   t.TokenId.String(),
+		Decimals: int32(t.Decimals),
+	}
 }

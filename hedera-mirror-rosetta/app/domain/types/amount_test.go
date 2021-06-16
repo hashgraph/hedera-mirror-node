@@ -21,28 +21,44 @@
 package types
 
 import (
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
+	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
-func expectedAmount() *types.Amount {
-	return &types.Amount{
-		Value:    "400",
-		Currency: config.CurrencyHbar,
-		Metadata: nil,
+var (
+	hbarAmount        = &HbarAmount{Value: 400}
+	hbarRosettaAmount = &types.Amount{Value: "400", Currency: config.CurrencyHbar}
+	tokenAmount       = &TokenAmount{
+		TokenId:  entityid.EntityId{EntityNum: 1580, EncodedId: 1580},
+		Decimals: 9,
+		Value:    6000,
 	}
-}
+	tokenRosettaAmount = &types.Amount{
+		Value:    "6000",
+		Currency: &types.Currency{Symbol: "0.0.1580", Decimals: 9},
+	}
+)
 
-func exampleAmount() *Amount {
-	return &Amount{Value: int64(400)}
-}
+func TestHbarAmountToRosettaAmount(t *testing.T) {
+	// given
 
-func TestToRosettaAmount(t *testing.T) {
 	// when:
-	result := exampleAmount().ToRosetta()
+	actual := hbarAmount.ToRosetta()
 
 	// then:
-	assert.Equal(t, expectedAmount(), result)
+	assert.Equal(t, hbarRosettaAmount, actual)
+}
+
+func TestTokenAmountToRosettaAmount(t *testing.T) {
+	// given
+
+	// when:
+	actual := tokenAmount.ToRosetta()
+
+	// then:
+	assert.Equal(t, tokenRosettaAmount, actual)
 }

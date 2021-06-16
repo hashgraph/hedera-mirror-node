@@ -40,8 +40,8 @@ const (
 	mainConfigFile    = "application.yml"
 )
 
-// LoadConfig loads configuration from yaml files and env variables
-func LoadConfig() (*types.Config, error) {
+// loadConfig loads configuration from yaml files and env variables
+func loadConfig() (*types.Config, error) {
 	var config types.Config
 
 	if !getConfig(&config, defaultConfigFile) {

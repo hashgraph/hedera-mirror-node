@@ -26,6 +26,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
@@ -778,18 +779,19 @@ func TestShouldSuccessReturnRepository(t *testing.T) {
 	result := NewBlockRepository(gormDbClient)
 
 	// then
-	assert.IsType(t, &BlockRepository{}, result)
+	assert.NotNil(t, result)
+	assert.Implements(t, (*repositories.BlockRepository)(nil), result)
 	assert.Equal(t, result.dbClient, gormDbClient)
 }
 
-func setupRepository(t *testing.T) (*BlockRepository, sqlmock.Sqlmock) {
+func setupRepository(t *testing.T) (*blockRepository, sqlmock.Sqlmock) {
 	return setupRepositoryWithGenesisRecordFile(t, nil)
 }
 
 func setupRepositoryWithGenesisRecordFile(
 	t *testing.T,
 	genesisRecordFile *recordFile,
-) (*BlockRepository, sqlmock.Sqlmock) {
+) (*blockRepository, sqlmock.Sqlmock) {
 	gormDbClient, mock := mocks.DatabaseMock(t)
 
 	aber := NewBlockRepository(gormDbClient)

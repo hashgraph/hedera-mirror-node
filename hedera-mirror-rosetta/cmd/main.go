@@ -32,6 +32,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/account"
 	addressBookEntry "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/addressbook/entry"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/block"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/token"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/transaction"
 	accountService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/account"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
@@ -75,10 +76,11 @@ func newBlockchainOnlineRouter(
 	version *rTypes.Version,
 	dbClient *gorm.DB,
 ) (http.Handler, error) {
-	blockRepo := block.NewBlockRepository(dbClient)
-	transactionRepo := transaction.NewTransactionRepository(dbClient)
 	accountRepo := account.NewAccountRepository(dbClient)
 	addressBookEntryRepo := addressBookEntry.NewAddressBookEntryRepository(dbClient)
+	blockRepo := block.NewBlockRepository(dbClient)
+	tokenRepo := token.NewTokenRepository(dbClient)
+	transactionRepo := transaction.NewTransactionRepository(dbClient)
 
 	baseService := base.NewBaseService(blockRepo, transactionRepo)
 
@@ -91,7 +93,11 @@ func newBlockchainOnlineRouter(
 	mempoolAPIService := mempoolService.NewMempoolAPIService()
 	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
-	constructionAPIService, err := constructionService.NewConstructionAPIService(network.Network, nodes)
+	constructionAPIService, err := constructionService.NewConstructionAPIService(
+		network.Network,
+		nodes,
+		constructionService.NewTransactionConstructor(tokenRepo),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +123,11 @@ func newBlockchainOfflineRouter(
 	nodes types.NodeMap,
 	asserter *asserter.Asserter,
 ) (http.Handler, error) {
-	constructionAPIService, err := constructionService.NewConstructionAPIService(network, nodes)
+	constructionAPIService, err := constructionService.NewConstructionAPIService(
+		network,
+		nodes,
+		constructionService.NewTransactionConstructor(nil),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +139,7 @@ func newBlockchainOfflineRouter(
 func main() {
 	configLogger("info")
 
-	configuration, err := LoadConfig()
+	configuration, err := loadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %s", err)
 	}

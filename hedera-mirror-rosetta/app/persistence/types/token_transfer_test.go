@@ -18,31 +18,14 @@
  * ‍
  */
 
-package validator
+package types
 
 import (
-	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func ValidateOperationsSum(operations []*types.Operation) *types.Error {
-	if len(operations) == 0 {
-		return errors.ErrEmptyOperations
-	}
-	var sum int64 = 0
-
-	for _, operation := range operations {
-		amount, err := parse.ToInt64(operation.Amount.Value)
-		if err != nil || amount == 0 {
-			return errors.ErrInvalidAmount
-		}
-		sum += amount
-	}
-
-	if sum != 0 {
-		return errors.ErrInvalidOperationsTotalAmount
-	}
-
-	return nil
+func TestTokenTransferTableName(t *testing.T) {
+	assert.Equal(t, "token_transfer", TokenTransfer{}.TableName())
 }

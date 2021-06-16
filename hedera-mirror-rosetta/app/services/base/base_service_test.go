@@ -20,12 +20,14 @@
 package base
 
 import (
+	"testing"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/suite"
 )
 
 var (
@@ -68,11 +70,6 @@ func transactions() []*types.Transaction {
 	}
 }
 
-func getSubject() *BaseService {
-	baseService := NewBaseService(repository.MBlockRepository, repository.MTransactionRepository)
-	return &baseService
-}
-
 func examplePartialBlockIdentifier(index *int64, hash *string) *rTypes.PartialBlockIdentifier {
 	return &rTypes.PartialBlockIdentifier{
 		Index: index,
@@ -80,334 +77,326 @@ func examplePartialBlockIdentifier(index *int64, hash *string) *rTypes.PartialBl
 	}
 }
 
-func TestRetrieveBlockThrowsNoIdentifiers(t *testing.T) {
-	// given:
-	repository.Setup()
-
-	// when:
-	res, e := getSubject().RetrieveBlock(examplePartialBlockIdentifier(nil, nil))
-
-	// then:
-	assert.Nil(t, res)
-	assert.Equal(t, errors.ErrInternalServerError, e)
+func TestBaseServiceSuite(t *testing.T) {
+	suite.Run(t, new(baseServiceSuite))
 }
 
-func TestRetrieveBlockFindByIdentifier(t *testing.T) {
-	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIdentifier").Return(
-		block(),
-		repository.NilError,
-	)
-
-	// when:
-	res, e := getSubject().RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, &exampleHash))
-
-	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, block(), res)
+type baseServiceSuite struct {
+	suite.Suite
+	baseService         *BaseService
+	mockBlockRepo       *repository.MockBlockRepository
+	mockTransactionRepo *repository.MockTransactionRepository
 }
 
-func TestRetrieveBlockThrowsFindByIdentifier(t *testing.T) {
+func (suite *baseServiceSuite) SetupTest() {
+	suite.mockBlockRepo = &repository.MockBlockRepository{}
+	suite.mockTransactionRepo = &repository.MockTransactionRepository{}
+
+	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	suite.baseService = &baseService
+}
+
+func (suite *baseServiceSuite) TestRetrieveBlockThrowsNoIdentifiers() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIdentifier").Return(
+
+	// when:
+	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(nil, nil))
+
+	// then:
+	assert.Nil(suite.T(), res)
+	assert.Equal(suite.T(), errors.ErrInternalServerError, e)
+}
+
+func (suite *baseServiceSuite) TestRetrieveBlockFindByIdentifier() {
+	// given:
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), repository.NilError)
+
+	// when:
+	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, &exampleHash))
+
+	// then:
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), block(), res)
+}
+
+func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIdentifier() {
+	// given:
+	suite.mockBlockRepo.On("FindByIdentifier").Return(
 		repository.NilBlock,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, &exampleHash))
+	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, &exampleHash))
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestRetrieveBlockFindByIndex(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveBlockFindByIndex() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIndex").Return(
+	suite.mockBlockRepo.On("FindByIndex").Return(
 		block(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, nil))
+	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, nil))
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, block(), res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), block(), res)
 }
 
-func TestRetrieveBlockThrowsFindByIndex(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIndex() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIndex").Return(
+	suite.mockBlockRepo.On("FindByIndex").Return(
 		repository.NilBlock,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, nil))
+	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, nil))
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestRetrieveBlockFindByHash(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveBlockFindByHash() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByHash").Return(
+	suite.mockBlockRepo.On("FindByHash").Return(
 		block(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().RetrieveBlock(examplePartialBlockIdentifier(nil, &exampleHash))
+	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(nil, &exampleHash))
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, block(), res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), block(), res)
 }
 
-func TestRetrieveBlockThrowsFindByHash(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByHash() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByHash").Return(
+	suite.mockBlockRepo.On("FindByHash").Return(
 		repository.NilBlock,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().RetrieveBlock(examplePartialBlockIdentifier(nil, &exampleHash))
+	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(nil, &exampleHash))
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestRetrieveLatest(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveLatest() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveLatest").Return(
+	suite.mockBlockRepo.On("RetrieveLatest").Return(
 		block(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().RetrieveLatest()
+	res, e := suite.baseService.RetrieveLatest()
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, block(), res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), block(), res)
 }
 
-func TestRetrieveLatestThrows(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveLatestThrows() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveLatest").Return(
+	suite.mockBlockRepo.On("RetrieveLatest").Return(
 		repository.NilBlock,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().RetrieveLatest()
+	res, e := suite.baseService.RetrieveLatest()
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestRetrieveGenesis(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveGenesis() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveGenesis").Return(
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(
 		block(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().RetrieveGenesis()
+	res, e := suite.baseService.RetrieveGenesis()
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, block(), res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), block(), res)
 }
 
-func TestRetrieveGenesisThrows(t *testing.T) {
+func (suite *baseServiceSuite) TestRetrieveGenesisThrows() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("RetrieveGenesis").Return(
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(
 		repository.NilBlock,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().RetrieveGenesis()
+	res, e := suite.baseService.RetrieveGenesis()
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestFindByIdentifier(t *testing.T) {
+func (suite *baseServiceSuite) TestFindByIdentifier() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIdentifier").Return(
+	suite.mockBlockRepo.On("FindByIdentifier").Return(
 		block(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().FindByIdentifier(exampleIndex, exampleHash)
+	res, e := suite.baseService.FindByIdentifier(exampleIndex, exampleHash)
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, block(), res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), block(), res)
 }
 
-func TestFindByIdentifierThrows(t *testing.T) {
+func (suite *baseServiceSuite) TestFindByIdentifierThrows() {
 	// given:
-	repository.Setup()
-	repository.MBlockRepository.On("FindByIdentifier").Return(
+	suite.mockBlockRepo.On("FindByIdentifier").Return(
 		repository.NilBlock,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().FindByIdentifier(exampleIndex, exampleHash)
+	res, e := suite.baseService.FindByIdentifier(exampleIndex, exampleHash)
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestFindByHashInBlock(t *testing.T) {
+func (suite *baseServiceSuite) TestFindByHashInBlock() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("FindByHashInBlock").Return(
+	suite.mockTransactionRepo.On("FindByHashInBlock").Return(
 		transaction(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().FindByHashInBlock(exampleHash, 1, 2)
+	res, e := suite.baseService.FindByHashInBlock(exampleHash, 1, 2)
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, transaction(), res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), transaction(), res)
 }
 
-func TestFindByHashInBlockThrows(t *testing.T) {
+func (suite *baseServiceSuite) TestFindByHashInBlockThrows() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("FindByHashInBlock").Return(
+	suite.mockTransactionRepo.On("FindByHashInBlock").Return(
 		repository.NilTransaction,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().FindByHashInBlock(exampleHash, 1, 2)
+	res, e := suite.baseService.FindByHashInBlock(exampleHash, 1, 2)
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestFindBetween(t *testing.T) {
+func (suite *baseServiceSuite) TestFindBetween() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("FindBetween").Return(
+	suite.mockTransactionRepo.On("FindBetween").Return(
 		transactions(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().FindBetween(1, 2)
+	res, e := suite.baseService.FindBetween(1, 2)
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, transactions(), res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), transactions(), res)
 }
 
-func TestFindBetweenThrows(t *testing.T) {
+func (suite *baseServiceSuite) TestFindBetweenThrows() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("FindBetween").Return(
-		[]*types.Transaction{},
-		&rTypes.Error{},
-	)
+	suite.mockTransactionRepo.On("FindBetween").Return([]*types.Transaction{}, &rTypes.Error{})
 
 	// when:
-	res, e := getSubject().FindBetween(1, 2)
+	res, e := suite.baseService.FindBetween(1, 2)
 
 	// then:
-	assert.Equal(t, []*types.Transaction{}, res)
-	assert.NotNil(t, e)
+	assert.Equal(suite.T(), []*types.Transaction{}, res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestStatuses(t *testing.T) {
+func (suite *baseServiceSuite) TestStatuses() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("Results").Return(
+	suite.mockTransactionRepo.On("Results").Return(
 		exampleMap,
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().Results()
+	res, e := suite.baseService.Results()
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, exampleMap, res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), exampleMap, res)
 }
 
-func TestStatusesThrows(t *testing.T) {
+func (suite *baseServiceSuite) TestStatusesThrows() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("Results").Return(
+	suite.mockTransactionRepo.On("Results").Return(
 		nilMap,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().Results()
+	res, e := suite.baseService.Results()
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
 
-func TestTypesAsArray(t *testing.T) {
+func (suite *baseServiceSuite) TestTypesAsArray() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("TypesAsArray").Return(
+	suite.mockTransactionRepo.On("TypesAsArray").Return(
 		exampleTypesArray,
 		repository.NilError,
 	)
 
 	// when:
-	res, e := getSubject().TypesAsArray()
+	res, e := suite.baseService.TypesAsArray()
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, exampleTypesArray, res)
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), exampleTypesArray, res)
 }
 
-func TestTypesAsArrayThrows(t *testing.T) {
+func (suite *baseServiceSuite) TestTypesAsArrayThrows() {
 	// given:
-	repository.Setup()
-	repository.MTransactionRepository.On("TypesAsArray").Return(
+	suite.mockTransactionRepo.On("TypesAsArray").Return(
 		nilArray,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := getSubject().TypesAsArray()
+	res, e := suite.baseService.TypesAsArray()
 
 	// then:
-	assert.Nil(t, res)
-	assert.NotNil(t, e)
+	assert.Nil(suite.T(), res)
+	assert.NotNil(suite.T(), e)
 }
