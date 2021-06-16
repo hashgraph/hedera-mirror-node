@@ -40,9 +40,9 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Override
     public String getInsertQuery() {
         return "insert into token (created_timestamp, decimals, freeze_default, freeze_key, freeze_key_ed25519_hex, " +
-                "initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, name, supply_key, " +
-                "supply_key_ed25519_hex, symbol, token_id, total_supply, treasury_account_id, wipe_key, " +
-                "wipe_key_ed25519_hex) select token_temp.created_timestamp, token_temp.decimals, token_temp" +
+                "initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, max_supply, name, supply_key, " +
+                "supply_key_ed25519_hex, supply_typesymbol, token_id, total_supply, treasury_account_id, type, " +
+                "wipe_key, wipe_key_ed25519_hex) select token_temp.created_timestamp, token_temp.decimals, token_temp" +
                 ".freeze_default, token_temp.freeze_key, case when token_temp.freeze_key_ed25519_hex = '<uuid>' then " +
                 "'' " +
                 "else coalesce(token_temp.freeze_key_ed25519_hex, null) end, token_temp.initial_supply, token_temp" +
