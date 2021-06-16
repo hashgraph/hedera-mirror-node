@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -493,12 +494,12 @@ public class EntityRecordItemListener implements RecordItemListener {
                     tokenAccount = optionalTokenAccount.get();
                 } else {
                     // if not onboarded create TokenAccount based on Token details
-                    EntityId tokenID = EntityId.of(token);
-                    Optional<Token> optionalToken = retrieveToken(token, TransactionTypeEnum.TOKENASSOCIATE,
+                    EntityId tokenId = EntityId.of(token);
+                    Optional<Token> optionalToken = retrieveToken(tokenId, TransactionTypeEnum.TOKENASSOCIATE,
                             consensusTimeStamp);
                     if (optionalToken.isPresent()) {
                         Token storedToken = optionalToken.get();
-                        tokenAccount = new TokenAccount(tokenID, EntityId.of(accountID));
+                        tokenAccount = new TokenAccount(tokenId, EntityId.of(accountID));
                         tokenAccount.setCreatedTimestamp(consensusTimeStamp);
                         tokenAccount.setFreezeStatus(storedToken.getNewAccountFreezeStatus());
                         tokenAccount.setKycStatus(storedToken.getNewAccountKycStatus());
@@ -518,13 +519,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenBurnTransactionBody tokenBurnTransactionBody = recordItem.getTransactionBody().getTokenBurn();
             EntityId tokenId = EntityId.of(tokenBurnTransactionBody.getToken());
+            long consensusTimeStamp = recordItem.getConsensusTimestamp();
 
             updateTokenSupply(
                     tokenId,
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
-                    recordItem.getConsensusTimestamp());
+                    consensusTimeStamp);
 
-            long consensusTimeStamp = recordItem.getConsensusTimestamp();
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
                     nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimeStamp)
             );
@@ -642,9 +643,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenMintTransactionBody tokenMintTransactionBody = recordItem.getTransactionBody().getTokenMint();
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
-            TokenID tokenID = tokenMintTransactionBody.getToken();
+            EntityId tokenId = EntityId.of(tokenMintTransactionBody.getToken());
 
-            Optional<Token> optionalToken = retrieveToken(tokenID, TransactionTypeEnum.TOKENMINT,
+            Optional<Token> optionalToken = retrieveToken(tokenId, TransactionTypeEnum.TOKENMINT,
                     consensusTimeStamp);
             if (optionalToken.isPresent()) {
                 Token token = optionalToken.get();
@@ -653,15 +654,17 @@ public class EntityRecordItemListener implements RecordItemListener {
                 tokenRepository.save(token);
 
                 List<Long> serialNumbers = recordItem.getRecord().getReceipt().getSerialNumbersList();
+                List<Nft> nfts = new ArrayList<>();
                 for (int i = 0; i < serialNumbers.size(); i++) {
                     Nft nft = new Nft();
                     nft.setAccountId(token.getTreasuryAccountId());
                     nft.setCreatedTimestamp(consensusTimeStamp);
-                    nft.setId(new NftId(serialNumbers.get(i), EntityId.of(tokenID)));
+                    nft.setId(new NftId(serialNumbers.get(i), tokenId));
                     nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
                     nft.setModifiedTimestamp(consensusTimeStamp);
-                    nftRepository.save(nft);
+                    nfts.add(nft);
                 }
+                nftRepository.saveAll(nfts);
             }
         }
     }
@@ -714,8 +717,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     nftTransferDomain.setReceiverAccountId(receiverId);
                     nftTransferDomain.setSenderAccountId(senderId);
 
-                    entityListener
-                            .onNftTransfer(nftTransferDomain);
+                    entityListener.onNftTransfer(nftTransferDomain);
                     if (receiverId != EntityId.EMPTY) {
                         nftRepository
                                 .transferNftOwnership(new NftId(serialNumber, tokenId), receiverId,
@@ -729,10 +731,10 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenUpdate(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
-            TokenID tokenID = tokenUpdateTransactionBody.getToken();
+            EntityId tokenId = EntityId.of(tokenUpdateTransactionBody.getToken());
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            Optional<Token> optionalToken = retrieveToken(tokenID, TransactionTypeEnum.TOKENUPDATE,
+            Optional<Token> optionalToken = retrieveToken(tokenId, TransactionTypeEnum.TOKENUPDATE,
                     consensusTimestamp);
             if (optionalToken.isPresent()) {
                 Token token = optionalToken.get();
@@ -798,13 +800,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenWipeAccountTransactionBody tokenWipeAccountTransactionBody = recordItem.getTransactionBody()
                     .getTokenWipe();
             EntityId tokenId = EntityId.of(tokenWipeAccountTransactionBody.getToken());
+            long consensusTimeStamp = recordItem.getConsensusTimestamp();
 
             updateTokenSupply(
                     tokenId,
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
-                    recordItem.getConsensusTimestamp());
+                    consensusTimeStamp);
 
-            long consensusTimeStamp = recordItem.getConsensusTimestamp();
             tokenWipeAccountTransactionBody.getSerialNumbersList().forEach(serialNumber ->
                     nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimeStamp));
         }
@@ -828,13 +830,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         return optionalTokenAccount;
     }
 
-    private Optional<Token> retrieveToken(TokenID tokenID, TransactionTypeEnum transactionTypeEnum,
+    private Optional<Token> retrieveToken(EntityId tokenId, TransactionTypeEnum transactionTypeEnum,
                                           long currentTransactionTimestamp) {
         Optional<Token> optionalToken = tokenRepository
-                .findById(new Token.Id(EntityId.of(tokenID)));
+                .findById(new Token.Id(tokenId));
 
         if (optionalToken.isEmpty()) {
-            log.warn(MISSING_TOKEN_MESSAGE, tokenID, transactionTypeEnum, currentTransactionTimestamp);
+            log.warn(MISSING_TOKEN_MESSAGE, tokenId, transactionTypeEnum, currentTransactionTimestamp);
         }
 
         return optionalToken;
