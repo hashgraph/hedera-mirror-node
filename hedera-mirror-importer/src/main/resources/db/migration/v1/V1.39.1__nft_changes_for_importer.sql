@@ -11,7 +11,10 @@ drop index if exists nft__token_id_serial_num;
 alter table nft
     add primary key (token_id, serial_number);
 
--- Remove not null constraints on nft_tranfer account ids
+-- Remove not null constraints on nft created timestamp to allow for partial data flag
+alter table nft alter column created_timestamp drop not null;
+
+-- Remove not null constraints on nft_tranfer account ids for mint/burn/wipe transfers
 alter table nft_transfer alter column receiver_account_id drop not null;
 alter table nft_transfer alter column sender_account_id drop not null;
 

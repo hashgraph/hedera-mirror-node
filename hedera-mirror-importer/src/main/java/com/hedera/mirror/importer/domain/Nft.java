@@ -47,7 +47,7 @@ public class Nft {
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId accountId;
 
-    private long createdTimestamp;
+    private Long createdTimestamp;
 
     private boolean deleted;
 
