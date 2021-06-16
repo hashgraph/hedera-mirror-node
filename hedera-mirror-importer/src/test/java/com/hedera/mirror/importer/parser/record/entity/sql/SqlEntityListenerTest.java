@@ -741,17 +741,16 @@ public class SqlEntityListenerTest extends IntegrationTest {
         token.setFreezeKey(freezeKey != null ? freezeKey.toByteArray() : null);
         token.setInitialSupply(initialSupply);
         token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
+        token.setMaxSupply(0L);
         token.setModifiedTimestamp(modifiedTimestamp);
         token.setName(name);
         token.setSupplyKey(supplyKey != null ? supplyKey.toByteArray() : null);
+        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol(symbol);
         token.setTokenId(new TokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setTreasuryAccountId(EntityId.of(accountId, ACCOUNT));
         token.setWipeKey(wipeKey != null ? wipeKey.toByteArray() : null);
-
-        token.setMaxSupply(0L);
-        token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
-        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
 
         return token;
     }
