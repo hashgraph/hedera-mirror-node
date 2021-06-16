@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -761,18 +760,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         token.setTotalSupply(newTotalSupply);
         token.setModifiedTimestamp(modifiedTimestamp);
         entityListener.onToken(token);
-    }
-
-    private Optional<Token> retrieveToken(EntityId tokenId, TransactionTypeEnum transactionTypeEnum,
-                                          long currentTransactionTimestamp) {
-        Optional<Token> optionalToken = tokenRepository
-                .findById(new TokenId(tokenId));
-
-        if (optionalToken.isEmpty()) {
-            log.warn(MISSING_TOKEN_MESSAGE, tokenId, transactionTypeEnum, currentTransactionTimestamp);
-        }
-
-        return optionalToken;
     }
 
     private void insertScheduleCreate(RecordItem recordItem) {
