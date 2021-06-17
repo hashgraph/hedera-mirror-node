@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.leader;
  * ‍
  */
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.log4j.Log4j2;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -32,16 +33,13 @@ import org.springframework.integration.leader.event.OnRevokedEvent;
  * This class uses Spring Cloud Kubernetes Leader to atomically elect a leader using Kubernetes primitives. This class
  * tracks those leader events and either allows or disallows the execution of a method annotated with @Leader based upon
  * whether this pod is currently leader or not.
- * <p>
- * This functionality is currently considered unsupported and hasn't been tested with more than one replica. It's not
- * recommended for production use.
  */
 @Aspect
 @Log4j2
 @Order(1)
 public class LeaderAspect {
 
-    private volatile boolean leader = false;
+    private final AtomicBoolean leader = new AtomicBoolean(false);
 
     public LeaderAspect() {
         log.info("Starting as follower");
@@ -51,9 +49,9 @@ public class LeaderAspect {
     public Object leader(ProceedingJoinPoint joinPoint, Leader leaderAnnotation) throws Throwable {
         String targetClass = joinPoint.getTarget().getClass().getSimpleName();
         String methodName = joinPoint.getSignature().getName();
-        log.debug("Verifying leadership status before invoking");
+        log.trace("Verifying leadership status before invoking");
 
-        if (!leader) {
+        if (!leader.get()) {
             log.debug("Not the leader. Skipping invocation of {}.{}()", targetClass, methodName);
             return null;
         }
@@ -64,17 +62,15 @@ public class LeaderAspect {
 
     @EventListener
     public void granted(OnGrantedEvent event) {
-        if (!leader) {
-            leader = true;
-            log.info("Transitioned to leader");
+        if (leader.compareAndSet(false, true)) {
+            log.info("Transitioned to leader: {}", event);
         }
     }
 
     @EventListener
     public void revoked(OnRevokedEvent event) {
-        if (leader) {
-            leader = false;
-            log.info("Transitioned to follower");
+        if (leader.compareAndSet(true, false)) {
+            log.info("Transitioned to follower: {}", event);
         }
     }
 }

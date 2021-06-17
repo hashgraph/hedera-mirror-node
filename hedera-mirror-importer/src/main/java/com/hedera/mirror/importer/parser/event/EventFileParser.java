@@ -20,26 +20,27 @@ package com.hedera.mirror.importer.parser.event;
  * ‍
  */
 
+import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
-import com.hedera.mirror.importer.repository.EventFileRepository;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 @Named
 public class EventFileParser extends AbstractStreamFileParser<EventFile> {
 
-    private final EventFileRepository eventFileRepository;
-
-    public EventFileParser(EventFileRepository eventFileRepository, EventParserProperties properties) {
-        super(properties);
-        this.eventFileRepository = eventFileRepository;
+    public EventFileParser(MeterRegistry meterRegistry, EventParserProperties parserProperties,
+                           StreamFileRepository<EventFile, Long> eventFileRepository) {
+        super(meterRegistry, parserProperties, eventFileRepository);
     }
 
     @Override
+    @Leader
     @Retryable(backoff = @Backoff(
             delayExpression = "#{@eventParserProperties.getRetry().getMinBackoff().toMillis()}",
             maxDelayExpression = "#{@eventParserProperties.getRetry().getMaxBackoff().toMillis()}",
@@ -52,6 +53,6 @@ public class EventFileParser extends AbstractStreamFileParser<EventFile> {
 
     @Override
     protected void doParse(EventFile eventFile) {
-        eventFileRepository.save(eventFile);
+        streamFileRepository.save(eventFile);
     }
 }

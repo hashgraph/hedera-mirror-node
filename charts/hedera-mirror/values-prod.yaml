@@ -25,6 +25,10 @@ importer:
   priorityClassName: high
   prometheusRules:
     enabled: true
+  replicas: 2
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
 
 monitor:
   alertmanager:
