@@ -20,13 +20,17 @@
 
 \copy non_fee_transfer (entity_id, consensus_timestamp, amount) from non_fee_transfer.csv csv;
 
+\copy nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id) from nft.csv csv;
+
+\copy nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id) from nft_transfer.csv csv
+
 \copy record_file (name, load_start, load_end, hash, prev_hash, consensus_start, consensus_end, node_account_id, count, digest_algorithm, hapi_version_major, hapi_version_minor, hapi_version_patch, version, file_hash, bytes, index) from record_file.csv csv;
 
 \copy schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body) from schedule.csv csv;
 
 \copy entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type) from entity.csv csv;
 
-\copy token (token_id, created_timestamp, decimals, freeze_default, freeze_key, freeze_key_ed25519_hex, initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, name, supply_key, supply_key_ed25519_hex, symbol, total_supply, treasury_account_id, wipe_key, wipe_key_ed25519_hex) from token.csv csv;
+\copy token (token_id, created_timestamp, decimals, freeze_default, freeze_key, freeze_key_ed25519_hex, initial_supply, kyc_key, kyc_key_ed25519_hex, modified_timestamp, name, supply_key, supply_key_ed25519_hex, symbol, total_supply, treasury_account_id, wipe_key, wipe_key_ed25519_hex, max_supply, supply_type, type) from token.csv csv;
 
 \copy token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id) from token_account.csv csv;
 
