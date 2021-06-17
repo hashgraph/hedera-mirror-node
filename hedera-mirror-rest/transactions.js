@@ -368,18 +368,16 @@ const getTransactionsInnerQuery = function (
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
       return `
-        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp, ntl.consensus_timestamp)
+        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp)
                  AS consensus_timestamp
         FROM (${ctlQuery}) AS ctl
                FULL OUTER JOIN (${ttlQuery}) as ttl
                                ON ctl.consensus_timestamp = ttl.consensus_timestamp
-               FULL OUTER JOIN (${nftTrQuery}) as ntl
-                               ON ctl.consensus_timestamp = ntl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
           ${namedLimitQuery}`;
     }
-    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
-    // between the three tables is needed to get rows that may only exist in one.
+    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and nft_transfer.account_id,
+    // and token_transfer.account_id, a full outer join between the three tables is needed to get rows that may only exist in one.
     return `
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp,
                       ntl.consensus_timestamp) AS consensus_timestamp

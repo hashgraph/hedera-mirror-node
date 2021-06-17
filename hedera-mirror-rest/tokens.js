@@ -96,6 +96,14 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
       continue;
     }
 
+    // handle token type=ALL, valid param but not present in db
+    if (
+      filter.key === constants.filterKeys.TOKEN_TYPE &&
+      filter.value === constants.tokenTypeFilter.ALL.toUpperCase()
+    ) {
+      continue;
+    }
+
     const columnKey = filterColumnMap[filter.key];
     if (columnKey === undefined) {
       continue;

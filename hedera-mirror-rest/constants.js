@@ -107,9 +107,9 @@ const defaultBucketNames = {
 const recordStreamPrefix = 'recordstreams/record';
 
 const tokenTypeFilter = {
-  ALL: 'ALL',
-  FUNGIBLE_COMMON: 'FUNGIBLE_COMMON',
-  NON_FUNGIBLE_UNIQUE: 'NON_FUNGIBLE_UNIQUE',
+  ALL: 'all',
+  FUNGIBLE_COMMON: 'fungible_common',
+  NON_FUNGIBLE_UNIQUE: 'non_fungible_unique',
 };
 
 module.exports = {

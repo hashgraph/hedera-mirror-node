@@ -198,6 +198,44 @@ describe('Utils isValidNum tests', () => {
   });
 });
 
+describe('Utils isValidValueIgnoreCase tokenTypeFilter tests', () => {
+  const tokenTypeObjectValues = Object.values(constants.tokenTypeFilter);
+
+  test('Verify invalid for empty input', () => {
+    expect(utils.isValidValueIgnoreCase('', tokenTypeObjectValues)).toBe(false);
+  });
+  test('Verify invalid for invalid input', () => {
+    expect(utils.isValidValueIgnoreCase('1234567890.000000001', tokenTypeObjectValues)).toBe(false);
+  });
+  test('Verify invalid for entity format shard', () => {
+    expect(utils.isValidValueIgnoreCase('1.0.1', tokenTypeObjectValues)).toBe(false);
+  });
+  test(`Verify valid for tokenType: ${constants.tokenTypeFilter.ALL}`, () => {
+    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.ALL, tokenTypeObjectValues)).toBe(true);
+  });
+  test(`Verify valid for tokenType: ${constants.tokenTypeFilter.FUNGIBLE_COMMON}`, () => {
+    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.FUNGIBLE_COMMON, tokenTypeObjectValues)).toBe(true);
+  });
+  test(`Verify valid for tokenType: ${constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE}`, () => {
+    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE, tokenTypeObjectValues)).toBe(
+      true
+    );
+  });
+  test(`Verify valid for tokenType: ${constants.tokenTypeFilter.ALL.toUpperCase()}`, () => {
+    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.ALL.toUpperCase(), tokenTypeObjectValues)).toBe(true);
+  });
+  test(`Verify valid for tokenType: ${constants.tokenTypeFilter.FUNGIBLE_COMMON.toUpperCase()}`, () => {
+    expect(
+      utils.isValidValueIgnoreCase(constants.tokenTypeFilter.FUNGIBLE_COMMON.toUpperCase(), tokenTypeObjectValues)
+    ).toBe(true);
+  });
+  test(`Verify valid for tokenType: ${constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE.toUpperCase()}`, () => {
+    expect(
+      utils.isValidValueIgnoreCase(constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE.toUpperCase(), tokenTypeObjectValues)
+    ).toBe(true);
+  });
+});
+
 describe('utils encodeMessage tests', () => {
   const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
   const base64Message = 'aGVkZXJhIGhhc2hncmFwaA==';

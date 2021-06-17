@@ -793,6 +793,10 @@ const formatComparator = (comparator) => {
         // Accepted forms: shard.realm.num or num
         comparator.value = EntityId.fromString(comparator.value).getEncodedId();
         break;
+      case constants.filterKeys.TOKEN_TYPE:
+        // db requires upper case matching for enum
+        comparator.value = comparator.value.toUpperCase();
+        break;
       // case 'type':
       //   // Acceptable words: credit or debit
       //   comparator.value = ;
@@ -877,6 +881,7 @@ module.exports = {
   getTransactionTypeQuery,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
+  isValidValueIgnoreCase,
   isValidLimitNum,
   isValidNum,
   isValidTimestampParam,

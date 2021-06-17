@@ -432,6 +432,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/publicKeyQueryParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
+        - $ref: '#/components/parameters/tokenTypeQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -685,7 +686,7 @@ components:
       properties:
         _type:
           type: string
-          enum: [ED25519, ProtobufEncoded]
+          enum: [ ED25519, ProtobufEncoded ]
           example: ProtobufEncoded
         key:
           type: string
@@ -758,6 +759,24 @@ components:
           type: string
         name:
           type: string
+        nft_transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              receiver_account_id:
+                type: string
+              sender_account_id:
+                type: string
+              serial_number:
+                type: number
+              token_id:
+                type: string
+            required:
+              - receiver_account_id
+              - sender_account_id
+              - serial_number
+              - token_id
         max_fee:
           type: string
         valid_duration_seconds:
@@ -803,6 +822,15 @@ components:
         memo_base64: null
         result: SUCCESS
         name: CRYPTOTRANSFER
+        nft_transfers:
+          - receiver_account_id: 0.0.121
+            sender_account_id: 0.0.122
+            serial_number: 1
+            token_id: 0.0.123
+          - receiver_account_id: 0.0.321
+            sender_account_id: 0.0.422
+            serial_number: 2
+            token_id: 0.0.123
         max_fee: 33
         valid_duration_seconds: 11
         node: 0.0.3
@@ -889,14 +917,18 @@ components:
           type: string
         admin_key:
           $ref: '#/components/schemas/Key'
+        type:
+          type: string
       required:
         - token_id
         - symbol
         - admin_key
+        - type
       example:
         token_id: 0.0.1
         symbol: FIRSTMOVERLPDJH
         admin_key: null
+        type: FUNGIBLE_COMMON
     Tokens:
       type: array
       items:
@@ -931,6 +963,9 @@ components:
           example: 1000000
         kyc_key:
           $ref: '#/components/schemas/Key'
+        max_supply:
+          type: number
+          example: 9223372036854775807
         modified_timestamp:
           type: string
           example: 1234567890.000000001
@@ -939,6 +974,9 @@ components:
           example: Token name
         supply_key:
           $ref: '#/components/schemas/Key'
+        supply_type:
+          type: string
+          example: INFINITE
         symbol:
           type: string
           example: ORIGINALRDKSE
@@ -946,11 +984,14 @@ components:
           type: string
           example: 0.0.1135
         total_supply:
-          type: string
+          type: number
           example: 1000000
         treasury_account_id:
           type: string
           example: 0.0.98
+        type:
+          type: string
+          example: FUNGIBLE_COMMON
         wipe_key:
           $ref: '#/components/schemas/Key'
     TokenDistribution:
@@ -1287,6 +1328,18 @@ components:
       example: 0.0.1135
       schema:
         type: string
+    tokenTypeQueryParam:
+      name: tokentype
+      in: query
+      example:
+        - ALL
+        - FUNGIBLE_COMMON
+        - NON_FUNGIBLE_UNIQUE
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
     topicIdPathParam:
       name: id
       in: path

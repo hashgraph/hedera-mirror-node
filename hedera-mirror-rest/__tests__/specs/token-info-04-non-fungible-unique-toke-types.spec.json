@@ -1,0 +1,61 @@
+{
+  "description": "Token info api call for a given token",
+  "setup": {
+    "entities": [
+      {
+        "num": 1,
+        "type": 5
+      },
+      {
+        "num": 1135,
+        "type": 5
+      },
+      {
+        "realm": 7,
+        "num": 25301,
+        "type": 5
+      },
+      {
+        "realm": 23,
+        "num": 45678,
+        "type": 5
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.1135",
+        "symbol": "ORIGINALRDKSE",
+        "created_timestamp": "1234567890000000002",
+        "type": "NON_FUNGIBLE_UNIQUE"
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "urls": ["/api/v1/tokens/0.0.1135", "/api/v1/tokens/0.1135", "/api/v1/tokens/1135"],
+  "responseStatus": 200,
+  "responseJson": {
+    "token_id": "0.0.1135",
+    "symbol": "ORIGINALRDKSE",
+    "admin_key": null,
+    "auto_renew_account": null,
+    "auto_renew_period": null,
+    "created_timestamp": "1234567890.000000002",
+    "decimals": "1000",
+    "expiry_timestamp": null,
+    "freeze_default": false,
+    "freeze_key": null,
+    "initial_supply": "1000000",
+    "kyc_key": null,
+    "max_supply": "9223372036854775807",
+    "modified_timestamp": "1234567890.000000002",
+    "name": "Token name",
+    "supply_key": null,
+    "supply_type": "INFINITE",
+    "total_supply": "1000000",
+    "treasury_account_id": "0.0.98",
+    "type": "NON_FUNGIBLE_UNIQUE",
+    "wipe_key": null
+  }
+}
