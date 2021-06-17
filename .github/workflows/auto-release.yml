@@ -18,9 +18,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     env:
-      CHANGELOG: CHANGELOG.md
       RELEASE_NOTES_FILENAME: release_notes
-      RELEASE_NOTES_FULLNAME: release_notes.md
     outputs:
       create_pr: ${{ env.CREATE_PR }}
       next_chart_version_snapshot: ${{ env.NEXT_CHART_VERSION_SNAPSHOT }}
@@ -43,28 +41,14 @@ jobs:
           bump: preminor
           version: ${{ github.event.inputs.chartVersion }}
 
-      - name: Set Prerelease
-        if: ${{ contains(steps.version_parser.outputs.version, '-') }}
-        run: echo "PRERELEASE=true" >> $GITHUB_ENV
-
       - name: Retrieve the Milestone
         id: milestone
-        if: ${{ env.PRERELEASE != 'true' }}
+        if: ${{ steps.version_parser.outputs.pre-release == '' }}
         uses: julb/action-manage-milestone@v1
         with:
           title: Mirror ${{ steps.version_parser.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Milestone Data
-        id: milestone-data
-        if: ${{ steps.milestone.outputs.number != '' }}
-        uses: Beakyn/gha-get-milestone-data@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          repository: ${{ github.repository }}
-          milestone: ${{ steps.milestone.outputs.number }}
 
       - name: Set Release Environment Variables
         run: |
@@ -73,16 +57,9 @@ jobs:
           RELEASE_BRANCH="release/${{ steps.version_parser.outputs.major }}.${{ steps.version_parser.outputs.minor }}"
           RELEASE_TAG=v${{ steps.version_parser.outputs.version }}
 
-          if [ ! -z "${{ steps.milestone.outputs.number }}" ]; then
-            CREATE_PR=true
-            PR_TITLE="Merge changes from $RELEASE_BRANCH"
-          fi
-
           cat >> $GITHUB_ENV <<EOF
-          CREATE_PR=$CREATE_PR
           NEXT_CHART_VERSION_SNAPSHOT=$NEXT_CHART_VERSION_SNAPSHOT
           NEXT_VERSION_SNAPSHOT=$NEXT_VERSION_SNAPSHOT
-          PR_TITLE=$PR_TITLE
           RELEASE_BRANCH=$RELEASE_BRANCH
           RELEASE_TAG=$RELEASE_TAG
           EOF
@@ -117,10 +94,9 @@ jobs:
             git checkout -b ${RELEASE_BRANCH}
             git push -u origin ${RELEASE_BRANCH}
 
-            if [ -z "${{ steps.milestone.outputs.number }}" ]; then
-              echo "CREATE_PR=true" >> $GITHUB_ENV
-              echo "PR_TITLE=Bump versions for v$NEXT_VERSION_SNAPSHOT" >> $GITHUB_ENV
-            fi
+            # create a PR to bump master version to the next snapshot version
+            echo "CREATE_PR=true" >> $GITHUB_ENV
+            echo "PR_TITLE=Bump versions for v$NEXT_VERSION_SNAPSHOT" >> $GITHUB_ENV
           else
             git checkout ${RELEASE_BRANCH}
           fi
@@ -139,34 +115,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MILESTONE_NUMBER: ${{ steps.milestone.outputs.number }}
 
-      - name: Update Changelog
-        if: ${{ steps.milestone.outputs.number != '' }}
-        run: |
-          DESCRIPTION="${{ fromJson(steps.milestone-data.outputs.data).description }}"
-          RELEASE_DATE=$(date +%Y-%m-%d)
-
-          GITHUB_RELEASE_NOTES=$(mktemp --suffix .md)
-          TMP_CHANGELOG=$(mktemp --suffix .md)
-          TMP_RELEASE_NOTES=$(mktemp --suffix .md)
-
-          # copy to a temporary file for modification due to lack of write permsision
-          echo -e "$DESCRIPTION\n" | sed 's/\r$//' | cat - $RELEASE_NOTES_FULLNAME > $GITHUB_RELEASE_NOTES
-          RELEASE_NOTES=$(sed -r 's/^(#+) /\1# /g' $GITHUB_RELEASE_NOTES)
-
-          CHANGELOG_TITLE="# Hedera Mirror Node Changelog"
-          CHANGELOG_PREVIOUS=$(sed 'N; N; 0,/^'"$CHANGELOG_TITLE"'\n.*\n/s///' $CHANGELOG)
-          cat > $CHANGELOG <<EOF
-          $CHANGELOG_TITLE
-
-          ## ${{ steps.version_parser.outputs.version }} ($RELEASE_DATE)
-
-          $RELEASE_NOTES
-
-          $CHANGELOG_PREVIOUS
-          EOF
-
-          echo "GITHUB_RELEASE_NOTES=$GITHUB_RELEASE_NOTES" >> $GITHUB_ENV
-
       - name: Commit and Tag
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
@@ -180,11 +128,12 @@ jobs:
       - name: Create Github Release
         uses: ncipollo/release-action@v1
         with:
-          bodyFile: ${{ env.GITHUB_RELEASE_NOTES }}
+          bodyFile: ${{ env.RELEASE_NOTES_FILENAME }}.md
           commit: ${{ env.RELEASE_BRANCH }}
           draft: true
           name: ${{ env.RELEASE_TAG }}
-          prerelease: ${{ env.PRERELEASE == 'true' }}
+          omitBody: ${{ steps.milestone.outputs.number == '' }}
+          prerelease: ${{ steps.version_parser.outputs.pre-release != '' }}
           tag: ${{ env.RELEASE_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
