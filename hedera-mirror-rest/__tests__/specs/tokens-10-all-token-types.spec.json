@@ -38,7 +38,8 @@
       {
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
-        "created_timestamp": "1234567890000000001"
+        "created_timestamp": "1234567890000000001",
+        "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.0.1135",
@@ -49,7 +50,8 @@
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
-        "created_timestamp": "1234567890000000003"
+        "created_timestamp": "1234567890000000003",
+        "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.23.45678",

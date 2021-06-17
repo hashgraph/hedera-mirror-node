@@ -426,7 +426,6 @@ const addToken = async (token) => {
     symbol: 'YBTJBOAZ',
     total_supply: 1000000,
     treasury_account_id: '0.0.98',
-    type: 'FUNGIBLE_COMMON',
     wipe_key: null,
     wipe_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     ...token,

@@ -10,7 +10,8 @@
     "tokens": [
       {
         "token_id": "0.0.1",
-        "symbol": "FIRSTMOVERLPDJH"
+        "symbol": "FIRSTMOVERLPDJH",
+        "type": "FUNGIBLE_COMMON"
       }
     ],
     "balances": [],

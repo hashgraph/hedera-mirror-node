@@ -910,6 +910,7 @@ components:
           $ref: '#/components/schemas/Key'
         supply_type:
           type: string
+          enum: [ FINITE, INFINITE ]
           example: INFINITE
         symbol:
           type: string
@@ -923,6 +924,7 @@ components:
           $ref: '#/components/schemas/EntityId'
         type:
           type: string
+          enum: [ FUNGIBLE_COMMON, NON_FUNGIBLE_UNIQUE ]
           example: FUNGIBLE_COMMON
         wipe_key:
           $ref: '#/components/schemas/Key'
@@ -997,8 +999,6 @@ components:
               token_id:
                 $ref: '#/components/schemas/EntityId'
             required:
-              - receiver_account_id
-              - sender_account_id
               - serial_number
               - token_id
         max_fee:

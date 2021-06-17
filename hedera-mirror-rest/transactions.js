@@ -382,8 +382,7 @@ const getTransactionsInnerQuery = function (
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, nft_transfer.account_id,
     // and token_transfer.account_id, a full outer join between the four tables is needed to get rows that may only exist in one.
     return `
-      SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp,
-                      ntl.consensus_timestamp) AS consensus_timestamp
+      SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp, ntl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS t
       FULL OUTER JOIN (${ctlQuery}) AS ctl
       ON t.consensus_timestamp = ctl.consensus_timestamp
