@@ -20,6 +20,10 @@
 
 \copy non_fee_transfer to non_fee_transfer.csv delimiter ',' csv;
 
+\copy nft to nft.csv delimiter ',' csv;
+
+\copy nft_transfer to nft_transfer.csv delimiter ',' csv;
+
 \copy record_file to record_file.csv delimiter ',' csv;
 
 \copy schedule to schedule.csv delimiter ',' csv;
