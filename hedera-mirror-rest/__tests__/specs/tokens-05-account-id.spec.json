@@ -83,7 +83,8 @@
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
-        "admin_key": null
+        "admin_key": null,
+        "type": "FUNGIBLE_COMMON"
       }
     ],
     "links": {

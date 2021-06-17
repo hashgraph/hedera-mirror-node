@@ -194,6 +194,9 @@ const filterValidityChecks = async (param, op, val) => {
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
       break;
+    case constants.filterKeys.TOKEN_TYPE:
+      ret = isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
+      break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);

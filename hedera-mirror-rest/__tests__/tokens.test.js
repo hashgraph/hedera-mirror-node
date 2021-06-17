@@ -35,6 +35,7 @@ describe('token formatTokenRow tests', () => {
     public_key: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
     symbol: 'YBTJBOAZ',
     token_id: '7',
+    type: 'FUNGIBLE_COMMON',
   };
 
   const expectedFormat = {
@@ -44,6 +45,7 @@ describe('token formatTokenRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '030303',
     },
+    type: 'FUNGIBLE_COMMON',
   };
 
   test('Verify formatTokenRow', () => {
@@ -62,7 +64,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const filters = [];
 
     const expectedquery =
-      'select t.token_id, symbol, e.key from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
+      'select t.token_id, symbol, e.key, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -90,7 +92,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key
+    const expectedquery = `select t.token_id, symbol, e.key, t.type
                            from token t
                                   join entity e on e.id = t.token_id
                            where e.public_key = $1
@@ -124,7 +126,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key
+    const expectedquery = `select t.token_id, symbol, e.key, t.type
                            from token t
                                   join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
                                   join entity e on e.id = t.token_id
@@ -147,9 +149,47 @@ describe('token extractSqlFromTokenRequest tests', () => {
     );
   });
 
+  test('Verify token type filter', () => {
+    const extraConditions = ['ta.associated is true'];
+    const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
+    const initialParams = [5];
+    const tokenType = 'NON_FUNGIBLE_UNIQUE';
+    const filters = [
+      {
+        key: filterKeys.TOKEN_TYPE,
+        operator: ' = ',
+        value: tokenType,
+      },
+    ];
+
+    const expectedquery = `select t.token_id, symbol, e.key, t.type
+                           from token t
+                                  join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+                                  join entity e on e.id = t.token_id
+                           where ta.associated is true
+                             and t.type = $2
+                           order by t.token_id asc
+                           limit $3`;
+    const expectedparams = [5, tokenType, maxLimit];
+    const expectedorder = orderFilterValues.ASC;
+    const expectedlimit = maxLimit;
+
+    verifyExtractSqlFromTokenRequest(
+      initialQuery,
+      initialParams,
+      filters,
+      extraConditions,
+      expectedquery,
+      expectedparams,
+      expectedorder,
+      expectedlimit
+    );
+  });
+
   test('Verify all filters', () => {
     const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [5];
+    const tokenType = 'FUNGIBLE_COMMON';
     const filters = [
       {
         key: filterKeys.ACCOUNT_ID,
@@ -162,19 +202,25 @@ describe('token extractSqlFromTokenRequest tests', () => {
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
       {key: filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
+      {
+        key: filterKeys.TOKEN_TYPE,
+        operator: ' = ',
+        value: tokenType,
+      },
       {key: filterKeys.LIMIT, operator: ' = ', value: '3'},
       {key: filterKeys.ORDER, operator: ' = ', value: orderFilterValues.DESC},
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key
+    const expectedquery = `select t.token_id, symbol, e.key, t.type
                            from token t
                                   join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
                                   join entity e on e.id = t.token_id
                            where e.public_key = $2
                              and t.token_id > $3
+                             and t.type = $4
                            order by t.token_id desc
-                           limit $4`;
-    const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', '3'];
+                           limit $5`;
+    const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', tokenType, '3'];
     const expectedorder = orderFilterValues.DESC;
     const expectedlimit = 3;
 
@@ -317,19 +363,18 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select
-              tb.consensus_timestamp,
-              tb.account_id,
-              tb.balance
+            select tb.consensus_timestamp,
+                   tb.account_id,
+                   tb.balance
             from token_balance tb
             where tb.token_id = $1
               and tb.consensus_timestamp = (
-                select tb.consensus_timestamp
-                from token_balance tb
-                where tb.consensus_timestamp ${op !== opsMap.eq ? op : '<='} $2
-                order by tb.consensus_timestamp desc
-                limit 1
-              )
+              select tb.consensus_timestamp
+              from token_balance tb
+              where tb.consensus_timestamp ${op !== opsMap.eq ? op : '<='}
+                $2
+              order by tb.consensus_timestamp desc
+              limit 1)
             order by tb.account_id desc
             limit $3`,
           params: [tokenId, timestampNsLow, maxLimit],
@@ -386,12 +431,11 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select
-              tb.consensus_timestamp,
-              tb.account_id,
-              tb.balance
+            select tb.consensus_timestamp,
+                   tb.account_id,
+                   tb.balance
             from token_balance tb
-            where  tb.token_id = $1
+            where tb.token_id = $1
               and tb.account_id ${op} $2
               and tb.consensus_timestamp = (
                 select tb.consensus_timestamp
@@ -421,10 +465,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select
-              tb.consensus_timestamp,
-              tb.account_id,
-              tb.balance
+            select tb.consensus_timestamp,
+                   tb.account_id,
+                   tb.balance
             from token_balance tb
             where tb.token_id = $1
               and tb.balance ${op} $2
@@ -456,18 +499,17 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         ],
         expected: {
           query: `
-            select
-              tb.consensus_timestamp,
-              tb.account_id,
-              tb.balance
+            select tb.consensus_timestamp,
+                   tb.account_id,
+                   tb.balance
             from token_balance tb
             where tb.token_id = $1
               and tb.consensus_timestamp = (
-                select tb.consensus_timestamp
-                from token_balance tb
-                order by tb.consensus_timestamp desc
-                limit 1
-              )
+              select tb.consensus_timestamp
+              from token_balance tb
+              order by tb.consensus_timestamp desc
+              limit 1
+            )
             order by tb.account_id ${order}
             limit $2`,
           params: [tokenId, maxLimit],
@@ -608,6 +650,9 @@ describe('token formatTokenInfoRow tests', () => {
     auto_renew_period: 7890000,
     modified_timestamp: 1603394416676293000,
     name: 'Token name',
+    type: 'FUNGIBLE_COMMON',
+    max_supply: '9000000',
+    supply_type: 'FINITE',
   };
 
   const expectedFormat = {
@@ -630,16 +675,19 @@ describe('token formatTokenInfoRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '020202',
     },
+    max_supply: '9000000',
     modified_timestamp: '1603394416.676293000',
     name: 'Token name',
     supply_key: {
       _type: 'ProtobufEncoded',
       key: '040404',
     },
+    supply_type: 'FINITE',
     symbol: 'YBTJBOAZ',
     token_id: '0.0.7',
     total_supply: 2000000,
     treasury_account_id: '0.0.3',
+    type: 'FUNGIBLE_COMMON',
     wipe_key: {
       _type: 'ProtobufEncoded',
       key: '050505',

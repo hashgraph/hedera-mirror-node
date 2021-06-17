@@ -161,8 +161,8 @@ const addEntity = async (defaults, entity) => {
 
   await sqlConnection.query(
     `INSERT INTO entity (id, type, shard, realm, num, expiration_timestamp, deleted, public_key,
-                           auto_renew_period, key, memo)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+                         auto_renew_period, key, memo)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
     [
       EntityId.of(entity.shard, entity.realm, entity.num).getEncodedId(),
       entity.type,
@@ -194,7 +194,7 @@ const setAccountBalance = async (balance) => {
   const accountId = EntityId.of(config.shard, balance.realm_num, balance.id).getEncodedId();
   await sqlConnection.query(
     `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
-       VALUES ($1, $2, $3);`,
+     VALUES ($1, $2, $3);`,
     [balance.timestamp, accountId, balance.balance]
   );
 
@@ -240,9 +240,9 @@ const addTransaction = async (transaction) => {
   const entityId = EntityId.fromString(transaction.entity_id, 'entity_id', true);
   await sqlConnection.query(
     `INSERT INTO transaction (consensus_ns, valid_start_ns, payer_account_id, node_account_id, result, type,
-                                valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id,
-                                transaction_bytes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
+                              valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id,
+                              transaction_bytes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
     [
       transaction.consensus_timestamp.toString(),
       transaction.valid_start_timestamp.toString(),
@@ -262,13 +262,15 @@ const addTransaction = async (transaction) => {
   await insertTransfers('crypto_transfer', transaction.consensus_timestamp, transaction.transfers);
   await insertTransfers('non_fee_transfer', transaction.consensus_timestamp, transaction.non_fee_transfers);
   await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfer_list);
+  await insertNftTransfers(transaction.consensus_timestamp, transaction.nft_transfer_list);
 };
 
 const insertTransfers = async (tableName, consensusTimestamp, transfers) => {
   for (let i = 0; i < transfers.length; ++i) {
     const transfer = transfers[i];
     await sqlConnection.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id) VALUES ($1, $2, $3);`,
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id)
+       VALUES ($1, $2, $3);`,
       [consensusTimestamp.toString(), transfer.amount, EntityId.fromString(transfer.account).getEncodedId()]
     );
   }
@@ -290,6 +292,29 @@ const insertTokenTransfers = async (consensusTimestamp, transfers) => {
 
   await sqlConnection.query(
     pgformat('INSERT INTO token_transfer (consensus_timestamp, token_id, account_id, amount) VALUES %L', tokenTransfers)
+  );
+};
+
+const insertNftTransfers = async (consensusTimestamp, transfers) => {
+  if (!transfers || transfers.length === 0) {
+    return;
+  }
+
+  const nftTransfers = transfers.map((transfer) => {
+    return [
+      `${consensusTimestamp}`,
+      EntityId.fromString(transfer.receiver_account_id).getEncodedId().toString(),
+      EntityId.fromString(transfer.sender_account_id).getEncodedId().toString(),
+      transfer.serial_number,
+      EntityId.fromString(transfer.token_id).getEncodedId().toString(),
+    ];
+  });
+
+  await sqlConnection.query(
+    pgformat(
+      'INSERT INTO nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id) VALUES %L',
+      nftTransfers
+    )
   );
 };
 
@@ -325,8 +350,8 @@ const addTopicMessage = async (message) => {
 
   await sqlConnection.query(
     `INSERT INTO topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number,
-                                  running_hash_version)
-       VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+                                running_hash_version)
+     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
     [
       message.timestamp,
       message.realm_num,
@@ -349,12 +374,12 @@ const addSchedule = async (schedule) => {
 
   await sqlConnection.query(
     `INSERT INTO schedule (consensus_timestamp,
-                             creator_account_id,
-                             executed_timestamp,
-                             payer_account_id,
-                             schedule_id,
-                             transaction_body)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+                           creator_account_id,
+                           executed_timestamp,
+                           payer_account_id,
+                           schedule_id,
+                           transaction_body)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
     [
       schedule.consensus_timestamp,
       EntityId.fromString(schedule.creator_account_id).getEncodedId().toString(),
@@ -369,10 +394,10 @@ const addSchedule = async (schedule) => {
 const addTransactionSignature = async (transactionSignature) => {
   await sqlConnection.query(
     `INSERT INTO transaction_signature (consensus_timestamp,
-                                          public_key_prefix,
-                                          entity_id,
-                                          signature)
-       VALUES ($1, $2, $3, $4)`,
+                                        public_key_prefix,
+                                        entity_id,
+                                        signature)
+     VALUES ($1, $2, $3, $4)`,
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
@@ -393,12 +418,15 @@ const addToken = async (token) => {
     initial_supply: 1000000,
     kyc_key: null,
     kyc_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    max_supply: 9223372036854775807, // max long
     name: 'Token name',
     supply_key: null,
     supply_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    supply_type: 'INFINITE',
     symbol: 'YBTJBOAZ',
     total_supply: 1000000,
     treasury_account_id: '0.0.98',
+    type: 'FUNGIBLE_COMMON',
     wipe_key: null,
     wipe_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     ...token,
@@ -410,23 +438,23 @@ const addToken = async (token) => {
 
   await sqlConnection.query(
     `INSERT INTO token (token_id,
-                          created_timestamp,
-                          decimals,
-                          freeze_default,
-                          freeze_key_ed25519_hex,
-                          initial_supply,
-                          kyc_key,
-                          kyc_key_ed25519_hex,
-                          modified_timestamp,
-                          name,
-                          supply_key,
-                          supply_key_ed25519_hex,
-                          symbol,
-                          total_supply,
-                          treasury_account_id,
-                          wipe_key,
-                          wipe_key_ed25519_hex)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);`,
+                        created_timestamp,
+                        decimals,
+                        freeze_default,
+                        freeze_key_ed25519_hex,
+                        initial_supply,
+                        kyc_key,
+                        kyc_key_ed25519_hex,
+                        modified_timestamp,
+                        name,
+                        supply_key,
+                        supply_key_ed25519_hex,
+                        symbol,
+                        total_supply,
+                        treasury_account_id,
+                        wipe_key,
+                        wipe_key_ed25519_hex)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);`,
     [
       EntityId.fromString(token.token_id).getEncodedId(),
       token.created_timestamp,
@@ -468,8 +496,8 @@ const addTokenAccount = async (tokenAccount) => {
 
   await sqlConnection.query(
     `INSERT INTO token_account (account_id, associated, created_timestamp, freeze_status, kyc_status,
-                                  modified_timestamp, token_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+                                modified_timestamp, token_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
     [
       EntityId.fromString(tokenAccount.account_id).getEncodedId(),
       tokenAccount.associated,

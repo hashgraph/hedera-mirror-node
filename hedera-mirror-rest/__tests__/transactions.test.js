@@ -25,7 +25,7 @@ const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils');
 const utils = require('../utils');
-const {buildWhereClause} = require('../transactions');
+const {buildWhereClause, createNftTransferList, createTransferLists} = require('../transactions');
 
 const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
@@ -128,19 +128,19 @@ const validateFields = function (transactions) {
   // Assert that all mandatory fields are present in the response
   [
     'consensus_timestamp',
-    'valid_start_timestamp',
     'charged_tx_fee',
-    'transaction_id',
+    'entity_id',
+    'max_fee',
     'memo_base64',
-    'result',
     'name',
     'node',
+    'result',
+    'scheduled',
+    'transaction_hash',
+    'transaction_id',
     'transfers',
     'valid_duration_seconds',
-    'max_fee',
-    'transaction_hash',
-    'scheduled',
-    'entity_id',
+    'valid_start_timestamp',
   ].forEach((field) => {
     if (!(field in transaction)) {
       errors.push(`missing field "${field}"`);
@@ -306,6 +306,8 @@ describe('Transaction tests', () => {
       const {transactions} = JSON.parse(response.text);
       const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
 
+      // expect(JSON.stringify(transactions.nft_transfers)).toEqual('');
+
       // Verify the sql query against each of the specified checks
       expect(parsedParams).toEqual(expect.arrayContaining(item.checks));
 
@@ -393,5 +395,200 @@ describe('buildWhereClause', () => {
       const whereClause = buildWhereClause(...conditions);
       expect(whereClause.toLowerCase()).toEqual(expected);
     });
+  });
+});
+
+describe('createNftTransferList', () => {
+  const rowsFromDb = [
+    {
+      consensus_timestamp: 1,
+      receiver_account_id: 1000,
+      sender_account_id: 98,
+      serial_number: 1,
+      token_id: 2000,
+    },
+    {
+      consensus_timestamp: 10,
+      receiver_account_id: 1005,
+      sender_account_id: 98,
+      serial_number: 2,
+      token_id: 2000,
+    },
+    {
+      consensus_timestamp: 100,
+      receiver_account_id: 98,
+      sender_account_id: 1005,
+      serial_number: 2,
+      token_id: 2000,
+    },
+  ];
+
+  const expectedFormat = [
+    {
+      receiver_account_id: '0.0.1000',
+      sender_account_id: '0.0.98',
+      serial_number: 1,
+      token_id: '0.0.2000',
+    },
+    {
+      receiver_account_id: '0.0.1005',
+      sender_account_id: '0.0.98',
+      serial_number: 2,
+      token_id: '0.0.2000',
+    },
+    {
+      receiver_account_id: '0.0.98',
+      sender_account_id: '0.0.1005',
+      serial_number: 2,
+      token_id: '0.0.2000',
+    },
+  ];
+
+  test('Simple createNftTransferList', () => {
+    expect(createNftTransferList(rowsFromDb)).toEqual(expectedFormat);
+  });
+});
+
+describe('create transferLists', () => {
+  test('Simple nftTransferList', () => {
+    const nftTransfersFromDb = [
+      {
+        consensus_timestamp: 1,
+        receiver_account_id: 1000,
+        sender_account_id: 98,
+        serial_number: 1,
+        token_id: 2000,
+      },
+      {
+        consensus_timestamp: 10,
+        receiver_account_id: 1005,
+        sender_account_id: 98,
+        serial_number: 2,
+        token_id: 2000,
+      },
+      {
+        consensus_timestamp: 100,
+        receiver_account_id: 98,
+        sender_account_id: 1005,
+        serial_number: 2,
+        token_id: 2000,
+      },
+    ];
+
+    const transactionsFromDb = [
+      {
+        consensus_ns: 1,
+        entity_id: 98,
+        ctl_entity_id: 98,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        non_fee_transfers: [],
+        transfers: [],
+        result: 22,
+        scheduled: false,
+        transaction_hash: 'hash',
+        type: 14,
+        valid_start_ns: 1623787159737799966,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+        nft_transfer_list: nftTransfersFromDb,
+      },
+      {
+        consensus_ns: 2,
+        entity_id: 100,
+        ctl_entity_id: 100,
+        memo: null,
+        charged_tx_fee: 5,
+        max_fee: 33,
+        non_fee_transfers: [],
+        transfers: [],
+        result: 22,
+        scheduled: false,
+        transaction_hash: 'hash',
+        type: 14,
+        valid_start_ns: 1623787159737799966,
+        transaction_bytes: 'bytes',
+        node_account_id: 2,
+        payer_account_id: 3,
+        nft_transfer_list: undefined,
+      },
+    ];
+
+    const expectedNftTransfersList = [
+      {
+        receiver_account_id: '0.0.1000',
+        sender_account_id: '0.0.98',
+        serial_number: 1,
+        token_id: '0.0.2000',
+      },
+      {
+        receiver_account_id: '0.0.1005',
+        sender_account_id: '0.0.98',
+        serial_number: 2,
+        token_id: '0.0.2000',
+      },
+      {
+        receiver_account_id: '0.0.98',
+        sender_account_id: '0.0.1005',
+        serial_number: 2,
+        token_id: '0.0.2000',
+      },
+    ];
+
+    const expectedFormat = [
+      {
+        bytes: 'bytes',
+        consensus_timestamp: '0.000000001',
+        charged_tx_fee: 5,
+        entity_id: '0.0.98',
+        id: undefined,
+        max_fee: '33',
+        memo_base64: null,
+        name: undefined,
+        node: '0.0.2',
+        result: 22,
+        scheduled: false,
+        token_transfers: undefined,
+        transaction_hash: 'hash',
+        transaction_id: '0.0.3-1623787159-737800000',
+        transfers: [
+          {
+            account: '0.0.98',
+            amount: NaN,
+          },
+        ],
+        valid_duration_seconds: null,
+        valid_start_timestamp: '1623787159.737800000',
+        nft_transfers: expectedNftTransfersList,
+      },
+      {
+        bytes: 'bytes',
+        consensus_timestamp: '0.000000002',
+        charged_tx_fee: 5,
+        entity_id: '0.0.100',
+        id: undefined,
+        max_fee: '33',
+        memo_base64: null,
+        name: undefined,
+        nft_transfers: undefined,
+        node: '0.0.2',
+        result: 22,
+        scheduled: false,
+        token_transfers: undefined,
+        transaction_hash: 'hash',
+        transaction_id: '0.0.3-1623787159-737800000',
+        transfers: [
+          {
+            account: '0.0.100',
+            amount: NaN,
+          },
+        ],
+        valid_duration_seconds: null,
+        valid_start_timestamp: '1623787159.737800000',
+      },
+    ];
+    expect(createTransferLists(transactionsFromDb).transactions).toEqual(expectedFormat);
   });
 });

@@ -62,11 +62,14 @@
     "freeze_key": null,
     "initial_supply": "1000000",
     "kyc_key": null,
+    "max_supply": "9223372036854775807",
     "modified_timestamp": "1234567890.000000002",
     "name": "Token name",
     "supply_key": null,
+    "supply_type": "INFINITE",
     "total_supply": "1000000",
     "treasury_account_id": "0.0.98",
+    "type": "FUNGIBLE_COMMON",
     "wipe_key": null
   }
 }
