@@ -303,8 +303,8 @@ const insertNftTransfers = async (consensusTimestamp, transfers) => {
   const nftTransfers = transfers.map((transfer) => {
     return [
       `${consensusTimestamp}`,
-      EntityId.fromString(transfer.receiver_account_id).getEncodedId().toString(),
-      EntityId.fromString(transfer.sender_account_id).getEncodedId().toString(),
+      EntityId.fromString(transfer.receiver_account_id, '', true).getEncodedId(),
+      EntityId.fromString(transfer.sender_account_id, '', true).getEncodedId(),
       transfer.serial_number,
       EntityId.fromString(transfer.token_id).getEncodedId().toString(),
     ];

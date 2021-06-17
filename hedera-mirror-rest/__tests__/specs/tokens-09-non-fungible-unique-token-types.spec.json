@@ -59,7 +59,7 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens?tokentype=NON_FUNGIBLE_UNIQUE", "/api/v1/tokens?tokentype=non_fungible_unique"],
+  "urls": ["/api/v1/tokens?type=NON_FUNGIBLE_UNIQUE", "/api/v1/tokens?type=non_fungible_unique"],
   "responseStatus": 200,
   "responseJson": {
     "tokens": [

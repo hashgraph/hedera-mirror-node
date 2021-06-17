@@ -24,6 +24,7 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // select columns
@@ -158,12 +159,79 @@ const formatTokenInfoRow = (row) => {
   };
 };
 
+const tokenQueryFilterValidityChecks = (param, op, val) => {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
+  }
+
+  // Validate operator
+  if (!utils.isValidOperatorQuery(op)) {
+    return ret;
+  }
+
+  // Validate the value
+  switch (param) {
+    case constants.filterKeys.ACCOUNT_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
+    case constants.filterKeys.ENTITY_PUBLICKEY:
+      // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+      ret = utils.isValidPublicKeyQuery(val);
+      break;
+    case constants.filterKeys.LIMIT:
+      // Acceptable forms: upto 4 digits
+      ret = utils.isValidLimitNum(val);
+      break;
+    case constants.filterKeys.ORDER:
+      // Acceptable words: asc or desc
+      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
+      break;
+    case constants.filterKeys.TOKEN_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
+    case constants.filterKeys.TOKEN_TYPE:
+      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
+      break;
+    case constants.filterKeys.TIMESTAMP:
+      ret = utils.isValidTimestampParam(val);
+      break;
+    default:
+      // Every token parameter should be included here. Otherwise, it will not be accepted.
+      ret = false;
+  }
+
+  return ret;
+};
+
+/**
+ * Verify param and filters meet expected format
+ * Additionally update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const validateTokensFilters = (filters) => {
+  const badParams = [];
+
+  for (const filter of filters) {
+    if (!tokenQueryFilterValidityChecks(filter.key, filter.operator, filter.value)) {
+      badParams.push(filter.key);
+    }
+  }
+
+  if (badParams.length > 0) {
+    throw InvalidArgumentError.forParams(badParams);
+  }
+};
+
 const getTokensRequest = async (req, res) => {
   // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
 
-  // validate filters
-  await utils.validateAndParseFilters(filters);
+  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
+  validateTokensFilters(filters);
+  utils.formatFilters(filters);
 
   const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
@@ -388,5 +456,6 @@ if (utils.isTestEnv()) {
     formatTokenRow,
     tokenBalancesSelectQuery,
     tokensSelectQuery,
+    validateTokensFilters,
   });
 }

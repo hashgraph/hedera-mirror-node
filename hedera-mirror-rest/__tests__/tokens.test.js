@@ -24,6 +24,7 @@ const tokens = require('../tokens');
 const {filterKeys, orderFilterValues} = require('../constants');
 const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
+const utils = require('../utils');
 
 const formatSqlQueryString = (query) => {
   return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
@@ -698,5 +699,43 @@ describe('token formatTokenInfoRow tests', () => {
     const formattedInput = tokens.formatTokenInfoRow(rowInput);
 
     expect(JSON.stringify(formattedInput)).toStrictEqual(JSON.stringify(expectedFormat));
+  });
+});
+
+describe('utils validateAndParseFilters token type tests', () => {
+  const key = filterKeys.TOKEN_TYPE;
+  const invalidFilters = [
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
+    // invalid format
+    utils.buildComparatorFilter(key, 'cred'),
+    utils.buildComparatorFilter(key, 'deb'),
+  ];
+
+  const filters = [
+    utils.buildComparatorFilter(key, 'all'),
+    utils.buildComparatorFilter(key, 'ALL'),
+    utils.buildComparatorFilter(key, 'NON_FUNGIBLE_UNIQUE'),
+    utils.buildComparatorFilter(key, 'non_fungible_unique'),
+    utils.buildComparatorFilter(key, 'FUNGIBLE_COMMON'),
+    utils.buildComparatorFilter(key, 'fungible_common'),
+  ];
+
+  invalidFilters.forEach((filter) => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
+      expect(() => tokens.validateTokensFilters([filter])).toThrowErrorMatchingSnapshot();
+    });
+  });
+
+  filters.forEach((filter) => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
+      tokens.validateTokensFilters([filter]);
+    });
   });
 });

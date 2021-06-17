@@ -579,69 +579,6 @@ servers:
         enum: [ mainnet, previewnet, testnet ]
 components:
   schemas:
-    Timestamp:
-      type: string
-      example: 1586567700.453054000
-    TokenBalance:
-      type: object
-      required:
-        - token_id
-        - balance
-      properties:
-        token_id:
-          type: string
-        balance:
-          type: number
-      example:
-        token_id: 0.0.200001
-        balance: 8
-    AccountBalance:
-      type: object
-      required:
-        - account
-        - balance
-        - tokens
-      properties:
-        account:
-          type: string
-        balance:
-          type: number
-        tokens:
-          type: array
-          items:
-            $ref: '#/components/schemas/TokenBalance'
-      example:
-        account: 0.15.10
-        balance: 80
-        tokens:
-          - token_id: 0.0.200001
-            balance: 8
-    Balance:
-      type: object
-      required:
-        - timestamp
-        - balance
-        - tokens
-      properties:
-        timestamp:
-          type: string
-        balance:
-          type: number
-        tokens:
-          type: array
-          items:
-            type: object
-            properties:
-              token_id:
-                type: string
-              balance:
-                type: number
-      example:
-        timestamp: 0.000002345
-        balance: 80
-        tokens:
-          - token_id: 0.0.200001
-            balance: 8
     AccountInfo:
       type: object
       required:
@@ -655,7 +592,7 @@ components:
         balance:
           $ref: '#/components/schemas/Balance'
         account:
-          type: string
+          $ref: '#/components/schemas/EntityId'
         expiry_timestamp:
           nullable: true
         auto_renew_period:
@@ -680,6 +617,102 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/AccountInfo'
+    AccountBalance:
+      type: object
+      required:
+        - account
+        - balance
+        - tokens
+      properties:
+        account:
+          $ref: '#/components/schemas/EntityId'
+        balance:
+          type: number
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenBalance'
+      example:
+        account: 0.15.10
+        balance: 80
+        tokens:
+          - token_id: 0.0.200001
+            balance: 8
+    AccountBalanceTransactions:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/Transactions'
+        balance:
+          $ref: '#/components/schemas/Balance'
+        account:
+          $ref: '#/components/schemas/EntityId'
+        expiry_timestamp:
+          nullable: true
+        auto_renew_period:
+          nullable: true
+        key:
+          $ref: '#/components/schemas/Key'
+        deleted:
+          type: boolean
+        links:
+          $ref: '#/components/schemas/Links'
+    Balance:
+      type: object
+      required:
+        - timestamp
+        - balance
+        - tokens
+      properties:
+        timestamp:
+          type: string
+        balance:
+          type: number
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              token_id:
+                $ref: '#/components/schemas/EntityId'
+              balance:
+                type: number
+      example:
+        timestamp: 0.000002345
+        balance: 80
+        tokens:
+          - token_id: 0.0.200001
+            balance: 8
+    EntityId:
+      type: object
+      required:
+        - shard
+        - realm
+        - num
+      properties:
+        shard:
+          type: number
+        realm:
+          type: number
+        num:
+          type: number
+      example:
+        shard: 0
+        realm: 1
+        num: 2
+    Error:
+      type: object
+      properties:
+        _status:
+          type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  message:
+                    type: string
     Key:
       type: object
       nullable: true
@@ -691,6 +724,12 @@ components:
         key:
           type: string
           example: 7b2231222c2231222c2231227d
+    Links:
+      type: object
+      properties:
+        next:
+          example: null
+          nullable: true
     Schedule:
       type: object
       properties:
@@ -700,8 +739,7 @@ components:
           type: string
           example: "1234567890.000000001"
         creator_account_id:
-          type: string
-          example: 0.0.2000
+          $ref: '#/components/schemas/EntityId'
         executed_timestamp:
           type: string
           nullable: true
@@ -710,11 +748,9 @@ components:
           type: string
           example: 'created on 02/10/2021'
         payer_account_id:
-          type: string
-          example: 0.0.3000
+          $ref: '#/components/schemas/EntityId'
         schedule_id:
-          type: string
-          example: 0.0.3010
+          $ref: '#/components/schemas/EntityId'
         signatures:
           type: array
           items:
@@ -741,6 +777,194 @@ components:
           type: string
           format: byte
           example: "3q2+7wABAQMLqgMMwQ=="
+    StateProofFiles:
+      type: object
+      properties:
+        record_file:
+          type: string
+          format: byte
+        address_books:
+          type: array
+          items:
+            type: string
+            format: byte
+        signature_files:
+          type: object
+          properties:
+            0.0.3:
+              type: string
+              format: byte
+            0.0.4:
+              type: string
+              format: byte
+            0.0.5:
+              type: string
+              format: byte
+            0.0.6:
+              type: string
+              format: byte
+          additionalProperties:
+            type: string
+            format: byte
+      example:
+        record_file: YzNkOTg3Yzg3NDI5NGViOTViMmRmOWZkMzZiMDY1NjYyMzMxNTc2OWFmMmVmMzQ0YzM1ODY4NzgwMTAyYjVjMA==
+        address_books:
+          - MjljY2IxNGNjNWY2NWM1MmZlYjc0MjkyYjAxZDUyZmRjZjJkZTY0NWQzOTRiNTM3MDQ2ODBkYjZkMTMyZWM2Yw==
+        signature_files:
+          0.0.3: MWFmYzZlNWVjNGJiZTg0ZWJjNTVkMGViNDViMjE2Mzg2ZTQ2NjUzZTYyYmM1NjE2YThmZGJjNzQ1ZWIyMTQxNQ==
+          0.0.4: ZDI4ZDIwMGJiYTdkNDhmNTA3ZTE0MGZhNjIyOGFiYTdmMjlmZjhiMmEzZjJhOGVlYjg1NzQyZGMwNTNjZWM3MQ==
+          0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
+          0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
+          0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
+    Timestamp:
+      type: string
+      example: 1586567700.453054000
+    Token:
+      type: object
+      properties:
+        token_id:
+          $ref: '#/components/schemas/EntityId'
+        symbol:
+          type: string
+        admin_key:
+          $ref: '#/components/schemas/Key'
+        type:
+          type: string
+      required:
+        - token_id
+        - symbol
+        - admin_key
+        - type
+      example:
+        token_id: 0.0.1
+        symbol: FIRSTMOVERLPDJH
+        admin_key: null
+        type: FUNGIBLE_COMMON
+    TokenBalance:
+      type: object
+      required:
+        - token_id
+        - balance
+      properties:
+        token_id:
+          $ref: '#/components/schemas/EntityId'
+        balance:
+          type: number
+      example:
+        token_id: 0.0.200001
+        balance: 8
+    TokenDistribution:
+      type: array
+      items:
+        type: object
+        properties:
+          account:
+            $ref: '#/components/schemas/EntityId'
+          balance:
+            type: number
+        required:
+          - account
+          - balance
+      example:
+        - account: 0.15.2
+          balance: 1000
+    TokenInfo:
+      type: object
+      properties:
+        admin_key:
+          $ref: '#/components/schemas/Key'
+        auto_renew_account:
+          $ref: '#/components/schemas/EntityId'
+        auto_renew_period:
+          example: null
+          nullable: true
+        created_timestamp:
+          type: string
+          example: 1234567890.000000001
+        decimals:
+          type: string
+          example: 1000
+        expiry_timestamp:
+          example: null
+          nullable: true
+        freeze_default:
+          type: boolean
+          example: false
+        freeze_key:
+          $ref: '#/components/schemas/Key'
+        initial_supply:
+          type: string
+          example: 1000000
+        kyc_key:
+          $ref: '#/components/schemas/Key'
+        max_supply:
+          type: number
+          example: 9223372036854775807
+        modified_timestamp:
+          type: string
+          example: 1234567890.000000001
+        name:
+          type: string
+          example: Token name
+        supply_key:
+          $ref: '#/components/schemas/Key'
+        supply_type:
+          type: string
+          example: INFINITE
+        symbol:
+          type: string
+          example: ORIGINALRDKSE
+        token_id:
+          $ref: '#/components/schemas/EntityId'
+        total_supply:
+          type: number
+          example: 1000000
+        treasury_account_id:
+          $ref: '#/components/schemas/EntityId'
+        type:
+          type: string
+          example: FUNGIBLE_COMMON
+        wipe_key:
+          $ref: '#/components/schemas/Key'
+    Tokens:
+      type: array
+      items:
+        $ref: '#/components/schemas/Token'
+    TopicMessage:
+      type: object
+      properties:
+        consensus_timestamp:
+          type: string
+        topic_id:
+          $ref: '#/components/schemas/EntityId'
+        message:
+          type: string
+          format: byte
+        running_hash:
+          type: string
+          format: byte
+        running_hash_version:
+          type: number
+        sequence_number:
+          type: number
+      required:
+        - consensus_timestamp
+        - topic_id
+        - message
+        - running_hash
+        - running_hash_version
+        - sequence_number
+      example:
+        consensus_timestamp: 1234567890.000000001
+        topic_id: 0.0.7
+        message: bWVzc2FnZQ==
+        running_hash: cnVubmluZ19oYXNo
+        running_hash_version: 2
+        sequence_number: 1
+    TopicMessages:
+      type: array
+      items:
+        $ref: '#/components/schemas/TopicMessage'
     Transaction:
       type: object
       properties:
@@ -765,13 +989,13 @@ components:
             type: object
             properties:
               receiver_account_id:
-                type: string
+                $ref: '#/components/schemas/EntityId'
               sender_account_id:
-                type: string
+                $ref: '#/components/schemas/EntityId'
               serial_number:
                 type: number
               token_id:
-                type: string
+                $ref: '#/components/schemas/EntityId'
             required:
               - receiver_account_id
               - sender_account_id
@@ -782,7 +1006,7 @@ components:
         valid_duration_seconds:
           type: string
         node:
-          type: string
+          $ref: '#/components/schemas/EntityId'
         scheduled:
           type: boolean
         transaction_id:
@@ -793,7 +1017,7 @@ components:
             type: object
             properties:
               account:
-                type: string
+                $ref: '#/components/schemas/EntityId'
               amount:
                 type: number
             required:
@@ -805,9 +1029,9 @@ components:
             type: object
             properties:
               token_id:
-                type: string
+                $ref: '#/components/schemas/EntityId'
               account:
-                type: string
+                $ref: '#/components/schemas/EntityId'
               amount:
                 type: number
             required:
@@ -854,219 +1078,6 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Transaction'
-    AccountBalanceTransactions:
-      type: object
-      properties:
-        transactions:
-          $ref: '#/components/schemas/Transactions'
-        balance:
-          $ref: '#/components/schemas/Balance'
-        account:
-          type: string
-        expiry_timestamp:
-          nullable: true
-        auto_renew_period:
-          nullable: true
-        key:
-          $ref: '#/components/schemas/Key'
-        deleted:
-          type: boolean
-        links:
-          $ref: '#/components/schemas/Links'
-    TopicMessage:
-      type: object
-      properties:
-        consensus_timestamp:
-          type: string
-        topic_id:
-          type: string
-        message:
-          type: string
-          format: byte
-        running_hash:
-          type: string
-          format: byte
-        running_hash_version:
-          type: number
-        sequence_number:
-          type: number
-      required:
-        - consensus_timestamp
-        - topic_id
-        - message
-        - running_hash
-        - running_hash_version
-        - sequence_number
-      example:
-        consensus_timestamp: 1234567890.000000001
-        topic_id: 0.0.7
-        message: bWVzc2FnZQ==
-        running_hash: cnVubmluZ19oYXNo
-        running_hash_version: 2
-        sequence_number: 1
-    TopicMessages:
-      type: array
-      items:
-        $ref: '#/components/schemas/TopicMessage'
-    Token:
-      type: object
-      properties:
-        token_id:
-          type: string
-        symbol:
-          type: string
-        admin_key:
-          $ref: '#/components/schemas/Key'
-        type:
-          type: string
-      required:
-        - token_id
-        - symbol
-        - admin_key
-        - type
-      example:
-        token_id: 0.0.1
-        symbol: FIRSTMOVERLPDJH
-        admin_key: null
-        type: FUNGIBLE_COMMON
-    Tokens:
-      type: array
-      items:
-        $ref: '#/components/schemas/Token'
-    TokenInfo:
-      type: object
-      properties:
-        admin_key:
-          $ref: '#/components/schemas/Key'
-        auto_renew_account:
-          example: null
-          nullable: true
-        auto_renew_period:
-          example: null
-          nullable: true
-        created_timestamp:
-          type: string
-          example: 1234567890.000000001
-        decimals:
-          type: string
-          example: 1000
-        expiry_timestamp:
-          example: null
-          nullable: true
-        freeze_default:
-          type: boolean
-          example: false
-        freeze_key:
-          $ref: '#/components/schemas/Key'
-        initial_supply:
-          type: string
-          example: 1000000
-        kyc_key:
-          $ref: '#/components/schemas/Key'
-        max_supply:
-          type: number
-          example: 9223372036854775807
-        modified_timestamp:
-          type: string
-          example: 1234567890.000000001
-        name:
-          type: string
-          example: Token name
-        supply_key:
-          $ref: '#/components/schemas/Key'
-        supply_type:
-          type: string
-          example: INFINITE
-        symbol:
-          type: string
-          example: ORIGINALRDKSE
-        token_id:
-          type: string
-          example: 0.0.1135
-        total_supply:
-          type: number
-          example: 1000000
-        treasury_account_id:
-          type: string
-          example: 0.0.98
-        type:
-          type: string
-          example: FUNGIBLE_COMMON
-        wipe_key:
-          $ref: '#/components/schemas/Key'
-    TokenDistribution:
-      type: array
-      items:
-        type: object
-        properties:
-          account:
-            type: string
-          balance:
-            type: number
-        required:
-          - account
-          - balance
-      example:
-        - account: 0.15.2
-          balance: 1000
-    StateProofFiles:
-      type: object
-      properties:
-        record_file:
-          type: string
-          format: byte
-        address_books:
-          type: array
-          items:
-            type: string
-            format: byte
-        signature_files:
-          type: object
-          properties:
-            0.0.3:
-              type: string
-              format: byte
-            0.0.4:
-              type: string
-              format: byte
-            0.0.5:
-              type: string
-              format: byte
-            0.0.6:
-              type: string
-              format: byte
-          additionalProperties:
-            type: string
-            format: byte
-      example:
-        record_file: YzNkOTg3Yzg3NDI5NGViOTViMmRmOWZkMzZiMDY1NjYyMzMxNTc2OWFmMmVmMzQ0YzM1ODY4NzgwMTAyYjVjMA==
-        address_books:
-          - MjljY2IxNGNjNWY2NWM1MmZlYjc0MjkyYjAxZDUyZmRjZjJkZTY0NWQzOTRiNTM3MDQ2ODBkYjZkMTMyZWM2Yw==
-        signature_files:
-          0.0.3: MWFmYzZlNWVjNGJiZTg0ZWJjNTVkMGViNDViMjE2Mzg2ZTQ2NjUzZTYyYmM1NjE2YThmZGJjNzQ1ZWIyMTQxNQ==
-          0.0.4: ZDI4ZDIwMGJiYTdkNDhmNTA3ZTE0MGZhNjIyOGFiYTdmMjlmZjhiMmEzZjJhOGVlYjg1NzQyZGMwNTNjZWM3MQ==
-          0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
-          0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
-          0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
-    Links:
-      type: object
-      properties:
-        next:
-          example: null
-          nullable: true
-    Error:
-      type: object
-      properties:
-        _status:
-          type: object
-          properties:
-            messages:
-              type: array
-              items:
-                type: object
-                properties:
-                  message:
-                    type: string
   responses:
     NotFoundError:
       description: Not Found
@@ -1329,7 +1340,7 @@ components:
       schema:
         type: string
     tokenTypeQueryParam:
-      name: tokentype
+      name: type
       in: query
       example:
         - ALL

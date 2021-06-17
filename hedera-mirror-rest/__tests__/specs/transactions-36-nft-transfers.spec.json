@@ -38,14 +38,14 @@
             "token_id": "0.0.90000"
           },
           {
-            "receiver_account_id": "0.0.9",
+            "receiver_account_id": null,
             "sender_account_id": "0.0.3",
             "serial_number": 2,
             "token_id": "0.0.90000"
           },
           {
             "receiver_account_id": "0.0.10",
-            "sender_account_id": "0.0.3",
+            "sender_account_id": null,
             "serial_number": 3,
             "token_id": "0.0.90000"
           }
@@ -76,12 +76,12 @@
         "nft_transfers": [
           {
             "receiver_account_id": "0.0.10",
-            "sender_account_id": "0.0.3",
+            "sender_account_id": null,
             "serial_number": 3,
             "token_id": "0.0.90000"
           },
           {
-            "receiver_account_id": "0.0.9",
+            "receiver_account_id": null,
             "sender_account_id": "0.0.3",
             "serial_number": 2,
             "token_id": "0.0.90000"

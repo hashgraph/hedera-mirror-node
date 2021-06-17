@@ -740,24 +740,42 @@ const buildComparatorFilter = (name, filter) => {
 
 /**
  * Verify param and filters meet expected format
- * Additionally update format to be persistence query compatible
  * @param filters
- * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = async (filters) => {
+const validateFilters = async (filters) => {
   const badParams = [];
 
   for (const filter of filters) {
     if (!(await filterValidityChecks(filter.key, filter.operator, filter.value))) {
       badParams.push(filter.key);
-    } else {
-      formatComparator(filter);
     }
   }
 
   if (badParams.length > 0) {
     throw InvalidArgumentError.forParams(badParams);
   }
+};
+
+/**
+ * Update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const formatFilters = (filters) => {
+  for (const filter of filters) {
+    formatComparator(filter);
+  }
+};
+
+/**
+ * Verify param and filters meet expected format
+ * Additionally update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const validateAndParseFilters = async (filters) => {
+  await validateFilters(filters);
+  formatFilters(filters);
 };
 
 const formatComparator = (comparator) => {
@@ -876,11 +894,14 @@ module.exports = {
   ENTITY_TYPE_FILE,
   filterValidityChecks,
   formatComparator,
+  formatFilters,
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
+  isValidPublicKeyQuery,
+  isValidOperatorQuery,
   isValidValueIgnoreCase,
   isValidLimitNum,
   isValidNum,

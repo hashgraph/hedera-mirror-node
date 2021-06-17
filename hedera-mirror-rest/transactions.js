@@ -113,8 +113,8 @@ const createNftTransferList = (nftTransferList) => {
       token_id: tokenId,
     } = transfer;
     return {
-      receiver_account_id: EntityId.fromEncodedId(receiverAccountId).toString(),
-      sender_account_id: EntityId.fromEncodedId(senderAccountId).toString(),
+      receiver_account_id: EntityId.fromEncodedId(receiverAccountId, true).toString(),
+      sender_account_id: EntityId.fromEncodedId(senderAccountId, true).toString(),
       serial_number: serialNumber,
       token_id: EntityId.fromEncodedId(tokenId).toString(),
     };
@@ -271,8 +271,11 @@ const getTransferDistinctTimestampsQuery = function (
 
   return `
     SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
-    FROM ${tableName} AS ${tableAlias} ${joinClause} ${whereClause}
-    ORDER BY ${tableAlias}.consensus_timestamp ${order} ${namedLimitQuery}`;
+      FROM ${tableName} AS ${tableAlias}
+      ${joinClause}
+      ${whereClause}
+      ORDER BY ${tableAlias}.consensus_timestamp ${order}
+      ${namedLimitQuery}`;
 };
 
 /**
@@ -318,8 +321,9 @@ const getTransactionsInnerQuery = function (
   const transactionOnlyQuery = `
     SELECT consensus_ns AS consensus_timestamp
     FROM transaction AS t
-      ${transactionWhereClause}
-    ORDER BY consensus_ns ${order} ${namedLimitQuery}`;
+    ${transactionWhereClause}
+    ORDER BY consensus_ns ${order}
+    ${namedLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(
@@ -368,28 +372,27 @@ const getTransactionsInnerQuery = function (
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
       return `
-        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp)
-                 AS consensus_timestamp
+        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
         FROM (${ctlQuery}) AS ctl
-               FULL OUTER JOIN (${ttlQuery}) as ttl
-                               ON ctl.consensus_timestamp = ttl.consensus_timestamp
+        FULL OUTER JOIN (${ttlQuery}) as ttl
+        ON ctl.consensus_timestamp = ttl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
-          ${namedLimitQuery}`;
+        ${namedLimitQuery}`;
     }
-    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and nft_transfer.account_id,
-    // and token_transfer.account_id, a full outer join between the three tables is needed to get rows that may only exist in one.
+    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, nft_transfer.account_id,
+    // and token_transfer.account_id, a full outer join between the four tables is needed to get rows that may only exist in one.
     return `
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp,
                       ntl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS t
-             FULL OUTER JOIN (${ctlQuery}) AS ctl
-                             ON t.consensus_timestamp = ctl.consensus_timestamp
-             FULL OUTER JOIN (${ttlQuery}) AS ttl
-                             ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
-             FULL OUTER JOIN (${nftTrQuery}) as ntl
-                             ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ntl.consensus_timestamp
+      FULL OUTER JOIN (${ctlQuery}) AS ctl
+      ON t.consensus_timestamp = ctl.consensus_timestamp
+      FULL OUTER JOIN (${ttlQuery}) AS ttl
+      ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      FULL OUTER JOIN (${nftTrQuery}) as ntl
+      ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) = ntl.consensus_timestamp
       ORDER BY consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+      ${namedLimitQuery}`;
   }
 
   return transactionOnlyQuery;

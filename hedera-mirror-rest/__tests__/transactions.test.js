@@ -306,8 +306,6 @@ describe('Transaction tests', () => {
       const {transactions} = JSON.parse(response.text);
       const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
 
-      // expect(JSON.stringify(transactions.nft_transfers)).toEqual('');
-
       // Verify the sql query against each of the specified checks
       expect(parsedParams).toEqual(expect.arrayContaining(item.checks));
 
@@ -480,6 +478,7 @@ describe('create transferLists', () => {
         consensus_ns: 1,
         entity_id: 98,
         ctl_entity_id: 98,
+        amount: 100,
         memo: null,
         charged_tx_fee: 5,
         max_fee: 33,
@@ -499,6 +498,7 @@ describe('create transferLists', () => {
         consensus_ns: 2,
         entity_id: 100,
         ctl_entity_id: 100,
+        amount: 100,
         memo: null,
         charged_tx_fee: 5,
         max_fee: 33,
@@ -547,6 +547,7 @@ describe('create transferLists', () => {
         max_fee: '33',
         memo_base64: null,
         name: undefined,
+        nft_transfers: expectedNftTransfersList,
         node: '0.0.2',
         result: 22,
         scheduled: false,
@@ -556,12 +557,11 @@ describe('create transferLists', () => {
         transfers: [
           {
             account: '0.0.98',
-            amount: NaN,
+            amount: 100,
           },
         ],
         valid_duration_seconds: null,
         valid_start_timestamp: '1623787159.737800000',
-        nft_transfers: expectedNftTransfersList,
       },
       {
         bytes: 'bytes',
@@ -582,7 +582,7 @@ describe('create transferLists', () => {
         transfers: [
           {
             account: '0.0.100',
-            amount: NaN,
+            amount: 100,
           },
         ],
         valid_duration_seconds: null,

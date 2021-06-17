@@ -38,7 +38,7 @@ const filterKeys = {
   TIMESTAMP: 'timestamp',
   TOKENID: 'tokenid',
   TOKEN_ID: 'token.id',
-  TOKEN_TYPE: 'tokentype',
+  TOKEN_TYPE: 'type',
   TRANSACTION_TYPE: 'transactiontype',
 };
 

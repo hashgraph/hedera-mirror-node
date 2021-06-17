@@ -60,7 +60,7 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens?tokentype=FUNGIBLE_COMMON", "/api/v1/tokens?tokentype=fungible_common"],
+  "urls": ["/api/v1/tokens?type=FUNGIBLE_COMMON", "/api/v1/tokens?type=fungible_common"],
   "responseStatus": 200,
   "responseJson": {
     "tokens": [
