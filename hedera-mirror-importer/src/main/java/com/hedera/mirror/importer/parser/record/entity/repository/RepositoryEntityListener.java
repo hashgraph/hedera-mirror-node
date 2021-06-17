@@ -30,6 +30,8 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
@@ -46,6 +48,8 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -68,6 +72,8 @@ public class RepositoryEntityListener implements EntityListener {
     private final EntityRepository entityRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
+    private final NftRepository nftRepository;
+    private final NftTransferRepository nftTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
@@ -105,6 +111,16 @@ public class RepositoryEntityListener implements EntityListener {
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashRepository.save(liveHash);
+    }
+
+    @Override
+    public void onNft(Nft nft) throws ImporterException {
+        nftRepository.save(nft);
+    }
+
+    @Override
+    public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
+        nftTransferRepository.save(nftTransfer);
     }
 
     @Override

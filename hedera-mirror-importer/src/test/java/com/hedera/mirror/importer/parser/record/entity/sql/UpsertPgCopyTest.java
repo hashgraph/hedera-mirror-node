@@ -49,6 +49,8 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
+import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -445,12 +447,15 @@ class UpsertPgCopyTest extends IntegrationTest {
         token.setFreezeKey(freezeKey != null ? freezeKey.toByteArray() : null);
         token.setInitialSupply(1_000_000_000L);
         token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
+        token.setMaxSupply(1_000_000_000L);
         token.setModifiedTimestamp(3L);
         token.setName("FOO COIN TOKEN" + tokenId);
         token.setSupplyKey(hexKey);
+        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK" + tokenId);
         token.setTokenId(new TokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         token.setTreasuryAccountId(EntityId.of(treasuryAccountId, ACCOUNT));
+        token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(hexKey);
         return token;
     }

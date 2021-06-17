@@ -211,7 +211,8 @@ class PubSubMessageTest {
                 "    \"topicSequenceNumber\": \"100000000\"," +
                 "    \"topicRunningHash\": \"YWJjZGVm\"," +
                 "    \"topicRunningHashVersion\": \"0\"," +
-                "    \"newTotalSupply\": \"0\"" +
+                "    \"newTotalSupply\": \"0\"," +
+                "    \"serialNumbers\": []" +
                 "  }," +
                 "  \"transactionHash\": \"YWJjZGVm\"," +
                 "  \"consensusTimestamp\": {" +

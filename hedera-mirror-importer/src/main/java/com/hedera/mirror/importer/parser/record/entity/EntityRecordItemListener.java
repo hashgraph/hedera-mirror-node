@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Predicate;
@@ -62,6 +63,10 @@ import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
+import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
@@ -69,7 +74,9 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
+import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
@@ -84,6 +91,7 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -96,17 +104,20 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final Predicate<TransactionFilterFields> transactionFilter;
+    private final NftRepository nftRepository;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
-                                    TransactionHandlerFactory transactionHandlerFactory) {
+                                    TransactionHandlerFactory transactionHandlerFactory,
+                                    NftRepository nftRepository) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
+        this.nftRepository = nftRepository;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -181,9 +192,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
             }
 
-            // Record token transfers can be populated for multiple transaction types
-            insertTokenTransfers(recordItem);
-
             if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
                 insertTransactionSignatures(
                         tx.getEntityId(),
@@ -230,6 +238,9 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasScheduleCreate()) {
                 insertScheduleCreate(recordItem);
             }
+
+            // Record token transfers can be populated for multiple transaction types
+            insertTokenTransfers(recordItem);
         }
 
         entityListener.onTransaction(tx);
@@ -474,11 +485,17 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenBurn(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenBurnTransactionBody tokenBurnTransactionBody = recordItem.getTransactionBody().getTokenBurn();
+            EntityId tokenId = EntityId.of(tokenBurnTransactionBody.getToken());
+            long consensusTimeStamp = recordItem.getConsensusTimestamp();
 
             updateTokenSupply(
-                    tokenBurnTransactionBody.getToken(),
+                    tokenId,
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
-                    recordItem.getConsensusTimestamp());
+                    consensusTimeStamp);
+
+            tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
+                    nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimeStamp)
+            );
         }
     }
 
@@ -492,11 +509,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setDecimals(tokenCreateTransactionBody.getDecimals());
             token.setFreezeDefault(tokenCreateTransactionBody.getFreezeDefault());
             token.setInitialSupply(tokenCreateTransactionBody.getInitialSupply());
+            token.setMaxSupply(tokenCreateTransactionBody.getMaxSupply());
             token.setModifiedTimestamp(consensusTimeStamp);
             token.setName(tokenCreateTransactionBody.getName());
+            token.setSupplyType(TokenSupplyTypeEnum.fromId(tokenCreateTransactionBody.getSupplyTypeValue()));
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
             token.setTokenId(new TokenId(EntityId.of(recordItem.getRecord().getReceipt().getTokenID())));
             token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
+            token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenTypeValue()));
 
             if (tokenCreateTransactionBody.hasFreezeKey()) {
                 token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
@@ -577,11 +597,25 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenMint(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             TokenMintTransactionBody tokenMintTransactionBody = recordItem.getTransactionBody().getTokenMint();
+            long consensusTimeStamp = recordItem.getConsensusTimestamp();
+            EntityId tokenId = EntityId.of(tokenMintTransactionBody.getToken());
 
             updateTokenSupply(
-                    tokenMintTransactionBody.getToken(),
+                    tokenId,
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
-                    recordItem.getConsensusTimestamp());
+                    consensusTimeStamp);
+
+            List<Long> serialNumbers = recordItem.getRecord().getReceipt().getSerialNumbersList();
+            List<Nft> nfts = new ArrayList<>();
+            for (int i = 0; i < serialNumbers.size(); i++) {
+                Nft nft = new Nft();
+                nft.setCreatedTimestamp(consensusTimeStamp);
+                nft.setId(new NftId(serialNumbers.get(i), tokenId));
+                nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
+                nft.setModifiedTimestamp(consensusTimeStamp);
+                nfts.add(nft);
+            }
+            nftRepository.saveAll(nfts);
         }
     }
 
@@ -614,6 +648,26 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     entityListener.onTokenTransfer(new TokenTransfer(consensusTimeStamp, accountAmount
                             .getAmount(), tokenId, accountId));
+                });
+
+                tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
+                    EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
+                    entityListener.onEntity(receiverId.toEntity());
+
+                    EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
+                    entityListener.onEntity(senderId.toEntity());
+
+                    long serialNumber = nftTransfer.getSerialNumber();
+                    NftTransfer nftTransferDomain = new NftTransfer();
+                    nftTransferDomain.setId(new NftTransferId(consensusTimeStamp, serialNumber, tokenId));
+                    nftTransferDomain.setReceiverAccountId(receiverId);
+                    nftTransferDomain.setSenderAccountId(senderId);
+
+                    entityListener.onNftTransfer(nftTransferDomain);
+                    if (!EntityId.isEmpty(receiverId)) {
+                        nftRepository.transferNftOwnership(new NftId(serialNumber, tokenId), receiverId,
+                                consensusTimeStamp);
+                    }
                 });
             });
         }
@@ -681,17 +735,22 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenWipeAccountTransactionBody tokenWipeAccountTransactionBody = recordItem.getTransactionBody()
                     .getTokenWipe();
+            EntityId tokenId = EntityId.of(tokenWipeAccountTransactionBody.getToken());
+            long consensusTimeStamp = recordItem.getConsensusTimestamp();
 
             updateTokenSupply(
-                    tokenWipeAccountTransactionBody.getToken(),
+                    tokenId,
                     recordItem.getRecord().getReceipt().getNewTotalSupply(),
-                    recordItem.getConsensusTimestamp());
+                    consensusTimeStamp);
+
+            tokenWipeAccountTransactionBody.getSerialNumbersList().forEach(serialNumber ->
+                    nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimeStamp));
         }
     }
 
-    private void updateTokenSupply(TokenID tokenID, long newTotalSupply, long modifiedTimestamp) {
+    private void updateTokenSupply(EntityId tokenId, long newTotalSupply, long modifiedTimestamp) {
         Token token = new Token();
-        token.setTokenId(new TokenId(EntityId.of(tokenID)));
+        token.setTokenId(new TokenId(tokenId));
         token.setTotalSupply(newTotalSupply);
         token.setModifiedTimestamp(modifiedTimestamp);
         entityListener.onToken(token);

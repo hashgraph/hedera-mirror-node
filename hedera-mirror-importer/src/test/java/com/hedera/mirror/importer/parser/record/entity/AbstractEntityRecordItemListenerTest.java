@@ -81,6 +81,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build();
     protected static final AccountID PAYER2 =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2003).build();
+    protected static final AccountID RECEIVER =
+            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2004).build();
+    protected static final AccountID DEFAULT_ACCOUNT_ID =
+            AccountID.getDefaultInstance();
     protected static final AccountID NODE =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
     protected static final EntityId NODE_ACCOUNT_ID = EntityId.of(NODE);

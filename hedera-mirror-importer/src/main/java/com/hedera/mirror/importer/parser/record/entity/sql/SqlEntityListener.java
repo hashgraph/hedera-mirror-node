@@ -41,6 +41,8 @@ import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
@@ -61,6 +63,8 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
@@ -77,12 +81,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
     private final ApplicationEventPublisher eventPublisher;
+    private final NftRepository nftRepository;
 
     // init schemas, writers, etc once per process
     private final PgCopy<ContractResult> contractResultPgCopy;
     private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
     private final PgCopy<FileData> fileDataPgCopy;
     private final PgCopy<LiveHash> liveHashPgCopy;
+    private final PgCopy<NftTransfer> nftTransferPgCopy;
     private final PgCopy<NonFeeTransfer> nonFeeTransferPgCopy;
     private final PgCopy<TokenTransfer> tokenTransferPgCopy;
     private final PgCopy<TopicMessage> topicMessagePgCopy;
@@ -99,6 +105,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
+    private final Collection<NftTransfer> nftTransfers;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<TokenTransfer> tokenTransfers;
@@ -118,17 +125,19 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              EntityUpsertQueryGenerator entityUpsertQueryGenerator,
                              ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator,
                              TokenUpsertQueryGenerator tokenUpsertQueryGenerator,
-                             TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator) {
+                             TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator, NftRepository nftRepository) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
         this.eventPublisher = eventPublisher;
+        this.nftRepository = nftRepository;
 
         // insert only tables
         contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, recordParserProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, recordParserProperties);
         fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, recordParserProperties);
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, recordParserProperties);
+        nftTransferPgCopy = new PgCopy<>(NftTransfer.class, meterRegistry, recordParserProperties);
         nonFeeTransferPgCopy = new PgCopy<>(NonFeeTransfer.class, meterRegistry, recordParserProperties);
         tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, recordParserProperties);
@@ -149,6 +158,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoTransfers = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
+        nftTransfers = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
         topicMessages = new ArrayList<>();
@@ -190,6 +200,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             fileData.clear();
             liveHashes.clear();
             nonFeeTransfers.clear();
+            nftTransfers.clear();
             schedules.clear();
             topicMessages.clear();
             transactions.clear();
@@ -219,6 +230,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             fileDataPgCopy.copy(fileData, connection);
             liveHashPgCopy.copy(liveHashes, connection);
             nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
+            nftTransferPgCopy.copy(nftTransfers, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             transactionPgCopy.copy(transactions, connection);
@@ -262,6 +274,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
         cryptoTransfers.add(cryptoTransfer);
+    }
+
+    @Override
+    public void onNft(Nft nft) throws ImporterException {
+        nftRepository.save(nft);
+    }
+
+    @Override
+    public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
+        nftTransfers.add(nftTransfer);
     }
 
     @Override

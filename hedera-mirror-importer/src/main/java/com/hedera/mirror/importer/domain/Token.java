@@ -22,13 +22,18 @@ package com.hedera.mirror.importer.domain;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
@@ -37,6 +42,10 @@ import com.hedera.mirror.importer.util.Utility;
 @Data
 @Entity
 @NoArgsConstructor
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
+)
 @ToString(exclude = {"freezeKey", "freezeKeyEd25519Hex", "kycKey", "kycKeyEd25519Hex", "supplyKey",
         "supplyKeyEd25519Hex", "wipeKey", "wipeKeyEd25519Hex"})
 public class Token {
@@ -66,6 +75,8 @@ public class Token {
     @JsonSerialize(using = NullableStringSerializer.class)
     private String kycKeyEd25519Hex;
 
+    private long maxSupply;
+
     private long modifiedTimestamp;
 
     private String name;
@@ -76,10 +87,18 @@ public class Token {
     @JsonSerialize(using = NullableStringSerializer.class)
     private String supplyKeyEd25519Hex;
 
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private TokenSupplyTypeEnum supplyType;
+
     private String symbol;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId treasuryAccountId;
+
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private TokenTypeEnum type;
 
     private byte[] wipeKey;
 

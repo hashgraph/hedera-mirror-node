@@ -37,6 +37,10 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
+import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
@@ -44,7 +48,9 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
+import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
@@ -54,6 +60,8 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -75,6 +83,8 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
+    private final NftRepository nftRepository;
+    private final NftTransferRepository nftTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
     private final TokenRepository tokenRepository;
     private final TokenAccountRepository tokenAccountRepository;
@@ -139,6 +149,28 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onNft() {
+        Nft nft = new Nft();
+        nft.setAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
+        nft.setCreatedTimestamp(1L);
+        nft.setMetadata(new byte[1]);
+        nft.setModifiedTimestamp(2L);
+        nft.setId(new NftId(3L, EntityId.of("0.0.456", EntityTypeEnum.TOKEN)));
+        repositoryEntityListener.onNft(nft);
+        assertThat(nftRepository.findAll()).contains(nft);
+    }
+
+    @Test
+    void onNftTransfer() {
+        NftTransfer nftTransfer = new NftTransfer();
+        nftTransfer.setId(new NftTransferId(1L, 1L, EntityId.of("0.0.123", EntityTypeEnum.TOKEN)));
+        nftTransfer.setReceiverAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
+        nftTransfer.setSenderAccountId(EntityId.of("0.0.789", EntityTypeEnum.ACCOUNT));
+        repositoryEntityListener.onNftTransfer(nftTransfer);
+        assertThat(nftTransferRepository.findAll()).contains(nftTransfer);
+    }
+
+    @Test
     void onSchedule() throws ImporterException {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(1L);
@@ -173,12 +205,15 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         token.setFreezeKey(input.toByteArray());
         token.setInitialSupply(1_000_000_000L);
         token.setKycKey(input.toByteArray());
+        token.setMaxSupply(1_000_000_000L);
         token.setModifiedTimestamp(3L);
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(input.toByteArray());
+        token.setSupplyType(TokenSupplyTypeEnum.FINITE);
         token.setSymbol("FOOTOK");
         token.setTokenId(new TokenId(TOKEN_ID));
         token.setTreasuryAccountId(ENTITY_ID);
+        token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(input.toByteArray());
         repositoryEntityListener.onToken(token);
         assertThat(tokenRepository.findAll()).contains(token);

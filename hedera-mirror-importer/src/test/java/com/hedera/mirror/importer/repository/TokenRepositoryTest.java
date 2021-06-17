@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
+import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 
 public class TokenRepositoryTest extends AbstractRepositoryTest {
@@ -96,10 +98,12 @@ public class TokenRepositoryTest extends AbstractRepositoryTest {
         token.setModifiedTimestamp(consensusTimestamp);
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(hexKey);
+        token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK");
         token.setTokenId(new TokenId(FOO_COIN_ID));
         token.setTotalSupply(INITIAL_SUPPLY);
         token.setTreasuryAccountId(treasuryAccount);
+        token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(hexKey);
         return token;
     }

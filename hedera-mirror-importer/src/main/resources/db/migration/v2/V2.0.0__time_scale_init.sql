@@ -144,8 +144,8 @@ create table if not exists live_hash
 -- nft
 create table if not exists nft
 (
-  account_id            bigint                  not null,
-  created_timestamp     bigint  primary key     not null,
+  account_id            bigint,
+  created_timestamp     bigint,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
   metadata              bytea   default ''      not null,
@@ -158,8 +158,8 @@ comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 create table if not exists nft_transfer
 (
   consensus_timestamp   bigint  not null,
-  receiver_account_id   bigint  not null,
-  sender_account_id     bigint  not null,
+  receiver_account_id   bigint,
+  sender_account_id     bigint,
   serial_number         bigint  not null,
   token_id              bigint  not null
 );
