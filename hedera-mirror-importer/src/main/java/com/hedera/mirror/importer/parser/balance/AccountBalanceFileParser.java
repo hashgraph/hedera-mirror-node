@@ -22,17 +22,13 @@ package com.hedera.mirror.importer.parser.balance;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
-import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import java.sql.Connection;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.sql.DataSource;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -43,54 +39,38 @@ import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
+import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.PgCopy;
-import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 /**
  * Parse an account balances file and load it into the database.
  */
-@Log4j2
 @Named
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
     private final DataSource dataSource;
-    private final Timer parseDurationMetricFailure;
-    private final Timer parseDurationMetricSuccess;
-    private final Timer parseLatencyMetric;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
-    private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final PgCopy<AccountBalance> pgCopyAccountBalance;
     private final PgCopy<TokenBalance> pgCopyTokenBalance;
 
-    public AccountBalanceFileParser(BalanceParserProperties properties, DataSource dataSource,
-                                    MeterRegistry meterRegistry,
-                                    MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
-                                    AccountBalanceFileRepository accountBalanceFileRepository) {
-        super(properties);
+    public AccountBalanceFileParser(MeterRegistry meterRegistry, BalanceParserProperties parserProperties,
+                                    StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
+                                    DataSource dataSource,
+                                    MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+        super(meterRegistry, parserProperties, accountBalanceFileRepository);
         this.dataSource = dataSource;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
-        this.accountBalanceFileRepository = accountBalanceFileRepository;
-        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, properties);
-        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, properties);
-
-        Timer.Builder parseDurationTimerBuilder = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME)
-                .description("The duration in seconds it took to parse the file and store it in the database")
-                .tag("type", properties.getStreamType().toString());
-        parseDurationMetricFailure = parseDurationTimerBuilder.tag("success", "false").register(meterRegistry);
-        parseDurationMetricSuccess = parseDurationTimerBuilder.tag("success", "true").register(meterRegistry);
-
-        parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
-                .description("The difference in ms between the consensus time of the last transaction in the file " +
-                        "and the time at which the file was processed successfully")
-                .tag("type", properties.getStreamType().toString())
-                .register(meterRegistry);
+        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
+        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
     }
 
     /**
      * Process the file and load all the data into the database.
      */
     @Override
+    @Leader
     @Retryable(backoff = @Backoff(
             delayExpression = "#{@balanceParserProperties.getRetry().getMinBackoff().toMillis()}",
             maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
@@ -103,18 +83,13 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
 
     @Override
     protected void doParse(AccountBalanceFile accountBalanceFile) {
-        long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
-        long count = 0L;
-        String name = accountBalanceFile.getName();
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        boolean success = false;
-
-        log.info("Starting processing account balances file {}", name);
+        log.info("Starting processing account balances file {}", accountBalanceFile.getName());
         DateRangeFilter filter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(StreamType.BALANCE);
         Connection connection = DataSourceUtils.getConnection(dataSource);
+        long count = 0L;
 
         try {
-            if (filter.filter(consensusTimestamp)) {
+            if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
                 List<AccountBalance> accountBalances = accountBalanceFile.getItems();
                 List<TokenBalance> tokenBalances = accountBalances
                         .stream()
@@ -129,19 +104,9 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             Instant loadEnd = Instant.now();
             accountBalanceFile.setCount(count);
             accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
-            accountBalanceFileRepository.save(accountBalanceFile);
-
-            log.info("Successfully processed {} account balances from {} in {}", count, name, stopwatch);
-            Instant consensusInstant = Instant.ofEpochSecond(0L, consensusTimestamp);
-            parseLatencyMetric.record(Duration.between(consensusInstant, loadEnd));
-            success = true;
-        } catch (Exception ex) {
-            log.error("Failed to load account balance file {}", name, ex);
-            throw ex;
+            streamFileRepository.save(accountBalanceFile);
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
-            Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
-            timer.record(stopwatch.elapsed());
         }
     }
 }

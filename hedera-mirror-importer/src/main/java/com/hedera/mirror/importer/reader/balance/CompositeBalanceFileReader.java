@@ -48,7 +48,7 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
 
     @Override
     public AccountBalanceFile read(StreamFileData streamFileData, Consumer<AccountBalance> itemConsumer) {
-        long count = -1;
+        long count = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         try {
@@ -57,9 +57,9 @@ public class CompositeBalanceFileReader implements BalanceFileReader {
             count = accountBalanceFile.getCount();
             return accountBalanceFile;
         } finally {
-            boolean success = count != -1;
-            log.info("Loaded {} items {}successfully from account balance file {} in {}", count, success ? "" : "un",
-                    streamFileData.getFilename(), stopwatch);
+            boolean success = count != 0;
+            log.info("Read {} items {}successfully from account balance file {} in {}",
+                    count, success ? "" : "un", streamFileData.getFilename(), stopwatch);
         }
     }
 

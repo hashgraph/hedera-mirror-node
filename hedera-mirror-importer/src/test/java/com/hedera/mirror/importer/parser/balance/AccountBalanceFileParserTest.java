@@ -69,7 +69,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     @Test
-    void disabled() throws Exception {
+    void disabled() {
         // given
         parserProperties.setEnabled(false);
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
@@ -81,9 +81,23 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         assertPostParseAccountBalanceFile(accountBalanceFile, true);
     }
 
+    @Test
+    void alreadyExists() {
+        // given
+        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        accountBalanceFile.setLoadEnd(1L);
+        accountBalanceFileRepository.save(accountBalanceFile);
+
+        // when
+        accountBalanceFileParser.parse(accountBalanceFile);
+
+        // then
+        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+    }
+
     @Disabled("Fails in CI")
     @Test
-    void success() throws Exception {
+    void success() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         accountBalanceFileParser.parse(accountBalanceFile);
         assertPostParseAccountBalanceFile(accountBalanceFile, true);
@@ -91,7 +105,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     @Disabled("Fails in CI")
     @Test
-    void duplicateFile() throws Exception {
+    void duplicateFile() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         AccountBalanceFile duplicate = accountBalanceFile(1);
 

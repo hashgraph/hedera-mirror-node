@@ -20,12 +20,14 @@ package com.hedera.mirror.importer.reader.event;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import com.google.common.primitives.Ints;
 import java.io.DataInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.function.Consumer;
 import javax.inject.Named;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
@@ -35,6 +37,7 @@ import com.hedera.mirror.importer.exception.InvalidEventFileException;
 import com.hedera.mirror.importer.parser.domain.EventItem;
 import com.hedera.mirror.importer.util.Utility;
 
+@Log4j2
 @Named
 public class EventFileReaderV3 implements EventFileReader {
 
@@ -46,7 +49,11 @@ public class EventFileReaderV3 implements EventFileReader {
 
     @Override
     public EventFile read(StreamFileData streamFileData, Consumer<EventItem> itemConsumer) {
-        String fileName = streamFileData.getFilename();
+        String filename = streamFileData.getFilename();
+        int fileVersion = 0;
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        boolean success = false;
+
         long consensusStart = Utility.convertToNanosMax(streamFileData.getInstant());
         EventFile eventFile = new EventFile();
         eventFile.setBytes(streamFileData.getBytes());
@@ -55,7 +62,7 @@ public class EventFileReaderV3 implements EventFileReader {
         eventFile.setCount(0L);
         eventFile.setDigestAlgorithm(DIGEST_ALGORITHM);
         eventFile.setLoadStart(Instant.now().getEpochSecond());
-        eventFile.setName(fileName);
+        eventFile.setName(filename);
 
         try (DataInputStream dis = new DataInputStream(streamFileData.getInputStream())) {
             // MessageDigest for getting the file Hash
@@ -68,7 +75,7 @@ public class EventFileReaderV3 implements EventFileReader {
             // for Version3, h[i + 1] = hash(p[i] || h[i] || hash(c[i]))
             MessageDigest md = MessageDigest.getInstance(DIGEST_ALGORITHM.getName());
 
-            int fileVersion = dis.readInt();
+            fileVersion = dis.readInt();
             md.update(Ints.toByteArray(fileVersion));
             if (fileVersion < EVENT_STREAM_FILE_VERSION_2 ||
                     fileVersion > EVENT_STREAM_FILE_VERSION_3) {
@@ -100,11 +107,15 @@ public class EventFileReaderV3 implements EventFileReader {
             eventFile.setHash(fileHash);
             eventFile.setPreviousHash(Hex.encodeHexString(prevFileHash));
             eventFile.setVersion(fileVersion);
+            success = true;
             return eventFile;
         } catch (InvalidEventFileException e) {
             throw e;
         } catch (Exception e) {
-            throw new InvalidEventFileException("Error reading bad event file " + fileName, e);
+            throw new InvalidEventFileException("Error reading bad event file " + filename, e);
+        } finally {
+            log.info("Read v{} event file {} {}successfully in {}",
+                    fileVersion, filename, success ? "" : "un", stopwatch);
         }
     }
 }

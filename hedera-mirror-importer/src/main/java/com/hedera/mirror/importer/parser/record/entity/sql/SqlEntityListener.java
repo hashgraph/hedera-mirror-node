@@ -30,6 +30,7 @@ import java.util.Map;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -192,21 +193,25 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void cleanup() {
-        contractResults.clear();
-        cryptoTransfers.clear();
-        entities.clear();
-        fileData.clear();
-        liveHashes.clear();
-        nftTransfers.clear();
-        nonFeeTransfers.clear();
-        schedules.clear();
-        topicMessages.clear();
-        transactions.clear();
-        tokenAccounts.clear();
-        tokens.clear();
-        tokenTransfers.clear();
-        transactionSignatures.clear();
-        eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
+        try {
+            contractResults.clear();
+            cryptoTransfers.clear();
+            entities.clear();
+            fileData.clear();
+            liveHashes.clear();
+            nonFeeTransfers.clear();
+            nftTransfers.clear();
+            schedules.clear();
+            topicMessages.clear();
+            transactions.clear();
+            tokenAccounts.clear();
+            tokens.clear();
+            tokenTransfers.clear();
+            transactionSignatures.clear();
+            eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
+        } catch (BeanCreationNotAllowedException e) {
+            // This error can occur during shutdown
+        }
     }
 
     private void executeBatches() {

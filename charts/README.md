@@ -29,11 +29,6 @@ $ helm upgrade --install "${RELEASE}" charts/hedera-mirror
 
 ## Configure
 
-### Scaling
-
-At most one Importer pod can be run at time due to the potential to cause data inconsistencies. All other modules
-support scaling up to more than one replica.
-
 ### TimescaleDB
 
 In an effort to increase performance and reduce storage costs, the mirror node is switching to
