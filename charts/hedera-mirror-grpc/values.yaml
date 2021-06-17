@@ -113,6 +113,11 @@ nodeSelector: {}
 
 podAnnotations: {}
 
+podDisruptionBudget:
+  enabled: false
+  # maxUnavailable: 0
+  minAvailable: 50%
+
 podSecurityContext:
   fsGroup: 1000
 
