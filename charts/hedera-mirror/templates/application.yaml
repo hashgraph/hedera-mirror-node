@@ -31,9 +31,9 @@ spec:
   descriptor:
     description: Hedera Mirror Node mirrors transaction data from Hedera nodes and serves it via GRPC and REST APIs
     icons:
-      - src: https://s3.amazonaws.com/hedera-com/hedera_hashgraph.png
-        type: image/png
-        size: 547x166
+      - src: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
+        type: image/jpeg
+        size: 786x162
     keywords:
       - blockchain
       - dlt

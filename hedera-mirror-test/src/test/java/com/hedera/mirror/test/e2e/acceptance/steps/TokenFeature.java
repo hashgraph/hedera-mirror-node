@@ -303,7 +303,7 @@ public class TokenFeature {
             ReceiptStatusException, TimeoutException {
         tokenKey = PrivateKey.generate();
         PublicKey tokenPublicKey = tokenKey.getPublicKey();
-        log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
+        log.trace("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
 
         sender = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(

@@ -82,8 +82,9 @@ ingress:
     ipWhitelist:
       - 0.0.0.0/0
     rateLimit:
-      average: 1000
-      burst: 2000
+      average: 20
+      sourceCriterion:
+        requestHost: true
   tls:
     enabled: false
     secretName: ""

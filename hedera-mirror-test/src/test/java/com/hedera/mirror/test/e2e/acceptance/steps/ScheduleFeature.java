@@ -191,7 +191,7 @@ public class ScheduleFeature {
         // create token
         PrivateKey tokenKey = PrivateKey.generate();
         PublicKey tokenPublicKey = tokenKey.getPublicKey();
-        log.debug("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
+        log.trace("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
 
         networkTransactionResponse = tokenClient.createToken(
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
