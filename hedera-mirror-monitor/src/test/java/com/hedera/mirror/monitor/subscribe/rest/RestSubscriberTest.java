@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -72,6 +73,7 @@ import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
 class RestSubscriberTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String SCENARIO = "test";
 
     static {
         SimpleModule simpleModule = new SimpleModule();
@@ -100,10 +102,61 @@ class RestSubscriberTest {
         restSubscriberProperties.getRetry().setMaxBackoff(Duration.ofNanos(2L));
 
         subscribeProperties = new SubscribeProperties();
-        subscribeProperties.getRest().add(restSubscriberProperties);
+        subscribeProperties.getRest().put(restSubscriberProperties.getName(), restSubscriberProperties);
 
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchangeFunction);
         restSubscriber = new RestSubscriber(monitorProperties, subscribeProperties, builder);
+    }
+
+    @Test
+    void onPublishWhenComplete() {
+        restSubscriber.getSubscriptions().subscribe(s -> s.onComplete());
+
+        restSubscriber.subscribe()
+                .as(StepVerifier::create)
+                .then(() -> restSubscriber.onPublish(publishResponse()))
+                .then(() -> restSubscriber.onPublish(publishResponse()))
+                .expectNextCount(0L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500L));
+
+        verifyNoInteractions(exchangeFunction);
+        RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
+        assertThat(subscription.getCount()).isZero();
+    }
+
+    @Test
+    void onPublishWhenNoPublisherMatches() {
+        restSubscriberProperties.setPublishers(Set.of("invalid"));
+
+        restSubscriber.subscribe()
+                .as(StepVerifier::create)
+                .then(() -> restSubscriber.onPublish(publishResponse()))
+                .then(() -> restSubscriber.onPublish(publishResponse()))
+                .expectNextCount(0L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500L));
+
+        verifyNoInteractions(exchangeFunction);
+        RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
+        assertThat(subscription.getCount()).isZero();
+    }
+
+    @Test
+    void onPublishWhenPublisherMatches() {
+        restSubscriberProperties.setPublishers(Set.of(SCENARIO));
+        Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
+
+        restSubscriber.subscribe()
+                .as(StepVerifier::create)
+                .then(() -> restSubscriber.onPublish(publishResponse()))
+                .expectNextCount(1L)
+                .thenCancel()
+                .verify(Duration.ofMillis(500L));
+
+        verify(exchangeFunction, times(1)).exchange(Mockito.isA(ClientRequest.class));
+        RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
+        assertThat(subscription.getCount()).isEqualTo(1L);
     }
 
     @Test
@@ -164,7 +217,7 @@ class RestSubscriberTest {
     void multipleScenarios() {
         RestSubscriberProperties restSubscriberProperties2 = new RestSubscriberProperties();
         restSubscriberProperties2.setName("test2");
-        subscribeProperties.getRest().add(restSubscriberProperties2);
+        subscribeProperties.getRest().put(restSubscriberProperties2.getName(), restSubscriberProperties2);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         restSubscriber.subscribe()
@@ -445,6 +498,7 @@ class RestSubscriberTest {
     private PublishResponse publishResponse() {
         return PublishResponse.builder()
                 .request(PublishRequest.builder()
+                        .scenarioName(SCENARIO)
                         .timestamp(Instant.now())
                         .type(TransactionType.CONSENSUS_SUBMIT_MESSAGE)
                         .build())

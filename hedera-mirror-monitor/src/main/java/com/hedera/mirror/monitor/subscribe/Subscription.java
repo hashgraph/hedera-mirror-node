@@ -25,11 +25,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Duration;
 import java.util.Map;
 
+import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
+
 @JsonSerialize(as = Subscription.class)
 public interface Subscription {
 
     long getCount();
 
+    @JsonSerialize(using = DurationToStringSerializer.class)
     Duration getElapsed();
 
     Map<String, Integer> getErrors();
