@@ -27,12 +27,13 @@ spec:
       grafana:
         admin:
           existingSecret: ""
+      prometheus:
+        prometheusSpec:
+          externalLabels:
+            cluster: mainnet-na
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "mainnet-na"]
-      prometheusSpec:
-        externalLabels:
-          cluster: mainnet-na
     traefik:
       service:
         annotations:

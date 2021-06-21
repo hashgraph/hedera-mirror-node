@@ -24,12 +24,13 @@ spec:
       name: mirror
   values:
     prometheus:
+      prometheus:
+        prometheusSpec:
+          externalLabels:
+            cluster: mainnet-eu
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "mainnet-eu"]
-      prometheusSpec:
-        externalLabels:
-          cluster: mainnet-eu
     traefik:
       service:
         annotations:
