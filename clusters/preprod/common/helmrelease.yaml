@@ -25,7 +25,8 @@ spec:
   values:
     prometheus:
       grafana:
-        admin: null
+        admin:
+          existingSecret: ""
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "integration", "performance", "previewnet"]
