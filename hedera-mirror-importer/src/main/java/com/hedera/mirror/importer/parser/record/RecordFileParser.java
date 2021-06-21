@@ -105,7 +105,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
-    @Transactional
+    @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout()}")
     public void parse(RecordFile recordFile) {
         super.parse(recordFile);
     }

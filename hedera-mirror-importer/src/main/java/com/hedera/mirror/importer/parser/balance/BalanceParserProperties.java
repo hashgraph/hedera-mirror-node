@@ -38,6 +38,7 @@ public class BalanceParserProperties extends AbstractParserProperties {
     public BalanceParserProperties() {
         queueCapacity = 0;
         retry.setMaxAttempts(3);
+        transactionTimeout = 5 * 60;
     }
 
     @Min(1)

@@ -50,6 +50,8 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
+    @Min(30)
+    protected int transactionTimeout = 30;
 
     @Data
     @Validated
