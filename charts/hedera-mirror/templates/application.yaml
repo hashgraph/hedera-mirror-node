@@ -48,7 +48,7 @@ spec:
       - description: Source Repository
         url: https://github.com/hashgraph/hedera-mirror-node
       - description: User Guide
-        url: https://github.com/hashgraph/hedera-mirror-node/blob/master/charts/marketplace/gcp/README.md
+        url: https://github.com/hashgraph/hedera-mirror-node/blob/main/charts/marketplace/gcp/README.md
       - description: Website
         url: https://hedera.com
     maintainers:
@@ -68,4 +68,4 @@ spec:
         curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
     type: hedera-mirror-node
     version: {{ default .Chart.AppVersion .Values.applicationResource.version | quote }}
-{{- end }}
+  {{- end }}
