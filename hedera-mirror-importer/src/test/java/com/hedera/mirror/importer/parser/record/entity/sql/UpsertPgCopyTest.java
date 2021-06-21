@@ -155,6 +155,37 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
+    void entityInsertAndUpdateBatched() throws SQLException {
+        var entities = new HashSet<Entity>();
+        long consensusTimestamp = 1;
+        entities.add(getEntity(1, consensusTimestamp, consensusTimestamp, "memo-1"));
+        entities.add(getEntity(2, consensusTimestamp, consensusTimestamp, "memo-2"));
+        entities.add(getEntity(3, consensusTimestamp, consensusTimestamp, "memo-3"));
+        entities.add(getEntity(4, consensusTimestamp, consensusTimestamp, "memo-4"));
+
+        // update
+        long updateTimestamp = 5;
+
+        // updated
+        var updateEntities = new HashSet<Entity>();
+        updateEntities.add(getEntity(3, null, updateTimestamp, ""));
+        updateEntities.add(getEntity(4, null, updateTimestamp, "updated-memo-4"));
+
+        // new inserts
+        updateEntities.add(getEntity(5, null, updateTimestamp, "memo-5"));
+        updateEntities.add(getEntity(6, null, updateTimestamp, "memo-6"));
+
+        copyWithTransactionSupport(entityPgCopy, entities, updateEntities); // copy inserts and updates
+
+        assertThat(entityRepository
+                .findAll())
+                .isNotEmpty()
+                .hasSize(6)
+                .extracting(Entity::getMemo)
+                .containsExactlyInAnyOrder("memo-1", "memo-2", "", "updated-memo-4", "memo-5", "memo-6");
+    }
+
+    @Test
     void tokenInsertOnly() throws SQLException, DecoderException {
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -409,10 +440,12 @@ class UpsertPgCopyTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(null, null, 5L, 6L, null, null);
     }
 
-    private void copyWithTransactionSupport(UpsertPgCopy upsertPgCopy, Collection items) throws SQLException {
+    private void copyWithTransactionSupport(UpsertPgCopy upsertPgCopy, Collection... items) throws SQLException {
         try (Connection connection = DataSourceUtils.getConnection(dataSource)) {
             connection.setAutoCommit(false); // for tests have to set auto commit to false or temp table gets lost
-            upsertPgCopy.copy(items, connection);
+            for (Collection batch : items) {
+                upsertPgCopy.copy(batch, connection);
+            }
             connection.commit();
         } finally {
 

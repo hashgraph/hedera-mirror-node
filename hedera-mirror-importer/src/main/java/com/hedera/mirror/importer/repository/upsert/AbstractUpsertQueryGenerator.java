@@ -79,7 +79,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     @Override
     public String getCreateTempTableQuery() {
-        return String.format("create temporary table %s on commit drop as table %s limit 0",
+        return String.format("create temporary table if not exists %s on commit drop as table %s limit 0",
                 getTemporaryTableName(), getFinalTableName());
     }
 
