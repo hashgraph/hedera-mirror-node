@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
-public class FileUpdateTransactionHandler implements TransactionHandler {
+public class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -39,12 +39,7 @@ public class FileUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         FileUpdateTransactionBody txMessage = recordItem.getTransactionBody().getFileUpdate();
         if (txMessage.hasExpirationTime()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));

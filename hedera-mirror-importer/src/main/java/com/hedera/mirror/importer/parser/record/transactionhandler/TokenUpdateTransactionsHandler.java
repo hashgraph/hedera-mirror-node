@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
-public class TokenUpdateTransactionsHandler implements TransactionHandler {
+public class TokenUpdateTransactionsHandler extends AbstractEntityCrudTransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -39,12 +39,12 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
+    public EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getAutoRenewAccount());
     }
 
     @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
         if (tokenUpdateTransactionBody.hasAdminKey()) {
             entity.setKey(tokenUpdateTransactionBody.getAdminKey().toByteArray());
@@ -61,10 +61,5 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
         if (tokenUpdateTransactionBody.hasMemo()) {
             entity.setMemo(tokenUpdateTransactionBody.getMemo().getValue());
         }
-    }
-
-    @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getAutoRenewAccount());
     }
 }

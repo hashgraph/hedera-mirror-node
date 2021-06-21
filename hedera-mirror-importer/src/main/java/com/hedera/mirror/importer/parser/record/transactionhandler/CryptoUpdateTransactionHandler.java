@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
-public class CryptoUpdateTransactionHandler implements TransactionHandler {
+public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -44,12 +44,7 @@ public class CryptoUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         CryptoUpdateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoUpdateAccount();
         if (txMessage.hasExpirationTime()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));

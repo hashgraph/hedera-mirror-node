@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @AllArgsConstructor
-public class ConsensusUpdateTopicTransactionHandler implements TransactionHandler {
+public class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -44,12 +44,7 @@ public class ConsensusUpdateTopicTransactionHandler implements TransactionHandle
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var updateTopic = recordItem.getTransactionBody().getConsensusUpdateTopic();
         if (updateTopic.hasExpirationTime()) {
             Timestamp expirationTime = updateTopic.getExpirationTime();

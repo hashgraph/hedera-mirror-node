@@ -20,24 +20,41 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import javax.inject.Named;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
-@Named
-@AllArgsConstructor
-public class ConsensusDeleteTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
+abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
 
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getConsensusDeleteTopic().getTopicID());
+    @Getter
+    private final boolean entityCreate;
+
+    public AbstractEntityCrudTransactionHandler() {
+        this(false);
+    }
+
+    public AbstractEntityCrudTransactionHandler(boolean entityCreate) {
+        this.entityCreate = entityCreate;
     }
 
     @Override
-    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        entity.setDeleted(true);
+    public boolean updatesEntity() {
+        return true;
     }
+
+    @Override
+    public void updateEntity(Entity entity, RecordItem recordItem) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+
+        if (entityCreate) {
+            entity.setCreatedTimestamp(consensusTimestamp);
+        }
+
+        entity.setModifiedTimestamp(consensusTimestamp);
+
+        doUpdateEntity(entity, recordItem);
+    }
+
+    protected abstract void doUpdateEntity(Entity entity, RecordItem recordItem);
 }

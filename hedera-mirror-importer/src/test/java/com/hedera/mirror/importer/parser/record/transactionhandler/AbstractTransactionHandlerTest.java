@@ -80,7 +80,17 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected static final String UPDATED_MEMO = "update memo";
 
+    private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
+
+    private static final Timestamp MODIFIED_TIMESTAMP = Timestamp.newBuilder().setSeconds(200).setNanos(2).build();
+
+    private static final Long CREATED_TIMESTAMP_NS = Utility.timestampInNanosMax(CREATED_TIMESTAMP);
+
+    private static final Long MODIFIED_TIMESTAMP_NS = Utility.timestampInNanosMax(MODIFIED_TIMESTAMP);
+
     private TransactionHandler transactionHandler;
+
+    private boolean isEntityCreate;
 
     protected abstract TransactionHandler getTransactionHandler();
 
@@ -106,6 +116,11 @@ public abstract class AbstractTransactionHandlerTest {
     void beforeEach(TestInfo testInfo) {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
         transactionHandler = getTransactionHandler();
+
+        if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
+            AbstractEntityCrudTransactionHandler handler = (AbstractEntityCrudTransactionHandler) transactionHandler;
+            isEntityCreate = handler.isEntityCreate();
+        }
     }
 
     @Test
@@ -171,6 +186,19 @@ public abstract class AbstractTransactionHandlerTest {
                         .build(),
                 transactionRecord);
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
+    }
+
+    protected Entity getExpectedEntityWithConsensusTimestamp() {
+        Entity entity = new Entity();
+
+        if (isEntityCreate) {
+            entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
+            entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
+        } else {
+            entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
+        }
+
+        return entity;
     }
 
     private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
@@ -292,7 +320,8 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     private Entity getExpectedUpdatedEntity() {
-        Entity entity = new Entity();
+        Entity entity = getExpectedEntityWithConsensusTimestamp();
+
         TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
         List<String> fieldNames = innerBody.getDescriptorForType().getFields().stream()
@@ -396,7 +425,16 @@ public abstract class AbstractTransactionHandlerTest {
                                 .toByteString()
                 )
                 .build();
-        return new RecordItem(transaction, TransactionRecord.newBuilder().build());
+
+        TransactionRecord record;
+        if (transactionHandler.updatesEntity()) {
+            Timestamp consensusTimestamp = isEntityCreate ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
+            record = getDefaultTransactionRecord().setConsensusTimestamp(consensusTimestamp).build();
+        } else {
+            record = getDefaultTransactionRecord().build();
+        }
+
+        return new RecordItem(transaction, record);
     }
 
     protected static Key getKey(String keyString) {

@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,17 +29,15 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-@AllArgsConstructor
-public class ContractCreateTransactionHandler implements TransactionHandler {
+public class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public ContractCreateTransactionHandler() {
+        super(true);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getContractID());
-    }
-
-    @Override
-    public boolean updatesEntity() {
-        return true;
     }
 
     @Override
@@ -54,7 +51,7 @@ public class ContractCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(final Entity entity, final RecordItem recordItem) {
         ContractCreateTransactionBody txMessage = recordItem.getTransactionBody().getContractCreateInstance();
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());

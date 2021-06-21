@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,8 +29,11 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-@AllArgsConstructor
-public class CryptoCreateTransactionHandler implements TransactionHandler {
+public class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public CryptoCreateTransactionHandler() {
+        super(true);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -44,17 +46,12 @@ public class CryptoCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         transaction.setInitialBalance(recordItem.getTransactionBody().getCryptoCreateAccount().getInitialBalance());
     }
 
     @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(final Entity entity, final RecordItem recordItem) {
         CryptoCreateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoCreateAccount();
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());

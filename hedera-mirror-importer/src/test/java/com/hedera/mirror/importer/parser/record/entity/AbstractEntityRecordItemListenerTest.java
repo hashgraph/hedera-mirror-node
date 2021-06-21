@@ -43,11 +43,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -81,10 +79,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build();
     protected static final AccountID PAYER2 =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2003).build();
-    protected static final AccountID RECEIVER =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2004).build();
-    protected static final AccountID DEFAULT_ACCOUNT_ID =
-            AccountID.getDefaultInstance();
     protected static final AccountID NODE =
             AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
     protected static final EntityId NODE_ACCOUNT_ID = EntityId.of(NODE);
@@ -121,9 +115,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
-
-    @Resource
-    private TransactionTemplate transactionTemplate;
 
     private long nextIndex = 0L;
 
@@ -181,37 +172,33 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
-        transactionTemplate.executeWithoutResult(status -> {
-            Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
-            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-            long consensusStart = recordItem.getConsensusTimestamp();
-            RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
+        Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
+        String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
+        long consensusStart = recordItem.getConsensusTimestamp();
+        RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
 
-            recordStreamFileListener.onStart();
-            entityRecordItemListener.onItem(recordItem);
-            // commit, close connection
-            recordStreamFileListener.onEnd(recordFile);
-        });
+        recordStreamFileListener.onStart();
+        entityRecordItemListener.onItem(recordItem);
+        // commit, close connection
+        recordStreamFileListener.onEnd(recordFile);
     }
 
-    protected void parseRecordItemsAndCommit(List<RecordItem> recordItems) {
-        transactionTemplate.executeWithoutResult(status -> {
-            Instant instant = Instant.ofEpochSecond(0, recordItems.get(0).getConsensusTimestamp());
-            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
-            long consensusStart = recordItems.get(0).getConsensusTimestamp();
-            long consensusEnd = recordItems.get(recordItems.size() - 1).getConsensusTimestamp();
-            RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);
+    protected void parseRecordItemsAndCommit(RecordItem... recordItems) {
+        Instant instant = Instant.ofEpochSecond(0, recordItems[0].getConsensusTimestamp());
+        String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
+        long consensusStart = recordItems[0].getConsensusTimestamp();
+        long consensusEnd = recordItems[recordItems.length - 1].getConsensusTimestamp();
+        RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);
 
-            recordStreamFileListener.onStart();
+        recordStreamFileListener.onStart();
 
-            // process each record item
-            for (RecordItem recordItem : recordItems) {
-                entityRecordItemListener.onItem(recordItem);
-            }
+        // process each record item
+        for (RecordItem recordItem : recordItems) {
+            entityRecordItemListener.onItem(recordItem);
+        }
 
-            // commit, close connection
-            recordStreamFileListener.onEnd(recordFile);
-        });
+        // commit, close connection
+        recordStreamFileListener.onEnd(recordFile);
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {
@@ -353,10 +340,10 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     }
 
     protected Entity createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-                                  Boolean deleted, Long expiryTimeNs, String memo, Key submitKey,
-                                  Long createdTimestamp, Long modifiedTimestamp) {
+                                  long createdTimestamp, boolean deleted, Long expiryTimeNs, String memo,
+                                  long modifiedTimestamp, Key submitKey) {
         if (autoRenewAccountId != null) {
-            entityRepository.save(getEntityWithDefaultMemo(autoRenewAccountId));
+            entityRepository.save(autoRenewAccountId.toEntity());
         }
 
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
@@ -408,12 +395,6 @@ public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
     protected void assertEntity(Entity expected) {
         Entity actual = getEntity(expected.getId());
         assertThat(actual).isEqualTo(expected);
-    }
-
-    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
-        Entity entity = entityId.toEntity();
-        entity.setMemo("");
-        return entity;
     }
 
     private RecordFile recordFile(long consensusStart, long consensusEnd, String filename) {

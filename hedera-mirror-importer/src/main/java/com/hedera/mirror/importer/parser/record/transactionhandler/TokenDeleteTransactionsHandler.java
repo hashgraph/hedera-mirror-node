@@ -29,19 +29,15 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
 @AllArgsConstructor
-public class TokenDeleteTransactionsHandler implements TransactionHandler {
+public class TokenDeleteTransactionsHandler extends AbstractEntityCrudTransactionHandler {
+
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenDeletion().getToken());
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         entity.setDeleted(true);
     }
 }

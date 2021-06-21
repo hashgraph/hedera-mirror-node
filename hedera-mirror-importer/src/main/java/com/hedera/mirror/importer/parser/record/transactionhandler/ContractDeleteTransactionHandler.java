@@ -29,7 +29,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
 @AllArgsConstructor
-public class ContractDeleteTransactionHandler implements TransactionHandler {
+public class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -37,12 +37,7 @@ public class ContractDeleteTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    public void doUpdateEntity(Entity entity, RecordItem recordItem) {
         entity.setDeleted(true);
     }
 }
