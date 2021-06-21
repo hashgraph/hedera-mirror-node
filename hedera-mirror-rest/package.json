@@ -65,7 +65,7 @@
   ],
   "devDependencies": {
     "app-root-path": "^3.0.0",
-    "aws-sdk-mock": "^5.1.0",
+    "aws-sdk-mock": "^5.2.1",
     "axios": "^0.21.1",
     "codecov": "^3.8.2",
     "eslint-config-airbnb-base": "^14.2.1",
