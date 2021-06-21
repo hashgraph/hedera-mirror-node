@@ -1,5 +1,5 @@
 [![Build](https://github.com/hashgraph/hedera-mirror-node/actions/workflows/importer.yml/badge.svg)](https://github.com/hashgraph/hedera-mirror-node/actions)
-[![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/master)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
+[![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/main)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
 [![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)](LICENSE)
 [![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
 
@@ -79,15 +79,15 @@ to understanding the mirror node operations.
 - [Git](https://git-scm.com/about)
 - [Maven](https://maven.apache.org/guides/getting-started/index.html)
 - [Docker](https://docs.docker.com/)
-  - [docker-compose commands](https://docs.docker.com/compose/reference/overview/)
-  - [docker commands](https://docs.docker.com/engine/reference/commandline/docker/)
+    - [docker-compose commands](https://docs.docker.com/compose/reference/overview/)
+    - [docker commands](https://docs.docker.com/engine/reference/commandline/docker/)
 - [NodeJS](https://nodejs.org/en/about/)
 - [Spring](https://spring.io/quickstart)
-  - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
-  - [Externalized Configurations](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
+    - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
+    - [Externalized Configurations](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
 - [PostgreSQL](https://www.postgresql.org/docs/9.6/index.html)
-  - [SQL commands](https://www.postgresql.org/docs/9.6/sql-commands.html)
-  - [Client Application & Utilities](https://www.postgresql.org/docs/9.6/reference-client.html)
+    - [SQL commands](https://www.postgresql.org/docs/9.6/sql-commands.html)
+    - [Client Application & Utilities](https://www.postgresql.org/docs/9.6/reference-client.html)
 - [Go](https://golang.org/)
 
 ### Prerequisite Tools

@@ -2,7 +2,7 @@ name: "REST API"
 
 on:
   pull_request:
-    branches: [ master, release/** ]
+    branches: [ main, release/** ]
   push:
     tags: [ v* ]
 
