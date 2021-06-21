@@ -24,6 +24,9 @@ spec:
       name: mirror
   values:
     prometheus:
+      grafana:
+        admin:
+          existingSecret: ""
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "mainnet-na"]
