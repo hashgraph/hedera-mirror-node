@@ -59,10 +59,6 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
-    protected static final Long DEFAULT_CREATED_TIMESTAMP = 0L;
-
-    protected static final boolean DEFAULT_DELETED = false;
-
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
 
     protected static final Timestamp DEFAULT_EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
@@ -90,7 +86,7 @@ public abstract class AbstractTransactionHandlerTest {
 
     private TransactionHandler transactionHandler;
 
-    private boolean isEntityCreate;
+    private boolean isCreateEntity;
 
     protected abstract TransactionHandler getTransactionHandler();
 
@@ -119,7 +115,7 @@ public abstract class AbstractTransactionHandlerTest {
 
         if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
             AbstractEntityCrudTransactionHandler handler = (AbstractEntityCrudTransactionHandler) transactionHandler;
-            isEntityCreate = handler.isEntityCreate();
+            isCreateEntity = handler.isCreateEntity();
         }
     }
 
@@ -188,11 +184,12 @@ public abstract class AbstractTransactionHandlerTest {
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }
 
-    protected Entity getExpectedEntityWithConsensusTimestamp() {
+    protected Entity getExpectedEntityWithTimestamp() {
         Entity entity = new Entity();
 
-        if (isEntityCreate) {
+        if (isCreateEntity) {
             entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
+            entity.setDeleted(false);
             entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
         } else {
             entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
@@ -320,7 +317,7 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     private Entity getExpectedUpdatedEntity() {
-        Entity entity = getExpectedEntityWithConsensusTimestamp();
+        Entity entity = getExpectedEntityWithTimestamp();
 
         TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
@@ -348,15 +345,6 @@ public abstract class AbstractTransactionHandlerTest {
                 default:
                     break;
             }
-        }
-
-        // set created_timestamp and deleted based on transaction body type
-        String dataCaseName = defaultBody.getDataCase().name().toLowerCase();
-        if (dataCaseName.contains("creat")) { // some names use creation vs create
-            entity.setCreatedTimestamp(DEFAULT_CREATED_TIMESTAMP);
-            entity.setDeleted(DEFAULT_DELETED);
-        } else if (dataCaseName.contains("delete")) {
-            entity.setDeleted(true);
         }
 
         entity.setMemo("");
@@ -428,7 +416,7 @@ public abstract class AbstractTransactionHandlerTest {
 
         TransactionRecord record;
         if (transactionHandler.updatesEntity()) {
-            Timestamp consensusTimestamp = isEntityCreate ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
+            Timestamp consensusTimestamp = isCreateEntity ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
             record = getDefaultTransactionRecord().setConsensusTimestamp(consensusTimestamp).build();
         } else {
             record = getDefaultTransactionRecord().build();

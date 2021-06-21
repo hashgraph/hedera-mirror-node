@@ -28,14 +28,14 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
 
     @Getter
-    private final boolean entityCreate;
+    private final boolean createEntity;
 
     public AbstractEntityCrudTransactionHandler() {
         this(false);
     }
 
-    public AbstractEntityCrudTransactionHandler(boolean entityCreate) {
-        this.entityCreate = entityCreate;
+    public AbstractEntityCrudTransactionHandler(boolean createEntity) {
+        this.createEntity = createEntity;
     }
 
     @Override
@@ -47,7 +47,7 @@ abstract class AbstractEntityCrudTransactionHandler implements TransactionHandle
     public void updateEntity(Entity entity, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
 
-        if (entityCreate) {
+        if (createEntity) {
             entity.setCreatedTimestamp(consensusTimestamp);
         }
 
