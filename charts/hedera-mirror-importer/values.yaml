@@ -176,9 +176,9 @@ prometheusRules:
   ImporterBalanceParseLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
-      summary: Took longer than 16s to parse balance stream files
+      summary: Took longer than 60s to parse balance stream files
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 16
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 60
     for: 2m
     labels:
       severity: critical

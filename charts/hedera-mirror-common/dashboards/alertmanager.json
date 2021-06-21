@@ -7,7 +7,9 @@
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
+        "limit": 100,
         "name": "Annotations & Alerts",
+        "showIn": 0,
         "type": "dashboard"
       }
     ]
@@ -15,17 +17,231 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 25,
-  "iteration": 1602715438463,
+  "id": 34,
+  "iteration": 1624124412293,
   "links": [],
   "panels": [
+    {
+      "datasource": null,
+      "description": "The percent of alerts firing by name",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 13,
+      "interval": null,
+      "maxDataPoints": null,
+      "options": {
+        "displayLabels": [
+          "percent",
+          "name"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {}
+      },
+      "pluginVersion": "7.5.5",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(ALERTS{namespace=~\"$namespace\",alertname!=\"Watchdog\",container=~\"$container\"}) by (alertname)",
+          "interval": "",
+          "legendFormat": "{{alertname}}",
+          "refId": "A"
+        }
+      ],
+      "timeShift": null,
+      "title": "Name",
+      "type": "piechart"
+    },
+    {
+      "datasource": null,
+      "description": "The percent of alerts by severity",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 14,
+      "interval": null,
+      "maxDataPoints": null,
+      "options": {
+        "displayLabels": [
+          "percent",
+          "name"
+        ],
+        "legend": {
+          "displayMode": "hidden",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {}
+      },
+      "pluginVersion": "7.5.5",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(ALERTS{namespace=~\"$namespace\",alertname!=\"Watchdog\",container=~\"$container\"}) by (severity)",
+          "interval": "",
+          "legendFormat": "{{severity}}",
+          "refId": "A"
+        }
+      ],
+      "timeShift": null,
+      "title": "Severity",
+      "type": "piechart"
+    },
+    {
+      "datasource": null,
+      "description": "The percent of alerts by state",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 15,
+      "interval": null,
+      "maxDataPoints": null,
+      "options": {
+        "displayLabels": [
+          "name",
+          "value"
+        ],
+        "legend": {
+          "displayMode": "hidden",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {}
+      },
+      "pluginVersion": "7.5.5",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(ALERTS{namespace=~\"$namespace\",alertname!=\"Watchdog\",container=~\"$container\"}) by (alertstate)",
+          "interval": "",
+          "legendFormat": "{{alertstate}}",
+          "refId": "A"
+        }
+      ],
+      "timeShift": null,
+      "title": "State",
+      "type": "piechart"
+    },
     {
       "datasource": "Prometheus",
       "description": "The number of AlertManager pods",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -45,8 +261,8 @@
       "gridPos": {
         "h": 5,
         "w": 3,
-        "x": 5,
-        "y": 0
+        "x": 0,
+        "y": 11
       },
       "id": 8,
       "options": {
@@ -61,12 +277,14 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.0",
+      "pluginVersion": "7.5.5",
       "targets": [
         {
-          "expr": "count(alertmanager_build_info{instance=~\"$instance\"})",
+          "exemplar": true,
+          "expr": "count(alertmanager_build_info{instance=~\"$instance\",namespace=~\"$namespace\"})",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -82,8 +300,8 @@
       "description": "Current number of active alerts.",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -103,8 +321,8 @@
       "gridPos": {
         "h": 5,
         "w": 3,
-        "x": 8,
-        "y": 0
+        "x": 3,
+        "y": 11
       },
       "id": 6,
       "options": {
@@ -119,12 +337,14 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.0",
+      "pluginVersion": "7.5.5",
       "targets": [
         {
-          "expr": "avg(alertmanager_alerts{state=\"active\", instance=~\"$instance\"})",
+          "exemplar": true,
+          "expr": "sum(ALERTS{alertstate=\"firing\",namespace=~\"$namespace\",instance=~\"$instance\",alertname!=\"Watchdog\",container=~\"$container\"})",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -140,8 +360,8 @@
       "description": "Current number of suppressed alerts.",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -161,8 +381,8 @@
       "gridPos": {
         "h": 5,
         "w": 3,
-        "x": 11,
-        "y": 0
+        "x": 6,
+        "y": 11
       },
       "id": 7,
       "options": {
@@ -177,12 +397,14 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.0",
+      "pluginVersion": "7.5.5",
       "targets": [
         {
-          "expr": "avg(alertmanager_alerts{state=\"suppressed\", instance=~\"$instance\"})",
+          "exemplar": true,
+          "expr": "avg(alertmanager_alerts{state=\"suppressed\",namespace=~\"$namespace\",instance=~\"$instance\",container=~\"$container\"})",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -198,8 +420,8 @@
       "description": "Current number of silenced alerts.",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -219,8 +441,8 @@
       "gridPos": {
         "h": 5,
         "w": 3,
-        "x": 14,
-        "y": 0
+        "x": 9,
+        "y": 11
       },
       "id": 9,
       "options": {
@@ -235,12 +457,14 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "7.2.0",
+      "pluginVersion": "7.5.5",
       "targets": [
         {
-          "expr": "avg(alertmanager_silences{state=\"active\", instance=~\"$instance\"})",
+          "exemplar": true,
+          "expr": "avg(alertmanager_silences{state=\"active\",namespace=~\"$namespace\",instance=~\"$instance\",container=~\"$container\"})",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -253,7 +477,7 @@
     },
     {
       "datasource": "AlertManager",
-      "description": "Alerts that are currently firing that are not specific to a namespace",
+      "description": "Alerts that are currently active",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -353,7 +577,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 637
+                "value": null
               }
             ]
           },
@@ -372,10 +596,10 @@
         ]
       },
       "gridPos": {
-        "h": 5,
+        "h": 8,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 16
       },
       "id": 3,
       "options": {
@@ -387,22 +611,27 @@
           }
         ]
       },
-      "pluginVersion": "7.2.0",
+      "pluginVersion": "7.5.5",
       "repeatDirection": "v",
       "targets": [
         {
+          "active": true,
           "annotations": false,
           "expr": "namespace=~\"$namespace\",severity=~\"critical\"",
+          "filters": "namespace=~$namespace,container=~\"$container\"",
+          "inhibited": false,
           "labelSelector": "alertname, summary, description, message,job,namespace",
           "legendFormat": "",
+          "receiver": "",
           "refId": "A",
+          "silenced": false,
           "target": "Query",
           "type": "table"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Critical Alerts",
+      "title": "Active Alerts",
       "transformations": [
         {
           "id": "organize",
@@ -424,157 +653,85 @@
       "type": "table"
     },
     {
-      "datasource": "AlertManager",
-      "description": "Alerts that are currently firing that are not specific to a namespace",
+      "datasource": null,
+      "description": "Alerts that are currently active by container",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "align": null,
-            "displayMode": "color-background",
-            "filterable": false
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "orange",
+                "color": "red",
                 "value": null
               }
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Time"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 141
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "alertname"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 197
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "severity"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 76
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "job"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 228
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "summary"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 445
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "message"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 503
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "description"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 637
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "namespace"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 152
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
-        "h": 5,
+        "h": 8,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 24
       },
-      "id": 4,
+      "id": 16,
       "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": false,
-            "displayName": "Time"
-          }
-        ]
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltipOptions": {
+          "mode": "multi"
+        }
       },
-      "pluginVersion": "7.2.0",
+      "pluginVersion": "7.5.5",
       "repeatDirection": "v",
       "targets": [
         {
-          "annotations": false,
-          "expr": "namespace=~\"$namespace\",severity=~\"warning\"",
-          "labelSelector": "alertname, summary, description, message,job,namespace",
-          "legendFormat": "",
-          "refId": "A",
-          "target": "Query",
-          "type": "table"
+          "exemplar": true,
+          "expr": "sum(ALERTS{namespace=~\"$namespace\",instance=~\"$instance\"}) by (container)",
+          "interval": "",
+          "legendFormat": "{{container}}",
+          "refId": "A"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Warning Alerts",
+      "title": "Active Alerts by container",
       "transformations": [
         {
           "id": "organize",
@@ -593,144 +750,7 @@
           }
         }
       ],
-      "type": "table"
-    },
-    {
-      "datasource": "AlertManager",
-      "description": "Alerts that are currently firing that are not specific to a namespace",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": null,
-            "displayMode": "color-background",
-            "filterable": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "semi-dark-yellow",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Time"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 141
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "alertname"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 197
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "severity"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 76
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "job"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 262
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "summary"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 469
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 24,
-        "x": 0,
-        "y": 15
-      },
-      "id": 2,
-      "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": false,
-            "displayName": "Time"
-          }
-        ]
-      },
-      "pluginVersion": "7.2.0",
-      "repeat": null,
-      "repeatDirection": "v",
-      "targets": [
-        {
-          "annotations": false,
-          "expr": "namespace=~\"\",severity=~\"critical|warning\"",
-          "labelSelector": "alertname, summary, description, message,",
-          "legendFormat": "",
-          "refId": "A",
-          "target": "Query",
-          "type": "table"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Cluster Wide Alerts",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": false,
-              "Value": true,
-              "severity": true
-            },
-            "indexByName": {},
-            "renameByName": {
-              "Time": "",
-              "message": "",
-              "severity": ""
-            }
-          }
-        }
-      ],
-      "type": "table"
+      "type": "timeseries"
     },
     {
       "aliasColors": {},
@@ -740,9 +760,7 @@
       "datasource": null,
       "description": "",
       "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
+        "defaults": {},
         "overrides": []
       },
       "fill": 1,
@@ -751,7 +769,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 32
       },
       "hiddenSeries": false,
       "id": 11,
@@ -771,7 +789,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.2.0",
+      "pluginVersion": "7.5.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -829,7 +847,7 @@
       }
     }
   ],
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "style": "dark",
   "tags": [
     "alertmanager",
@@ -842,50 +860,34 @@
         "allValue": ".*",
         "current": {
           "selected": true,
+          "tags": [],
           "text": [
-            "common"
+            "All"
           ],
           "value": [
-            "common"
+            "$__all"
           ]
         },
-        "datasource": "AlertManager",
-        "definition": "label_values(severity!=\"\",namespace) ",
+        "datasource": null,
+        "definition": "label_values(ALERTS, namespace)",
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": "Namespace",
         "multi": true,
         "name": "namespace",
         "options": [],
-        "query": "label_values(severity!=\"\",namespace) ",
-        "refresh": 2,
+        "query": {
+          "query": "label_values(ALERTS, namespace)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 1,
+        "sort": 5,
         "tagValuesQuery": "",
-        "tags": [
-          {
-            "text": "{\"labels\":{\"alertname\":\"PrometheusRuleFailures\",\"container\":\"prometheus\",\"endpoint\":\"web\",\"instance\":\"10.42.0.81:9090\",\"job\":\"mirror-prometheus-prometheus\",\"namespace\":\"common\",\"pod\":\"prometheus-mirror-prometheus-prometheus-0\",\"prometheus\":\"common/mirror-prometheus-prometheus\",\"rule_group\":\"/etc/prometheus/rules/prometheus-mirror-prometheus-prometheus-rulefiles-0/common-mirror-prometheus-kubernetes-system-kubelet.yaml;kubernetes-system-kubelet\",\"service\":\"mirror-prometheus-prometheus\",\"severity\":\"critical\"},\"annotations\":{\"description\":\"Prometheus common/prometheus-mirror-prometheus-prometheus-0 has failed to evaluate 10 rules in the last 5m.\",\"summary\":\"Prometheus is failing rule evaluations.\"},\"startsAt\":\"2020-10-13T20:32:27.753Z\",\"endsAt\":\"2020-10-13T22:12:27.753Z\",\"generatorURL\":\"http://mirror-prometheus-prometheus.common:9090/graph?g0.expr=increase%28prometheus_rule_evaluation_failures_total%7Bjob%3D%22mirror-prometheus-prometheus%22%2Cnamespace%3D%22common%22%7D%5B5m%5D%29+%3E+0&g0.tab=1\",\"status\":{\"state\":\"active\",\"silencedBy\":[],\"inhibitedBy\":[]},\"receivers\":[\"slack\"],\"fingerprint\":\"03e4c53cc7a64c71\"}"
-          },
-          {
-            "text": "{\"labels\":{\"alertname\":\"KubeCPUOvercommit\",\"prometheus\":\"common/mirror-prometheus-prometheus\",\"severity\":\"warning\"},\"annotations\":{\"description\":\"Cluster has overcommitted CPU resource requests for Pods and cannot tolerate node failure.\",\"runbook_url\":\"https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubecpuovercommit\",\"summary\":\"Cluster has overcommitted CPU resource requests.\"},\"startsAt\":\"2020-10-13T20:20:51.551Z\",\"endsAt\":\"2020-10-13T22:12:51.551Z\",\"generatorURL\":\"http://mirror-prometheus-prometheus.common:9090/graph?g0.expr=sum%28namespace%3Akube_pod_container_resource_requests_cpu_cores%3Asum%29+%2F+sum%28kube_node_status_allocatable_cpu_cores%29+%3E+%28count%28kube_node_status_allocatable_cpu_cores%29+-+1%29+%2F+count%28kube_node_status_allocatable_cpu_cores%29&g0.tab=1\",\"status\":{\"state\":\"active\",\"silencedBy\":[],\"inhibitedBy\":[]},\"receivers\":[\"slack\"],\"fingerprint\":\"099865e4e2a79e3e\"}"
-          },
-          {
-            "text": "{\"labels\":{\"alertname\":\"NodeClockNotSynchronising\",\"container\":\"node-exporter\",\"endpoint\":\"metrics\",\"instance\":\"10.42.0.82:9100\",\"job\":\"node-exporter\",\"namespace\":\"common\",\"pod\":\"mirror-prometheus-node-exporter-65kmj\",\"prometheus\":\"common/mirror-prometheus-prometheus\",\"service\":\"mirror-prometheus-node-exporter\",\"severity\":\"warning\"},\"annotations\":{\"message\":\"Clock on 10.42.0.82:9100 is not synchronising. Ensure NTP is configured on this host.\",\"runbook_url\":\"https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-nodeclocknotsynchronising\",\"summary\":\"Clock not synchronising.\"},\"startsAt\":\"2020-10-13T20:26:16.559Z\",\"endsAt\":\"2020-10-13T22:12:16.559Z\",\"generatorURL\":\"http://mirror-prometheus-prometheus.common:9090/graph?g0.expr=min_over_time%28node_timex_sync_status%5B5m%5D%29+%3D%3D+0&g0.tab=1\",\"status\":{\"state\":\"active\",\"silencedBy\":[],\"inhibitedBy\":[]},\"receivers\":[\"slack\"],\"fingerprint\":\"0e7775828c80cb31\"}"
-          },
-          {
-            "text": "{\"labels\":{\"alertname\":\"Watchdog\",\"prometheus\":\"common/mirror-prometheus-prometheus\",\"severity\":\"none\"},\"annotations\":{\"message\":\"This is an alert meant to ensure that the entire alerting pipeline is functional.\\nThis alert is always firing, therefore it should always be firing in Alertmanager\\nand always fire against a receiver. There are integrations with various notification\\nmechanisms that send a notification when this alert is not firing. For example the\\n\\\"DeadMansSnitch\\\" integration in PagerDuty.\\n\"},\"startsAt\":\"2020-10-13T20:15:15.342Z\",\"endsAt\":\"2020-10-13T22:11:45.342Z\",\"generatorURL\":\"http://mirror-prometheus-prometheus.common:9090/graph?g0.expr=vector%281%29&g0.tab=1\",\"status\":{\"state\":\"active\",\"silencedBy\":[],\"inhibitedBy\":[]},\"receivers\":[\"null\"],\"fingerprint\":\"884f08421bf0f6e5\"}"
-          },
-          {
-            "text": "{\"labels\":{\"alertname\":\"PrometheusRuleFailures\",\"container\":\"prometheus\",\"endpoint\":\"web\",\"instance\":\"10.42.0.81:9090\",\"job\":\"mirror-prometheus-prometheus\",\"namespace\":\"common\",\"pod\":\"prometheus-mirror-prometheus-prometheus-0\",\"prometheus\":\"common/mirror-prometheus-prometheus\",\"rule_group\":\"/etc/prometheus/rules/prometheus-mirror-prometheus-prometheus-rulefiles-0/common-mirror-prometheus-kubelet.rules.yaml;kubelet.rules\",\"service\":\"mirror-prometheus-prometheus\",\"severity\":\"critical\"},\"annotations\":{\"description\":\"Prometheus common/prometheus-mirror-prometheus-prometheus-0 has failed to evaluate 30 rules in the last 5m.\",\"summary\":\"Prometheus is failing rule evaluations.\"},\"startsAt\":\"2020-10-13T20:32:27.753Z\",\"endsAt\":\"2020-10-13T22:12:27.753Z\",\"generatorURL\":\"http://mirror-prometheus-prometheus.common:9090/graph?g0.expr=increase%28prometheus_rule_evaluation_failures_total%7Bjob%3D%22mirror-prometheus-prometheus%22%2Cnamespace%3D%22common%22%7D%5B5m%5D%29+%3E+0&g0.tab=1\",\"status\":{\"state\":\"active\",\"silencedBy\":[],\"inhibitedBy\":[]},\"receivers\":[\"slack\"],\"fingerprint\":\"8f5725baf5912df5\"}"
-          },
-          {
-            "text": "{\"labels\":{\"alertname\":\"KubeMemoryOvercommit\",\"prometheus\":\"common/mirror-prometheus-prometheus\",\"severity\":\"warning\"},\"annotations\":{\"description\":\"Cluster has overcommitted memory resource requests for Pods and cannot tolerate node failure.\",\"runbook_url\":\"https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubememoryovercommit\",\"summary\":\"Cluster has overcommitted memory resource requests.\"},\"startsAt\":\"2020-10-13T20:20:51.551Z\",\"endsAt\":\"2020-10-13T22:12:51.551Z\",\"generatorURL\":\"http://mirror-prometheus-prometheus.common:9090/graph?g0.expr=sum%28namespace%3Akube_pod_container_resource_requests_memory_bytes%3Asum%29+%2F+sum%28kube_node_status_allocatable_memory_bytes%29+%3E+%28count%28kube_node_status_allocatable_memory_bytes%29+-+1%29+%2F+count%28kube_node_status_allocatable_memory_bytes%29&g0.tab=1\",\"status\":{\"state\":\"active\",\"silencedBy\":[],\"inhibitedBy\":[]},\"receivers\":[\"slack\"],\"fingerprint\":\"abf173bbd2fc874d\"}"
-          },
-          {
-            "text": "{\"labels\":{\"alertname\":\"TargetDown\",\"job\":\"kube-dns\",\"namespace\":\"kube-system\",\"prometheus\":\"common/mirror-prometheus-prometheus\",\"service\":\"mirror-prometheus-kube-dns\",\"severity\":\"warning\"},\"annotations\":{\"message\":\"100% of the kube-dns/mirror-prometheus-kube-dns targets in kube-system namespace are down.\"},\"startsAt\":\"2020-10-13T20:26:15.342Z\",\"endsAt\":\"2020-10-13T22:12:15.342Z\",\"generatorURL\":\"http://mirror-prometheus-prometheus.common:9090/graph?g0.expr=100+%2A+%28count+by%28job%2C+namespace%2C+service%29+%28up+%3D%3D+0%29+%2F+count+by%28job%2C+namespace%2C+service%29+%28up%29%29+%3E+10&g0.tab=1\",\"status\":{\"state\":\"active\",\"silencedBy\":[],\"inhibitedBy\":[]},\"receivers\":[\"slack\"],\"fingerprint\":\"aece28aedf23b2bc\"}"
-          }
-        ],
+        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
@@ -903,13 +905,18 @@
         },
         "datasource": "Prometheus",
         "definition": "query_result(alertmanager_build_info)",
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": "Instance",
         "multi": true,
         "name": "instance",
         "options": [],
-        "query": "query_result(alertmanager_build_info)",
+        "query": {
+          "query": "query_result(alertmanager_build_info)",
+          "refId": "Prometheus-instance-Variable-Query"
+        },
         "refresh": 2,
         "regex": "/.*instance=\"([^\"]+)\".*/",
         "skipUrlSync": false,
@@ -919,11 +926,46 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": null,
+        "definition": "label_values(ALERTS{namespace=~\"$namespace\"}, container)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Container",
+        "multi": true,
+        "name": "container",
+        "options": [],
+        "query": {
+          "query": "label_values(ALERTS{namespace=~\"$namespace\"}, container)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 5,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
       }
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
