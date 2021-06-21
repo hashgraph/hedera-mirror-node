@@ -49,11 +49,14 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private final Timer copyDurationMetric;
     private final Timer finalInsertDurationMetric;
     private final Timer updateDurationMetric;
+    private final String truncateSql;
 
     public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
                         UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
+        truncateSql = String
+                .format("truncate table %s restart identity cascade", upsertQueryGenerator.getTemporaryTableName());
         finalTableName = upsertQueryGenerator.getFinalTableName();
         insertSql = upsertQueryGenerator.getInsertQuery();
         updateSql = upsertQueryGenerator.getUpdateQuery();
@@ -116,6 +119,11 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private void createTempTable(Connection connection) throws SQLException {
         // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
         try (PreparedStatement preparedStatement = connection.prepareStatement(createTempTableSql)) {
+            preparedStatement.executeUpdate();
+        }
+
+        // ensure table is empty in case of batching
+        try (PreparedStatement preparedStatement = connection.prepareStatement(truncateSql)) {
             preparedStatement.executeUpdate();
         }
         log.trace("Created temp table {}", tableName);
