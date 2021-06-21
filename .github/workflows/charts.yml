@@ -2,7 +2,7 @@ name: Charts
 
 on:
   pull_request:
-    branches: [ master, release/** ]
+    branches: [ main, release/** ]
   push:
     tags: [ v* ]
 
@@ -31,14 +31,14 @@ jobs:
           fetch-depth: 0
 
       - name: Build images
-        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=master
+        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=main
 
       - name: Create k3d cluster
         run: |
           set -ex
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           k3d cluster create mirror --agents 1 --timeout 5m
-          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:master" "gcr.io/mirrornode/hedera-mirror-importer:master" "gcr.io/mirrornode/hedera-mirror-rest:master"
+          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:main" "gcr.io/mirrornode/hedera-mirror-importer:main" "gcr.io/mirrornode/hedera-mirror-rest:main"
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.0.1
