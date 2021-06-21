@@ -160,7 +160,7 @@ podAnnotations: {}
 podDisruptionBudget:
   enabled: false
   # maxUnavailable: 0
-  # minAvailable: 1
+  minAvailable: 1
 
 podMonitor:
   enabled: false
