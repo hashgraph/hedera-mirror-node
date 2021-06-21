@@ -42,6 +42,7 @@ import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
 @Named
@@ -174,11 +175,19 @@ public class AccountClient extends AbstractNetworkClient {
                 receiverSigRequired,
                 String.format("Mirror new crypto account: %s_%s", memo == null ? "" : memo, Instant.now()));
 
-        TransactionReceipt receipt = executeTransactionAndRetrieveReceipt(accountCreateTransaction,
-                receiverSigRequired ? KeyList.of(privateKey) : null)
-                .getReceipt();
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(accountCreateTransaction,
+                        receiverSigRequired ? KeyList.of(privateKey) : null);
+        TransactionReceipt receipt = networkTransactionResponse.getReceipt();
 
         AccountId newAccountId = receipt.accountId;
+
+        // verify accountId
+        if (receipt.accountId == null) {
+            throw new NetworkException(String.format("Receipt for %s returned no accountId, receipt: %s",
+                    networkTransactionResponse.getTransactionId(),
+                    receipt));
+        }
 
         log.debug("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
         return new ExpandedAccountId(newAccountId, privateKey, privateKey.getPublicKey());

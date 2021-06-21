@@ -65,7 +65,7 @@ under `hedera.mirror.test.acceptance` include:
 - `operatorId` - Account ID on the network in 'x.y.z' format.
 - `operatorKey` - Account private key to be used for signing transaction and client identification. Please do not check
   in.
-- `restPollingProperties`
+- `rest`
   - `baseUrl` - The host URL to the mirror node. For example, https://testnet.mirrornode.hedera.com/api/v1
   - `delay` - The time to wait in between failed REST API calls.
   - `maxAttempts` - The maximum number of attempts when calling a REST API endpoint and receiving a 404.

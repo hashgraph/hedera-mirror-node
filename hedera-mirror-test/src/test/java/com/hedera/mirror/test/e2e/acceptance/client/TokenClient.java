@@ -352,7 +352,7 @@ public class TokenClient extends AbstractNetworkClient {
         long balance = new AccountBalanceQuery()
                 .setAccountId(accountId)
                 .execute(client)
-                .token.get(tokenId);
+                .tokens.get(tokenId);
 
         log.debug("{}'s token balance is {} {} tokens", accountId, balance, tokenId);
 
