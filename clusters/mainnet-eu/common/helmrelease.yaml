@@ -25,9 +25,11 @@ spec:
   values:
     prometheus:
       prometheusOperator:
-      prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "mainnet-eu"]
+      prometheusSpec:
+        externalLabels:
+          cluster: mainnet-eu
     traefik:
       service:
         annotations:

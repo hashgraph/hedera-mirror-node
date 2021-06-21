@@ -27,6 +27,9 @@ spec:
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "mainnet-na"]
+      prometheusSpec:
+        externalLabels:
+          cluster: mainnet-na
     traefik:
       service:
         annotations:

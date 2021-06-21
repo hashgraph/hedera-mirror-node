@@ -30,6 +30,9 @@ spec:
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "integration", "performance", "previewnet"]
+      prometheusSpec:
+        externalLabels:
+          cluster: preprod
     traefik:
       service:
         annotations:
