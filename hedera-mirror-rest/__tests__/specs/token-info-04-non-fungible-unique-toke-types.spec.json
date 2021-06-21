@@ -23,28 +23,10 @@
     ],
     "tokens": [
       {
-        "token_id": "0.0.1",
-        "symbol": "FIRSTMOVERLPDJH",
-        "created_timestamp": "1234567890000000001",
-        "type": "FUNGIBLE_COMMON"
-      },
-      {
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
-        "type": "FUNGIBLE_COMMON"
-      },
-      {
-        "token_id": "0.7.25301",
-        "symbol": "MIRRORTOKEN",
-        "created_timestamp": "1234567890000000003",
-        "type": "FUNGIBLE_COMMON"
-      },
-      {
-        "token_id": "0.23.45678",
-        "symbol": "HEDERACOIN",
-        "created_timestamp": "1234567890000000004",
-        "type": "FUNGIBLE_COMMON"
+        "type": "NON_FUNGIBLE_UNIQUE"
       }
     ],
     "balances": [],
@@ -73,7 +55,7 @@
     "supply_type": "INFINITE",
     "total_supply": "1000000",
     "treasury_account_id": "0.0.98",
-    "type": "FUNGIBLE_COMMON",
+    "type": "NON_FUNGIBLE_UNIQUE",
     "wipe_key": null
   }
 }

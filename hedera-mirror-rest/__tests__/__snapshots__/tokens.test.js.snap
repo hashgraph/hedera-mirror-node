@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`utils validateAndParseFilters token type tests Verify validateAndParseFilters for invalid {"key":"type","operator":"eq","value":"-1"} 1`] = `
+Array [
+  "Invalid parameter: type",
+]
+`;
+
+exports[`utils validateAndParseFilters token type tests Verify validateAndParseFilters for invalid {"key":"type","operator":"eq","value":"cred"} 1`] = `
+Array [
+  "Invalid parameter: type",
+]
+`;
+
+exports[`utils validateAndParseFilters token type tests Verify validateAndParseFilters for invalid {"key":"type","operator":"eq","value":"deb"} 1`] = `
+Array [
+  "Invalid parameter: type",
+]
+`;

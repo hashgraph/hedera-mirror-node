@@ -38,6 +38,7 @@ const filterKeys = {
   TIMESTAMP: 'timestamp',
   TOKENID: 'tokenid',
   TOKEN_ID: 'token.id',
+  TOKEN_TYPE: 'type',
   TRANSACTION_TYPE: 'transactiontype',
 };
 
@@ -105,6 +106,12 @@ const defaultBucketNames = {
 
 const recordStreamPrefix = 'recordstreams/record';
 
+const tokenTypeFilter = {
+  ALL: 'all',
+  FUNGIBLE_COMMON: 'fungible_common',
+  NON_FUNGIBLE_UNIQUE: 'non_fungible_unique',
+};
+
 module.exports = {
   characterEncoding,
   cloudProviders,
@@ -118,6 +125,7 @@ module.exports = {
   recordStreamPrefix,
   requestIdLabel,
   responseDataLabel,
+  tokenTypeFilter,
   transactionColumns,
   transactionResultFilter,
 };

@@ -24,14 +24,16 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // select columns
 const sqlQueryColumns = {
   KEY: 'e.key',
+  PUBLIC_KEY: 'e.public_key',
   SYMBOL: 't.symbol',
   TOKEN_ID: 't.token_id',
-  PUBLIC_KEY: 'e.public_key',
+  TYPE: 't.type',
 };
 
 // query to column maps
@@ -39,33 +41,37 @@ const filterColumnMap = {
   publickey: sqlQueryColumns.PUBLIC_KEY,
   symbol: sqlQueryColumns.SYMBOL,
   [constants.filterKeys.TOKEN_ID]: sqlQueryColumns.TOKEN_ID,
+  [constants.filterKeys.TOKEN_TYPE]: sqlQueryColumns.TYPE,
 };
 
 // token discovery sql queries
-const tokensSelectQuery = 'select t.token_id, symbol, e.key from token t';
+const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
 const accountIdJoinQuery = 'join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id';
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 
 // token info sql queries
 const tokenInfoSelectFields = [
-  'symbol',
-  'token_id',
-  'name',
-  'decimals',
-  'initial_supply',
-  'total_supply',
-  'treasury_account_id',
-  't.created_timestamp',
-  'freeze_default',
-  'e.key',
-  'kyc_key',
-  'freeze_key',
-  'wipe_key',
-  'supply_key',
-  'e.expiration_timestamp',
   'e.auto_renew_account_id',
   'e.auto_renew_period',
+  't.created_timestamp',
+  'decimals',
+  'e.expiration_timestamp',
+  'freeze_default',
+  'freeze_key',
+  'initial_supply',
+  'e.key',
+  'kyc_key',
+  'max_supply',
   't.modified_timestamp',
+  'name',
+  'supply_key',
+  'supply_type',
+  'symbol',
+  'token_id',
+  'total_supply',
+  'treasury_account_id',
+  't.type',
+  'wipe_key',
 ];
 const tokenInfoSelectQuery = ['select', tokenInfoSelectFields.join(',\n'), 'from token t'].join('\n');
 const tokenIdMatchQuery = 'where token_id = $1';
@@ -91,6 +97,14 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
       continue;
     }
 
+    // handle token type=ALL, valid param but not present in db
+    if (
+      filter.key === constants.filterKeys.TOKEN_TYPE &&
+      filter.value === constants.tokenTypeFilter.ALL.toUpperCase()
+    ) {
+      continue;
+    }
+
     const columnKey = filterColumnMap[filter.key];
     if (columnKey === undefined) {
       continue;
@@ -112,9 +126,10 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
  */
 const formatTokenRow = (row) => {
   return {
-    token_id: EntityId.fromEncodedId(row.token_id).toString(),
-    symbol: row.symbol,
     admin_key: utils.encodeKey(row.key),
+    symbol: row.symbol,
+    token_id: EntityId.fromEncodedId(row.token_id).toString(),
+    type: row.type,
   };
 };
 
@@ -130,23 +145,93 @@ const formatTokenInfoRow = (row) => {
     freeze_key: utils.encodeKey(row.freeze_key),
     initial_supply: row.initial_supply,
     kyc_key: utils.encodeKey(row.kyc_key),
+    max_supply: row.max_supply,
     modified_timestamp: utils.nsToSecNs(row.modified_timestamp),
     name: row.name,
     supply_key: utils.encodeKey(row.supply_key),
+    supply_type: row.supply_type,
     symbol: row.symbol,
     token_id: EntityId.fromEncodedId(row.token_id).toString(),
     total_supply: row.total_supply,
     treasury_account_id: EntityId.fromEncodedId(row.treasury_account_id).toString(),
+    type: row.type,
     wipe_key: utils.encodeKey(row.wipe_key),
   };
+};
+
+const tokenQueryFilterValidityChecks = (param, op, val) => {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
+  }
+
+  // Validate operator
+  if (!utils.isValidOperatorQuery(op)) {
+    return ret;
+  }
+
+  // Validate the value
+  switch (param) {
+    case constants.filterKeys.ACCOUNT_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
+    case constants.filterKeys.ENTITY_PUBLICKEY:
+      // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
+      ret = utils.isValidPublicKeyQuery(val);
+      break;
+    case constants.filterKeys.LIMIT:
+      // Acceptable forms: upto 4 digits
+      ret = utils.isValidLimitNum(val);
+      break;
+    case constants.filterKeys.ORDER:
+      // Acceptable words: asc or desc
+      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
+      break;
+    case constants.filterKeys.TOKEN_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
+    case constants.filterKeys.TOKEN_TYPE:
+      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
+      break;
+    case constants.filterKeys.TIMESTAMP:
+      ret = utils.isValidTimestampParam(val);
+      break;
+    default:
+      // Every token parameter should be included here. Otherwise, it will not be accepted.
+      ret = false;
+  }
+
+  return ret;
+};
+
+/**
+ * Verify param and filters meet expected format
+ * Additionally update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const validateTokensFilters = (filters) => {
+  const badParams = [];
+
+  for (const filter of filters) {
+    if (!tokenQueryFilterValidityChecks(filter.key, filter.operator, filter.value)) {
+      badParams.push(filter.key);
+    }
+  }
+
+  if (badParams.length > 0) {
+    throw InvalidArgumentError.forParams(badParams);
+  }
 };
 
 const getTokensRequest = async (req, res) => {
   // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
 
-  // validate filters
-  await utils.validateAndParseFilters(filters);
+  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
+  validateTokensFilters(filters);
+  utils.formatFilters(filters);
 
   const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
@@ -280,10 +365,10 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
 
   const tsQueryWhereClause = tsQueryConditions.length !== 0 ? `where ${tsQueryConditions.join(' and ')}` : '';
   const tsQuery = `select ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
-    from token_balance tb
-    ${tsQueryWhereClause}
-    order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
-    limit 1`;
+                   from token_balance tb
+                     ${tsQueryWhereClause}
+                   order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
+                   limit 1`;
   conditions.push(`tb.consensus_timestamp = (${tsQuery})`);
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
@@ -362,14 +447,15 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
-    extractSqlFromTokenRequest,
-    formatTokenRow,
-    formatTokenInfoRow,
-    tokensSelectQuery,
     accountIdJoinQuery,
     entityIdJoinQuery,
-    tokenBalancesSelectQuery,
+    extractSqlFromTokenRequest,
     extractSqlFromTokenBalancesRequest,
     formatTokenBalanceRow,
+    formatTokenInfoRow,
+    formatTokenRow,
+    tokenBalancesSelectQuery,
+    tokensSelectQuery,
+    validateTokensFilters,
   });
 }
