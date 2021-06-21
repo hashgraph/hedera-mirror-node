@@ -20,7 +20,7 @@ require (
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.1.0
-	gorm.io/gorm v1.21.10
+	gorm.io/gorm v1.21.11
 )
 
 replace github.com/hashgraph/hedera-sdk-go/v2 => github.com/xin-hedera/hedera-sdk-go/v2 v2.0.0-20210605062338-543911ffd214
