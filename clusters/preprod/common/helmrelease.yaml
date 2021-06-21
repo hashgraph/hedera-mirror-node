@@ -24,6 +24,8 @@ spec:
       name: mirror
   values:
     prometheus:
+      grafana:
+        admin: null
       prometheusOperator:
         namespaces:
           additional: ["kube-system", "common", "integration", "performance", "previewnet"]
