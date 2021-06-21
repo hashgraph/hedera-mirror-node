@@ -74,8 +74,8 @@
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.0</msgpack.version>
         <protobuf.version>3.17.3</protobuf.version>
-        <release.version>0.36.0-rc1</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.23.0-rc1</release.chartVersion>
+        <release.version>0.37.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.24.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>

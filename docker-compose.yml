@@ -26,7 +26,7 @@ services:
       - 5432:5432
 
   grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc:0.36.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-grpc:master
     pull_policy: always
     restart: unless-stopped
     environment:
@@ -39,7 +39,7 @@ services:
       - 5600:5600
 
   importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer:0.36.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-importer:master
     pull_policy: always
     restart: unless-stopped
     environment:
@@ -53,7 +53,7 @@ services:
   monitor:
     deploy:
       replicas: 0
-    image: gcr.io/mirrornode/hedera-mirror-monitor:0.36.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-monitor:master
     pull_policy: always
     restart: unless-stopped
     environment:
@@ -71,7 +71,7 @@ services:
       - 6379:6379
 
   rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest:0.36.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-rest:master
     pull_policy: always
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
@@ -81,7 +81,7 @@ services:
       - 5551:5551
 
   rosetta:
-    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.36.0-rc1
+    image: gcr.io/mirrornode/hedera-mirror-rosetta:master
     pull_policy: always
     environment:
       HEDERA_MIRROR_ROSETTA_DB_HOST: db
