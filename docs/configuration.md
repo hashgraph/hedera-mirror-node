@@ -233,7 +233,7 @@ Name                                                            | Default    | D
 `hedera.mirror.monitor.publish.clients`                         | 4          | How many total SDK clients to publish transactions. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.publish.enabled`                         | true       | Whether to enable transaction publishing
 `hedera.mirror.monitor.publish.responseThreads`                 | 40         | How many threads to use to resolve the asynchronous responses
-`hedera.mirror.monitor.publish.scenarios.<name>`                | ""         | The unique publisher scenario name. Used as a unique identifier in logs, metrics, and the REST API
+`hedera.mirror.monitor.publish.scenarios`                       |            | A map of scenario name to publish scenarios. The name is used as a unique identifier in logs, metrics, and the REST API
 `hedera.mirror.monitor.publish.scenarios.<name>.duration`       |            | How long this scenario should publish transactions. Leave empty for infinite
 `hedera.mirror.monitor.publish.scenarios.<name>.enabled`        | true       | Whether this publish scenario is enabled
 `hedera.mirror.monitor.publish.scenarios.<name>.limit`          | 0          | How many transactions to publish before halting. 0 for unlimited
@@ -249,7 +249,7 @@ Name                                                            | Default    | D
 `hedera.mirror.monitor.publish.warmupPeriod`                    | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
 `hedera.mirror.monitor.subscribe.clients`                       | 1          | How many SDK clients should be created to subscribe to mirror node APIs. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.subscribe.enabled`                       | true       | Whether to enable subscribing to mirror node APIs to verify published transactions
-`hedera.mirror.monitor.subscribe.grpc.<name>`                   | ""         | The unique gRPC subscriber scenario name. Used as a unique identifier in logs, metrics, and the REST API
+`hedera.mirror.monitor.subscribe.grpc`                          |            | A map of scenario name to gRPC subscriber scenarios. The name is used as a unique identifier in logs, metrics, and the REST API
 `hedera.mirror.monitor.subscribe.grpc.<name>.duration`          |            | How long to stay subscribed to the API
 `hedera.mirror.monitor.subscribe.grpc.<name>.enabled`           | true       | Whether this subscribe scenario is enabled
 `hedera.mirror.monitor.subscribe.grpc.<name>.limit`             | 0          | How many transactions to receive before halting. 0 for unlimited
@@ -259,7 +259,7 @@ Name                                                            | Default    | D
 `hedera.mirror.monitor.subscribe.grpc.<name>.startTime`         |            | The start time passed to the gRPC API. Defaults to current time if not set
 `hedera.mirror.monitor.subscribe.grpc.<name>.subscribers`       | 1          | How many concurrent subscribers should be instantiated for this scenario
 `hedera.mirror.monitor.subscribe.grpc.<name>.topicId`           |            | Which topic to subscribe to
-`hedera.mirror.monitor.subscribe.rest.<name>`                   | ""         | The unique REST subscriber scenario name. Used as a unique identifier in logs, metrics, and the REST API
+`hedera.mirror.monitor.subscribe.rest`                          |            | A map of scenario name to REST subscriber scenarios. The name is used as a unique identifier in logs, metrics, and the REST API
 `hedera.mirror.monitor.subscribe.rest.<name>.duration`          |            | How long to stay subscribed to the API
 `hedera.mirror.monitor.subscribe.rest.<name>.enabled`           | true       | Whether this subscribe scenario is enabled
 `hedera.mirror.monitor.subscribe.rest.<name>.limit`             | 0          | How many transactions to receive before halting. 0 for unlimited
