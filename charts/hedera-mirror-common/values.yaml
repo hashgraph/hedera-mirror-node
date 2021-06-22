@@ -196,9 +196,6 @@ prometheus:
         url: http://{{ .Release.Name }}-loki:3100
         jsonData:
           maxLines: 500
-    admin:
-      existingSecret: grafana-admin
-    adminPassword: ""  # Randomly generated if left blank
     defaultDashboardsEnabled: true
     plugins:
       - camptocamp-prometheus-alertmanager-datasource
