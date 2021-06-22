@@ -41,11 +41,6 @@ public class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactio
     }
 
     @Override
-    public EntityId getProxyAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoCreateAccount().getProxyAccountID());
-    }
-
-    @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         transaction.setInitialBalance(recordItem.getTransactionBody().getCryptoCreateAccount().getInitialBalance());
     }
@@ -57,13 +52,15 @@ public class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactio
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
 
-        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-        entity.setDeleted(false);
-
         if (txMessage.hasKey()) {
             entity.setKey(txMessage.getKey().toByteArray());
         }
 
         entity.setMemo(txMessage.getMemo());
+    }
+
+    @Override
+    protected EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getCryptoCreateAccount().getProxyAccountID());
     }
 }

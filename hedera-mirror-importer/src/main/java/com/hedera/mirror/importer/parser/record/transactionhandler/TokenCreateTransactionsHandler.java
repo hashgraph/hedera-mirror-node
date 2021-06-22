@@ -36,11 +36,6 @@ public class TokenCreateTransactionsHandler extends AbstractEntityCrudTransactio
     }
 
     @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenCreation().getAutoRenewAccount());
-    }
-
-    @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
     }
@@ -56,13 +51,15 @@ public class TokenCreateTransactionsHandler extends AbstractEntityCrudTransactio
             entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-
         if (tokenCreateTransactionBody.hasExpiry()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(tokenCreateTransactionBody.getExpiry()));
         }
 
-        entity.setDeleted(false);
         entity.setMemo(tokenCreateTransactionBody.getMemo());
+    }
+
+    @Override
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getTokenCreation().getAutoRenewAccount());
     }
 }

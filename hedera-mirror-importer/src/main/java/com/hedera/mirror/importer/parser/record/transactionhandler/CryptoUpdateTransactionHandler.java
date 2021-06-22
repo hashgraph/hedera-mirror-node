@@ -39,11 +39,6 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
     }
 
     @Override
-    public EntityId getProxyAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoUpdateAccount().getProxyAccountID());
-    }
-
-    @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         CryptoUpdateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoUpdateAccount();
         if (txMessage.hasExpirationTime()) {
@@ -61,5 +56,10 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
         if (txMessage.hasMemo()) {
             entity.setMemo(txMessage.getMemo().getValue());
         }
+    }
+
+    @Override
+    protected EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getCryptoUpdateAccount().getProxyAccountID());
     }
 }

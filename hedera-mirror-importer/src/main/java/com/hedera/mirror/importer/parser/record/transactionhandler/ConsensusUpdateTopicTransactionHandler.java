@@ -39,11 +39,6 @@ public class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTr
     }
 
     @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getAutoRenewAccount());
-    }
-
-    @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var updateTopic = recordItem.getTransactionBody().getConsensusUpdateTopic();
         if (updateTopic.hasExpirationTime()) {
@@ -62,5 +57,10 @@ public class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTr
         if (updateTopic.hasMemo()) {
             entity.setMemo(updateTopic.getMemo().getValue());
         }
+    }
+
+    @Override
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getAutoRenewAccount());
     }
 }

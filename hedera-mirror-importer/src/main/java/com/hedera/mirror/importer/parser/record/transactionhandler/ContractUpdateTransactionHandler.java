@@ -39,11 +39,6 @@ public class ContractUpdateTransactionHandler extends AbstractEntityCrudTransact
     }
 
     @Override
-    public EntityId getProxyAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getProxyAccountID());
-    }
-
-    @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         ContractUpdateTransactionBody txMessage = recordItem.getTransactionBody().getContractUpdateInstance();
         if (txMessage.hasExpirationTime()) {
@@ -70,5 +65,10 @@ public class ContractUpdateTransactionHandler extends AbstractEntityCrudTransact
             default:
                 break;
         }
+    }
+
+    @Override
+    protected EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getProxyAccountID());
     }
 }

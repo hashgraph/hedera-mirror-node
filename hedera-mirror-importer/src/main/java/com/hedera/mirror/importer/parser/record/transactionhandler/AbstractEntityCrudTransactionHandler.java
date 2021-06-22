@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import lombok.Getter;
 
 import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
@@ -49,12 +50,32 @@ abstract class AbstractEntityCrudTransactionHandler implements TransactionHandle
 
         if (createEntity) {
             entity.setCreatedTimestamp(consensusTimestamp);
+            entity.setDeleted(false);
         }
 
         entity.setModifiedTimestamp(consensusTimestamp);
+
+        // stream contains account ID explicitly set to the default '0.0.0'
+        EntityId autoRenewAccountId = getAutoRenewAccount(recordItem);
+        if (!EntityId.isEmpty(autoRenewAccountId)) {
+            entity.setAutoRenewAccountId(autoRenewAccountId);
+        }
+
+        EntityId proxyAccountId = getProxyAccount(recordItem);
+        if (!EntityId.isEmpty(proxyAccountId)) {
+            entity.setProxyAccountId(proxyAccountId);
+        }
 
         doUpdateEntity(entity, recordItem);
     }
 
     protected abstract void doUpdateEntity(Entity entity, RecordItem recordItem);
+
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return null;
+    }
+
+    protected EntityId getProxyAccount(RecordItem recordItem) {
+        return  null;
+    }
 }

@@ -39,19 +39,11 @@ public class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTr
     }
 
     @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getConsensusCreateTopic().getAutoRenewAccount());
-    }
-
-    @Override
     protected void doUpdateEntity(final Entity entity, final RecordItem recordItem) {
         var createTopic = recordItem.getTransactionBody().getConsensusCreateTopic();
         if (createTopic.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(createTopic.getAutoRenewPeriod().getSeconds());
         }
-
-        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-        entity.setDeleted(false);
 
         // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
         // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
@@ -60,5 +52,10 @@ public class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTr
         entity.setMemo(createTopic.getMemo());
         entity.setKey(adminKey);
         entity.setSubmitKey(submitKey);
+    }
+
+    @Override
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getConsensusCreateTopic().getAutoRenewAccount());
     }
 }

@@ -39,11 +39,6 @@ public class TokenUpdateTransactionsHandler extends AbstractEntityCrudTransactio
     }
 
     @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getAutoRenewAccount());
-    }
-
-    @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
         if (tokenUpdateTransactionBody.hasAdminKey()) {
@@ -61,5 +56,10 @@ public class TokenUpdateTransactionsHandler extends AbstractEntityCrudTransactio
         if (tokenUpdateTransactionBody.hasMemo()) {
             entity.setMemo(tokenUpdateTransactionBody.getMemo().getValue());
         }
+    }
+
+    @Override
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getAutoRenewAccount());
     }
 }

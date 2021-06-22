@@ -47,8 +47,6 @@ public class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransact
             entity.setKey(scheduleCreateTransactionBody.getAdminKey().toByteArray());
         }
 
-        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-        entity.setDeleted(false);
         entity.setMemo(scheduleCreateTransactionBody.getMemo());
     }
 }
