@@ -37,7 +37,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -196,7 +195,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
@@ -206,7 +205,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for token fund flow")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenFundFlow(int status) {
@@ -218,7 +217,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should confirm token update")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenUpdateFlow() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
@@ -229,7 +228,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {

@@ -25,8 +25,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.http.MediaType;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
@@ -36,6 +41,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 
 @Log4j2
 @Named
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class MirrorNodeClient extends AbstractNetworkClient {
 
     private final WebClient webClient;
@@ -101,23 +107,35 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
+    @Retryable(value = {WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
         return callRestEndpoint("/transactions?timestamp={timestamp}",
                 MirrorTransactionsResponse.class, timestamp);
     }
 
+    @Retryable(value = {WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint("/transactions/{transactionId}",
                 MirrorTransactionsResponse.class, transactionId);
     }
 
+    @Retryable(value = {WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorTokenResponse getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
         return callRestEndpoint("/tokens/{tokenId}", MirrorTokenResponse.class, tokenId);
     }
 
+    @Retryable(value = {WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
         log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
         return callRestEndpoint("/schedules/{scheduleId}", MirrorScheduleResponse.class, scheduleId);

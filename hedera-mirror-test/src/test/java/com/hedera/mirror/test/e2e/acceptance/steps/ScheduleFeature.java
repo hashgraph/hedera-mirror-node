@@ -42,7 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -325,7 +324,7 @@ public class ScheduleFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for the schedule transaction")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
@@ -341,7 +340,7 @@ public class ScheduleFeature {
     }
 
     @Then("the mirror node REST API should verify the executed schedule entity")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyExecutedScheduleFromMirror() {
@@ -350,7 +349,7 @@ public class ScheduleFeature {
     }
 
     @Then("the mirror node REST API should verify the non executed schedule entity")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyNonExecutedScheduleFromMirror() {
@@ -358,7 +357,7 @@ public class ScheduleFeature {
     }
 
     @Then("the mirror node REST API should verify the deleted schedule entity")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyDeletedScheduleFromMirror() {
