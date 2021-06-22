@@ -68,8 +68,8 @@ public class AcceptanceTestProperties {
 
     private boolean retrieveAddressBook = true;
 
-    @Max(5)
-    private int maxRetries = 5;
+    @Max(10)
+    private int maxRetries = 10;
 
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);
