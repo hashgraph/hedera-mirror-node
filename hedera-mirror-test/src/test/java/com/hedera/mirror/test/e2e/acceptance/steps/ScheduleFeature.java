@@ -41,7 +41,6 @@ import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -101,7 +100,6 @@ public class ScheduleFeature {
     private ExpandedAccountId tokenTreasuryAccount;
 
     @Given("I successfully schedule a treasury HBAR disbursement to {string}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewHBarTransferSchedule(String accountName) throws ReceiptStatusException,
             PrecheckStatusException,
             TimeoutException {
@@ -119,7 +117,6 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a crypto account create")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewCryptoAccountSchedule() throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 1;
@@ -138,7 +135,6 @@ public class ScheduleFeature {
 
     @Given("I schedule a crypto transfer with {int} initial signatures but require an additional signature from " +
             "{string}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewCryptoAccountSchedule(int initSignatureCount, String accountName) throws ReceiptStatusException,
             PrecheckStatusException,
             TimeoutException {
@@ -179,7 +175,6 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a token transfer from {string} to {string}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewTokenTransferSchedule(String senderName, String receiverName) throws ReceiptStatusException,
             PrecheckStatusException,
             TimeoutException {
@@ -225,7 +220,6 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a topic message submit with {string}'s submit key")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewHCSSchedule(String accountName) throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
         expectedSignersCount = 1;
@@ -508,18 +502,6 @@ public class ScheduleFeature {
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
 
         return mirrorTransaction;
-    }
-
-    /**
-     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
-     * after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
-        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
-        throw t;
     }
 
     @RequiredArgsConstructor

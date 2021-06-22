@@ -26,6 +26,8 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -50,6 +52,9 @@ public class ScheduleClient extends AbstractNetworkClient {
         log.debug("Creating Schedule Client");
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
                                                      String memo, KeyList signatureKeyList) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
@@ -87,6 +92,9 @@ public class ScheduleClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId,
                                                    ScheduleId scheduleId) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
@@ -103,6 +111,9 @@ public class ScheduleClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 

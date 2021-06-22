@@ -54,10 +54,10 @@ class ClientConfiguration {
     @Bean
     RetryTemplate retryTemplate() {
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(acceptanceTestProperties.getSubscribeRetryBackoffPeriod().toMillis());
+        fixedBackOffPolicy.setBackOffPeriod(acceptanceTestProperties.getBackOffPeriod().toMillis());
 
         SimpleRetryPolicy simpleRetryPolicy = new SimpleRetryPolicy();
-        simpleRetryPolicy.setMaxAttempts(acceptanceTestProperties.getSubscribeRetries());
+        simpleRetryPolicy.setMaxAttempts(acceptanceTestProperties.getMaxRetries());
 
         RetryTemplate retryTemplate = new RetryTemplate();
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);

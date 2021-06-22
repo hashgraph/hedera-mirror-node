@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -72,7 +71,6 @@ public class TopicFeature {
     private TopicClient topicClient;
 
     @Given("I successfully create a new topic id")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         testInstantReference = Instant.now();
 
@@ -95,7 +93,6 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new open topic")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void createNewOpenTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         testInstantReference = Instant.now();
 
@@ -238,14 +235,13 @@ public class TopicFeature {
         messageSubscribeCount = numGroups * messageCount;
     }
 
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
+    @Retryable(value = {PrecheckStatusException.class})
     public void publishTopicMessages(int messageCount) throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
         topicClient.publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, false);
     }
 
     @When("I publish and verify {int} messages sent")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
     public void publishAndVerifyTopicMessages(int messageCount) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
         messageSubscribeCount = messageCount;
@@ -374,41 +370,5 @@ public class TopicFeature {
 
     private KeyList getSubmitKeys() {
         return submitKey == null ? null : KeyList.of(submitKey);
-    }
-
-    /**
-     * Recover method for retry operations Method parameters of retry method must match this method after exception
-     * parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
-        log.error("Transaction submissions for topic operation failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
-     * method after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, int messageCount) throws PrecheckStatusException {
-        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
-     * method after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
-        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
-        throw t;
     }
 }

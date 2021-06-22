@@ -69,10 +69,10 @@ public class AcceptanceTestProperties {
     private boolean retrieveAddressBook = true;
 
     @Max(5)
-    private int subscribeRetries = 5;
+    private int maxRetries = 5;
 
     @NotNull
-    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
+    private Duration backOffPeriod = Duration.ofMillis(5000);
 
     public Set<NodeProperties> getNodes() {
         if (network == HederaNetwork.OTHER && nodes.isEmpty()) {

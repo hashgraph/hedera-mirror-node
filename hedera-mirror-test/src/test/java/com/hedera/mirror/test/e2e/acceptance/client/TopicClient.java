@@ -34,6 +34,8 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -64,6 +66,9 @@ public class TopicClient extends AbstractNetworkClient {
         log.debug("Creating Topic Client");
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) throws ReceiptStatusException,
             PrecheckStatusException, TimeoutException {
 
@@ -90,6 +95,9 @@ public class TopicClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse updateTopic(TopicId topicId) throws ReceiptStatusException,
             PrecheckStatusException,
             TimeoutException {
@@ -112,6 +120,9 @@ public class TopicClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse deleteTopic(TopicId topicId) throws ReceiptStatusException,
             PrecheckStatusException,
             TimeoutException {
@@ -128,6 +139,9 @@ public class TopicClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public List<TransactionReceipt> publishMessagesToTopic(TopicId topicId, String baseMessage,
                                                            KeyList submitKeys, int numMessages,
                                                            boolean verify) throws PrecheckStatusException,
@@ -155,6 +169,9 @@ public class TopicClient extends AbstractNetworkClient {
                 .setMessage(message);
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public TopicId getDefaultTopicId() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         if (defaultTopicId == null) {
             NetworkTransactionResponse networkTransactionResponse = createTopic(sdkClient
@@ -166,11 +183,17 @@ public class TopicClient extends AbstractNetworkClient {
         return defaultTopicId;
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void publishMessageToDefaultTopic() throws ReceiptStatusException, PrecheckStatusException,
             TimeoutException {
         publishMessagesToTopic(getDefaultTopicId(), "Background message", null, 1, false);
     }
 
+    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
         TopicMessageSubmitTransaction consensusMessageSubmitTransaction = new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
