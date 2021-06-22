@@ -33,7 +33,7 @@ spec:
             cluster: mainnet-na
       prometheusOperator:
         namespaces:
-          additional: ["kube-system", "common", "mainnet-na"]
+          additional: ["kube-system", "common", "mainnet"]
     traefik:
       service:
         annotations:

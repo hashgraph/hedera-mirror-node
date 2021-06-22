@@ -2,7 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: mirror
-  namespace: mainnet-na
+  namespace: mainnet
 spec:
   chart:
     spec:
