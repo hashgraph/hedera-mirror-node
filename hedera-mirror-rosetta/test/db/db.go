@@ -44,6 +44,7 @@ const (
 	dbMigrationPath = "hedera-mirror-importer/src/main/resources/db/migration/v1"
 	dbName          = "mirror_node"
 	dbUsername      = "mirror_rosetta_integration"
+	poolMaxWait     = 10 * time.Minute
 )
 
 // moduleRoot is the absolute path to hedera-mirror-rosetta
@@ -110,7 +111,7 @@ func SetupDb() DbResource {
 	}
 
 	// set max wait to 5 minutes, used in pool.Retry to timeout
-	pool.MaxWait = 5 * time.Minute
+	pool.MaxWait = poolMaxWait
 
 	// create a dedicated network for the containers, so flyway can connect to db using hostname
 	log.Info("Create network for docker containers")
