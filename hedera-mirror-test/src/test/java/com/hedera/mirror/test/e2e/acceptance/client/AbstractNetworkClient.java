@@ -20,20 +20,20 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.util.concurrent.TimeoutException;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Key;
 import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -42,14 +42,18 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 public abstract class AbstractNetworkClient {
     protected final SDKClient sdkClient;
     protected final Client client;
+    protected final RetryTemplate retryTemplate;
 
-    public AbstractNetworkClient(SDKClient sdkClient) {
+    public AbstractNetworkClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         this.sdkClient = sdkClient;
         client = sdkClient.getClient();
+        this.retryTemplate = retryTemplate;
     }
 
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) throws TimeoutException,
-            PrecheckStatusException {
+    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
+
+        // set max retries on sdk
+        transaction.setMaxAttempts(sdkClient.getAcceptanceTestProperties().getSdkProperties().getMaxAttempts());
 
         if (keyList != null) {
             transaction.freezeWith(client); // Signing requires transaction to be frozen
@@ -59,26 +63,42 @@ public abstract class AbstractNetworkClient {
             log.debug("{} additional signatures added to transaction", keyList.size());
         }
 
-        TransactionResponse transactionResponse = (TransactionResponse) transaction.execute(client);
+        Transaction finalTransaction = transaction;
+        TransactionResponse transactionResponse = retryTemplate.execute(x -> executeTransaction(finalTransaction));
         TransactionId transactionId = transactionResponse.transactionId;
         log.debug("Executed transaction {} with {} signatures.", transactionId, keyList == null ? 0 : keyList.size());
 
         return transactionId;
     }
 
+    @SneakyThrows
+    private TransactionResponse executeTransaction(Transaction transaction) {
+        return (TransactionResponse) transaction.execute(client);
+    }
+
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
-                                                                           KeyList keyList) throws TimeoutException,
-            PrecheckStatusException, ReceiptStatusException {
+                                                                           KeyList keyList) {
         long startBalance = getBalance();
         TransactionId transactionId = executeTransaction(transaction, keyList);
-        TransactionReceipt transactionReceipt = transactionId.getReceipt(client);
+        TransactionReceipt transactionReceipt = getTransactionReceipt(transactionId);
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 
-    public long getBalance() throws TimeoutException, PrecheckStatusException {
+    @SneakyThrows
+    public TransactionReceipt getTransactionReceipt(TransactionId transactionId) {
+        return retryTemplate.execute(x -> transactionId.getReceipt(client));
+    }
+
+    @SneakyThrows
+    public TransactionRecord getTransactionRecord(TransactionId transactionId) {
+        return retryTemplate.execute(x -> transactionId.getRecord(client));
+    }
+
+    @SneakyThrows
+    public long getBalance() {
         return new AccountBalanceQuery()
-                .setAccountId(sdkClient.getOperatorId())
+                .setAccountId(sdkClient.getExpandedOperatorAccountId().getAccountId())
                 .execute(client)
                 .hbars
                 .toTinybars();

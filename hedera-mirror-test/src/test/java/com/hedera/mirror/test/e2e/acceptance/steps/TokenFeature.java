@@ -29,22 +29,17 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
+import junit.framework.AssertionFailedError;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
@@ -52,7 +47,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
@@ -65,8 +59,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 public class TokenFeature {
     private final static int INITIAL_SUPPLY = 1_000_000;
 
-    @Autowired
-    private AcceptanceTestProperties acceptanceProps;
     @Autowired
     private TokenClient tokenClient;
     @Autowired
@@ -82,82 +74,67 @@ public class TokenFeature {
     private NetworkTransactionResponse networkTransactionResponse;
 
     @Given("I successfully create a new token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void createNewToken() {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I successfully create a new token {string}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewToken(String symbol) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void createNewToken(String symbol) throws Exception {
         createNewToken(symbol, TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I successfully create a new token account with freeze status {int} and kyc status {int}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewToken(int freezeStatus, int kycStatus) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+    public void createNewToken(int freezeStatus, int kycStatus) {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
     }
 
     @Given("I associate with token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void associateWithToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void associateWithToken() throws Exception {
         // associate payer
         sender = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         associateWithToken(sender);
     }
 
     @Given("I associate a new sender account with token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void associateSenderWithToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void associateSenderWithToken() {
 
         sender = accountClient.createNewAccount(10_000_000);
         associateWithToken(sender);
     }
 
     @Given("I associate a new recipient account with token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void associateRecipientWithToken() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void associateRecipientWithToken() {
 
         recipient = accountClient.createNewAccount(10_000_000);
         associateWithToken(recipient);
     }
 
     @When("I set new account freeze status to {int}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void setFreezeStatus(int freezeStatus) throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    public void setFreezeStatus(int freezeStatus) {
         setFreezeStatus(freezeStatus, recipient);
     }
 
     @When("I set new account kyc status to {int}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void setKycStatus(int kycStatus) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void setKycStatus(int kycStatus) {
         setKycStatus(kycStatus, recipient);
     }
 
     @Then("I transfer {int} tokens to payer")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void fundPayerAccountWithTokens(int amount) throws PrecheckStatusException, ReceiptStatusException,
-            TimeoutException {
-        transferTokens(tokenId, amount, recipient, tokenClient.getSdkClient()
-                .getOperatorId());
+    public void fundPayerAccountWithTokens(int amount) {
+        transferTokens(tokenId, amount, recipient, tokenClient.getSdkClient().getExpandedOperatorAccountId()
+                .getAccountId());
     }
 
     @Then("I transfer {int} tokens to recipient")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void transferTokensToRecipient(int amount) throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    public void transferTokensToRecipient(int amount) {
         transferTokens(tokenId, amount, sender, recipient
                 .getAccountId());
     }
 
     @Given("I update the token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void updateToken() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void updateToken() {
 
         networkTransactionResponse = tokenClient
                 .updateToken(tokenId, tokenClient.getSdkClient().getExpandedOperatorAccountId());
@@ -166,8 +143,7 @@ public class TokenFeature {
     }
 
     @Given("I burn {int} from the token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void burnToken(int amount) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void burnToken(int amount) {
 
         networkTransactionResponse = tokenClient.burn(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -175,8 +151,7 @@ public class TokenFeature {
     }
 
     @Given("I mint {int} from the token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void mintToken(int amount) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void mintToken(int amount) {
 
         networkTransactionResponse = tokenClient.mint(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -184,8 +159,7 @@ public class TokenFeature {
     }
 
     @Given("I wipe {int} from the token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void wipeToken(int amount) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void wipeToken(int amount) {
 
         networkTransactionResponse = tokenClient.wipe(tokenId, amount, recipient);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -193,17 +167,14 @@ public class TokenFeature {
     }
 
     @Given("I dissociate the account from the token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void dissociateNewAccountFromToken() throws PrecheckStatusException, ReceiptStatusException,
-            TimeoutException {
-        networkTransactionResponse = tokenClient.disssociate(recipient, tokenId);
+    public void dissociateNewAccountFromToken() {
+        networkTransactionResponse = tokenClient.dissociate(recipient, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I delete the token")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void deleteToken() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void deleteToken() {
 
         networkTransactionResponse = tokenClient
                 .delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
@@ -213,36 +184,32 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorAPIResponses(int status) throws PrecheckStatusException, ReceiptStatusException,
-            TimeoutException {
+    public void verifyMirrorAPIResponses(int status) {
         verifyTransactions(status);
 
-        // publish background message to network to reduce possibility of stale info in low TPS environment
-        topicClient.publishMessageToDefaultTopic();
+        publishBackgroundMessages();
     }
 
     @Then("the mirror node REST API should return status {int} for token fund flow")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenFundFlow(int status) throws PrecheckStatusException, ReceiptStatusException,
-            TimeoutException {
+    public void verifyMirrorTokenFundFlow(int status) {
         verifyTransactions(status);
         verifyToken();
         verifyTokenTransfers();
 
-        // publish background message to network to reduce possibility of stale info in low TPS environment
-        topicClient.publishMessageToDefaultTopic();
+        publishBackgroundMessages();
     }
 
     @Then("the mirror node REST API should confirm token update")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenUpdateFlow() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void verifyMirrorTokenUpdateFlow() throws Exception {
         verifyTokenUpdate();
 
         // publish background message to network to reduce possibility of stale info in low TPS environment
@@ -250,10 +217,10 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionIdString);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
@@ -271,7 +238,7 @@ public class TokenFeature {
     }
 
     @After
-    public void cleanup() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void cleanup() {
         // dissociate all applicable accounts from token to reduce likelihood of max token association error
         if (tokenId != null) {
             // a nonzero balance will result in a TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES error
@@ -291,7 +258,7 @@ public class TokenFeature {
     private void dissociateAccount(ExpandedAccountId accountId) {
         if (accountId != null) {
             try {
-                tokenClient.disssociate(accountId, tokenId);
+                tokenClient.dissociate(accountId, tokenId);
                 log.info("Successfully dissociated account {} from token {}", accountId, tokenId);
             } catch (Exception ex) {
                 log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
@@ -299,8 +266,7 @@ public class TokenFeature {
         }
     }
 
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws PrecheckStatusException,
-            ReceiptStatusException, TimeoutException {
+    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
         tokenKey = PrivateKey.generate();
         PublicKey tokenPublicKey = tokenKey.getPublicKey();
         log.trace("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
@@ -319,15 +285,13 @@ public class TokenFeature {
         assertNotNull(tokenId);
     }
 
-    private void associateWithToken(ExpandedAccountId accountId) throws PrecheckStatusException,
-            ReceiptStatusException, TimeoutException {
-        networkTransactionResponse = tokenClient.asssociate(accountId, tokenId);
+    private void associateWithToken(ExpandedAccountId accountId) {
+        networkTransactionResponse = tokenClient.associate(accountId, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) throws PrecheckStatusException,
-            ReceiptStatusException, TimeoutException {
+    private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) {
         if (freezeStatus == TokenFreezeStatus.Frozen_VALUE) {
             networkTransactionResponse = tokenClient.freeze(tokenId, accountId.getAccountId(), tokenKey);
         } else if (freezeStatus == TokenFreezeStatus.Unfrozen_VALUE) {
@@ -340,8 +304,7 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void setKycStatus(int kycStatus, ExpandedAccountId accountId) throws PrecheckStatusException,
-            ReceiptStatusException, TimeoutException {
+    private void setKycStatus(int kycStatus, ExpandedAccountId accountId) {
         if (kycStatus == TokenKycStatus.Granted_VALUE) {
             networkTransactionResponse = tokenClient.grantKyc(tokenId, accountId.getAccountId(), tokenKey);
         } else if (kycStatus == TokenKycStatus.Revoked_VALUE) {
@@ -354,22 +317,15 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
         networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + amount);
-    }
-
-    private void onboardNewTokenAccount(int freezeStatus, int kycStatus) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
-        // create token, associate payer and transfer tokens to payer
-        createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
-
-        associateWithToken();
-
-        fundPayerAccountWithTokens(INITIAL_SUPPLY / 2);
     }
 
     private MirrorTransaction verifyTransactions(int status) {
@@ -432,52 +388,12 @@ public class TokenFeature {
         assertThat(mirrorToken.getCreatedTimestamp()).isNotEqualTo(mirrorToken.getModifiedTimestamp());
     }
 
-    /**
-     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
-     * after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
-        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
-     * after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, int count) throws PrecheckStatusException {
-        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
-     * after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, String param) throws PrecheckStatusException {
-        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for REST verify operations. Method parameters of retry method must match this method after
-     * exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(AssertionError t) {
-        log.error("REST API response verification failed after {} retries w: {}",
-                acceptanceProps.getRestPollingProperties().getMaxAttempts(), t.getMessage());
-        throw t;
+    private void publishBackgroundMessages() {
+        // publish background message to network to reduce possibility of stale info in low TPS environment
+        try {
+            topicClient.publishMessageToDefaultTopic();
+        } catch (Exception ex) {
+            log.trace("Encountered issue published background messages to default topic", ex);
+        }
     }
 }

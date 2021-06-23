@@ -33,27 +33,21 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
+import junit.framework.AssertionFailedError;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.opentest4j.AssertionFailedError;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleInfo;
-import com.hedera.hashgraph.sdk.ScheduleInfoQuery;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.Transaction;
@@ -101,10 +95,7 @@ public class ScheduleFeature {
     private ExpandedAccountId tokenTreasuryAccount;
 
     @Given("I successfully schedule a treasury HBAR disbursement to {string}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewHBarTransferSchedule(String accountName) throws ReceiptStatusException,
-            PrecheckStatusException,
-            TimeoutException {
+    public void createNewHBarTransferSchedule(String accountName) {
         expectedSignersCount = 2;
         currentSignersCount = 0 + signatoryCountOffset;
         ExpandedAccountId recipient = accountClient
@@ -119,9 +110,7 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a crypto account create")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewCryptoAccountSchedule() throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    public void createNewCryptoAccountSchedule() {
         expectedSignersCount = 1;
         currentSignersCount = 0 + signatoryCountOffset;
 
@@ -138,10 +127,7 @@ public class ScheduleFeature {
 
     @Given("I schedule a crypto transfer with {int} initial signatures but require an additional signature from " +
             "{string}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewCryptoAccountSchedule(int initSignatureCount, String accountName) throws ReceiptStatusException,
-            PrecheckStatusException,
-            TimeoutException {
+    public void createNewCryptoAccountSchedule(int initSignatureCount, String accountName) {
         expectedSignersCount = 2 + initSignatureCount; // new account, accountName and initSignatureCount
         currentSignersCount = initSignatureCount + signatoryCountOffset;
         ExpandedAccountId finalSignatory = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
@@ -168,7 +154,7 @@ public class ScheduleFeature {
         scheduledTransaction = accountClient
                 .getCryptoTransferTransaction(
                         newAccountId.getAccountId(),
-                        accountClient.getSdkClient().getOperatorId(),
+                        accountClient.getSdkClient().getExpandedOperatorAccountId().getAccountId(),
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR));
 
         // add sender private key to ensure only Alice's signature is the only signature left that is required
@@ -179,10 +165,7 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a token transfer from {string} to {string}")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewTokenTransferSchedule(String senderName, String receiverName) throws ReceiptStatusException,
-            PrecheckStatusException,
-            TimeoutException {
+    public void createNewTokenTransferSchedule(String senderName, String receiverName) {
         expectedSignersCount = 2;
         currentSignersCount = 0 + signatoryCountOffset;
         tokenTreasuryAccount = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
@@ -207,7 +190,7 @@ public class ScheduleFeature {
 
         // associate new account, sender as treasury is auto associated
         log.debug("Associate receiver: {} with token: {}", receiverName, tokenId);
-        networkTransactionResponse = tokenClient.asssociate(receiver, tokenId);
+        networkTransactionResponse = tokenClient.associate(receiver, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
 
         Hbar hbarAmount = Hbar.fromTinybars(DEFAULT_TINY_HBAR);
@@ -225,9 +208,7 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a topic message submit with {string}'s submit key")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewHCSSchedule(String accountName) throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    public void createNewHCSSchedule(String accountName) {
         expectedSignersCount = 1;
         currentSignersCount = 0 + signatoryCountOffset;
         ExpandedAccountId submitAdmin = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
@@ -249,8 +230,7 @@ public class ScheduleFeature {
         createNewSchedule(scheduledTransaction, null);
     }
 
-    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList) throws PrecheckStatusException,
-            ReceiptStatusException, TimeoutException {
+    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList) {
         log.debug("Schedule creation ");
 
         // create signatures list
@@ -270,8 +250,7 @@ public class ScheduleFeature {
         assertNotNull(scheduledTransactionId);
     }
 
-    public void signSignature(ExpandedAccountId signatoryAccount) throws PrecheckStatusException,
-            ReceiptStatusException, TimeoutException {
+    public void signSignature(ExpandedAccountId signatoryAccount) {
         currentSignersCount++; // add signatoryAccount and payer
         networkTransactionResponse = scheduleClient.signSchedule(
                 signatoryAccount,
@@ -284,21 +263,19 @@ public class ScheduleFeature {
     }
 
     @Then("the scheduled transaction is signed by {string}")
-    public void accountSignsSignature(String accountName) throws PrecheckStatusException, ReceiptStatusException,
-            TimeoutException {
+    public void accountSignsSignature(String accountName) throws Exception {
         log.debug("{} signs scheduledTransaction", accountName);
         signSignature(accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName)));
     }
 
     @Then("the scheduled transaction is signed by treasuryAccount")
-    public void treasurySignsSignature() throws PrecheckStatusException, ReceiptStatusException,
-            TimeoutException {
+    public void treasurySignsSignature() throws Exception {
         log.debug("treasuryAccount signs scheduledTransaction");
         signSignature(accountClient.getTokenTreasuryAccount());
     }
 
     @When("I successfully delete the schedule")
-    public void deleteSchedule() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void deleteSchedule() throws Exception {
         networkTransactionResponse = scheduleClient.deleteSchedule(scheduleId);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -306,34 +283,26 @@ public class ScheduleFeature {
     }
 
     @Then("the network confirms schedule presence")
-    public void verifyNetworkScheduleResponse() throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public void verifyNetworkScheduleResponse() throws Exception {
         verifyNetworkScheduleStatus(ScheduleStatus.NON_EXECUTED);
     }
 
     @Then("the network confirms the schedule is executed")
-    public void verifyNetworkScheduleExecutedResponse() throws TimeoutException,
-            PrecheckStatusException,
-            ReceiptStatusException {
+    public void verifyNetworkScheduleExecutedResponse() throws Exception {
         verifyNetworkScheduleStatus(ScheduleStatus.EXECUTED);
     }
 
     @Then("the network confirms the schedule is deleted")
-    public void verifyNetworkScheduleDeletedResponse() throws TimeoutException,
-            PrecheckStatusException,
-            ReceiptStatusException {
+    public void verifyNetworkScheduleDeletedResponse() throws Exception {
         verifyNetworkScheduleStatus(ScheduleStatus.DELETED);
     }
 
     @Then("the network confirms some signers have provided their signatures")
-    public void verifyPartialScheduleFromNetwork() throws TimeoutException, PrecheckStatusException {
+    public void verifyPartialScheduleFromNetwork() throws Exception {
         verifyScheduleInfoFromNetwork(currentSignersCount);
     }
 
     @Then("the mirror node REST API should return status {int} for the schedule transaction")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
         log.info("Verify schedule transaction");
         String transactionId = networkTransactionResponse.getTransactionIdString();
@@ -347,32 +316,23 @@ public class ScheduleFeature {
     }
 
     @Then("the mirror node REST API should verify the executed schedule entity")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyExecutedScheduleFromMirror() {
         MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror(ScheduleStatus.EXECUTED);
         verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
     }
 
     @Then("the mirror node REST API should verify the non executed schedule entity")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyNonExecutedScheduleFromMirror() {
         verifyScheduleFromMirror(ScheduleStatus.NON_EXECUTED);
     }
 
     @Then("the mirror node REST API should verify the deleted schedule entity")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyDeletedScheduleFromMirror() {
         verifyScheduleFromMirror(ScheduleStatus.DELETED);
     }
 
     @After
-    public void cleanup() throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public void cleanup() throws Exception {
         // dissociate all applicable accounts from token to reduce likelihood of max token association error
         if (tokenId != null) {
             // a nonzero balance will result in a TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES error
@@ -385,10 +345,42 @@ public class ScheduleFeature {
         }
     }
 
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    public void verifyNetworkScheduleStatus(ScheduleStatus scheduleStatus) {
+        scheduleInfo = scheduleClient.getScheduleInfo(scheduleId);
+
+        // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
+        validateScheduleInfo(scheduleInfo);
+
+        switch (scheduleStatus) {
+            case NON_EXECUTED:
+                assertThat(scheduleInfo.executedAt).isNull();
+                assertThat(scheduleInfo.deletedAt).isNull();
+                break;
+            case EXECUTED:
+                assertThat(scheduleInfo.deletedAt).isNull();
+                assertThat(scheduleInfo.executedAt).isNotNull();
+                TransactionReceipt transactionReceipt = scheduleClient.getTransactionReceipt(scheduledTransactionId);
+                assertNotNull(transactionReceipt);
+                log.debug("Executed transaction {} was confirmed", scheduledTransactionId);
+                break;
+            case DELETED:
+                assertThat(scheduleInfo.deletedAt).isNotNull();
+                assertThat(scheduleInfo.executedAt).isNull();
+                break;
+            default:
+                break;
+        }
+
+        log.info("Schedule {} status was confirmed by network state", scheduleId);
+    }
+
     private void dissociateAccount(ExpandedAccountId accountId) {
         if (accountId != null) {
             try {
-                tokenClient.disssociate(accountId, tokenId);
+                tokenClient.dissociate(accountId, tokenId);
                 log.info("Successfully dissociated account {} from token {}", accountId, tokenId);
             } catch (Exception ex) {
                 log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
@@ -405,46 +397,8 @@ public class ScheduleFeature {
                 .isEqualTo(accountClient.getSdkClient().getExpandedOperatorAccountId().getAccountId());
     }
 
-    private void verifyNetworkScheduleStatus(ScheduleStatus scheduleStatus) throws TimeoutException,
-            PrecheckStatusException,
-            ReceiptStatusException {
-        scheduleInfo = new ScheduleInfoQuery()
-                .setScheduleId(scheduleId)
-                .setNodeAccountIds(List.of(scheduleClient.getSdkClient().getRandomNodeAccountId()))
-                .execute(scheduleClient.getClient());
-
-        // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
-        validateScheduleInfo(scheduleInfo);
-
-        switch (scheduleStatus) {
-            case NON_EXECUTED:
-                assertThat(scheduleInfo.executedAt).isNull();
-                assertThat(scheduleInfo.deletedAt).isNull();
-                break;
-            case EXECUTED:
-                assertThat(scheduleInfo.deletedAt).isNull();
-                assertThat(scheduleInfo.executedAt).isNotNull();
-                TransactionReceipt transactionReceipt = scheduledTransactionId.getReceipt(scheduleClient.getClient());
-                assertNotNull(transactionReceipt);
-                log.debug("Executed transaction {} was confirmed", scheduledTransactionId);
-                break;
-            case DELETED:
-                assertThat(scheduleInfo.deletedAt).isNotNull();
-                assertThat(scheduleInfo.executedAt).isNull();
-                break;
-            default:
-                break;
-        }
-
-        log.info("Schedule {} status was confirmed by network state", scheduleId);
-    }
-
-    private void verifyScheduleInfoFromNetwork(int expectedSignatoriesCount) throws TimeoutException,
-            PrecheckStatusException {
-        scheduleInfo = new ScheduleInfoQuery()
-                .setScheduleId(scheduleId)
-                .setNodeAccountIds(List.of(scheduleClient.getSdkClient().getRandomNodeAccountId()))
-                .execute(scheduleClient.getClient());
+    private void verifyScheduleInfoFromNetwork(int expectedSignatoriesCount) {
+        scheduleInfo = scheduleClient.getScheduleInfo(scheduleId);
 
         assertNotNull(scheduleInfo);
         assertThat(scheduleInfo.scheduleId).isEqualTo(scheduleId);
@@ -508,18 +462,6 @@ public class ScheduleFeature {
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
 
         return mirrorTransaction;
-    }
-
-    /**
-     * Recover method for token transaction retry operations. Method parameters of retry method must match this method
-     * after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
-        log.error("Transaction submissions for token transaction failed after retries w: {}", t.getMessage());
-        throw t;
     }
 
     @RequiredArgsConstructor

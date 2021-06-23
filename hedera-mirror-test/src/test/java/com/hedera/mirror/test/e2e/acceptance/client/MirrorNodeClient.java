@@ -21,15 +21,24 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
+import io.grpc.netty.shaded.io.netty.handler.timeout.ReadTimeoutException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.netty.http.client.PrematureCloseException;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
+import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
@@ -39,10 +48,19 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 public class MirrorNodeClient extends AbstractNetworkClient {
 
     private final WebClient webClient;
+    private final RetryBackoffSpec retrySpec;
 
-    public MirrorNodeClient(SDKClient sdkClient, WebClient webClient) {
-        super(sdkClient);
+    public MirrorNodeClient(SDKClient sdkClient, WebClient webClient, RetryTemplate retryTemplate) {
+        super(sdkClient, retryTemplate);
         this.webClient = webClient;
+        RestPollingProperties restPollingProperties = this.sdkClient.getAcceptanceTestProperties()
+                .getRestPollingProperties();
+        retrySpec = Retry
+                .backoff(restPollingProperties.getMaxAttempts(), restPollingProperties.getMinBackoff())
+                .maxBackoff(restPollingProperties.getMaxBackoff())
+                .filter(this::shouldRetryRestCall)
+                .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
+                        r.totalRetries() + 1, r.failure().getMessage()));
         log.info("Creating Mirror Node client for {}", sdkClient.getMirrorNodeAddress());
     }
 
@@ -50,8 +68,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         SubscriptionHandle subscription = topicMessageQuery
-                .subscribe(client,
-                        subscriptionResponse::handleConsensusTopicResponse);
+                .subscribe(client, subscriptionResponse::handleConsensusTopicResponse);
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -129,8 +146,9 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(classType)
+                .retryWhen(retrySpec)
                 .doOnNext(x -> log.debug("Endpoint call successfully returned a 200"))
-                .doOnError(x -> log.debug("Endpoint failed, returning: {}", x.getMessage()))
+                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
 
         return response;
@@ -139,5 +157,13 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
+    }
+
+    protected boolean shouldRetryRestCall(Throwable t) {
+        return t instanceof PrematureCloseException ||
+                t instanceof ReadTimeoutException ||
+                t instanceof TimeoutException ||
+                (t instanceof WebClientResponseException &&
+                        ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND);
     }
 }
