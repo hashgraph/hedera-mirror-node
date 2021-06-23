@@ -45,13 +45,11 @@ const getSelectClauseWithTokenTransferOrder = (order) => {
        ctl.entity_id AS ctl_entity_id,
        ctl.amount AS amount,
        json_agg(
-         json_build_object(
+         distinct jsonb_build_object(
            'token_id', ttl.token_id::text,
            'account_id', ttl.account_id::text,
            'amount', ttl.amount
-         ) ORDER BY
-             ttl.token_id ${order || ''},
-             ttl.account_id ${order || ''}
+         )
        ) FILTER (WHERE ttl.token_id IS NOT NULL) AS token_transfer_list,
        json_agg(
          distinct jsonb_build_object(
