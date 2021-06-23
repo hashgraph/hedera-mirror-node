@@ -217,10 +217,10 @@ prometheusRules:
   MonitorPublishToHandleLatency:
     annotations:
       description: "Averaging {{ $value | humanizeDuration }} transaction latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Submit to transaction being handled latency exceeds 8s"
+      summary: "Submit to transaction being handled latency exceeds 11s"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 8
-    for: 2m
+    expr: sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application="hedera-mirror-monitor"}[5m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application="hedera-mirror-monitor"}[5m])) by (namespace, pod, scenario) > 11
+    for: 5m
     labels:
       severity: warning
       application: hedera-mirror-monitor

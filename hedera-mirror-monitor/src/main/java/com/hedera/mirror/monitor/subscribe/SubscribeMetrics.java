@@ -33,6 +33,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
+
 @Log4j2
 @Named
 @RequiredArgsConstructor
@@ -88,8 +90,9 @@ public class SubscribeMetrics {
 
     private void status(Subscription s) {
         if (s.getStatus() == SubscriptionStatus.RUNNING) {
+            String elapsed = DurationToStringSerializer.convert(s.getElapsed());
             log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
-                    s.getProtocol(), s, s.getCount(), s.getElapsed(), s.getRate(), s.getErrors());
+                    s.getProtocol(), s, s.getCount(), elapsed, s.getRate(), s.getErrors());
         }
     }
 }

@@ -53,6 +53,17 @@ const getSelectClauseWithTokenTransferOrder = (order) => {
              ttl.token_id ${order || ''},
              ttl.account_id ${order || ''}
        ) FILTER (WHERE ttl.token_id IS NOT NULL) AS token_transfer_list,
+       json_agg(
+         json_build_object(
+           'receiver_account_id', ntl.receiver_account_id::text,
+           'sender_account_id', ntl.sender_account_id::text,
+           'serial_number', ntl.serial_number,
+           'token_id', ntl.token_id::text
+         ) ORDER BY
+             ntl.token_id ${order || ''},
+             ntl.sender_account_id ${order || ''},
+             ntl.serial_number ${order || ''}
+       ) FILTER (WHERE ntl.token_id IS NOT NULL) AS nft_transfer_list,
        t.charged_tx_fee,
        t.valid_duration_seconds,
        t.max_fee,
@@ -84,6 +95,33 @@ const createTokenTransferList = (tokenTransferList) => {
 };
 
 /**
+ * Creates an nft transfer list from aggregated array of JSON objects in the query result
+ *
+ * @param tokenTransferList token transfer list string
+ * @return {undefined|{amount: Number, account: string, token_id: string}[]}
+ */
+const createNftTransferList = (nftTransferList) => {
+  if (!nftTransferList) {
+    return undefined;
+  }
+
+  return nftTransferList.map((transfer) => {
+    const {
+      receiver_account_id: receiverAccountId,
+      sender_account_id: senderAccountId,
+      serial_number: serialNumber,
+      token_id: tokenId,
+    } = transfer;
+    return {
+      receiver_account_id: EntityId.fromEncodedId(receiverAccountId, true).toString(),
+      sender_account_id: EntityId.fromEncodedId(senderAccountId, true).toString(),
+      serial_number: serialNumber,
+      token_id: EntityId.fromEncodedId(tokenId).toString(),
+    };
+  });
+};
+
+/**
  * Create transferlists from the output of SQL queries. The SQL table has different
  * rows for each of the transfers in a single transaction. This function collates all
  * transfers into a single list.
@@ -91,7 +129,7 @@ const createTokenTransferList = (tokenTransferList) => {
  * @return {{anchorSecNs: (String|number), transactions: {}}}
  */
 const createTransferLists = (rows) => {
-  // If the transaction has a transferlist (i.e. list of individual trasnfers, it
+  // If the transaction has a transferlist (i.e. list of individual transfers, it
   // will show up as separate rows. Combine those into a single transferlist for
   // a given consensus_ns (Note that there could be two records for the same
   // transaction-id where one would pass and others could fail as duplicates)
@@ -108,6 +146,7 @@ const createTransferLists = (rows) => {
         max_fee: utils.getNullableNumber(row.max_fee),
         memo_base64: utils.encodeBase64(row.memo),
         name: row.name,
+        nft_transfers: createNftTransferList(row.nft_transfer_list),
         node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
         result: row.result,
         scheduled: row.scheduled,
@@ -159,6 +198,7 @@ const getTransactionsOuterQuery = async (innerQuery, order) => {
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
        LEFT OUTER JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
        LEFT OUTER JOIN token_transfer ttl ON tlist.consensus_timestamp = ttl.consensus_timestamp
+       LEFT OUTER JOIN nft_transfer ntl ON tlist.consensus_timestamp = ntl.consensus_timestamp
      GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo, t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
      ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
 };
@@ -230,12 +270,12 @@ const getTransferDistinctTimestampsQuery = function (
   );
 
   return `
-      SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
-        FROM ${tableName} AS ${tableAlias}
-        ${joinClause}
-        ${whereClause}
-        ORDER BY ${tableAlias}.consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+    SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
+      FROM ${tableName} AS ${tableAlias}
+      ${joinClause}
+      ${whereClause}
+      ORDER BY ${tableAlias}.consensus_timestamp ${order}
+      ${namedLimitQuery}`;
 };
 
 /**
@@ -314,6 +354,20 @@ const getTransactionsInnerQuery = function (
       namedLimitQuery
     );
 
+    const namedNftTrAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ntl.sender_account_id');
+    const nftTrQuery = getTransferDistinctTimestampsQuery(
+      'nft_transfer',
+      'ntl',
+      namedTsQuery,
+      'consensus_timestamp',
+      resultTypeQuery,
+      transactionTypeQuery,
+      namedNftTrAccountQuery,
+      '',
+      order,
+      namedLimitQuery
+    );
+
     if (creditDebitQuery) {
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
@@ -325,17 +379,19 @@ const getTransactionsInnerQuery = function (
         ORDER BY consensus_timestamp ${order}
         ${namedLimitQuery}`;
     }
-    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, and token_transfer.account_id, a full outer join
-    // between the three tables is needed to get rows that may only exist in one.
+    // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, nft_transfer.account_id,
+    // and token_transfer.account_id, a full outer join between the four tables is needed to get rows that may only exist in one.
     return `
-        SELECT coalesce(t.consensus_timestamp,ctl.consensus_timestamp,ttl.consensus_timestamp) AS consensus_timestamp
-        FROM (${transactionOnlyQuery}) AS t
-        FULL OUTER JOIN (${ctlQuery}) AS ctl
-        ON t.consensus_timestamp = ctl.consensus_timestamp
-        FULL OUTER JOIN (${ttlQuery}) AS ttl
-        ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
-        ORDER BY consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+      SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp, ntl.consensus_timestamp) AS consensus_timestamp
+      FROM (${transactionOnlyQuery}) AS t
+      FULL OUTER JOIN (${ctlQuery}) AS ctl
+      ON t.consensus_timestamp = ctl.consensus_timestamp
+      FULL OUTER JOIN (${ttlQuery}) AS ttl
+      ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      FULL OUTER JOIN (${nftTrQuery}) as ntl
+      ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) = ntl.consensus_timestamp
+      ORDER BY consensus_timestamp ${order}
+      ${namedLimitQuery}`;
   }
 
   return transactionOnlyQuery;
@@ -451,6 +507,7 @@ const getOneTransaction = async (req, res) => {
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
     LEFT JOIN crypto_transfer ctl ON ctl.consensus_timestamp = t.consensus_ns
     LEFT JOIN token_transfer ttl ON t.consensus_ns = ttl.consensus_timestamp
+    LEFT JOIN nft_transfer ntl ON t.consensus_ns = ntl.consensus_timestamp
     ${whereClause}
     GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo,
       t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
@@ -483,3 +540,11 @@ module.exports = {
   getTransactionsInnerQuery,
   getTransactionsOuterQuery,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(module.exports, {
+    createNftTransferList,
+    createTokenTransferList,
+    createTransferLists,
+  });
+}

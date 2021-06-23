@@ -1,0 +1,17 @@
+{{- if .Values.podDisruptionBudget.enabled -}}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels: {{ include "hedera-mirror-rest.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest.fullname" . }}
+  namespace: {{ include "hedera-mirror-rest.namespace" . }}
+spec:
+  {{- with .Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- end }}
+  {{- with .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels: {{ include "hedera-mirror-rest.selectorLabels" . | nindent 6 }}
+{{- end -}}

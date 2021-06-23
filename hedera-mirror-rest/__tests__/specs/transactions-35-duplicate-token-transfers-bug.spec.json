@@ -22,7 +22,14 @@
       {
         "token_id": "0.0.30000",
         "symbol": "FIRSTTOKEN",
-        "created_timestamp": "1234560000000000001"
+        "created_timestamp": "1234560000000000001",
+        "type": "FUNGIBLE_COMMON"
+      },
+      {
+        "token_id": "0.0.90000",
+        "symbol": "SECONDTOKEN",
+        "created_timestamp": "1234560000000000002",
+        "type": "NON_FUNGIBLE_UNIQUE"
       }
     ],
     "balances": [],
@@ -65,6 +72,14 @@
             "account": "0.0.12500",
             "amount": 1200
           }
+        ],
+        "nft_transfer_list": [
+          {
+            "receiver_account_id": "0.0.12500",
+            "sender_account_id": "0.0.11200",
+            "serial_number": 1,
+            "token_id": "0.0.90000"
+          }
         ]
       }
     ]
@@ -81,6 +96,20 @@
         "max_fee": "33",
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
+        "nft_transfers": [
+          {
+            "receiver_account_id": "0.0.12500",
+            "sender_account_id": "0.0.11200",
+            "serial_number": 1,
+            "token_id": "0.0.90000"
+          },
+          {
+            "receiver_account_id": "0.0.12500",
+            "sender_account_id": "0.0.11200",
+            "serial_number": 1,
+            "token_id": "0.0.90000"
+          }
+        ],
         "node": "0.0.3",
         "result": "SUCCESS",
         "scheduled": false,

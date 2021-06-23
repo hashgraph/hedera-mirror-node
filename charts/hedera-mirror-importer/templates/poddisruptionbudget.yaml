@@ -7,10 +7,10 @@ metadata:
   namespace: {{ include "hedera-mirror-importer.namespace" . }}
 spec:
   {{- with .Values.podDisruptionBudget.maxUnavailable }}
-  maxUnavailable: {{ . | int }}
+  maxUnavailable: {{ . }}
   {{- end }}
   {{- with .Values.podDisruptionBudget.minAvailable }}
-  minAvailable: {{ . | int }}
+  minAvailable: {{ . }}
   {{- end }}
   selector:
     matchLabels: {{ include "hedera-mirror-importer.selectorLabels" . | nindent 6 }}

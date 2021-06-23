@@ -25,22 +25,26 @@
       {
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
-        "created_timestamp": "1234567890000000001"
+        "created_timestamp": "1234567890000000001",
+        "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
-        "created_timestamp": "1234567890000000002"
+        "created_timestamp": "1234567890000000002",
+        "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
-        "created_timestamp": "1234567890000000003"
+        "created_timestamp": "1234567890000000003",
+        "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.23.45678",
         "symbol": "HEDERACOIN",
-        "created_timestamp": "1234567890000000004"
+        "created_timestamp": "1234567890000000004",
+        "type": "FUNGIBLE_COMMON"
       }
     ]
   },
@@ -55,12 +59,14 @@
       {
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
-        "admin_key": null
+        "admin_key": null,
+        "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
-        "admin_key": null
+        "admin_key": null,
+        "type": "FUNGIBLE_COMMON"
       }
     ],
     "links": {

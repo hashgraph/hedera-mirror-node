@@ -20,10 +20,13 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 import com.hedera.mirror.monitor.subscribe.rest.RestSubscriberProperties;
@@ -37,30 +40,35 @@ class SubscribePropertiesTest {
     @BeforeEach
     void setup() {
         grpcSubscriberProperties = new GrpcSubscriberProperties();
-        grpcSubscriberProperties.setName("grpc1");
-
         restSubscriberProperties = new RestSubscriberProperties();
-        restSubscriberProperties.setName("rest1");
-
         subscribeProperties = new SubscribeProperties();
-        subscribeProperties.getGrpc().add(grpcSubscriberProperties);
-        subscribeProperties.getRest().add(restSubscriberProperties);
+        subscribeProperties.getGrpc().put("grpc1", grpcSubscriberProperties);
+        subscribeProperties.getRest().put("rest1", restSubscriberProperties);
     }
 
     @Test
     void validate() {
         subscribeProperties.validate();
+        assertThat(grpcSubscriberProperties.getName()).isEqualTo("grpc1");
+        assertThat(restSubscriberProperties.getName()).isEqualTo("rest1");
     }
 
     @Test
     void duplicateName() {
-        restSubscriberProperties.setName(grpcSubscriberProperties.getName());
+        subscribeProperties.getGrpc().put("rest1", grpcSubscriberProperties);
+        assertThrows(IllegalArgumentException.class, subscribeProperties::validate);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " "})
+    void emptyName(String name) {
+        subscribeProperties.getGrpc().put(name, grpcSubscriberProperties);
         assertThrows(IllegalArgumentException.class, subscribeProperties::validate);
     }
 
     @Test
-    void duplicateRestName() {
-        subscribeProperties.getRest().add(restSubscriberProperties);
+    void nullName() {
+        subscribeProperties.getGrpc().put(null, grpcSubscriberProperties);
         assertThrows(IllegalArgumentException.class, subscribeProperties::validate);
     }
 

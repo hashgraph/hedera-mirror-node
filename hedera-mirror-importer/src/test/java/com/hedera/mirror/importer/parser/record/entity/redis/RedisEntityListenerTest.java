@@ -102,13 +102,13 @@ class RedisEntityListenerTest {
 
         //then
         //Thread is blocked because queue is full, and publisher is blocked on first message.
-        verify(redisOperations, timeout(TIMEOUT_MILLIS).times(1))
+        verify(redisOperations, timeout(TIMEOUT_MILLIS * 5).times(1))
                 .executePipelined(any(SessionCallback.class));
         assertThat(saveCount.get()).isEqualTo(redisProperties.getQueueCapacity() + 1);
 
         latch.countDown();
         //All messages should be queued and published
-        verify(redisOperations, timeout(TIMEOUT_MILLIS).times(redisProperties.getQueueCapacity() + 2))
+        verify(redisOperations, timeout(TIMEOUT_MILLIS * 5).times(redisProperties.getQueueCapacity() + 2))
                 .executePipelined(any(SessionCallback.class));
         assertThat(saveCount.get()).isEqualTo(redisProperties.getQueueCapacity() + 2);
     }

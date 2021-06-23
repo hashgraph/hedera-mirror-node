@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -51,7 +50,6 @@ public class ScenarioProperties {
     @Min(1)
     private int maxAttempts = 1;
 
-    @NotBlank
     private String name;
 
     @NotNull

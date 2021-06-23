@@ -113,6 +113,11 @@ nodeSelector: {}
 
 podAnnotations: {}
 
+podDisruptionBudget:
+  enabled: false
+  # maxUnavailable: 0
+  minAvailable: 50%
+
 podSecurityContext:
   fsGroup: 1000
 
@@ -215,13 +220,13 @@ prometheusRules:
 
   GrpcNoSubscribers:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} has {{ $value }} subscribers for {{ $labels.type }}"
+      description: "{{ $labels.namespace }} has {{ $value }} subscribers for {{ $labels.type }}"
       summary: "Mirror gRPC API has no subscribers"
     enabled: true
-    expr: sum(hedera_mirror_subscribers{application="hedera-mirror-grpc"}) by (namespace, pod, type) <= 0
+    expr: sum(hedera_mirror_subscribers{application="hedera-mirror-grpc"}) by (namespace, type) <= 0
     for: 5m
     labels:
-      severity: warning
+      severity: critical
       application: hedera-mirror-grpc
 
 rbac:

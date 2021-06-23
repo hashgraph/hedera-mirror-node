@@ -7,9 +7,14 @@ grpc:
   alertmanager:
     inhibitRules:
       enabled: true
+  hpa:
+    enabled: true
+    minReplicas: 2
   ingress:
     middleware:
       enabled: true
+  podDisruptionBudget:
+    enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true
@@ -20,6 +25,8 @@ importer:
   alertmanager:
     inhibitRules:
       enabled: true
+  podDisruptionBudget:
+    enabled: true
   podMonitor:
     enabled: true
   priorityClassName: high
@@ -71,6 +78,8 @@ rest:
   ingress:
     middleware:
       enabled: true
+  podDisruptionBudget:
+    enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true

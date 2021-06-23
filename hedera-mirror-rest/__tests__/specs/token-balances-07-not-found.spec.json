@@ -26,7 +26,8 @@
     "tokens": [
       {
         "token_id": "0.20.1",
-        "symbol": "TOKEN1"
+        "symbol": "TOKEN1",
+        "type": "FUNGIBLE_COMMON"
       }
     ],
     "balances": [

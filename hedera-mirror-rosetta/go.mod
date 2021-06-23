@@ -7,9 +7,9 @@ require (
 	github.com/caarlos0/env/v6 v6.6.2
 	github.com/coinbase/rosetta-sdk-go v0.6.10
 	github.com/go-playground/validator/v10 v10.6.1
-	github.com/hashgraph/hedera-sdk-go/v2 v2.1.5
+	github.com/hashgraph/hedera-sdk-go/v2 v2.1.7
 	github.com/iancoleman/strcase v0.1.3
-	github.com/lib/pq v1.8.0
+	github.com/lib/pq v1.10.2
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/ory/dockertest/v3 v3.6.6-0.20210527163936-888a43c66acd
 	github.com/pkg/errors v0.9.1
@@ -20,7 +20,7 @@ require (
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.1.0
-	gorm.io/gorm v1.21.10
+	gorm.io/gorm v1.21.11
 )
 
 replace github.com/hashgraph/hedera-sdk-go/v2 => github.com/xin-hedera/hedera-sdk-go/v2 v2.0.0-20210605062338-543911ffd214

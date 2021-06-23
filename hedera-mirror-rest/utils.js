@@ -194,6 +194,9 @@ const filterValidityChecks = async (param, op, val) => {
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
       break;
+    case constants.filterKeys.TOKEN_TYPE:
+      ret = isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
+      break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
       ret = isValidNum(val);
@@ -737,24 +740,42 @@ const buildComparatorFilter = (name, filter) => {
 
 /**
  * Verify param and filters meet expected format
- * Additionally update format to be persistence query compatible
  * @param filters
- * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = async (filters) => {
+const validateFilters = async (filters) => {
   const badParams = [];
 
   for (const filter of filters) {
     if (!(await filterValidityChecks(filter.key, filter.operator, filter.value))) {
       badParams.push(filter.key);
-    } else {
-      formatComparator(filter);
     }
   }
 
   if (badParams.length > 0) {
     throw InvalidArgumentError.forParams(badParams);
   }
+};
+
+/**
+ * Update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const formatFilters = (filters) => {
+  for (const filter of filters) {
+    formatComparator(filter);
+  }
+};
+
+/**
+ * Verify param and filters meet expected format
+ * Additionally update format to be persistence query compatible
+ * @param filters
+ * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ */
+const validateAndParseFilters = async (filters) => {
+  await validateFilters(filters);
+  formatFilters(filters);
 };
 
 const formatComparator = (comparator) => {
@@ -789,6 +810,10 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.TOKEN_ID:
         // Accepted forms: shard.realm.num or num
         comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        break;
+      case constants.filterKeys.TOKEN_TYPE:
+        // db requires upper case matching for enum
+        comparator.value = comparator.value.toUpperCase();
         break;
       // case 'type':
       //   // Acceptable words: credit or debit
@@ -869,11 +894,15 @@ module.exports = {
   ENTITY_TYPE_FILE,
   filterValidityChecks,
   formatComparator,
+  formatFilters,
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
+  isValidPublicKeyQuery,
+  isValidOperatorQuery,
+  isValidValueIgnoreCase,
   isValidLimitNum,
   isValidNum,
   isValidTimestampParam,

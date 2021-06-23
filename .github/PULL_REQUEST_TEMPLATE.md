@@ -2,7 +2,7 @@
 
 1. Read our CONTRIBUTING.md guide
 2. Name your PR as `<Feature Area>: Describe your change`
-3. Rebase your PR if it gets out of sync with master
+3. Rebase your PR if it gets out of sync with main
 -->
 
 **Detailed description**:
@@ -13,6 +13,7 @@ Fixes #<issue number>
 **Special notes for your reviewer**:
 
 **Checklist**
+
 - [ ] Documentation added
 - [ ] Tests updated
 

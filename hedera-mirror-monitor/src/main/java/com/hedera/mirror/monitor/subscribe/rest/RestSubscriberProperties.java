@@ -21,6 +21,8 @@ package com.hedera.mirror.monitor.subscribe.rest;
  */
 
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -35,12 +37,15 @@ import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
 public class RestSubscriberProperties extends AbstractSubscriberProperties {
 
     @NotNull
-    @DurationMin(millis = 500)
-    private Duration timeout = Duration.ofSeconds(5);
+    private Set<String> publishers = new LinkedHashSet<>();
 
     @Min(0)
     @Max(1)
     private double samplePercent = 1.0;
+
+    @NotNull
+    @DurationMin(millis = 500)
+    private Duration timeout = Duration.ofSeconds(5);
 
     @Override
     public long getLimit() {

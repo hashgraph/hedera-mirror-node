@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class HibernateConfiguration implements HibernatePropertiesCustomizer {
     @Override
-    public void customize(final Map<String, Object> hibernateProperties) {
+    public void customize(Map<String, Object> hibernateProperties) {
         hibernateProperties.put("hibernate.session_factory.interceptor", hibernateInterceptor());
     }
 
@@ -40,10 +40,12 @@ public class HibernateConfiguration implements HibernatePropertiesCustomizer {
     public Interceptor hibernateInterceptor() {
         // https://www.pgpool.net/docs/latest/en/html/runtime-config-load-balancing.html
         // pgpool disables load balancing for SQL statements beginning with an arbitrary comment and sends them to the
-        // master / primary node. This is used to prevent the stale read-after-write issue.
+        // primary node. This is used to prevent the stale read-after-write issue.
         return new EmptyInterceptor() {
+            private static final long serialVersionUID = -2584591648084883933L;
+
             @Override
-            public String onPrepareStatement(final String sql) {
+            public String onPrepareStatement(String sql) {
                 return "/* NO PGPOOL LOAD BALANCE */\n" + sql;
             }
         };

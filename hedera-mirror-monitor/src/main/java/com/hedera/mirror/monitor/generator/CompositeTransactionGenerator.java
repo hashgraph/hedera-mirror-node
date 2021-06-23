@@ -58,6 +58,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
         this.properties = properties;
         this.transactionGenerators = properties.getScenarios()
+                .values()
                 .stream()
                 .filter(ScenarioProperties::isEnabled)
                 .map(scenarioProperties -> new ConfigurableTransactionGenerator(expressionConverter,
