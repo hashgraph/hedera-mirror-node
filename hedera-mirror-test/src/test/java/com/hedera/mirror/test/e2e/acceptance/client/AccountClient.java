@@ -72,7 +72,14 @@ public class AccountClient extends AbstractNetworkClient {
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
         // retrieve account, setting if it doesn't exist
         ExpandedAccountId accountId = accountMap
-                .computeIfAbsent(accountNameEnum, x -> createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum));
+                .computeIfAbsent(accountNameEnum, x -> {
+                    try {
+                        return createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum);
+                    } catch (Exception e) {
+                        log.trace("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
+                        return null;
+                    }
+                });
 
         if (accountId == null) {
             throw new NetworkException("Null accountId retrieved from receipt");
