@@ -11,7 +11,7 @@ require (
 	github.com/iancoleman/strcase v0.1.3
 	github.com/lib/pq v1.10.2
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/ory/dockertest/v3 v3.6.6-0.20210527163936-888a43c66acd
+	github.com/ory/dockertest/v3 v3.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
