@@ -21,21 +21,19 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
 import com.hedera.hashgraph.sdk.ScheduleDeleteTransaction;
 import com.hedera.hashgraph.sdk.ScheduleId;
+import com.hedera.hashgraph.sdk.ScheduleInfo;
+import com.hedera.hashgraph.sdk.ScheduleInfoQuery;
 import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -47,20 +45,17 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ScheduleClient extends AbstractNetworkClient {
 
-    public ScheduleClient(SDKClient sdkClient) {
-        super(sdkClient);
+    public ScheduleClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
+        super(sdkClient, retryTemplate);
         log.debug("Creating Schedule Client");
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
-                                                     String memo, KeyList signatureKeyList) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+                                                     String memo, KeyList signatureKeyList) throws Exception {
 
         log.debug("Create new schedule");
-        TransactionId transactionId = TransactionId.generate(sdkClient.getOperatorId()).setScheduled(true);
+        TransactionId transactionId = TransactionId.generate(sdkClient.getExpandedOperatorAccountId().getAccountId())
+                .setScheduled(true);
         transaction.setTransactionId(transactionId);
 
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
@@ -92,12 +87,8 @@ public class ScheduleClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId,
-                                                   ScheduleId scheduleId) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+                                                   ScheduleId scheduleId) throws Exception {
 
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
@@ -111,11 +102,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) throws Exception {
 
         log.debug("Delete schedule {}", scheduleId);
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
@@ -127,5 +114,13 @@ public class ScheduleClient extends AbstractNetworkClient {
         log.debug("Deleted schedule {}", scheduleId);
 
         return networkTransactionResponse;
+    }
+
+    public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) throws Exception {
+        return retryTemplate.execute(x ->
+                new ScheduleInfoQuery()
+                        .setScheduleId(scheduleId)
+                        .setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()))
+                        .execute(client));
     }
 }

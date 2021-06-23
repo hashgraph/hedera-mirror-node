@@ -32,9 +32,10 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import junit.framework.AssertionFailedError;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -71,7 +72,7 @@ public class TopicFeature {
     private TopicClient topicClient;
 
     @Given("I successfully create a new topic id")
-    public void createNewTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void createNewTopic() throws Exception {
         testInstantReference = Instant.now();
 
         submitKey = PrivateKey.generate();
@@ -93,7 +94,7 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new open topic")
-    public void createNewOpenTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void createNewOpenTopic() throws Exception {
         testInstantReference = Instant.now();
 
         NetworkTransactionResponse networkTransactionResponse = topicClient
@@ -111,14 +112,14 @@ public class TopicFeature {
     }
 
     @When("I successfully update an existing topic")
-    public void updateTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void updateTopic() throws Exception {
         TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
     }
 
     @When("I successfully delete the topic")
-    public void deleteTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void deleteTopic() throws Exception {
         TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
@@ -222,9 +223,10 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse);
     }
 
+    @Retryable(backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
-    public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
-            PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws Exception {
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);
             publishTopicMessages(messageCount);
@@ -235,15 +237,19 @@ public class TopicFeature {
         messageSubscribeCount = numGroups * messageCount;
     }
 
-    @Retryable(value = {PrecheckStatusException.class})
-    public void publishTopicMessages(int messageCount) throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    public void publishTopicMessages(int messageCount) throws Exception {
         topicClient.publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, false);
     }
 
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class, PrecheckStatusException.class,
+            ReceiptStatusException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     @When("I publish and verify {int} messages sent")
-    public void publishAndVerifyTopicMessages(int messageCount) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+    public void publishAndVerifyTopicMessages(int messageCount) throws Exception {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, true);
@@ -348,7 +354,7 @@ public class TopicFeature {
                             consensusTopicId,
                             "backgroundMessage".getBytes(StandardCharsets.UTF_8),
                             getSubmitKeys());
-                } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
+                } catch (Exception e) {
                     log.error("Error publishing to topic", e);
                 }
             }, 0, 1, TimeUnit.SECONDS);

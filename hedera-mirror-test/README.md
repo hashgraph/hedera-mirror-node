@@ -50,10 +50,12 @@ Configuration properties are set in the `application.yml` file located under `sr
 uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configure the application. Available properties
 under `hedera.mirror.test.acceptance` include:
 
+- `backOffPeriod` - The number of milliseconds client should wait before retrying a retryable failure.
 - `emitBackgroundMessages` - Flag to set if background messages should be emitted. For operations use in non-production
   `environments.
 - `existingTopicNum` - A pre-existing default topic number that can be used when no topicId is specified in a test. Used
   initially by `@subscribeonly` test.
+- `maxRetries` - The number of times client should retryable on supported failures.
 - `maxTinyBarTransactionFee` - The maximum transaction fee you're willing to pay on a transaction.
 - `messageTimeout` - The number of seconds to wait on messages representing transactions (default is 20).
 - `mirrorNodeAddress` - The mirror node grpc server endpoint including IP address and port. Refer to
@@ -69,10 +71,12 @@ under `hedera.mirror.test.acceptance` include:
   - `baseUrl` - The host URL to the mirror node. For example, https://testnet.mirrornode.hedera.com/api/v1
   - `delay` - The time to wait in between failed REST API calls.
   - `maxAttempts` - The maximum number of attempts when calling a REST API endpoint and receiving a 404.
+  - `maxBackoff` - The maximum backoff duration the mirror grpc subscriber will wait between attempts.
+  - `minBackoff` - The minimum backoff duration the mirror grpc subscriber will wait between attempts.
 - `retrieveAddressBook` - Whether to download the address book from the network and use those nodes over the default
   nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
-- `subscribeRetries` - The number of times client should retryable on supported failures.
-- `subscribeRetryOffPeriod` - The number of milliseconds client should wait before retrying a retryable failure.
+- `sdkProperties`
+  - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
 
 (Recommended) Options can be set by creating your own configuration file with the above properties. This allows for
 multiple files per env. The following command will help to point out which file to use:

@@ -27,7 +27,9 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +46,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+
 @Configuration
 @RequiredArgsConstructor
 @EnableRetry
@@ -56,8 +60,14 @@ class ClientConfiguration {
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
         fixedBackOffPolicy.setBackOffPeriod(acceptanceTestProperties.getBackOffPeriod().toMillis());
 
-        SimpleRetryPolicy simpleRetryPolicy = new SimpleRetryPolicy();
-        simpleRetryPolicy.setMaxAttempts(acceptanceTestProperties.getMaxRetries());
+        Map retryableExceptionMap = Map.of(
+                PrecheckStatusException.class, true,
+                TimeoutException.class, true,
+                RuntimeException.class, true); // make configurable
+        SimpleRetryPolicy simpleRetryPolicy = new SimpleRetryPolicy(
+                acceptanceTestProperties.getMaxRetries(),
+                retryableExceptionMap,
+                true); // traverseCauses
 
         RetryTemplate retryTemplate = new RetryTemplate();
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);

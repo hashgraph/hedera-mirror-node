@@ -33,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 
@@ -59,23 +58,20 @@ public class AccountFeature {
     }
 
     @When("I create a new account with balance {long} tℏ")
-    public void createNewAccount(long initialBalance) throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    public void createNewAccount(long initialBalance) throws Exception {
         accountId = accountClient.createNewAccount(initialBalance).getAccountId();
         assertNotNull(accountId);
     }
 
     @When("I send {long} tℏ to newly created account")
-    public void sendTinyHbars(long amount) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public void sendTinyHbars(long amount) throws Exception {
         startingBalance = accountClient.getBalance(accountId);
         TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
         assertNotNull(receipt);
     }
 
     @When("I send {long} tℏ to account {int}")
-    public void sendTinyHbars(long amount, int accountNum) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public void sendTinyHbars(long amount, int accountNum) throws Exception {
         accountId = new AccountId(accountNum);
         startingBalance = accountClient.getBalance(accountId);
         TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
@@ -83,8 +79,7 @@ public class AccountFeature {
     }
 
     @When("I send {int} ℏ to account {int}")
-    public void sendHbars(int amount, int accountNum) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public void sendHbars(int amount, int accountNum) throws Exception {
         accountId = new AccountId(accountNum);
         startingBalance = accountClient.getBalance(accountId);
         TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.from(amount));

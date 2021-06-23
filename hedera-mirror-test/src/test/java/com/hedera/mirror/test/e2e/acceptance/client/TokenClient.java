@@ -30,8 +30,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -39,7 +38,6 @@ import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
 import com.hedera.hashgraph.sdk.TokenBurnTransaction;
 import com.hedera.hashgraph.sdk.TokenCreateTransaction;
@@ -63,18 +61,14 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TokenClient extends AbstractNetworkClient {
 
-    public TokenClient(SDKClient sdkClient) {
-        super(sdkClient);
+    public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
+        super(sdkClient, retryTemplate);
         log.debug("Creating Token Client");
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse createToken(ExpandedAccountId expandedAccountId, String symbol, int freezeStatus,
                                                   int kycStatus, ExpandedAccountId treasuryAccount,
-                                                  int initialSupply) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+                                                  int initialSupply) throws Exception {
 
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
@@ -120,10 +114,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse asssociate(ExpandedAccountId accountId, TokenId token) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) throws Exception {
 
         log.debug("Associate account {} with token {}", accountId.getAccountId(), token);
         Instant refInstant = Instant.now();
@@ -142,11 +133,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse mint(TokenId tokenId, long amount) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse mint(TokenId tokenId, long amount) throws Exception {
 
         log.debug("Mint {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
@@ -164,10 +151,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) throws Exception {
 
         Instant refInstant = Instant.now();
         TokenFreezeTransaction tokenFreezeAccountTransaction = new TokenFreezeTransaction()
@@ -185,10 +169,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse unfreeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse unfreeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) throws Exception {
 
         Instant refInstant = Instant.now();
         TokenUnfreezeTransaction tokenUnfreezeTransaction = new TokenUnfreezeTransaction()
@@ -206,10 +187,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse grantKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse grantKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) throws Exception {
 
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         Instant refInstant = Instant.now();
@@ -227,10 +205,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) throws Exception {
 
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         Instant refInstant = Instant.now();
@@ -248,9 +223,6 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public TransferTransaction getTokenTransferTransaction(TokenId tokenId, AccountId sender, AccountId recipient,
                                                            long amount) {
         Instant refInstant = Instant.now();
@@ -261,12 +233,8 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Transfer token_" + refInstant);
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
-                                                    long amount) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+                                                    long amount) throws Exception {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
         TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender
@@ -281,10 +249,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) throws Exception {
         PublicKey publicKey = expandedAccountId.getPublicKey();
         String newSymbol = RandomStringUtils.randomAlphabetic(4).toUpperCase();
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
@@ -308,11 +273,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse burn(TokenId tokenId, long amount) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse burn(TokenId tokenId, long amount) throws Exception {
 
         log.debug("Burn {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
@@ -330,10 +291,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse wipe(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse wipe(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) throws Exception {
 
         log.debug("Wipe {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
@@ -352,10 +310,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse disssociate(ExpandedAccountId accountId, TokenId token) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse dissociate(ExpandedAccountId accountId, TokenId token) throws Exception {
 
         log.debug("Dissociate account {} with token {}", accountId.getAccountId(), token);
         TokenDissociateTransaction tokenDissociateTransaction = new TokenDissociateTransaction()
@@ -371,10 +326,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) throws Exception {
 
         log.debug("Delete token {}", token);
         Instant refInstant = Instant.now();
@@ -392,9 +344,6 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public long getTokenBalance(AccountId accountId, TokenId tokenId) throws TimeoutException, PrecheckStatusException {
         long balance = new AccountBalanceQuery()
                 .setAccountId(accountId)

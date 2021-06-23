@@ -23,41 +23,50 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import com.google.common.base.Stopwatch;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
+import reactor.util.retry.RetryBackoffSpec;
 
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
+import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
 @Named
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class MirrorNodeClient extends AbstractNetworkClient {
 
     private final WebClient webClient;
+    private final RetryBackoffSpec retrySpec;
 
-    public MirrorNodeClient(SDKClient sdkClient, WebClient webClient) {
-        super(sdkClient);
+    public MirrorNodeClient(SDKClient sdkClient, WebClient webClient, RetryTemplate retryTemplate) {
+        super(sdkClient, retryTemplate);
         this.webClient = webClient;
+        RestPollingProperties restPollingProperties = this.sdkClient.getAcceptanceTestProperties()
+                .getRestPollingProperties();
+        retrySpec = Retry
+                .backoff(restPollingProperties.getMaxAttempts(), restPollingProperties.getMinBackoff())
+                .maxBackoff(restPollingProperties.getMaxBackoff())
+                .filter(this::shouldRetry)
+                .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
+                        r.totalRetries() + 1, r.failure().getMessage()));
         log.info("Creating Mirror Node client for {}", sdkClient.getMirrorNodeAddress());
     }
 
     public SubscriptionResponse subscribeToTopic(TopicMessageQuery topicMessageQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
-        SubscriptionHandle subscription = topicMessageQuery
-                .subscribe(client,
-                        subscriptionResponse::handleConsensusTopicResponse);
+        SubscriptionHandle subscription = retryTemplate.execute(x ->
+                topicMessageQuery.subscribe(client, subscriptionResponse::handleConsensusTopicResponse));
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -77,14 +86,14 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        SubscriptionHandle subscription = topicMessageQuery
+        SubscriptionHandle subscription = retryTemplate.execute(x -> topicMessageQuery
                 .subscribe(client, resp -> {
                     // add expected messages only to messages list
                     if (subscriptionResponse.getMirrorHCSResponses().size() < numMessages) {
                         subscriptionResponse.handleConsensusTopicResponse(resp);
                     }
                     messageLatch.countDown();
-                });
+                }));
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -107,35 +116,23 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
-    @Retryable(value = {WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
         return callRestEndpoint("/transactions?timestamp={timestamp}",
                 MirrorTransactionsResponse.class, timestamp);
     }
 
-    @Retryable(value = {WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorTransactionsResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint("/transactions/{transactionId}",
                 MirrorTransactionsResponse.class, transactionId);
     }
 
-    @Retryable(value = {WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorTokenResponse getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
         return callRestEndpoint("/tokens/{tokenId}", MirrorTokenResponse.class, tokenId);
     }
 
-    @Retryable(value = {WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.delay.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
         log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
         return callRestEndpoint("/schedules/{scheduleId}", MirrorScheduleResponse.class, scheduleId);
@@ -147,6 +144,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(classType)
+                .retryWhen(retrySpec)
                 .doOnNext(x -> log.debug("Endpoint call successfully returned a 200"))
                 .doOnError(x -> log.debug("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
@@ -157,5 +155,10 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
+    }
+
+    protected boolean shouldRetry(Throwable t) {
+        return t instanceof TimeoutException || (t instanceof WebClientResponseException &&
+                ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND);
     }
 }

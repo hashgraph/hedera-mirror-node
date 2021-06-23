@@ -24,13 +24,13 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
@@ -40,7 +40,6 @@ import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -58,13 +57,12 @@ public class AccountClient extends AbstractNetworkClient {
 
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
 
-    public AccountClient(SDKClient sdkClient) {
-        super(sdkClient);
+    public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
+        super(sdkClient, retryTemplate);
         log.debug("Creating Account Client");
     }
 
-    public ExpandedAccountId getTokenTreasuryAccount() throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    public ExpandedAccountId getTokenTreasuryAccount() throws Exception {
         if (tokenTreasuryAccount == null) {
             tokenTreasuryAccount = createNewAccount(DEFAULT_INITIAL_BALANCE);
             log.debug("Treasury Account: {} will be used for current test session", tokenTreasuryAccount);
@@ -75,16 +73,22 @@ public class AccountClient extends AbstractNetworkClient {
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
         // retrieve account, setting if it doesn't exist
+        AtomicReference<Exception> encounteredException = null;
         ExpandedAccountId accountId = accountMap
                 .computeIfAbsent(accountNameEnum, x -> {
                     try {
                         return createNewAccount(SMALL_INITIAL_BALANCE,
                                 accountNameEnum);
                     } catch (Exception e) {
+                        encounteredException.set(e);
                         log.trace("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
                     }
                     return null;
                 });
+
+        if (accountId == null) {
+            throw new NetworkException(encounteredException.get().getMessage());
+        }
 
         log.debug("Retrieve Account: {}, {}", accountId, accountNameEnum);
         return accountId;
@@ -92,7 +96,7 @@ public class AccountClient extends AbstractNetworkClient {
 
     @Override
     public long getBalance() throws TimeoutException, PrecheckStatusException {
-        return getBalance(sdkClient.getOperatorId());
+        return getBalance(sdkClient.getExpandedOperatorAccountId().getAccountId());
     }
 
     public long getBalance(AccountId accountId) throws TimeoutException, PrecheckStatusException {
@@ -114,13 +118,14 @@ public class AccountClient extends AbstractNetworkClient {
                 .setTransactionMemo("transfer test");
     }
 
-    public TransactionReceipt sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
-        log.debug("Send CryptoTransfer of {} tℏ from {} to {}", hbarAmount.toTinybars(), sdkClient
-                .getOperatorId(), recipient);
+    public TransactionReceipt sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) throws Exception {
+        log.debug(
+                "Send CryptoTransfer of {} tℏ from {} to {}", hbarAmount.toTinybars(),
+                sdkClient.getExpandedOperatorAccountId().getAccountId(),
+                recipient);
 
         TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sdkClient
-                .getOperatorId(), recipient, hbarAmount);
+                .getExpandedOperatorAccountId().getAccountId(), recipient, hbarAmount);
 
         TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null)
                 .getReceipt();
@@ -142,13 +147,11 @@ public class AccountClient extends AbstractNetworkClient {
                 .setTransactionMemo(memo);
     }
 
-    public ExpandedAccountId createNewAccount(long initialBalance) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public ExpandedAccountId createNewAccount(long initialBalance) throws Exception {
         return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null);
     }
 
-    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) throws Exception {
         return createCryptoAccount(
                 Hbar.fromTinybars(initialBalance),
                 accountNameEnum.receiverSigRequired,
@@ -156,12 +159,9 @@ public class AccountClient extends AbstractNetworkClient {
                 accountNameEnum.toString());
     }
 
-    @Retryable(value = {PrecheckStatusException.class, TimeoutException.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired, KeyList keyList,
                                                  String memo)
-            throws TimeoutException, PrecheckStatusException, ReceiptStatusException {
+            throws Exception {
         // 1. Generate a Ed25519 private, public key pair
         PrivateKey privateKey = PrivateKey.generate();
         PublicKey publicKey = privateKey.getPublicKey();

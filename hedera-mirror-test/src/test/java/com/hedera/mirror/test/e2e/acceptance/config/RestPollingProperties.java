@@ -26,7 +26,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMax;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -41,12 +40,15 @@ public class RestPollingProperties {
     @NotBlank
     private String baseUrl;
 
-    @DurationMin(seconds = 0L)
-    @DurationMax(seconds = 10L)
-    @NotNull
-    private Duration delay = Duration.ofMillis(3000);
-
     @Min(1)
     @Max(60)
     private int maxAttempts = 60;
+
+    @NotNull
+    @DurationMin(millis = 500L)
+    private Duration maxBackoff = Duration.ofSeconds(8L);
+
+    @NotNull
+    @DurationMin(millis = 100L)
+    private Duration minBackoff = Duration.ofMillis(250L);
 }
