@@ -23,7 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -72,21 +71,11 @@ public class AccountClient extends AbstractNetworkClient {
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
         // retrieve account, setting if it doesn't exist
-        AtomicReference<Exception> encounteredException = new AtomicReference<>();
         ExpandedAccountId accountId = accountMap
-                .computeIfAbsent(accountNameEnum, x -> {
-                    try {
-                        return createNewAccount(SMALL_INITIAL_BALANCE,
-                                accountNameEnum);
-                    } catch (Exception e) {
-                        encounteredException.set(e);
-                        log.trace("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
-                    }
-                    return null;
-                });
+                .computeIfAbsent(accountNameEnum, x -> createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum));
 
         if (accountId == null) {
-            throw new NetworkException(encounteredException.get().getMessage());
+            throw new NetworkException("Null accountId retrieved from receipt");
         }
 
         log.debug("Retrieve Account: {}, {}", accountId, accountNameEnum);
