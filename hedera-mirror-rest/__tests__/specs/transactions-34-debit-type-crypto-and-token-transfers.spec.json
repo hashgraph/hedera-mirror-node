@@ -155,13 +155,13 @@
             "token_id": "0.0.90000"
           },
           {
-            "account": "0.0.8",
-            "amount": 1000,
+            "account": "0.0.3",
+            "amount": 200,
             "token_id": "0.0.90000"
           },
           {
-            "account": "0.0.3",
-            "amount": 200,
+            "account": "0.0.8",
+            "amount": 1000,
             "token_id": "0.0.90000"
           }
         ]
@@ -219,13 +219,13 @@
             "token_id": "0.0.90000"
           },
           {
-            "account": "0.0.8",
-            "amount": 1000,
+            "account": "0.0.3",
+            "amount": 200,
             "token_id": "0.0.90000"
           },
           {
-            "account": "0.0.3",
-            "amount": 200,
+            "account": "0.0.8",
+            "amount": 1000,
             "token_id": "0.0.90000"
           }
         ]

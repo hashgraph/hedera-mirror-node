@@ -102,12 +102,6 @@
             "sender_account_id": "0.0.11200",
             "serial_number": 1,
             "token_id": "0.0.90000"
-          },
-          {
-            "receiver_account_id": "0.0.12500",
-            "sender_account_id": "0.0.11200",
-            "serial_number": 1,
-            "token_id": "0.0.90000"
           }
         ],
         "node": "0.0.3",
@@ -115,13 +109,13 @@
         "scheduled": false,
         "token_transfers": [
           {
-            "account": "0.0.12500",
-            "amount": 1200,
+            "account": "0.0.11200",
+            "amount": -1200,
             "token_id": "0.0.30000"
           },
           {
-            "account": "0.0.11200",
-            "amount": -1200,
+            "account": "0.0.12500",
+            "amount": 1200,
             "token_id": "0.0.30000"
           }
         ],
