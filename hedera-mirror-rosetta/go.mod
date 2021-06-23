@@ -11,7 +11,7 @@ require (
 	github.com/iancoleman/strcase v0.1.3
 	github.com/lib/pq v1.10.2
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
-	github.com/ory/dockertest/v3 v3.6.6-0.20210527163936-888a43c66acd
+	github.com/ory/dockertest/v3 v3.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
@@ -22,5 +22,3 @@ require (
 	gorm.io/driver/postgres v1.1.0
 	gorm.io/gorm v1.21.11
 )
-
-replace github.com/hashgraph/hedera-sdk-go/v2 => github.com/xin-hedera/hedera-sdk-go/v2 v2.0.0-20210605062338-543911ffd214

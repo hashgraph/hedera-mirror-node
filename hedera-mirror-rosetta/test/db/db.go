@@ -44,6 +44,7 @@ const (
 	dbMigrationPath = "hedera-mirror-importer/src/main/resources/db/migration/v1"
 	dbName          = "mirror_node"
 	dbUsername      = "mirror_rosetta_integration"
+	poolMaxWait     = 5 * time.Minute
 )
 
 // moduleRoot is the absolute path to hedera-mirror-rosetta
@@ -72,15 +73,14 @@ func (d DbResource) GetGormDb() *gorm.DB {
 }
 
 type dbParams struct {
+	endpoint string
 	name     string
 	username string
 	password string
-	port     string
 }
 
 func (d dbParams) toDsn() string {
-	return fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", d.username, d.password,
-		d.port, d.name)
+	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", d.username, d.password, d.endpoint, d.name)
 }
 
 func (d dbParams) toJdbcUrl(endpoint string) string {
@@ -109,8 +109,8 @@ func SetupDb() DbResource {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	// set max wait to 5 minutes, used in pool.Retry to timeout
-	pool.MaxWait = 5 * time.Minute
+	// set max wait, used in pool.Retry to timeout
+	pool.MaxWait = poolMaxWait
 
 	// create a dedicated network for the containers, so flyway can connect to db using hostname
 	log.Info("Create network for docker containers")
@@ -129,6 +129,7 @@ func SetupDb() DbResource {
 			log.Errorf("%s", err)
 			return err
 		}
+
 		return db.Ping()
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
@@ -178,10 +179,11 @@ func createPostgresDb(pool *dockertest.Pool, network *dockertest.Network) (*dock
 	}
 
 	return resource, dbParams{
+		// use IPv4 local address, 'localhost' may resolve to IPv6 local address in github CI
+		endpoint: "127.0.0.1:" + resource.GetPort("5432/tcp"),
 		name:     dbName,
 		username: dbUsername,
 		password: dbPassword,
-		port:     resource.GetPort("5432/tcp"),
 	}
 }
 
