@@ -31,11 +31,11 @@ abstract class AbstractEntityCrudTransactionHandler implements TransactionHandle
     @Getter
     private final boolean createEntity;
 
-    public AbstractEntityCrudTransactionHandler() {
+    protected AbstractEntityCrudTransactionHandler() {
         this(false);
     }
 
-    public AbstractEntityCrudTransactionHandler(boolean createEntity) {
+    protected AbstractEntityCrudTransactionHandler(boolean createEntity) {
         this.createEntity = createEntity;
     }
 
