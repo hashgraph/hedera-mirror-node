@@ -95,7 +95,7 @@ public class ScheduleFeature {
     private ExpandedAccountId tokenTreasuryAccount;
 
     @Given("I successfully schedule a treasury HBAR disbursement to {string}")
-    public void createNewHBarTransferSchedule(String accountName) throws Exception {
+    public void createNewHBarTransferSchedule(String accountName) {
         expectedSignersCount = 2;
         currentSignersCount = 0 + signatoryCountOffset;
         ExpandedAccountId recipient = accountClient
@@ -110,7 +110,7 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a crypto account create")
-    public void createNewCryptoAccountSchedule() throws Exception {
+    public void createNewCryptoAccountSchedule() {
         expectedSignersCount = 1;
         currentSignersCount = 0 + signatoryCountOffset;
 
@@ -127,7 +127,7 @@ public class ScheduleFeature {
 
     @Given("I schedule a crypto transfer with {int} initial signatures but require an additional signature from " +
             "{string}")
-    public void createNewCryptoAccountSchedule(int initSignatureCount, String accountName) throws Exception {
+    public void createNewCryptoAccountSchedule(int initSignatureCount, String accountName) {
         expectedSignersCount = 2 + initSignatureCount; // new account, accountName and initSignatureCount
         currentSignersCount = initSignatureCount + signatoryCountOffset;
         ExpandedAccountId finalSignatory = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
@@ -165,7 +165,7 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a token transfer from {string} to {string}")
-    public void createNewTokenTransferSchedule(String senderName, String receiverName) throws Exception {
+    public void createNewTokenTransferSchedule(String senderName, String receiverName) {
         expectedSignersCount = 2;
         currentSignersCount = 0 + signatoryCountOffset;
         tokenTreasuryAccount = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
@@ -208,7 +208,7 @@ public class ScheduleFeature {
     }
 
     @Given("I successfully schedule a topic message submit with {string}'s submit key")
-    public void createNewHCSSchedule(String accountName) throws Exception {
+    public void createNewHCSSchedule(String accountName) {
         expectedSignersCount = 1;
         currentSignersCount = 0 + signatoryCountOffset;
         ExpandedAccountId submitAdmin = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
@@ -230,7 +230,7 @@ public class ScheduleFeature {
         createNewSchedule(scheduledTransaction, null);
     }
 
-    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList) throws Exception {
+    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList) {
         log.debug("Schedule creation ");
 
         // create signatures list
@@ -250,7 +250,7 @@ public class ScheduleFeature {
         assertNotNull(scheduledTransactionId);
     }
 
-    public void signSignature(ExpandedAccountId signatoryAccount) throws Exception {
+    public void signSignature(ExpandedAccountId signatoryAccount) {
         currentSignersCount++; // add signatoryAccount and payer
         networkTransactionResponse = scheduleClient.signSchedule(
                 signatoryAccount,
@@ -348,7 +348,7 @@ public class ScheduleFeature {
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public void verifyNetworkScheduleStatus(ScheduleStatus scheduleStatus) throws Exception {
+    public void verifyNetworkScheduleStatus(ScheduleStatus scheduleStatus) {
         scheduleInfo = scheduleClient.getScheduleInfo(scheduleId);
 
         // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
@@ -397,7 +397,7 @@ public class ScheduleFeature {
                 .isEqualTo(accountClient.getSdkClient().getExpandedOperatorAccountId().getAccountId());
     }
 
-    private void verifyScheduleInfoFromNetwork(int expectedSignatoriesCount) throws Exception {
+    private void verifyScheduleInfoFromNetwork(int expectedSignatoriesCount) {
         scheduleInfo = scheduleClient.getScheduleInfo(scheduleId);
 
         assertNotNull(scheduleInfo);

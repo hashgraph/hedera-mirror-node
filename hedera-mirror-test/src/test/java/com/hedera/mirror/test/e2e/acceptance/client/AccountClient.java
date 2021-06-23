@@ -23,10 +23,10 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -37,7 +37,6 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
@@ -62,7 +61,7 @@ public class AccountClient extends AbstractNetworkClient {
         log.debug("Creating Account Client");
     }
 
-    public ExpandedAccountId getTokenTreasuryAccount() throws Exception {
+    public ExpandedAccountId getTokenTreasuryAccount() {
         if (tokenTreasuryAccount == null) {
             tokenTreasuryAccount = createNewAccount(DEFAULT_INITIAL_BALANCE);
             log.debug("Treasury Account: {} will be used for current test session", tokenTreasuryAccount);
@@ -73,7 +72,7 @@ public class AccountClient extends AbstractNetworkClient {
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
         // retrieve account, setting if it doesn't exist
-        AtomicReference<Exception> encounteredException = null;
+        AtomicReference<Exception> encounteredException = new AtomicReference<>();
         ExpandedAccountId accountId = accountMap
                 .computeIfAbsent(accountNameEnum, x -> {
                     try {
@@ -95,11 +94,12 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     @Override
-    public long getBalance() throws TimeoutException, PrecheckStatusException {
+    public long getBalance() {
         return getBalance(sdkClient.getExpandedOperatorAccountId().getAccountId());
     }
 
-    public long getBalance(AccountId accountId) throws TimeoutException, PrecheckStatusException {
+    @SneakyThrows
+    public long getBalance(AccountId accountId) {
         Hbar balance = new AccountBalanceQuery()
                 .setAccountId(accountId)
                 .execute(client)
@@ -118,7 +118,7 @@ public class AccountClient extends AbstractNetworkClient {
                 .setTransactionMemo("transfer test");
     }
 
-    public TransactionReceipt sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) throws Exception {
+    public TransactionReceipt sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
         log.debug(
                 "Send CryptoTransfer of {} tℏ from {} to {}", hbarAmount.toTinybars(),
                 sdkClient.getExpandedOperatorAccountId().getAccountId(),
@@ -147,11 +147,11 @@ public class AccountClient extends AbstractNetworkClient {
                 .setTransactionMemo(memo);
     }
 
-    public ExpandedAccountId createNewAccount(long initialBalance) throws Exception {
+    public ExpandedAccountId createNewAccount(long initialBalance) {
         return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null);
     }
 
-    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) throws Exception {
+    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
         return createCryptoAccount(
                 Hbar.fromTinybars(initialBalance),
                 accountNameEnum.receiverSigRequired,
@@ -160,8 +160,7 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired, KeyList keyList,
-                                                 String memo)
-            throws Exception {
+                                                 String memo) {
         // 1. Generate a Ed25519 private, public key pair
         PrivateKey privateKey = PrivateKey.generate();
         PublicKey publicKey = privateKey.getPublicKey();

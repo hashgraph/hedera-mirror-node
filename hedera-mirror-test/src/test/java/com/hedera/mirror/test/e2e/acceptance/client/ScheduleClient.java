@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import java.util.List;
 import javax.inject.Named;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -51,7 +52,7 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
-                                                     String memo, KeyList signatureKeyList) throws Exception {
+                                                     String memo, KeyList signatureKeyList) {
 
         log.debug("Create new schedule");
         TransactionId transactionId = TransactionId.generate(sdkClient.getExpandedOperatorAccountId().getAccountId())
@@ -88,7 +89,7 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse signSchedule(ExpandedAccountId expandedAccountId,
-                                                   ScheduleId scheduleId) throws Exception {
+                                                   ScheduleId scheduleId) {
 
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
@@ -102,7 +103,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) throws Exception {
+    public NetworkTransactionResponse deleteSchedule(ScheduleId scheduleId) {
 
         log.debug("Delete schedule {}", scheduleId);
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
@@ -116,7 +117,8 @@ public class ScheduleClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) throws Exception {
+    @SneakyThrows
+    public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) {
         return retryTemplate.execute(x ->
                 new ScheduleInfoQuery()
                         .setScheduleId(scheduleId)

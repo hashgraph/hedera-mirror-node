@@ -47,7 +47,7 @@ public class AcceptanceTestProperties {
     private Long existingTopicNum;
 
     @Max(10)
-    private int maxRetries = 10;
+    private int maxRetries = 3;
 
     @NotNull
     private Long maxTinyBarTransactionFee = 1_000_000_000L;

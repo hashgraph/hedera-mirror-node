@@ -36,5 +36,5 @@ public class SdkProperties {
 
     @Min(1)
     @Max(60)
-    private int maxAttempts = 20;
+    private int maxAttempts = 10;
 }

@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.cucumber.java.en.Given;
@@ -73,7 +74,7 @@ public class TopicFeature {
     private TopicClient topicClient;
 
     @Given("I successfully create a new topic id")
-    public void createNewTopic() throws Exception {
+    public void createNewTopic() {
         testInstantReference = Instant.now();
 
         submitKey = PrivateKey.generate();
@@ -95,7 +96,7 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new open topic")
-    public void createNewOpenTopic() throws Exception {
+    public void createNewOpenTopic() {
         testInstantReference = Instant.now();
 
         NetworkTransactionResponse networkTransactionResponse = topicClient
@@ -113,14 +114,14 @@ public class TopicFeature {
     }
 
     @When("I successfully update an existing topic")
-    public void updateTopic() throws Exception {
+    public void updateTopic() {
         TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
     }
 
     @When("I successfully delete the topic")
-    public void deleteTopic() throws Exception {
+    public void deleteTopic() {
         TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
@@ -224,10 +225,11 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse);
     }
 
-    @Retryable(backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
-    public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws Exception {
+    @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException {
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);
             publishTopicMessages(messageCount);
@@ -241,17 +243,17 @@ public class TopicFeature {
     @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public void publishTopicMessages(int messageCount) throws Exception {
+    public void publishTopicMessages(int messageCount) {
         messageSubscribeCount = messageCount;
         topicClient.publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, false);
     }
 
+    @When("I publish and verify {int} messages sent")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class, PrecheckStatusException.class,
             ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    @When("I publish and verify {int} messages sent")
-    public void publishAndVerifyTopicMessages(int messageCount) throws Exception {
+    public void publishAndVerifyTopicMessages(int messageCount) {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, true);
@@ -320,11 +322,11 @@ public class TopicFeature {
     }
 
     @Then("the network should successfully observe the topic")
-    public void verifyTopicOnNetwork() throws Exception {
+    public void verifyTopicOnNetwork() {
         TopicInfo topicInfo = topicClient.getTopicInfo(consensusTopicId);
         assertNotNull(topicInfo, "topicInfo is null");
         assertNotEquals(topicInfo.topicMemo, "", "topicMemo is not empty");
-        assertEquals(topicInfo.sequenceNumber, messageSubscribeCount, "sequence count is correct");
+        assertThat(topicInfo.sequenceNumber).isGreaterThanOrEqualTo(messageSubscribeCount);
     }
 
     @Then("the network should successfully observe these messages")

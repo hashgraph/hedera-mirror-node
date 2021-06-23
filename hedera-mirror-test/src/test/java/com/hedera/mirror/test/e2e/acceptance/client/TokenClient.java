@@ -24,8 +24,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -35,7 +35,6 @@ import org.springframework.retry.support.RetryTemplate;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
@@ -68,7 +67,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse createToken(ExpandedAccountId expandedAccountId, String symbol, int freezeStatus,
                                                   int kycStatus, ExpandedAccountId treasuryAccount,
-                                                  int initialSupply) throws Exception {
+                                                  int initialSupply) {
 
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
@@ -114,7 +113,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) throws Exception {
+    public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) {
 
         log.debug("Associate account {} with token {}", accountId.getAccountId(), token);
         Instant refInstant = Instant.now();
@@ -133,7 +132,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse mint(TokenId tokenId, long amount) throws Exception {
+    public NetworkTransactionResponse mint(TokenId tokenId, long amount) {
 
         log.debug("Mint {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
@@ -151,7 +150,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) throws Exception {
+    public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) {
 
         Instant refInstant = Instant.now();
         TokenFreezeTransaction tokenFreezeAccountTransaction = new TokenFreezeTransaction()
@@ -169,7 +168,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse unfreeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) throws Exception {
+    public NetworkTransactionResponse unfreeze(TokenId tokenId, AccountId accountId, PrivateKey freezeKey) {
 
         Instant refInstant = Instant.now();
         TokenUnfreezeTransaction tokenUnfreezeTransaction = new TokenUnfreezeTransaction()
@@ -187,7 +186,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse grantKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) throws Exception {
+    public NetworkTransactionResponse grantKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) {
 
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         Instant refInstant = Instant.now();
@@ -205,7 +204,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) throws Exception {
+    public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId, PrivateKey kycKey) {
 
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
         Instant refInstant = Instant.now();
@@ -234,7 +233,7 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
-                                                    long amount) throws Exception {
+                                                    long amount) {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
         TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender
@@ -249,7 +248,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) throws Exception {
+    public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
         PublicKey publicKey = expandedAccountId.getPublicKey();
         String newSymbol = RandomStringUtils.randomAlphabetic(4).toUpperCase();
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
@@ -273,7 +272,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse burn(TokenId tokenId, long amount) throws Exception {
+    public NetworkTransactionResponse burn(TokenId tokenId, long amount) {
 
         log.debug("Burn {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
@@ -291,7 +290,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse wipe(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) throws Exception {
+    public NetworkTransactionResponse wipe(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) {
 
         log.debug("Wipe {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
@@ -310,7 +309,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse dissociate(ExpandedAccountId accountId, TokenId token) throws Exception {
+    public NetworkTransactionResponse dissociate(ExpandedAccountId accountId, TokenId token) {
 
         log.debug("Dissociate account {} with token {}", accountId.getAccountId(), token);
         TokenDissociateTransaction tokenDissociateTransaction = new TokenDissociateTransaction()
@@ -326,7 +325,7 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) throws Exception {
+    public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) {
 
         log.debug("Delete token {}", token);
         Instant refInstant = Instant.now();
@@ -344,7 +343,8 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public long getTokenBalance(AccountId accountId, TokenId tokenId) throws TimeoutException, PrecheckStatusException {
+    @SneakyThrows
+    public long getTokenBalance(AccountId accountId, TokenId tokenId) {
         long balance = new AccountBalanceQuery()
                 .setAccountId(accountId)
                 .execute(client)

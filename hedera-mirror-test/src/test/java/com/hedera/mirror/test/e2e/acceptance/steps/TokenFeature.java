@@ -74,7 +74,7 @@ public class TokenFeature {
     private NetworkTransactionResponse networkTransactionResponse;
 
     @Given("I successfully create a new token")
-    public void createNewToken() throws Exception {
+    public void createNewToken() {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE);
     }
@@ -86,7 +86,7 @@ public class TokenFeature {
     }
 
     @Given("I successfully create a new token account with freeze status {int} and kyc status {int}")
-    public void createNewToken(int freezeStatus, int kycStatus) throws Exception {
+    public void createNewToken(int freezeStatus, int kycStatus) {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
     }
 
@@ -98,43 +98,43 @@ public class TokenFeature {
     }
 
     @Given("I associate a new sender account with token")
-    public void associateSenderWithToken() throws Exception {
+    public void associateSenderWithToken() {
 
         sender = accountClient.createNewAccount(10_000_000);
         associateWithToken(sender);
     }
 
     @Given("I associate a new recipient account with token")
-    public void associateRecipientWithToken() throws Exception {
+    public void associateRecipientWithToken() {
 
         recipient = accountClient.createNewAccount(10_000_000);
         associateWithToken(recipient);
     }
 
     @When("I set new account freeze status to {int}")
-    public void setFreezeStatus(int freezeStatus) throws Exception {
+    public void setFreezeStatus(int freezeStatus) {
         setFreezeStatus(freezeStatus, recipient);
     }
 
     @When("I set new account kyc status to {int}")
-    public void setKycStatus(int kycStatus) throws Exception {
+    public void setKycStatus(int kycStatus) {
         setKycStatus(kycStatus, recipient);
     }
 
     @Then("I transfer {int} tokens to payer")
-    public void fundPayerAccountWithTokens(int amount) throws Exception {
+    public void fundPayerAccountWithTokens(int amount) {
         transferTokens(tokenId, amount, recipient, tokenClient.getSdkClient().getExpandedOperatorAccountId()
                 .getAccountId());
     }
 
     @Then("I transfer {int} tokens to recipient")
-    public void transferTokensToRecipient(int amount) throws Exception {
+    public void transferTokensToRecipient(int amount) {
         transferTokens(tokenId, amount, sender, recipient
                 .getAccountId());
     }
 
     @Given("I update the token")
-    public void updateToken() throws Exception {
+    public void updateToken() {
 
         networkTransactionResponse = tokenClient
                 .updateToken(tokenId, tokenClient.getSdkClient().getExpandedOperatorAccountId());
@@ -143,7 +143,7 @@ public class TokenFeature {
     }
 
     @Given("I burn {int} from the token")
-    public void burnToken(int amount) throws Exception {
+    public void burnToken(int amount) {
 
         networkTransactionResponse = tokenClient.burn(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -151,7 +151,7 @@ public class TokenFeature {
     }
 
     @Given("I mint {int} from the token")
-    public void mintToken(int amount) throws Exception {
+    public void mintToken(int amount) {
 
         networkTransactionResponse = tokenClient.mint(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -159,7 +159,7 @@ public class TokenFeature {
     }
 
     @Given("I wipe {int} from the token")
-    public void wipeToken(int amount) throws Exception {
+    public void wipeToken(int amount) {
 
         networkTransactionResponse = tokenClient.wipe(tokenId, amount, recipient);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -167,14 +167,14 @@ public class TokenFeature {
     }
 
     @Given("I dissociate the account from the token")
-    public void dissociateNewAccountFromToken() throws Exception {
+    public void dissociateNewAccountFromToken() {
         networkTransactionResponse = tokenClient.dissociate(recipient, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I delete the token")
-    public void deleteToken() throws Exception {
+    public void deleteToken() {
 
         networkTransactionResponse = tokenClient
                 .delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
@@ -220,7 +220,7 @@ public class TokenFeature {
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) throws Exception {
+    public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionIdString);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
@@ -266,7 +266,7 @@ public class TokenFeature {
         }
     }
 
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) throws Exception {
+    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
         tokenKey = PrivateKey.generate();
         PublicKey tokenPublicKey = tokenKey.getPublicKey();
         log.trace("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
@@ -285,13 +285,13 @@ public class TokenFeature {
         assertNotNull(tokenId);
     }
 
-    private void associateWithToken(ExpandedAccountId accountId) throws Exception {
+    private void associateWithToken(ExpandedAccountId accountId) {
         networkTransactionResponse = tokenClient.associate(accountId, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) throws Exception {
+    private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) {
         if (freezeStatus == TokenFreezeStatus.Frozen_VALUE) {
             networkTransactionResponse = tokenClient.freeze(tokenId, accountId.getAccountId(), tokenKey);
         } else if (freezeStatus == TokenFreezeStatus.Unfrozen_VALUE) {
@@ -304,7 +304,7 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void setKycStatus(int kycStatus, ExpandedAccountId accountId) throws Exception {
+    private void setKycStatus(int kycStatus, ExpandedAccountId accountId) {
         if (kycStatus == TokenKycStatus.Granted_VALUE) {
             networkTransactionResponse = tokenClient.grantKyc(tokenId, accountId.getAccountId(), tokenKey);
         } else if (kycStatus == TokenKycStatus.Revoked_VALUE) {
@@ -320,7 +320,7 @@ public class TokenFeature {
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) throws Exception {
+    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
         networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());

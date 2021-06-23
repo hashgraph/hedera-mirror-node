@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -37,9 +37,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.hashgraph.sdk.TopicDeleteTransaction;
 import com.hedera.hashgraph.sdk.TopicId;
@@ -67,7 +65,7 @@ public class TopicClient extends AbstractNetworkClient {
         log.debug("Creating Topic Client");
     }
 
-    public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) throws Exception {
+    public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) {
 
         Instant refInstant = Instant.now();
         String memo = "HCS Topic_" + refInstant;
@@ -92,7 +90,7 @@ public class TopicClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse updateTopic(TopicId topicId) throws Exception {
+    public NetworkTransactionResponse updateTopic(TopicId topicId) {
         String newMemo = "HCS UpdatedTopic__" + Instant.now().getNano();
         TopicUpdateTransaction consensusTopicUpdateTransaction = new TopicUpdateTransaction()
                 .setTopicId(topicId)
@@ -112,7 +110,7 @@ public class TopicClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse deleteTopic(TopicId topicId) throws Exception {
+    public NetworkTransactionResponse deleteTopic(TopicId topicId) {
         TopicDeleteTransaction consensusTopicDeleteTransaction = new TopicDeleteTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTopicId(topicId);
@@ -128,7 +126,7 @@ public class TopicClient extends AbstractNetworkClient {
 
     public List<TransactionReceipt> publishMessagesToTopic(TopicId topicId, String baseMessage,
                                                            KeyList submitKeys, int numMessages,
-                                                           boolean verify) throws Exception {
+                                                           boolean verify) {
         log.debug("Publishing {} message(s) to topicId : {}.", numMessages, topicId);
         List<TransactionReceipt> transactionReceiptList = new ArrayList<>();
         for (int i = 0; i < numMessages; i++) {
@@ -152,7 +150,7 @@ public class TopicClient extends AbstractNetworkClient {
                 .setMessage(message);
     }
 
-    public TopicId getDefaultTopicId() throws Exception {
+    public TopicId getDefaultTopicId() {
         if (defaultTopicId == null) {
             NetworkTransactionResponse networkTransactionResponse = createTopic(sdkClient
                     .getExpandedOperatorAccountId(), null);
@@ -163,11 +161,11 @@ public class TopicClient extends AbstractNetworkClient {
         return defaultTopicId;
     }
 
-    public void publishMessageToDefaultTopic() throws Exception {
+    public void publishMessageToDefaultTopic() {
         publishMessagesToTopic(getDefaultTopicId(), "Background message", null, 1, false);
     }
 
-    public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) throws Exception {
+    public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) {
         TopicMessageSubmitTransaction consensusMessageSubmitTransaction = new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message);
@@ -188,7 +186,7 @@ public class TopicClient extends AbstractNetworkClient {
         return transactionId;
     }
 
-    public TransactionReceipt publishMessageToTopicAndVerify(TopicId topicId, byte[] message, KeyList submitKeys) throws Exception {
+    public TransactionReceipt publishMessageToTopicAndVerify(TopicId topicId, byte[] message, KeyList submitKeys) {
         TransactionId transactionId = publishMessageToTopic(topicId, message, submitKeys);
         TransactionReceipt transactionReceipt = null;
         try {
@@ -198,8 +196,8 @@ public class TopicClient extends AbstractNetworkClient {
             recordPublishInstants.put(
                     transactionReceipt.topicSequenceNumber,
                     getTransactionRecord(transactionId).consensusTimestamp);
-        } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
-            log.error("Error publishing to topic", e);
+        } catch (Exception e) {
+            log.error("Error retrieving transaction receipt", e);
         }
 
         log.trace("Verified message published : '{}' to topicId : {} with sequence number : {}", message, topicId,
@@ -216,7 +214,8 @@ public class TopicClient extends AbstractNetworkClient {
         return recordPublishInstants.get(0L);
     }
 
-    public TopicInfo getTopicInfo(TopicId topicId) throws Exception {
+    @SneakyThrows
+    public TopicInfo getTopicInfo(TopicId topicId) {
         return retryTemplate.execute(x ->
                 new TopicInfoQuery()
                         .setTopicId(topicId)

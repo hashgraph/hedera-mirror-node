@@ -31,6 +31,7 @@ import org.springframework.http.MediaType;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.netty.http.client.PrematureCloseException;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
@@ -56,8 +57,8 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         retrySpec = Retry
                 .backoff(restPollingProperties.getMaxAttempts(), restPollingProperties.getMinBackoff())
                 .maxBackoff(restPollingProperties.getMaxBackoff())
-                .filter(this::shouldRetry)
-                .doBeforeRetry(r -> log.debug("Retry attempt #{} after failure: {}",
+                .filter(this::shouldRetryRestCall)
+                .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
                         r.totalRetries() + 1, r.failure().getMessage()));
         log.info("Creating Mirror Node client for {}", sdkClient.getMirrorNodeAddress());
     }
@@ -65,8 +66,8 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public SubscriptionResponse subscribeToTopic(TopicMessageQuery topicMessageQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
-        SubscriptionHandle subscription = retryTemplate.execute(x ->
-                topicMessageQuery.subscribe(client, subscriptionResponse::handleConsensusTopicResponse));
+        SubscriptionHandle subscription = topicMessageQuery
+                .subscribe(client, subscriptionResponse::handleConsensusTopicResponse);
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -86,14 +87,14 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        SubscriptionHandle subscription = retryTemplate.execute(x -> topicMessageQuery
+        SubscriptionHandle subscription = topicMessageQuery
                 .subscribe(client, resp -> {
                     // add expected messages only to messages list
                     if (subscriptionResponse.getMirrorHCSResponses().size() < numMessages) {
                         subscriptionResponse.handleConsensusTopicResponse(resp);
                     }
                     messageLatch.countDown();
-                }));
+                });
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -146,7 +147,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 .bodyToMono(classType)
                 .retryWhen(retrySpec)
                 .doOnNext(x -> log.debug("Endpoint call successfully returned a 200"))
-                .doOnError(x -> log.debug("Endpoint failed, returning: {}", x.getMessage()))
+                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
 
         return response;
@@ -157,8 +158,9 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         log.info("Unsubscribed from {}", subscription);
     }
 
-    protected boolean shouldRetry(Throwable t) {
-        return t instanceof TimeoutException || (t instanceof WebClientResponseException &&
-                ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND);
+    protected boolean shouldRetryRestCall(Throwable t) {
+        return t instanceof TimeoutException || t instanceof PrematureCloseException ||
+                (t instanceof WebClientResponseException &&
+                        ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND);
     }
 }
