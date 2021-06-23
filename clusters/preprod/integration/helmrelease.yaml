@@ -38,20 +38,8 @@ spec:
       podAnnotations:
         git.commit: 70db7896feb9042b587ab9e228bf5a8d0c714e4f
     importer:
-      config:
-        hedera:
-          mirror:
-            importer:
-              initialAddressBook: "/etc/secrets/addressbook.bin"
-              network: OTHER
-      volumeMounts:
-        custom:
-          mountPath: /etc/secrets
-      volumes:
-        custom:
-          secret:
-            defaultMode: 420
-            secretName: mirror-importer-custom
+      env:
+        HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
