@@ -84,7 +84,7 @@ hedera:
     monitor:
       publish:
         scenarios:
-          - name: HCS Pinger
+          pinger: # Scenario name
             properties:
               maxTransactionFee: 1000000
               message: Hello world!
@@ -103,7 +103,7 @@ inner transaction must be signed by all required signatories as part of the `Sch
 transactions. Due to this the monitor by default will initially support only `ScheduleCreate` scenarios in which the
 inner transaction is a `CryptoCreate` with `receiverSignatureRequired` set to true.
 
-By default all required signatures will be provided. However, this can be modified by
+By default, all required signatures will be provided. However, this can be modified by
 setting `hedera.mirror.monitor.publish.scenarios.properties.signatoryCount` to be a number greater than 0 but smaller
 than `hedera.mirror.monitor.publish.scenarios.properties.totalSignatoryCount`
 To execute a scheduled scenario set the `hedera.mirror.monitor.publish.scenarios` properties similar to the following
@@ -115,7 +115,7 @@ hedera:
     monitor:
       publish:
         scenarios:
-          - name: Scheduled Crypto Create
+          scheduledCryptoCreate:
             properties:
               nodeAccountId: 0.0.3
               operatorAccountId: 0.0.1018
@@ -145,14 +145,14 @@ hedera:
     monitor:
       publish:
         scenarios:
-          - name: HTS associate
+          htsAssociate:
             limit: 1
             properties:
               accountId: ${account.them}
               tokenId: ${token.foobar}
             tps: 1
             type: TOKEN_ASSOCIATE
-          - name: HTS transfer
+          htsTransfer:
             properties:
               recipientAccountId: ${account.them}
               senderAccountId: ${account.me}
@@ -179,12 +179,12 @@ hedera:
       subscribe:
         clients: 4
         grpc:
-          - name: HCS Subscribe
+          hcs:
             enabled: true
             subscribers: 10
             topicId: ${topic.ping}
         rest:
-          - name: REST
+          transactionId:
             enabled: false
             samplePercent: 1.0
 ```
@@ -234,7 +234,7 @@ Example response:
     "errors": {
       "TimeoutException": 1
     },
-    "elapsed": "PT12M13.303710674S",
+    "elapsed": "2d3h3s",
     "rate": 0.1,
     "name": "HCS REST",
     "id": 1,
@@ -260,7 +260,7 @@ Example response:
     "errors": {
       "TimeoutException": 1
     },
-    "elapsed": "PT12M13.303710674S",
+    "elapsed": "1h2m57s",
     "rate": 0.1,
     "name": "HCS REST",
     "id": 1,
@@ -285,7 +285,7 @@ Example response:
   "errors": {
     "TimeoutException": 1
   },
-  "elapsed": "PT12M13.303710674S",
+  "elapsed": "12m13s",
   "rate": 0.1,
   "name": "HCS REST",
   "id": 1,

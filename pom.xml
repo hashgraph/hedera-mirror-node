@@ -26,7 +26,7 @@
         <license>
             <distribution>repo</distribution>
             <name>Apache License 2.0</name>
-            <url>https://github.com/hashgraph/hedera-mirror-node/blob/master/LICENSE</url>
+            <url>https://github.com/hashgraph/hedera-mirror-node/blob/main/LICENSE</url>
         </license>
     </licenses>
 
@@ -90,8 +90,8 @@
 
     <scm>
         <connection>https://github.com/hashgraph/hedera-mirror-node.git</connection>
-        <tag>master</tag>
-        <url>https://github.com/hashgraph/hedera-mirror-node/tree/master</url>
+        <tag>main</tag>
+        <url>https://github.com/hashgraph/hedera-mirror-node/tree/main</url>
     </scm>
 
     <dependencyManagement>

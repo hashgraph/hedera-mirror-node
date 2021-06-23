@@ -23,8 +23,10 @@ package com.hedera.mirror.monitor.config;
 import java.net.InetSocketAddress;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.reactivestreams.Publisher;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -35,6 +37,7 @@ import reactor.core.publisher.Mono;
 public class LoggingFilter implements WebFilter {
 
     private static final String LOCALHOST = "127.0.0.1";
+    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -62,6 +65,12 @@ public class LoggingFilter implements WebFilter {
     }
 
     private String getClient(ServerHttpRequest request) {
+        String xForwardedFor = CollectionUtils.firstElement(request.getHeaders().get(X_FORWARDED_FOR));
+
+        if (StringUtils.isNotBlank(xForwardedFor)) {
+            return xForwardedFor;
+        }
+
         InetSocketAddress remoteAddress = request.getRemoteAddress();
 
         if (remoteAddress != null && remoteAddress.getAddress() != null) {

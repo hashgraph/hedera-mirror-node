@@ -20,19 +20,17 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
+import com.google.common.collect.Sets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -52,10 +50,10 @@ public class SubscribeProperties {
     private boolean enabled = true;
 
     @NotNull
-    private List<GrpcSubscriberProperties> grpc = new ArrayList<>();
+    private Map<String, GrpcSubscriberProperties> grpc = new LinkedHashMap<>();
 
     @NotNull
-    private List<RestSubscriberProperties> rest = new ArrayList<>();
+    private Map<String, RestSubscriberProperties> rest = new LinkedHashMap<>();
 
     @DurationMin(seconds = 1L)
     @NotNull
@@ -67,17 +65,16 @@ public class SubscribeProperties {
             throw new IllegalArgumentException("There must be at least one subscribe scenario");
         }
 
-        Set<String> names = Stream.concat(grpc.stream(), rest.stream())
-                .map(AbstractSubscriberProperties::getName)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
-                .entrySet()
-                .stream()
-                .filter(e -> e.getValue() > 1)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        if (Sets.union(grpc.keySet(), rest.keySet()).stream().anyMatch(StringUtils::isBlank)) {
+            throw new IllegalArgumentException("Subscribe scenario name cannot be empty");
+        }
 
+        Set<String> names = Sets.intersection(grpc.keySet(), rest.keySet());
         if (!names.isEmpty()) {
             throw new IllegalArgumentException("More than one subscribe scenario with the same name: " + names);
         }
+
+        grpc.forEach((name, property) -> property.setName(name));
+        rest.forEach((name, property) -> property.setName(name));
     }
 }

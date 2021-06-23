@@ -44,6 +44,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 
 @Log4j2
 @Named
@@ -163,7 +164,8 @@ public class PublishMetrics {
         double instantRate = getRate(instantCount, instantElapsed);
         Map<String, Integer> errorCounts = new HashMap<>();
         errors.forEachEntry((k, v) -> errorCounts.put(k, v));
-        log.info("Published {} transactions in {} at {}/s. Errors: {}", count, stopwatch, instantRate, errorCounts);
+        String elapsedStr = DurationToStringSerializer.convert(stopwatch.elapsed());
+        log.info("Published {} transactions in {} at {}/s. Errors: {}", count, elapsedStr, instantRate, errorCounts);
     }
 
     private double getRate(long count, long elapsedMicros) {
