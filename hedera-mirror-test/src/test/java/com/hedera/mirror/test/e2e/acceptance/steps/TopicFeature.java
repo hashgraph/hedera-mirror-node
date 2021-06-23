@@ -44,6 +44,7 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicInfo;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -241,6 +242,7 @@ public class TopicFeature {
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void publishTopicMessages(int messageCount) throws Exception {
+        messageSubscribeCount = messageCount;
         topicClient.publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, false);
     }
 
@@ -283,6 +285,9 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve messages")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void retrieveTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(topicMessageQuery, "TopicMessageQuery null");
@@ -291,6 +296,9 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve these published messages")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void retrievePublishedTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(topicMessageQuery, "TopicMessageQuery null");
@@ -311,12 +319,19 @@ public class TopicFeature {
         subscriptionResponse = subscribeWithBackgroundMessageEmission();
     }
 
+    @Then("the network should successfully observe the topic")
+    public void verifyTopicOnNetwork() throws Exception {
+        TopicInfo topicInfo = topicClient.getTopicInfo(consensusTopicId);
+        assertNotNull(topicInfo, "topicInfo is null");
+        assertNotEquals(topicInfo.topicMemo, "", "topicMemo is not empty");
+        assertEquals(topicInfo.sequenceNumber, messageSubscribeCount, "sequence count is correct");
+    }
+
     @Then("the network should successfully observe these messages")
     public void verifyTopicMessageSubscription() throws Exception {
         assertNotNull(subscriptionResponse, "subscriptionResponse is null");
         assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
 
-        assertEquals(messageSubscribeCount, subscriptionResponse.getMirrorHCSResponses().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
@@ -326,7 +341,6 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse, "subscriptionResponse is null");
         assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
 
-        assertEquals(expectedMessageCount, subscriptionResponse.getMirrorHCSResponses().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
@@ -365,6 +379,7 @@ public class TopicFeature {
         try {
             subscriptionResponse = mirrorClient
                     .subscribeToTopicAndRetrieveMessages(topicMessageQuery, messageSubscribeCount, latency);
+            assertEquals(messageSubscribeCount, subscriptionResponse.getMirrorHCSResponses().size());
         } finally {
             if (scheduler != null) {
                 scheduler.shutdownNow();

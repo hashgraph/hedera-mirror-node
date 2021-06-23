@@ -376,7 +376,7 @@ public class ScheduleFeature {
 
         log.info("Schedule {} status was confirmed by network state", scheduleId);
     }
-    
+
     private void dissociateAccount(ExpandedAccountId accountId) {
         if (accountId != null) {
             try {

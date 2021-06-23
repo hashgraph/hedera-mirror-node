@@ -43,6 +43,8 @@ import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.hashgraph.sdk.TopicDeleteTransaction;
 import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicInfo;
+import com.hedera.hashgraph.sdk.TopicInfoQuery;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -212,5 +214,13 @@ public class TopicClient extends AbstractNetworkClient {
 
     public Instant getInstantOfFirstPublishedMessage() {
         return recordPublishInstants.get(0L);
+    }
+
+    public TopicInfo getTopicInfo(TopicId topicId) throws Exception {
+        return retryTemplate.execute(x ->
+                new TopicInfoQuery()
+                        .setTopicId(topicId)
+                        .setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()))
+                        .execute(client));
     }
 }
