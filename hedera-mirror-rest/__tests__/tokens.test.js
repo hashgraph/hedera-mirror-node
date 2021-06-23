@@ -739,3 +739,247 @@ describe('utils validateAndParseFilters token type tests', () => {
     });
   });
 });
+
+describe('token extractSqlFromNftTokensRequest tests', () => {
+  const verifyExtractSqlFromNftTokensRequest = (
+    tokenId,
+    pgSqlQuery,
+    filters,
+    expectedquery,
+    expectedparams,
+    expectedorder,
+    expectedlimit
+  ) => {
+    const {query, params, order, limit} = tokens.extractSqlFromNftTokensRequest(tokenId, pgSqlQuery, filters);
+
+    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
+    expect(params).toStrictEqual(expectedparams);
+    expect(order).toStrictEqual(expectedorder);
+    expect(limit).toStrictEqual(expectedlimit);
+  };
+
+  test('Verify simple discovery query', () => {
+    const tokenId = '1009'; // encoded
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const filters = [];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number
+                           from nft
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                           order by nft.account_id desc
+                           limit $2`;
+    const expectedParams = [tokenId, maxLimit];
+    const expectedOrder = orderFilterValues.DESC;
+    const expectedLimit = maxLimit;
+
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
+  test('Verify account id', () => {
+    const tokenId = '1009'; // encoded
+    const accountId = '111'; // encoded
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const filters = [
+      {
+        key: filterKeys.ACCOUNT_ID,
+        operator: ' = ',
+        value: accountId,
+      },
+    ];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number
+                           from nft
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                             and nft.account_id = $2
+                           order by nft.account_id desc
+                           limit $3`;
+    const expectedParams = [tokenId, accountId, maxLimit];
+    const expectedOrder = orderFilterValues.DESC;
+    const expectedLimit = maxLimit;
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
+  test('Verify serial number id', () => {
+    const tokenId = '1009'; // encoded
+    const serialFilter = 'gt:111';
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const filters = [
+      {
+        key: filterKeys.SERIAL_NUMBER,
+        operator: ' = ',
+        value: serialFilter,
+      },
+    ];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number
+                           from nft
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                             and nft.serial_number = $2
+                           order by nft.account_id desc
+                           limit $3`;
+    const expectedParams = [tokenId, serialFilter, maxLimit];
+    const expectedOrder = orderFilterValues.DESC;
+    const expectedLimit = maxLimit;
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
+  test('Verify all filters', () => {
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const tokenId = '1009'; // encoded
+    const accountId = '5';
+    const serialNum = '2';
+    const limit = '3';
+    const order = orderFilterValues.ASC;
+    const filters = [
+      {
+        key: filterKeys.ACCOUNT_ID,
+        operator: ' = ',
+        value: accountId,
+      },
+      {
+        key: filterKeys.SERIAL_NUMBER,
+        operator: ' = ',
+        value: serialNum,
+      },
+      {key: filterKeys.LIMIT, operator: ' = ', value: limit},
+      {key: filterKeys.ORDER, operator: ' = ', value: order},
+    ];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number
+                           from nft
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                             and nft.account_id = $2
+                             and nft.serial_number = $3
+                           order by nft.account_id asc
+                           limit $4`;
+    const expectedParams = [tokenId, accountId, serialNum, limit];
+    const expectedOrder = order;
+    const expectedLimit = 3;
+
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+});
+
+describe('token extractSqlFromNftTokenInfoRequest tests', () => {
+  const verifyExtractSqlFromNftTokenInfoRequest = (
+    tokenId,
+    serialNumber,
+    pgSqlQuery,
+    filters,
+    expectedquery,
+    expectedparams
+  ) => {
+    const {query, params} = tokens.extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, pgSqlQuery, filters);
+
+    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
+    expect(params).toStrictEqual(expectedparams);
+  };
+
+  test('Verify simple serial query', () => {
+    const tokenId = '1009'; // encoded
+    const serialNumber = '960';
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const filters = [];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number
+                           from nft
+                           where nft.token_id = $1
+                             and nft.serial_number = $2`;
+    const expectedParams = [tokenId, serialNumber];
+    verifyExtractSqlFromNftTokenInfoRequest(
+      tokenId,
+      serialNumber,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams
+    );
+  });
+
+  // test('Verify simple serial query', () => {
+  //   const tokenId = '1009'; // encoded
+  //   const serialNumber = '960';
+  //   const initialQuery = [tokens.nftSelectQuery].join('\n');
+  //   const filters = [];
+  //
+  //   const expectedQuery = `select nft.account_id,
+  //                                 nft.created_timestamp,
+  //                                 nft.deleted,
+  //                                 nft.metadata,
+  //                                 nft.modified_timestamp,
+  //                                 nft.serial_number
+  //                          from nft
+  //                          where nft.token_id = $1
+  //                            and nft.serial_number = $2`;
+  //   const expectedParams = [tokenId, serialNumber];
+  //   verifyExtractSqlFromNftTokenInfoRequest(
+  //     tokenId,
+  //     serialNumber,
+  //     initialQuery,
+  //     filters,
+  //     expectedQuery,
+  //     expectedParams
+  //   );
+  // });
+});

@@ -44,6 +44,30 @@ const filterColumnMap = {
   [constants.filterKeys.TOKEN_TYPE]: sqlQueryColumns.TYPE,
 };
 
+const nftQueryColumns = {
+  ACCOUNT_ID: 'nft.account_id',
+  CREATED_TIMESTAMP: 'nft.created_timestamp',
+  DELETED: 'nft.deleted',
+  SERIAL_NUMBER: 'nft.serial_number',
+  TOKEN_ID: 'nft.token_id',
+};
+
+// query to column maps
+const nftFilterColumnMap = {
+  serialnumber: nftQueryColumns.SERIAL_NUMBER,
+  [constants.filterKeys.ACCOUNT_ID]: nftQueryColumns.ACCOUNT_ID,
+};
+
+const nftSelectFields = [
+  'nft.account_id',
+  'nft.created_timestamp',
+  'nft.deleted',
+  'nft.metadata',
+  'nft.modified_timestamp',
+  'nft.serial_number',
+];
+const nftSelectQuery = ['select', nftSelectFields.join(',\n'), 'from nft'].join('\n');
+
 // token discovery sql queries
 const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
 const accountIdJoinQuery = 'join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id';
@@ -425,6 +449,153 @@ const getTokenBalances = async (req, res) => {
   res.locals[constants.responseDataLabel] = response;
 };
 
+/**
+ * Extracts SQL query, params, order, and limit
+ *
+ * @param {string} tokenId encoded token ID
+ * @param {string} query initial pg SQL query string
+ * @param {[]} filters parsed and validated filters
+ * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
+ */
+const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
+  let limit = config.maxLimit;
+  let order = constants.orderFilterValues.DESC;
+  // let joinTokenClause = `join token t on ${nftQueryColumns.TOKEN_ID} = ${sqlQueryColumns.TOKEN_ID}`;
+  const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.DELETED} = false`];
+  const params = [tokenId];
+
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = filter.value;
+        break;
+      default:
+        const columnKey = nftFilterColumnMap[filter.key];
+        if (!columnKey) {
+          break;
+        }
+
+        conditions.push(`${columnKey} ${filter.operator} $${params.push(filter.value)}`);
+        break;
+    }
+  }
+
+  const whereQuery = `where ${conditions.join('\nand ')}`;
+  const orderQuery = `order by ${nftQueryColumns.ACCOUNT_ID} ${order}`;
+  const limitQuery = `limit $${params.push(limit)}`;
+  query = [query, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
+
+  return utils.buildPgSqlObject(query, params, order, limit);
+};
+
+/**
+ * Extracts SQL query, params, order, and limit
+ *
+ * @param {string} tokenId encoded token ID
+ * @param {string} query initial pg SQL query string
+ * @param {[]} filters parsed and validated filters
+ * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
+ */
+const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
+  const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.SERIAL_NUMBER} = $2`];
+  const params = [tokenId, serialNumber];
+
+  const whereQuery = `where ${conditions.join('\nand ')}`;
+  query = [query, whereQuery].filter((q) => q !== '').join('\n');
+
+  return utils.buildPgSqlObject(query, params, '', '');
+};
+
+const formatNftRow = (row) => {
+  return {
+    account_id: EntityId.fromEncodedId(row.account_id).toString(),
+    created_timestamp: row.created_timestamp,
+    deleted: row.deleted,
+    metadata: utils.encodeKey(row.metadata),
+    modified_timestamp: row.modified_timestamp,
+    serial_number: Number(row.serial_number),
+  };
+};
+
+/**
+ * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
+ */
+const validateSerialNumberParam = (serialNumber) => {
+  if (serialNumber === undefined) {
+    return;
+  }
+
+  if (!utils.isValidNum(serialNumber)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.SERIAL_NUMBER);
+  }
+};
+
+/**
+ * Handler function for /tokens/:id/nfts API.
+ *
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ */
+const getNftTokensRequest = async (req, res) => {
+  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
+  const filters = utils.buildFilterObject(req.query);
+  await utils.validateAndParseFilters(filters);
+
+  const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getNftTokens query: ${query} ${JSON.stringify(params)}`);
+  }
+
+  const {rows} = await utils.queryQuietly(query, ...params);
+  const response = {
+    nfts: rows.map((row) => formatNftRow(row)),
+    links: {
+      next: null,
+    },
+  };
+
+  // Pagination links
+  const anchorAccountId = response.nfts.length > 0 ? response.nfts[response.nfts.length - 1].account_id : 0;
+  response.links.next = utils.getPaginationLink(
+    req,
+    response.nfts.length !== limit,
+    constants.filterKeys.ACCOUNT_ID,
+    anchorAccountId,
+    order
+  );
+
+  logger.debug(`getNftTokens returning ${response.nfts.length} entries`);
+  res.locals[constants.responseDataLabel] = response;
+};
+
+/**
+ * Handler function for /tokens/:id/nfts API.
+ *
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ */
+const getNftTokenInfoRequest = async (req, res) => {
+  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
+  const {serialNumber} = req.params;
+  validateSerialNumberParam(serialNumber);
+
+  const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getNftTokenInfo query: ${query} ${JSON.stringify(params)}`);
+  }
+
+  const {rows} = await utils.queryQuietly(query, ...params);
+  const response = {
+    nfts: rows.map((row) => formatNftRow(row)),
+  };
+
+  logger.debug(`getNftTokens returning ${response.balances.length} entries`);
+  res.locals[constants.responseDataLabel] = response;
+};
+
 const getToken = async (pgSqlQuery, tokenId) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getTokenInfo query: ${pgSqlQuery}, params: ${tokenId}`);
@@ -440,6 +611,8 @@ const getToken = async (pgSqlQuery, tokenId) => {
 };
 
 module.exports = {
+  getNftTokenInfoRequest,
+  getNftTokensRequest,
   getTokenInfoRequest,
   getTokensRequest,
   getTokenBalances,
@@ -450,10 +623,13 @@ if (utils.isTestEnv()) {
     accountIdJoinQuery,
     entityIdJoinQuery,
     extractSqlFromTokenRequest,
+    extractSqlFromNftTokenInfoRequest,
+    extractSqlFromNftTokensRequest,
     extractSqlFromTokenBalancesRequest,
     formatTokenBalanceRow,
     formatTokenInfoRow,
     formatTokenRow,
+    nftSelectQuery,
     tokenBalancesSelectQuery,
     tokensSelectQuery,
     validateTokensFilters,

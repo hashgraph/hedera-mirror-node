@@ -34,6 +34,7 @@ const filterKeys = {
   SCHEDULED: 'scheduled',
   SCHEDULEID: 'scheduleid',
   SCHEDULE_ID: 'schedule.id',
+  SERIAL_NUMBER: 'serialnumber',
   SEQUENCE_NUMBER: 'sequencenumber',
   TIMESTAMP: 'timestamp',
   TOKENID: 'tokenid',
