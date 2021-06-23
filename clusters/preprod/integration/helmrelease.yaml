@@ -36,7 +36,7 @@ spec:
       image:
         pullPolicy: Always
       podAnnotations:
-        git.commit: 536ccdaa7812101484a65fb143d6df4584a84072
+        git.commit: 2d50317b754f0a79826b7c4acd7be852cd2e1f61
     importer:
       config:
         hedera:
