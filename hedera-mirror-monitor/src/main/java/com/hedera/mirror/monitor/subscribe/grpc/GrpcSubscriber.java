@@ -62,7 +62,7 @@ class GrpcSubscriber implements MirrorSubscriber {
     private Flux<GrpcSubscription> createSubscriptions() {
         Collection<GrpcSubscription> subscriptionList = new ArrayList<>();
 
-        for (GrpcSubscriberProperties properties : subscribeProperties.getGrpc()) {
+        for (GrpcSubscriberProperties properties : subscribeProperties.getGrpc().values()) {
             if (subscribeProperties.isEnabled() && properties.isEnabled()) {
                 String topicId = expressionConverter.convert(properties.getTopicId());
                 properties.setTopicId(topicId);

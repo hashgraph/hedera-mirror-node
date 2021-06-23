@@ -20,10 +20,13 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.monitor.generator.ScenarioProperties;
 
@@ -35,22 +38,26 @@ class PublishPropertiesTest {
     @BeforeEach
     void setup() {
         scenarioProperties = new ScenarioProperties();
-        scenarioProperties.setName("test1");
-
         publishProperties = new PublishProperties();
-        publishProperties.getScenarios().add(scenarioProperties);
+        publishProperties.getScenarios().put("test1", scenarioProperties);
     }
 
     @Test
     void validate() {
         publishProperties.validate();
+        assertThat(scenarioProperties.getName()).isEqualTo("test1");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " "})
+    void emptyName(String name) {
+        publishProperties.getScenarios().put(name, scenarioProperties);
+        assertThrows(IllegalArgumentException.class, publishProperties::validate);
     }
 
     @Test
-    void duplicateName() {
-        ScenarioProperties scenarioProperties2 = new ScenarioProperties();
-        scenarioProperties2.setName(scenarioProperties.getName());
-        publishProperties.getScenarios().add(scenarioProperties2);
+    void nullName() {
+        publishProperties.getScenarios().put(null, scenarioProperties);
         assertThrows(IllegalArgumentException.class, publishProperties::validate);
     }
 

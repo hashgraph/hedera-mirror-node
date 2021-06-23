@@ -25,9 +25,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -56,7 +56,6 @@ class RestSubscriber implements MirrorSubscriber {
     private final Flux<RestSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
     private final WebClient webClient;
 
-    @Autowired
     RestSubscriber(MonitorProperties monitorProperties, SubscribeProperties subscribeProperties,
                    WebClient.Builder webClientBuilder) {
         this.subscribeProperties = subscribeProperties;
@@ -70,10 +69,24 @@ class RestSubscriber implements MirrorSubscriber {
 
     @Override
     public void onPublish(PublishResponse response) {
-        subscriptions.filter(s -> s.getStatus() != SubscriptionStatus.COMPLETED)
-                .filter(s -> RANDOM.nextDouble() < s.getProperties().getSamplePercent())
+        subscriptions.filter(s -> shouldSample(s, response))
                 .map(RestSubscription::getSink)
                 .subscribe(s -> s.tryEmitNext(response));
+    }
+
+    private boolean shouldSample(RestSubscription subscription, PublishResponse response) {
+        if (subscription.getStatus() == SubscriptionStatus.COMPLETED) {
+            return false;
+        }
+
+        RestSubscriberProperties properties = subscription.getProperties();
+        Set<String> publishers = properties.getPublishers();
+
+        if (!publishers.isEmpty() && !publishers.contains(response.getRequest().getScenarioName())) {
+            return false;
+        }
+
+        return RANDOM.nextDouble() < properties.getSamplePercent();
     }
 
     @Override
@@ -89,7 +102,7 @@ class RestSubscriber implements MirrorSubscriber {
     private Flux<RestSubscription> createSubscriptions() {
         Collection<RestSubscription> subscriptionList = new ArrayList<>();
 
-        for (RestSubscriberProperties properties : subscribeProperties.getRest()) {
+        for (RestSubscriberProperties properties : subscribeProperties.getRest().values()) {
             if (subscribeProperties.isEnabled() && properties.isEnabled()) {
                 for (int i = 1; i <= properties.getSubscribers(); ++i) {
                     subscriptionList.add(new RestSubscription(i, properties));
@@ -126,7 +139,7 @@ class RestSubscriber implements MirrorSubscriber {
                         .onErrorContinue((t, o) -> subscription.onError(t))
                         .doOnNext(subscription::onNext)
                         .map(transaction -> toResponse(subscription, publishResponse, transaction)))
-                .limitRequest(properties.getLimit())
+                .take(properties.getLimit(), true)
                 .take(properties.getDuration());
     }
 

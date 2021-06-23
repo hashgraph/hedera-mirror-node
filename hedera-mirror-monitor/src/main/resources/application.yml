@@ -3,7 +3,7 @@ hedera:
     monitor:
       publish:
         scenarios:
-          - name: HCS Pinger
+          pinger:
             properties:
               topicId: ${topic.ping}
             receiptPercent: 1.0
@@ -11,10 +11,11 @@ hedera:
             type: CONSENSUS_SUBMIT_MESSAGE
       subscribe:
         grpc:
-          - name: HCS Subscribe
+          hcs:
             topicId: ${topic.ping}
         rest:
-          - name: HCS REST
+          transactionId:
+            publishers: [ "pinger" ]
             samplePercent: 1.0
 logging:
   level:
