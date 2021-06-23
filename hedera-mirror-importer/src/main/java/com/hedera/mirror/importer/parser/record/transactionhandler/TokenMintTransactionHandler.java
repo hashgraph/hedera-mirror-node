@@ -28,9 +28,9 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
 @AllArgsConstructor
-public class TokenUnfreezeTransactionsHandler implements TransactionHandler {
+public class TokenMintTransactionHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenUnfreeze().getAccount());
+        return EntityId.of(recordItem.getTransactionBody().getTokenMint().getToken());
     }
 }

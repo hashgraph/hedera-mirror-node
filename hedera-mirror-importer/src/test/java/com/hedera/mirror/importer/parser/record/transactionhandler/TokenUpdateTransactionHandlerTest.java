@@ -21,24 +21,38 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenWipeTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenWipeTransactionsHandler();
+        return new TokenUpdateTransactionHandler();
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
-                        .setAccount(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM))
-                        .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()).build());
+                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
+                        .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build())
+                        .setAdminKey(DEFAULT_KEY)
+                        .setExpiry(Timestamp.newBuilder().setSeconds(360).build())
+                        .setKycKey(DEFAULT_KEY)
+                        .setFreezeKey(DEFAULT_KEY)
+                        .setSymbol("SYMBOL")
+                        .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
+                        .setAutoRenewAccount(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2)
+                                .build())
+                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
+                        .setName("token_name")
+                        .setWipeKey(DEFAULT_KEY)
+                        .build());
     }
 
     @Override

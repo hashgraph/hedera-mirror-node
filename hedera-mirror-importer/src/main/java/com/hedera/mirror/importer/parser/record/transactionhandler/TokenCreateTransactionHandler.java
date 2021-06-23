@@ -29,9 +29,9 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class TokenCreateTransactionsHandler extends AbstractEntityCrudTransactionHandler {
+public class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    public TokenCreateTransactionsHandler() {
+    public TokenCreateTransactionHandler() {
         super(true);
     }
 

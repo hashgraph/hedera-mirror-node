@@ -28,9 +28,9 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
 @AllArgsConstructor
-public class TokenRevokeKycTransactionsHandler implements TransactionHandler {
+public class TokenBurnTransactionHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenRevokeKyc().getAccount());
+        return EntityId.of(recordItem.getTransactionBody().getTokenBurn().getToken());
     }
 }

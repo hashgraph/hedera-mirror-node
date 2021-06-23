@@ -28,9 +28,9 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
 @AllArgsConstructor
-public class TokenAssociateTransactionsHandler implements TransactionHandler {
+public class TokenWipeTransactionHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenAssociate().getAccount());
+        return EntityId.of(recordItem.getTransactionBody().getTokenWipe().getToken());
     }
 }
