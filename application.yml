@@ -2,11 +2,11 @@
 #  mirror:
 #    importer:
 #      downloader:
-#        accessKey: {GOOG1E....}
-#        cloudProvider: "GCP"
+#        accessKey: {GOOG1E/AWS....}
+#        cloudProvider: "GCP/S3"
 #        gcpProjectId: {projectId}
-#        secretKey: {GOOG1E....}
-#      network: TESTNET
+#        secretKey: {GOOG1E/AWS....}
+#      network: TESTNET/MAINNET/PREVIEWNET
 #    monitor:
 #      operator:
 #        accountId: {accountId}
