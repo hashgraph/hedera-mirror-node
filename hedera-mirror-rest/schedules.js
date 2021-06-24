@@ -25,7 +25,6 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
 const {NotFoundError} = require('./errors/notFoundError');
-const {recordIpAndEndpoint} = require('./middleware/metricsHandler');
 
 const scheduleSelectFields = [
   'e.key',
@@ -123,8 +122,6 @@ const formatScheduleRow = (row) => {
  * @returns {Promise<void>}
  */
 const getScheduleById = async (req, res) => {
-  recordIpAndEndpoint('/schedules/{id}', req.ip);
-
   const scheduleId = EntityId.fromString(req.params.id, constants.filterKeys.SCHEDULEID).getEncodedId();
   if (logger.isTraceEnabled()) {
     logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
@@ -219,7 +216,6 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
  * @returns {Promise<void>}
  */
 const getSchedules = async (req, res) => {
-  recordIpAndEndpoint('/schedules/{id}', req.ip);
   // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
 

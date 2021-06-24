@@ -43,7 +43,7 @@ const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {handleError} = require('./middleware/httpErrorHandler');
-const {metricsHandler} = require('./middleware/metricsHandler');
+const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
@@ -166,7 +166,7 @@ app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
 app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
 
 // response data handling middleware
-app.useAsync(responseHandler);
+app.useAsync(responseHandler, recordIpAndEndpoint);
 
 // response error handling middleware
 app.useAsync(handleError);

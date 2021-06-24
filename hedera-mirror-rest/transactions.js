@@ -25,7 +25,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const {recordIpAndEndpoint} = require('./middleware/metricsHandler');
+
 /**
  * Gets the select clause with token transfers sorted by token_id and account_id in the specified order
  *
@@ -433,8 +433,6 @@ const reqToSql = async function (req) {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getTransactions = async (req, res) => {
-  recordIpAndEndpoint('transactions', req.ip);
-
   // Validate query parameters first
   await utils.validateReq(req);
 
@@ -494,7 +492,6 @@ const getScheduledQuery = (query) => {
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
-  recordIpAndEndpoint('transactions/{id}', req.ip);
   // ipEndpointHistogram.labels("transactions/{id}", req.ip).observe(1);
   await utils.validateReq(req);
 

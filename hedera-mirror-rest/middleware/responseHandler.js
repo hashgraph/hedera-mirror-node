@@ -33,6 +33,7 @@ const responseHandler = async (req, res, next) => {
   } else {
     // set response json
     res.json(res.locals[constants.responseDataLabel]);
+    next();
   }
 };
 
