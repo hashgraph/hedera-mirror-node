@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.test.e2e.acceptance.config;
 
 /*-
  * ‌
@@ -20,26 +20,21 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import lombok.AllArgsConstructor;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import lombok.Data;
-import lombok.ToString;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
-
+@Component
+@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.sdk")
 @Data
-@AllArgsConstructor
-public class ExpandedAccountId {
-    private final AccountId accountId;
-    @ToString.Exclude
-    private final PrivateKey privateKey;
-    @ToString.Exclude
-    private final PublicKey publicKey;
+@Validated
+public class SdkProperties {
+    // To-do: move sdk related properties from AcceptanceTestProperties here
 
-    public ExpandedAccountId(String operatorId, String operatorKey) {
-        accountId = AccountId.fromString(operatorId);
-        privateKey = PrivateKey.fromString(operatorKey);
-        publicKey = privateKey.getPublicKey();
-    }
+    @Min(1)
+    @Max(60)
+    private int maxAttempts = 10;
 }

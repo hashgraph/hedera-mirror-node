@@ -45,24 +45,19 @@ const getSelectClauseWithTokenTransferOrder = (order) => {
        ctl.entity_id AS ctl_entity_id,
        ctl.amount AS amount,
        json_agg(
-         json_build_object(
+         distinct jsonb_build_object(
            'token_id', ttl.token_id::text,
            'account_id', ttl.account_id::text,
            'amount', ttl.amount
-         ) ORDER BY
-             ttl.token_id ${order || ''},
-             ttl.account_id ${order || ''}
+         )
        ) FILTER (WHERE ttl.token_id IS NOT NULL) AS token_transfer_list,
        json_agg(
-         json_build_object(
+         distinct jsonb_build_object(
            'receiver_account_id', ntl.receiver_account_id::text,
            'sender_account_id', ntl.sender_account_id::text,
            'serial_number', ntl.serial_number,
            'token_id', ntl.token_id::text
-         ) ORDER BY
-             ntl.token_id ${order || ''},
-             ntl.sender_account_id ${order || ''},
-             ntl.serial_number ${order || ''}
+         )
        ) FILTER (WHERE ntl.token_id IS NOT NULL) AS nft_transfer_list,
        t.charged_tx_fee,
        t.valid_duration_seconds,

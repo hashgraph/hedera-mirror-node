@@ -150,13 +150,13 @@
         "token_transfers": [
           {
             "token_id": "0.0.90000",
-            "account": "0.0.200",
-            "amount": 200
+            "account": "0.0.10",
+            "amount": -200
           },
           {
             "token_id": "0.0.90000",
-            "account": "0.0.10",
-            "amount": -200
+            "account": "0.0.200",
+            "amount": 200
           }
         ]
       },
