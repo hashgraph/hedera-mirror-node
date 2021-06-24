@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.Getter;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomUtils;
@@ -44,8 +45,6 @@ import com.hedera.hashgraph.sdk.FileContentsQuery;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.proto.NodeAddress;
 import com.hedera.hashgraph.sdk.proto.NodeAddressBook;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
@@ -60,25 +59,26 @@ public class SDKClient implements AutoCloseable {
     private static final FileId ADDRESS_BOOK_ID = new FileId(0L, 0L, 101L);
 
     private final Client client;
-    private final PublicKey payerPublicKey;
-    private final PrivateKey operatorKey;
-    private final AccountId operatorId;
     private final String mirrorNodeAddress;
     private final long messageTimeoutSeconds;
     private final Hbar maxTransactionFee;
     private final Map<String, AccountId> validateNetworkMap;
+    private final AcceptanceTestProperties acceptanceTestProperties;
+
+    @Getter
+    private final ExpandedAccountId expandedOperatorAccountId;
 
     public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException {
-        // Grab configuration variables from the .env file
-        operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
-        operatorKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
-        payerPublicKey = operatorKey.getPublicKey();
         mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
         messageTimeoutSeconds = acceptanceTestProperties.getMessageTimeout().toSeconds();
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
+        this.acceptanceTestProperties = acceptanceTestProperties;
+        expandedOperatorAccountId = new ExpandedAccountId(
+                acceptanceTestProperties.getOperatorId(),
+                acceptanceTestProperties.getOperatorKey());
 
         Client client = getBootstrapClient(acceptanceTestProperties.getNetwork(), acceptanceTestProperties.getNodes());
-        client.setOperator(operatorId, operatorKey);
+        client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
         client.setMirrorNetwork(List.of(mirrorNodeAddress));
 
         Map<String, AccountId> networkMapToValidate = client.getNetwork();
@@ -93,10 +93,6 @@ public class SDKClient implements AutoCloseable {
         // only use validated nodes for tests
         this.client = getValidatedClient(networkMapToValidate, client);
         validateNetworkMap = this.client.getNetwork();
-    }
-
-    public ExpandedAccountId getExpandedOperatorAccountId() {
-        return new ExpandedAccountId(operatorId, operatorKey, payerPublicKey);
     }
 
     public AccountId getRandomNodeAccountId() {
@@ -163,7 +159,8 @@ public class SDKClient implements AutoCloseable {
 
         log.info("Creating validated client using nodes: {} nodes", validNodes);
         Client validatedClient = Client.forNetwork(validNodes);
-        validatedClient.setOperator(operatorId, operatorKey);
+        validatedClient
+                .setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
         validatedClient.setMirrorNetwork(List.of(mirrorNodeAddress));
 
         return validatedClient;

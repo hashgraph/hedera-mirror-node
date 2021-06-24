@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.cucumber.java.en.Given;
@@ -32,10 +33,10 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import junit.framework.AssertionFailedError;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -44,6 +45,7 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicId;
+import com.hedera.hashgraph.sdk.TopicInfo;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -72,8 +74,7 @@ public class TopicFeature {
     private TopicClient topicClient;
 
     @Given("I successfully create a new topic id")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void createNewTopic() {
         testInstantReference = Instant.now();
 
         submitKey = PrivateKey.generate();
@@ -95,8 +96,7 @@ public class TopicFeature {
     }
 
     @Given("I successfully create a new open topic")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void createNewOpenTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void createNewOpenTopic() {
         testInstantReference = Instant.now();
 
         NetworkTransactionResponse networkTransactionResponse = topicClient
@@ -114,14 +114,14 @@ public class TopicFeature {
     }
 
     @When("I successfully update an existing topic")
-    public void updateTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void updateTopic() {
         TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
     }
 
     @When("I successfully delete the topic")
-    public void deleteTopic() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void deleteTopic() {
         TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId).getReceipt();
 
         assertNotNull(receipt);
@@ -226,8 +226,10 @@ public class TopicFeature {
     }
 
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
-    public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException,
-            PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException {
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);
             publishTopicMessages(messageCount);
@@ -238,16 +240,20 @@ public class TopicFeature {
         messageSubscribeCount = numGroups * messageCount;
     }
 
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void publishTopicMessages(int messageCount) throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    public void publishTopicMessages(int messageCount) {
+        messageSubscribeCount = messageCount;
         topicClient.publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, false);
     }
 
     @When("I publish and verify {int} messages sent")
-    @Retryable(value = {PrecheckStatusException.class}, exceptionExpression = "#{message.contains('BUSY')}")
-    public void publishAndVerifyTopicMessages(int messageCount) throws ReceiptStatusException,
-            PrecheckStatusException, TimeoutException {
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class, PrecheckStatusException.class,
+            ReceiptStatusException.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    public void publishAndVerifyTopicMessages(int messageCount) {
         messageSubscribeCount = messageCount;
         publishedTransactionReceipts = topicClient
                 .publishMessagesToTopic(consensusTopicId, "New message", getSubmitKeys(), messageCount, true);
@@ -281,6 +287,9 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve messages")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void retrieveTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(topicMessageQuery, "TopicMessageQuery null");
@@ -289,6 +298,9 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve these published messages")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
+            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void retrievePublishedTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(topicMessageQuery, "TopicMessageQuery null");
@@ -309,12 +321,19 @@ public class TopicFeature {
         subscriptionResponse = subscribeWithBackgroundMessageEmission();
     }
 
+    @Then("the network should successfully observe the topic")
+    public void verifyTopicOnNetwork() {
+        TopicInfo topicInfo = topicClient.getTopicInfo(consensusTopicId);
+        assertNotNull(topicInfo, "topicInfo is null");
+        assertNotEquals(topicInfo.topicMemo, "", "topicMemo is not empty");
+        assertThat(topicInfo.sequenceNumber).isGreaterThanOrEqualTo(messageSubscribeCount);
+    }
+
     @Then("the network should successfully observe these messages")
     public void verifyTopicMessageSubscription() throws Exception {
         assertNotNull(subscriptionResponse, "subscriptionResponse is null");
         assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
 
-        assertEquals(messageSubscribeCount, subscriptionResponse.getMirrorHCSResponses().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
@@ -324,7 +343,6 @@ public class TopicFeature {
         assertNotNull(subscriptionResponse, "subscriptionResponse is null");
         assertFalse(subscriptionResponse.errorEncountered(), "Error encountered");
 
-        assertEquals(expectedMessageCount, subscriptionResponse.getMirrorHCSResponses().size());
         subscriptionResponse.validateReceivedMessages();
         mirrorClient.unSubscribeFromTopic(subscriptionResponse.getSubscription());
     }
@@ -352,7 +370,7 @@ public class TopicFeature {
                             consensusTopicId,
                             "backgroundMessage".getBytes(StandardCharsets.UTF_8),
                             getSubmitKeys());
-                } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
+                } catch (Exception e) {
                     log.error("Error publishing to topic", e);
                 }
             }, 0, 1, TimeUnit.SECONDS);
@@ -363,6 +381,7 @@ public class TopicFeature {
         try {
             subscriptionResponse = mirrorClient
                     .subscribeToTopicAndRetrieveMessages(topicMessageQuery, messageSubscribeCount, latency);
+            assertEquals(messageSubscribeCount, subscriptionResponse.getMirrorHCSResponses().size());
         } finally {
             if (scheduler != null) {
                 scheduler.shutdownNow();
@@ -374,41 +393,5 @@ public class TopicFeature {
 
     private KeyList getSubmitKeys() {
         return submitKey == null ? null : KeyList.of(submitKey);
-    }
-
-    /**
-     * Recover method for retry operations Method parameters of retry method must match this method after exception
-     * parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t) throws PrecheckStatusException {
-        log.error("Transaction submissions for topic operation failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
-     * method after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, int messageCount) throws PrecheckStatusException {
-        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
-        throw t;
-    }
-
-    /**
-     * Recover method for publishTopicMessages retry operations. Method parameters of retry method must match this
-     * method after exception parameter
-     *
-     * @param t
-     */
-    @Recover
-    public void recover(PrecheckStatusException t, int numGroups, int messageCount, long milliSleep) throws PrecheckStatusException {
-        log.error("Transaction submissions for message publish failed after retries w: {}", t.getMessage());
-        throw t;
     }
 }
