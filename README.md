@@ -79,22 +79,26 @@ to understanding the mirror node operations.
 - [Git](https://git-scm.com/about)
 - [Maven](https://maven.apache.org/guides/getting-started/index.html)
 - [Docker](https://docs.docker.com/)
-    - [docker-compose commands](https://docs.docker.com/compose/reference/overview/)
-    - [docker commands](https://docs.docker.com/engine/reference/commandline/docker/)
+  - [docker-compose commands](https://docs.docker.com/compose/reference/overview/)
+  - [docker commands](https://docs.docker.com/engine/reference/commandline/docker/)
 - [NodeJS](https://nodejs.org/en/about/)
 - [Spring](https://spring.io/quickstart)
-    - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
-    - [Externalized Configurations](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
+  - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
+  - [Externalized Configurations](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
 - [PostgreSQL](https://www.postgresql.org/docs/9.6/index.html)
-    - [SQL commands](https://www.postgresql.org/docs/9.6/sql-commands.html)
-    - [Client Application & Utilities](https://www.postgresql.org/docs/9.6/reference-client.html)
+  - [SQL commands](https://www.postgresql.org/docs/9.6/sql-commands.html)
+  - [Client Application & Utilities](https://www.postgresql.org/docs/9.6/reference-client.html)
 - [Go](https://golang.org/)
 
 ### Prerequisite Tools
 
-Ensure these tools are installed prior to running the mirror node
+Ensure these tools are installed (note minimum versions) prior to running the mirror node
 
-- [Docker](https://www.docker.com/products/docker-desktop)
+- [Docker](https://www.docker.com/products/docker-desktop) - v3.3.3 (minimum)
+- [NodeJs](https://nodejs.org) - v14.16.0 (minimum)
+- [Npm](https://www.npmjs.com/get-npm) - v6.14.11 (minimum)
+- [Go](https://golang.org/dl/) - v1.13+ (minimum)
+- Java - JDK 11 (minimum), [OpenJDK 11](https://openjdk.java.net/projects/jdk/11/) (recommended)
 
 ### Running Mirror Node
 
