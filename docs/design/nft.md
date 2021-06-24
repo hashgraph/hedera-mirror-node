@@ -32,13 +32,13 @@ the mirror node can be updated to add support for NFTs.
 ```sql
 create table if not exists nft
 (
-  account_id         bigint                not null
-    created_timestamp bigint primary key not null,
-  deleted            boolean default false not null,
-  modified_timestamp bigint                not null,
-  metadata           bytea   default ''    not null,
-  serial_number      bigint                not null,
-  token_id           bigint                not null
+  account_id            bigint                  not null,
+  created_timestamp     bigint primary key      not null,
+  deleted               boolean default false   not null,
+  modified_timestamp    bigint                  not null,
+  metadata              bytea   default ''      not null,
+  serial_number         bigint                  not null,
+  token_id              bigint                  not null
 );
 
 ```
@@ -50,11 +50,11 @@ create table if not exists nft
 ```sql
 create table if not exists nft_transfer
 (
-  consensus_timestamp bigint not null,
-  receiver_account_id bigint not null,
-  sender_account_id   bigint not null,
-  serial_number       bigint not null,
-  token_id            bigint not null
+  consensus_timestamp   bigint  not null,
+  receiver_account_id   bigint  not null,
+  sender_account_id     bigint  not null,
+  serial_number         bigint  not null,
+  token_id              bigint  not null
 );
 ```
 
