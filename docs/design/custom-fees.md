@@ -168,7 +168,6 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
         }
       ]
     }
-
 ```
 
 - Update transactions query to include transactions with assessed custom fee's collector matching the `account.id`
@@ -270,20 +269,20 @@ Add `/api/v1/tokens/<token_id>/customfees` to return the historical custom fees 
       ],
       "fractional_fees": [
         {
-          "collector_account_id": "0.0.99820",
           "amount": {
             "numerator": 1,
             "denominator": 10
           },
+          "collector_account_id": "0.0.99820",
           "maximum": 200,
           "minimum": 50
         },
         {
-          "collector_account_id": "0.0.99821",
           "amount": {
             "numerator": 3,
             "denominator": 20
           },
+          "collector_account_id": "0.0.99821",
           "minimum": 10
         }
       ]
