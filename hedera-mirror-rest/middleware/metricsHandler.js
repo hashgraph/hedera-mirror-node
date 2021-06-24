@@ -65,7 +65,6 @@ const recordIpAndEndpoint = async (req, res, next) => {
   if (req.route !== undefined) {
     ipEndpointHistogram.labels(req.route.path, req.ip).observe(1);
   }
-  res.json(res.json);
 };
 
 module.exports = {

@@ -166,7 +166,10 @@ app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
 app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
 
 // response data handling middleware
-app.useAsync(responseHandler, recordIpAndEndpoint);
+app.useAsync(recordIpAndEndpoint);
+
+// response data handling middleware
+app.useAsync(responseHandler);
 
 // response error handling middleware
 app.useAsync(handleError);
