@@ -702,6 +702,26 @@ describe('token formatTokenInfoRow tests', () => {
   });
 });
 
+const verifyValidAndAInvalidTokensFilters = (invalidFilters, validFilters) => {
+  invalidFilters.forEach((filter) => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
+      expect(() => tokens.validateTokensFilters([filter])).toThrowErrorMatchingSnapshot();
+    });
+  });
+
+  validFilters.forEach((filter) => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for valid ${filterString}`, async () => {
+      tokens.validateTokensFilters([filter]);
+    });
+  });
+};
+
 describe('utils validateAndParseFilters token type tests', () => {
   const key = filterKeys.TOKEN_TYPE;
   const invalidFilters = [
@@ -712,7 +732,7 @@ describe('utils validateAndParseFilters token type tests', () => {
     utils.buildComparatorFilter(key, 'deb'),
   ];
 
-  const filters = [
+  const validFilters = [
     utils.buildComparatorFilter(key, 'all'),
     utils.buildComparatorFilter(key, 'ALL'),
     utils.buildComparatorFilter(key, 'NON_FUNGIBLE_UNIQUE'),
@@ -721,23 +741,63 @@ describe('utils validateAndParseFilters token type tests', () => {
     utils.buildComparatorFilter(key, 'fungible_common'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    const filterString = Array.isArray(filter)
-      ? `${JSON.stringify(filter[0])} ${filter.length} times`
-      : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
-      expect(() => tokens.validateTokensFilters([filter])).toThrowErrorMatchingSnapshot();
-    });
-  });
+  verifyValidAndAInvalidTokensFilters(invalidFilters, validFilters);
+});
 
-  filters.forEach((filter) => {
-    const filterString = Array.isArray(filter)
-      ? `${JSON.stringify(filter[0])} ${filter.length} times`
-      : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
-      tokens.validateTokensFilters([filter]);
-    });
-  });
+describe('utils validateAndParseFilters serialnumbers tests', () => {
+  const key = filterKeys.SERIAL_NUMBER;
+  const invalidFilters = [
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
+    utils.buildComparatorFilter(key, 'deb'),
+    // invalid format
+    utils.buildComparatorFilter(key, '0'),
+  ];
+
+  const validFilters = [
+    utils.buildComparatorFilter(key, '1'),
+    utils.buildComparatorFilter(key, '21'),
+    utils.buildComparatorFilter(key, '9007199254740991'),
+    utils.buildComparatorFilter(key, 'eq:324'),
+    utils.buildComparatorFilter(key, 'gt:324'),
+    utils.buildComparatorFilter(key, 'gte:324'),
+    utils.buildComparatorFilter(key, 'lt:324'),
+    utils.buildComparatorFilter(key, 'lte:324'),
+  ];
+
+  verifyValidAndAInvalidTokensFilters(invalidFilters, validFilters);
+});
+
+describe('utils validateAndParseFilters account.id tests', () => {
+  const key = filterKeys.ACCOUNT_ID;
+  const invalidFilters = [
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
+    utils.buildComparatorFilter(key, 'L'),
+    // invalid format
+    utils.buildComparatorFilter(key, '0.1.2.3'),
+    utils.buildComparatorFilter(key, '-1.-1.-1'),
+  ];
+
+  const validFilters = [
+    utils.buildComparatorFilter(key, '1001'),
+    utils.buildComparatorFilter(key, '0.1001'),
+    utils.buildComparatorFilter(key, '0.0.1001'),
+    utils.buildComparatorFilter(key, '21'),
+    utils.buildComparatorFilter(key, '1234567890'),
+    utils.buildComparatorFilter(key, 'eq:0.0.1001'),
+    utils.buildComparatorFilter(key, 'lt:0.0.1001'),
+    utils.buildComparatorFilter(key, 'lte:0.0.1001'),
+    utils.buildComparatorFilter(key, 'gt:0.0.1001'),
+    utils.buildComparatorFilter(key, 'gte:0.0.1001'),
+    utils.buildComparatorFilter(key, 'eq:1001'),
+    utils.buildComparatorFilter(key, 'lt:324'),
+    utils.buildComparatorFilter(key, 'lte:324'),
+    utils.buildComparatorFilter(key, 'gt:324'),
+    utils.buildComparatorFilter(key, 'gte:324'),
+  ];
+
+  verifyValidAndAInvalidTokensFilters(invalidFilters, validFilters);
 });
 
 describe('token extractSqlFromNftTokensRequest tests', () => {
@@ -956,30 +1016,21 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
       expectedParams
     );
   });
+});
 
-  // test('Verify simple serial query', () => {
-  //   const tokenId = '1009'; // encoded
-  //   const serialNumber = '960';
-  //   const initialQuery = [tokens.nftSelectQuery].join('\n');
-  //   const filters = [];
-  //
-  //   const expectedQuery = `select nft.account_id,
-  //                                 nft.created_timestamp,
-  //                                 nft.deleted,
-  //                                 nft.metadata,
-  //                                 nft.modified_timestamp,
-  //                                 nft.serial_number
-  //                          from nft
-  //                          where nft.token_id = $1
-  //                            and nft.serial_number = $2`;
-  //   const expectedParams = [tokenId, serialNumber];
-  //   verifyExtractSqlFromNftTokenInfoRequest(
-  //     tokenId,
-  //     serialNumber,
-  //     initialQuery,
-  //     filters,
-  //     expectedQuery,
-  //     expectedParams
-  //   );
-  // });
+describe('token validateSerialNumberParam tests', () => {
+  const invalidSerialNums = ['', '-1', null, undefined, 'end', 0, '0'];
+  const validSerialNums = [1, '1', '9007199254740991'];
+
+  invalidSerialNums.forEach((serialNum) => {
+    test(`Verify validateSerialNumberParam for invalid ${serialNum}`, async () => {
+      expect(() => tokens.validateSerialNumberParam(serialNum)).toThrowErrorMatchingSnapshot();
+    });
+  });
+
+  validSerialNums.forEach((serialNum) => {
+    test(`Verify validateSerialNumberParam for valid ${serialNum}`, async () => {
+      tokens.validateSerialNumberParam(serialNum);
+    });
+  });
 });

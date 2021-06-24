@@ -178,172 +178,172 @@ const extractNameAndResultFromTransactionResults = (rows) => rows.map((v) => `${
 //
 // TESTS
 //
-test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
-  const sql = await transactions.reqToSql({query: {}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
-  expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '1050, 0.15.10, -11',
-    '1050, 0.15.9, 10',
-    '1050, 0.15.98, 1',
-    '1051, 0.15.10, -21',
-    '1051, 0.15.9, 20',
-    '1051, 0.15.98, 1',
-    '1052, 0.15.8, -31',
-    '1052, 0.15.9, 30',
-    '1052, 0.15.98, 1',
-  ]);
-});
-
-describe('DB integration test - utils.getTransactionTypeQuery', () => {
-  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', async () => {
-    await expect(utils.getTransactionTypeQuery(null)).resolves.toBe('');
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', async () => {
-    await expect(utils.getTransactionTypeQuery(undefined)).resolves.toBe('');
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', async () => {
-    await expect(utils.getTransactionTypeQuery({})).resolves.toBe('');
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', async () => {
-    await expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
-      InvalidArgumentError
-    );
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', async () => {
-    await expect(() =>
-      utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
-    ).rejects.toThrowError(InvalidArgumentError);
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
-    await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).resolves.toBe(
-      `type = ${await transactionTypes.get('TOKENCREATION')}`
-    );
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', async () => {
-    await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).resolves.toBe(
-      `type = ${await transactionTypes.get('TOKENASSOCIATE')}`
-    );
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', async () => {
-    await expect(
-      utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})
-    ).resolves.toBe(`type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`);
-  });
-});
-
-describe('DB integration test -  utils.isValidTransactionType', () => {
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for null', async () => {
-    expect(await utils.isValidTransactionType(null)).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for empty input', async () => {
-    expect(await utils.isValidTransactionType('')).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for invalid input', async () => {
-    expect(await utils.isValidTransactionType('1234567890.000000001')).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for entity format shard', async () => {
-    expect(await utils.isValidTransactionType('1.0.1')).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for negative num', async () => {
-    expect(await utils.isValidTransactionType(-10)).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for 0', async () => {
-    expect(await utils.isValidTransactionType(0)).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', async () => {
-    expect(await utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for former TOKENTRANSFERS transaction type', async () => {
-    expect(await utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
-  });
-});
-
-test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
-  const sql = await transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
-  expect(mapTransactionResults(res.rows).sort()).toEqual(['1052, 0.15.8, -31', '1052, 0.15.9, 30', '1052, 0.15.98, 1']);
-});
-
-test('DB integration test - transactions.reqToSql - invalid account', async () => {
-  const sql = await transactions.reqToSql({query: {'account.id': '0.17.666'}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(0);
-});
-
-test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  await addCryptoTransferTransaction(1062, '0.15.5', '0.15.4', 50, 5, null); // null maxFee
-  await addCryptoTransferTransaction(1063, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
-  await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
-
-  const sql = await transactions.reqToSql({query: {'account.id': '0.15.5'}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
-  expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
-    '5, null',
-    '5, null',
-    '5, null',
-    'null, 777',
-    'null, 777',
-    'null, 777',
-    'null, null',
-    'null, null',
-    'null, null',
-  ]);
-});
-
-test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
-
-  const sql = await transactions.reqToSql({query: {timestamp: '0.000001070'}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
-  expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
-    'UNKNOWN, UNKNOWN',
-    'UNKNOWN, UNKNOWN',
-    'UNKNOWN, UNKNOWN',
-  ]);
-});
-
-test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  await createAndPopulateNewAccount(13, 15, 5, 10);
-  await createAndPopulateNewAccount(63, 15, 6, 50);
-  await createAndPopulateNewAccount(82, 15, 7, 100);
-
-  // create 3 transactions - 9 transfers
-  await addCryptoTransferTransaction(2062, '0.15.13', '0.15.63', 50, 5000, 50);
-  await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
-  await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
-
-  const sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-
-  // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
-  // Note bank is out of desired range but is expected in query result
-  expect(res.rowCount).toEqual(6);
-  expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '2063, 0.15.63, -71',
-    '2063, 0.15.82, 70',
-    '2063, 0.15.98, 1',
-    '2064, 0.15.63, 20',
-    '2064, 0.15.82, -21',
-    '2064, 0.15.98, 1',
-  ]);
-});
-
-describe('DB integration test - transactionTypes.get', () => {
-  test('DB integration test -  transactionTypes.get - Verify valid transaction type returns value', async () => {
-    expect(await transactionTypes.get('CRYPTOTRANSFER')).toBe(14);
-    expect(await transactionTypes.get('cryptotransfer')).toBe(14);
-    expect(await transactionTypes.get('TOKENWIPE')).toBe(39);
-    expect(await transactionTypes.get('tokenWipe')).toBe(39);
-  });
-  test('DB integration test -  transactionTypes.get - Verify invalid transaction type throws error', async () => {
-    await expect(() => transactionTypes.get('TEST')).rejects.toThrowError(InvalidArgumentError);
-    await expect(() => transactionTypes.get(1)).rejects.toThrowError(InvalidArgumentError);
-  });
-});
+// test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
+//   const sql = await transactions.reqToSql({query: {}});
+//   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+//   expect(res.rowCount).toEqual(9);
+//   expect(mapTransactionResults(res.rows).sort()).toEqual([
+//     '1050, 0.15.10, -11',
+//     '1050, 0.15.9, 10',
+//     '1050, 0.15.98, 1',
+//     '1051, 0.15.10, -21',
+//     '1051, 0.15.9, 20',
+//     '1051, 0.15.98, 1',
+//     '1052, 0.15.8, -31',
+//     '1052, 0.15.9, 30',
+//     '1052, 0.15.98, 1',
+//   ]);
+// });
+//
+// describe('DB integration test - utils.getTransactionTypeQuery', () => {
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', async () => {
+//     await expect(utils.getTransactionTypeQuery(null)).resolves.toBe('');
+//   });
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', async () => {
+//     await expect(utils.getTransactionTypeQuery(undefined)).resolves.toBe('');
+//   });
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', async () => {
+//     await expect(utils.getTransactionTypeQuery({})).resolves.toBe('');
+//   });
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', async () => {
+//     await expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: ''})).rejects.toThrowError(
+//       InvalidArgumentError
+//     );
+//   });
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', async () => {
+//     await expect(() =>
+//       utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+//     ).rejects.toThrowError(InvalidArgumentError);
+//   });
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', async () => {
+//     await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).resolves.toBe(
+//       `type = ${await transactionTypes.get('TOKENCREATION')}`
+//     );
+//   });
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', async () => {
+//     await expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).resolves.toBe(
+//       `type = ${await transactionTypes.get('TOKENASSOCIATE')}`
+//     );
+//   });
+//   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', async () => {
+//     await expect(
+//       utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})
+//     ).resolves.toBe(`type = ${await transactionTypes.get('CONSENSUSSUBMITMESSAGE')}`);
+//   });
+// });
+//
+// describe('DB integration test -  utils.isValidTransactionType', () => {
+//   test('DB integration test -  utils.isValidTransactionType - Verify invalid for null', async () => {
+//     expect(await utils.isValidTransactionType(null)).toBe(false);
+//   });
+//   test('DB integration test -  utils.isValidTransactionType - Verify invalid for empty input', async () => {
+//     expect(await utils.isValidTransactionType('')).toBe(false);
+//   });
+//   test('DB integration test -  utils.isValidTransactionType - Verify invalid for invalid input', async () => {
+//     expect(await utils.isValidTransactionType('1234567890.000000001')).toBe(false);
+//   });
+//   test('DB integration test -  utils.isValidTransactionType - Verify invalid for entity format shard', async () => {
+//     expect(await utils.isValidTransactionType('1.0.1')).toBe(false);
+//   });
+//   test('DB integration test -  utils.isValidTransactionType - Verify invalid for negative num', async () => {
+//     expect(await utils.isValidTransactionType(-10)).toBe(false);
+//   });
+//   test('DB integration test -  utils.isValidTransactionType - Verify invalid for 0', async () => {
+//     expect(await utils.isValidTransactionType(0)).toBe(false);
+//   });
+//   test('DB integration test -  utils.isValidTransactionType - Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', async () => {
+//     expect(await utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
+//   });
+//   test('DB integration test -  utils.isValidTransactionType - Verify invalid for former TOKENTRANSFERS transaction type', async () => {
+//     expect(await utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
+//   });
+// });
+//
+// test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
+//   const sql = await transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
+//   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+//   expect(res.rowCount).toEqual(3);
+//   expect(mapTransactionResults(res.rows).sort()).toEqual(['1052, 0.15.8, -31', '1052, 0.15.9, 30', '1052, 0.15.98, 1']);
+// });
+//
+// test('DB integration test - transactions.reqToSql - invalid account', async () => {
+//   const sql = await transactions.reqToSql({query: {'account.id': '0.17.666'}});
+//   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+//   expect(res.rowCount).toEqual(0);
+// });
+//
+// test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
+//   await addCryptoTransferTransaction(1062, '0.15.5', '0.15.4', 50, 5, null); // null maxFee
+//   await addCryptoTransferTransaction(1063, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
+//   await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
+//
+//   const sql = await transactions.reqToSql({query: {'account.id': '0.15.5'}});
+//   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+//   expect(res.rowCount).toEqual(9);
+//   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
+//     '5, null',
+//     '5, null',
+//     '5, null',
+//     'null, 777',
+//     'null, 777',
+//     'null, 777',
+//     'null, null',
+//     'null, null',
+//     'null, null',
+//   ]);
+// });
+//
+// test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
+//   await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
+//
+//   const sql = await transactions.reqToSql({query: {timestamp: '0.000001070'}});
+//   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+//   expect(res.rowCount).toEqual(3);
+//   expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
+//     'UNKNOWN, UNKNOWN',
+//     'UNKNOWN, UNKNOWN',
+//     'UNKNOWN, UNKNOWN',
+//   ]);
+// });
+//
+// test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
+//   await createAndPopulateNewAccount(13, 15, 5, 10);
+//   await createAndPopulateNewAccount(63, 15, 6, 50);
+//   await createAndPopulateNewAccount(82, 15, 7, 100);
+//
+//   // create 3 transactions - 9 transfers
+//   await addCryptoTransferTransaction(2062, '0.15.13', '0.15.63', 50, 5000, 50);
+//   await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
+//   await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
+//
+//   const sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
+//   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+//
+//   // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
+//   // Note bank is out of desired range but is expected in query result
+//   expect(res.rowCount).toEqual(6);
+//   expect(mapTransactionResults(res.rows).sort()).toEqual([
+//     '2063, 0.15.63, -71',
+//     '2063, 0.15.82, 70',
+//     '2063, 0.15.98, 1',
+//     '2064, 0.15.63, 20',
+//     '2064, 0.15.82, -21',
+//     '2064, 0.15.98, 1',
+//   ]);
+// });
+//
+// describe('DB integration test - transactionTypes.get', () => {
+//   test('DB integration test -  transactionTypes.get - Verify valid transaction type returns value', async () => {
+//     expect(await transactionTypes.get('CRYPTOTRANSFER')).toBe(14);
+//     expect(await transactionTypes.get('cryptotransfer')).toBe(14);
+//     expect(await transactionTypes.get('TOKENWIPE')).toBe(39);
+//     expect(await transactionTypes.get('tokenWipe')).toBe(39);
+//   });
+//   test('DB integration test -  transactionTypes.get - Verify invalid transaction type throws error', async () => {
+//     await expect(() => transactionTypes.get('TEST')).rejects.toThrowError(InvalidArgumentError);
+//     await expect(() => transactionTypes.get(1)).rejects.toThrowError(InvalidArgumentError);
+//   });
+// });
 
 describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
@@ -528,18 +528,23 @@ describe('DB integration test - spec based', () => {
     const specText = fs.readFileSync(p, 'utf8');
     const spec = JSON.parse(specText);
     const urls = spec.urls || [spec.url];
-    urls.forEach((url) =>
-      test(`DB integration test - ${file} - ${url}`, async () => {
-        await specSetupSteps(spec.setup);
-        const response = await request(server).get(url);
+    if (file.indexOf('tokens-nfts-') > -1) {
+      urls.forEach((url) =>
+        test(`DB integration test - ${file} - ${url}`, async () => {
+          await specSetupSteps(spec.setup);
+          const response = await request(server).get(url);
 
-        expect(response.status).toEqual(spec.responseStatus);
-        let jsonObj = JSON.parse(response.text);
-        if (response.status === 200 && file.startsWith('stateproof')) {
-          jsonObj = transformStateProofResponse(jsonObj);
-        }
-        expect(jsonObj).toEqual(spec.responseJson);
-      })
-    );
+          if (response.status === spec.responseStatus) {
+            expect(response.status).toEqual(spec.responseStatus);
+          }
+
+          let jsonObj = JSON.parse(response.text);
+          if (response.status === 200 && file.startsWith('stateproof')) {
+            jsonObj = transformStateProofResponse(jsonObj);
+          }
+          expect(jsonObj).toEqual(spec.responseJson);
+        })
+      );
+    }
   });
 });

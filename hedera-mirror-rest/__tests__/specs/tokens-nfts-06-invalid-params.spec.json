@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call for all nfts under a given token",
+  "description": "Token nfts api call using invalid params for a given given token",
   "setup": {
     "entities": [
       {
@@ -62,49 +62,34 @@
         "metadata": "m3",
         "serial_number": 3,
         "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000009",
+        "metadata": "m4",
+        "serial_number": 4,
+        "token_id": "0.0.1500"
       }
     ]
   },
-  "urls": ["/api/v1/tokens/1500/nfts", "/api/v1/tokens/0.1500/nfts", "/api/v1/tokens/0.0.1500/nfts"],
+  "urls": ["/api/v1/tokens/1500/nfts?account.id=me&serialnumber=-1&order=random&limit=-1"],
   "responseStatus": 200,
   "responseJson": {
-    "nfts": [
-      {
-        "account_id": "0.0.2001",
-        "created_timestamp": "1234567890000000006",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d32"
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: account.id"
         },
-        "modified_timestamp": "1234567890000000006",
-        "serial_number": 2
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000005",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d31"
+        {
+          "message": "Invalid parameter: serialnumber"
         },
-        "modified_timestamp": "1234567890000000005",
-        "serial_number": 1
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000008",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d33"
+        {
+          "message": "Invalid parameter: order"
         },
-        "modified_timestamp": "1234567890000000008",
-        "serial_number": 3
-      }
-    ],
-    "links": {
-      "next": null
+        {
+          "message": "Invalid parameter: limit"
+        }
+      ]
     }
   }
 }

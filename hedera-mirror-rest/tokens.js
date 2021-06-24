@@ -212,6 +212,9 @@ const tokenQueryFilterValidityChecks = (param, op, val) => {
       // Acceptable words: asc or desc
       ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
       break;
+    case constants.filterKeys.SERIAL_NUMBER:
+      ret = utils.isValidNum(val);
+      break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -524,10 +527,6 @@ const formatNftRow = (row) => {
  * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
  */
 const validateSerialNumberParam = (serialNumber) => {
-  if (serialNumber === undefined) {
-    return;
-  }
-
   if (!utils.isValidNum(serialNumber)) {
     throw InvalidArgumentError.forParams(constants.filterKeys.SERIAL_NUMBER);
   }
@@ -542,7 +541,10 @@ const validateSerialNumberParam = (serialNumber) => {
 const getNftTokensRequest = async (req, res) => {
   const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
   const filters = utils.buildFilterObject(req.query);
-  await utils.validateAndParseFilters(filters);
+
+  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
+  validateTokensFilters(filters);
+  utils.formatFilters(filters);
 
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
   if (logger.isTraceEnabled()) {
@@ -572,28 +574,28 @@ const getNftTokensRequest = async (req, res) => {
 };
 
 /**
- * Handler function for /tokens/:id/nfts API.
+ * Handler function for /tokens/:id/nfts/:serialnumber API.
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  */
 const getNftTokenInfoRequest = async (req, res) => {
   const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
-  const {serialNumber} = req.params;
-  validateSerialNumberParam(serialNumber);
+  const {serialnumber} = req.params;
+  validateSerialNumberParam(serialnumber);
 
-  const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
+  const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialnumber, nftSelectQuery);
   if (logger.isTraceEnabled()) {
     logger.trace(`getNftTokenInfo query: ${query} ${JSON.stringify(params)}`);
   }
 
   const {rows} = await utils.queryQuietly(query, ...params);
-  const response = {
-    nfts: rows.map((row) => formatNftRow(row)),
-  };
+  if (rows.length !== 1) {
+    throw new NotFoundError();
+  }
 
-  logger.debug(`getNftTokens returning ${response.balances.length} entries`);
-  res.locals[constants.responseDataLabel] = response;
+  logger.debug(`getNftToken info returning single entry`);
+  res.locals[constants.responseDataLabel] = formatNftRow(rows[0]);
 };
 
 const getToken = async (pgSqlQuery, tokenId) => {
@@ -632,6 +634,7 @@ if (utils.isTestEnv()) {
     nftSelectQuery,
     tokenBalancesSelectQuery,
     tokensSelectQuery,
+    validateSerialNumberParam,
     validateTokensFilters,
   });
 }

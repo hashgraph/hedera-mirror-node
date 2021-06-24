@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call for all nfts under a given token",
+  "description": "Token nft info api call for single non existent nft under a given token",
   "setup": {
     "entities": [
       {
@@ -65,46 +65,15 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/1500/nfts", "/api/v1/tokens/0.1500/nfts", "/api/v1/tokens/0.0.1500/nfts"],
-  "responseStatus": 200,
+  "urls": ["/api/v1/tokens/1500/nfts/20"],
+  "responseStatus": 404,
   "responseJson": {
-    "nfts": [
-      {
-        "account_id": "0.0.2001",
-        "created_timestamp": "1234567890000000006",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d32"
-        },
-        "modified_timestamp": "1234567890000000006",
-        "serial_number": 2
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000005",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d31"
-        },
-        "modified_timestamp": "1234567890000000005",
-        "serial_number": 1
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000008",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d33"
-        },
-        "modified_timestamp": "1234567890000000008",
-        "serial_number": 3
-      }
-    ],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call for all nfts under a given token",
+  "description": "Token nfts api call for a single nft of a matching serialnumber",
   "setup": {
     "entities": [
       {
@@ -51,46 +51,28 @@
       },
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000007",
-        "metadata": "s1",
-        "serial_number": 1,
-        "token_id": "0.0.2500"
-      },
-      {
-        "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000008",
         "metadata": "m3",
         "serial_number": 3,
         "token_id": "0.0.1500"
-      }
-    ]
-  },
-  "urls": ["/api/v1/tokens/1500/nfts", "/api/v1/tokens/0.1500/nfts", "/api/v1/tokens/0.0.1500/nfts"],
-  "responseStatus": 200,
-  "responseJson": {
-    "nfts": [
-      {
-        "account_id": "0.0.2001",
-        "created_timestamp": "1234567890000000006",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d32"
-        },
-        "modified_timestamp": "1234567890000000006",
-        "serial_number": 2
       },
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000005",
-        "deleted": false,
-        "metadata": {
-          "_type": "ProtobufEncoded",
-          "key": "6d31"
-        },
-        "modified_timestamp": "1234567890000000005",
-        "serial_number": 1
-      },
+        "created_timestamp": "1234567890000000007",
+        "metadata": "s1",
+        "serial_number": 1,
+        "token_id": "0.0.2500"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/tokens/0.0.1500/nfts?serialnumber=3",
+    "/api/v1/tokens/0.0.1500/nfts?serialnumber=gt:2",
+    "/api/v1/tokens/0.0.1500/nfts?serialnumber=gte:3"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "nfts": [
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000008",
