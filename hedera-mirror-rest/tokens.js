@@ -26,6 +26,7 @@ const EntityId = require('./entityId');
 const utils = require('./utils');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
+const {recordIpAndEndpoint} = require('./middleware/metricsHandler');
 
 // select columns
 const sqlQueryColumns = {
@@ -226,6 +227,7 @@ const validateTokensFilters = (filters) => {
 };
 
 const getTokensRequest = async (req, res) => {
+  recordIpAndEndpoint('/tokens', req.ip);
   // extract filters from query param
   const filters = utils.buildFilterObject(req.query);
 
@@ -278,6 +280,7 @@ const getTokensRequest = async (req, res) => {
 };
 
 const getTokenInfoRequest = async (req, res) => {
+  recordIpAndEndpoint('/tokens/{id}', req.ip);
   const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
 
   // concatenate queries to produce final sql query
@@ -393,6 +396,7 @@ const formatTokenBalanceRow = (row) => {
  * @param {Response} res HTTP response object
  */
 const getTokenBalances = async (req, res) => {
+  recordIpAndEndpoint('/tokens/{id}/balances', req.ip);
   const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
   const filters = utils.buildFilterObject(req.query);
   await utils.validateAndParseFilters(filters);

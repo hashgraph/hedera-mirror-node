@@ -28,6 +28,8 @@ const swStats = require('swagger-stats');
 const config = require('../config');
 const oasHandler = require('./openapiHandler');
 
+const client = require('prom-client');
+
 const metricsHandler = () => {
   const defaultMetricsConfig = {
     name: process.env.npm_package_name,
@@ -52,6 +54,19 @@ const onMetricsAuthenticate = async (req, username, password) => {
   });
 };
 
+const ipEndpointHistogram = new client.Histogram({
+  name: 'ip_count',
+  help: 'test',
+  buckets: [0.1, 5, 15, 50, 100, 500],
+  labelNames: ['endpoint', 'ip'],
+});
+
+const recordIpAndEndpoint = (endpoint, ip) => {
+  ipEndpointHistogram.labels(endpoint, ip).observe(1);
+};
+
 module.exports = {
   metricsHandler,
+  ipEndpointHistogram,
+  recordIpAndEndpoint,
 };

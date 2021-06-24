@@ -26,6 +26,7 @@ const utils = require('./utils');
 const transactions = require('./transactions');
 const {NotFoundError} = require('./errors/notFoundError');
 const {DbError} = require('./errors/dbError');
+const {recordIpAndEndpoint} = require('./middleware/metricsHandler');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -145,6 +146,7 @@ const toQueryObject = (queryAndParams) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getAccounts = async (req, res) => {
+  recordIpAndEndpoint('/accounts/{id}', req.ip);
   // Validate query parameters first
   await utils.validateReq(req);
 
@@ -208,6 +210,7 @@ const getAccounts = async (req, res) => {
  * @return {} None.
  */
 const getOneAccount = async (req, res) => {
+  recordIpAndEndpoint('/accounts/{id}', req.ip);
   // Validate query parameters first
   await utils.validateReq(req);
 

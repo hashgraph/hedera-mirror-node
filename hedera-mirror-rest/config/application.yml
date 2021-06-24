@@ -20,10 +20,11 @@ hedera:
       metrics:
         enabled: true
         config:
-          authentication: true
+          authentication: false
           password: password
           username: metrics
           uriPath: '/swagger'
+          elasticsearch: 'http://127.0.0.1:9200'
       openapi:
         specFileName: 'openapi'
         swaggerUIPath: 'docs'

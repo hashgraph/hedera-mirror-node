@@ -24,6 +24,7 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
+const {recordIpAndEndpoint} = require('./middleware/metricsHandler');
 
 const formatBalancesResult = (req, result, limit, order) => {
   const {rows, sqlQuery} = result;
@@ -73,6 +74,7 @@ const formatBalancesResult = (req, result, limit, order) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = async (req, res) => {
+  recordIpAndEndpoint('/balances', req.ip);
   await utils.validateReq(req);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination

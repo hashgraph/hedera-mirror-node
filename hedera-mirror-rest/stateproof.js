@@ -31,6 +31,7 @@ const utils = require('./utils');
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {FileDownloadError} = require('./errors/fileDownloadError');
+const {recordIpAndEndpoint} = require('./middleware/metricsHandler');
 
 /**
  * Get the consensus_ns of the transaction. Throws exception if no such successful transaction found or multiple such
@@ -276,6 +277,7 @@ const formatRecordFile = (data, transactionId, scheduled) => {
  * @returns none
  */
 const getStateProofForTransaction = async (req, res) => {
+  recordIpAndEndpoint('/transactions/:id/stateproof', req.ip);
   const filters = utils.buildFilterObject(req.query);
   await utils.validateAndParseFilters(filters);
 

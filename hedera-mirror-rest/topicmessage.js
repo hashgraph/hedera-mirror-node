@@ -27,6 +27,7 @@ const EntityId = require('./entityId');
 const utils = require('./utils');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {ipEndpointHistogram} = require('./middleware/metricsHandler');
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
@@ -131,6 +132,7 @@ const formatTopicMessageRow = (row, messageEncoding) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByConsensusTimestamp = async (req, res) => {
+  recordIpAndEndpoint('/topics/messages/{consensusTimestamp', req.ip);
   const consensusTimestampParam = req.params.consensusTimestamp;
   validateConsensusTimestampParam(consensusTimestampParam);
 
@@ -152,6 +154,7 @@ const getMessageByConsensusTimestamp = async (req, res) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByTopicAndSequenceRequest = async (req, res) => {
+  recordIpAndEndpoint('/topics/{id}/messages/{sequenceNumber}', req.ip);
   const topicIdStr = req.params.id;
   const seqNum = req.params.sequencenumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
@@ -175,6 +178,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
  * @returns {Promise} Promise for PostgreSQL query
  */
 const getTopicMessages = async (req, res) => {
+  recordIpAndEndpoint('/topics/{id}/messages', req.ip);
   // retrieve param and filters from request
   const topicIdStr = req.params.id;
   const filters = utils.buildFilterObject(req.query);
