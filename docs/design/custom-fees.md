@@ -249,7 +249,7 @@ Add `can_update_custom_fees_with_admin_key` and `custom_fees` to the response js
 
 ### Token Historical Custom Fees
 
-Add `/api/v1/tokens/<token_id>/cusomfees` to return the historical custom fees of a token
+Add `/api/v1/tokens/<token_id>/customfees` to return the historical custom fees of a token
 
 ```json
 {
@@ -307,7 +307,7 @@ Add `/api/v1/tokens/<token_id>/cusomfees` to return the historical custom fees o
 
 Optional filters:
 
-- `/api/v1/tokens/<token_id>/cusomfees?order=asc`
-- `/api/v1/tokens/<token_id>/cusomfees?timestamp=123456700.000000001`
+- `/api/v1/tokens/<token_id>/customfees?order=asc`
+- `/api/v1/tokens/<token_id>/customfees?timestamp=123456700.000000001`
 
 ## Non-Functional Requirements
