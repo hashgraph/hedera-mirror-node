@@ -20,14 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
 enum EntityOperationEnum {
-    NONE(0),
-    CREATE(1),
-    UPDATE(2),
-    DELETE(3);
-
-    private final int id;
+    NONE,
+    CREATE,
+    UPDATE,
+    DELETE;
 }
