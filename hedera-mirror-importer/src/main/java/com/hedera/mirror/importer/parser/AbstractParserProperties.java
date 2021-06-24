@@ -21,10 +21,12 @@ package com.hedera.mirror.importer.parser;
  */
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
 
 @Data
@@ -50,8 +52,9 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
-    @Min(30)
-    protected int transactionTimeout = 30;
+    @DurationMin(seconds = 30)
+    @DurationUnit(ChronoUnit.SECONDS)
+    protected Duration transactionTimeout = Duration.ofSeconds(30);
 
     @Data
     @Validated
