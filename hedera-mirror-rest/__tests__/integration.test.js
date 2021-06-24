@@ -533,9 +533,7 @@ describe('DB integration test - spec based', () => {
         await specSetupSteps(spec.setup);
         const response = await request(server).get(url);
 
-        if (response.status === spec.responseStatus) {
-          expect(response.status).toEqual(spec.responseStatus);
-        }
+        expect(response.status).toEqual(spec.responseStatus);
 
         let jsonObj = JSON.parse(response.text);
         if (response.status === 200 && file.startsWith('stateproof')) {
