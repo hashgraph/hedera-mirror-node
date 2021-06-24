@@ -638,9 +638,143 @@ const getToken = async (pgSqlQuery, tokenId) => {
   return rows[0];
 };
 
+const nftTransferQueryColumns = {
+  CONSENSUS_TIMESTAMP: 'nft.consensus_timestamp',
+  RECEIVER_ACCOUNT_ID: 'nft.receiver_account_id',
+  SENDER_ACCOUNT_ID: 'nft.sender_account_id',
+  SERIAL_NUMBER: 'nft.serial_number',
+  TOKEN_ID: 'nft.token_id',
+};
+
+const transactionQueryColumns = {
+  CONSENSUS_NS: 'nft.consensus_ns',
+  PAYER_ACCOUNT_ID: 'nft.payer_account_id',
+  TYPE: 'nft.type',
+  VALID_DURATION_SECONDS: 'nft.valid_duration_seconds',
+  VALID_DURATION_NS: 'nft.valid_start_ns',
+};
+
+const nftQueryColumns = {
+  ACCOUNT_ID: 'nft.account_id',
+  CREATED_TIMESTAMP: 'nft.created_timestamp',
+  DELETED: 'nft.deleted',
+  SERIAL_NUMBER: 'nft.serial_number',
+  TOKEN_ID: 'nft.token_id',
+};
+
+/**
+ * Extracts SQL query, params, order, and limit
+ *
+ * @param {string} tokenId encoded token ID
+ * @param {string} query initial pg SQL query string
+ * @param {[]} filters parsed and validated filters
+ * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
+ */
+const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, query) => {
+  // combine the results of the following
+  // CREATION - from createTimestamp get transactions
+  // TRANSFERS - using token id and serial number get nft transfers, then get transaction ids
+  // DELETION - from deleted time which should be modified assuming you can't do anything to an nft after it's been deleted
+  // Build this list with these 3 calls cause a multi join doesn't make sense
+
+  const limit = config.maxLimit;
+  const order = constants.orderFilterValues.DESC;
+  const joinNftTransferClause = `join nft_transfer nft_tr on ${nftQueryColumns.TOKEN_ID} = ${nftTransferQueryColumns.TOKEN_ID}
+  and ${nftQueryColumns.SERIAL_NUMBER} = ${nftTransferQueryColumns.SERIAL_NUMBER}`;
+  const joinTransactionClause = `join transaction t on ${nftTransferQueryColumns.CONSENSUS_TIMESTAMP} = ${transactionQueryColumns.CONSENSUS_NS}`;
+  const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.SERIAL_NUMBER} = $2`];
+  const params = [tokenId, serialNumber];
+
+  const whereQuery = `where ${conditions.join('\nand ')}`;
+  const orderQuery = `order by ${nftTransferQueryColumns.CONSENSUS_TIMESTAMP} ${order}`;
+  const limitQuery = `limit $${params.push(limit)}`;
+  query = [query, joinNftTransferClause, joinTransactionClause, whereQuery, orderQuery, limitQuery]
+    .filter((q) => q !== '')
+    .join('\n');
+
+  return utils.buildPgSqlObject(query, params, order, limit);
+};
+
+const formatNftRow = (row) => {
+  return {
+    account_id: EntityId.fromEncodedId(row.account_id).toString(),
+    created_timestamp: row.created_timestamp,
+    deleted: row.deleted,
+    metadata: utils.encodeKey(row.metadata),
+    modified_timestamp: row.modified_timestamp,
+    serial_number: Number(row.serial_number),
+  };
+};
+
+const nftHistorySelectFields = [
+  'nft_tr.consensus_timestamp',
+  'tr.consensus_ns',
+  'tr.payer_account_id',
+  'tr.valid_start_ns',
+  'tr.valid_duration_seconds',
+  'nft.treasury_account_id',
+  'nft_tr.receiver_account_id',
+  'nft_tr.sender_account_id',
+  'tr.type',
+];
+const nftHistorySelectQuery = ['select', nftHistorySelectFields.join(',\n'), 'from nft'].join('\n');
+
+/**
+ * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
+ */
+const validateSerialNumberParam = (serialNumber) => {
+  if (!utils.isValidNum(serialNumber)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.SERIAL_NUMBER);
+  }
+};
+
+/**
+ * Handler function for /api/v1/tokens/{id}/nfts/{serialNumber}/transactions API.
+ *
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ */
+const getNftTransferHistoryRequest = async (req, res) => {
+  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
+  const {serialNumber} = req.params;
+  validateSerialNumberParam(serialNumber);
+
+  const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(
+    tokenId,
+    serialNumber,
+    nftHistorySelectQuery
+  );
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getNftTransferHistory query: ${query} ${JSON.stringify(params)}`);
+  }
+
+  const {rows} = await utils.queryQuietly(query, ...params);
+  const response = {
+    transactions: rows.map((row) => formatNftRow(row)),
+    links: {
+      next: null,
+    },
+  };
+
+  // Pagination links
+  const anchorAccountId =
+    response.transactions.length > 0 ? response.transactions[response.transactions.length - 1].consensus_timestamp : 0;
+  response.links.next = utils.getPaginationLink(
+    req,
+    response.nfts.length !== limit,
+    constants.filterKeys.ACCOUNT_ID,
+    anchorAccountId,
+    order
+  );
+
+  logger.debug(`getNftTransferHistory returning ${response.balances.length} entries`);
+  res.locals[constants.responseDataLabel] = response;
+};
+
 module.exports = {
   getNftTokenInfoRequest,
   getNftTokensRequest,
+  getNftTransferHistoryRequest,
   getTokenInfoRequest,
   getTokensRequest,
   getTokenBalances,

@@ -153,6 +153,7 @@ app.getAsync(`${apiPrefix}/tokens/:id`, tokens.getTokenInfoRequest);
 app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenBalances);
 app.getAsync(`${apiPrefix}/tokens/:id/nfts`, tokens.getNftTokensRequest);
 app.getAsync(`${apiPrefix}/tokens/:id/nfts/:serialnumber`, tokens.getNftTokenInfoRequest);
+app.getAsync(`${apiPrefix}/tokens/:id/nfts/transactions`, tokens.getNftTransferHistoryRequest);
 
 // topics routes
 app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
