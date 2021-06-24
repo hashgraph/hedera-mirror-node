@@ -534,7 +534,6 @@ describe('DB integration test - spec based', () => {
         const response = await request(server).get(url);
 
         expect(response.status).toEqual(spec.responseStatus);
-
         let jsonObj = JSON.parse(response.text);
         if (response.status === 200 && file.startsWith('stateproof')) {
           jsonObj = transformStateProofResponse(jsonObj);

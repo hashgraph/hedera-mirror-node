@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call using invalid params for a given given token",
+  "description": "Token nfts api call using invalid params for a given token",
   "setup": {
     "entities": [
       {
@@ -73,7 +73,7 @@
     ]
   },
   "urls": ["/api/v1/tokens/1500/nfts?account.id=me&serialnumber=-1&order=random&limit=-1"],
-  "responseStatus": 200,
+  "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [

@@ -1034,3 +1034,20 @@ describe('token validateSerialNumberParam tests', () => {
     });
   });
 });
+
+describe('token validateTokenIdParam tests', () => {
+  const invalidTokenIds = ['', '-1', null, undefined, 'end'];
+  const validTokenIds = ['1', '0.1', '0.20.1'];
+
+  invalidTokenIds.forEach((tokenId) => {
+    test(`Verify validateTokenIdParam for invalid ${tokenId}`, async () => {
+      expect(() => tokens.validateTokenIdParam(tokenId)).toThrowErrorMatchingSnapshot();
+    });
+  });
+
+  validTokenIds.forEach((tokenId) => {
+    test(`Verify validateTokenIdParam for valid ${tokenId}`, async () => {
+      tokens.validateTokenIdParam(tokenId);
+    });
+  });
+});

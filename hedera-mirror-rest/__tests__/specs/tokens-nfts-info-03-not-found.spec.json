@@ -1,5 +1,5 @@
 {
-  "description": "Token nft info api call for single non existent nft under a given token",
+  "description": "Token nft info api call for single non-existent nft under a given token",
   "setup": {
     "entities": [
       {

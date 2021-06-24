@@ -304,8 +304,25 @@ const getTokensRequest = async (req, res) => {
   };
 };
 
+/**
+ * Verify tokenId meets entity id format
+ */
+const validateTokenIdParam = (tokenId) => {
+  if (!EntityId.isValidEntityId(tokenId)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
+  }
+};
+
+const getAndValidateTokenIdRequestPathParam = (req) => {
+  const tokenIdString = req.params.id;
+  validateTokenIdParam(tokenIdString);
+  return EntityId.fromString(tokenIdString, constants.filterKeys.TOKENID).getEncodedId();
+};
+
 const getTokenInfoRequest = async (req, res) => {
-  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
+  const tokenIdString = req.params.id;
+  validateTokenIdParam(tokenIdString);
+  const tokenId = getAndValidateTokenIdRequestPathParam(req);
 
   // concatenate queries to produce final sql query
   const pgSqlQuery = [tokenInfoSelectQuery, entityIdJoinQuery, tokenIdMatchQuery].join('\n');
@@ -420,7 +437,7 @@ const formatTokenBalanceRow = (row) => {
  * @param {Response} res HTTP response object
  */
 const getTokenBalances = async (req, res) => {
-  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
+  const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const filters = utils.buildFilterObject(req.query);
   await utils.validateAndParseFilters(filters);
 
@@ -463,7 +480,6 @@ const getTokenBalances = async (req, res) => {
 const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.DESC;
-  // let joinTokenClause = `join token t on ${nftQueryColumns.TOKEN_ID} = ${sqlQueryColumns.TOKEN_ID}`;
   const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.DELETED} = false`];
   const params = [tokenId];
 
@@ -498,11 +514,12 @@ const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
  * Extracts SQL query, params, order, and limit
  *
  * @param {string} tokenId encoded token ID
+ * @param {string} serialNumber nft serial number
  * @param {string} query initial pg SQL query string
- * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
+  // filter for token and serialNumber
   const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.SERIAL_NUMBER} = $2`];
   const params = [tokenId, serialNumber];
 
@@ -524,7 +541,7 @@ const formatNftRow = (row) => {
 };
 
 /**
- * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
+ * Verify serialnumber meets expected integer format and range
  */
 const validateSerialNumberParam = (serialNumber) => {
   if (!utils.isValidNum(serialNumber)) {
@@ -540,6 +557,7 @@ const validateSerialNumberParam = (serialNumber) => {
  */
 const getNftTokensRequest = async (req, res) => {
   const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
+  validateTokenIdParam(tokenId);
   const filters = utils.buildFilterObject(req.query);
 
   // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
@@ -581,6 +599,7 @@ const getNftTokensRequest = async (req, res) => {
  */
 const getNftTokenInfoRequest = async (req, res) => {
   const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
+  validateTokenIdParam(tokenId);
   const {serialnumber} = req.params;
   validateSerialNumberParam(serialnumber);
 
@@ -635,6 +654,7 @@ if (utils.isTestEnv()) {
     tokenBalancesSelectQuery,
     tokensSelectQuery,
     validateSerialNumberParam,
+    validateTokenIdParam,
     validateTokensFilters,
   });
 }

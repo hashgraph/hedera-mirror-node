@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call using all params for a given given token",
+  "description": "Token nfts api call using all params for a given token",
   "setup": {
     "entities": [
       {

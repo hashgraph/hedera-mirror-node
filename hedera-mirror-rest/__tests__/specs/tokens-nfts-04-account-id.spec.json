@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call for a single nft of a matching serialnumber",
+  "description": "Token nfts api call for a single nft of a matching account.id",
   "setup": {
     "entities": [
       {
