@@ -168,7 +168,11 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
         }
       ]
     }
+
 ```
+
+- Update transactions query to include transactions with assessed custom fee's collector matching the `account.id`
+  filter
 
 ### Token Info
 
