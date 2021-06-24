@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class FileCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     public FileCreateTransactionHandler() {
-        super(true);
+        super(EntityOperationEnum.CREATE);
     }
 
     @Override

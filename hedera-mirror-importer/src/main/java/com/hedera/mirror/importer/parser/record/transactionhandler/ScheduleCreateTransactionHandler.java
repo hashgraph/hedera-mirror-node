@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     public ScheduleCreateTransactionHandler() {
-        super(true);
+        super(EntityOperationEnum.CREATE);
     }
 
     @Override

@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     public TokenCreateTransactionHandler() {
-        super(true);
+        super(EntityOperationEnum.CREATE);
     }
 
     @Override

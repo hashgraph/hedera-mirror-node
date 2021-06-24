@@ -444,15 +444,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId) {
         Entity entity = entityId.toEntity();
         transactionHandler.updateEntity(entity, recordItem);
-        if (!EntityId.isEmpty(entity.getAutoRenewAccountId())) {
-            entityListener.onEntity(entity.getAutoRenewAccountId().toEntity());
-        }
-        // Stream contains transactions with proxyAccountID explicitly set to '0.0.0'. However it's not a valid entity,
-        // so no need to persist it to repo.
-        if (!EntityId.isEmpty(entity.getProxyAccountId())) {
-            entityListener.onEntity(entity.getProxyAccountId().toEntity());
-        }
-
+        entityListener.onEntityId(entity.getAutoRenewAccountId());
+        entityListener.onEntityId(entity.getProxyAccountId());
         entityListener.onEntity(entity);
     }
 

@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,8 +29,11 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@AllArgsConstructor
 public class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public ContractUpdateTransactionHandler() {
+        super(EntityOperationEnum.UPDATE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {

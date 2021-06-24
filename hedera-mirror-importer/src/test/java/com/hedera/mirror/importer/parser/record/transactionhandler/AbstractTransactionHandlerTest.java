@@ -86,7 +86,7 @@ public abstract class AbstractTransactionHandlerTest {
 
     private TransactionHandler transactionHandler;
 
-    private boolean isCreateEntity;
+    private EntityOperationEnum entityOperationEnum;
 
     protected abstract TransactionHandler getTransactionHandler();
 
@@ -115,7 +115,7 @@ public abstract class AbstractTransactionHandlerTest {
 
         if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
             AbstractEntityCrudTransactionHandler handler = (AbstractEntityCrudTransactionHandler) transactionHandler;
-            isCreateEntity = handler.isCreateEntity();
+            entityOperationEnum = handler.getEntityOperationEnum();
         }
     }
 
@@ -187,7 +187,7 @@ public abstract class AbstractTransactionHandlerTest {
     protected Entity getExpectedEntityWithTimestamp() {
         Entity entity = new Entity();
 
-        if (isCreateEntity) {
+        if (entityOperationEnum == EntityOperationEnum.CREATE) {
             entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
             entity.setDeleted(false);
             entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
@@ -416,7 +416,8 @@ public abstract class AbstractTransactionHandlerTest {
 
         TransactionRecord record;
         if (transactionHandler.updatesEntity()) {
-            Timestamp consensusTimestamp = isCreateEntity ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
+            Timestamp consensusTimestamp =
+                    entityOperationEnum == EntityOperationEnum.CREATE ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
             record = getDefaultTransactionRecord().setConsensusTimestamp(consensusTimestamp).build();
         } else {
             record = getDefaultTransactionRecord().build();

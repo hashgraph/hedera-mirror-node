@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     public ContractCreateTransactionHandler() {
-        super(true);
+        super(EntityOperationEnum.CREATE);
     }
 
     @Override

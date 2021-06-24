@@ -30,7 +30,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 public class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     public ConsensusCreateTopicTransactionHandler() {
-        super(true);
+        super(EntityOperationEnum.CREATE);
     }
 
     @Override
