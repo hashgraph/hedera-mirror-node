@@ -75,10 +75,12 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
 
 - Add `FixedFee` class with the following fields
   - `amount`
+  - `collectorAccountId`
   - `denominatingTokenId`
 
 - Add `FractionalFee` class with the following fields
   - `amount` of type `Fraction`
+  - `collectorAccountId`
   - `maximum`
   - `minimum`
 
@@ -157,11 +159,11 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
           "custom_fees": [
             {
               "amount": 150,
-              "collector": "0.0.87501"
+              "collector_account_id": "0.0.87501"
             },
             {
               "amount": 10,
-              "collector": "0.0.87502",
+              "collector_account_id": "0.0.87502",
               "token_id": "0.0.90000"
             }
           ]
@@ -220,25 +222,25 @@ Add `can_update_custom_fees_with_admin_key` and `custom_fees` to the response js
           {
             "amount": 10,
             "collector_account_id": "0.0.99813",
-            "token_id": "0.0.10020"
+            "denominating_token_id": "0.0.10020"
           }
         ],
         "fractional_fees": [
           {
-            "collector_account_id": "0.0.99820",
             "amount": {
               "numerator": 1,
               "denominator": 10
             },
+            "collector_account_id": "0.0.99820",
             "maximum": 200,
             "minimum": 50
           },
           {
-            "collector_account_id": "0.0.99821",
             "amount": {
               "numerator": 3,
               "denominator": 20
             },
+            "collector_account_id": "0.0.99821",
             "minimum": 10
           }
         ]
@@ -264,7 +266,7 @@ Add `/api/v1/tokens/<token_id>/customfees` to return the historical custom fees 
         {
           "amount": 10,
           "collector_account_id": "0.0.99813",
-          "token_id": "0.0.10020"
+          "denominating_token_id": "0.0.10020"
         }
       ],
       "fractional_fees": [
