@@ -33,7 +33,7 @@ the mirror node can be updated to add support for NFTs.
 create table if not exists nft
 (
   account_id            bigint                  not null,
-  created_timestamp     bigint primary key      not null,
+  created_timestamp     bigint  primary key     not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
   metadata              bytea   default ''      not null,
