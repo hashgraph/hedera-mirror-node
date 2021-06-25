@@ -28,11 +28,13 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Named;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -51,7 +53,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
     private static final int VERSION = 5;
 
     @Override
-    public RecordFile read(StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
+    public RecordFile read(StreamFileData streamFileData) {
         MessageDigest messageDigestFile = createMessageDigest(DIGEST_ALGORITHM);
         MessageDigest messageDigestMetadata = createMessageDigest(DIGEST_ALGORITHM);
         String filename = streamFileData.getFilename();
@@ -70,7 +72,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             recordFile.setName(filename);
 
             readHeader(vdis, recordFile);
-            readBody(vdis, itemConsumer, digestInputStream, recordFile);
+            readBody(vdis, digestInputStream, recordFile);
 
             recordFile.setFileHash(Hex.encodeHexString(messageDigestFile.digest()));
             recordFile.setMetadataHash(Hex.encodeHexString(messageDigestMetadata.digest()));
@@ -89,8 +91,8 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setVersion(VERSION);
     }
 
-    private void readBody(ValidatedDataInputStream vdis, Consumer<RecordItem> itemConsumer,
-                          DigestInputStream metadataDigestInputStream, RecordFile recordFile) throws IOException {
+    private void readBody(ValidatedDataInputStream vdis, DigestInputStream metadataDigestInputStream,
+                          RecordFile recordFile) throws IOException {
         String filename = recordFile.getName();
 
         vdis.readInt(); // object stream version
@@ -103,14 +105,12 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         long count = 0;
         long consensusStart = 0;
         RecordStreamObject lastRecordStreamObject = null;
+        List<RecordItem> items = new ArrayList<>();
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
             RecordStreamObject recordStreamObject = new RecordStreamObject(vdis);
-
-            if (itemConsumer != null) {
-                itemConsumer.accept(recordStreamObject.getRecordItem());
-            }
+            items.add(recordStreamObject.getRecordItem());
 
             if (count == 0) {
                 consensusStart = recordStreamObject.getRecordItem().getConsensusTimestamp();
@@ -137,6 +137,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setConsensusStart(consensusStart);
         recordFile.setHash(Hex.encodeHexString(endHashObject.getHash()));
+        recordFile.setItems(Flux.fromIterable(items));
         recordFile.setPreviousHash(Hex.encodeHexString(startHashObject.getHash()));
     }
 

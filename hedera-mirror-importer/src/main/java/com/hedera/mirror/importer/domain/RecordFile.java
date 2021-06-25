@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -34,6 +32,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -75,7 +74,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    private List<RecordItem> items = new ArrayList<>();
+    private Flux<RecordItem> items = Flux.empty();
 
     private Long loadEnd;
 

@@ -71,7 +71,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.importHistoricalAccountInfo`                 | true                    | Import historical account information that occurred before the last stream reset. Skipped if `startDate` is unset or after 2019-09-14T00:00:10Z. |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
-| `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
+| `hedera.mirror.importer.parser.balance.batchSize`                    | 200000                  | The number of balances to store in memory before saving to the database                        |
 | `hedera.mirror.importer.parser.balance.bufferSize`                   | 32768                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |

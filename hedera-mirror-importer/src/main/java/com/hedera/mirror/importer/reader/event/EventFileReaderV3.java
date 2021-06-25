@@ -25,7 +25,6 @@ import com.google.common.primitives.Ints;
 import java.io.DataInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
-import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -34,7 +33,6 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EventFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
-import com.hedera.mirror.importer.parser.domain.EventItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -48,7 +46,7 @@ public class EventFileReaderV3 implements EventFileReader {
     public static final byte EVENT_STREAM_FILE_VERSION_3 = 3;
 
     @Override
-    public EventFile read(StreamFileData streamFileData, Consumer<EventItem> itemConsumer) {
+    public EventFile read(StreamFileData streamFileData) {
         String filename = streamFileData.getFilename();
         int fileVersion = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();

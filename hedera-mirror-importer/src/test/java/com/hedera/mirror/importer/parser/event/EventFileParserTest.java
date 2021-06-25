@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -82,7 +83,7 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
         eventFile.setNodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
         eventFile.setPreviousHash("previousHash" + (id - 1));
         eventFile.setVersion(1);
-        eventFile.getItems().add(new EventItem());
+        eventFile.setItems(Flux.just(new EventItem()));
         return eventFile;
     }
 
