@@ -76,7 +76,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
-    @Transactional
+    @Transactional(timeoutString = "#{@balanceParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(AccountBalanceFile accountBalanceFile) {
         super.parse(accountBalanceFile);
     }
