@@ -29,6 +29,7 @@ const {NotFoundError} = require('./errors/notFoundError');
 
 // select columns
 const sqlQueryColumns = {
+  DELETED: 'e.deleted',
   KEY: 'e.key',
   PUBLIC_KEY: 'e.public_key',
   SYMBOL: 't.symbol',
@@ -68,6 +69,7 @@ const nftSelectFields = [
   'nft.token_id',
 ];
 const nftSelectQuery = ['select', nftSelectFields.join(',\n'), 'from nft'].join('\n');
+const entityNftsJoinQuery = 'join entity e on e.id = nft.token_id';
 
 // token discovery sql queries
 const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
@@ -481,7 +483,10 @@ const getTokenBalances = async (req, res) => {
 const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.DESC;
-  const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.DELETED} = false`];
+  const conditions = [
+    `${nftQueryColumns.TOKEN_ID} = $1`,
+    `${nftQueryColumns.DELETED} = false and ${sqlQueryColumns.DELETED} != true`,
+  ];
   const params = [tokenId];
 
   for (const filter of filters) {
@@ -506,7 +511,7 @@ const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   const whereQuery = `where ${conditions.join('\nand ')}`;
   const orderQuery = `order by ${nftQueryColumns.SERIAL_NUMBER} ${order}`;
   const limitQuery = `limit $${params.push(limit)}`;
-  query = [query, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
+  query = [query, entityNftsJoinQuery, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
 
   return utils.buildPgSqlObject(query, params, order, limit);
 };

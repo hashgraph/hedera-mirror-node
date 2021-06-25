@@ -158,14 +158,15 @@ const loadTopicMessages = async (messages) => {
 
 const addEntity = async (defaults, entity) => {
   entity = {
-    shard: 0,
-    realm: 0,
-    expiration_timestamp: null,
-    public_key: null,
-    type: 1,
     auto_renew_period: null,
+    deleted: false,
+    expiration_timestamp: null,
     key: null,
     memo: '',
+    public_key: null,
+    realm: 0,
+    shard: 0,
+    type: 1,
     ...defaults,
     ...entity,
   };
@@ -181,7 +182,7 @@ const addEntity = async (defaults, entity) => {
       entity.realm,
       entity.num,
       entity.expiration_timestamp,
-      false,
+      entity.deleted,
       entity.public_key,
       entity.auto_renew_period,
       entity.key,
