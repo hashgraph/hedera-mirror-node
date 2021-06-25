@@ -68,6 +68,5 @@ const recordIpAndEndpoint = async (req, res, next) => {
 
 module.exports = {
   metricsHandler,
-  ipEndpointHistogram,
   recordIpAndEndpoint,
 };
