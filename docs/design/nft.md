@@ -246,7 +246,8 @@ Add optional filters
       "deleted": false,
       "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
       "modified_timestamp": "1610682445.003266001",
-      "serial_number": 124
+      "serial_number": 124,
+      "token_id": "0.0.222"
     }
   ],
   "links": {
@@ -275,7 +276,8 @@ Optional Filters
   "deleted": false,
   "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
   "modified_timestamp": "1610682445.003266000",
-  "serial_number": 124
+  "serial_number": 124,
+  "token_id": "0.0.222"
 }
 ```
 

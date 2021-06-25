@@ -828,11 +828,12 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
-                                  nft.serial_number
+                                  nft.serial_number,
+                                  nft.token_id
                            from nft
                            where nft.token_id = $1
                              and nft.deleted = false
-                           order by nft.account_id desc
+                           order by nft.account_id desc, nft.serial_number desc
                            limit $2`;
     const expectedParams = [tokenId, maxLimit];
     const expectedOrder = orderFilterValues.DESC;
@@ -866,12 +867,13 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
-                                  nft.serial_number
+                                  nft.serial_number,
+                                  nft.token_id
                            from nft
                            where nft.token_id = $1
                              and nft.deleted = false
                              and nft.account_id = $2
-                           order by nft.account_id desc
+                           order by nft.account_id desc, nft.serial_number desc
                            limit $3`;
     const expectedParams = [tokenId, accountId, maxLimit];
     const expectedOrder = orderFilterValues.DESC;
@@ -904,12 +906,13 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
-                                  nft.serial_number
+                                  nft.serial_number,
+                                  nft.token_id
                            from nft
                            where nft.token_id = $1
                              and nft.deleted = false
                              and nft.serial_number = $2
-                           order by nft.account_id desc
+                           order by nft.account_id desc, nft.serial_number desc
                            limit $3`;
     const expectedParams = [tokenId, serialFilter, maxLimit];
     const expectedOrder = orderFilterValues.DESC;
@@ -952,13 +955,14 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                                   nft.deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
-                                  nft.serial_number
+                                  nft.serial_number,
+                                  nft.token_id
                            from nft
                            where nft.token_id = $1
                              and nft.deleted = false
                              and nft.account_id = $2
                              and nft.serial_number = $3
-                           order by nft.account_id asc
+                           order by nft.account_id asc, nft.serial_number asc
                            limit $4`;
     const expectedParams = [tokenId, accountId, serialNum, limit];
     const expectedOrder = order;
@@ -1002,10 +1006,12 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
                                   nft.deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
-                                  nft.serial_number
+                                  nft.serial_number,
+                                  nft.token_id
                            from nft
                            where nft.token_id = $1
-                             and nft.serial_number = $2`;
+                             and nft.serial_number = $2
+                           order by nft.serial_number desc`;
     const expectedParams = [tokenId, serialNumber];
     verifyExtractSqlFromNftTokenInfoRequest(
       tokenId,

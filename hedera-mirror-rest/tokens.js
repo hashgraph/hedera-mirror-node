@@ -65,6 +65,7 @@ const nftSelectFields = [
   'nft.metadata',
   'nft.modified_timestamp',
   'nft.serial_number',
+  'nft.token_id',
 ];
 const nftSelectQuery = ['select', nftSelectFields.join(',\n'), 'from nft'].join('\n');
 
@@ -503,7 +504,7 @@ const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   }
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
-  const orderQuery = `order by ${nftQueryColumns.ACCOUNT_ID} ${order}`;
+  const orderQuery = `order by ${nftQueryColumns.ACCOUNT_ID} ${order}, ${nftQueryColumns.SERIAL_NUMBER} ${order}`;
   const limitQuery = `limit $${params.push(limit)}`;
   query = [query, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
 
@@ -522,9 +523,11 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
   // filter for token and serialNumber
   const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.SERIAL_NUMBER} = $2`];
   const params = [tokenId, serialNumber];
+  let order = constants.orderFilterValues.DESC;
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
-  query = [query, whereQuery].filter((q) => q !== '').join('\n');
+  const orderQuery = `order by ${nftQueryColumns.SERIAL_NUMBER} ${order}`;
+  query = [query, whereQuery, orderQuery].filter((q) => q !== '').join('\n');
 
   return utils.buildPgSqlObject(query, params, '', '');
 };
@@ -532,11 +535,12 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
 const formatNftRow = (row) => {
   return {
     account_id: EntityId.fromEncodedId(row.account_id).toString(),
-    created_timestamp: row.created_timestamp,
+    created_timestamp: utils.nsToSecNs(row.created_timestamp),
     deleted: row.deleted,
-    metadata: utils.encodeKey(row.metadata),
-    modified_timestamp: row.modified_timestamp,
+    metadata: utils.encodeBase64(row.metadata),
+    modified_timestamp: utils.nsToSecNs(row.modified_timestamp),
     serial_number: Number(row.serial_number),
+    token_id: EntityId.fromEncodedId(row.token_id).toString(),
   };
 };
 

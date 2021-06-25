@@ -69,13 +69,11 @@
   "responseStatus": 200,
   "responseJson": {
     "account_id": "0.0.2001",
-    "created_timestamp": "1234567890000000006",
+    "created_timestamp": "1234567890.000000006",
     "deleted": false,
-    "metadata": {
-      "_type": "ProtobufEncoded",
-      "key": "6d32"
-    },
-    "modified_timestamp": "1234567890000000006",
-    "serial_number": 2
+    "metadata": "bTI=",
+    "modified_timestamp": "1234567890.000000006",
+    "serial_number": 2,
+    "token_id": "0.0.1500"
   }
 }
