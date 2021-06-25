@@ -21,7 +21,7 @@
 'use strict';
 
 // ext libraries
-var crypto = require('crypto');
+const crypto = require('crypto');
 const extend = require('extend');
 const client = require('prom-client');
 const swStats = require('swagger-stats');
