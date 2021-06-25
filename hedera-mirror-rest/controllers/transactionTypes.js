@@ -22,8 +22,7 @@
 
 const _ = require('lodash');
 
-const {DbError} = require('./errors/dbError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {DbError} = require('../errors/dbError');
 
 const transactionTypesQuery = 'select proto_id, name from t_transaction_types';
 
@@ -54,41 +53,10 @@ const get = async () => {
     promise = null;
     throw new DbError(err.message);
   }
-};
 
-const getName = async (transactionTypeId) => {
-  if (!_.isNumber(transactionTypeId)) {
-    throw new InvalidArgumentError(`Invalid argument ${transactionTypeId} is not a number`);
-  }
-
-  if (transactionTypeToProtoMap.size === 0) {
-    await get();
-  }
-
-  const type = transactionTypeProtoToNameMap.get(transactionTypeId);
-  if (type === undefined) {
-    throw new InvalidArgumentError(`Transaction type ${transactionTypeId} not found in db`);
-  }
-  return type;
-};
-
-const getId = async (transactionTypeName) => {
-  if (!_.isString(transactionTypeName)) {
-    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
-  }
-
-  if (transactionTypeToProtoMap.size === 0) {
-    await get();
-  }
-
-  const type = transactionTypeToProtoMap.get(transactionTypeName.toUpperCase());
-  if (type === undefined) {
-    throw new InvalidArgumentError(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
-  }
-  return type;
+  return {transactionTypeToProtoMap, transactionTypeProtoToNameMap};
 };
 
 module.exports = {
-  getName,
-  getId,
+  get,
 };

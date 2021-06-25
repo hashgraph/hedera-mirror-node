@@ -42,11 +42,13 @@ const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
+const transactionTypes = require('./controllers/transactionTypes');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
+const TransactionTypesModel = require('./models/transactionTypes');
 const {isTestEnv} = require('./utils');
 
 // Logger
@@ -179,18 +181,32 @@ app.useAsync(responseHandler);
 // response error handling middleware
 app.useAsync(handleError);
 
-if (!isTestEnv()) {
-  const server = app.listen(port, () => {
-    logger.info(`Server running on port: ${port}`);
-  });
+const getTransactionTypes = async () => {
+  // pulls in transactions types once and make globally available in non async manner
+  const {transactionTypeToProtoMap, transactionTypeProtoToNameMap} = await transactionTypes.get();
+  global.transactionTypes = new TransactionTypesModel(transactionTypeToProtoMap, transactionTypeProtoToNameMap);
+};
 
-  // Health check endpoints
-  createTerminus(server, {
-    healthChecks: {
-      '/health/readiness': health.readinessCheck,
-      '/health/liveness': health.livenessCheck,
-    },
-    beforeShutdown: health.beforeShutdown,
+const verifyDbConnection = async () => {
+  // initial db calls, serves as connection validation
+  await getTransactionTypes();
+};
+
+if (!isTestEnv()) {
+  verifyDbConnection().then(() => {
+    logger.info(`DB connection validated`);
+    const server = app.listen(port, () => {
+      logger.info(`Server running on port: ${port}`);
+    });
+
+    // Health check endpoints
+    createTerminus(server, {
+      healthChecks: {
+        '/health/readiness': health.readinessCheck,
+        '/health/liveness': health.livenessCheck,
+      },
+      beforeShutdown: health.beforeShutdown,
+    });
   });
 }
 

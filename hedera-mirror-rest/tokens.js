@@ -29,7 +29,6 @@ const {NotFoundError} = require('./errors/notFoundError');
 const Nft = require('./models/nft');
 const NftTransfer = require('./models/nftTransfer');
 const Transaction = require('./models/transaction');
-const transactionTypes = require('./transactionTypes');
 
 // select columns
 const sqlQueryColumns = {
@@ -691,7 +690,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   return utils.buildPgSqlObject(finalQuery, params, order, limit);
 };
 
-const formatNftHistoryRow = async (row) => {
+const formatNftHistoryRow = (row) => {
   return {
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
     transaction_id: utils.createTransactionId(
@@ -700,7 +699,7 @@ const formatNftHistoryRow = async (row) => {
     ),
     receiver_account_id: EntityId.fromEncodedId(row.receiver_account_id, true).toString(),
     sender_account_id: EntityId.fromEncodedId(row.sender_account_id, true).toString(),
-    type: await transactionTypes.getName(row.type),
+    type: global.transactionTypes.getName(row.type),
   };
 };
 
@@ -762,7 +761,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
 
   const {rows} = await utils.queryQuietly(query, ...params);
   const response = {
-    transactions: await Promise.all(rows.map((row) => formatNftHistoryRow(row))),
+    transactions: rows.map((row) => formatNftHistoryRow(row)),
     links: {
       next: null,
     },
