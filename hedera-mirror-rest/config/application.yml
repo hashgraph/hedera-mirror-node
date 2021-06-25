@@ -24,6 +24,7 @@ hedera:
           password: password
           username: metrics
           uriPath: '/swagger'
+        ipMetrics: false
       openapi:
         specFileName: 'openapi'
         swaggerUIPath: 'docs'

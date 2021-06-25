@@ -27,7 +27,6 @@ const EntityId = require('./entityId');
 const utils = require('./utils');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-const {ipEndpointHistogram} = require('./middleware/metricsHandler');
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',

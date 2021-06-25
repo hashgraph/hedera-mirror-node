@@ -22,13 +22,12 @@
 
 // ext libraries
 const extend = require('extend');
+const client = require('prom-client');
 const swStats = require('swagger-stats');
 
 // files
 const config = require('../config');
 const oasHandler = require('./openapiHandler');
-
-const client = require('prom-client');
 
 const metricsHandler = () => {
   const defaultMetricsConfig = {

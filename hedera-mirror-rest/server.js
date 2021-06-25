@@ -165,8 +165,10 @@ app.getAsync(`${apiPrefix}/schedules/:id`, schedules.getScheduleById);
 app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
 app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
 
-// response data handling middleware
-app.useAsync(recordIpAndEndpoint);
+// record ip metrics if enabled
+if (config.metrics.ipMetrics) {
+  app.useAsync(recordIpAndEndpoint);
+}
 
 // response data handling middleware
 app.useAsync(responseHandler);

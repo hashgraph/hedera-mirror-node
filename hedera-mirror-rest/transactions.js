@@ -492,7 +492,6 @@ const getScheduledQuery = (query) => {
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
-  // ipEndpointHistogram.labels("transactions/{id}", req.ip).observe(1);
   await utils.validateReq(req);
 
   const transactionId = TransactionId.fromString(req.params.id);
