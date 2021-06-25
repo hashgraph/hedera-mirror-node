@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,8 +29,11 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@AllArgsConstructor
-public class TokenUpdateTransactionsHandler implements TransactionHandler {
+public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public TokenUpdateTransactionHandler() {
+        super(EntityOperationEnum.UPDATE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -39,12 +41,7 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
         if (tokenUpdateTransactionBody.hasAdminKey()) {
             entity.setKey(tokenUpdateTransactionBody.getAdminKey().toByteArray());
@@ -64,7 +61,7 @@ public class TokenUpdateTransactionsHandler implements TransactionHandler {
     }
 
     @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getAutoRenewAccount());
     }
 }

@@ -21,16 +21,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-@AllArgsConstructor
-public class TokenWipeTransactionsHandler implements TransactionHandler {
+public class TokenDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public TokenDeleteTransactionHandler() {
+        super(EntityOperationEnum.DELETE);
+    }
+
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenWipe().getToken());
+        return EntityId.of(recordItem.getTransactionBody().getTokenDeletion().getToken());
     }
 }

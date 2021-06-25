@@ -22,27 +22,27 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenUnfreezeTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenUnfreezeTransactionsHandler();
+        return new TokenWipeTransactionHandler();
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
+                .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
                         .setAccount(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM))
                         .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()).build());
     }
 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.ACCOUNT;
+        return EntityTypeEnum.TOKEN;
     }
 }

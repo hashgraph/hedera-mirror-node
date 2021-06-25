@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,8 +29,11 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@AllArgsConstructor
-public class FileCreateTransactionHandler implements TransactionHandler {
+public class FileCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public FileCreateTransactionHandler() {
+        super(EntityOperationEnum.CREATE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -39,15 +41,8 @@ public class FileCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         FileCreateTransactionBody txMessage = recordItem.getTransactionBody().getFileCreate();
-        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-        entity.setDeleted(false);
         if (txMessage.hasExpirationTime()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
         }

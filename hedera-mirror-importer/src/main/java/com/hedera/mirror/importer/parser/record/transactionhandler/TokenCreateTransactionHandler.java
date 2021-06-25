@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,8 +29,11 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@AllArgsConstructor
-public class TokenCreateTransactionsHandler implements TransactionHandler {
+public class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public TokenCreateTransactionHandler() {
+        super(EntityOperationEnum.CREATE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -39,12 +41,7 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
     }
 
     @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
         if (tokenCreateTransactionBody.hasAdminKey()) {
             entity.setKey(tokenCreateTransactionBody.getAdminKey().toByteArray());
@@ -54,18 +51,15 @@ public class TokenCreateTransactionsHandler implements TransactionHandler {
             entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-
         if (tokenCreateTransactionBody.hasExpiry()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(tokenCreateTransactionBody.getExpiry()));
         }
 
-        entity.setDeleted(false);
         entity.setMemo(tokenCreateTransactionBody.getMemo());
     }
 
     @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenCreation().getAutoRenewAccount());
     }
 }

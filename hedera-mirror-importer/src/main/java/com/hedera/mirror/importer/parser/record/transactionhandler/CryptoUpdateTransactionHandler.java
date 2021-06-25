@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,8 +29,11 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@AllArgsConstructor
-public class CryptoUpdateTransactionHandler implements TransactionHandler {
+public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public CryptoUpdateTransactionHandler() {
+        super(EntityOperationEnum.UPDATE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -39,17 +41,7 @@ public class CryptoUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public EntityId getProxyAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoUpdateAccount().getProxyAccountID());
-    }
-
-    @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         CryptoUpdateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoUpdateAccount();
         if (txMessage.hasExpirationTime()) {
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
@@ -66,5 +58,10 @@ public class CryptoUpdateTransactionHandler implements TransactionHandler {
         if (txMessage.hasMemo()) {
             entity.setMemo(txMessage.getMemo().getValue());
         }
+    }
+
+    @Override
+    protected EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getCryptoUpdateAccount().getProxyAccountID());
     }
 }

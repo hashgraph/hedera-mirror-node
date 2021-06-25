@@ -27,10 +27,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenFreezeTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenFreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenFreezeTransactionsHandler();
+        return new TokenFreezeTransactionHandler();
     }
 
     @Override
