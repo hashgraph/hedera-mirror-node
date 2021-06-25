@@ -33,7 +33,7 @@ create table if not exists custom_fee
     fractional_fees     jsonb,
     token_id            bigint not null
 );
-alter table custom_fee add primary key (consensus_timestamp, token_id);
+alter table custom_fee add primary key (token_id, consensus_timestamp);
 ```
 
 - Add a new `assessed_custom_fee` table
@@ -156,7 +156,7 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
               "token_id": "0.0.90000"
             }
           ],
-          "custom_fees": [
+          "assessed_custom_fees": [
             {
               "amount": 150,
               "collector_account_id": "0.0.87501"
