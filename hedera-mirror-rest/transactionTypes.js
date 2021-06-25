@@ -28,14 +28,13 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const transactionTypesQuery = 'select proto_id, name from t_transaction_types';
 
 // Transaction Type (String) -> ProtoId (Integer)
-const transactionTypesMap = new Map();
+const transactionTypeToProtoMap = new Map();
+// Transaction ProtoId (Integer) -> Type (String)
+const transactionTypeProtoToNameMap = new Map();
 
 let promise;
 
-const get = async (transactionTypeName) => {
-  if (!_.isString(transactionTypeName)) {
-    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
-  }
+const get = async () => {
   if (!promise) {
     if (logger.isTraceEnabled()) {
       logger.trace(`getTransactionTypes query: ${transactionTypesQuery}`);
@@ -45,15 +44,44 @@ const get = async (transactionTypeName) => {
 
   try {
     const result = await promise;
-    if (transactionTypesMap.size === 0) {
-      result.rows.forEach((row) => transactionTypesMap.set(row.name, row.proto_id));
+    if (transactionTypeToProtoMap.size === 0) {
+      result.rows.forEach((row) => {
+        transactionTypeToProtoMap.set(row.name, row.proto_id);
+        transactionTypeProtoToNameMap.set(row.proto_id, row.name);
+      });
     }
   } catch (err) {
     promise = null;
     throw new DbError(err.message);
   }
+};
 
-  const type = transactionTypesMap.get(transactionTypeName.toUpperCase());
+const getName = async (transactionTypeId) => {
+  if (!_.isNumber(transactionTypeId)) {
+    throw new InvalidArgumentError(`Invalid argument ${transactionTypeId} is not a number`);
+  }
+
+  if (transactionTypeToProtoMap.size === 0) {
+    await get();
+  }
+
+  const type = transactionTypeProtoToNameMap.get(transactionTypeId);
+  if (type === undefined) {
+    throw new InvalidArgumentError(`Transaction type ${transactionTypeId} not found in db`);
+  }
+  return type;
+};
+
+const getId = async (transactionTypeName) => {
+  if (!_.isString(transactionTypeName)) {
+    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
+  }
+
+  if (transactionTypeToProtoMap.size === 0) {
+    await get();
+  }
+
+  const type = transactionTypeToProtoMap.get(transactionTypeName.toUpperCase());
   if (type === undefined) {
     throw new InvalidArgumentError(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
   }
@@ -61,5 +89,6 @@ const get = async (transactionTypeName) => {
 };
 
 module.exports = {
-  get,
+  getName,
+  getId,
 };
