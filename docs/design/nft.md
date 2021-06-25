@@ -88,7 +88,9 @@ create table if not exists nft_transfer
 
 #### Get Transaction
 
-- Update `/api/v1/transactions` and `/api/v1/transactions/{id}` response to add nft_transfers
+- Update `/api/v1/transactions/{id}` response to add nft_transfers
+  - `/api/v1/transactions` should not contain nft_transfers, as moving forward we wish to not add more joins to this
+    endpoint.
 
 ```json
 {
