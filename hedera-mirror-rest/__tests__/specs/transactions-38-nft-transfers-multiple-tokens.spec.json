@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions with nft transfers",
+  "description": "Transaction api calls for single transaction with nft transfers across multiple tokens",
   "setup": {
     "accounts": [
       {
