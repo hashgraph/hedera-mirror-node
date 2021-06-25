@@ -295,8 +295,7 @@ test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xf
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
   const sql = await transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(1);
-  expect(mapTransactionResults(res.rows)[0]).toEqual(expectedTransactionRowsMap['1052']);
+  expect(mapTransactionResults(res.rows)).toEqual([expectedTransactionRowsMap['1052']]);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
