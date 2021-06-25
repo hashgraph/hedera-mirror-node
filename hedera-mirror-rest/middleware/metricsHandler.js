@@ -21,6 +21,7 @@
 'use strict';
 
 // ext libraries
+var crypto = require('crypto');
 const extend = require('extend');
 const client = require('prom-client');
 const swStats = require('swagger-stats');
@@ -53,16 +54,17 @@ const onMetricsAuthenticate = async (req, username, password) => {
   });
 };
 
-const ipEndpointHistogram = new client.Histogram({
-  name: 'mirror_ip_endpoints_histogram',
-  help: 'a histogram mapping ip addresses to the endpoints they hit',
-  buckets: [0.1, 5, 15, 50, 100, 500],
+const ipEndpointHistogram = new client.Counter({
+  name: 'hedera_mirror_rest_request_count',
+  help: 'a counter mapping ip addresses to the endpoints they hit',
   labelNames: ['endpoint', 'ip'],
 });
 
 const recordIpAndEndpoint = async (req, res, next) => {
   if (req.route !== undefined) {
-    ipEndpointHistogram.labels(req.route.path, req.ip).observe(1);
+    ipEndpointHistogram
+      .labels(req.route.path, crypto.createHash('sha256').update(req.ip).digest().toString('hex'))
+      .inc();
   }
 };
 

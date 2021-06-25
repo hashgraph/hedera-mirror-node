@@ -465,6 +465,7 @@ const getTransactions = async (req, res) => {
   logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = ret;
 };
+
 /**
  * Gets the scheduled db query from the scheduled param in the HTTP request query. The last scheduled value is honored.
  * If not present, returns empty string.
