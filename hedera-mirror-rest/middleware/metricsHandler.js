@@ -54,8 +54,8 @@ const onMetricsAuthenticate = async (req, username, password) => {
 };
 
 const ipEndpointHistogram = new client.Histogram({
-  name: 'ip_count',
-  help: 'test',
+  name: 'mirror_ip_endpoints_histogram',
+  help: 'a histogram mapping ip addresses to the endpoints they hit',
   buckets: [0.1, 5, 15, 50, 100, 500],
   labelNames: ['endpoint', 'ip'],
 });
