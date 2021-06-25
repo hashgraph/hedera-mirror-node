@@ -702,12 +702,12 @@ describe('token formatTokenInfoRow tests', () => {
   });
 });
 
-const verifyValidAndAInvalidTokensFilters = (invalidFilters, validFilters) => {
+const verifyInvalidAndValidTokensFilters = (invalidFilters, validFilters) => {
   invalidFilters.forEach((filter) => {
     const filterString = Array.isArray(filter)
       ? `${JSON.stringify(filter[0])} ${filter.length} times`
       : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
+    test(`Verify validateAndParseFilters for invalid ${filterString}`, () => {
       expect(() => tokens.validateTokensFilters([filter])).toThrowErrorMatchingSnapshot();
     });
   });
@@ -716,7 +716,7 @@ const verifyValidAndAInvalidTokensFilters = (invalidFilters, validFilters) => {
     const filterString = Array.isArray(filter)
       ? `${JSON.stringify(filter[0])} ${filter.length} times`
       : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for valid ${filterString}`, async () => {
+    test(`Verify validateAndParseFilters for valid ${filterString}`, () => {
       tokens.validateTokensFilters([filter]);
     });
   });
@@ -725,11 +725,11 @@ const verifyValidAndAInvalidTokensFilters = (invalidFilters, validFilters) => {
 describe('utils validateAndParseFilters token type tests', () => {
   const key = filterKeys.TOKEN_TYPE;
   const invalidFilters = [
-    // erroneous data
-    utils.buildComparatorFilter(key, '-1'),
     // invalid format
     utils.buildComparatorFilter(key, 'cred'),
     utils.buildComparatorFilter(key, 'deb'),
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
   ];
 
   const validFilters = [
@@ -741,16 +741,16 @@ describe('utils validateAndParseFilters token type tests', () => {
     utils.buildComparatorFilter(key, 'fungible_common'),
   ];
 
-  verifyValidAndAInvalidTokensFilters(invalidFilters, validFilters);
+  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
 });
 
 describe('utils validateAndParseFilters serialnumbers tests', () => {
   const key = filterKeys.SERIAL_NUMBER;
   const invalidFilters = [
-    // erroneous data
+    // invalid format
     utils.buildComparatorFilter(key, '-1'),
     utils.buildComparatorFilter(key, 'deb'),
-    // invalid format
+    // erroneous data
     utils.buildComparatorFilter(key, '0'),
   ];
 
@@ -765,16 +765,17 @@ describe('utils validateAndParseFilters serialnumbers tests', () => {
     utils.buildComparatorFilter(key, 'lte:324'),
   ];
 
-  verifyValidAndAInvalidTokensFilters(invalidFilters, validFilters);
+  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
 });
 
 describe('utils validateAndParseFilters account.id tests', () => {
   const key = filterKeys.ACCOUNT_ID;
   const invalidFilters = [
+    // invalid format
+    utils.buildComparatorFilter(key, 'L'),
+    utils.buildComparatorFilter(key, '@.#.$'),
     // erroneous data
     utils.buildComparatorFilter(key, '-1'),
-    utils.buildComparatorFilter(key, 'L'),
-    // invalid format
     utils.buildComparatorFilter(key, '0.1.2.3'),
     utils.buildComparatorFilter(key, '-1.-1.-1'),
   ];
@@ -797,7 +798,7 @@ describe('utils validateAndParseFilters account.id tests', () => {
     utils.buildComparatorFilter(key, 'gte:324'),
   ];
 
-  verifyValidAndAInvalidTokensFilters(invalidFilters, validFilters);
+  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
 });
 
 describe('token extractSqlFromNftTokensRequest tests', () => {
@@ -820,7 +821,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
   test('Verify simple discovery query', () => {
     const tokenId = '1009'; // encoded
-    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const initialQuery = tokens.nftSelectQuery;
     const filters = [];
 
     const expectedQuery = `select nft.account_id,
@@ -833,7 +834,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                            from nft
                            where nft.token_id = $1
                              and nft.deleted = false
-                           order by nft.account_id desc, nft.serial_number desc
+                           order by nft.serial_number desc
                            limit $2`;
     const expectedParams = [tokenId, maxLimit];
     const expectedOrder = orderFilterValues.DESC;
@@ -873,7 +874,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                            where nft.token_id = $1
                              and nft.deleted = false
                              and nft.account_id = $2
-                           order by nft.account_id desc, nft.serial_number desc
+                           order by nft.serial_number desc
                            limit $3`;
     const expectedParams = [tokenId, accountId, maxLimit];
     const expectedOrder = orderFilterValues.DESC;
@@ -912,7 +913,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                            where nft.token_id = $1
                              and nft.deleted = false
                              and nft.serial_number = $2
-                           order by nft.account_id desc, nft.serial_number desc
+                           order by nft.serial_number desc
                            limit $3`;
     const expectedParams = [tokenId, serialFilter, maxLimit];
     const expectedOrder = orderFilterValues.DESC;
@@ -962,7 +963,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                              and nft.deleted = false
                              and nft.account_id = $2
                              and nft.serial_number = $3
-                           order by nft.account_id asc, nft.serial_number asc
+                           order by nft.serial_number asc
                            limit $4`;
     const expectedParams = [tokenId, accountId, serialNum, limit];
     const expectedOrder = order;
@@ -1010,8 +1011,7 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
                                   nft.token_id
                            from nft
                            where nft.token_id = $1
-                             and nft.serial_number = $2
-                           order by nft.serial_number desc`;
+                             and nft.serial_number = $2`;
     const expectedParams = [tokenId, serialNumber];
     verifyExtractSqlFromNftTokenInfoRequest(
       tokenId,
@@ -1029,13 +1029,13 @@ describe('token validateSerialNumberParam tests', () => {
   const validSerialNums = [1, '1', '9007199254740991'];
 
   invalidSerialNums.forEach((serialNum) => {
-    test(`Verify validateSerialNumberParam for invalid ${serialNum}`, async () => {
+    test(`Verify validateSerialNumberParam for invalid ${serialNum}`, () => {
       expect(() => tokens.validateSerialNumberParam(serialNum)).toThrowErrorMatchingSnapshot();
     });
   });
 
   validSerialNums.forEach((serialNum) => {
-    test(`Verify validateSerialNumberParam for valid ${serialNum}`, async () => {
+    test(`Verify validateSerialNumberParam for valid ${serialNum}`, () => {
       tokens.validateSerialNumberParam(serialNum);
     });
   });
@@ -1046,13 +1046,13 @@ describe('token validateTokenIdParam tests', () => {
   const validTokenIds = ['1', '0.1', '0.20.1'];
 
   invalidTokenIds.forEach((tokenId) => {
-    test(`Verify validateTokenIdParam for invalid ${tokenId}`, async () => {
+    test(`Verify validateTokenIdParam for invalid ${tokenId}`, () => {
       expect(() => tokens.validateTokenIdParam(tokenId)).toThrowErrorMatchingSnapshot();
     });
   });
 
   validTokenIds.forEach((tokenId) => {
-    test(`Verify validateTokenIdParam for valid ${tokenId}`, async () => {
+    test(`Verify validateTokenIdParam for valid ${tokenId}`, () => {
       tokens.validateTokenIdParam(tokenId);
     });
   });

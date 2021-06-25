@@ -504,7 +504,7 @@ const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   }
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
-  const orderQuery = `order by ${nftQueryColumns.ACCOUNT_ID} ${order}, ${nftQueryColumns.SERIAL_NUMBER} ${order}`;
+  const orderQuery = `order by ${nftQueryColumns.SERIAL_NUMBER} ${order}`;
   const limitQuery = `limit $${params.push(limit)}`;
   query = [query, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
 
@@ -523,11 +523,9 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
   // filter for token and serialNumber
   const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`, `${nftQueryColumns.SERIAL_NUMBER} = $2`];
   const params = [tokenId, serialNumber];
-  let order = constants.orderFilterValues.DESC;
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
-  const orderQuery = `order by ${nftQueryColumns.SERIAL_NUMBER} ${order}`;
-  query = [query, whereQuery, orderQuery].filter((q) => q !== '').join('\n');
+  query = [query, whereQuery].filter((q) => q !== '').join('\n');
 
   return utils.buildPgSqlObject(query, params, '', '');
 };
@@ -582,12 +580,12 @@ const getNftTokensRequest = async (req, res) => {
   };
 
   // Pagination links
-  const anchorAccountId = response.nfts.length > 0 ? response.nfts[response.nfts.length - 1].account_id : 0;
+  const anchorSerialNumber = response.nfts.length > 0 ? response.nfts[response.nfts.length - 1].serial_number : 0;
   response.links.next = utils.getPaginationLink(
     req,
     response.nfts.length !== limit,
-    constants.filterKeys.ACCOUNT_ID,
-    anchorAccountId,
+    constants.filterKeys.SERIAL_NUMBER,
+    anchorSerialNumber,
     order
   );
 

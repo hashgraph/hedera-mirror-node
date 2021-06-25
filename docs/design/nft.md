@@ -33,7 +33,7 @@ the mirror node can be updated to add support for NFTs.
 create table if not exists nft
 (
   account_id            bigint                  not null,
-  created_timestamp     bigint  primary key     not null,
+  created_timestamp     bigint                  not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
   metadata              bytea   default ''      not null,
@@ -41,6 +41,8 @@ create table if not exists nft
   token_id              bigint                  not null
 );
 
+create unique index if not exists nft__token_id_serial_num
+  on nft (token_id desc, serial_number desc);
 ```
 
 - Add a unique constraint to `nft` for `token_id` and `serial_number`, desc
@@ -56,6 +58,9 @@ create table if not exists nft_transfer
   serial_number         bigint  not null,
   token_id              bigint  not null
 );
+
+create unique index if not exists nft_transfer__timestamp_token_id_serial_num
+  on nft_transfer (consensus_timestamp desc, token_id desc, serial_number desc);
 ```
 
 - Add a unique constraint to `nft_transfer` for `consensus_timestamp`, `token_id`, and `serial_number`, desc

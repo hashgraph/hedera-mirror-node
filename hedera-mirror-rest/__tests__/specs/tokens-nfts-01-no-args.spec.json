@@ -70,21 +70,21 @@
   "responseJson": {
     "nfts": [
       {
-        "account_id": "0.0.2001",
-        "created_timestamp": "1234567890.000000006",
-        "deleted": false,
-        "metadata": "bTI=",
-        "modified_timestamp": "1234567890.000000006",
-        "serial_number": 2,
-        "token_id": "0.0.1500"
-      },
-      {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000008",
         "deleted": false,
         "metadata": "bTM=",
         "modified_timestamp": "1234567890.000000008",
         "serial_number": 3,
+        "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.2001",
+        "created_timestamp": "1234567890.000000006",
+        "deleted": false,
+        "metadata": "bTI=",
+        "modified_timestamp": "1234567890.000000006",
+        "serial_number": 2,
         "token_id": "0.0.1500"
       },
       {

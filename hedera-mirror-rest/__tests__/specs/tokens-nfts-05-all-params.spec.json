@@ -96,7 +96,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/tokens/1500/nfts?serialnumber=gt:1&account.id=1001&account.id=lt:0.0.1001&order=desc&limit=2"
+      "next": "/api/v1/tokens/1500/nfts?serialnumber=gt:1&serialnumber=lt:3&account.id=1001&order=desc&limit=2"
     }
   }
 }
