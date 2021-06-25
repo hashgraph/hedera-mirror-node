@@ -153,17 +153,12 @@ const createNftTransferList = (nftTransferList) => {
 };
 
 /**
- * Create transferlists from the output of SQL queries. The SQL table has different
- * rows for each of the transfers in a single transaction. This function collates all
- * transfers into a single list.
+ * Create transferlists from the output of SQL queries.
+ *
  * @param {Array of objects} rows Array of rows returned as a result of an SQL query
  * @return {{anchorSecNs: (String|number), transactions: {}}}
  */
 const createTransferLists = (rows) => {
-  // If the transaction has a transferlist (i.e. list of individual transfers, it
-  // will show up as separate rows. Combine those into a single transferlist for
-  // a given consensus_ns (Note that there could be two records for the same
-  // transaction-id where one would pass and others could fail as duplicates)
   const transactions = rows.map((row) => {
     const validStartTimestamp = row.valid_start_ns;
     return {

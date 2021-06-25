@@ -253,7 +253,7 @@ describe('DB integration test -  utils.isValidTransactionType', () => {
   });
 });
 
-// expected transaction rows order by consensus_ns desc, only field consensus_ns and crypto_transfer_list
+// expected transaction rows order by consensus_ns desc, only check fields consensus_ns and crypto_transfer_list
 const expectedTransactionRowsDesc = [
   {
     consensus_ns: '1052',
@@ -288,7 +288,6 @@ const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) =
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
   const sql = await transactions.reqToSql({query: {}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
   expect(mapTransactionResults(res.rows)).toEqual(expectedTransactionRowsDesc);
 });
 
@@ -354,7 +353,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   const sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
-  // 2 transaction, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
+  // 2 transactions, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
   // recipient and fee to bank. Note bank is out of desired range but is expected in query result
   expect(mapTransactionResults(res.rows).sort()).toEqual(expected);
 });
