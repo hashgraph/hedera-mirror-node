@@ -167,15 +167,15 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  */
 const mapTransactionResults = (rows) => {
   return rows.map((v) => {
-    const crypto_transfer_list = v.crypto_transfer_list.map((transfer) => {
+    const cryptoTransfers = v.crypto_transfer_list.map((transfer) => {
       return {
         amount: transfer.amount,
         account: EntityId.fromEncodedId(transfer.entity_id).toString(),
       };
     });
     return {
-      consensus_ns: v.consensus_ns,
-      crypto_transfer_list,
+      consensusNs: v.consensus_ns,
+      cryptoTransfers,
     };
   });
 };
@@ -256,24 +256,24 @@ describe('DB integration test -  utils.isValidTransactionType', () => {
 // expected transaction rows order by consensus_ns desc, only check fields consensus_ns and crypto_transfer_list
 const expectedTransactionRowsDesc = [
   {
-    consensus_ns: '1052',
-    crypto_transfer_list: [
+    consensusNs: '1052',
+    cryptoTransfers: [
       {account: '0.15.8', amount: -31},
       {account: '0.15.9', amount: 30},
       {account: '0.15.98', amount: 1},
     ],
   },
   {
-    consensus_ns: '1051',
-    crypto_transfer_list: [
+    consensusNs: '1051',
+    cryptoTransfers: [
       {account: '0.15.9', amount: 20},
       {account: '0.15.10', amount: -21},
       {account: '0.15.98', amount: 1},
     ],
   },
   {
-    consensus_ns: '1050',
-    crypto_transfer_list: [
+    consensusNs: '1050',
+    cryptoTransfers: [
       {account: '0.15.9', amount: 10},
       {account: '0.15.10', amount: -11},
       {account: '0.15.98', amount: 1},
@@ -281,7 +281,7 @@ const expectedTransactionRowsDesc = [
   },
 ];
 const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) => {
-  m[row.consensus_ns] = row;
+  m[row.consensusNs] = row;
   return m;
 }, {});
 
@@ -333,16 +333,16 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
   const expected = [
     {
-      consensus_ns: '2064',
-      crypto_transfer_list: [
+      consensusNs: '2064',
+      cryptoTransfers: [
         {account: '0.15.63', amount: 20},
         {account: '0.15.82', amount: -21},
         {account: '0.15.98', amount: 1},
       ],
     },
     {
-      consensus_ns: '2063',
-      crypto_transfer_list: [
+      consensusNs: '2063',
+      cryptoTransfers: [
         {account: '0.15.63', amount: -71},
         {account: '0.15.82', amount: 70},
         {account: '0.15.98', amount: 1},
