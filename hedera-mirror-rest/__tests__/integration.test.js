@@ -166,7 +166,18 @@ const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
  * @returns {*}
  */
 const mapTransactionResults = (rows) => {
-  return rows.map((v) => `${v.consensus_ns}, ${EntityId.fromEncodedId(v.ctl_entity_id).toString()}, ${v.amount}`);
+  return rows.map((v) => {
+    const crypto_transfer_list = v.crypto_transfer_list.map((transfer) => {
+      return {
+        amount: transfer.amount,
+        account: EntityId.fromEncodedId(transfer.entity_id).toString(),
+      };
+    });
+    return {
+      consensus_ns: v.consensus_ns,
+      crypto_transfer_list,
+    };
+  });
 };
 
 const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
@@ -178,23 +189,6 @@ const extractNameAndResultFromTransactionResults = (rows) => rows.map((v) => `${
 //
 // TESTS
 //
-test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
-  const sql = await transactions.reqToSql({query: {}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
-  expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '1050, 0.15.10, -11',
-    '1050, 0.15.9, 10',
-    '1050, 0.15.98, 1',
-    '1051, 0.15.10, -21',
-    '1051, 0.15.9, 20',
-    '1051, 0.15.98, 1',
-    '1052, 0.15.8, -31',
-    '1052, 0.15.9, 30',
-    '1052, 0.15.98, 1',
-  ]);
-});
-
 describe('DB integration test - utils.getTransactionTypeQuery', () => {
   test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', async () => {
     await expect(utils.getTransactionTypeQuery(null)).resolves.toBe('');
@@ -259,11 +253,50 @@ describe('DB integration test -  utils.isValidTransactionType', () => {
   });
 });
 
+// expected transaction rows order by consensus_ns desc, only field consensus_ns and crypto_transfer_list
+const expectedTransactionRowsDesc = [
+  {
+    consensus_ns: '1052',
+    crypto_transfer_list: [
+      {account: '0.15.8', amount: -31},
+      {account: '0.15.9', amount: 30},
+      {account: '0.15.98', amount: 1},
+    ],
+  },
+  {
+    consensus_ns: '1051',
+    crypto_transfer_list: [
+      {account: '0.15.9', amount: 20},
+      {account: '0.15.10', amount: -21},
+      {account: '0.15.98', amount: 1},
+    ],
+  },
+  {
+    consensus_ns: '1050',
+    crypto_transfer_list: [
+      {account: '0.15.9', amount: 10},
+      {account: '0.15.10', amount: -11},
+      {account: '0.15.98', amount: 1},
+    ],
+  },
+];
+const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) => {
+  m[row.consensus_ns] = row;
+  return m;
+}, {});
+
+test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
+  const sql = await transactions.reqToSql({query: {}});
+  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  expect(res.rowCount).toEqual(3);
+  expect(mapTransactionResults(res.rows)).toEqual(expectedTransactionRowsDesc);
+});
+
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
   const sql = await transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
-  expect(mapTransactionResults(res.rows).sort()).toEqual(['1052, 0.15.8, -31', '1052, 0.15.9, 30', '1052, 0.15.98, 1']);
+  expect(res.rowCount).toEqual(1);
+  expect(mapTransactionResults(res.rows)[0]).toEqual(expectedTransactionRowsMap['1052']);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
@@ -279,18 +312,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 
   const sql = await transactions.reqToSql({query: {'account.id': '0.15.5'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(9);
-  expect(extractDurationAndMaxFeeFromTransactionResults(res.rows).sort()).toEqual([
-    '5, null',
-    '5, null',
-    '5, null',
-    'null, 777',
-    'null, 777',
-    'null, 777',
-    'null, null',
-    'null, null',
-    'null, null',
-  ]);
+  expect(extractDurationAndMaxFeeFromTransactionResults(res.rows)).toEqual(['null, null', 'null, 777', '5, null']);
 });
 
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
@@ -298,12 +320,7 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
 
   const sql = await transactions.reqToSql({query: {timestamp: '0.000001070'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(res.rowCount).toEqual(3);
-  expect(extractNameAndResultFromTransactionResults(res.rows).sort()).toEqual([
-    'UNKNOWN, UNKNOWN',
-    'UNKNOWN, UNKNOWN',
-    'UNKNOWN, UNKNOWN',
-  ]);
+  expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['UNKNOWN, UNKNOWN']);
 });
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
@@ -316,20 +333,31 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
   await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
 
+  const expected = [
+    {
+      consensus_ns: '2064',
+      crypto_transfer_list: [
+        {account: '0.15.63', amount: 20},
+        {account: '0.15.82', amount: -21},
+        {account: '0.15.98', amount: 1},
+      ],
+    },
+    {
+      consensus_ns: '2063',
+      crypto_transfer_list: [
+        {account: '0.15.63', amount: -71},
+        {account: '0.15.82', amount: 70},
+        {account: '0.15.98', amount: 1},
+      ],
+    },
+  ];
+
   const sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
-  // 6 transfers are applicable. For each transfer negative amount from self, amount to recipient and fee to bank
-  // Note bank is out of desired range but is expected in query result
-  expect(res.rowCount).toEqual(6);
-  expect(mapTransactionResults(res.rows).sort()).toEqual([
-    '2063, 0.15.63, -71',
-    '2063, 0.15.82, 70',
-    '2063, 0.15.98, 1',
-    '2064, 0.15.63, 20',
-    '2064, 0.15.82, -21',
-    '2064, 0.15.98, 1',
-  ]);
+  // 2 transaction, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
+  // recipient and fee to bank. Note bank is out of desired range but is expected in query result
+  expect(mapTransactionResults(res.rows).sort()).toEqual(expected);
 });
 
 describe('DB integration test - transactionTypes.get', () => {

@@ -25,7 +25,12 @@ const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils');
 const utils = require('../utils');
-const {buildWhereClause, createNftTransferList, createTransferLists} = require('../transactions');
+const {
+  buildWhereClause,
+  createCryptoTransferList,
+  createNftTransferList,
+  createTransferLists,
+} = require('../transactions');
 
 const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
@@ -396,6 +401,49 @@ describe('buildWhereClause', () => {
   });
 });
 
+describe('createCryptoTransferList', () => {
+  test('From null', () => {
+    expect(createCryptoTransferList(null)).toEqual([]);
+  });
+
+  test('From undefined', () => {
+    expect(createCryptoTransferList(undefined)).toEqual([]);
+  });
+
+  test('Simple createCryptoTransferList', () => {
+    const rowsFromDb = [
+      {
+        amount: 8,
+        entity_id: 3,
+      },
+      {
+        amount: -27,
+        entity_id: 9001,
+      },
+      {
+        amount: 19,
+        entity_id: 98,
+      },
+    ];
+    const expected = [
+      {
+        account: '0.0.3',
+        amount: 8,
+      },
+      {
+        account: '0.0.9001',
+        amount: -27,
+      },
+      {
+        account: '0.0.98',
+        amount: 19,
+      },
+    ];
+
+    expect(createCryptoTransferList(rowsFromDb)).toEqual(expected);
+  });
+});
+
 describe('createNftTransferList', () => {
   const rowsFromDb = [
     {
@@ -477,8 +525,6 @@ describe('create transferLists', () => {
       {
         consensus_ns: 1,
         entity_id: 98,
-        ctl_entity_id: 98,
-        amount: 100,
         memo: null,
         charged_tx_fee: 5,
         max_fee: 33,
@@ -492,13 +538,12 @@ describe('create transferLists', () => {
         transaction_bytes: 'bytes',
         node_account_id: 2,
         payer_account_id: 3,
+        crypto_transfer_list: [{amount: 100, entity_id: 98}],
         nft_transfer_list: nftTransfersFromDb,
       },
       {
         consensus_ns: 2,
         entity_id: 100,
-        ctl_entity_id: 100,
-        amount: 100,
         memo: null,
         charged_tx_fee: 5,
         max_fee: 33,
@@ -512,6 +557,7 @@ describe('create transferLists', () => {
         transaction_bytes: 'bytes',
         node_account_id: 2,
         payer_account_id: 3,
+        crypto_transfer_list: [{amount: 100, entity_id: 100}],
         nft_transfer_list: undefined,
       },
     ];
