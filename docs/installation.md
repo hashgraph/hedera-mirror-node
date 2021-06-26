@@ -9,8 +9,8 @@ docker-compose pull
 
 ## Building
 
-Ensure you have OpenJDK 11 installed, then run the following command from the top level directory. This will compile a
-runnable Mirror Node JAR file in the `target` directory.
+Ensure you have AdoptOpenJDK 11 installed, then run the following command from the top level directory. This will
+compile a runnable Mirror Node JAR file in the `target` directory.
 
 ```console
 ./mvnw clean package -DskipTests
@@ -91,7 +91,7 @@ npm test
 #### Prerequisites
 
 ``
-Go 1.13+
+Go 1.16+
 ``
 
 To start the Rosetta API ensure you have the necessary [configuration](configuration.md#rosetta-api) populated and run:
