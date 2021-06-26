@@ -151,6 +151,8 @@ if (config.stateproof.enabled || isTestEnv()) {
 app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
 app.getAsync(`${apiPrefix}/tokens/:id`, tokens.getTokenInfoRequest);
 app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenBalances);
+app.getAsync(`${apiPrefix}/tokens/:id/nfts`, tokens.getNftTokensRequest);
+app.getAsync(`${apiPrefix}/tokens/:id/nfts/:serialnumber`, tokens.getNftTokenInfoRequest);
 
 // topics routes
 app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
