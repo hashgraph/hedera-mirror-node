@@ -131,7 +131,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     @Test
-    void filtered() {
+    void allFiltered() {
         RecordFile recordFile = (RecordFile) getStreamFile();
         when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
                 .thenReturn(DateRangeFilter.empty());

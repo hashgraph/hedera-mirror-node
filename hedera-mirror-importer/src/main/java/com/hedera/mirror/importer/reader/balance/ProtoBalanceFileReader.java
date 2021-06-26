@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.reader.balance;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistryLite;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import reactor.core.publisher.Flux;
@@ -44,6 +46,7 @@ import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 
+@Log4j2
 @Named
 public class ProtoBalanceFileReader implements BalanceFileReader {
 
@@ -82,12 +85,13 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
             CodedInputStream input = CodedInputStream.newInstance(inputStream);
             AtomicLong consensusTimestamp = new AtomicLong(0L);
 
-            return Flux.<AccountBalance>generate(s -> {
+            return Flux.<AccountBalance>generate(sink -> {
                 try {
                     while (true) {
-                        switch (input.readTag()) {
+                        int tag = input.readTag();
+                        switch (tag) {
                             case TAG_EOF:
-                                s.complete();
+                                sink.complete();
                                 return;
                             case TAG_TIMESTAMP:
                                 Timestamp timestamp = input.readMessage(Timestamp.parser(), extensionRegistry);
@@ -95,12 +99,15 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
                                 break;
                             case TAG_BALANCE:
                                 var ab = input.readMessage(SingleAccountBalances.parser(), extensionRegistry);
-                                s.next(toAccountBalance(consensusTimestamp.get(), ab));
+                                sink.next(toAccountBalance(consensusTimestamp.get(), ab));
                                 return;
+                            default:
+                                log.warn("Unsupported tag: {}", tag);
+                                break;
                         }
                     }
-                } catch (java.io.IOException e) {
-                    s.error(new StreamFileReaderException(e));
+                } catch (IOException e) {
+                    sink.error(new StreamFileReaderException(e));
                 }
             }).doFinally(s -> IOUtils.closeQuietly(inputStream));
         });
@@ -129,6 +136,7 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
 
         try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest)) {
             while (inputStream.read(buffer) >= 0) {
+                // Fully read the stream to calculate the digest
             }
         } catch (Exception e) {
             throw new StreamFileReaderException(e);
