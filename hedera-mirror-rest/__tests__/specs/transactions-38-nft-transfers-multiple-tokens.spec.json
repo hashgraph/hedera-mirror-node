@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions via account id query filter where account is nft owner and sender",
+  "description": "Transaction api calls for single transaction with nft transfers across multiple tokens",
   "setup": {
     "accounts": [
       {
@@ -38,26 +38,34 @@
             "token_id": "0.0.90000"
           },
           {
-            "receiver_account_id": "0.0.9",
+            "receiver_account_id": null,
             "sender_account_id": "0.0.3",
             "serial_number": 2,
             "token_id": "0.0.90000"
           },
           {
             "receiver_account_id": "0.0.10",
-            "sender_account_id": "0.0.3",
+            "sender_account_id": null,
             "serial_number": 3,
             "token_id": "0.0.90000"
+          },
+          {
+            "receiver_account_id": "0.0.9",
+            "sender_account_id": null,
+            "serial_number": 1,
+            "token_id": "0.0.100000"
+          },
+          {
+            "receiver_account_id": "0.0.98",
+            "sender_account_id": "0.0.9",
+            "serial_number": 2,
+            "token_id": "0.0.100000"
           }
         ]
       }
     ]
   },
-  "urls": [
-    "/api/v1/transactions?account.id=0.0.3",
-    "/api/v1/transactions?account.id=0.3",
-    "/api/v1/transactions?account.id=3"
-  ],
+  "urls": ["/api/v1/transactions/0.0.8-1234567890-000000000"],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -79,28 +87,37 @@
         "transfers": [],
         "nft_transfers": [
           {
+            "receiver_account_id": "0.0.9",
+            "sender_account_id": null,
+            "serial_number": 1,
+            "token_id": "0.0.100000"
+          },
+          {
+            "receiver_account_id": "0.0.98",
+            "sender_account_id": "0.0.9",
+            "serial_number": 2,
+            "token_id": "0.0.100000"
+          },
+          {
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
             "serial_number": 1,
             "token_id": "0.0.90000"
           },
           {
-            "receiver_account_id": "0.0.9",
+            "receiver_account_id": null,
             "sender_account_id": "0.0.3",
             "serial_number": 2,
             "token_id": "0.0.90000"
           },
           {
             "receiver_account_id": "0.0.10",
-            "sender_account_id": "0.0.3",
+            "sender_account_id": null,
             "serial_number": 3,
             "token_id": "0.0.90000"
           }
         ]
       }
-    ],
-    "links": {
-      "next": null
-    }
+    ]
   }
 }
