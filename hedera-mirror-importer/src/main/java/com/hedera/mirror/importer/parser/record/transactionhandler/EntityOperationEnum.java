@@ -20,26 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
-
-@Named
-public class FileDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
-
-    public FileDeleteTransactionHandler() {
-        super(EntityOperationEnum.DELETE);
-    }
-
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getFileDelete().getFileID());
-    }
-
-    @Override
-    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        entity.setDeleted(true);
-    }
+enum EntityOperationEnum {
+    NONE,
+    CREATE,
+    UPDATE,
+    DELETE;
 }

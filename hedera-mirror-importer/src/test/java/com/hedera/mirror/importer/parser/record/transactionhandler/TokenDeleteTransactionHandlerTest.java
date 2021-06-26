@@ -20,22 +20,23 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenMintTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenMintTransactionsHandler();
+        return new TokenDeleteTransactionHandler();
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenMint(TokenMintTransactionBody.newBuilder()
+                .setTokenDeletion(TokenDeleteTransactionBody.newBuilder()
                         .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()).build());
     }
 

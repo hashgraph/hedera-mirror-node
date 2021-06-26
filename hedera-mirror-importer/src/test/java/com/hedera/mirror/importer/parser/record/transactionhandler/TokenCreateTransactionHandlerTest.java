@@ -23,36 +23,48 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenUpdateTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenUpdateTransactionsHandler();
+        return new TokenCreateTransactionHandler();
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()
-                        .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build())
+                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
                         .setAdminKey(DEFAULT_KEY)
-                        .setExpiry(Timestamp.newBuilder().setSeconds(360).build())
-                        .setKycKey(DEFAULT_KEY)
-                        .setFreezeKey(DEFAULT_KEY)
-                        .setSymbol("SYMBOL")
-                        .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
                         .setAutoRenewAccount(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2)
                                 .build())
                         .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
+                        .setDecimals(1000)
+                        .setExpiry(Timestamp.newBuilder().setSeconds(360))
+                        .setFreezeDefault(false)
+                        .setFreezeKey(DEFAULT_KEY)
+                        .setInitialSupply(1_000_000L)
+                        .setKycKey(DEFAULT_KEY)
+                        .setMemo(DEFAULT_MEMO)
                         .setName("token_name")
+                        .setSymbol("SYMBOL")
+                        .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
                         .setWipeKey(DEFAULT_KEY)
                         .build());
+    }
+
+    @Override
+    protected TransactionRecord.Builder getDefaultTransactionRecord() {
+        return TransactionRecord.newBuilder()
+                .setReceipt(TransactionReceipt.newBuilder()
+                        .setTokenID(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()));
     }
 
     @Override

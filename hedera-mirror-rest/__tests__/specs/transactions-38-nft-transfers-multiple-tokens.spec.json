@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions with nft transfers",
+  "description": "Transaction api calls for single transaction with nft transfers across multiple tokens",
   "setup": {
     "accounts": [
       {
@@ -65,7 +65,7 @@
       }
     ]
   },
-  "urls": ["/api/v1/transactions"],
+  "urls": ["/api/v1/transactions/0.0.8-1234567890-000000000"],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -118,9 +118,6 @@
           }
         ]
       }
-    ],
-    "links": {
-      "next": null
-    }
+    ]
   }
 }

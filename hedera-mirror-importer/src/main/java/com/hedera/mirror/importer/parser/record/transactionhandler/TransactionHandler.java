@@ -38,14 +38,6 @@ public interface TransactionHandler {
      */
     EntityId getEntity(RecordItem recordItem);
 
-    default EntityId getProxyAccount(RecordItem recordItem) {
-        return null;
-    }
-
-    default EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return null;
-    }
-
     /**
      * Override to return true if an implementation wants to update the entity returned by
      * {@link #getEntity(RecordItem)}.

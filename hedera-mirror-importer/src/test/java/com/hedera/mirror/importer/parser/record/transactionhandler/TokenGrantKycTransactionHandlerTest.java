@@ -21,22 +21,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenDissociateTransactionsHandlerTest extends AbstractTransactionHandlerTest {
+public class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenDissociateTransactionsHandler();
+        return new TokenGrantKycTransactionHandler();
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenDissociate(TokenDissociateTransactionBody.newBuilder()
-                        .setAccount(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM)));
+                .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
+                        .setAccount(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM))
+                        .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()).build());
     }
 
     @Override

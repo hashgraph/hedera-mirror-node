@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.Timestamp;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,8 +29,11 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@AllArgsConstructor
-public class ConsensusUpdateTopicTransactionHandler implements TransactionHandler {
+public class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public ConsensusUpdateTopicTransactionHandler() {
+        super(EntityOperationEnum.UPDATE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -39,17 +41,7 @@ public class ConsensusUpdateTopicTransactionHandler implements TransactionHandle
     }
 
     @Override
-    public EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getAutoRenewAccount());
-    }
-
-    @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var updateTopic = recordItem.getTransactionBody().getConsensusUpdateTopic();
         if (updateTopic.hasExpirationTime()) {
             Timestamp expirationTime = updateTopic.getExpirationTime();
@@ -67,5 +59,10 @@ public class ConsensusUpdateTopicTransactionHandler implements TransactionHandle
         if (updateTopic.hasMemo()) {
             entity.setMemo(updateTopic.getMemo().getValue());
         }
+    }
+
+    @Override
+    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getAutoRenewAccount());
     }
 }

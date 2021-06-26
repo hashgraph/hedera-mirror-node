@@ -29,9 +29,10 @@ const {NotFoundError} = require('./errors/notFoundError');
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
+ * @param {boolean} includeNftTransferList - include the nft transfer list or not
  * @return {string}
  */
-const getSelectClauseWithTransfers = () => {
+const getSelectClauseWithTransfers = (includeNftTransferList) => {
   // aggregate crypto transfers, token transfers, and nft transfers
   const aggregateCryptoTransferQuery = `
     select jsonb_agg(jsonb_build_object(
@@ -61,26 +62,32 @@ const getSelectClauseWithTransfers = () => {
     from nft_transfer
     where nft_transfer.consensus_timestamp = t.consensus_ns
   `;
+  const fields = [
+    't.payer_account_id',
+    't.memo',
+    't.consensus_ns',
+    't.valid_start_ns',
+    `coalesce(ttr.result, 'UNKNOWN') AS result`,
+    `coalesce(ttt.name, 'UNKNOWN') AS name`,
+    't.node_account_id',
+    't.charged_tx_fee',
+    't.valid_duration_seconds',
+    't.max_fee',
+    't.transaction_hash',
+    't.scheduled',
+    't.entity_id',
+    't.transaction_bytes',
+    `(${aggregateCryptoTransferQuery}) AS crypto_transfer_list`,
+    `(${aggregateTokenTransferQuery}) AS token_transfer_list`,
+  ];
+
+  if (includeNftTransferList) {
+    fields.push(`(${aggregateNftTransferQuery}) AS nft_transfer_list`);
+  }
 
   return `SELECT
-       t.payer_account_id,
-       t.memo,
-       t.consensus_ns,
-       t.valid_start_ns,
-       coalesce(ttr.result, 'UNKNOWN') AS result,
-       coalesce(ttt.name, 'UNKNOWN') AS name,
-       t.node_account_id,
-       t.charged_tx_fee,
-       t.valid_duration_seconds,
-       t.max_fee,
-       t.transaction_hash,
-       t.scheduled,
-       t.entity_id,
-       t.transaction_bytes,
-       (${aggregateCryptoTransferQuery}) AS crypto_transfer_list,
-       (${aggregateTokenTransferQuery}) AS token_transfer_list,
-       (${aggregateNftTransferQuery}) AS nft_transfer_list
-   `;
+    ${fields.join(',\n')}
+  `;
 };
 
 /**
@@ -200,13 +207,15 @@ const createTransferLists = (rows) => {
  * extract all relevant information for those transactions.
  * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
  * Also see: getTransactionsInnerQuery function
+ *
  * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
  * @param {String} order Sorting order
+ * @param {boolean} includeNftTransferList include the nft transfer list or not
  * @return {String} outerQuery Fully formed SQL query
  */
-const getTransactionsOuterQuery = (innerQuery, order) => {
+const getTransactionsOuterQuery = (innerQuery, order, includeNftTransferList) => {
   return `
-    ${getSelectClauseWithTransfers()}
+    ${getSelectClauseWithTransfers(includeNftTransferList)}
     FROM ( ${innerQuery} ) AS tlist
        JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
@@ -365,20 +374,6 @@ const getTransactionsInnerQuery = function (
       namedLimitQuery
     );
 
-    const namedNftTrAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ntl.sender_account_id');
-    const nftTrQuery = getTransferDistinctTimestampsQuery(
-      'nft_transfer',
-      'ntl',
-      namedTsQuery,
-      'consensus_timestamp',
-      resultTypeQuery,
-      transactionTypeQuery,
-      namedNftTrAccountQuery,
-      '',
-      order,
-      namedLimitQuery
-    );
-
     if (creditDebitQuery) {
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
@@ -390,17 +385,16 @@ const getTransactionsInnerQuery = function (
         ORDER BY consensus_timestamp ${order}
         ${namedLimitQuery}`;
     }
+
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, nft_transfer.account_id,
     // and token_transfer.account_id, a full outer join between the four tables is needed to get rows that may only exist in one.
     return `
-      SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp, ntl.consensus_timestamp) AS consensus_timestamp
+      SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS t
       FULL OUTER JOIN (${ctlQuery}) AS ctl
       ON t.consensus_timestamp = ctl.consensus_timestamp
       FULL OUTER JOIN (${ttlQuery}) AS ttl
       ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
-      FULL OUTER JOIN (${nftTrQuery}) as ntl
-      ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) = ntl.consensus_timestamp
       ORDER BY consensus_timestamp ${order}
       ${namedLimitQuery}`;
   }
@@ -418,6 +412,7 @@ const reqToSql = async function (req) {
   const transactionTypeQuery = await utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
+  const includeNftTransferList = false;
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,
@@ -428,7 +423,7 @@ const reqToSql = async function (req) {
     transactionTypeQuery,
     order
   );
-  const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
+  const sqlQuery = getTransactionsOuterQuery(innerQuery, order, includeNftTransferList);
 
   return {
     limit,
@@ -454,7 +449,7 @@ const getTransactions = async (req, res) => {
 
   // Execute query
   const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
-  const transferList = createTransferLists(rows);
+  const transferList = createTransferLists(rows, false);
   const ret = {
     transactions: transferList.transactions,
   };
@@ -510,9 +505,10 @@ const getOneTransaction = async (req, res) => {
   const scheduledQuery = getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause('t.payer_account_id = ?', 't.valid_start_ns = ?', scheduledQuery);
+  const includeNftTransferList = true;
 
   const sqlQuery = `
-    ${getSelectClauseWithTransfers()}
+    ${getSelectClauseWithTransfers(includeNftTransferList)}
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
@@ -530,7 +526,7 @@ const getOneTransaction = async (req, res) => {
     throw new NotFoundError('Not found');
   }
 
-  const transferList = createTransferLists(rows);
+  const transferList = createTransferLists(rows, true);
   logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions: transferList.transactions,

@@ -59,10 +59,6 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
-    protected static final Long DEFAULT_CREATED_TIMESTAMP = 0L;
-
-    protected static final boolean DEFAULT_DELETED = false;
-
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
 
     protected static final Timestamp DEFAULT_EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
@@ -80,7 +76,17 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected static final String UPDATED_MEMO = "update memo";
 
+    private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
+
+    private static final Timestamp MODIFIED_TIMESTAMP = Timestamp.newBuilder().setSeconds(200).setNanos(2).build();
+
+    private static final Long CREATED_TIMESTAMP_NS = Utility.timestampInNanosMax(CREATED_TIMESTAMP);
+
+    private static final Long MODIFIED_TIMESTAMP_NS = Utility.timestampInNanosMax(MODIFIED_TIMESTAMP);
+
     private TransactionHandler transactionHandler;
+
+    private EntityOperationEnum entityOperationEnum;
 
     protected abstract TransactionHandler getTransactionHandler();
 
@@ -106,6 +112,11 @@ public abstract class AbstractTransactionHandlerTest {
     void beforeEach(TestInfo testInfo) {
         System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
         transactionHandler = getTransactionHandler();
+
+        if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
+            AbstractEntityCrudTransactionHandler handler = (AbstractEntityCrudTransactionHandler) transactionHandler;
+            entityOperationEnum = handler.getEntityOperationEnum();
+        }
     }
 
     @Test
@@ -171,6 +182,20 @@ public abstract class AbstractTransactionHandlerTest {
                         .build(),
                 transactionRecord);
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
+    }
+
+    protected Entity getExpectedEntityWithTimestamp() {
+        Entity entity = new Entity();
+
+        if (entityOperationEnum == EntityOperationEnum.CREATE) {
+            entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
+            entity.setDeleted(false);
+            entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
+        } else {
+            entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
+        }
+
+        return entity;
     }
 
     private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
@@ -292,7 +317,8 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     private Entity getExpectedUpdatedEntity() {
-        Entity entity = new Entity();
+        Entity entity = getExpectedEntityWithTimestamp();
+
         TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
         List<String> fieldNames = innerBody.getDescriptorForType().getFields().stream()
@@ -319,15 +345,6 @@ public abstract class AbstractTransactionHandlerTest {
                 default:
                     break;
             }
-        }
-
-        // set created_timestamp and deleted based on transaction body type
-        String dataCaseName = defaultBody.getDataCase().name().toLowerCase();
-        if (dataCaseName.contains("creat")) { // some names use creation vs create
-            entity.setCreatedTimestamp(DEFAULT_CREATED_TIMESTAMP);
-            entity.setDeleted(DEFAULT_DELETED);
-        } else if (dataCaseName.contains("delete")) {
-            entity.setDeleted(true);
         }
 
         entity.setMemo("");
@@ -396,7 +413,17 @@ public abstract class AbstractTransactionHandlerTest {
                                 .toByteString()
                 )
                 .build();
-        return new RecordItem(transaction, TransactionRecord.newBuilder().build());
+
+        TransactionRecord record;
+        if (transactionHandler.updatesEntity()) {
+            Timestamp consensusTimestamp =
+                    entityOperationEnum == EntityOperationEnum.CREATE ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
+            record = getDefaultTransactionRecord().setConsensusTimestamp(consensusTimestamp).build();
+        } else {
+            record = getDefaultTransactionRecord().build();
+        }
+
+        return new RecordItem(transaction, record);
     }
 
     protected static Key getKey(String keyString) {
