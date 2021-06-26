@@ -449,7 +449,7 @@ const getTransactions = async (req, res) => {
 
   // Execute query
   const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
-  const transferList = createTransferLists(rows, false);
+  const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,
   };
@@ -526,7 +526,7 @@ const getOneTransaction = async (req, res) => {
     throw new NotFoundError('Not found');
   }
 
-  const transferList = createTransferLists(rows, true);
+  const transferList = createTransferLists(rows);
   logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions: transferList.transactions,
