@@ -528,6 +528,59 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - tokens
+  /api/v1/tokens/{id}/nfts:
+    get:
+      summary: List nft tokens
+      description: Returns a list of nft tokens
+      operationId: listNfts
+      parameters:
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/serialNumberQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nfts'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - tokens
+  /api/v1/tokens/{id}/nfts/{serialnumber}:
+    get:
+      summary: Get nft token info
+      description: Returns an nft tokens information
+      operationId: listNftsById
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nft'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - tokens
+  /api/v1/tokens/{id}/nfts/{serialnumber}/transactions:
+    get:
+      summary: Get an nft tokens transction history
+      description: Returns a list of transactions for a given nft
+      operationId: listNftsTransactions
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NftTransactionHistory'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - tokens
 tags:
   - name: accounts
     description: The accounts object represents the information associated with an account entity and returns a list of account information.
@@ -730,6 +783,64 @@ components:
         next:
           example: null
           nullable: true
+    Nft:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/EntityId'
+        created_timestamp:
+          type: string
+          example: "1234567890.000000001"
+        deleted:
+          type: boolean
+        metadata:
+          type: string
+        modified_timestamp:
+          type: string
+          example: "1234567890.000000001"
+        serial_number:
+          type: number
+        token_id:
+          $ref: '#/components/schemas/EntityId'
+      example:
+        account_id: "0.1.2"
+        created_timestamp: "1234567890.000000001"
+        deleted: false
+        metadata: "VGhpcyBpcyBhIHRlc3QgTkZU"
+        modified_timestamp: "1610682445.003266001"
+        serial_number: 124
+        token_id: "0.0.222"
+    Nfts:
+      type: array
+      items:
+        $ref: '#/components/schemas/Nft'
+    NftTransactionTransfer:
+      type: object
+      properties:
+        consensus_timestamp:
+          type: string
+        transaction_id:
+          type: string
+        receiver_account_id:
+          $ref: '#/components/schemas/EntityId'
+        sender_account_id:
+          $ref: '#/components/schemas/EntityId'
+        type:
+          type: string
+          example: "1234567890.000000001"
+        token_id:
+          $ref: '#/components/schemas/EntityId'
+      example:
+        consensus_timestamp: "1618591023.997420021"
+        id: "0.0.19789-1618591023-997420021"
+        receiver_account_id: "0.0.11"
+        sender_account_id: "0.0.10"
+        type: "CRYPTOTRANSFER"
+        token_id: "0.0.1000"
+    NftTransactionHistory:
+      type: array
+      items:
+        $ref: '#/components/schemas/NftTransactionTransfer'
     Schedule:
       type: object
       properties:
@@ -1255,6 +1366,16 @@ components:
         type: array
         items:
           type: string
+    serialNumberQueryParam:
+      name: serialnumber
+      in: query
+      description: The nft serial number
+      example: 2
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+        maximum: 9223372036854775807
     timestampQueryParam:
       name: timestamp
       in: query

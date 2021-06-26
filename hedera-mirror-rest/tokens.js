@@ -643,6 +643,7 @@ const getToken = async (pgSqlQuery, tokenId) => {
 
 /**
  * Extracts SQL query, params, order, and limit
+ * Combine NFT CREATION and TRANSFERS details fron nft_transfer with DELETION details from nft
  *
  * @param {string} tokenId encoded token ID
  * @param {string} serialNumber nft serial number
@@ -650,12 +651,6 @@ const getToken = async (pgSqlQuery, tokenId) => {
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transferQuery, deleteQuery) => {
-  // combine the results of the following
-  // CREATION - from createTimestamp get transactions
-  // TRANSFERS - using token id and serial number get nft transfers, then get transaction ids
-  // DELETION - from deleted time which should be modified assuming you can't do anything to an nft after it's been deleted
-  // Build this list with these 3 calls cause a multi join doesn't make sense
-
   const limit = config.maxLimit;
   const order = constants.orderFilterValues.DESC;
   const joinNftTransferClause = `join ${NftTransfer.tableName} ${NftTransfer.tableAlias} on ${Nft.nftQueryColumns.TOKEN_ID} = ${NftTransfer.nftTransferFullNameColumns.TOKEN_ID}
@@ -728,15 +723,6 @@ const nftDeleteHistorySelectFields = [
 const nftDeleteHistorySelectQuery = ['select', nftDeleteHistorySelectFields.join(',\n'), `from ${Nft.tableName}`].join(
   '\n'
 );
-
-/**
- * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
- */
-const validateSerialNumberParam = (serialNumber) => {
-  if (!utils.isValidNum(serialNumber)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.SERIAL_NUMBER);
-  }
-};
 
 /**
  * Handler function for /api/v1/tokens/{id}/nfts/{serialNumber}/transactions API.
