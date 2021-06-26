@@ -126,9 +126,8 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
     private String getHash(StreamFileData streamFileData) {
         byte[] buffer = new byte[8192];
         MessageDigest messageDigest = DigestUtils.getSha384Digest();
-        InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest);
 
-        try {
+        try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest)) {
             while (inputStream.read(buffer) >= 0) {
             }
         } catch (Exception e) {
