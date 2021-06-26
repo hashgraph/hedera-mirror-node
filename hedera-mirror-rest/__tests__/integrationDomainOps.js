@@ -37,6 +37,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadEntities(testDataJson.entities);
+  await loadNfts(testDataJson.nfts);
   await loadSchedules(testDataJson.schedules);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
@@ -82,6 +83,16 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadNfts = async (nfts) => {
+  if (nfts == null) {
+    return;
+  }
+
+  for (const nft of nfts) {
+    await addNft(nft);
   }
 };
 
@@ -147,14 +158,15 @@ const loadTopicMessages = async (messages) => {
 
 const addEntity = async (defaults, entity) => {
   entity = {
-    shard: 0,
-    realm: 0,
-    expiration_timestamp: null,
-    public_key: null,
-    type: 1,
     auto_renew_period: null,
+    deleted: false,
+    expiration_timestamp: null,
     key: null,
     memo: '',
+    public_key: null,
+    realm: 0,
+    shard: 0,
+    type: 1,
     ...defaults,
     ...entity,
   };
@@ -170,7 +182,7 @@ const addEntity = async (defaults, entity) => {
       entity.realm,
       entity.num,
       entity.expiration_timestamp,
-      false,
+      entity.deleted,
       entity.public_key,
       entity.auto_renew_period,
       entity.key,
@@ -511,6 +523,38 @@ const addTokenAccount = async (tokenAccount) => {
       tokenAccount.kyc_status,
       tokenAccount.modified_timestamp,
       EntityId.fromString(tokenAccount.token_id).getEncodedId(),
+    ]
+  );
+};
+
+const addNft = async (nft) => {
+  // create nft account object
+  nft = {
+    account_id: '0.0.0',
+    created_timestamp: 0,
+    deleted: false,
+    metadata: '\\x',
+    modified_timestamp: 0,
+    serial_number: 0,
+    token_id: '0.0.0',
+    ...nft,
+  };
+
+  if (!nft.modified_timestamp) {
+    nft.modified_timestamp = nft.created_timestamp;
+  }
+
+  await sqlConnection.query(
+    `INSERT INTO nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+    [
+      EntityId.fromString(nft.account_id).getEncodedId(),
+      nft.created_timestamp,
+      nft.deleted,
+      nft.modified_timestamp,
+      nft.metadata,
+      nft.serial_number,
+      EntityId.fromString(nft.token_id).getEncodedId(),
     ]
   );
 };
