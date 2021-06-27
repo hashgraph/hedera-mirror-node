@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.reader.balance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.UnknownFieldSet;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -44,6 +46,8 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.AllAccountBalances;
+import com.hedera.services.stream.proto.SingleAccountBalances;
 
 class ProtoBalanceFileReaderTest {
 
@@ -72,6 +76,38 @@ class ProtoBalanceFileReaderTest {
                 .isEqualTo(expected);
         assertThat(expected.getItems().collectList().block()).isEqualTo(actual.getItems().collectList().block());
         assertThat(actual.getLoadStart()).isNotNull().isPositive();
+    }
+
+    @Test
+    void emptyProtobuf() {
+        AllAccountBalances allAccountBalances = AllAccountBalances.newBuilder().build();
+        byte[] bytes = allAccountBalances.toByteArray();
+        StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
+        assertThrows(InvalidStreamFileException.class, () -> protoBalanceFileReader.read(streamFileData));
+    }
+
+    @Test
+    void missingTimestamp() {
+        AllAccountBalances allAccountBalances = AllAccountBalances.newBuilder()
+                .addAllAccounts(SingleAccountBalances.newBuilder().build()).build();
+        byte[] bytes = allAccountBalances.toByteArray();
+        StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
+        assertThrows(InvalidStreamFileException.class, () -> protoBalanceFileReader.read(streamFileData));
+    }
+
+    @Test
+    void unknownFields() {
+        UnknownFieldSet.Field field = UnknownFieldSet.Field.newBuilder().addFixed32(11).build();
+        AllAccountBalances allAccountBalances = AllAccountBalances.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(1L).build())
+                .mergeUnknownFields(UnknownFieldSet.newBuilder().addField(23, field).build())
+                .addAllAccounts(SingleAccountBalances.newBuilder().build())
+                .build();
+        byte[] bytes = allAccountBalances.toByteArray();
+        StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
+        AccountBalanceFile accountBalanceFile = protoBalanceFileReader.read(streamFileData);
+        assertThat(accountBalanceFile).isNotNull();
+        assertThat(accountBalanceFile.getItems().count().block()).isEqualTo(1L);
     }
 
     @Test
