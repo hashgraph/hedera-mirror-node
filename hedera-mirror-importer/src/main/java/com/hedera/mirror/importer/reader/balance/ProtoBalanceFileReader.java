@@ -26,8 +26,6 @@ import com.google.protobuf.UnknownFieldSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,14 +69,18 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
                 .map(AccountBalance.Id::getConsensusTimestamp)
                 .blockFirst();
 
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
-        accountBalanceFile.setBytes(streamFileData.getBytes());
-        accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
-        accountBalanceFile.setFileHash(getHash(streamFileData));
-        accountBalanceFile.setItems(items);
-        accountBalanceFile.setLoadStart(loadStart.getEpochSecond());
-        accountBalanceFile.setName(streamFileData.getFilename());
-        return accountBalanceFile;
+        try {
+            AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
+            accountBalanceFile.setBytes(streamFileData.getBytes());
+            accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
+            accountBalanceFile.setFileHash(DigestUtils.sha384Hex(streamFileData.getInputStream()));
+            accountBalanceFile.setItems(items);
+            accountBalanceFile.setLoadStart(loadStart.getEpochSecond());
+            accountBalanceFile.setName(streamFileData.getFilename());
+            return accountBalanceFile;
+        } catch (IOException e) {
+            throw new StreamFileReaderException(e);
+        }
     }
 
     private Flux<AccountBalance> toFlux(StreamFileData streamFileData) {
@@ -138,21 +140,5 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
                 tokenBalances,
                 new AccountBalance.Id(consensusTimestamp, accountId)
         );
-    }
-
-    // Calculating the hash from the raw byte stream is 5x faster than parsing the protobuf
-    private String getHash(StreamFileData streamFileData) {
-        byte[] buffer = new byte[8192];
-        MessageDigest messageDigest = DigestUtils.getSha384Digest();
-
-        try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest)) {
-            while (inputStream.read(buffer) >= 0) {
-                // Fully read the stream to calculate the digest
-            }
-        } catch (Exception e) {
-            throw new StreamFileReaderException(e);
-        }
-
-        return Utility.bytesToHex(messageDigest.digest());
     }
 }
