@@ -66,8 +66,6 @@ const recordIpAndEndpoint = async (req, res, next) => {
   }
 };
 
-const maskIp = (ip) => {};
-
 module.exports = {
   metricsHandler,
   recordIpAndEndpoint,
