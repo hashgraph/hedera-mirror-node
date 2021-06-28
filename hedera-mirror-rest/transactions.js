@@ -27,55 +27,94 @@ const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
 
 /**
- * Gets the select clause with token transfers sorted by token_id and account_id in the specified order
+ * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
- * @param {string} order sorting order
+ * @param {boolean} includeNftTransferList - include the nft transfer list or not
  * @return {string}
  */
-const getSelectClauseWithTokenTransferOrder = (includeNftTransferList) => {
-  const nftTransferList =
-    includeNftTransferList === true
-      ? `json_agg(
-         distinct jsonb_build_object(
-           'receiver_account_id', ntl.receiver_account_id::text,
-           'sender_account_id', ntl.sender_account_id::text,
-           'serial_number', ntl.serial_number,
-           'token_id', ntl.token_id::text
-         )
-       ) FILTER (WHERE ntl.token_id IS NOT NULL) AS nft_transfer_list,`
-      : '';
-  // token transfers are aggregated as an array of json objects {token_id, account_id, amount}
+const getSelectClauseWithTransfers = (includeNftTransferList) => {
+  // aggregate crypto transfers, token transfers, and nft transfers
+  const aggregateCryptoTransferQuery = `
+    select jsonb_agg(jsonb_build_object(
+        'amount', amount,
+        'entity_id', entity_id
+      ) order by entity_id, amount
+    )
+    from crypto_transfer
+    where crypto_transfer.consensus_timestamp = t.consensus_ns
+  `;
+  const aggregateTokenTransferQuery = `
+    select jsonb_agg(jsonb_build_object(
+        'account_id', account_id,
+        'amount', amount,
+        'token_id', token_id
+      ))
+    from token_transfer
+    where token_transfer.consensus_timestamp = t.consensus_ns
+  `;
+  const aggregateNftTransferQuery = `
+    select jsonb_agg(jsonb_build_object(
+      'receiver_account_id', receiver_account_id,
+      'sender_account_id', sender_account_id,
+      'serial_number', serial_number,
+      'token_id', token_id
+      ))
+    from nft_transfer
+    where nft_transfer.consensus_timestamp = t.consensus_ns
+  `;
+  const fields = [
+    't.payer_account_id',
+    't.memo',
+    't.consensus_ns',
+    't.valid_start_ns',
+    `coalesce(ttr.result, 'UNKNOWN') AS result`,
+    `coalesce(ttt.name, 'UNKNOWN') AS name`,
+    't.node_account_id',
+    't.charged_tx_fee',
+    't.valid_duration_seconds',
+    't.max_fee',
+    't.transaction_hash',
+    't.scheduled',
+    't.entity_id',
+    't.transaction_bytes',
+    `(${aggregateCryptoTransferQuery}) AS crypto_transfer_list`,
+    `(${aggregateTokenTransferQuery}) AS token_transfer_list`,
+  ];
+
+  if (includeNftTransferList) {
+    fields.push(`(${aggregateNftTransferQuery}) AS nft_transfer_list`);
+  }
+
   return `SELECT
-       t.payer_account_id,
-       t.memo,
-       t.consensus_ns,
-       t.valid_start_ns,
-       coalesce(ttr.result, 'UNKNOWN') AS result,
-       coalesce(ttt.name, 'UNKNOWN') AS name,
-       t.node_account_id,
-       ctl.entity_id AS ctl_entity_id,
-       ctl.amount AS amount,
-       json_agg(
-         distinct jsonb_build_object(
-           'token_id', ttl.token_id::text,
-           'account_id', ttl.account_id::text,
-           'amount', ttl.amount
-         )
-       ) FILTER (WHERE ttl.token_id IS NOT NULL) AS token_transfer_list,
-       ${nftTransferList}
-       t.charged_tx_fee,
-       t.valid_duration_seconds,
-       t.max_fee,
-       t.transaction_hash,
-       t.scheduled,
-       t.entity_id,
-       t.transaction_bytes`;
+    ${fields.join(',\n')}
+  `;
+};
+
+/**
+ * Creates crypto transfer list from aggregated array of JSON objects in the query result. Note if the
+ * cryptoTransferList is undefined, an empty array is returned.
+ *
+ * @param cryptoTransferList crypto transfer list
+ * @return {{account: string, amount: Number}[]}
+ */
+const createCryptoTransferList = (cryptoTransferList) => {
+  if (!cryptoTransferList) {
+    return [];
+  }
+
+  return cryptoTransferList.map((transfer) => {
+    const {entity_id: accountId, amount} = transfer;
+    return {
+      account: EntityId.fromEncodedId(accountId).toString(),
+      amount,
+    };
+  });
 };
 
 /**
  * Creates token transfer list from aggregated array of JSON objects in the query result
  *
- * @param tokenTransferList token transfer list string
+ * @param tokenTransferList token transfer list
  * @return {undefined|{amount: Number, account: string, token_id: string}[]}
  */
 const createTokenTransferList = (tokenTransferList) => {
@@ -96,8 +135,8 @@ const createTokenTransferList = (tokenTransferList) => {
 /**
  * Creates an nft transfer list from aggregated array of JSON objects in the query result
  *
- * @param tokenTransferList token transfer list string
- * @return {undefined|{amount: Number, account: string, token_id: string}[]}
+ * @param nftTransferList nft transfer list
+ * @return {undefined|{receiver_account_id: string, sender_account_id: string, serial_number: Number, token_id: string}[]}
  */
 const createNftTransferList = (nftTransferList) => {
   if (!nftTransferList) {
@@ -121,62 +160,43 @@ const createNftTransferList = (nftTransferList) => {
 };
 
 /**
- * Create transferlists from the output of SQL queries. The SQL table has different
- * rows for each of the transfers in a single transaction. This function collates all
- * transfers into a single list.
+ * Create transferlists from the output of SQL queries.
+ *
  * @param {Array of objects} rows Array of rows returned as a result of an SQL query
  * @return {{anchorSecNs: (String|number), transactions: {}}}
  */
-const createTransferLists = (rows, includeNfts) => {
-  // If the transaction has a transferlist (i.e. list of individual transfers, it
-  // will show up as separate rows. Combine those into a single transferlist for
-  // a given consensus_ns (Note that there could be two records for the same
-  // transaction-id where one would pass and others could fail as duplicates)
-  const transactions = {};
+const createTransferLists = (rows) => {
+  const transactions = rows.map((row) => {
+    const validStartTimestamp = row.valid_start_ns;
+    return {
+      charged_tx_fee: Number(row.charged_tx_fee),
+      consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
+      entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
+      id: row.id,
+      max_fee: utils.getNullableNumber(row.max_fee),
+      memo_base64: utils.encodeBase64(row.memo),
+      name: row.name,
+      nft_transfers: createNftTransferList(row.nft_transfer_list),
+      node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
+      result: row.result,
+      scheduled: row.scheduled,
+      token_transfers: createTokenTransferList(row.token_transfer_list),
+      bytes: utils.encodeBase64(row.transaction_bytes),
+      transaction_hash: utils.encodeBase64(row.transaction_hash),
+      transaction_id: utils.createTransactionId(
+        EntityId.fromEncodedId(row.payer_account_id).toString(),
+        validStartTimestamp
+      ),
+      transfers: createCryptoTransferList(row.crypto_transfer_list),
+      valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
+      valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
+    };
+  });
 
-  for (const row of rows) {
-    if (!(row.consensus_ns in transactions)) {
-      const validStartTimestamp = row.valid_start_ns;
-      transactions[row.consensus_ns] = {
-        charged_tx_fee: Number(row.charged_tx_fee),
-        consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
-        entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
-        id: row.id,
-        max_fee: utils.getNullableNumber(row.max_fee),
-        memo_base64: utils.encodeBase64(row.memo),
-        name: row.name,
-        node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
-        result: row.result,
-        scheduled: row.scheduled,
-        token_transfers: createTokenTransferList(row.token_transfer_list),
-        bytes: utils.encodeBase64(row.transaction_bytes),
-        transaction_hash: utils.encodeBase64(row.transaction_hash),
-        transaction_id: utils.createTransactionId(
-          EntityId.fromEncodedId(row.payer_account_id).toString(),
-          validStartTimestamp
-        ),
-        transfers: [],
-        valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
-        valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
-      };
-
-      if (includeNfts) {
-        transactions[row.consensus_ns].nft_transfers = createNftTransferList(row.nft_transfer_list);
-      }
-    }
-
-    if (row.ctl_entity_id !== null) {
-      transactions[row.consensus_ns].transfers.push({
-        account: EntityId.fromEncodedId(row.ctl_entity_id).toString(),
-        amount: Number(row.amount),
-      });
-    }
-  }
-
-  const anchorSecNs = rows.length > 0 ? utils.nsToSecNs(rows[rows.length - 1].consensus_ns) : 0;
+  const anchorSecNs = transactions.length > 0 ? transactions[transactions.length - 1].consensus_timestamp : 0;
 
   return {
-    transactions: Object.values(transactions),
+    transactions,
     anchorSecNs,
   };
 };
@@ -187,21 +207,20 @@ const createTransferLists = (rows, includeNfts) => {
  * extract all relevant information for those transactions.
  * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
  * Also see: getTransactionsInnerQuery function
+ *
  * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
  * @param {String} order Sorting order
- * @return {{Promise<String>}} outerQuery Fully formed SQL query
+ * @param {boolean} includeNftTransferList include the nft transfer list or not
+ * @return {String} outerQuery Fully formed SQL query
  */
-const getTransactionsOuterQuery = async (innerQuery, order, includeNftTransferList) => {
+const getTransactionsOuterQuery = (innerQuery, order, includeNftTransferList) => {
   return `
-    ${getSelectClauseWithTokenTransferOrder(includeNftTransferList)}
+    ${getSelectClauseWithTransfers(includeNftTransferList)}
     FROM ( ${innerQuery} ) AS tlist
        JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-       LEFT OUTER JOIN crypto_transfer ctl ON tlist.consensus_timestamp = ctl.consensus_timestamp
-       LEFT OUTER JOIN token_transfer ttl ON tlist.consensus_timestamp = ttl.consensus_timestamp
-     GROUP BY t.consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo, t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
-     ORDER BY t.consensus_ns ${order} , ctl_entity_id ASC, amount ASC`;
+     ORDER BY t.consensus_ns ${order}`;
 };
 
 /**
@@ -404,7 +423,7 @@ const reqToSql = async function (req) {
     transactionTypeQuery,
     order
   );
-  const sqlQuery = await getTransactionsOuterQuery(innerQuery, order, includeNftTransferList);
+  const sqlQuery = getTransactionsOuterQuery(innerQuery, order, includeNftTransferList);
 
   return {
     limit,
@@ -430,7 +449,7 @@ const getTransactions = async (req, res) => {
 
   // Execute query
   const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
-  const transferList = createTransferLists(rows, false);
+  const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,
   };
@@ -489,17 +508,12 @@ const getOneTransaction = async (req, res) => {
   const includeNftTransferList = true;
 
   const sqlQuery = `
-    ${getSelectClauseWithTokenTransferOrder(includeNftTransferList)}
+    ${getSelectClauseWithTransfers(includeNftTransferList)}
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-    LEFT JOIN crypto_transfer ctl ON ctl.consensus_timestamp = t.consensus_ns
-    LEFT JOIN token_transfer ttl ON t.consensus_ns = ttl.consensus_timestamp
-    LEFT JOIN nft_transfer ntl ON t.consensus_ns = ntl.consensus_timestamp
     ${whereClause}
-    GROUP BY consensus_ns, ctl_entity_id, ctl.amount, ttr.result, ttt.name, t.payer_account_id, t.memo,
-      t.valid_start_ns, t.node_account_id, t.charged_tx_fee, t.valid_duration_seconds, t.max_fee, t.transaction_hash
-    ORDER BY consensus_ns ASC, ctl_entity_id ASC, ctl.amount ASC`;
+    ORDER BY consensus_ns ASC`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
   if (logger.isTraceEnabled()) {
@@ -512,7 +526,7 @@ const getOneTransaction = async (req, res) => {
     throw new NotFoundError('Not found');
   }
 
-  const transferList = createTransferLists(rows, true);
+  const transferList = createTransferLists(rows);
   logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions: transferList.transactions,
@@ -531,6 +545,7 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    createCryptoTransferList,
     createNftTransferList,
     createTokenTransferList,
     createTransferLists,

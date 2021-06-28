@@ -25,7 +25,12 @@ const request = require('supertest');
 const server = require('../server');
 const testutils = require('./testutils');
 const utils = require('../utils');
-const {buildWhereClause, createNftTransferList, createTransferLists} = require('../transactions');
+const {
+  buildWhereClause,
+  createCryptoTransferList,
+  createNftTransferList,
+  createTransferLists,
+} = require('../transactions');
 
 const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
@@ -396,53 +401,104 @@ describe('buildWhereClause', () => {
   });
 });
 
-describe('createNftTransferList', () => {
-  const rowsFromDb = [
-    {
-      consensus_timestamp: 1,
-      receiver_account_id: 1000,
-      sender_account_id: 98,
-      serial_number: 1,
-      token_id: 2000,
-    },
-    {
-      consensus_timestamp: 10,
-      receiver_account_id: 1005,
-      sender_account_id: 98,
-      serial_number: 2,
-      token_id: 2000,
-    },
-    {
-      consensus_timestamp: 100,
-      receiver_account_id: 98,
-      sender_account_id: 1005,
-      serial_number: 2,
-      token_id: 2000,
-    },
-  ];
+describe('createCryptoTransferList', () => {
+  test('From null', () => {
+    expect(createCryptoTransferList(null)).toEqual([]);
+  });
 
-  const expectedFormat = [
-    {
-      receiver_account_id: '0.0.1000',
-      sender_account_id: '0.0.98',
-      serial_number: 1,
-      token_id: '0.0.2000',
-    },
-    {
-      receiver_account_id: '0.0.1005',
-      sender_account_id: '0.0.98',
-      serial_number: 2,
-      token_id: '0.0.2000',
-    },
-    {
-      receiver_account_id: '0.0.98',
-      sender_account_id: '0.0.1005',
-      serial_number: 2,
-      token_id: '0.0.2000',
-    },
-  ];
+  test('From undefined', () => {
+    expect(createCryptoTransferList(undefined)).toEqual([]);
+  });
+
+  test('Simple createCryptoTransferList', () => {
+    const rowsFromDb = [
+      {
+        amount: 8,
+        entity_id: 3,
+      },
+      {
+        amount: -27,
+        entity_id: 9001,
+      },
+      {
+        amount: 19,
+        entity_id: 98,
+      },
+    ];
+    const expected = [
+      {
+        account: '0.0.3',
+        amount: 8,
+      },
+      {
+        account: '0.0.9001',
+        amount: -27,
+      },
+      {
+        account: '0.0.98',
+        amount: 19,
+      },
+    ];
+
+    expect(createCryptoTransferList(rowsFromDb)).toEqual(expected);
+  });
+});
+
+describe('createNftTransferList', () => {
+  test('From null', () => {
+    expect(createNftTransferList(null)).toEqual(undefined);
+  });
+
+  test('From undefined', () => {
+    expect(createNftTransferList(undefined)).toEqual(undefined);
+  });
 
   test('Simple createNftTransferList', () => {
+    const rowsFromDb = [
+      {
+        consensus_timestamp: 1,
+        receiver_account_id: 1000,
+        sender_account_id: 98,
+        serial_number: 1,
+        token_id: 2000,
+      },
+      {
+        consensus_timestamp: 10,
+        receiver_account_id: 1005,
+        sender_account_id: 98,
+        serial_number: 2,
+        token_id: 2000,
+      },
+      {
+        consensus_timestamp: 100,
+        receiver_account_id: 98,
+        sender_account_id: 1005,
+        serial_number: 2,
+        token_id: 2000,
+      },
+    ];
+
+    const expectedFormat = [
+      {
+        receiver_account_id: '0.0.1000',
+        sender_account_id: '0.0.98',
+        serial_number: 1,
+        token_id: '0.0.2000',
+      },
+      {
+        receiver_account_id: '0.0.1005',
+        sender_account_id: '0.0.98',
+        serial_number: 2,
+        token_id: '0.0.2000',
+      },
+      {
+        receiver_account_id: '0.0.98',
+        sender_account_id: '0.0.1005',
+        serial_number: 2,
+        token_id: '0.0.2000',
+      },
+    ];
+
     expect(createNftTransferList(rowsFromDb)).toEqual(expectedFormat);
   });
 });
@@ -477,8 +533,6 @@ describe('create transferLists', () => {
       {
         consensus_ns: 1,
         entity_id: 98,
-        ctl_entity_id: 98,
-        amount: 100,
         memo: null,
         charged_tx_fee: 5,
         max_fee: 33,
@@ -492,13 +546,12 @@ describe('create transferLists', () => {
         transaction_bytes: 'bytes',
         node_account_id: 2,
         payer_account_id: 3,
+        crypto_transfer_list: [{amount: 100, entity_id: 98}],
         nft_transfer_list: nftTransfersFromDb,
       },
       {
         consensus_ns: 2,
         entity_id: 100,
-        ctl_entity_id: 100,
-        amount: 100,
         memo: null,
         charged_tx_fee: 5,
         max_fee: 33,
@@ -512,6 +565,7 @@ describe('create transferLists', () => {
         transaction_bytes: 'bytes',
         node_account_id: 2,
         payer_account_id: 3,
+        crypto_transfer_list: [{amount: 100, entity_id: 100}],
         nft_transfer_list: undefined,
       },
     ];
@@ -559,6 +613,7 @@ describe('create transferLists', () => {
             amount: 100,
           },
         ],
+        nft_transfers: expectedNftTransfersList,
         valid_duration_seconds: null,
         valid_start_timestamp: '1623787159.737800000',
       },
