@@ -25,14 +25,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 
@@ -53,9 +51,6 @@ public class CompositeBalanceFileReaderTest {
     @InjectMocks
     private CompositeBalanceFileReader compositeBalanceFileReader;
 
-    private final Consumer<AccountBalance> consumer = accountBalance -> {
-    };
-
     private final AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder().count(1L).build();
 
     @Test
@@ -64,11 +59,11 @@ public class CompositeBalanceFileReaderTest {
         configMockReader(protoBalanceFileReader, streamFileData, false);
         configMockReader(readerImplV1, streamFileData, true);
 
-        compositeBalanceFileReader.read(streamFileData, consumer);
+        compositeBalanceFileReader.read(streamFileData);
 
-        verify(readerImplV1, times(1)).read(streamFileData, consumer);
-        verify(readerImplV2, never()).read(streamFileData, consumer);
-        verify(protoBalanceFileReader, never()).read(streamFileData, consumer);
+        verify(readerImplV1, times(1)).read(streamFileData);
+        verify(readerImplV2, never()).read(streamFileData);
+        verify(protoBalanceFileReader, never()).read(streamFileData);
     }
 
     @Test
@@ -77,29 +72,30 @@ public class CompositeBalanceFileReaderTest {
         configMockReader(protoBalanceFileReader, streamFileData, false);
         configMockReader(readerImplV2, streamFileData, true);
 
-        compositeBalanceFileReader.read(streamFileData, consumer);
+        compositeBalanceFileReader.read(streamFileData);
 
-        verify(readerImplV2, times(1)).read(streamFileData, consumer);
-        verify(readerImplV1, never()).read(streamFileData, consumer);
-        verify(protoBalanceFileReader, never()).read(streamFileData, consumer);
+        verify(readerImplV2, times(1)).read(streamFileData);
+        verify(readerImplV1, never()).read(streamFileData);
+        verify(protoBalanceFileReader, never()).read(streamFileData);
     }
 
     @Test
     void usesProtoBalanceFileReader() {
-        StreamFileData streamFileData = StreamFileData.from(BALANCE_FILENAME_PREFIX + ".pb.gz", "proto-based balance file");
+        StreamFileData streamFileData = StreamFileData
+                .from(BALANCE_FILENAME_PREFIX + ".pb.gz", "proto-based balance file");
         configMockReader(protoBalanceFileReader, streamFileData, true);
 
-        compositeBalanceFileReader.read(streamFileData, consumer);
+        compositeBalanceFileReader.read(streamFileData);
 
-        verify(protoBalanceFileReader, times(1)).read(streamFileData, consumer);
-        verify(readerImplV1, never()).read(streamFileData, consumer);
-        verify(readerImplV2, never()).read(streamFileData, consumer);
+        verify(protoBalanceFileReader, times(1)).read(streamFileData);
+        verify(readerImplV1, never()).read(streamFileData);
+        verify(readerImplV2, never()).read(streamFileData);
     }
 
     private void configMockReader(BalanceFileReader reader, StreamFileData streamFileData, boolean supports) {
         if (supports) {
             when(reader.supports(streamFileData)).thenReturn(true);
-            when(reader.read(streamFileData, consumer)).thenReturn(accountBalanceFile);
+            when(reader.read(streamFileData)).thenReturn(accountBalanceFile);
         } else {
             when(reader.supports(streamFileData)).thenReturn(false);
         }

@@ -68,7 +68,7 @@ public class StreamFileData {
         try {
             InputStream is = new ByteArrayInputStream(bytes);
             String compressor = streamFilename.getCompressor();
-            if (!StringUtils.isBlank(compressor)) {
+            if (StringUtils.isNotBlank(compressor)) {
                 is = compressorStreamFactory.createCompressorInputStream(compressor, is);
             }
 

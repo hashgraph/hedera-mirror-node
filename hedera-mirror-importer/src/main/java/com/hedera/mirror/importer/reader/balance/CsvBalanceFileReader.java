@@ -29,13 +29,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
@@ -52,12 +54,17 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
     static final int BUFFER_SIZE = 16;
     static final Charset CHARSET = StandardCharsets.UTF_8;
     static final String COLUMN_HEADER_PREFIX = "shard";
+    private static final String FILE_EXTENSION = "csv";
 
     private final BalanceParserProperties balanceParserProperties;
     private final AccountBalanceLineParser parser;
 
     @Override
     public boolean supports(StreamFileData streamFileData) {
+        if (!FILE_EXTENSION.equals(streamFileData.getStreamFilename().getExtension().getName())) {
+            return false;
+        }
+
         InputStream inputStream = streamFileData.getInputStream();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), BUFFER_SIZE)) {
@@ -77,15 +84,15 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
     protected abstract String getVersionHeaderPrefix();
 
     @Override
-    public AccountBalanceFile read(StreamFileData streamFileData, Consumer<AccountBalance> itemConsumer) {
+    public AccountBalanceFile read(StreamFileData streamFileData) {
         MessageDigest messageDigest = DigestUtils.getSha384Digest();
         int bufferSize = balanceParserProperties.getFileBufferSize();
-        itemConsumer = itemConsumer != null ? itemConsumer : accountBalance -> {};
 
         try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest);
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, CHARSET), bufferSize)) {
             long consensusTimestamp = parseConsensusTimestamp(reader);
             AtomicLong count = new AtomicLong(0L);
+            List<AccountBalance> items = new ArrayList<>();
 
             AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
             accountBalanceFile.setBytes(streamFileData.getBytes());
@@ -105,10 +112,11 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
                         }
                     })
                     .filter(Objects::nonNull)
-                    .forEachOrdered(itemConsumer);
+                    .forEachOrdered(items::add);
 
             accountBalanceFile.setCount(count.get());
             accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
+            accountBalanceFile.setItems(Flux.fromIterable(items));
             return accountBalanceFile;
         } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);

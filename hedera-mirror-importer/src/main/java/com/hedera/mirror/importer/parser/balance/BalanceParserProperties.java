@@ -43,7 +43,7 @@ public class BalanceParserProperties extends AbstractParserProperties {
     }
 
     @Min(1)
-    private int batchSize = 2000;
+    private int batchSize = 200_000;
 
     @Min(1)
     private int fileBufferSize = 200_000;

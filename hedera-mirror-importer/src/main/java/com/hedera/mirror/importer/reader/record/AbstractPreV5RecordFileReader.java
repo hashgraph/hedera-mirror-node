@@ -26,11 +26,13 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -50,7 +52,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     private final int readerVersion;
 
     @Override
-    public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
+    public RecordFile read(@NonNull StreamFileData streamFileData) {
         String filename = streamFileData.getFilename();
 
         try (RecordFileDigest digest = getRecordFileDigest(streamFileData.getInputStream());
@@ -62,7 +64,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
 
             readHeader(vdis, recordFile);
-            readBody(vdis, digest, itemConsumer, recordFile);
+            readBody(vdis, digest, recordFile);
 
             return recordFile;
         } catch (ImporterException e) {
@@ -99,43 +101,31 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * number of transaction and record pairs ordered by consensus timestamp. The body may also contain metadata to mark
      * the boundary of the pairs.
      *
-     * @param vdis         the {@link ValidatedDataInputStream} of the record file
-     * @param digest       the {@link RecordFileDigest} to update the digest with
-     * @param itemConsumer the {@link Consumer} to process individual {@link RecordItem}s
-     * @param recordFile   the {@link RecordFile} object
+     * @param vdis       the {@link ValidatedDataInputStream} of the record file
+     * @param digest     the {@link RecordFileDigest} to update the digest with
+     * @param recordFile the {@link RecordFile} object
      * @throws IOException
      */
-    private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest, Consumer<RecordItem> itemConsumer,
-                          RecordFile recordFile) throws IOException {
+    private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest, RecordFile recordFile) throws IOException {
         long count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;
-        boolean hasItemConsumer = itemConsumer != null;
         digest.startBody();
+        List<RecordItem> items = new ArrayList<>();
 
         while (vdis.available() != 0) {
             vdis.readByte(RECORD_MARKER, "record marker");
             byte[] transactionBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
             byte[] recordBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record bytes");
+            RecordItem recordItem = new RecordItem(transactionBytes, recordBytes);
+            items.add(recordItem);
 
-            boolean isFirstTransaction = count == 0;
-            boolean isLastTransaction = vdis.available() == 0;
+            if (count == 0) {
+                consensusStart = recordItem.getConsensusTimestamp();
+            }
 
-            // We need the first and last transaction timestamps for metrics
-            if (hasItemConsumer || isFirstTransaction || isLastTransaction) {
-                RecordItem recordItem = new RecordItem(transactionBytes, recordBytes);
-
-                if (hasItemConsumer) {
-                    itemConsumer.accept(recordItem);
-                }
-
-                if (isFirstTransaction) {
-                    consensusStart = recordItem.getConsensusTimestamp();
-                }
-
-                if (isLastTransaction) {
-                    consensusEnd = recordItem.getConsensusTimestamp();
-                }
+            if (vdis.available() == 0) {
+                consensusEnd = recordItem.getConsensusTimestamp();
             }
 
             count++;
@@ -148,6 +138,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         recordFile.setCount(count);
         recordFile.setFileHash(fileHash);
         recordFile.setHash(fileHash);
+        recordFile.setItems(Flux.fromIterable(items));
     }
 
     protected static class RecordFileDigest implements AutoCloseable {
