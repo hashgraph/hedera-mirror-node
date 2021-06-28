@@ -131,6 +131,8 @@ alter table token_balance
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp
     on token_transfer (consensus_timestamp desc, token_id desc, account_id desc);
+create index if not exists token_transfer__account_timestamp
+    on token_transfer (account_id, consensus_timestamp desc);
 
 -- topic_message
 alter table if exists topic_message
