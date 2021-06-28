@@ -1,0 +1,22 @@
+{
+  "description": "NFT token history",
+  "setup": {
+    "entities": [],
+    "tokens": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": []
+  },
+  "urls": ["/api/v1/tokens/mirror/nfts/2/transactions"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: tokenid"
+        }
+      ]
+    }
+  }
+}

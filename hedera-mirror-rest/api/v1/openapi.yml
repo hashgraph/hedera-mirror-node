@@ -545,8 +545,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Nfts'
-        404:
-          $ref: '#/components/responses/NotFoundError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
+                    - message: "Invalid parameter: serialnumber"
+                    - message: "Invalid parameter: limit"
+                    - message: "Invalid parameter: order"
       tags:
         - tokens
   /api/v1/tokens/{id}/nfts/{serialnumber}:
@@ -577,8 +588,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NftTransactionHistory'
-        404:
-          $ref: '#/components/responses/NotFoundError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: limit"
+                    - message: "Invalid parameter: order"
       tags:
         - tokens
 tags:

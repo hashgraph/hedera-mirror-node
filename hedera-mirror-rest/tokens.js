@@ -258,13 +258,19 @@ const validateTokensFilters = (filters) => {
   }
 };
 
-const getTokensRequest = async (req, res) => {
+const getValidatedFilters = (query) => {
   // extract filters from query param
-  const filters = utils.buildFilterObject(req.query);
+  const filters = utils.buildFilterObject(query);
 
   // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
   validateTokensFilters(filters);
   utils.formatFilters(filters);
+  return filters;
+};
+
+const getTokensRequest = async (req, res) => {
+  // extract filters from query param
+  const filters = getValidatedFilters(req.query);
 
   const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
@@ -559,6 +565,12 @@ const validateSerialNumberParam = (serialNumber) => {
   }
 };
 
+const getAndValidateSerialNumberRequestPathParam = (req) => {
+  const {serialnumber} = req.params;
+  validateSerialNumberParam(serialnumber);
+  return serialnumber;
+};
+
 /**
  * Handler function for /tokens/:id/nfts API.
  *
@@ -566,13 +578,8 @@ const validateSerialNumberParam = (serialNumber) => {
  * @param {Response} res HTTP response object
  */
 const getNftTokensRequest = async (req, res) => {
-  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
-  validateTokenIdParam(tokenId);
-  const filters = utils.buildFilterObject(req.query);
-
-  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
-  validateTokensFilters(filters);
-  utils.formatFilters(filters);
+  const tokenId = getAndValidateTokenIdRequestPathParam(req);
+  const filters = getValidatedFilters(req.query);
 
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
   if (logger.isTraceEnabled()) {
@@ -608,10 +615,8 @@ const getNftTokensRequest = async (req, res) => {
  * @param {Response} res HTTP response object
  */
 const getNftTokenInfoRequest = async (req, res) => {
-  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
-  validateTokenIdParam(tokenId);
-  const {serialnumber} = req.params;
-  validateSerialNumberParam(serialnumber);
+  const tokenId = getAndValidateTokenIdRequestPathParam(req);
+  const serialnumber = getAndValidateSerialNumberRequestPathParam(req);
 
   const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialnumber, nftSelectQuery);
   if (logger.isTraceEnabled()) {
@@ -650,9 +655,9 @@ const getToken = async (pgSqlQuery, tokenId) => {
  * @param {string} query initial pg SQL query string
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
-const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transferQuery, deleteQuery) => {
-  const limit = config.maxLimit;
-  const order = constants.orderFilterValues.DESC;
+const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transferQuery, deleteQuery, filters) => {
+  let limit = config.maxLimit;
+  let order = constants.orderFilterValues.DESC;
   const joinNftTransferClause = `join ${NftTransfer.tableName} ${NftTransfer.tableAlias} on ${Nft.nftQueryColumns.TOKEN_ID} = ${NftTransfer.nftTransferFullNameColumns.TOKEN_ID}
   and ${Nft.nftQueryColumns.SERIAL_NUMBER} = ${NftTransfer.nftTransferFullNameColumns.SERIAL_NUMBER}`;
   const joinTransactionClause = `join ${Transaction.tableName} ${Transaction.tableAlias} on ${NftTransfer.nftTransferFullNameColumns.CONSENSUS_TIMESTAMP} = ${Transaction.transactionQueryColumns.CONSENSUS_NS}`;
@@ -660,13 +665,27 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const params = [tokenId, serialNumber];
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
-  const orderQuery = `order by ${NftTransfer.nftTransferColumns.CONSENSUS_TIMESTAMP} ${order}`;
-  const limitQuery = `limit $${params.push(limit)}`;
 
   // get deleted case, use modifiedTimestamp where deleted = true
   const unionQuery = `union\n${deleteQuery}`;
   const deleteJoinTransactionClause = `join ${Transaction.tableName} ${Transaction.tableAlias} on ${Nft.nftQueryColumns.MODIFIED_TIMESTAMP} = ${Transaction.transactionQueryColumns.CONSENSUS_NS} and ${Nft.nftQueryColumns.DELETED} = true`;
   const deleteWhereCondition = `where ${conditions.join('\nand ')}`;
+
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = filter.value;
+        break;
+      default:
+        break;
+    }
+  }
+
+  const orderQuery = `order by ${NftTransfer.nftTransferColumns.CONSENSUS_TIMESTAMP} ${order}`;
+  const limitQuery = `limit $${params.push(limit)}`;
 
   const finalQuery = [
     transferQuery,
@@ -731,15 +750,17 @@ const nftDeleteHistorySelectQuery = ['select', nftDeleteHistorySelectFields.join
  * @param {Response} res HTTP response object
  */
 const getNftTransferHistoryRequest = async (req, res) => {
-  const tokenId = EntityId.fromString(req.params.id, constants.filterKeys.TOKENID).getEncodedId();
-  const {serialnumber} = req.params;
-  validateSerialNumberParam(serialnumber);
+  const tokenId = getAndValidateTokenIdRequestPathParam(req);
+  const serialnumber = getAndValidateSerialNumberRequestPathParam(req);
+
+  const filters = getValidatedFilters(req.query);
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(
     tokenId,
     serialnumber,
     nftTransferHistorySelectQuery,
-    nftDeleteHistorySelectQuery
+    nftDeleteHistorySelectQuery,
+    filters
   );
   if (logger.isTraceEnabled()) {
     logger.trace(`getNftTransferHistory query: ${query} ${JSON.stringify(params)}`);
@@ -754,13 +775,13 @@ const getNftTransferHistoryRequest = async (req, res) => {
   };
 
   // Pagination links
-  const anchorAccountId =
+  const anchorTimestamp =
     response.transactions.length > 0 ? response.transactions[response.transactions.length - 1].consensus_timestamp : 0;
   response.links.next = utils.getPaginationLink(
     req,
     response.transactions.length !== limit,
-    constants.filterKeys.ACCOUNT_ID,
-    anchorAccountId,
+    constants.filterKeys.TIMESTAMP,
+    anchorTimestamp,
     order
   );
 
