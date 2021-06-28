@@ -69,11 +69,11 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
                 .map(AccountBalance.Id::getConsensusTimestamp)
                 .blockFirst();
 
-        try {
+        try (InputStream inputStream = streamFileData.getInputStream()) {
             AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
             accountBalanceFile.setBytes(streamFileData.getBytes());
             accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
-            accountBalanceFile.setFileHash(DigestUtils.sha384Hex(streamFileData.getInputStream()));
+            accountBalanceFile.setFileHash(DigestUtils.sha384Hex(inputStream));
             accountBalanceFile.setItems(items);
             accountBalanceFile.setLoadStart(loadStart.getEpochSecond());
             accountBalanceFile.setName(streamFileData.getFilename());

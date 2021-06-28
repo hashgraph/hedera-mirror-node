@@ -80,20 +80,6 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     @Test
-    void alreadyExists() {
-        // given
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        accountBalanceFile.setLoadEnd(1L);
-        accountBalanceFileRepository.save(accountBalanceFile);
-
-        // when
-        accountBalanceFileParser.parse(accountBalanceFile);
-
-        // then
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
-    }
-
-    @Test
     void success() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         accountBalanceFileParser.parse(accountBalanceFile);
