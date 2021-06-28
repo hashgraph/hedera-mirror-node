@@ -83,7 +83,7 @@
     "node-flywaydb": "^3.0.5",
     "nodemon": "^2.0.7",
     "pg-format": "^1.0.4",
-    "prettier": "^2.3.1",
+    "prettier": "^2.3.2",
     "pretty-quick": "^3.1.1",
     "rewire": "^5.0.0",
     "sinon": "^11.1.1",
