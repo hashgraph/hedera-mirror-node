@@ -22,7 +22,6 @@ hedera:
         config:
           authentication: true
           password: password
-          swaggerOnly: true
           username: metrics
           uriPath: '/swagger'
         ipMetrics: false
