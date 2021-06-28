@@ -69,7 +69,7 @@ In production, it is advised to use a certificate authority signed certificate, 
 for more secure and intricate load balancing needs. The following diagram illustrates a high level overview of the
 resources utilized in the recommended traffic flow.
 
-![Kubernetes deployed Hedera Mirror Node Resource Traffic Flow](images/mirror_traffic_resource_architecture.png)
+![Kubernetes Deployment](images/deployment.png)
 
 #### GCP
 
