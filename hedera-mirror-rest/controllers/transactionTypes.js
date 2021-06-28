@@ -20,8 +20,6 @@
 
 'use strict';
 
-const _ = require('lodash');
-
 const {DbError} = require('../errors/dbError');
 
 const transactionTypesQuery = 'select proto_id, name from t_transaction_types';
