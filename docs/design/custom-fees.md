@@ -47,8 +47,6 @@ create table if not exists assessed_custom_fee (
 );
 create index if not exists assessed_custom_fee__consensus_timestamp
   on assessed_custom_fee (consensus_timestamp);
-create index if not exists assessed_custom_fee__collector_consensus_timestamp
-  on assessed_custom_fee (collector_account_id, consensus_timestamp);
 ```
 
 ## Importer
@@ -98,6 +96,12 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
     }
 ```
 
+- Add a `onCustomFee()` to handle inserts on the `custom_fee` table
+```java
+    default void onCustomFee(CustomFee CustomFee) throws ImporterException {
+    }
+```
+
 #### EntityRecordItemListener
 
 - Add a function `insertAssessedCustomFees()` to insert assessed custom fees in a transaction record
@@ -107,7 +111,7 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
 
 ### Transactions Endpoint
 
-- Update `/api/v1/transactions` response to add assessed custom fees. Note if a assessed custom fee doesn't have a
+- Update `/api/v1/transactions/{id}` response to add assessed custom fees. Note if an assessed custom fee doesn't have a
   `token_id`, it's charged in HBAR; otherwise it's charged in the `token_id`
 
 ```json
@@ -132,11 +136,15 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
             },
             {
               "account": "0.0.10",
-              "amount": -11
+              "amount": -161
             },
             {
               "account": "0.0.98",
               "amount": 1
+            },
+            {
+              "account": "0.0.87501",
+              "amount": 150
             }
           ],
           "token_transfers": [
@@ -146,13 +154,18 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
               "token_id": "0.0.90000"
             },
             {
-              "account": "0.0.300",
-              "amount": -1200,
+              "account": "0.0.10",
+              "amount": -1210,
               "token_id": "0.0.90000"
             },
             {
               "account": "0.0.400",
               "amount": 1000,
+              "token_id": "0.0.90000"
+            },
+            {
+              "account": "0.0.87502",
+              "amount": 10,
               "token_id": "0.0.90000"
             }
           ],
@@ -171,9 +184,6 @@ create index if not exists assessed_custom_fee__collector_consensus_timestamp
       ]
     }
 ```
-
-- Update transactions query to include transactions with assessed custom fee's collector matching the `account.id`
-  filter
 
 ### Token Info
 
