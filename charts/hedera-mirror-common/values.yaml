@@ -196,6 +196,7 @@ prometheus:
         url: http://{{ .Release.Name }}-loki:3100
         jsonData:
           maxLines: 500
+    adminPassword: ""  # Randomly generated if left blank
     defaultDashboardsEnabled: true
     plugins:
       - camptocamp-prometheus-alertmanager-datasource

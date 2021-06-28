@@ -151,10 +151,10 @@ prometheusRules:
 
   RestNoRequests:
     annotations:
-      description: "REST API has not seen any requests to {{ $labels.namespace }}/{{ $labels.pod }} for 5m"
+      description: "REST API has not seen any requests to {{ $labels.namespace }} for 5m"
       summary: "No Mirror REST API requests seen for awhile"
     enabled: true
-    expr: sum(rate(api_all_request_total{container="rest"}[3m])) by (namespace, pod) <= 0
+    expr: sum(rate(api_all_request_total{container="rest"}[3m])) by (namespace) <= 0
     for: 5m
     labels:
       severity: warning
