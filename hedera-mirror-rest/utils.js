@@ -22,6 +22,7 @@
 
 const _ = require('lodash');
 const crypto = require('crypto');
+const anonymize = require('ip-anonymize');
 const math = require('mathjs');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -880,6 +881,15 @@ const queryQuietly = async (query, ...params) => {
   }
 };
 
+/**
+ * Masks the given IP based on Google Analytics standards
+ * @param {String} ip the IP address from the req object.
+ * @returns {String} The masked IP address
+ */
+const ipMask = (ip) => {
+  return anonymize(ip, 24, 48);
+};
+
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
@@ -898,6 +908,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
+  ipMask,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isValidPublicKeyQuery,
