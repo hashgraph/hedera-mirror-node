@@ -76,6 +76,7 @@
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-security": "^1.4.0",
     "husky": "^6.0.0",
+    "ip-anonymize": "^0.1.0",
     "jest": "^27.0.4",
     "jest-circus": "^27.0.4",
     "jest-junit": "^12.2.0",

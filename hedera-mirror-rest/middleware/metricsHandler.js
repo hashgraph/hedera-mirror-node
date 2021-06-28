@@ -21,7 +21,6 @@
 'use strict';
 
 // ext libraries
-const crypto = require('crypto');
 const extend = require('extend');
 const client = require('prom-client');
 const swStats = require('swagger-stats');
@@ -29,6 +28,7 @@ const swStats = require('swagger-stats');
 // files
 const config = require('../config');
 const oasHandler = require('./openapiHandler');
+const {ipMask} = require('../utils');
 
 const metricsHandler = () => {
   const defaultMetricsConfig = {
@@ -62,11 +62,11 @@ const ipEndpointHistogram = new client.Counter({
 
 const recordIpAndEndpoint = async (req, res, next) => {
   if (req.route !== undefined) {
-    ipEndpointHistogram
-      .labels(req.route.path, crypto.createHash('sha256').update(req.ip).digest().toString('hex'))
-      .inc();
+    ipEndpointHistogram.labels(req.route.path, ipMask(req.ip)).inc();
   }
 };
+
+const maskIp = (ip) => {};
 
 module.exports = {
   metricsHandler,
