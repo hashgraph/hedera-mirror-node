@@ -22,11 +22,13 @@
 
 // ext libraries
 const extend = require('extend');
+const client = require('prom-client');
 const swStats = require('swagger-stats');
 
 // files
 const config = require('../config');
 const oasHandler = require('./openapiHandler');
+const {ipMask} = require('../utils');
 
 const metricsHandler = () => {
   const defaultMetricsConfig = {
@@ -52,6 +54,19 @@ const onMetricsAuthenticate = async (req, username, password) => {
   });
 };
 
+const ipEndpointHistogram = new client.Counter({
+  name: 'hedera_mirror_rest_request_count',
+  help: 'a counter mapping ip addresses to the endpoints they hit',
+  labelNames: ['endpoint', 'ip'],
+});
+
+const recordIpAndEndpoint = async (req, res, next) => {
+  if (req.route !== undefined) {
+    ipEndpointHistogram.labels(req.route.path, ipMask(req.ip)).inc();
+  }
+};
+
 module.exports = {
   metricsHandler,
+  recordIpAndEndpoint,
 };
