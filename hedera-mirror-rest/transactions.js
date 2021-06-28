@@ -92,7 +92,7 @@ const getSelectClauseWithTransfers = (includeNftTransferList) => {
 
 /**
  * Creates crypto transfer list from aggregated array of JSON objects in the query result. Note if the
- * cryptoTransferList is undefined, any empty array is returned.
+ * cryptoTransferList is undefined, an empty array is returned.
  *
  * @param cryptoTransferList crypto transfer list
  * @return {{account: string, amount: Number}[]}
@@ -193,7 +193,7 @@ const createTransferLists = (rows) => {
     };
   });
 
-  const anchorSecNs = rows.length > 0 ? transactions[transactions.length - 1].consensus_timestamp : 0;
+  const anchorSecNs = transactions.length > 0 ? transactions[transactions.length - 1].consensus_timestamp : 0;
 
   return {
     transactions,
