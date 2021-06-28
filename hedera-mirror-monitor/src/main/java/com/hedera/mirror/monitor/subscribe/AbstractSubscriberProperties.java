@@ -23,7 +23,6 @@ package com.hedera.mirror.monitor.subscribe;
 import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -42,7 +41,6 @@ public abstract class AbstractSubscriberProperties {
     @Min(0)
     protected long limit = 0; // 0 for unlimited
 
-    @NotBlank
     protected String name;
 
     @NotNull

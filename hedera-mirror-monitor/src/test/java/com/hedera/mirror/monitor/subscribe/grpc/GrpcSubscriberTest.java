@@ -60,7 +60,7 @@ class GrpcSubscriberTest {
     void setup() {
         grpcSubscriberProperties.setName("Test");
         grpcSubscriberProperties.setTopicId("0.0.1000");
-        subscribeProperties.getGrpc().add(grpcSubscriberProperties);
+        subscribeProperties.getGrpc().put(grpcSubscriberProperties.getName(), grpcSubscriberProperties);
         grpcSubscriber = new GrpcSubscriber(expressionConverter, grpcClient, subscribeProperties);
     }
 
@@ -106,7 +106,7 @@ class GrpcSubscriberTest {
         GrpcSubscriberProperties grpcSubscriberProperties2 = new GrpcSubscriberProperties();
         grpcSubscriberProperties2.setName("Test2");
         grpcSubscriberProperties2.setTopicId("0.0.1001");
-        subscribeProperties.getGrpc().add(grpcSubscriberProperties2);
+        subscribeProperties.getGrpc().put(grpcSubscriberProperties2.getName(), grpcSubscriberProperties2);
 
         when(grpcClient.subscribe(any())).thenReturn(Flux.just(response(), response()));
         grpcSubscriber.subscribe()

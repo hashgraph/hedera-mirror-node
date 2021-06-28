@@ -38,17 +38,22 @@ import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 @Data
 @Validated
 public class AcceptanceTestProperties {
+    @NotNull
+    private Duration backOffPeriod = Duration.ofMillis(5000);
 
     private boolean emitBackgroundMessages = false;
 
     @NotNull
     private Long existingTopicNum;
 
+    @Max(5)
+    private int maxRetries = 2;
+
     @NotNull
     private Long maxTinyBarTransactionFee = 1_000_000_000L;
 
     @NotNull
-    private Duration messageTimeout = Duration.ofSeconds(20);
+    private Duration messageTimeout = Duration.ofSeconds(60);
 
     @NotBlank
     private String mirrorNodeAddress;
@@ -68,11 +73,7 @@ public class AcceptanceTestProperties {
 
     private boolean retrieveAddressBook = true;
 
-    @Max(5)
-    private int subscribeRetries = 5;
-
-    @NotNull
-    private Duration subscribeRetryBackoffPeriod = Duration.ofMillis(5000);
+    private final SdkProperties sdkProperties;
 
     public Set<NodeProperties> getNodes() {
         if (network == HederaNetwork.OTHER && nodes.isEmpty()) {

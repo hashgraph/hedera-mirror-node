@@ -194,8 +194,12 @@ class Pool {
 
       const accountNumValue = this.getAccountId(accountNum, i);
 
-      row.ctl_entity_id = EntityId.of(0, 0, accountNumValue).getEncodedId();
-      row.amount = i * 1000;
+      row.crypto_transfer_list = [
+        {
+          amount: i * 1000,
+          entity_id: EntityId.of(0, 0, accountNumValue).getEncodedId(),
+        },
+      ];
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';
       row.scheduled = false;

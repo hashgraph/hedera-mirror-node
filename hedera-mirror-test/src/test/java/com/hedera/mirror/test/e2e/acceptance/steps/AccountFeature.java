@@ -25,15 +25,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
-import java.util.concurrent.TimeoutException;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 
@@ -49,7 +46,7 @@ public class AccountFeature {
     private AccountClient accountClient;
 
     @When("I request balance info for this account")
-    public void getAccountBalance() throws TimeoutException, PrecheckStatusException {
+    public void getAccountBalance() {
         balance = accountClient.getBalance();
     }
 
@@ -59,23 +56,20 @@ public class AccountFeature {
     }
 
     @When("I create a new account with balance {long} tℏ")
-    public void createNewAccount(long initialBalance) throws ReceiptStatusException, PrecheckStatusException,
-            TimeoutException {
+    public void createNewAccount(long initialBalance) {
         accountId = accountClient.createNewAccount(initialBalance).getAccountId();
         assertNotNull(accountId);
     }
 
     @When("I send {long} tℏ to newly created account")
-    public void sendTinyHbars(long amount) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public void sendTinyHbars(long amount) {
         startingBalance = accountClient.getBalance(accountId);
         TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
         assertNotNull(receipt);
     }
 
     @When("I send {long} tℏ to account {int}")
-    public void sendTinyHbars(long amount, int accountNum) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public void sendTinyHbars(long amount, int accountNum) {
         accountId = new AccountId(accountNum);
         startingBalance = accountClient.getBalance(accountId);
         TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
@@ -83,8 +77,7 @@ public class AccountFeature {
     }
 
     @When("I send {int} ℏ to account {int}")
-    public void sendHbars(int amount, int accountNum) throws TimeoutException, PrecheckStatusException,
-            ReceiptStatusException {
+    public void sendHbars(int amount, int accountNum) {
         accountId = new AccountId(accountNum);
         startingBalance = accountClient.getBalance(accountId);
         TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.from(amount));
@@ -92,7 +85,7 @@ public class AccountFeature {
     }
 
     @Then("the new balance should reflect cryptotransfer of {long}")
-    public void accountReceivedFunds(long amount) throws TimeoutException, PrecheckStatusException {
+    public void accountReceivedFunds(long amount) {
         assertTrue(accountClient.getBalance(accountId) >= startingBalance + amount);
     }
 }

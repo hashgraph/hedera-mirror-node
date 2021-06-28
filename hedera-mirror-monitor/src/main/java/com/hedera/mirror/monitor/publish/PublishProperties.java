@@ -21,16 +21,13 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -51,7 +48,7 @@ public class PublishProperties {
     private boolean enabled = true;
 
     @NotNull
-    private List<ScenarioProperties> scenarios = new ArrayList<>();
+    private Map<String, ScenarioProperties> scenarios = new LinkedHashMap<>();
 
     @DurationMin(seconds = 1L)
     @NotNull
@@ -70,17 +67,10 @@ public class PublishProperties {
             throw new IllegalArgumentException("There must be at least one publish scenario");
         }
 
-        Set<String> names = scenarios.stream()
-                .map(ScenarioProperties::getName)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
-                .entrySet()
-                .stream()
-                .filter(e -> e.getValue() > 1)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-
-        if (!names.isEmpty()) {
-            throw new IllegalArgumentException("More than one publish scenario with the same name: " + names);
+        if (scenarios.keySet().stream().anyMatch(StringUtils::isBlank)) {
+            throw new IllegalArgumentException("Publish scenario name cannot be empty");
         }
+
+        scenarios.forEach((name, property) -> property.setName(name));
     }
 }

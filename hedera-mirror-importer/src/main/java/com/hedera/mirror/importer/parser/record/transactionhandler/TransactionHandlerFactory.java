@@ -47,18 +47,18 @@ public class TransactionHandlerFactory {
     private final FileUpdateTransactionHandler fileUpdateTransactionHandler;
     private final ScheduleCreateTransactionHandler scheduleCreateTransactionHandler;
     private final ScheduleSignTransactionHandler scheduleSignTransactionHandler;
-    private final TokenAssociateTransactionsHandler tokenAssociateTransactionsHandler;
-    private final TokenBurnTransactionsHandler tokenBurnTransactionsHandler;
-    private final TokenCreateTransactionsHandler tokenCreateTransactionsHandler;
-    private final TokenDeleteTransactionsHandler tokenDeleteTransactionsHandler;
-    private final TokenDissociateTransactionsHandler tokenDissociateTransactionsHandler;
-    private final TokenFreezeTransactionsHandler tokenFreezeTransactionsHandler;
-    private final TokenGrantKycTransactionsHandler tokenGrantKycTransactionsHandler;
-    private final TokenMintTransactionsHandler tokenMintTransactionsHandler;
-    private final TokenRevokeKycTransactionsHandler tokenRevokeKycTransactionsHandler;
-    private final TokenUnfreezeTransactionsHandler tokenUnfreezeTransactionsHandler;
-    private final TokenUpdateTransactionsHandler tokenUpdateTransactionsHandler;
-    private final TokenWipeTransactionsHandler tokenWipeTransactionsHandler;
+    private final TokenAssociateTransactionHandler tokenAssociateTransactionHandler;
+    private final TokenBurnTransactionHandler tokenBurnTransactionHandler;
+    private final TokenCreateTransactionHandler tokenCreateTransactionHandler;
+    private final TokenDeleteTransactionHandler tokenDeleteTransactionHandler;
+    private final TokenDissociateTransactionHandler tokenDissociateTransactionHandler;
+    private final TokenFreezeTransactionHandler tokenFreezeTransactionHandler;
+    private final TokenGrantKycTransactionHandler tokenGrantKycTransactionHandler;
+    private final TokenMintTransactionHandler tokenMintTransactionHandler;
+    private final TokenRevokeKycTransactionHandler tokenRevokeKycTransactionHandler;
+    private final TokenUnfreezeTransactionHandler tokenUnfreezeTransactionHandler;
+    private final TokenUpdateTransactionHandler tokenUpdateTransactionHandler;
+    private final TokenWipeTransactionHandler tokenWipeTransactionHandler;
     private final SystemDeleteTransactionHandler systemDeleteTransactionHandler;
     private final SystemUndeleteTransactionHandler systemUndeleteTransactionHandler;
     private final UnknownDataTransactionHandler unknownDataTransactionHandler;
@@ -105,29 +105,29 @@ public class TransactionHandlerFactory {
         } else if (body.hasScheduleSign()) {
             return scheduleSignTransactionHandler;
         } else if (body.hasTokenAssociate()) {
-            return tokenAssociateTransactionsHandler;
+            return tokenAssociateTransactionHandler;
         } else if (body.hasTokenBurn()) {
-            return tokenBurnTransactionsHandler;
+            return tokenBurnTransactionHandler;
         } else if (body.hasTokenCreation()) {
-            return tokenCreateTransactionsHandler;
+            return tokenCreateTransactionHandler;
         } else if (body.hasTokenDeletion()) {
-            return tokenDeleteTransactionsHandler;
+            return tokenDeleteTransactionHandler;
         } else if (body.hasTokenDissociate()) {
-            return tokenDissociateTransactionsHandler;
+            return tokenDissociateTransactionHandler;
         } else if (body.hasTokenFreeze()) {
-            return tokenFreezeTransactionsHandler;
+            return tokenFreezeTransactionHandler;
         } else if (body.hasTokenGrantKyc()) {
-            return tokenGrantKycTransactionsHandler;
+            return tokenGrantKycTransactionHandler;
         } else if (body.hasTokenMint()) {
-            return tokenMintTransactionsHandler;
+            return tokenMintTransactionHandler;
         } else if (body.hasTokenRevokeKyc()) {
-            return tokenRevokeKycTransactionsHandler;
+            return tokenRevokeKycTransactionHandler;
         } else if (body.hasTokenUnfreeze()) {
-            return tokenUnfreezeTransactionsHandler;
+            return tokenUnfreezeTransactionHandler;
         } else if (body.hasTokenUpdate()) {
-            return tokenUpdateTransactionsHandler;
+            return tokenUpdateTransactionHandler;
         } else if (body.hasTokenWipe()) {
-            return tokenWipeTransactionsHandler;
+            return tokenWipeTransactionHandler;
         } else if (body.hasSystemDelete()) {
             return systemDeleteTransactionHandler;
         } else if (body.hasSystemUndelete()) {

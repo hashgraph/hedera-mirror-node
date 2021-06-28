@@ -46,28 +46,30 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 
 class CompositeTransactionGeneratorTest {
 
+    private ScenarioProperties scenarioProperties1;
+    private ScenarioProperties scenarioProperties2;
     private PublishProperties properties;
     private Supplier<CompositeTransactionGenerator> supplier;
     private double totalTps;
 
     @BeforeEach
     void init() {
-        ScenarioProperties scenarioProperties1 = new ScenarioProperties();
+        scenarioProperties1 = new ScenarioProperties();
         scenarioProperties1.setName("test1");
         scenarioProperties1.setProperties(Map.of("topicId", "0.0.1000"));
         scenarioProperties1.setTps(750);
         scenarioProperties1.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         totalTps = scenarioProperties1.getTps();
 
-        ScenarioProperties scenarioProperties2 = new ScenarioProperties();
+        scenarioProperties2 = new ScenarioProperties();
         scenarioProperties2.setName("test2");
         scenarioProperties2.setTps(250);
         scenarioProperties2.setType(TransactionType.ACCOUNT_CREATE);
         totalTps += scenarioProperties2.getTps();
 
         properties = new PublishProperties();
-        properties.getScenarios().add(scenarioProperties1);
-        properties.getScenarios().add(scenarioProperties2);
+        properties.getScenarios().put(scenarioProperties1.getName(), scenarioProperties1);
+        properties.getScenarios().put(scenarioProperties2.getName(), scenarioProperties2);
         supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(p -> p, properties));
 
         prepare();
@@ -110,13 +112,13 @@ class CompositeTransactionGeneratorTest {
 
         Multiset<TransactionType> types = HashMultiset.create();
         double seconds = 5;
-        for (int i = 0; i < totalTps * seconds;) {
+        for (int i = 0; i < totalTps * seconds; ) {
             List<PublishRequest> requests = generator.next();
             requests.stream().map(PublishRequest::getType).forEach(types::add);
             i += requests.size();
         }
 
-        for (ScenarioProperties scenarioProperties : properties.getScenarios()) {
+        for (ScenarioProperties scenarioProperties : properties.getScenarios().values()) {
             assertThat(types.count(scenarioProperties.getType()))
                     .isNotNegative()
                     .isNotZero()
@@ -126,7 +128,7 @@ class CompositeTransactionGeneratorTest {
 
     @Test
     void disabledScenario() {
-        properties.getScenarios().get(0).setEnabled(false);
+        scenarioProperties1.setEnabled(false);
         CompositeTransactionGenerator generator = supplier.get();
         assertThat(generator.distribution.get().getPmf())
                 .hasSize(1)
@@ -162,13 +164,13 @@ class CompositeTransactionGeneratorTest {
 
     @Test
     void scenariosComplete() {
-        properties.getScenarios().remove(properties.getScenarios().size() - 1);
-        properties.getScenarios().get(0).setLimit(1L);
+        properties.getScenarios().remove(scenarioProperties2.getName());
+        scenarioProperties1.setLimit(1L);
         CompositeTransactionGenerator generator = supplier.get();
         assertThat(generator.next()).hasSize(1);
         assertThat(generator.next()).isEmpty();
         assertInactive();
-        assertThat(properties.getScenarios())
+        assertThat(properties.getScenarios().values())
                 .extracting(ScenarioProperties::isEnabled)
                 .containsExactly(false);
     }
@@ -206,9 +208,7 @@ class CompositeTransactionGeneratorTest {
     @Test
     @Timeout(10)
     void scenariosDurationAfterFirstFinish() {
-        ScenarioProperties scenarioProperties1 = properties.getScenarios().get(0);
         scenarioProperties1.setDuration(Duration.ofSeconds(3));
-        ScenarioProperties scenarioProperties2 = properties.getScenarios().get(1);
         scenarioProperties2.setDuration(Duration.ofSeconds(5));
         properties.setWarmupPeriod(Duration.ZERO);
         CompositeTransactionGenerator generator = supplier.get();
@@ -227,9 +227,7 @@ class CompositeTransactionGeneratorTest {
     @Test
     @Timeout(10)
     void scenariosDurationAfterBothFinish() {
-        ScenarioProperties scenarioProperties1 = properties.getScenarios().get(0);
         scenarioProperties1.setDuration(Duration.ofSeconds(3));
-        ScenarioProperties scenarioProperties2 = properties.getScenarios().get(1);
         scenarioProperties2.setDuration(Duration.ofSeconds(5));
         properties.setWarmupPeriod(Duration.ZERO);
         CompositeTransactionGenerator generator = supplier.get();

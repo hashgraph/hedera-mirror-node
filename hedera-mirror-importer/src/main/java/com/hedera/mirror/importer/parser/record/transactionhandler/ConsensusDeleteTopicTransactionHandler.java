@@ -22,28 +22,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.Entity;
-import lombok.AllArgsConstructor;
-
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-@AllArgsConstructor
-public class ConsensusDeleteTopicTransactionHandler implements TransactionHandler {
+public class ConsensusDeleteTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public ConsensusDeleteTopicTransactionHandler() {
+        super(EntityOperationEnum.DELETE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getConsensusDeleteTopic().getTopicID());
-    }
-
-    @Override
-    public boolean updatesEntity() {
-        return true;
-    }
-
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
-        entity.setDeleted(true);
     }
 }

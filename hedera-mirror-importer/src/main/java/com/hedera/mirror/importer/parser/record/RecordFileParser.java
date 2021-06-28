@@ -29,7 +29,6 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -105,7 +104,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
-    @Transactional
+    @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(RecordFile recordFile) {
         super.parse(recordFile);
     }
@@ -114,16 +113,18 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     protected void doParse(RecordFile recordFile) {
         DateRangeFilter dateRangeFilter = mirrorDateRangePropertiesProcessor
                 .getDateRangeFilter(parserProperties.getStreamType());
-        AtomicInteger counter = new AtomicInteger(0);
 
         try {
             recordStreamFileListener.onStart();
-            recordFile.getItems().forEach(recordItem -> {
-                if (processRecordItem(recordItem, dateRangeFilter)) {
-                    counter.incrementAndGet();
-                }
-            });
+            long count = recordFile.getItems()
+                    .doOnNext(this::logItem)
+                    .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
+                    .doOnNext(recordItemListener::onItem)
+                    .doOnNext(this::recordMetrics)
+                    .count()
+                    .block();
 
+            recordFile.setCount(count);
             recordFile.setLoadEnd(Instant.now().getEpochSecond());
             recordStreamFileListener.onEnd(recordFile);
         } catch (Exception ex) {
@@ -132,7 +133,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         }
     }
 
-    private boolean processRecordItem(RecordItem recordItem, DateRangeFilter dateRangeFilter) {
+    private void logItem(RecordItem recordItem) {
         if (log.isTraceEnabled()) {
             log.trace("Transaction = {}, Record = {}",
                     Utility.printProtoMessage(recordItem.getTransaction()),
@@ -140,19 +141,14 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         } else if (log.isDebugEnabled()) {
             log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
         }
+    }
 
-        if (dateRangeFilter != null && !dateRangeFilter.filter(recordItem.getConsensusTimestamp())) {
-            return false;
-        }
-
-        recordItemListener.onItem(recordItem);
-
+    private void recordMetrics(RecordItem recordItem) {
         sizeMetrics.getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
                 .record(recordItem.getTransactionBytes().length);
 
         Instant consensusTimestamp = Utility.convertToInstant(recordItem.getRecord().getConsensusTimestamp());
         latencyMetrics.getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
-        return true;
     }
 }

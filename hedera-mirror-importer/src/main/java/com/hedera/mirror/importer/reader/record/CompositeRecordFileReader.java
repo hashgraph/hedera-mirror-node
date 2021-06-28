@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.reader.record;
 import com.google.common.base.Stopwatch;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.function.Consumer;
 import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +33,6 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Log4j2
 @Named
@@ -47,7 +45,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
     private final RecordFileReaderImplV5 version5Reader;
 
     @Override
-    public RecordFile read(@NonNull StreamFileData streamFileData, Consumer<RecordItem> itemConsumer) {
+    public RecordFile read(@NonNull StreamFileData streamFileData) {
         long count = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
         String filename = streamFileData.getFilename();
@@ -72,7 +70,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
                             version, filename));
             }
 
-            RecordFile recordFile = reader.read(streamFileData, itemConsumer);
+            RecordFile recordFile = reader.read(streamFileData);
             count = recordFile.getCount();
             return recordFile;
         } catch (IOException e) {

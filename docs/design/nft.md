@@ -32,8 +32,8 @@ the mirror node can be updated to add support for NFTs.
 ```sql
 create table if not exists nft
 (
-  account_id            bigint                  not null
-  created_timestamp     bigint  primary key     not null,
+  account_id            bigint                  not null,
+  created_timestamp     bigint                  not null,
   deleted               boolean default false   not null,
   modified_timestamp    bigint                  not null,
   metadata              bytea   default ''      not null,
@@ -41,6 +41,8 @@ create table if not exists nft
   token_id              bigint                  not null
 );
 
+create unique index if not exists nft__token_id_serial_num
+  on nft (token_id desc, serial_number desc);
 ```
 
 - Add a unique constraint to `nft` for `token_id` and `serial_number`, desc
@@ -56,6 +58,9 @@ create table if not exists nft_transfer
   serial_number         bigint  not null,
   token_id              bigint  not null
 );
+
+create unique index if not exists nft_transfer__timestamp_token_id_serial_num
+  on nft_transfer (consensus_timestamp desc, token_id desc, serial_number desc);
 ```
 
 - Add a unique constraint to `nft_transfer` for `consensus_timestamp`, `token_id`, and `serial_number`, desc
@@ -88,7 +93,9 @@ create table if not exists nft_transfer
 
 #### Get Transaction
 
-- Update `/api/v1/transactions` and `/api/v1/transactions/{id}` response to add nft_transfers
+- Update `/api/v1/transactions/{id}` response to add nft_transfers
+  - `/api/v1/transactions` should not contain nft_transfers, as moving forward we wish to not add more joins to this
+    endpoint.
 
 ```json
 {
@@ -246,7 +253,8 @@ Add optional filters
       "deleted": false,
       "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
       "modified_timestamp": "1610682445.003266001",
-      "serial_number": 124
+      "serial_number": 124,
+      "token_id": "0.0.222"
     }
   ],
   "links": {
@@ -260,7 +268,7 @@ Optional Filters
 - `/api/v1/tokens/{id}/nfts?account.id=0.0.111` - All NFTs belonging to a given account id.
 - `/api/v1/tokens/{id}/nfts?limit=x` - All NFTs taking the first `x` number of NFTs
 - `/api/v1/tokens/{id}/nfts?order=desc` - All NFTs in descending order of `serial_number`
-- `/api/v1/tokens/{id}/nfts?serialNumber=gt:0.0.1001` - All serial numbers in range
+- `/api/v1/tokens/{id}/nfts?serialNumber=gt:1001` - All serial numbers in range
 
 #### Get NFT by id
 
@@ -275,7 +283,8 @@ Optional Filters
   "deleted": false,
   "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
   "modified_timestamp": "1610682445.003266000",
-  "serial_number": 124
+  "serial_number": 124,
+  "token_id": "0.0.222"
 }
 ```
 

@@ -22,15 +22,11 @@ package com.hedera.mirror.importer.reader.record;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
@@ -39,7 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 
@@ -64,40 +59,7 @@ abstract class RecordFileReaderTest {
     }
 
     @TestFactory
-    Stream<DynamicTest> readValidFileWithConsumer() {
-        String template = "read valid version %d file %s";
-
-        return DynamicTest.stream(
-                getFilteredFiles(false),
-                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
-                (recordFile) -> {
-                    Consumer<RecordItem> itemConsumer = mock(Consumer.class);
-
-                    // given
-                    Path testFile = getTestFile(recordFile);
-                    StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
-
-                    // when
-                    RecordFile actual = recordFileReader.read(streamFileData, itemConsumer);
-
-                    // then
-                    assertThat(actual).usingRecursiveComparison().ignoringFields("bytes", "items", "loadStart")
-                            .isEqualTo(recordFile);
-                    assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
-                    assertThat(actual.getLoadStart()).isNotNull().isPositive();
-                    ArgumentCaptor<RecordItem> captor = ArgumentCaptor.forClass(RecordItem.class);
-                    verify(itemConsumer, times(recordFile.getCount().intValue())).accept(captor.capture());
-                    List<Long> timestamps = captor.getAllValues().stream()
-                            .map(RecordItem::getConsensusTimestamp)
-                            .collect(Collectors.toList());
-                    assertThat(timestamps).first().isEqualTo(recordFile.getConsensusStart());
-                    assertThat(timestamps).last().isEqualTo(recordFile.getConsensusEnd());
-                    assertThat(timestamps).doesNotHaveDuplicates().isSorted();
-                });
-    }
-
-    @TestFactory
-    Stream<DynamicTest> readValidFileWithoutConsumer() {
+    Stream<DynamicTest> readValidFile() {
         String template = "read valid version %d file %s";
 
         return DynamicTest.stream(
@@ -116,6 +78,13 @@ abstract class RecordFileReaderTest {
                             .isEqualTo(recordFile);
                     assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
                     assertThat(actual.getLoadStart()).isNotNull().isPositive();
+                    List<Long> timestamps = actual.getItems()
+                            .map(RecordItem::getConsensusTimestamp)
+                            .collectList()
+                            .block();
+                    assertThat(timestamps).first().isEqualTo(recordFile.getConsensusStart());
+                    assertThat(timestamps).last().isEqualTo(recordFile.getConsensusEnd());
+                    assertThat(timestamps).doesNotHaveDuplicates().isSorted();
                 });
     }
 
@@ -130,7 +99,7 @@ abstract class RecordFileReaderTest {
                     // given
                     Path testFile = getTestFile(recordFile);
                     byte[] bytes = FileUtils.readFileToByteArray(testFile.toFile());
-                    byte[] bytesCorrupted = ArrayUtils.addAll(bytes, new byte[] { 0, 1, 2, 3 });
+                    byte[] bytesCorrupted = ArrayUtils.addAll(bytes, new byte[] {0, 1, 2, 3});
                     StreamFileData streamFileData = StreamFileData.from(recordFile.getName(), bytesCorrupted);
 
                     // when

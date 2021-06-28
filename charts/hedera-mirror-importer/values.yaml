@@ -178,7 +178,7 @@ prometheusRules:
       description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
       summary: Took longer than 60s to parse balance stream files
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 60
+    expr: sum(rate(hedera_mirror_parse_duration_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[15m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[15m])) by (namespace, pod) > 60
     for: 2m
     labels:
       severity: critical
@@ -191,7 +191,7 @@ prometheusRules:
       description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
       summary: Mirror Importer balance stream processing has fallen behind
     enabled: true
-    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[3m])) by (namespace, pod) > 960
+    expr: sum(rate(hedera_mirror_parse_latency_seconds_sum{application="hedera-mirror-importer",type="BALANCE"}[15m])) by (namespace, pod) / sum(rate(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[15m])) by (namespace, pod) > 960
     for: 3m
     labels:
       severity: critical
@@ -297,7 +297,7 @@ prometheusRules:
 
   ImporterNoConsensus:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} only able to achieve {{ $value | humanizePercentage }} consensus during {{ $labels.type }} stream signature verification"
+      description: "{{ $labels.namespace }} only able to achieve {{ $value | humanizePercentage }} consensus during {{ $labels.type }} stream signature verification"
       summary: Unable to verify {{ $labels.type }} stream signatures
     enabled: true
     expr: sum(rate(hedera_mirror_download_signature_verification_total{application="hedera-mirror-importer", status="CONSENSUS_REACHED"}[2m])) by (namespace, pod, type) / sum(rate(hedera_mirror_download_signature_verification_total{application="hedera-mirror-importer"}[2m])) by (namespace, pod, type) < 0.33
@@ -321,10 +321,10 @@ prometheusRules:
 
   ImporterNoTransactions:
     annotations:
-      description: "Record stream TPS has dropped to {{ $value }} for {{ $labels.namespace }}/{{ $labels.pod }}. This may be because importer is down, can't connect to cloud storage, main nodes are not uploading, error parsing the streams, no traffic, etc."
+      description: "Record stream TPS has dropped to {{ $value }} for {{ $labels.namespace }}. This may be because importer is down, can't connect to cloud storage, main nodes are not uploading, error parsing the streams, no traffic, etc."
       summary: "No transactions seen for 2m"
     enabled: true
-    expr: sum(rate(hedera_mirror_transaction_latency_seconds_count{application="hedera-mirror-importer"}[5m])) by (namespace, pod) <= 0
+    expr: sum(rate(hedera_mirror_transaction_latency_seconds_count{application="hedera-mirror-importer"}[5m])) by (namespace) <= 0
     for: 2m
     labels:
       severity: critical

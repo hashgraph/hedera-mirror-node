@@ -702,17 +702,37 @@ describe('token formatTokenInfoRow tests', () => {
   });
 });
 
+const verifyInvalidAndValidTokensFilters = (invalidFilters, validFilters) => {
+  invalidFilters.forEach((filter) => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for invalid ${filterString}`, () => {
+      expect(() => tokens.validateTokensFilters([filter])).toThrowErrorMatchingSnapshot();
+    });
+  });
+
+  validFilters.forEach((filter) => {
+    const filterString = Array.isArray(filter)
+      ? `${JSON.stringify(filter[0])} ${filter.length} times`
+      : `${JSON.stringify(filter)}`;
+    test(`Verify validateAndParseFilters for valid ${filterString}`, () => {
+      tokens.validateTokensFilters([filter]);
+    });
+  });
+};
+
 describe('utils validateAndParseFilters token type tests', () => {
   const key = filterKeys.TOKEN_TYPE;
   const invalidFilters = [
-    // erroneous data
-    utils.buildComparatorFilter(key, '-1'),
     // invalid format
     utils.buildComparatorFilter(key, 'cred'),
     utils.buildComparatorFilter(key, 'deb'),
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
   ];
 
-  const filters = [
+  const validFilters = [
     utils.buildComparatorFilter(key, 'all'),
     utils.buildComparatorFilter(key, 'ALL'),
     utils.buildComparatorFilter(key, 'NON_FUNGIBLE_UNIQUE'),
@@ -721,21 +741,327 @@ describe('utils validateAndParseFilters token type tests', () => {
     utils.buildComparatorFilter(key, 'fungible_common'),
   ];
 
-  invalidFilters.forEach((filter) => {
-    const filterString = Array.isArray(filter)
-      ? `${JSON.stringify(filter[0])} ${filter.length} times`
-      : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
-      expect(() => tokens.validateTokensFilters([filter])).toThrowErrorMatchingSnapshot();
+  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
+});
+
+describe('utils validateAndParseFilters serialnumbers tests', () => {
+  const key = filterKeys.SERIAL_NUMBER;
+  const invalidFilters = [
+    // invalid format
+    utils.buildComparatorFilter(key, '-1'),
+    utils.buildComparatorFilter(key, 'deb'),
+    // erroneous data
+    utils.buildComparatorFilter(key, '0'),
+  ];
+
+  const validFilters = [
+    utils.buildComparatorFilter(key, '1'),
+    utils.buildComparatorFilter(key, '21'),
+    utils.buildComparatorFilter(key, '9007199254740991'),
+    utils.buildComparatorFilter(key, 'eq:324'),
+    utils.buildComparatorFilter(key, 'gt:324'),
+    utils.buildComparatorFilter(key, 'gte:324'),
+    utils.buildComparatorFilter(key, 'lt:324'),
+    utils.buildComparatorFilter(key, 'lte:324'),
+  ];
+
+  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
+});
+
+describe('utils validateAndParseFilters account.id tests', () => {
+  const key = filterKeys.ACCOUNT_ID;
+  const invalidFilters = [
+    // invalid format
+    utils.buildComparatorFilter(key, 'L'),
+    utils.buildComparatorFilter(key, '@.#.$'),
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
+    utils.buildComparatorFilter(key, '0.1.2.3'),
+    utils.buildComparatorFilter(key, '-1.-1.-1'),
+  ];
+
+  const validFilters = [
+    utils.buildComparatorFilter(key, '1001'),
+    utils.buildComparatorFilter(key, '0.1001'),
+    utils.buildComparatorFilter(key, '0.0.1001'),
+    utils.buildComparatorFilter(key, '21'),
+    utils.buildComparatorFilter(key, '1234567890'),
+    utils.buildComparatorFilter(key, 'eq:0.0.1001'),
+    utils.buildComparatorFilter(key, 'lt:0.0.1001'),
+    utils.buildComparatorFilter(key, 'lte:0.0.1001'),
+    utils.buildComparatorFilter(key, 'gt:0.0.1001'),
+    utils.buildComparatorFilter(key, 'gte:0.0.1001'),
+    utils.buildComparatorFilter(key, 'eq:1001'),
+    utils.buildComparatorFilter(key, 'lt:324'),
+    utils.buildComparatorFilter(key, 'lte:324'),
+    utils.buildComparatorFilter(key, 'gt:324'),
+    utils.buildComparatorFilter(key, 'gte:324'),
+  ];
+
+  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
+});
+
+describe('token extractSqlFromNftTokensRequest tests', () => {
+  const verifyExtractSqlFromNftTokensRequest = (
+    tokenId,
+    pgSqlQuery,
+    filters,
+    expectedquery,
+    expectedparams,
+    expectedorder,
+    expectedlimit
+  ) => {
+    const {query, params, order, limit} = tokens.extractSqlFromNftTokensRequest(tokenId, pgSqlQuery, filters);
+
+    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
+    expect(params).toStrictEqual(expectedparams);
+    expect(order).toStrictEqual(expectedorder);
+    expect(limit).toStrictEqual(expectedlimit);
+  };
+
+  test('Verify simple discovery query', () => {
+    const tokenId = '1009'; // encoded
+    const initialQuery = tokens.nftSelectQuery;
+    const filters = [];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number,
+                                  nft.token_id
+                           from nft
+                                  join entity e on e.id = nft.token_id
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                             and e.deleted != true
+                           order by nft.serial_number desc
+                           limit $2`;
+    const expectedParams = [tokenId, maxLimit];
+    const expectedOrder = orderFilterValues.DESC;
+    const expectedLimit = maxLimit;
+
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
+  test('Verify account id', () => {
+    const tokenId = '1009'; // encoded
+    const accountId = '111'; // encoded
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const filters = [
+      {
+        key: filterKeys.ACCOUNT_ID,
+        operator: ' = ',
+        value: accountId,
+      },
+    ];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number,
+                                  nft.token_id
+                           from nft
+                                  join entity e on e.id = nft.token_id
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                             and e.deleted != true
+                             and nft.account_id = $2
+                           order by nft.serial_number desc
+                           limit $3`;
+    const expectedParams = [tokenId, accountId, maxLimit];
+    const expectedOrder = orderFilterValues.DESC;
+    const expectedLimit = maxLimit;
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
+  test('Verify serial number id', () => {
+    const tokenId = '1009'; // encoded
+    const serialFilter = 'gt:111';
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const filters = [
+      {
+        key: filterKeys.SERIAL_NUMBER,
+        operator: ' = ',
+        value: serialFilter,
+      },
+    ];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number,
+                                  nft.token_id
+                           from nft
+                                  join entity e on e.id = nft.token_id
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                             and e.deleted != true
+                             and nft.serial_number = $2
+                           order by nft.serial_number desc
+                           limit $3`;
+    const expectedParams = [tokenId, serialFilter, maxLimit];
+    const expectedOrder = orderFilterValues.DESC;
+    const expectedLimit = maxLimit;
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
+  test('Verify all filters', () => {
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const tokenId = '1009'; // encoded
+    const accountId = '5';
+    const serialNum = '2';
+    const limit = '3';
+    const order = orderFilterValues.ASC;
+    const filters = [
+      {
+        key: filterKeys.ACCOUNT_ID,
+        operator: ' = ',
+        value: accountId,
+      },
+      {
+        key: filterKeys.SERIAL_NUMBER,
+        operator: ' = ',
+        value: serialNum,
+      },
+      {key: filterKeys.LIMIT, operator: ' = ', value: limit},
+      {key: filterKeys.ORDER, operator: ' = ', value: order},
+    ];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number,
+                                  nft.token_id
+                           from nft
+                                  join entity e on e.id = nft.token_id
+                           where nft.token_id = $1
+                             and nft.deleted = false
+                             and e.deleted != true
+                             and nft.account_id = $2
+                             and nft.serial_number = $3
+                           order by nft.serial_number asc
+                           limit $4`;
+    const expectedParams = [tokenId, accountId, serialNum, limit];
+    const expectedOrder = order;
+    const expectedLimit = 3;
+
+    verifyExtractSqlFromNftTokensRequest(
+      tokenId,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+});
+
+describe('token extractSqlFromNftTokenInfoRequest tests', () => {
+  const verifyExtractSqlFromNftTokenInfoRequest = (
+    tokenId,
+    serialNumber,
+    pgSqlQuery,
+    filters,
+    expectedquery,
+    expectedparams
+  ) => {
+    const {query, params} = tokens.extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, pgSqlQuery, filters);
+
+    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
+    expect(params).toStrictEqual(expectedparams);
+  };
+
+  test('Verify simple serial query', () => {
+    const tokenId = '1009'; // encoded
+    const serialNumber = '960';
+    const initialQuery = [tokens.nftSelectQuery].join('\n');
+    const filters = [];
+
+    const expectedQuery = `select nft.account_id,
+                                  nft.created_timestamp,
+                                  nft.deleted,
+                                  nft.metadata,
+                                  nft.modified_timestamp,
+                                  nft.serial_number,
+                                  nft.token_id
+                           from nft
+                           where nft.token_id = $1
+                             and nft.serial_number = $2`;
+    const expectedParams = [tokenId, serialNumber];
+    verifyExtractSqlFromNftTokenInfoRequest(
+      tokenId,
+      serialNumber,
+      initialQuery,
+      filters,
+      expectedQuery,
+      expectedParams
+    );
+  });
+});
+
+describe('token validateSerialNumberParam tests', () => {
+  const invalidSerialNums = ['', '-1', null, undefined, 'end', 0, '0'];
+  const validSerialNums = [1, '1', '9007199254740991'];
+
+  invalidSerialNums.forEach((serialNum) => {
+    test(`Verify validateSerialNumberParam for invalid ${serialNum}`, () => {
+      expect(() => tokens.validateSerialNumberParam(serialNum)).toThrowErrorMatchingSnapshot();
     });
   });
 
-  filters.forEach((filter) => {
-    const filterString = Array.isArray(filter)
-      ? `${JSON.stringify(filter[0])} ${filter.length} times`
-      : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
-      tokens.validateTokensFilters([filter]);
+  validSerialNums.forEach((serialNum) => {
+    test(`Verify validateSerialNumberParam for valid ${serialNum}`, () => {
+      tokens.validateSerialNumberParam(serialNum);
+    });
+  });
+});
+
+describe('token validateTokenIdParam tests', () => {
+  const invalidTokenIds = ['', '-1', null, undefined, 'end'];
+  const validTokenIds = ['1', '0.1', '0.20.1'];
+
+  invalidTokenIds.forEach((tokenId) => {
+    test(`Verify validateTokenIdParam for invalid ${tokenId}`, () => {
+      expect(() => tokens.validateTokenIdParam(tokenId)).toThrowErrorMatchingSnapshot();
+    });
+  });
+
+  validTokenIds.forEach((tokenId) => {
+    test(`Verify validateTokenIdParam for valid ${tokenId}`, () => {
+      tokens.validateTokenIdParam(tokenId);
     });
   });
 });

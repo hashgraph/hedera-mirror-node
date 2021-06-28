@@ -1,5 +1,5 @@
 [![Build](https://github.com/hashgraph/hedera-mirror-node/actions/workflows/importer.yml/badge.svg)](https://github.com/hashgraph/hedera-mirror-node/actions)
-[![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/master)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
+[![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/main)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
 [![GitHub](https://img.shields.io/github/license/hashgraph/hedera-mirror-node)](LICENSE)
 [![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
 
@@ -92,9 +92,13 @@ to understanding the mirror node operations.
 
 ### Prerequisite Tools
 
-Ensure these tools are installed prior to running the mirror node
+Ensure these tools are installed (note minimum versions) prior to running the mirror node
 
-- [Docker](https://www.docker.com/products/docker-desktop)
+- [Docker](https://www.docker.com/products/docker-desktop) - v3.3.3+
+- [NodeJs](https://nodejs.org) - v14.16.0+
+- [Npm](https://www.npmjs.com/get-npm) - v6.14.11+
+- [Go](https://golang.org/dl/) - v1.16+
+- Java - [AdoptOpenJDK 11](https://adoptopenjdk.net/)
 
 ### Running Mirror Node
 
