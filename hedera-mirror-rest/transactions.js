@@ -173,15 +173,15 @@ const createTransferLists = (rows) => {
       consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
       entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
       max_fee: utils.getNullableNumber(row.max_fee),
-      memo_base64: row.memo && row.memo.toString('base64'),
+      memo_base64: utils.encodeBase64(row.memo),
       name: row.name,
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
       result: row.result,
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
-      bytes: utils.encodeBase64(row.transaction_bytes, 'base64'),
-      transaction_hash: utils.encodeBase64(row.transaction_hash, 'base64'),
+      bytes: utils.encodeBase64(row.transaction_bytes),
+      transaction_hash: utils.encodeBase64(row.transaction_hash),
       transaction_id: utils.createTransactionId(
         EntityId.fromEncodedId(row.payer_account_id).toString(),
         validStartTimestamp
@@ -448,7 +448,6 @@ const getTransactions = async (req, res) => {
 
   // Execute query
   const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
-  // const result = await sql.unsafe(query.query, query.params);
   const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,

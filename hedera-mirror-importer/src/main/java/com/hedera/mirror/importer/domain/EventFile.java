@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Enumerated;
@@ -31,6 +29,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.parser.domain.EventItem;
@@ -62,7 +61,7 @@ public class EventFile implements StreamFile<EventItem> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    private List<EventItem> items = new ArrayList<>();
+    private Flux<EventItem> items = Flux.empty();
 
     private Long loadEnd;
 

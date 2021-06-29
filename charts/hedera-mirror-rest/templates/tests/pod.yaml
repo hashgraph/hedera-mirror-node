@@ -4,7 +4,7 @@ kind: Pod
 metadata:
   annotations:
     helm.sh/hook: test
-    helm.sh/hook-delete-policy: hook-failed,hook-succeeded
+    helm.sh/hook-delete-policy: before-hook-creation,hook-failed,hook-succeeded
   labels:
     {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}-test

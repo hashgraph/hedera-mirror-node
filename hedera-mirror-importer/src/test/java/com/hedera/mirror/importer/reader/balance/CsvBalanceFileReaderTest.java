@@ -34,7 +34,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -72,17 +71,17 @@ abstract class CsvBalanceFileReaderTest {
     protected long consensusTimestamp;
 
     CsvBalanceFileReaderTest(Class<? extends CsvBalanceFileReader> balanceFileReaderClass,
-            Class<? extends AccountBalanceLineParser> accountBalanceLineParserClass,
-            String balanceFilePath, long expectedCount) {
+                             Class<? extends AccountBalanceLineParser> accountBalanceLineParserClass,
+                             String balanceFilePath, long expectedCount) {
         mirrorProperties = new MirrorProperties();
         balanceParserProperties = new BalanceParserProperties();
         balanceFile = TestUtils.getResource(balanceFilePath);
         parser = (AccountBalanceLineParser) ReflectUtils.newInstance(accountBalanceLineParserClass,
-                new Class[]{MirrorProperties.class},
-                new Object[]{ mirrorProperties});
+                new Class[] {MirrorProperties.class},
+                new Object[] {mirrorProperties});
         balanceFileReader = (CsvBalanceFileReader) ReflectUtils.newInstance(balanceFileReaderClass,
-                new Class[]{BalanceParserProperties.class, accountBalanceLineParserClass},
-                new Object[]{balanceParserProperties, parser});
+                new Class[] {BalanceParserProperties.class, accountBalanceLineParserClass},
+                new Object[] {balanceParserProperties, parser});
         this.expectedCount = expectedCount;
     }
 
@@ -96,12 +95,11 @@ abstract class CsvBalanceFileReaderTest {
 
     @Test
     void readValid() throws Exception {
-        List<AccountBalance> accountBalances = new ArrayList<>();
         StreamFileData streamFileData = StreamFileData.from(balanceFile);
-        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData, accountBalances::add);
+        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData);
         assertAccountBalanceFile(accountBalanceFile);
         assertFileHash(balanceFile, accountBalanceFile);
-        verifySuccess(balanceFile, accountBalances, 2);
+        verifySuccess(balanceFile, accountBalanceFile, 2);
     }
 
     @Test
@@ -178,11 +176,10 @@ abstract class CsvBalanceFileReaderTest {
         FileUtils.writeLines(testFile, lines);
         FileUtils.writeStringToFile(testFile, "\n\n\n", CsvBalanceFileReader.CHARSET, true);
 
-        List<AccountBalance> accountBalances = new ArrayList<>();
         StreamFileData streamFileData = StreamFileData.from(testFile);
-        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData, accountBalances::add);
+        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData);
         assertAccountBalanceFile(accountBalanceFile);
-        verifySuccess(testFile, accountBalances, 2);
+        verifySuccess(testFile, accountBalanceFile, 2);
     }
 
     @Test
@@ -191,11 +188,10 @@ abstract class CsvBalanceFileReaderTest {
         FileUtils.writeLines(testFile, lines);
         FileUtils.writeStringToFile(testFile, "\n0.0.3.20340\nfoobar\n", CsvBalanceFileReader.CHARSET, true);
 
-        List<AccountBalance> accountBalances = new ArrayList<>();
         StreamFileData streamFileData = StreamFileData.from(testFile);
-        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData, accountBalances::add);
+        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData);
         assertAccountBalanceFile(accountBalanceFile);
-        verifySuccess(testFile, accountBalances, 2);
+        verifySuccess(testFile, accountBalanceFile, 2);
     }
 
     @Test
@@ -207,17 +203,22 @@ abstract class CsvBalanceFileReaderTest {
                 String.format("\n%d,0,3,340\n%d,0,4,340\n", otherShard, otherShard), CsvBalanceFileReader.CHARSET,
                 true);
 
-        List<AccountBalance> accountBalances = new ArrayList<>();
         StreamFileData streamFileData = StreamFileData.from(testFile);
-        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData, accountBalances::add);
+        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData);
         assertAccountBalanceFile(accountBalanceFile);
-        verifySuccess(testFile, accountBalances, 2);
+        verifySuccess(testFile, accountBalanceFile, 2);
     }
 
     @Test
     void supports() {
         StreamFileData streamFileData = StreamFileData.from(balanceFile);
         assertThat(balanceFileReader.supports(streamFileData)).isTrue();
+    }
+
+    @Test
+    void supportsInvalidWhenWrongExtension() {
+        StreamFileData streamFileData = StreamFileData.from("2021-03-10T16:00:00Z_Balances.csv", "");
+        assertThat(balanceFileReader.supports(streamFileData)).isFalse();
     }
 
     @Test
@@ -263,7 +264,7 @@ abstract class CsvBalanceFileReaderTest {
         assertThat(accountBalanceFile.getFileHash()).isEqualTo(fileHash);
     }
 
-    protected void verifySuccess(File file, List<AccountBalance> accountBalances, int skipLines) throws IOException {
+    protected void verifySuccess(File file, AccountBalanceFile accountBalanceFile, int skipLines) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file),
                 CsvBalanceFileReader.CHARSET))) {
 
@@ -272,6 +273,7 @@ abstract class CsvBalanceFileReaderTest {
                 skipLines--;
             }
 
+            List<AccountBalance> accountBalances = accountBalanceFile.getItems().collectList().block();
             var lineIter = reader.lines().iterator();
             var accountBalanceIter = accountBalances.iterator();
 

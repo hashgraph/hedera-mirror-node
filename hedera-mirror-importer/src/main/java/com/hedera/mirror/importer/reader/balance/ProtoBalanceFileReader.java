@@ -20,16 +20,22 @@ package com.hedera.mirror.importer.reader.balance;
  * ‍
  */
 
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.ExtensionRegistryLite;
+import com.google.protobuf.UnknownFieldSet;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
+import org.springframework.util.Assert;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
@@ -37,48 +43,90 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 
+@Log4j2
 @Named
 public class ProtoBalanceFileReader implements BalanceFileReader {
 
-    public static final String FILE_EXTENSION = "pb";
+    private static final String FILE_EXTENSION = "pb";
+    private static final int TAG_EOF = 0;
+    private static final int TAG_TIMESTAMP = 10;
+    private static final int TAG_BALANCE = 18;
 
     @Override
     public boolean supports(StreamFileData streamFileData) {
-        return streamFileData.getFilename().contains(FILE_EXTENSION);
+        return FILE_EXTENSION.equals(streamFileData.getStreamFilename().getExtension().getName());
     }
 
     @Override
-    public AccountBalanceFile read(StreamFileData streamFileData, Consumer<AccountBalance> itemConsumer) {
-        MessageDigest messageDigest = DigestUtils.getSha384Digest();
-        itemConsumer = itemConsumer != null ? itemConsumer : accountBalance -> {
-        };
+    public AccountBalanceFile read(StreamFileData streamFileData) {
+        Instant loadStart = Instant.now();
+        Flux<AccountBalance> items = toFlux(streamFileData);
+        long consensusTimestamp = items.map(AccountBalance::getId)
+                .map(AccountBalance.Id::getConsensusTimestamp)
+                .blockFirst();
 
-        try (InputStream inputStream = new DigestInputStream(streamFileData.getInputStream(), messageDigest)) {
+        try (InputStream inputStream = streamFileData.getInputStream()) {
             AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
             accountBalanceFile.setBytes(streamFileData.getBytes());
-            accountBalanceFile.setLoadStart(Instant.now().getEpochSecond());
-
-            AllAccountBalances allAccountBalances = AllAccountBalances.parseFrom(inputStream.readAllBytes());
-            long consensusTimestamp = Utility.timestampInNanosMax(allAccountBalances.getConsensusTimestamp());
-            allAccountBalances.getAllAccountsList().stream()
-                    .map((balances -> this.readSingleAccountBalances(consensusTimestamp, balances)))
-                    .forEachOrdered(itemConsumer);
-
             accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
-            accountBalanceFile.setCount((long) allAccountBalances.getAllAccountsCount());
-            accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
+            accountBalanceFile.setFileHash(DigestUtils.sha384Hex(inputStream));
+            accountBalanceFile.setItems(items);
+            accountBalanceFile.setLoadStart(loadStart.getEpochSecond());
             accountBalanceFile.setName(streamFileData.getFilename());
             return accountBalanceFile;
-        } catch (IOException ex) {
-            throw new InvalidStreamFileException("Error reading account balance pb file", ex);
+        } catch (IOException e) {
+            throw new StreamFileReaderException(e);
         }
     }
 
-    private AccountBalance readSingleAccountBalances(long consensusTimestamp, SingleAccountBalances balances) {
+    private Flux<AccountBalance> toFlux(StreamFileData streamFileData) {
+        return Flux.defer(() -> {
+            InputStream inputStream = streamFileData.getInputStream();
+            ExtensionRegistryLite extensionRegistry = ExtensionRegistryLite.getEmptyRegistry();
+            CodedInputStream input = CodedInputStream.newInstance(inputStream);
+            AtomicLong consensusTimestamp = new AtomicLong(0L);
+            UnknownFieldSet.Builder unknownFieldSet = UnknownFieldSet.newBuilder();
+
+            return Flux.<AccountBalance>generate(sink -> {
+                try {
+                    boolean done = false;
+                    while (!done) {
+                        int tag = input.readTag();
+                        switch (tag) {
+                            case TAG_EOF:
+                                done = true;
+                                break;
+                            case TAG_TIMESTAMP:
+                                Timestamp timestamp = input.readMessage(Timestamp.parser(), extensionRegistry);
+                                consensusTimestamp.set(Utility.timestampInNanosMax(timestamp));
+                                break;
+                            case TAG_BALANCE:
+                                Assert.state(consensusTimestamp.get() > 0, "Missing consensus timestamp)");
+                                var ab = input.readMessage(SingleAccountBalances.parser(), extensionRegistry);
+                                sink.next(toAccountBalance(consensusTimestamp.get(), ab));
+                                return;
+                            default:
+                                log.warn("Unsupported tag: {}", tag);
+                                done = !unknownFieldSet.mergeFieldFrom(tag, input);
+                        }
+                    }
+
+                    Assert.state(consensusTimestamp.get() > 0, "Missing consensus timestamp)");
+                    sink.complete();
+                } catch (IOException e) {
+                    sink.error(new StreamFileReaderException(e));
+                } catch (IllegalStateException e) {
+                    sink.error(new InvalidStreamFileException(e));
+                }
+            }).doFinally(s -> IOUtils.closeQuietly(inputStream));
+        });
+    }
+
+    private AccountBalance toAccountBalance(long consensusTimestamp, SingleAccountBalances balances) {
         EntityId accountId = EntityId.of(balances.getAccountID());
         List<TokenBalance> tokenBalances = balances.getTokenUnitBalancesList().stream()
                 .map(tokenBalance -> {

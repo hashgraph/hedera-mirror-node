@@ -20,10 +20,6 @@ package com.hedera.mirror.importer.reader;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.domain.StreamItem;
@@ -32,18 +28,11 @@ public interface StreamFileReader<S extends StreamFile, I extends StreamItem> {
 
     /**
      * Reads a stream file. This method takes ownership of the {@link java.io.InputStream} provided by {@code
-     * streamFileData} and will close it when it's done processing the data.
+     * streamFileData} and will close it when it's done processing the data. Depending upon the implementation, the
+     * StreamFile::getItems may return a lazily parsed list of items.
      *
      * @param streamFileData {@link StreamFileData} object for the record file.
-     * @param itemConsumer   consumer to handle individual {@link StreamItem} objects.
      * @return {@link StreamFile} object
      */
-    S read(StreamFileData streamFileData, Consumer<I> itemConsumer);
-
-    default S read(StreamFileData streamFileData) {
-        List<I> items = new ArrayList<>();
-        S streamFile = read(streamFileData, items::add);
-        streamFile.getItems().addAll(items);
-        return streamFile;
-    }
+    S read(StreamFileData streamFileData);
 }

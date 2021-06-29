@@ -23,13 +23,11 @@ package com.hedera.mirror.importer.reader.balance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
@@ -56,10 +54,9 @@ class BalanceFileReaderImplV1Test extends CsvBalanceFileReaderTest {
         copy.add("");
         copy.addAll(lines);
         FileUtils.writeLines(testFile, copy);
-        List<AccountBalance> accountBalances = new ArrayList<>();
         StreamFileData streamFileData = StreamFileData.from(testFile);
-        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData, accountBalances::add);
+        AccountBalanceFile accountBalanceFile = balanceFileReader.read(streamFileData);
         assertAccountBalanceFile(accountBalanceFile);
-        verifySuccess(testFile, accountBalances, 2);
+        verifySuccess(testFile, accountBalanceFile, 2);
     }
 }

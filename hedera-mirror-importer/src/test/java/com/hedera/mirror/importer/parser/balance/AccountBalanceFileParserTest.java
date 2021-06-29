@@ -22,15 +22,14 @@ package com.hedera.mirror.importer.parser.balance;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Longs;
 import java.time.Instant;
 import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AccountBalance;
@@ -40,7 +39,6 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -82,40 +80,24 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     @Test
-    void alreadyExists() {
-        // given
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        accountBalanceFile.setLoadEnd(1L);
-        accountBalanceFileRepository.save(accountBalanceFile);
-
-        // when
-        accountBalanceFileParser.parse(accountBalanceFile);
-
-        // then
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
-    }
-
-    @Disabled("Fails in CI")
-    @Test
     void success() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         accountBalanceFileParser.parse(accountBalanceFile);
         assertPostParseAccountBalanceFile(accountBalanceFile, true);
     }
 
-    @Disabled("Fails in CI")
     @Test
     void duplicateFile() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         AccountBalanceFile duplicate = accountBalanceFile(1);
 
         accountBalanceFileParser.parse(accountBalanceFile);
-        assertThrows(ParserException.class, () -> accountBalanceFileParser.parse(duplicate));
+        accountBalanceFileParser.parse(duplicate); // Will be ignored
 
+        assertThat(accountBalanceFileRepository.count()).isEqualTo(1L);
         assertPostParseAccountBalanceFile(accountBalanceFile, true);
     }
 
-    @Disabled("Fails in CI")
     @Test
     void keepFiles() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
@@ -152,17 +134,17 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         assertThat(accountBalanceFileRepository.count()).isEqualTo(accountBalanceFiles.length);
 
         for (AccountBalanceFile accountBalanceFile : accountBalanceFiles) {
-            for (AccountBalance accountBalance : accountBalanceFile.getItems()) {
+            accountBalanceFile.getItems().doOnNext(accountBalance -> {
                 assertThat(accountBalanceRepository.findById(accountBalance.getId())).get().isEqualTo(accountBalance);
 
                 for (TokenBalance tokenBalance : accountBalance.getTokenBalances()) {
                     assertThat(tokenBalanceRepository.findById(tokenBalance.getId())).get().isEqualTo(tokenBalance);
                 }
-            }
+            }).blockLast();
 
             assertThat(accountBalanceRepository.findByIdConsensusTimestamp(accountBalanceFile.getConsensusTimestamp()))
                     .hasSize(accountBalanceFile.getCount().intValue())
-                    .hasSize(accountBalanceFile.getItems().size());
+                    .hasSize(Math.toIntExact(accountBalanceFile.getItems().count().block()));
 
             assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()))
                     .get()
@@ -181,7 +163,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .consensusTimestamp(timestamp)
                 .count(2L)
                 .fileHash("fileHash" + timestamp)
-                .items(List.of(accountBalance(timestamp, 1), accountBalance(timestamp, 2)))
+                .items(Flux.just(accountBalance(timestamp, 1), accountBalance(timestamp, 2)))
                 .loadEnd(null)
                 .loadStart(timestamp)
                 .name(filename)
