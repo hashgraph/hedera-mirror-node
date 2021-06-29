@@ -43,6 +43,7 @@ spec:
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
+        HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "1"
     rest:
       test:
         checkRecent: false
