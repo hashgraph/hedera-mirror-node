@@ -24,6 +24,12 @@ const _ = require('lodash');
 const {shard: systemShard} = require('./config');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
+const numBits = 32n;
+const numMask = 2n ** numBits - 1n;
+const realmBits = 16n;
+const realmMask = 2n ** realmBits - 1n;
+const shardMask = realmMask;
+
 const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
 const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
 const maxEncodedId = 2n ** 63n - 1n;
@@ -82,16 +88,20 @@ const fromEncodedId = (id, isNullable = false) => {
     throw new InvalidArgumentError(message);
   }
 
-  const encodedId = BigInt(id);
+  let encodedId = BigInt(id);
   if (encodedId < 0 || encodedId > maxEncodedId) {
     throw new InvalidArgumentError(message);
   }
 
-  const shard = encodedId / shardOffset; // quotient is shard
-  const encodedRealmNum = encodedId % shardOffset; // realm and num remains
-  const realm = encodedRealmNum / realmOffset;
-  const num = encodedRealmNum % realmOffset;
-  return of(Number(shard), Number(realm), Number(num)); // convert from BigInt to number
+  const num = encodedId & numMask;
+  encodedId = encodedId >> numBits;
+  const realm = encodedId & realmMask;
+  const shard = encodedId >> realmBits;
+  // const shard = encodedId / shardOffset; // quotient is shard
+  // const encodedRealmNum = encodedId % shardOffset; // realm and num remains
+  // const realm = encodedRealmNum / realmOffset;
+  // const num = encodedRealmNum % realmOffset;
+  return of(shard, realm, num); // convert from BigInt to number
 };
 
 /**

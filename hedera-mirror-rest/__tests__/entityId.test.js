@@ -251,7 +251,7 @@ describe('EntityId fromEncodedId', () => {
     const {encodedId, isNullable, expectErr, expected} = spec;
     test(`${encodedId}`, () => {
       if (!expectErr) {
-        expect(EntityId.fromEncodedId(encodedId, isNullable)).toEqual(expected);
+        expect(EntityId.fromEncodedId(encodedId, isNullable).toString()).toEqual(expected.toString());
       } else {
         expect(() => {
           EntityId.fromEncodedId(encodedId, isNullable);
