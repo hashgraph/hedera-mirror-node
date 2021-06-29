@@ -28,12 +28,16 @@ Custom Hedera Token Service Fees. This document explains how the mirror node can
 ```sql
 create table if not exists custom_fee
 (
-    consensus_timestamp bigint not null,
-    fixed_fees          jsonb,
-    fractional_fees     jsonb,
-    token_id            bigint not null
+    amount                bigint not null,
+    amount_denominator    bigint,
+    collector_account_id  bigint,
+    consensus_timestamp   bigint not null,
+    denominating_token_id bigint,
+    maximum_amount        bigint,
+    minimum_amount        bigint,
+    token_id              bigint not null
 );
-alter table custom_fee add primary key (token_id, consensus_timestamp);
+alter table custom_fee add primary key (token_id, consensus_timestamp, collector_account_id);
 ```
 
 - Add a new `assessed_custom_fee` table
@@ -50,12 +54,6 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 ```
 
 ## Importer
-
-### Converter
-
-- Add a `FixedFeeConverter` class to convert `FixedFee` to/from json string
-- Add a `FractionalFeeConverter` class to convert `FractionalFee` to/from json string
-- Add a `FractionConverter` class to convert `Fraction` to/from json string
 
 ### Domain
 
