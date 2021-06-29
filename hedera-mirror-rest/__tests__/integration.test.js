@@ -57,7 +57,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions.js');
-const transactionTypes = require('../controllers/transactionTypes');
+const transactionTypesController = require('../controllers/transactionTypes');
 const utils = require('../utils');
 const TransactionTypesModel = require('../models/transactionTypes');
 
@@ -72,7 +72,7 @@ beforeAll(async () => {
   sqlConnection = await integrationDbOps.instantiateDatabase();
 
   // set items that required db connection but weren't available due to integration db setup logic
-  const {transactionTypeToProtoMap, transactionTypeProtoToNameMap} = await transactionTypes.get();
+  const {transactionTypeToProtoMap, transactionTypeProtoToNameMap} = await transactionTypesController.get();
   global.transactionTypes = new TransactionTypesModel(transactionTypeToProtoMap, transactionTypeProtoToNameMap);
 }, defaultBeforeAllTimeoutMillis);
 
@@ -214,17 +214,17 @@ describe('DB integration test - utils.getTransactionTypeQuery', () => {
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${global.transactionTypes.getId('TOKENCREATION')}`
+      `type = ${transactionTypes.getId('TOKENCREATION')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${global.transactionTypes.getId('TOKENASSOCIATE')}`
+      `type = ${transactionTypes.getId('TOKENASSOCIATE')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${global.transactionTypes.getId('CONSENSUSSUBMITMESSAGE')}`
+      `type = ${transactionTypes.getId('CONSENSUSSUBMITMESSAGE')}`
     );
   });
 });
@@ -363,14 +363,14 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
 describe('DB integration test - transactionTypes.getId', () => {
   test('DB integration test -  transactionTypes.getId - Verify valid transaction type returns value', () => {
-    expect(global.transactionTypes.getId('CRYPTOTRANSFER')).toBe(14);
-    expect(global.transactionTypes.getId('cryptotransfer')).toBe(14);
-    expect(global.transactionTypes.getId('TOKENWIPE')).toBe(39);
-    expect(global.transactionTypes.getId('tokenWipe')).toBe(39);
+    expect(transactionTypes.getId('CRYPTOTRANSFER')).toBe(14);
+    expect(transactionTypes.getId('cryptotransfer')).toBe(14);
+    expect(transactionTypes.getId('TOKENWIPE')).toBe(39);
+    expect(transactionTypes.getId('tokenWipe')).toBe(39);
   });
   test('DB integration test -  transactionTypes.getId - Verify invalid transaction type throws error', () => {
-    expect(() => global.transactionTypes.getId('TEST')).toThrowError(InvalidArgumentError);
-    expect(() => global.transactionTypes.getId(1)).toThrowError(InvalidArgumentError);
+    expect(() => transactionTypes.getId('TEST')).toThrowError(InvalidArgumentError);
+    expect(() => transactionTypes.getId(1)).toThrowError(InvalidArgumentError);
   });
 });
 

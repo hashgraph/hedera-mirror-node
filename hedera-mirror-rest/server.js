@@ -29,7 +29,6 @@ const cors = require('cors');
 const httpContext = require('express-http-context');
 const log4js = require('log4js');
 const compression = require('compression');
-const _ = require('lodash');
 
 // local files
 const accounts = require('./accounts');
@@ -42,14 +41,15 @@ const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
-const transactionTypes = require('./controllers/transactionTypes');
+const {isTestEnv} = require('./utils');
+const transactionTypesController = require('./controllers/transactionTypes');
+const {DbError} = require('./errors/dbError');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 const TransactionTypesModel = require('./models/transactionTypes');
-const {isTestEnv} = require('./utils');
 
 // Logger
 const logger = log4js.getLogger();
@@ -183,7 +183,7 @@ app.useAsync(handleError);
 
 const getTransactionTypes = async () => {
   // pulls in transactions types once and make globally available in non async manner
-  const {transactionTypeToProtoMap, transactionTypeProtoToNameMap} = await transactionTypes.get();
+  const {transactionTypeToProtoMap, transactionTypeProtoToNameMap} = await transactionTypesController.get();
   global.transactionTypes = new TransactionTypesModel(transactionTypeToProtoMap, transactionTypeProtoToNameMap);
 };
 
@@ -193,21 +193,25 @@ const verifyDbConnection = async () => {
 };
 
 if (!isTestEnv()) {
-  verifyDbConnection().then(() => {
-    logger.info(`DB connection validated`);
-    const server = app.listen(port, () => {
-      logger.info(`Server running on port: ${port}`);
-    });
+  verifyDbConnection()
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then(() => {
+      logger.info(`DB connection validated`);
+      const server = app.listen(port, () => {
+        logger.info(`Server running on port: ${port}`);
+      });
 
-    // Health check endpoints
-    createTerminus(server, {
-      healthChecks: {
-        '/health/readiness': health.readinessCheck,
-        '/health/liveness': health.livenessCheck,
-      },
-      beforeShutdown: health.beforeShutdown,
+      // Health check endpoints
+      createTerminus(server, {
+        healthChecks: {
+          '/health/readiness': health.readinessCheck,
+          '/health/liveness': health.livenessCheck,
+        },
+        beforeShutdown: health.beforeShutdown,
+      });
     });
-  });
 }
 
 module.exports = app;

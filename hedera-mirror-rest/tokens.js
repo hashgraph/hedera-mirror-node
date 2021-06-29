@@ -713,7 +713,7 @@ const formatNftHistoryRow = (row) => {
     ),
     receiver_account_id: EntityId.fromEncodedId(row.receiver_account_id, true).toString(),
     sender_account_id: EntityId.fromEncodedId(row.sender_account_id, true).toString(),
-    type: global.transactionTypes.getName(row.type),
+    type: transactionTypes.getName(row.type),
   };
 };
 

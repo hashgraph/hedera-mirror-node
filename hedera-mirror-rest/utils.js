@@ -100,7 +100,7 @@ const isValidEncoding = (query) => {
 
 const isValidTransactionType = (transactionType) => {
   try {
-    global.transactionTypes.getId(transactionType);
+    transactionTypes.getId(transactionType);
     return true;
   } catch (err) {
     return false;
@@ -869,7 +869,7 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  const protoId = global.transactionTypes.getId(transactionType);
+  const protoId = transactionTypes.getId(transactionType);
   return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 
