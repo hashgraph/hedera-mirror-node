@@ -31,13 +31,14 @@ create table if not exists custom_fee
     amount                bigint not null,
     amount_denominator    bigint,
     collector_account_id  bigint,
-    consensus_timestamp   bigint not null,
+    created_timestamp     bigint not null,
     denominating_token_id bigint,
     maximum_amount        bigint,
     minimum_amount        bigint,
     token_id              bigint not null
 );
-alter table custom_fee add primary key (token_id, consensus_timestamp, collector_account_id);
+create index if not exists
+    custom_fee__token_timestamp on custom_fee (token_id, created_timestamp desc);
 ```
 
 - Add a new `assessed_custom_fee` table
@@ -50,7 +51,7 @@ create table if not exists assessed_custom_fee (
     token_id             bigint
 );
 create index if not exists assessed_custom_fee__consensus_timestamp
-  on assessed_custom_fee (consensus_timestamp);
+    on assessed_custom_fee (consensus_timestamp);
 ```
 
 ## Importer
@@ -64,25 +65,14 @@ create index if not exists assessed_custom_fee__consensus_timestamp
   - `tokenId`
 
 - Add `CustomFee` class with the following fields
-  - `consensusTimestamp`
-  - `fixedFees` of type `List<FixedFee>`
-  - `fractionalFees` of type `List<FractionalFee>`
-  - `tokenId`
-
-- Add `FixedFee` class with the following fields
   - `amount`
+  - `amountDenominator`
   - `collectorAccountId`
+  - `createdTimestamp`
   - `denominatingTokenId`
-
-- Add `FractionalFee` class with the following fields
-  - `amount` of type `Fraction`
-  - `collectorAccountId`
-  - `maximum`
-  - `minimum`
-
-- Add `Fraction` class with the following fields
-  - `numerator`
-  - `denominator`
+  - `maximumAmount`
+  - `minimumAmount`
+  - `tokenId`
 
 ### Custom Fee Parsing
 
@@ -113,159 +103,108 @@ create index if not exists assessed_custom_fee__consensus_timestamp
   `token_id`, it's charged in HBAR; otherwise it's charged in the `token_id`
 
 ```json
-    {
-      "transactions": [
-        {
-          "consensus_timestamp": "1234567890.000000001",
-          "valid_start_timestamp": "1234567890.000000000",
-          "charged_tx_fee": 7,
-          "memo_base64": null,
-          "result": "SUCCESS",
-          "transaction_hash": "aGFzaA==",
-          "name": "TOKENTRANSFER",
-          "node": "0.0.3",
-          "transaction_id": "0.0.10-1234567890-000000000",
-          "valid_duration_seconds": "11",
-          "max_fee": "33",
-          "transfers": [
-            {
-              "account": "0.0.9",
-              "amount": 10
-            },
-            {
-              "account": "0.0.10",
-              "amount": -161
-            },
-            {
-              "account": "0.0.98",
-              "amount": 1
-            },
-            {
-              "account": "0.0.87501",
-              "amount": 150
-            }
-          ],
-          "token_transfers": [
-            {
-              "account": "0.0.200",
-              "amount": 200,
-              "token_id": "0.0.90000"
-            },
-            {
-              "account": "0.0.10",
-              "amount": -1210,
-              "token_id": "0.0.90000"
-            },
-            {
-              "account": "0.0.400",
-              "amount": 1000,
-              "token_id": "0.0.90000"
-            },
-            {
-              "account": "0.0.87502",
-              "amount": 10,
-              "token_id": "0.0.90000"
-            }
-          ],
-          "assessed_custom_fees": [
-            {
-              "amount": 150,
-              "collector_account_id": "0.0.87501"
-            },
-            {
-              "amount": 10,
-              "collector_account_id": "0.0.87502",
-              "token_id": "0.0.90000"
-            }
-          ]
-        }
-      ]
-    }
+  {
+    "transactions": [
+      {
+        "consensus_timestamp": "1234567890.000000001",
+        "valid_start_timestamp": "1234567890.000000000",
+        "charged_tx_fee": 7,
+        "memo_base64": null,
+        "result": "SUCCESS",
+        "transaction_hash": "aGFzaA==",
+        "name": "TOKENTRANSFER",
+        "node": "0.0.3",
+        "transaction_id": "0.0.10-1234567890-000000000",
+        "valid_duration_seconds": "11",
+        "max_fee": "33",
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 10
+          },
+          {
+            "account": "0.0.10",
+            "amount": -161
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          },
+          {
+            "account": "0.0.87501",
+            "amount": 150
+          }
+        ],
+        "token_transfers": [
+          {
+            "account": "0.0.200",
+            "amount": 200,
+            "token_id": "0.0.90000"
+          },
+          {
+            "account": "0.0.10",
+            "amount": -1210,
+            "token_id": "0.0.90000"
+          },
+          {
+            "account": "0.0.400",
+            "amount": 1000,
+            "token_id": "0.0.90000"
+          },
+          {
+            "account": "0.0.87502",
+            "amount": 10,
+            "token_id": "0.0.90000"
+          }
+        ],
+        "assessed_custom_fees": [
+          {
+            "amount": 150,
+            "collector_account_id": "0.0.87501",
+            "payer_account_id": "0.0.10"
+          },
+          {
+            "amount": 10,
+            "collector_account_id": "0.0.87502",
+            "token_id": "0.0.90000",
+            "payer_account_id": "0.0.10"
+          }
+        ]
+      }
+    ]
+  }
 ```
 
 ### Token Info
 
-Add `can_update_custom_fees_with_admin_key` and `custom_fees` to the response json object of `/api/v1/tokens/<tokenId>`
+Add `can_update_custom_fees_with_admin_key` and `custom_fees` to the response json object of `/api/v1/tokens/:id`
 
 ```json
-    {
-      "admin_key": {
-        "_type": "ProtobufEncoded",
-        "key": "9c2233222c2233222c2233227d"
-      },
-      "auto_renew_account": "0.0.6",
-      "auto_renew_period": null,
-      "decimals": "1000",
-      "expiry_timestamp": null,
-      "freeze_default": false,
-      "freeze_key": {
-        "_type": "ProtobufEncoded",
-        "key": "9c2233222c2233222c2233227d"
-      },
-      "initial_supply": "1000000",
-      "kyc_key": {
-        "_type": "ProtobufEncoded",
-        "key": "9c2233222c2233222c2233227d"
-      },
-      "name": "FOO COIN TOKEN",
-      "supply_key": {
-        "_type": "ProtobufEncoded",
-        "key": "9c2233222c2233222c2233227d"
-      },
-      "symbol": "FOOCOIN",
-      "token_id": "0.15.3",
-      "total_supply": "1000000",
-      "treasury_account": "0.15.10",
-      "wipe_key": {
-        "_type": "ProtobufEncoded",
-        "key": "9c2233222c2233222c2233227d"
-      },
-      "can_update_custom_fees_with_admin_key": true,
-      "custom_fees": {
-        "fixed_fees": [
-          {
-            "amount": 10,
-            "collector_account_id": "0.0.99812"
-          },
-          {
-            "amount": 10,
-            "collector_account_id": "0.0.99813",
-            "denominating_token_id": "0.0.10020"
-          }
-        ],
-        "fractional_fees": [
-          {
-            "amount": {
-              "numerator": 1,
-              "denominator": 10
-            },
-            "collector_account_id": "0.0.99820",
-            "maximum": 200,
-            "minimum": 50
-          },
-          {
-            "amount": {
-              "numerator": 3,
-              "denominator": 20
-            },
-            "collector_account_id": "0.0.99821",
-            "minimum": 10
-          }
-        ]
-      }
-    }
-```
-
-### Token Historical Custom Fees
-
-Add `/api/v1/tokens/<token_id>/customfees` to return the historical custom fees of a token
-
-```json
-{
-  "token_id": "0.0.90007",
-  "custom_fees": [
-    {
-      "consensus_timestamp": "1234567890.000000001",
+  {
+    "token_id": "0.0.1135",
+    "symbol": "ORIGINALRDKSE",
+    "admin_key": null,
+    "auto_renew_account": null,
+    "auto_renew_period": null,
+    "created_timestamp": "1234567890.000000002",
+    "decimals": "1000",
+    "expiry_timestamp": null,
+    "freeze_default": false,
+    "freeze_key": null,
+    "initial_supply": "1000000",
+    "kyc_key": null,
+    "max_supply": "9223372036854775807",
+    "modified_timestamp": "1234567899.000000002",
+    "name": "Token name",
+    "supply_key": null,
+    "supply_type": "INFINITE",
+    "total_supply": "1000000",
+    "treasury_account_id": "0.0.98",
+    "type": "FUNGIBLE_COMMON",
+    "wipe_key": null,
+    "can_update_custom_fees_with_admin_key": true,
+    "custom_fees": {
+      "created_timestamp": "1234567896.000000001",
       "fixed_fees": [
         {
           "amount": 10,
@@ -296,27 +235,14 @@ Add `/api/v1/tokens/<token_id>/customfees` to return the historical custom fees 
           "minimum": 10
         }
       ]
-    },
-    {
-      "consensus_timestamp": "123456700.000000001",
-      "fixed_fees": [
-        {
-          "amount": 10,
-          "collector_account_id": "0.0.99812"
-        },
-      ],
-      "fractional_fees": []
     }
-  ],
-  "links": {
-    "next": "/api/v1/tokens/90007/customfees?limit=500&timestamp=lt:123456700.000000001"
   }
-}
 ```
 
-Optional filters:
+Add optional filters
 
-- `/api/v1/tokens/<token_id>/customfees?order=asc`
-- `/api/v1/tokens/<token_id>/customfees?timestamp=123456700.000000001`
+- `/api/v1/tokens/:id?timestamp=123456789.000000001` - return the historical custom fees of a token effective at the
+  specified timestamp. Note the query is designed with support of historical value of other token fields but only custom
+  fees will be implemented.
 
 ## Non-Functional Requirements
