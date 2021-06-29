@@ -43,9 +43,7 @@ class EntityId {
    * @returns {string} encoded id corresponding to this EntityId.
    */
   getEncodedId() {
-    return this.num === null
-      ? null
-      : ((BigInt(this.shard) << shardOffset) | (BigInt(this.realm) << numBits) | BigInt(this.num)).toString();
+    return this.num === null ? null : ((this.shard << shardOffset) | (this.realm << numBits) | this.num).toString();
   }
 
   toString() {
@@ -58,6 +56,14 @@ const isValidEntityId = (entityId) => {
   return (typeof entityId === 'string' && /^(\d{1,10}\.){0,2}\d{1,10}$/.test(entityId)) || /^\d{1,10}$/.test(entityId);
 };
 
+/**
+ * Creates EntityId from shard, realm, and num.
+ *
+ * @param {BigInt} shard
+ * @param {BigInt} realm
+ * @param {BigInt} num
+ * @return {EntityId}
+ */
 const of = (shard, realm, num) => {
   return new EntityId(shard, realm, num);
 };
@@ -130,8 +136,8 @@ const fromString = (entityIdStr, paramName = '', isNullable = false) => {
 
   return of(
     ...parts.map((part) => {
-      const num = Number(part);
-      if (Number.isNaN(num) || num < 0) {
+      const num = BigInt(part);
+      if (num < 0) {
         throw error(`invalid entity ID string "${entityIdStr}"`);
       }
       return num;

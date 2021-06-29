@@ -581,7 +581,7 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
  * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
  *
  * @param {String} ns Nanoseconds since epoch
- * @param {String} sep separator between seconds and nanso, default is '.'
+ * @param {String} sep separator between seconds and nanos, default is '.'
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
 const nsToSecNs = (ns, sep = '.') => {
