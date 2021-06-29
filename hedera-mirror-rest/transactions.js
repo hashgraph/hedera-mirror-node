@@ -26,29 +26,6 @@ const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
 
-// const {db: dbConfig} = require('./config');
-// const postgres = require('postgres');
-
-// const sql = postgres({
-//   host: dbConfig.host,
-//   port: dbConfig.port,
-//   database: dbConfig.name,
-//   username: dbConfig.username,
-//   password: dbConfig.password,
-//   max: 10,
-//   idle_timeout: 60,
-// });
-
-const nsToSecNs = (ns, sep = '.') => {
-  let secs = ns.substr(0, ns.length - 9);
-  if (secs === '') {
-    secs = '0';
-  }
-
-  const nanos = ns.slice(-9).padStart(9, '0');
-  return `${secs}${sep}${nanos}`;
-};
-
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
@@ -193,9 +170,9 @@ const createTransferLists = (rows) => {
     const validStartTimestamp = row.valid_start_ns;
     return {
       charged_tx_fee: Number(row.charged_tx_fee),
-      consensus_timestamp: nsToSecNs(row.consensus_ns),
+      consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
       entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
-      max_fee: row.max_fee,
+      max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: row.memo && row.memo.toString('base64'),
       name: row.name,
       nft_transfers: createNftTransferList(row.nft_transfer_list),
@@ -203,12 +180,15 @@ const createTransferLists = (rows) => {
       result: row.result,
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
-      bytes: row.transaction_bytes && row.transaction_bytes.toString('base64'),
-      transaction_hash: row.transaction_hash.toString('base64'),
-      transaction_id: `${EntityId.fromEncodedId(row.payer_account_id)}-${nsToSecNs(validStartTimestamp, '-')}`,
+      bytes: utils.encodeBase64(row.transaction_bytes, 'base64'),
+      transaction_hash: utils.encodeBase64(row.transaction_hash, 'base64'),
+      transaction_id: utils.createTransactionId(
+        EntityId.fromEncodedId(row.payer_account_id).toString(),
+        validStartTimestamp
+      ),
       transfers: createCryptoTransferList(row.crypto_transfer_list),
-      valid_duration_seconds: row.valid_duration_seconds,
-      valid_start_timestamp: nsToSecNs(validStartTimestamp),
+      valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
+      valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
     };
   });
 
@@ -432,12 +412,6 @@ const reqToSql = async function (req) {
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
   const includeNftTransferList = false;
-
-  // const typedAccountParams = accountParams.map((v) => BigInt(v));
-  // const typedTsParams = tsParams.map((v) => BigInt(v));
-  // const typedParams = params.map((v) => Number(v)); // just the limit
-  //
-  // const sqlParams = typedAccountParams.concat(typedTsParams).concat(creditDebitParams).concat(typedParams);
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,

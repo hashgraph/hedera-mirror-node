@@ -24,13 +24,11 @@ const _ = require('lodash');
 const {shard: systemShard} = require('./config');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
+// format: |0|15-bit shard|16-bit realm|32-bit num|
 const numBits = 32n;
 const numMask = 2n ** numBits - 1n;
 const realmBits = 16n;
 const realmMask = 2n ** realmBits - 1n;
-
-// const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
-// const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
 const maxEncodedId = 2n ** 63n - 1n;
 
 class EntityId {
@@ -46,8 +44,7 @@ class EntityId {
   getEncodedId() {
     return this.num === null
       ? null
-      : ((BigInt(this.shard) << (realmBits + numBits)) | (BigInt(this.realm) << realmBits) | this.num).toString();
-    // : (BigInt(this.num) + BigInt(this.realm) * realmOffset + BigInt(this.shard) * shardOffset).toString();
+      : ((BigInt(this.shard) << (realmBits + numBits)) | (BigInt(this.realm) << numBits) | BigInt(this.num)).toString();
   }
 
   toString() {
@@ -88,20 +85,16 @@ const fromEncodedId = (id, isNullable = false) => {
     throw new InvalidArgumentError(message);
   }
 
-  let encodedId = BigInt(id);
+  const encodedId = BigInt(id);
   if (encodedId < 0 || encodedId > maxEncodedId) {
     throw new InvalidArgumentError(message);
   }
 
   const num = encodedId & numMask;
-  encodedId = encodedId >> numBits;
-  const realm = encodedId & realmMask;
-  const shard = encodedId >> realmBits;
-  // const shard = encodedId / shardOffset; // quotient is shard
-  // const encodedRealmNum = encodedId % shardOffset; // realm and num remains
-  // const realm = encodedRealmNum / realmOffset;
-  // const num = encodedRealmNum % realmOffset;
-  return of(shard, realm, num); // convert from BigInt to number
+  const shardRealm = encodedId >> numBits;
+  const realm = shardRealm & realmMask;
+  const shard = shardRealm >> realmBits;
+  return of(shard, realm, num);
 };
 
 /**
