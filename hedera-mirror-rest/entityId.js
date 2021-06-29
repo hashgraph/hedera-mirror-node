@@ -28,10 +28,9 @@ const numBits = 32n;
 const numMask = 2n ** numBits - 1n;
 const realmBits = 16n;
 const realmMask = 2n ** realmBits - 1n;
-const shardMask = realmMask;
 
-const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
-const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
+// const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
+// const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
 const maxEncodedId = 2n ** 63n - 1n;
 
 class EntityId {
@@ -47,7 +46,8 @@ class EntityId {
   getEncodedId() {
     return this.num === null
       ? null
-      : (BigInt(this.num) + BigInt(this.realm) * realmOffset + BigInt(this.shard) * shardOffset).toString();
+      : ((BigInt(this.shard) << (realmBits + numBits)) | (BigInt(this.realm) << realmBits) | this.num).toString();
+    // : (BigInt(this.num) + BigInt(this.realm) * realmOffset + BigInt(this.shard) * shardOffset).toString();
   }
 
   toString() {
