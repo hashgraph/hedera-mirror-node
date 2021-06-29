@@ -1,5 +1,5 @@
 {
-  "description": "NFT token history",
+  "description": "NFT token history from partial mirror node with missing nft TOKENCREATE",
   "setup": {
     "entities": [
       {
@@ -24,12 +24,6 @@
       }
     ],
     "tokens": [
-      {
-        "token_id": "0.0.1500",
-        "symbol": "FIRSTMOVERLPDJH",
-        "created_timestamp": "1234567890000000002",
-        "type": "NON_FUNGIBLE_UNIQUE"
-      },
       {
         "token_id": "0.0.2500",
         "symbol": "ORIGINALRDKSE",
@@ -157,15 +151,6 @@
         "created_timestamp": "1234567890000000004",
         "metadata": "m1",
         "serial_number": 1,
-        "token_id": "0.0.1500"
-      },
-      {
-        "account_id": "0.0.4001",
-        "created_timestamp": "1234567890000000005",
-        "deleted": true,
-        "metadata": "m1",
-        "modified_timestamp": "1234567890000000009",
-        "serial_number": 2,
         "token_id": "0.0.1500"
       },
       {

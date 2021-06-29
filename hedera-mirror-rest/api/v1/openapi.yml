@@ -530,8 +530,8 @@ paths:
         - tokens
   /api/v1/tokens/{id}/nfts:
     get:
-      summary: List nft tokens
-      description: Returns a list of nft tokens
+      summary: List nfts
+      description: Returns a list of non-fungible tokens
       operationId: listNfts
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
@@ -562,9 +562,9 @@ paths:
         - tokens
   /api/v1/tokens/{id}/nfts/{serialnumber}:
     get:
-      summary: Get nft token info
-      description: Returns an nft tokens information
-      operationId: listNftsById
+      summary: Get nft info
+      description: Returns information for a non-fungible token
+      operationId: listNftBySerialnumber
       responses:
         200:
           description: OK
@@ -578,9 +578,9 @@ paths:
         - tokens
   /api/v1/tokens/{id}/nfts/{serialnumber}/transactions:
     get:
-      summary: Get an nft tokens transction history
-      description: Returns a list of transactions for a given nft
-      operationId: listNftsTransactions
+      summary: Get an nfts transction history
+      description: Returns a list of transactions for a given non-fungible token
+      operationId: listNftTransactions
       responses:
         200:
           description: OK

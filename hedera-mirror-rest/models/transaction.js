@@ -63,8 +63,25 @@ class Transaction {
 
   static tableAlias = 't';
   static tableName = 'transaction';
-  static transactionQueryColumns = {
-    CHARGED_TX_FEE: `${this.tableAlias}.charged_tx_fee`,
+  static transactionColumns = {
+    CHARGED_TX_FEE: `charged_tx_fee`,
+    CONSENSUS_NS: `consensus_ns`,
+    ENTITY_ID: `entity_id`,
+    INITIAL_BALANCE: `initial_balance`,
+    MAX_FEE: `max_fee`,
+    MEMO: `memo`,
+    NODE_ACCOUNT_ID: `node_account_id`,
+    PAYER_ACCOUNT_ID: `payer_account_id`,
+    RESULT: `result`,
+    SCHEDULED: `scheduled`,
+    TRANSACTION_HASH: `transaction_hash`,
+    TRANSACTION_BYTES: `transaction_bytes`,
+    TYPE: `type`,
+    VALID_DURATION_SECONDS: `valid_duration_seconds`,
+    VALID_START_NS: `valid_start_ns`,
+  };
+  static transactionFullNameColumns = {
+    CHARGED_TX_FEE: `${this.tableAlias}.${this.transactionColumns.CHARGED_TX_FEE}`,
     CONSENSUS_NS: `${this.tableAlias}.consensus_ns`,
     ENTITY_ID: `${this.tableAlias}.entity_id`,
     INITIAL_BALANCE: `${this.tableAlias}.initial_balance`,
