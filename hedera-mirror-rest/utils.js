@@ -585,7 +585,9 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
 const nsToSecNs = (ns, sep = '.') => {
-  if (!ns) return `0${sep}000000000`;
+  if (!ns) {
+    return `0${sep}000000000`;
+  }
 
   ns = `${ns}`;
   const secs = ns.substr(0, ns.length - 9).padStart(1, '0');
