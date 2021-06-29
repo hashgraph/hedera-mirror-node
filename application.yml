@@ -6,4 +6,4 @@
 #        cloudProvider: "GCP/s3"
 #        gcpProjectId: {projectId} # N/A for AWS
 #        secretKey: {GOOG1E/AWS....}
-#      network: PREVIEWNET/TESTNET/MAINNET
+#      network: PREVIEWNET/TESTNET/MAINNET # Select one network
