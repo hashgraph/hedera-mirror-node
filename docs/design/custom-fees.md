@@ -21,21 +21,20 @@ Custom Hedera Token Service Fees. This document explains how the mirror node can
 
 - Update `t_transaction_results` with new response codes
 
-- Add to `token` table a new column `can_update_custom_fees_with_admin_key` (boolean not null)
-
 - Add a new `custom_fee` table
 
 ```sql
 create table if not exists custom_fee
 (
-    amount                bigint not null,
-    amount_denominator    bigint,
-    collector_account_id  bigint,
-    created_timestamp     bigint not null,
-    denominating_token_id bigint,
-    maximum_amount        bigint,
-    minimum_amount        bigint,
-    token_id              bigint not null
+    amount                    bigint,
+    amount_denominator        bigint,
+    can_update_with_admin_key boolean not null,
+    collector_account_id      bigint,
+    created_timestamp         bigint not null,
+    denominating_token_id     bigint,
+    maximum_amount            bigint,
+    minimum_amount            bigint,
+    token_id                  bigint not null
 );
 create index if not exists
     custom_fee__token_timestamp on custom_fee (token_id, created_timestamp desc);
@@ -67,6 +66,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 - Add `CustomFee` class with the following fields
   - `amount`
   - `amountDenominator`
+  - `canUpdateWithAdminKey`
   - `collectorAccountId`
   - `createdTimestamp`
   - `denominatingTokenId`
@@ -93,6 +93,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 #### EntityRecordItemListener
 
 - Add a function `insertAssessedCustomFees()` to insert assessed custom fees in a transaction record
+- Add a function `insertCustomFees()` to insert custom fees in a transaction record
 - Update `insertTokenCreate` and `insertTokenUpdate` to insert a token's custom fees
 
 ## REST API
@@ -205,6 +206,7 @@ Add `can_update_custom_fees_with_admin_key` and `custom_fees` to the response js
     "can_update_custom_fees_with_admin_key": true,
     "custom_fees": {
       "created_timestamp": "1234567896.000000001",
+      "can_update_with_admin_key": true,
       "fixed_fees": [
         {
           "amount": 10,
