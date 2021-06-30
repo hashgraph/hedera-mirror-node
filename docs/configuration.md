@@ -5,7 +5,7 @@ configuration from an `application.yml` file or via the environment.
 
 ## Default Values
 
-The default configuration allows users to get quickly up and running without having to configure anything. This provides
+The default configuration allows users to quickly get up and running without having to configure anything. This provides
 ease of use at the trade-off of some insecure default configuration. Most configuration settings have appropriate
 defaults and can be left unchanged. It is recommended to browse the properties below and adjust to your needs.
 
