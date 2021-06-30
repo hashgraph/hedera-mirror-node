@@ -30,7 +30,7 @@ import com.hedera.mirror.importer.domain.Entity_;
 @Named
 @Value
 public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Entity_> {
-    public final String finalTableName = "entity";
+    public static final String TABLE = "entity";
     public final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> v1ConflictIdColumns = List.of(Entity_.ID);
     private final List<String> v2ConflictIdColumns = List.of(Entity_.ID);
@@ -39,6 +39,11 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
             Entity_.KEY, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY, Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY);
     private final Set<String> nonUpdatableColumns = Set.of(Entity_.CREATED_TIMESTAMP, Entity_.ID,
             Entity_.NUM, Entity_.REALM, Entity_.SHARD, Entity_.TYPE);
+
+    @Override
+    public String getFinalTableName() {
+        return TABLE;
+    }
 
     @Override
     public String getInsertWhereClause() {

@@ -179,7 +179,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 camelCaseName);
     }
 
-    private String getSelectCoalesceQuery(String column, String defaultValue) {
+    protected String getSelectCoalesceQuery(String column, String defaultValue) {
         // e.g. "coalesce(delete, 'false')"
         String formattedColumnName = getFullTempTableColumnName(column);
         return String.format("coalesce(%s, %s)", formattedColumnName, defaultValue);
