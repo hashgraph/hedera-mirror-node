@@ -30,6 +30,8 @@ import lombok.Value;
 import com.hedera.mirror.importer.domain.Entity_;
 import com.hedera.mirror.importer.domain.NftId_;
 import com.hedera.mirror.importer.domain.Nft_;
+import com.hedera.mirror.importer.domain.TokenId_;
+import com.hedera.mirror.importer.domain.Token_;
 
 @Named
 @Value
@@ -60,6 +62,12 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
                         getFullTempTableColumnName(NftId_.TOKEN_ID),
                         getFullTableColumnName(EntityUpsertQueryGenerator.TABLE, Entity_.ID)));
 
+        // optionally join with token if present to allow for treasuryAccount reference
+        insertWhereQueryBuilder
+                .append(String.format(" right outer join %s on %s = %s", TokenUpsertQueryGenerator.TABLE,
+                        getFullTempTableColumnName(NftId_.TOKEN_ID),
+                        getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, TokenId_.TOKEN_ID)));
+
         // ignore entries where nft created timestamp is noted
         insertWhereQueryBuilder.append(String.format(" where %s is not null",
                 getFullTempTableColumnName(Nft_.CREATED_TIMESTAMP)));
@@ -79,16 +87,24 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
 
     @Override
     public String getAttributeSelectQuery(String attributeName) {
-        if (attributeName.equalsIgnoreCase(Nft_.DELETED)) {
-//            String freezeStatusInsert = "case when %s is not null then %s when" +
+        if (attributeName.equalsIgnoreCase(Nft_.ACCOUNT_ID)) {
+            return getSelectCoalesceQuery(
+                    Nft_.ACCOUNT_ID,
+                    getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, Token_.TREASURY_ACCOUNT_ID));
+//            String treasuryAccountInsert = "coalesce() case when %s is not null then %s when" +
 //                    " %s is null then null else %s end %s";
-//            return String.format(freezeStatusInsert,
+//            String treasuryAccountInsert = "case when %s is not null then %s when" +
+//                    " %s is null then null else %s end %s";
+//            return String.format(treasuryAccountInsert,
 //                    getFullTempTableColumnName(Nft_.DELETED),
 //                    getFullTempTableColumnName(Nft_.DELETED),
 //                    getFullTableColumnName(JOIN_TABLE, Entity_.DELETED),
 //                    getFullTableColumnName(JOIN_TABLE, Entity_.DELETED),
 //                    getFormattedColumnName(Nft_.DELETED));
-            return getSelectCoalesceQuery(Nft_.DELETED, getFullTableColumnName(JOIN_TABLE, Entity_.DELETED));
+        } else if (attributeName.equalsIgnoreCase(Nft_.DELETED)) {
+            return getSelectCoalesceQuery(
+                    Nft_.DELETED,
+                    getFullTableColumnName(EntityUpsertQueryGenerator.TABLE, Entity_.DELETED));
         }
 
         return null;
