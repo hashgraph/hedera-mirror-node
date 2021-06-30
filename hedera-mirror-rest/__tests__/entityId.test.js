@@ -136,7 +136,7 @@ describe('EntityId fromString', () => {
     const {entityIdStr, paramName, isNullable, expectErr, expected} = spec;
     test(`${entityIdStr}`, () => {
       if (!expectErr) {
-        expect(EntityId.fromString(entityIdStr, paramName, isNullable)).toEqual(expected);
+        expect(EntityId.fromString(entityIdStr, paramName, isNullable).toString()).toEqual(expected.toString());
       } else {
         expect(() => {
           EntityId.fromString(entityIdStr, paramName, isNullable);
@@ -148,11 +148,11 @@ describe('EntityId fromString', () => {
 
 describe('EntityId toString', () => {
   test('0.0.0', () => {
-    expect(EntityId.of(0, 0, 0).toString()).toEqual('0.0.0');
+    expect(EntityId.of(0n, 0n, 0n).toString()).toEqual('0.0.0');
   });
 
   test('32767.65535.4294967295', () => {
-    expect(EntityId.of(32767, 65535, 4294967295).toString()).toEqual('32767.65535.4294967295');
+    expect(EntityId.of(32767n, 65535n, 4294967295n).toString()).toEqual('32767.65535.4294967295');
   });
 });
 
@@ -251,7 +251,7 @@ describe('EntityId fromEncodedId', () => {
     const {encodedId, isNullable, expectErr, expected} = spec;
     test(`${encodedId}`, () => {
       if (!expectErr) {
-        expect(EntityId.fromEncodedId(encodedId, isNullable)).toEqual(expected);
+        expect(EntityId.fromEncodedId(encodedId, isNullable).toString()).toEqual(expected.toString());
       } else {
         expect(() => {
           EntityId.fromEncodedId(encodedId, isNullable);
