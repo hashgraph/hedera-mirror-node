@@ -29,11 +29,24 @@ $ helm upgrade --install "${RELEASE}" charts/hedera-mirror
 
 ## Configure
 
+### Passwords
+
+This chart supports automatic generation of random passwords. On initial installation, a secure, random password for
+each chart component will be generated and stored into a Kubernetes secret. During upgrades, Helm
+will [lookup](https://helm.sh/docs/chart_template_guide/functions_and_pipelines/#using-the-lookup-function) the existing
+secret and ensure the passwords stay the same between upgrades. You can retrieve the generated passwords in
+the `mirror-passwords` Kubernetes secret. It's recommended to use [ksd](https://github.com/mfuentesg/ksd) to
+automatically base64 decode secrets.
+
+```shell
+kubectl get password mirror-passwords -o yaml | ksd
+```
+
 ### TimescaleDB
 
-In an effort to increase performance and reduce storage costs, the mirror node is switching to
-[TimescaleDB](https://docs.timescale.com/latest/main) by default. To deploy the mirror node chart using TimescaleDB
-instead of PostgreSQL:
+In an effort to increase performance and reduce storage costs, the mirror node is experimenting with
+[TimescaleDB](https://docs.timescale.com/latest/main). To deploy the mirror node chart using TimescaleDB instead of
+PostgreSQL:
 
 ```shell
 $ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enabled=false --set timescaledb.enabled=true
