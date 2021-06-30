@@ -42,14 +42,13 @@ const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {isTestEnv} = require('./utils');
-const transactionTypesController = require('./controllers/transactionTypes');
+const TransactionTypesService = require('./services/transactionTypesService');
 const {DbError} = require('./errors/dbError');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const TransactionTypesModel = require('./models/transactionTypes');
 
 // Logger
 const logger = log4js.getLogger();
@@ -183,8 +182,7 @@ app.useAsync(handleError);
 
 const getTransactionTypes = async () => {
   // pulls in transactions types once and make globally available in non async manner
-  const {transactionTypeToProtoMap, transactionTypeProtoToNameMap} = await transactionTypesController.get();
-  global.transactionTypes = new TransactionTypesModel(transactionTypeToProtoMap, transactionTypeProtoToNameMap);
+  await TransactionTypesService.loadTransactionTypes();
 };
 
 const verifyDbConnection = async () => {

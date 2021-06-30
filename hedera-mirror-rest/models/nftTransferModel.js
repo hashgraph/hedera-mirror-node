@@ -20,18 +20,16 @@
 
 'use strict';
 
-const {EntityId} = require('../entityId');
-
-class NftTransfer {
+class NftTransferModel {
   /**
    * Parses nft table columns into object
    */
-  constructor(consensusTimestamp, receiverAccountId, senderAccountId, serialNumber, tokenId) {
-    this.consensus_timestamp = consensusTimestamp;
-    this.receiver_account_id = EntityId.fromEncodedId(receiverAccountId).toString();
-    this.sender_account_id = EntityId.fromEncodedId(senderAccountId).toString();
-    this.serial_number = serialNumber;
-    this.token_id = EntityId.fromEncodedId(tokenId).toString();
+  constructor(dbRow) {
+    this.consensus_timestamp = dbRow.consensus_timestamp;
+    this.receiver_account_id = dbRow.receiver_account_id;
+    this.sender_account_id = dbRow.sender_account_id;
+    this.serial_number = dbRow.serial_number;
+    this.token_id = dbRow.token_id;
   }
 
   static tableAlias = 'nft_tr';
@@ -52,4 +50,4 @@ class NftTransfer {
   };
 }
 
-module.exports = NftTransfer;
+module.exports = NftTransferModel;

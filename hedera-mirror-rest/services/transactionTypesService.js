@@ -22,25 +22,43 @@
 
 const _ = require('lodash');
 
+const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const TransactionTypeModel = require('../models/transactionTypeModel');
 
-class TransactionTypes {
+class TransactionTypesService {
   /**
    * Store and verify transaction type maps
    */
-  constructor(transactionTypeToProtoMap, transactionTypeProtoToNameMap) {
-    if (transactionTypeToProtoMap === undefined || transactionTypeToProtoMap.size === 0) {
-      throw new InvalidArgumentError(`Transaction type name to id map from db is empty`);
-    }
-    if (transactionTypeProtoToNameMap === undefined || transactionTypeProtoToNameMap.size === 0) {
-      throw new InvalidArgumentError(`Transaction type id to name map from db is empty`);
-    }
-
-    this.transactionTypeToProtoMap = transactionTypeToProtoMap;
-    this.transactionTypeProtoToNameMap = transactionTypeProtoToNameMap;
+  constructor() {
+    this.transactionTypeToProtoMap = new Map();
+    this.transactionTypeProtoToNameMap = new Map();
   }
 
-  getId(transactionTypeName) {
+  static transactionTypesQuery = 'select entity_type, name, proto_id from t_transaction_types';
+
+  populateTransactionTypeMaps(rows) {
+    this.transactionTypeToProtoMap = new Map();
+    this.transactionTypeProtoToNameMap = new Map();
+
+    rows.forEach((row) => {
+      const transactionType = new TransactionTypeModel(row);
+      this.transactionTypeToProtoMap.set(row.name, transactionType);
+      this.transactionTypeProtoToNameMap.set(row.proto_id, transactionType);
+    });
+  }
+
+  async loadTransactionTypes() {
+    try {
+      const result = await pool.query(TransactionTypesService.transactionTypesQuery);
+      this.populateTransactionTypeMaps(result.rows);
+    } catch (err) {
+      this.promise = null;
+      throw new DbError(err.message);
+    }
+  }
+
+  getProtoId(transactionTypeName) {
     if (!_.isString(transactionTypeName)) {
       throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
     }
@@ -49,7 +67,7 @@ class TransactionTypes {
     if (type === undefined) {
       throw new InvalidArgumentError(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
     }
-    return type;
+    return type.proto_id;
   }
 
   getName(transactionTypeId) {
@@ -61,8 +79,8 @@ class TransactionTypes {
     if (type === undefined) {
       throw new InvalidArgumentError(`Transaction type ${transactionTypeId} not found in db`);
     }
-    return type;
+    return type.name;
   }
 }
 
-module.exports = TransactionTypes;
+module.exports = new TransactionTypesService();

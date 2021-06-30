@@ -25,7 +25,7 @@ const {filterKeys, orderFilterValues} = require('../constants');
 const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
-const TransactionTypesModel = require('../models/transactionTypes');
+const TransactionTypesService = require('../services/transactionTypesService');
 
 const formatSqlQueryString = (query) => {
   return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
@@ -1068,7 +1068,7 @@ describe('token validateTokenIdParam tests', () => {
 });
 
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
-  global.transactionTypes = new TransactionTypesModel(new Map([['TOKENDELETE', 35]]), new Map([[35, 'TOKENDELETE']]));
+  TransactionTypesService.populateTransactionTypeMaps([{entity_type: 5, name: 'TOKENDELETION', proto_id: 35}]);
 
   const verifyExtractSqlFromNftTransferHistoryRequest = (
     tokenId,
@@ -1105,11 +1105,12 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                                   nft_tr.sender_account_id,
                                   t.type
                            from nft
-                                  join nft_transfer nft_tr
-                                       on nft.token_id = nft_tr.token_id and nft.serial_number = nft_tr.serial_number
+                                  right outer join nft_transfer nft_tr
+                                                   on nft.token_id = nft_tr.token_id and
+                                                      nft.serial_number = nft_tr.serial_number
                                   join transaction t on nft_tr.consensus_timestamp = t.consensus_ns
-                           where nft.token_id = $1
-                             and nft.serial_number = $2
+                           where nft_tr.token_id = $1
+                             and nft_tr.serial_number = $2
                            union
                            select t.consensus_ns as consensus_timestamp,
                                   t.payer_account_id,
@@ -1152,11 +1153,12 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                                   nft_tr.sender_account_id,
                                   t.type
                            from nft
-                                  join nft_transfer nft_tr
-                                       on nft.token_id = nft_tr.token_id and nft.serial_number = nft_tr.serial_number
+                                  right outer join nft_transfer nft_tr
+                                                   on nft.token_id = nft_tr.token_id and
+                                                      nft.serial_number = nft_tr.serial_number
                                   join transaction t on nft_tr.consensus_timestamp = t.consensus_ns
-                           where nft.token_id = $1
-                             and nft.serial_number = $2
+                           where nft_tr.token_id = $1
+                             and nft_tr.serial_number = $2
                            union
                            select t.consensus_ns as consensus_timestamp,
                                   t.payer_account_id,

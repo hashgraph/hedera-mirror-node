@@ -20,28 +20,25 @@
 
 'use strict';
 
-const {EntityId} = require('../entityId');
-const utils = require('../utils');
-
-class Nft {
+class NftModel {
   /**
    * Parses nft table columns into object
    */
-  constructor(accountId, createdTimestamp, deleted, metadata, modifiedTimestamp, serialNumber, tokenId) {
-    this.account_id = EntityId.fromEncodedId(accountId).toString();
-    this.created_timestamp = createdTimestamp;
-    this.deleted = deleted;
-    this.metadata = utils.encodeKey(metadata); // base64 encode
-    this.modified_timestamp = modifiedTimestamp;
-    this.serial_number = serialNumber;
-    this.token_id = EntityId.fromEncodedId(tokenId).toString();
+  constructor(dbRow) {
+    this.account_id = dbRow.account_id;
+    this.created_timestamp = dbRow.created_timestamp;
+    this.deleted = dbRow.deleted;
+    this.metadata = dbRow.metadata;
+    this.modified_timestamp = dbRow.modified_timestamp;
+    this.serial_number = dbRow.serial_number;
+    this.token_id = dbRow.token_id;
   }
 
   static tableAlias = 'nft';
   static tableName = this.tableAlias;
   static nftQueryColumns = {
     ACCOUNT_ID: `${this.tableAlias}.account_id`,
-    CREATED_TIMESTAMP: `${this.tableAlias}nft.created_timestamp`,
+    CREATED_TIMESTAMP: `${this.tableAlias}.created_timestamp`,
     DELETED: `${this.tableAlias}.deleted`,
     METADATA: `${this.tableAlias}.metadata`,
     MODIFIED_TIMESTAMP: `${this.tableAlias}.modified_timestamp`,
@@ -50,4 +47,4 @@ class Nft {
   };
 }
 
-module.exports = Nft;
+module.exports = NftModel;
