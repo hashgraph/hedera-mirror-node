@@ -32,6 +32,7 @@ const TransactionModel = require('./models/transactionModel');
 const TransactionTypeService = require('./services/transactionTypesService');
 const TokenService = require('./services/tokenService');
 const NftViewModel = require('./viewmodels/nftViewModel');
+const NftTransactionHistoryViewModel = require('./viewmodels/nftTransactionHistoryViewModel');
 
 // select columns
 const sqlQueryColumns = {
@@ -720,15 +721,13 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
 };
 
 const formatNftHistoryRow = (row) => {
+  const nftTransactionHistoryViewModel = new NftTransactionHistoryViewModel(row);
   return {
-    consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
-    transaction_id: utils.createTransactionId(
-      EntityId.fromEncodedId(row.payer_account_id).toString(),
-      row.valid_start_ns
-    ),
-    receiver_account_id: EntityId.fromEncodedId(row.receiver_account_id, true).toString(),
-    sender_account_id: EntityId.fromEncodedId(row.sender_account_id, true).toString(),
-    type: TransactionTypeService.getName(row.type),
+    consensus_timestamp: nftTransactionHistoryViewModel.consensus_timestamp,
+    transaction_id: nftTransactionHistoryViewModel.transaction_id,
+    receiver_account_id: nftTransactionHistoryViewModel.receiver_account_id,
+    sender_account_id: nftTransactionHistoryViewModel.sender_account_id,
+    type: nftTransactionHistoryViewModel.type,
   };
 };
 

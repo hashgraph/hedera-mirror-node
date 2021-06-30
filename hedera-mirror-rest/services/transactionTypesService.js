@@ -26,10 +26,10 @@ const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const TransactionTypeModel = require('../models/transactionTypeModel');
 
+/**
+ * Transaction types retrieval business logic
+ */
 class TransactionTypesService {
-  /**
-   * Store and verify transaction type maps
-   */
   constructor() {
     this.transactionTypeToProtoMap = new Map();
     this.transactionTypeProtoToNameMap = new Map();

@@ -146,8 +146,7 @@ const createNftTransferList = (nftTransferList) => {
   }
 
   return nftTransferList.map((transfer) => {
-    const nftTransferModel = new NftTransferModel(transfer);
-    return new NftTransferViewModel(nftTransferModel);
+    return NftTransferViewModel.fromDb(transfer);
   });
 };
 

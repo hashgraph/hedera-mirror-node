@@ -26,10 +26,10 @@ const {DbError} = require('../errors/dbError');
 const TokenModel = require('../models/tokenModel');
 const utils = require('../utils');
 
+/**
+ * Token retrieval business logic
+ */
 class TokenService {
-  /**
-   * Nft business model
-   */
   constructor() {}
 
   static tokenByIdQuery = `select *

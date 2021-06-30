@@ -535,9 +535,9 @@ paths:
       operationId: listNfts
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/serialNumberQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
       responses:
         200:
           description: OK
@@ -558,6 +558,8 @@ paths:
                     - message: "Invalid parameter: serialnumber"
                     - message: "Invalid parameter: limit"
                     - message: "Invalid parameter: order"
+        404:
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
   /api/v1/tokens/{id}/nfts/{serialnumber}:
@@ -565,6 +567,9 @@ paths:
       summary: Get nft info
       description: Returns information for a non-fungible token
       operationId: listNftBySerialnumber
+      parameters:
+        - $ref: '#/components/parameters/serialNumberPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
       responses:
         200:
           description: OK
@@ -581,6 +586,9 @@ paths:
       summary: Get an nfts transction history
       description: Returns a list of transactions for a given non-fungible token
       operationId: listNftTransactions
+      parameters:
+        - $ref: '#/components/parameters/serialNumberPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
       responses:
         200:
           description: OK
@@ -814,7 +822,9 @@ components:
         deleted:
           type: boolean
         metadata:
+          description: base64 encoded binary data
           type: string
+          format: byte
         modified_timestamp:
           type: string
           example: "1234567890.000000001"
@@ -1386,13 +1396,26 @@ components:
         type: array
         items:
           type: string
+    serialNumberPathParam:
+      name: id
+      in: path
+      required: true
+      description: The nft serial number
+      example: 1
+      schema:
+        type: integer
+        format: int64
+        default: 1
+        minimum: 1
+        maximum: 9223372036854775807
     serialNumberQueryParam:
       name: serialnumber
       in: query
-      description: The nft serial number
+      description: The nft serial number (64 bit type)
       example: 2
       schema:
         type: integer
+        format: int64
         default: 1
         minimum: 1
         maximum: 9223372036854775807

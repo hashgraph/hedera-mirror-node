@@ -23,10 +23,10 @@
 const utils = require('../utils');
 const EntityId = require('../entityId');
 
+/**
+ * NFT view model
+ */
 class NftViewModel {
-  /**
-   * Parses nft table columns into object
-   */
   constructor(nftModel) {
     this.account_id = EntityId.fromEncodedId(nftModel.account_id).toString();
     this.created_timestamp = utils.nsToSecNs(nftModel.created_timestamp);

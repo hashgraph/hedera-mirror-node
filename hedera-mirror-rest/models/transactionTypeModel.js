@@ -22,7 +22,7 @@
 
 class TransactionTypeModel {
   /**
-   * Store and verify transaction type maps
+   * Parses transaction type columns into object
    */
   constructor(dbRow) {
     this.name = dbRow.name;

@@ -22,11 +22,13 @@
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
+const TransactionTypeService = require('../services/transactionTypesService');
+const TransactionModel = require('../models/transactionModel');
 
+/**
+ * Transaction transfer view model
+ */
 class TransactionViewModel {
-  /**
-   * Parses transaction table columns into object
-   */
   constructor(transactionModel) {
     const validStartTimestamp = transactionModel.valid_start_ns;
     this.bytes = utils.encodeBase64(transactionModel.transaction_bytes);
@@ -47,6 +49,7 @@ class TransactionViewModel {
       validStartTimestamp
     );
     this.transfers = [];
+    this.type = TransactionTypeService.getName(transactionModel.type);
     this.valid_duration_seconds = utils.getNullableNumber(transactionModel.valid_duration_seconds);
     this.valid_start_timestamp = utils.nsToSecNs(validStartTimestamp);
   }

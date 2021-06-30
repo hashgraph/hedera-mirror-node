@@ -22,7 +22,7 @@
 
 class NftTransferModel {
   /**
-   * Parses nft table columns into object
+   * Parses nft_transfer table columns into object
    */
   constructor(dbRow) {
     this.consensus_timestamp = dbRow.consensus_timestamp;

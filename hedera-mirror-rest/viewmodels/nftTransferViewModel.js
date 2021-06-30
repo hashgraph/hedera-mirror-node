@@ -21,16 +21,22 @@
 'use strict';
 
 const EntityId = require('../entityId');
+const NftTransferModel = require('../models/nftTransferModel');
 
+/**
+ * Nft transfer view model
+ */
 class NftTransferViewModel {
-  /**
-   * Parses nft table columns into object
-   */
   constructor(nftTransferModel) {
     this.receiver_account_id = EntityId.fromEncodedId(nftTransferModel.receiver_account_id, true).toString();
     this.sender_account_id = EntityId.fromEncodedId(nftTransferModel.sender_account_id, true).toString();
     this.serial_number = nftTransferModel.serial_number;
     this.token_id = EntityId.fromEncodedId(nftTransferModel.token_id).toString();
+  }
+
+  static fromDb(dbRow) {
+    const nftTransferModel = new NftTransferModel(dbRow);
+    return new NftTransferViewModel(nftTransferModel);
   }
 }
 
