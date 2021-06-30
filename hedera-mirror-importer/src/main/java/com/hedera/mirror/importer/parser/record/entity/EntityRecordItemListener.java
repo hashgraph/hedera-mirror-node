@@ -55,10 +55,13 @@ import java.util.List;
 import java.util.function.Predicate;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import proto.CustomFeesOuterClass;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
@@ -241,6 +244,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
+            insertAssessedCustomFees(recordItem);
         }
 
         entityListener.onTransaction(tx);
@@ -492,6 +496,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             // pull token details from TokenCreation body and TokenId from receipt
             TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
             long consensusTimeStamp = recordItem.getConsensusTimestamp();
+            EntityId tokenId = EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
             Token token = new Token();
             token.setCreatedTimestamp(consensusTimeStamp);
             token.setDecimals(tokenCreateTransactionBody.getDecimals());
@@ -502,7 +507,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setName(tokenCreateTransactionBody.getName());
             token.setSupplyType(TokenSupplyTypeEnum.fromId(tokenCreateTransactionBody.getSupplyTypeValue()));
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
-            token.setTokenId(new TokenId(EntityId.of(recordItem.getRecord().getReceipt().getTokenID())));
+            token.setTokenId(new TokenId(tokenId));
             token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
             token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenTypeValue()));
 
@@ -527,6 +532,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (tokenCreateTransactionBody.hasWipeKey()) {
                 token.setWipeKey(tokenCreateTransactionBody.getWipeKey().toByteArray());
             }
+
+            insertCustomFees(tokenCreateTransactionBody.getCustomFees(), consensusTimeStamp, tokenId);
 
             entityListener.onToken(token);
         }
@@ -663,11 +670,13 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertTokenUpdate(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
             TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
 
+            EntityId tokenId = EntityId.of(tokenUpdateTransactionBody.getToken());
             Token token = new Token();
-            token.setTokenId(new TokenId(EntityId.of(tokenUpdateTransactionBody.getToken())));
-            token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+            token.setTokenId(new TokenId(tokenId));
+            token.setModifiedTimestamp(consensusTimestamp);
 
             if (tokenUpdateTransactionBody.hasFreezeKey()) {
                 token.setFreezeKey(tokenUpdateTransactionBody.getFreezeKey().toByteArray());
@@ -697,6 +706,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             if (!tokenUpdateTransactionBody.getSymbol().isEmpty()) {
                 token.setSymbol(tokenUpdateTransactionBody.getSymbol());
+            }
+
+            if (tokenUpdateTransactionBody.hasCustomFees()) {
+                insertCustomFees(tokenUpdateTransactionBody.getCustomFees(), consensusTimestamp, tokenId);
             }
 
             entityListener.onToken(token);
@@ -802,6 +815,73 @@ public class EntityRecordItemListener implements RecordItemListener {
             schedule.setScheduleId(EntityId.of(transactionRecord.getScheduleRef()));
             schedule.setExecutedTimestamp(consensusTimestamp);
             entityListener.onSchedule(schedule);
+        }
+    }
+
+    private void insertAssessedCustomFees(RecordItem recordItem) {
+        if (entityProperties.getPersist().isTokens()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
+                EntityId tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
+                if (EntityId.isEmpty((tokenId))) {
+                    tokenId = null;
+                }
+
+                AssessedCustomFee assessedCustomFee = new AssessedCustomFee(protoAssessedCustomFee.getAmount(),
+                        EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId()), consensusTimestamp, tokenId);
+                entityListener.onAssessedCustomFee(assessedCustomFee);
+            }
+        }
+    }
+
+    private void insertCustomFees(CustomFeesOuterClass.CustomFees customFees, long consensusTimestamp,
+                                  EntityId tokenId) {
+        CustomFee.Id id = new CustomFee.Id(consensusTimestamp, tokenId);
+
+        for (var protoCustomFee : customFees.getCustomFeesList()) {
+            CustomFee customFee = new CustomFee();
+            customFee.setCollectorAccountId(EntityId.of(protoCustomFee.getFeeCollectorAccountId()));
+            customFee.setHasCustomFee(true);
+            customFee.setId(id);
+
+            switch (protoCustomFee.getFeeCase()) {
+                case FIXED_FEE:
+                    CustomFeesOuterClass.FixedFee fixedFee = protoCustomFee.getFixedFee();
+                    customFee.setAmount(fixedFee.getAmount());
+                    EntityId denominatingTokenId = EntityId.of(fixedFee.getDenominatingTokenId());
+                    if (!EntityId.isEmpty(denominatingTokenId)) {
+                        customFee.setDenominatingTokenId(denominatingTokenId);
+                    }
+                    break;
+                case FRACTIONAL_FEE:
+                    CustomFeesOuterClass.FractionalFee fractionalFee = protoCustomFee.getFractionalFee();
+                    customFee.setAmount(fractionalFee.getFractionalAmount().getNumerator());
+                    customFee.setAmountDenominator(fractionalFee.getFractionalAmount().getDenominator());
+
+                    long maximumAmount = fractionalFee.getMaximumAmount();
+                    if (maximumAmount != 0) {
+                        customFee.setMaximumAmount(maximumAmount);
+                    }
+
+                    long minimumAmount = fractionalFee.getMinimumAmount();
+                    if (minimumAmount != 0) {
+                        customFee.setMinimumAmount(minimumAmount);
+                    }
+
+                    break;
+                default:
+                    break;
+            }
+
+            entityListener.onCustomFee(customFee);
+        }
+
+        if (customFees.getCustomFeesCount() == 0) {
+            // for empty custom fees, add a single row with only the timestamp, tokenId, and canUpdateWithAdminKey.
+            CustomFee customFee = new CustomFee();
+            customFee.setHasCustomFee(false);
+            customFee.setId(id);
+            entityListener.onCustomFee(customFee);
         }
     }
 }

@@ -21,6 +21,11 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
+
+import com.hedera.mirror.importer.domain.CustomFee;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -84,8 +89,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final NftRepository nftRepository;
 
     // init schemas, writers, etc once per process
+    private final PgCopy<AssessedCustomFee> assessedCustomFeePgCopy;
     private final PgCopy<ContractResult> contractResultPgCopy;
     private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
+    private final PgCopy<CustomFee> customFeePgCopy;
     private final PgCopy<FileData> fileDataPgCopy;
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<NftTransfer> nftTransferPgCopy;
@@ -101,8 +108,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final UpsertPgCopy<Token> tokenPgCopy;
 
     // lists of insert only domains
+    private final Collection<AssessedCustomFee> assessedCustomFees;
     private final Collection<ContractResult> contractResults;
     private final Collection<CryptoTransfer> cryptoTransfers;
+    private final Collection<CustomFee> customFees;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftTransfer> nftTransfers;
@@ -133,8 +142,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.nftRepository = nftRepository;
 
         // insert only tables
+        assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, recordParserProperties);
         contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, recordParserProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, recordParserProperties);
+        customFeePgCopy = new PgCopy<>(CustomFee.class, meterRegistry, recordParserProperties);
         fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, recordParserProperties);
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, recordParserProperties);
         nftTransferPgCopy = new PgCopy<>(NftTransfer.class, meterRegistry, recordParserProperties);
@@ -154,8 +165,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
                 tokenUpsertQueryGenerator);
 
+        assessedCustomFees = new ArrayList<>();
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
+        customFees = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftTransfers = new ArrayList<>();
@@ -194,8 +207,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void cleanup() {
         try {
+            assessedCustomFees.clear();;
             contractResults.clear();
             cryptoTransfers.clear();
+            customFees.clear();
             entities.clear();
             fileData.clear();
             liveHashes.clear();
@@ -203,10 +218,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftTransfers.clear();
             schedules.clear();
             topicMessages.clear();
-            transactions.clear();
             tokenAccounts.clear();
             tokens.clear();
             tokenTransfers.clear();
+            transactions.clear();
             transactionSignatures.clear();
             eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
         } catch (BeanCreationNotAllowedException e) {
@@ -225,8 +240,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // insert only operations
+            assessedCustomFeePgCopy.copy(assessedCustomFees, connection);
             contractResultPgCopy.copy(contractResults, connection);
             cryptoTransferPgCopy.copy(cryptoTransfers, connection);
+            customFeePgCopy.copy(customFees, connection);
             fileDataPgCopy.copy(fileData, connection);
             liveHashPgCopy.copy(liveHashes, connection);
             nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
@@ -253,11 +270,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onTransaction(Transaction transaction) throws ImporterException {
-        transactions.add(transaction);
-        if (transactions.size() == sqlProperties.getBatchSize()) {
-            executeBatches();
-        }
+    public void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
+        assessedCustomFees.add(assessedCustomFee);
+    }
+
+    @Override
+    public void onContractResult(ContractResult contractResult) throws ImporterException {
+        contractResults.add(contractResult);
+    }
+
+    @Override
+    public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
+        cryptoTransfers.add(cryptoTransfer);
+    }
+
+    @Override
+    public void onCustomFee(CustomFee customFee) throws ImporterException {
+        customFees.add(customFee);
     }
 
     @Override
@@ -272,8 +301,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
-        cryptoTransfers.add(cryptoTransfer);
+    public void onFileData(FileData fd) {
+        fileData.add(fd);
+    }
+
+    @Override
+    public void onLiveHash(LiveHash liveHash) throws ImporterException {
+        liveHashes.add(liveHash);
     }
 
     @Override
@@ -292,23 +326,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        topicMessages.add(topicMessage);
-    }
-
-    @Override
-    public void onContractResult(ContractResult contractResult) throws ImporterException {
-        contractResults.add(contractResult);
-    }
-
-    @Override
-    public void onFileData(FileData fd) {
-        fileData.add(fd);
-    }
-
-    @Override
-    public void onLiveHash(LiveHash liveHash) throws ImporterException {
-        liveHashes.add(liveHash);
+    public void onSchedule(Schedule schedule) throws ImporterException {
+        // schedules could experience multiple updates in a single record file, handle updates in memory for this case
+        schedules.merge(schedule.getScheduleId().getId(), schedule, this::mergeSchedule);
     }
 
     @Override
@@ -329,9 +349,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onSchedule(Schedule schedule) throws ImporterException {
-        // schedules could experience multiple updates in a single record file, handle updates in memory for this case
-        schedules.merge(schedule.getScheduleId().getId(), schedule, this::mergeSchedule);
+    public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
+        topicMessages.add(topicMessage);
+    }
+
+    @Override
+    public void onTransaction(Transaction transaction) throws ImporterException {
+        transactions.add(transaction);
+        if (transactions.size() == sqlProperties.getBatchSize()) {
+            executeBatches();
+        }
     }
 
     @Override
@@ -378,6 +405,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return cachedEntity;
+    }
+
+    private Schedule mergeSchedule(Schedule cachedSchedule, Schedule schedule) {
+        cachedSchedule.setExecutedTimestamp(schedule.getExecutedTimestamp());
+        return cachedSchedule;
     }
 
     private Token mergeToken(Token cachedToken, Token newToken) {
@@ -432,10 +464,5 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());
         return cachedTokenAccount;
-    }
-
-    private Schedule mergeSchedule(Schedule cachedSchedule, Schedule schedule) {
-        cachedSchedule.setExecutedTimestamp(schedule.getExecutedTimestamp());
-        return cachedSchedule;
     }
 }

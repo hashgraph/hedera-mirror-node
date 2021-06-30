@@ -153,6 +153,11 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
+    void tokenCreateWithCustomFees() throws InvalidProtocolBufferException {
+
+    }
+
+    @Test
     void tokenAssociate() throws InvalidProtocolBufferException {
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true);
 
@@ -747,13 +752,12 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .setTreasury(PAYER)
                     .setWipeKey(TOKEN_REF_KEY);
 
-            if (tokenType == tokenType.FUNGIBLE_COMMON) {
-                builder.getTokenCreationBuilder().
-                        setInitialSupply(INITIAL_SUPPLY);
+            if (tokenType == TokenType.FUNGIBLE_COMMON) {
+                builder.getTokenCreationBuilder().setInitialSupply(INITIAL_SUPPLY);
             }
+
             if (setFreezeKey) {
-                builder.getTokenCreationBuilder()
-                        .setFreezeKey(TOKEN_REF_KEY);
+                builder.getTokenCreationBuilder().setFreezeKey(TOKEN_REF_KEY);
             }
 
             if (setKycKey) {
