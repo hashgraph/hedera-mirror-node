@@ -20,9 +20,6 @@
 
 'use strict';
 
-const {EntityId} = require('../entityId');
-const utils = require('../utils');
-
 class TransactionModel {
   /**
    * Parses transaction table columns into object
@@ -47,40 +44,37 @@ class TransactionModel {
 
   static tableAlias = 't';
   static tableName = 'transaction';
-  static transactionColumns = {
-    CHARGED_TX_FEE: `charged_tx_fee`,
-    CONSENSUS_NS: `consensus_ns`,
-    ENTITY_ID: `entity_id`,
-    INITIAL_BALANCE: `initial_balance`,
-    MAX_FEE: `max_fee`,
-    MEMO: `memo`,
-    NODE_ACCOUNT_ID: `node_account_id`,
-    PAYER_ACCOUNT_ID: `payer_account_id`,
-    RESULT: `result`,
-    SCHEDULED: `scheduled`,
-    TRANSACTION_HASH: `transaction_hash`,
-    TRANSACTION_BYTES: `transaction_bytes`,
-    TYPE: `type`,
-    VALID_DURATION_SECONDS: `valid_duration_seconds`,
-    VALID_START_NS: `valid_start_ns`,
-  };
-  static transactionFullNameColumns = {
-    CHARGED_TX_FEE: `${this.tableAlias}.${this.transactionColumns.CHARGED_TX_FEE}`,
-    CONSENSUS_NS: `${this.tableAlias}.${this.transactionColumns.CONSENSUS_NS}`,
-    ENTITY_ID: `${this.tableAlias}.${this.transactionColumns.ENTITY_ID}`,
-    INITIAL_BALANCE: `${this.tableAlias}.${this.transactionColumns.INITIAL_BALANCE}`,
-    MAX_FEE: `${this.tableAlias}.${this.transactionColumns.MAX_FEE}`,
-    MEMO: `${this.tableAlias}.${this.transactionColumns.MEMO}`,
-    NODE_ACCOUNT_ID: `${this.tableAlias}.${this.transactionColumns.NODE_ACCOUNT_ID}`,
-    PAYER_ACCOUNT_ID: `${this.tableAlias}.${this.transactionColumns.PAYER_ACCOUNT_ID}`,
-    RESULT: `${this.tableAlias}.${this.transactionColumns.RESULT}`,
-    SCHEDULED: `${this.tableAlias}.${this.transactionColumns.SCHEDULED}`,
-    TRANSACTION_HASH: `${this.tableAlias}.${this.transactionColumns.TRANSACTION_HASH}`,
-    TRANSACTION_BYTES: `${this.tableAlias}.${this.transactionColumns.TRANSACTION_BYTES}`,
-    TYPE: `${this.tableAlias}.${this.transactionColumns.TYPE}`,
-    VALID_DURATION_SECONDS: `${this.tableAlias}.${this.transactionColumns.VALID_DURATION_SECONDS}`,
-    VALID_START_NS: `${this.tableAlias}.${this.transactionColumns.VALID_START_NS}`,
-  };
+
+  static CHARGED_TX_FEE = `charged_tx_fee`;
+  static CHARGED_TX_FEE_FULL_NAME = `${this.tableAlias}.${this.CHARGED_TX_FEE}`;
+  static CONSENSUS_NS = `consensus_ns`;
+  static CONSENSUS_NS_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_NS}`;
+  static ENTITY_ID = `entity_id`;
+  static ENTITY_ID_FULL_NAME = `${this.tableAlias}.${this.ENTITY_ID}`;
+  static INITIAL_BALANCE = `initial_balance`;
+  static INITIAL_BALANCE_FULL_NAME = `${this.tableAlias}.${this.INITIAL_BALANCE}`;
+  static MAX_FEE = `max_fee`;
+  static MAX_FEE_FULL_NAME = `${this.tableAlias}.${this.MAX_FEE}`;
+  static MEMO = `memo`;
+  static MEMO_FULL_NAME = `${this.tableAlias}.${this.MEMO}`;
+  static NODE_ACCOUNT_ID = `node_account_id`;
+  static NODE_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.NODE_ACCOUNT_ID}`;
+  static PAYER_ACCOUNT_ID = `payer_account_id`;
+  static PAYER_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.PAYER_ACCOUNT_ID}`;
+  static RESULT = `result`;
+  static RESULT_FULL_NAME = `${this.tableAlias}.${this.RESULT}`;
+  static SCHEDULED = `scheduled`;
+  static SCHEDULED_FULL_NAME = `${this.tableAlias}.${this.SCHEDULED}`;
+  static TRANSACTION_HASH = `transaction_hash`;
+  static TRANSACTION_HASH_FULL_NAME = `${this.tableAlias}.${this.TRANSACTION_HASH}`;
+  static TRANSACTION_BYTES = `transaction_bytes`;
+  static TRANSACTION_BYTES_FULL_NAME = `${this.tableAlias}.${this.TRANSACTION_BYTES}`;
+  static TYPE = `type`;
+  static TYPE_FULL_NAME = `${this.tableAlias}.${this.TYPE}`;
+  static VALID_DURATION_SECONDS = `valid_duration_seconds`;
+  static VALID_DURATION_SECONDS_FULL_NAME = `${this.tableAlias}.${this.VALID_DURATION_SECONDS}`;
+  static VALID_START_NS = `valid_start_ns`;
+  static VALID_START_NS_FULL_NAME = `${this.tableAlias}.${this.VALID_START_NS}`;
 }
 
 module.exports = TransactionModel;

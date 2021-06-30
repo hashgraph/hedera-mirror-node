@@ -147,21 +147,7 @@ const createNftTransferList = (nftTransferList) => {
 
   return nftTransferList.map((transfer) => {
     const nftTransferModel = new NftTransferModel(transfer);
-    logger.info(`*** nftTransferModel: ${JSON.stringify(nftTransferModel)}`);
-    logger.info(`*** NftTransferViewModel: ${JSON.stringify(new NftTransferViewModel(nftTransferModel))}`);
     return new NftTransferViewModel(nftTransferModel);
-    // const {
-    //   receiver_account_id: receiverAccountId,
-    //   sender_account_id: senderAccountId,
-    //   serial_number: serialNumber,
-    //   token_id: tokenId,
-    // } = transfer;
-    // return {
-    //   receiver_account_id: EntityId.fromEncodedId(receiverAccountId, true).toString(),
-    //   sender_account_id: EntityId.fromEncodedId(senderAccountId, true).toString(),
-    //   serial_number: serialNumber,
-    //   token_id: EntityId.fromEncodedId(tokenId).toString(),
-    // };
   });
 };
 

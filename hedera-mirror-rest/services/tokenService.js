@@ -20,25 +20,30 @@
 
 'use strict';
 
-class TransactionTypeModel {
+const _ = require('lodash');
+
+const {DbError} = require('../errors/dbError');
+const TokenModel = require('../models/tokenModel');
+const utils = require('../utils');
+
+class TokenService {
   /**
-   * Store and verify transaction type maps
+   * Nft business model
    */
-  constructor(dbRow) {
-    this.name = dbRow.name;
-    this.entity_type = dbRow.entity_type;
-    this.proto_id = dbRow.proto_id;
+  constructor() {}
+
+  static tokenByIdQuery = `select *
+                           from ${TokenModel.tableName}
+                           where ${TokenModel.TOKEN_ID} = $1`;
+
+  async getToken(tokenId) {
+    try {
+      const {rows} = await utils.queryQuietly(TokenService.tokenByIdQuery, tokenId);
+      return _.isEmpty(rows) ? null : new TokenModel(rows[0]);
+    } catch (err) {
+      throw new DbError(err.message);
+    }
   }
-
-  static tableAlias = 'ttt';
-  static tableName = 't_transaction_types';
-
-  static ENTITY_TYPE = `entity_type`;
-  static ENTITY_TYPE_FULL_NAME = `${this.tableAlias}.${this.ENTITY_TYPE}`;
-  static NAME = `name`;
-  static NAME_FULL_NAME = `${this.tableAlias}.${this.NAME}`;
-  static PROTO_ID = `proto_id`;
-  static PROTO_ID_FULL_NAME = `${this.tableAlias}.${this.PROTO_ID}`;
 }
 
-module.exports = TransactionTypeModel;
+module.exports = new TokenService();

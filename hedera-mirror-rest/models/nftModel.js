@@ -36,15 +36,21 @@ class NftModel {
 
   static tableAlias = 'nft';
   static tableName = this.tableAlias;
-  static nftQueryColumns = {
-    ACCOUNT_ID: `${this.tableAlias}.account_id`,
-    CREATED_TIMESTAMP: `${this.tableAlias}.created_timestamp`,
-    DELETED: `${this.tableAlias}.deleted`,
-    METADATA: `${this.tableAlias}.metadata`,
-    MODIFIED_TIMESTAMP: `${this.tableAlias}.modified_timestamp`,
-    SERIAL_NUMBER: `${this.tableAlias}.serial_number`,
-    TOKEN_ID: `${this.tableAlias}.token_id`,
-  };
+
+  static ACCOUNT_ID = 'account_id';
+  static ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.ACCOUNT_ID}`;
+  static CREATED_TIMESTAMP = 'created_timestamp';
+  static CREATED_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CREATED_TIMESTAMP}`;
+  static DELETED = 'deleted';
+  static DELETED_FULL_NAME = `${this.tableAlias}.${this.DELETED}`;
+  static METADATA = 'metadata';
+  static METADATA_FULL_NAME = `${this.tableAlias}.${this.METADATA}`;
+  static MODIFIED_TIMESTAMP = 'modified_timestamp';
+  static MODIFIED_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.MODIFIED_TIMESTAMP}`;
+  static SERIAL_NUMBER = 'serial_number';
+  static SERIAL_NUMBER_FULL_NAME = `${this.tableAlias}.${this.SERIAL_NUMBER}`;
+  static TOKEN_ID = 'token_id';
+  static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 }
 
 module.exports = NftModel;
