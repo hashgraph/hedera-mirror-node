@@ -20,4 +20,7 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: previewnet
+    - kind: HelmRelease
+      name: '*'
+      namespace: performance
 
