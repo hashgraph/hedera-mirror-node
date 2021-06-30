@@ -548,11 +548,6 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
   return utils.buildPgSqlObject(query, params, '', '');
 };
 
-const formatNftRow = (row) => {
-  const nftModel = new NftModel(row);
-  return new NftViewModel(nftModel);
-};
-
 /**
  * Verify serialnumber meets expected integer format and range
  */
@@ -591,7 +586,7 @@ const getNftTokensRequest = async (req, res) => {
 
   const {rows} = await utils.queryQuietly(query, ...params);
   const response = {
-    nfts: rows.map((row) => formatNftRow(row)),
+    nfts: rows.map((row) => NftViewModel.fromDb(row)),
     links: {
       next: null,
     },
@@ -638,7 +633,7 @@ const getNftTokenInfoRequest = async (req, res) => {
   }
 
   logger.debug(`getNftToken info returning single entry`);
-  res.locals[constants.responseDataLabel] = formatNftRow(rows[0]);
+  res.locals[constants.responseDataLabel] = NftViewModel.fromDb(rows[0]);
 };
 
 const getToken = async (pgSqlQuery, tokenId) => {

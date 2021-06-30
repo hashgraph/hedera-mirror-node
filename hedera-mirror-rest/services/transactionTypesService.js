@@ -22,6 +22,7 @@
 
 const _ = require('lodash');
 
+const utils = require('../utils');
 const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const TransactionTypeModel = require('../models/transactionTypeModel');
@@ -37,21 +38,37 @@ class TransactionTypesService {
 
   static transactionTypesQuery = 'select entity_type, name, proto_id from t_transaction_types';
 
-  populateTransactionTypeMaps(rows) {
+  populateTransactionTypeMaps(transactionTypes) {
     this.transactionTypeToProtoMap = new Map();
     this.transactionTypeProtoToNameMap = new Map();
 
-    rows.forEach((row) => {
-      const transactionType = new TransactionTypeModel(row);
-      this.transactionTypeToProtoMap.set(row.name, transactionType);
-      this.transactionTypeProtoToNameMap.set(row.proto_id, transactionType);
+    transactionTypes.forEach((transactionType) => {
+      this.transactionTypeToProtoMap.set(transactionType.name, transactionType);
+      this.transactionTypeProtoToNameMap.set(transactionType.proto_id, transactionType);
     });
+  }
+
+  async getTransactionTypes() {
+    let rows;
+    try {
+      const result = await pool.query(TransactionTypesService.transactionTypesQuery);
+      rows = result.rows;
+    } catch (err) {
+      this.promise = null;
+      throw new DbError(err.message);
+    }
+
+    if (_.isEmpty(rows)) {
+      return [];
+    }
+
+    return rows.map((row) => new TransactionTypeModel(row));
   }
 
   async loadTransactionTypes() {
     try {
-      const result = await pool.query(TransactionTypesService.transactionTypesQuery);
-      this.populateTransactionTypeMaps(result.rows);
+      const transactionTypes = await this.getTransactionTypes();
+      this.populateTransactionTypeMaps(transactionTypes);
     } catch (err) {
       this.promise = null;
       throw new DbError(err.message);

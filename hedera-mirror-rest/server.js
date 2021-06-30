@@ -42,13 +42,13 @@ const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {isTestEnv} = require('./utils');
-const TransactionTypesService = require('./services/transactionTypesService');
 const {DbError} = require('./errors/dbError');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
+const TransactionTypesService = require('./services/transactionTypesService');
 
 // Logger
 const logger = log4js.getLogger();

@@ -281,8 +281,11 @@ const getTransferDistinctTimestampsQuery = function (
 
   return `
     SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
-    FROM ${tableName} AS ${tableAlias} ${joinClause} ${whereClause}
-    ORDER BY ${tableAlias}.consensus_timestamp ${order} ${namedLimitQuery}`;
+    FROM ${tableName} AS ${tableAlias}
+    ${joinClause}
+    ${whereClause}
+    ORDER BY ${tableAlias}.consensus_timestamp ${order}
+    ${namedLimitQuery}`;
 };
 
 /**
@@ -328,8 +331,9 @@ const getTransactionsInnerQuery = function (
   const transactionOnlyQuery = `
     SELECT consensus_ns AS consensus_timestamp
     FROM transaction AS t
-      ${transactionWhereClause}
-    ORDER BY consensus_ns ${order} ${namedLimitQuery}`;
+    ${transactionWhereClause}
+    ORDER BY consensus_ns ${order}
+    ${namedLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(
@@ -366,10 +370,10 @@ const getTransactionsInnerQuery = function (
       return `
         SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
         FROM (${ctlQuery}) AS ctl
-               FULL OUTER JOIN (${ttlQuery}) as ttl
-                               ON ctl.consensus_timestamp = ttl.consensus_timestamp
+        FULL OUTER JOIN (${ttlQuery}) as ttl
+        ON ctl.consensus_timestamp = ttl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
-          ${namedLimitQuery}`;
+        ${namedLimitQuery}`;
     }
 
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, nft_transfer.account_id,
@@ -377,12 +381,12 @@ const getTransactionsInnerQuery = function (
     return `
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS t
-             FULL OUTER JOIN (${ctlQuery}) AS ctl
-                             ON t.consensus_timestamp = ctl.consensus_timestamp
-             FULL OUTER JOIN (${ttlQuery}) AS ttl
-                             ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      FULL OUTER JOIN (${ctlQuery}) AS ctl
+      ON t.consensus_timestamp = ctl.consensus_timestamp
+      FULL OUTER JOIN (${ttlQuery}) AS ttl
+      ON coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
       ORDER BY consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+      ${namedLimitQuery}`;
   }
 
   return transactionOnlyQuery;
