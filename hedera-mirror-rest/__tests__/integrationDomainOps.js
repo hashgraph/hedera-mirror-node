@@ -176,7 +176,7 @@ const addEntity = async (defaults, entity) => {
                          auto_renew_period, key, memo)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
     [
-      EntityId.of(entity.shard, entity.realm, entity.num).getEncodedId(),
+      EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId(),
       entity.type,
       entity.shard,
       entity.realm,
@@ -203,7 +203,7 @@ const addAccount = async (account) => {
 
 const setAccountBalance = async (balance) => {
   balance = {timestamp: 0, id: null, balance: 0, realm_num: 0, ...balance};
-  const accountId = EntityId.of(config.shard, balance.realm_num, balance.id).getEncodedId();
+  const accountId = EntityId.of(BigInt(config.shard), BigInt(balance.realm_num), BigInt(balance.id)).getEncodedId();
   await sqlConnection.query(
     `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
      VALUES ($1, $2, $3);`,
@@ -215,7 +215,11 @@ const setAccountBalance = async (balance) => {
       balance.timestamp,
       accountId,
       tokenBalance.balance,
-      EntityId.of(config.shard, tokenBalance.token_realm, tokenBalance.token_num).getEncodedId(),
+      EntityId.of(
+        BigInt(config.shard),
+        BigInt(tokenBalance.token_realm),
+        BigInt(tokenBalance.token_num)
+      ).getEncodedId(),
     ]);
     await sqlConnection.query(
       pgformat(
