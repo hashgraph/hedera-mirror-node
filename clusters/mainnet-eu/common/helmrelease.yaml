@@ -28,6 +28,8 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-eu
+      prometheusOperator:
+        namespaces: null
     traefik:
       service:
         annotations:
