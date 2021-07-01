@@ -99,16 +99,6 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     @Test
-    void keepFiles() {
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        AccountBalanceFile intact = accountBalanceFile(1);
-        accountBalanceFileParser.parse(accountBalanceFile);
-
-        assertAccountBalances(intact);
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
-    }
-
-    @Test
     void beforeStartDate() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(-1L);
         accountBalanceFileParser.parse(accountBalanceFile);
