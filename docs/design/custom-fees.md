@@ -7,9 +7,10 @@ Custom Hedera Token Service Fees. This document explains how the mirror node can
 
 ## Goals
 
-- Ingest custom fees in TokenCreate and TokenUpdate transactions to the database
+- Ingest custom fees in TokenCreate and TokenFeeScheduleUpdate transactions to the database
+- Ingest the fee schedule key in TokenCreate and TokenUpdate transactions to the database
 - Ingest assessed custom fees in the transaction record to the database
-- Expose custom fees via REST APIs
+- Expose the fee schedule key and custom fees via REST APIs
 - Expose assessed custom fees via REST APIs
 - Support historical token custom fees lookup
 
@@ -19,7 +20,15 @@ Custom Hedera Token Service Fees. This document explains how the mirror node can
 
 ### Database
 
+- Add new `t_transaction_types`
+
+```sql
+insert into t_transaction_types (proto_id, name) values (45, 'TOKENFEESCHEDULEUPDATE');
+```
+
 - Update `t_transaction_results` with new response codes
+
+- Add new columns `fee_schedule_key` and `fee_schedule_key_ed25519_hex` to table `token`
 
 - Add a new `custom_fee` table
 
@@ -28,10 +37,10 @@ create table if not exists custom_fee
 (
     amount                    bigint,
     amount_denominator        bigint,
-    can_update_with_admin_key boolean not null,
     collector_account_id      bigint,
     created_timestamp         bigint not null,
     denominating_token_id     bigint,
+    has_custom_fee            boolean not null,
     maximum_amount            bigint,
     minimum_amount            bigint,
     token_id                  bigint not null
@@ -66,9 +75,9 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 - Add `CustomFee` class with the following fields
   - `amount`
   - `amountDenominator`
-  - `canUpdateWithAdminKey`
   - `collectorAccountId`
   - `createdTimestamp`
+  - `hasCustomFee`
   - `denominatingTokenId`
   - `maximumAmount`
   - `minimumAmount`
@@ -93,8 +102,15 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 #### EntityRecordItemListener
 
 - Add a function `insertAssessedCustomFees()` to insert assessed custom fees in a transaction record
-- Add a function `insertCustomFees()` to insert custom fees in a transaction record
-- Update `insertTokenCreate` and `insertTokenUpdate` to insert a token's custom fees
+- Add a function `insertCustomFees()` to insert custom fees in TokenCreate / TokenFeeScheduleUpdate transaction body
+- Update `insertTokenCreate` to save the fee schedule key and insert a token's custom fees
+- Update `insertTokenUpdate` to save the updated fee schedule key
+- Add a function `insertTokenFeeScheduleUpdate` to insert updated custom fees of a token
+
+### Transaction Handler
+
+- Add a new transaction handler `TokenFeeScheduleUpdateTransactionHandler` to extract the token entity and update
+  the modified timestamp of the entity
 
 ## REST API
 
@@ -178,7 +194,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 
 ### Token Info
 
-Add `can_update_custom_fees_with_admin_key` and `custom_fees` to the response json object of `/api/v1/tokens/:id`
+Add `fee_schedule_key` and `custom_fees` to the response json object of `/api/v1/tokens/:id`
 
 ```json
   {
@@ -203,10 +219,12 @@ Add `can_update_custom_fees_with_admin_key` and `custom_fees` to the response js
     "treasury_account_id": "0.0.98",
     "type": "FUNGIBLE_COMMON",
     "wipe_key": null,
-    "can_update_custom_fees_with_admin_key": true,
+    "fee_schedule_key": {
+      "_type": "ProtobufEncoded",
+      "key": "7b2231222c2231222c2231227d"
+    },
     "custom_fees": {
       "created_timestamp": "1234567896.000000001",
-      "can_update_with_admin_key": true,
       "fixed_fees": [
         {
           "amount": 10,
