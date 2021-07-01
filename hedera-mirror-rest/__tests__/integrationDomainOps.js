@@ -565,6 +565,8 @@ const addNft = async (nft) => {
 module.exports = {
   addAccount,
   addCryptoTransaction,
+  addNft,
+  addToken,
   setAccountBalance,
   setUp,
 };
