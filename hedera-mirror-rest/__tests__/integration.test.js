@@ -56,8 +56,8 @@ const {cloudProviders, filterKeys} = require('../constants');
 const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
-const transactions = require('../transactions.js');
-const TransactionTypesService = require('../services/transactionTypesService');
+const transactions = require('../transactions');
+const TransactionTypeService = require('../service/transactionTypeService');
 const utils = require('../utils');
 
 jest.setTimeout(20000);
@@ -71,7 +71,7 @@ beforeAll(async () => {
   sqlConnection = await integrationDbOps.instantiateDatabase();
 
   // set items that required db connection but weren't available due to integration db setup logic
-  await TransactionTypesService.loadTransactionTypes();
+  await TransactionTypeService.loadTransactionTypes();
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
@@ -212,17 +212,17 @@ describe('DB integration test - utils.getTransactionTypeQuery', () => {
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${TransactionTypesService.getProtoId('TOKENCREATION')}`
+      `type = ${TransactionTypeService.getProtoId('TOKENCREATION')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${TransactionTypesService.getProtoId('TOKENASSOCIATE')}`
+      `type = ${TransactionTypeService.getProtoId('TOKENASSOCIATE')}`
     );
   });
   test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', () => {
     expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${TransactionTypesService.getProtoId('CONSENSUSSUBMITMESSAGE')}`
+      `type = ${TransactionTypeService.getProtoId('CONSENSUSSUBMITMESSAGE')}`
     );
   });
 });
@@ -361,14 +361,14 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
 describe('DB integration test - transactionTypes.getId', () => {
   test('DB integration test -  transactionTypes.getId - Verify valid transaction type returns value', () => {
-    expect(TransactionTypesService.getProtoId('CRYPTOTRANSFER')).toBe(14);
-    expect(TransactionTypesService.getProtoId('cryptotransfer')).toBe(14);
-    expect(TransactionTypesService.getProtoId('TOKENWIPE')).toBe(39);
-    expect(TransactionTypesService.getProtoId('tokenWipe')).toBe(39);
+    expect(TransactionTypeService.getProtoId('CRYPTOTRANSFER')).toBe(14);
+    expect(TransactionTypeService.getProtoId('cryptotransfer')).toBe(14);
+    expect(TransactionTypeService.getProtoId('TOKENWIPE')).toBe(39);
+    expect(TransactionTypeService.getProtoId('tokenWipe')).toBe(39);
   });
   test('DB integration test -  transactionTypes.getId - Verify invalid transaction type throws error', () => {
-    expect(() => TransactionTypesService.getProtoId('TEST')).toThrowError(InvalidArgumentError);
-    expect(() => TransactionTypesService.getProtoId(1)).toThrowError(InvalidArgumentError);
+    expect(() => TransactionTypeService.getProtoId('TEST')).toThrowError(InvalidArgumentError);
+    expect(() => TransactionTypeService.getProtoId(1)).toThrowError(InvalidArgumentError);
   });
 });
 

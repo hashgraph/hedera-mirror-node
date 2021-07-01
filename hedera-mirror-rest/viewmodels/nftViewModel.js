@@ -22,25 +22,19 @@
 
 const utils = require('../utils');
 const EntityId = require('../entityId');
-const NftModel = require('../models/nftModel');
 
 /**
  * NFT view model
  */
 class NftViewModel {
   constructor(nftModel) {
-    this.account_id = EntityId.fromEncodedId(nftModel.account_id).toString();
-    this.created_timestamp = utils.nsToSecNs(nftModel.created_timestamp);
+    this.account_id = EntityId.fromEncodedId(nftModel.accountId).toString();
+    this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
     this.deleted = nftModel.deleted;
     this.metadata = utils.encodeBase64(nftModel.metadata);
-    this.modified_timestamp = utils.nsToSecNs(nftModel.modified_timestamp);
-    this.serial_number = Number(nftModel.serial_number);
-    this.token_id = EntityId.fromEncodedId(nftModel.token_id).toString();
-  }
-
-  static fromDb(dbRow) {
-    const nftTransferModel = new NftModel(dbRow);
-    return new NftViewModel(nftTransferModel);
+    this.modified_timestamp = utils.nsToSecNs(nftModel.modifiedTimestamp);
+    this.serial_number = Number(nftModel.serialNumber);
+    this.token_id = EntityId.fromEncodedId(nftModel.tokenId).toString();
   }
 }
 

@@ -20,17 +20,19 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
-const NftModel = require('./models/nftModel');
-const NftTransferModel = require('./models/nftTransferModel');
-const TransactionModel = require('./models/transactionModel');
-const TransactionTypeService = require('./services/transactionTypesService');
-const TokenService = require('./services/tokenService');
+const NftModel = require('./model/nft');
+const NftTransferModel = require('./model/nftTransfer');
+const TransactionModel = require('./model/transaction');
+const TransactionTypeService = require('./service/transactionTypeService');
+const TokenService = require('./service/tokenService');
 const NftViewModel = require('./viewmodels/nftViewModel');
 const NftTransactionHistoryViewModel = require('./viewmodels/nftTransactionHistoryViewModel');
 
@@ -586,7 +588,10 @@ const getNftTokensRequest = async (req, res) => {
 
   const {rows} = await utils.queryQuietly(query, ...params);
   const response = {
-    nfts: rows.map((row) => NftViewModel.fromDb(row)),
+    nfts: rows.map((row) => {
+      const nftModel = new NftModel(row);
+      return new NftViewModel(nftModel);
+    }),
     links: {
       next: null,
     },
@@ -633,7 +638,8 @@ const getNftTokenInfoRequest = async (req, res) => {
   }
 
   logger.debug(`getNftToken info returning single entry`);
-  res.locals[constants.responseDataLabel] = NftViewModel.fromDb(rows[0]);
+  const nftModel = new NftModel(rows[0]);
+  res.locals[constants.responseDataLabel] = new NftViewModel(nftModel);
 };
 
 const getToken = async (pgSqlQuery, tokenId) => {
@@ -651,6 +657,8 @@ const getToken = async (pgSqlQuery, tokenId) => {
 };
 
 const tokenDeleteTransactionType = 'TOKENDELETION';
+const successTransactionResult = 'SUCCESS';
+const successTransactionResultProtoId = '22'; // replace this with a service call to get id
 
 /**
  * Extracts SQL query, params, order, and limit
@@ -680,6 +688,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const deleteConditions = [
     `${TransactionModel.ENTITY_ID_FULL_NAME} = $1`,
     `${TransactionModel.TYPE_FULL_NAME} = ${TransactionTypeService.getProtoId(tokenDeleteTransactionType)}`,
+    `${TransactionModel.RESULT_FULL_NAME} = ${successTransactionResultProtoId}`,
   ];
   const deleteWhereCondition = `where ${deleteConditions.join('\nand ')}`;
 
@@ -716,14 +725,9 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
 };
 
 const formatNftHistoryRow = (row) => {
-  const nftTransactionHistoryViewModel = new NftTransactionHistoryViewModel(row);
-  return {
-    consensus_timestamp: nftTransactionHistoryViewModel.consensus_timestamp,
-    transaction_id: nftTransactionHistoryViewModel.transaction_id,
-    receiver_account_id: nftTransactionHistoryViewModel.receiver_account_id,
-    sender_account_id: nftTransactionHistoryViewModel.sender_account_id,
-    type: nftTransactionHistoryViewModel.type,
-  };
+  const nftTransferModel = new NftTransferModel(row);
+  const transactionModel = new TransactionModel(row);
+  return new NftTransactionHistoryViewModel(nftTransferModel, transactionModel);
 };
 
 const nftTransferHistorySelectFields = [
@@ -778,6 +782,10 @@ const getNftTransferHistoryRequest = async (req, res) => {
   }
 
   const {rows} = await utils.queryQuietly(query, ...params);
+  if (_.isEmpty(rows)) {
+    throw new NotFoundError();
+  }
+
   const response = {
     transactions: rows.map((row) => formatNftHistoryRow(row)),
     links: {

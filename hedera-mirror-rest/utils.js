@@ -31,7 +31,7 @@ const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
-const TransactionTypesService = require('./services/transactionTypesService');
+const TransactionTypeService = require('./service/transactionTypeService');
 
 const ENTITY_TYPE_ACCOUNT = 1;
 const ENTITY_TYPE_FILE = 3;
@@ -101,7 +101,7 @@ const isValidEncoding = (query) => {
 
 const isValidTransactionType = (transactionType) => {
   try {
-    TransactionTypesService.getProtoId(transactionType);
+    TransactionTypeService.getProtoId(transactionType);
     return true;
   } catch (err) {
     return false;
@@ -870,7 +870,7 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  const protoId = TransactionTypesService.getProtoId(transactionType);
+  const protoId = TransactionTypeService.getProtoId(transactionType);
   return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 

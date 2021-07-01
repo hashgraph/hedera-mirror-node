@@ -25,7 +25,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const NftTransferModel = require('./models/nftTransferModel');
+const NftTransferModel = require('./model/nftTransfer');
 const NftTransferViewModel = require('./viewmodels/nftTransferViewModel');
 
 /**
@@ -146,7 +146,8 @@ const createNftTransferList = (nftTransferList) => {
   }
 
   return nftTransferList.map((transfer) => {
-    return NftTransferViewModel.fromDb(transfer);
+    const nftTransferModel = new NftTransferModel(transfer);
+    return new NftTransferViewModel(nftTransferModel);
   });
 };
 

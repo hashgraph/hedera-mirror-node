@@ -22,8 +22,7 @@
 
 const _ = require('lodash');
 
-const {DbError} = require('../errors/dbError');
-const TokenModel = require('../models/tokenModel');
+const TokenModel = require('../model/token');
 const utils = require('../utils');
 
 /**
@@ -37,12 +36,8 @@ class TokenService {
                            where ${TokenModel.TOKEN_ID} = $1`;
 
   async getToken(tokenId) {
-    try {
-      const {rows} = await utils.queryQuietly(TokenService.tokenByIdQuery, tokenId);
-      return _.isEmpty(rows) ? null : new TokenModel(rows[0]);
-    } catch (err) {
-      throw new DbError(err.message);
-    }
+    const {rows} = await utils.queryQuietly(TokenService.tokenByIdQuery, tokenId);
+    return _.isEmpty(rows) ? null : new TokenModel(rows[0]);
   }
 }
 

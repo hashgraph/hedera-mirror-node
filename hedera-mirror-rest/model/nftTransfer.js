@@ -20,16 +20,16 @@
 
 'use strict';
 
-class NftTransferModel {
+class NftTransfer {
   /**
    * Parses nft_transfer table columns into object
    */
   constructor(dbRow) {
-    this.consensus_timestamp = dbRow.consensus_timestamp;
-    this.receiver_account_id = dbRow.receiver_account_id;
-    this.sender_account_id = dbRow.sender_account_id;
-    this.serial_number = dbRow.serial_number;
-    this.token_id = dbRow.token_id;
+    this.consensusTimestamp = dbRow.consensus_timestamp;
+    this.receiverAccountId = dbRow.receiver_account_id;
+    this.senderAccountId = dbRow.sender_account_id;
+    this.serialNumber = dbRow.serial_number;
+    this.tokenId = dbRow.token_id;
   }
 
   static tableAlias = 'nft_tr';
@@ -47,4 +47,4 @@ class NftTransferModel {
   static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 }
 
-module.exports = NftTransferModel;
+module.exports = NftTransfer;

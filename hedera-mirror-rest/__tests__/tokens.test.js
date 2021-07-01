@@ -25,7 +25,7 @@ const {filterKeys, orderFilterValues} = require('../constants');
 const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
-const TransactionTypesService = require('../services/transactionTypesService');
+const TransactionTypesService = require('../service/transactionTypesService');
 
 const formatSqlQueryString = (query) => {
   return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
@@ -1068,7 +1068,7 @@ describe('token validateTokenIdParam tests', () => {
 });
 
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
-  TransactionTypesService.populateTransactionTypeMaps([{entity_type: 5, name: 'TOKENDELETION', proto_id: 35}]);
+  TransactionTypesService.populateTransactionTypeMaps([{entityType: 5, name: 'TOKENDELETION', protoId: 35}]);
 
   const verifyExtractSqlFromNftTransferHistoryRequest = (
     tokenId,
@@ -1121,6 +1121,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                            from transaction t
                            where t.entity_id = $1
                              and t.type = 35
+                             and t.result = 22
                            order by consensus_timestamp desc
                            limit $3`;
     const expectedParams = [tokenId, serialNumber, maxLimit];
@@ -1169,6 +1170,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                            from transaction t
                            where t.entity_id = $1
                              and t.type = 35
+                             and t.result = 22
                            order by consensus_timestamp asc
                            limit $3`;
     const expectedParams = [tokenId, serialNumber, limit];

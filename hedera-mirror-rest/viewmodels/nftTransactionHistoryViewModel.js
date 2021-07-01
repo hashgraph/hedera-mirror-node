@@ -22,21 +22,21 @@
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
-const TransactionTypeService = require('../services/transactionTypesService');
+const TransactionTypeService = require('../service/transactionTypeService');
 
 /**
  * Nft transaction history transfer view model
  */
 class NftTransactionHistoryViewModel {
-  constructor(combinedModel) {
-    this.consensus_timestamp = utils.nsToSecNs(combinedModel.consensus_timestamp);
+  constructor(nftTransferModel, transactionModel) {
+    this.consensus_timestamp = utils.nsToSecNs(nftTransferModel.consensusTimestamp);
     this.transaction_id = utils.createTransactionId(
-      EntityId.fromEncodedId(combinedModel.payer_account_id).toString(),
-      combinedModel.valid_start_ns
+      EntityId.fromEncodedId(transactionModel.payerAccountId).toString(),
+      transactionModel.validStartNs
     );
-    this.receiver_account_id = EntityId.fromEncodedId(combinedModel.receiver_account_id, true).toString();
-    this.sender_account_id = EntityId.fromEncodedId(combinedModel.sender_account_id, true).toString();
-    this.type = TransactionTypeService.getName(combinedModel.type);
+    this.receiver_account_id = EntityId.fromEncodedId(nftTransferModel.receiverAccountId, true).toString();
+    this.sender_account_id = EntityId.fromEncodedId(nftTransferModel.senderAccountId, true).toString();
+    this.type = TransactionTypeService.getName(transactionModel.type);
   }
 }
 

@@ -20,18 +20,18 @@
 
 'use strict';
 
-class NftModel {
+class Nft {
   /**
    * Parses nft table columns into object
    */
   constructor(dbRow) {
-    this.account_id = dbRow.account_id;
-    this.created_timestamp = dbRow.created_timestamp;
+    this.accountId = dbRow.account_id;
+    this.createdTimestamp = dbRow.created_timestamp;
     this.deleted = dbRow.deleted;
     this.metadata = dbRow.metadata;
-    this.modified_timestamp = dbRow.modified_timestamp;
-    this.serial_number = dbRow.serial_number;
-    this.token_id = dbRow.token_id;
+    this.modifiedTimestamp = dbRow.modified_timestamp;
+    this.serialNumber = dbRow.serial_number;
+    this.tokenId = dbRow.token_id;
   }
 
   static tableAlias = 'nft';
@@ -53,4 +53,4 @@ class NftModel {
   static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 }
 
-module.exports = NftModel;
+module.exports = Nft;

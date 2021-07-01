@@ -20,14 +20,14 @@
 
 'use strict';
 
-class TransactionTypeModel {
+class TransactionType {
   /**
    * Parses transaction type columns into object
    */
   constructor(dbRow) {
     this.name = dbRow.name;
-    this.entity_type = dbRow.entity_type;
-    this.proto_id = dbRow.proto_id;
+    this.entityType = dbRow.entity_type;
+    this.protoId = dbRow.proto_id;
   }
 
   static tableAlias = 'ttt';
@@ -41,4 +41,4 @@ class TransactionTypeModel {
   static PROTO_ID_FULL_NAME = `${this.tableAlias}.${this.PROTO_ID}`;
 }
 
-module.exports = TransactionTypeModel;
+module.exports = TransactionType;

@@ -1397,7 +1397,7 @@ components:
         items:
           type: string
     serialNumberPathParam:
-      name: id
+      name: serialnumber
       in: path
       required: true
       description: The nft serial number

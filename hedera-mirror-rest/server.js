@@ -48,7 +48,7 @@ const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandl
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const TransactionTypesService = require('./services/transactionTypesService');
+const TransactionTypeService = require('./service/transactionTypeService');
 
 // Logger
 const logger = log4js.getLogger();
@@ -180,14 +180,9 @@ app.useAsync(responseHandler);
 // response error handling middleware
 app.useAsync(handleError);
 
-const getTransactionTypes = async () => {
-  // pulls in transactions types once and make globally available in non async manner
-  await TransactionTypesService.loadTransactionTypes();
-};
-
 const verifyDbConnection = async () => {
   // initial db calls, serves as connection validation
-  await getTransactionTypes();
+  await TransactionTypeService.loadTransactionTypes();
 };
 
 if (!isTestEnv()) {

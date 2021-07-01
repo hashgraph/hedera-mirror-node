@@ -22,30 +22,28 @@
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
-const TransactionTypeService = require('../services/transactionTypesService');
-const TransactionModel = require('../models/transactionModel');
+const TransactionTypeService = require('../service/transactionTypesService');
 
 /**
  * Transaction transfer view model
  */
 class TransactionViewModel {
   constructor(transactionModel) {
-    const validStartTimestamp = transactionModel.valid_start_ns;
-    this.bytes = utils.encodeBase64(transactionModel.transaction_bytes);
-    this.charged_tx_fee = Number(transactionModel.charged_tx_fee);
-    this.consensus_timestamp = utils.nsToSecNs(transactionModel.consensus_ns);
-    this.entity_id = EntityId.fromEncodedId(transactionModel.entity_id).toString();
-    this.id = EntityId.fromEncodedId(transactionModel.id).toString();
-    this.max_fee = utils.getNullableNumber(transactionModel.max_fee);
-    this.memo_base64 = utils.encodeKey(transactionModel.memo); // base64 encode
+    const validStartTimestamp = transactionModel.validStartNs;
+    this.bytes = utils.encodeBase64(transactionModel.transactionBytes);
+    this.charged_tx_fee = Number(transactionModel.chargedTxFee);
+    this.consensus_timestamp = utils.nsToSecNs(transactionModel.consensusNs);
+    this.entity_id = EntityId.fromEncodedId(transactionModel.entityId, true).toString();
+    this.max_fee = utils.getNullableNumber(transactionModel.maxFee);
+    this.memo_base64 = utils.encodeBase64(transactionModel.memo); // base64 encode
     this.name = transactionModel.name;
-    this.node = transactionModel.node_account_id;
+    this.node = EntityId.fromEncodedId(transactionModel.nodeAccountId, true).toString();
     this.result = transactionModel.result;
     this.scheduled = transactionModel.scheduled;
-    this.token_transfers = this.createTokenTransferList(transactionModel.token_transfer_list);
-    this.transaction_hash = utils.encodeBase64(transactionModel.transaction_hash);
+    this.token_transfers = this.createTokenTransferList(transactionModel.tokenTransferList);
+    this.transaction_hash = utils.encodeBase64(transactionModel.transactionHash);
     this.transaction_id = utils.createTransactionId(
-      EntityId.fromEncodedId(transactionModel.payer_account_id).toString(),
+      EntityId.fromEncodedId(transactionModel.payerAccountId).toString(),
       validStartTimestamp
     );
     this.transfers = [];

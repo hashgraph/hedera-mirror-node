@@ -22,15 +22,14 @@
 
 const _ = require('lodash');
 
-const utils = require('../utils');
 const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const TransactionTypeModel = require('../models/transactionTypeModel');
+const TransactionTypeModel = require('../model/transactionType');
 
 /**
  * Transaction types retrieval business logic
  */
-class TransactionTypesService {
+class TransactionTypeService {
   constructor() {
     this.transactionTypeToProtoMap = new Map();
     this.transactionTypeProtoToNameMap = new Map();
@@ -44,14 +43,14 @@ class TransactionTypesService {
 
     transactionTypes.forEach((transactionType) => {
       this.transactionTypeToProtoMap.set(transactionType.name, transactionType);
-      this.transactionTypeProtoToNameMap.set(transactionType.proto_id, transactionType);
+      this.transactionTypeProtoToNameMap.set(transactionType.protoId, transactionType);
     });
   }
 
   async getTransactionTypes() {
     let rows;
     try {
-      const result = await pool.query(TransactionTypesService.transactionTypesQuery);
+      const result = await pool.query(TransactionTypeService.transactionTypesQuery);
       rows = result.rows;
     } catch (err) {
       this.promise = null;
@@ -66,13 +65,8 @@ class TransactionTypesService {
   }
 
   async loadTransactionTypes() {
-    try {
-      const transactionTypes = await this.getTransactionTypes();
-      this.populateTransactionTypeMaps(transactionTypes);
-    } catch (err) {
-      this.promise = null;
-      throw new DbError(err.message);
-    }
+    const transactionTypes = await this.getTransactionTypes();
+    this.populateTransactionTypeMaps(transactionTypes);
   }
 
   getProtoId(transactionTypeName) {
@@ -84,7 +78,7 @@ class TransactionTypesService {
     if (type === undefined) {
       throw new InvalidArgumentError(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
     }
-    return type.proto_id;
+    return type.protoId;
   }
 
   getName(transactionTypeId) {
@@ -100,4 +94,4 @@ class TransactionTypesService {
   }
 }
 
-module.exports = new TransactionTypesService();
+module.exports = new TransactionTypeService();

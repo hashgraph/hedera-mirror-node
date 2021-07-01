@@ -20,26 +20,26 @@
 
 'use strict';
 
-class TransactionModel {
+class Transaction {
   /**
    * Parses transaction table columns into object
    */
   constructor(dbRow) {
-    this.charged_tx_fee = dbRow.charged_tx_fee;
-    this.consensus_ns = dbRow.consensus_ns;
-    this.entity_id = dbRow.entity_id;
-    this.initial_balance = dbRow.initial_balance;
-    this.max_fee = dbRow.max_fee;
+    this.chargedTxFee = dbRow.charged_tx_fee;
+    this.consensusNs = dbRow.consensus_ns;
+    this.entityId = dbRow.entity_id;
+    this.initialBalance = dbRow.initial_balance;
+    this.maxFee = dbRow.max_fee;
     this.memo = dbRow.memo;
-    this.node_account_id = dbRow.node_account_id;
-    this.payer_account_id = dbRow.payer_account_id;
+    this.nodeAccountId = dbRow.node_account_id;
+    this.payerAccountId = dbRow.payer_account_id;
     this.result = dbRow.result;
     this.scheduled = dbRow.scheduled;
-    this.transaction_hash = dbRow.transaction_hash;
-    this.transaction_bytes = dbRow.transaction_bytes;
+    this.transactionHash = dbRow.transaction_hash;
+    this.transactionBytes = dbRow.transaction_bytes;
     this.type = dbRow.type;
-    this.valid_duration_seconds = dbRow.valid_duration_seconds;
-    this.valid_start_ns = dbRow.valid_start_ns;
+    this.validDurationSeconds = dbRow.valid_duration_seconds;
+    this.validStartNs = dbRow.valid_start_ns;
   }
 
   static tableAlias = 't';
@@ -77,4 +77,4 @@ class TransactionModel {
   static VALID_START_NS_FULL_NAME = `${this.tableAlias}.${this.VALID_START_NS}`;
 }
 
-module.exports = TransactionModel;
+module.exports = Transaction;
