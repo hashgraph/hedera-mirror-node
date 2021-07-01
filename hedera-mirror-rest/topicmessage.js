@@ -145,15 +145,15 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 };
 
 /**
- * Handler function for /:id/messages/:sequencenumber API.
+ * Handler function for /:id/messages/:sequenceNumber API.
  * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get
  * message
  *
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByTopicAndSequenceRequest = async (req, res) => {
-  const topicIdStr = req.params.id;
-  const seqNum = req.params.sequencenumber;
+  const topicIdStr = req.params.topicId;
+  const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
   const topicId = EntityId.fromString(topicIdStr);
   await validateTopicId(topicId, topicIdStr);
@@ -176,7 +176,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
  */
 const getTopicMessages = async (req, res) => {
   // retrieve param and filters from request
-  const topicIdStr = req.params.id;
+  const topicIdStr = req.params.topicId;
   const filters = utils.buildFilterObject(req.query);
 
   // validate params

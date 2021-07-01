@@ -28,6 +28,9 @@ const {randomString} = require('../utils');
 const requestLogger = async (req, res, next) => {
   httpContext.set(constants.requestIdLabel, randomString(8));
   logger.info(`${req.ip} ${req.method} ${req.originalUrl}`);
+
+  // set default http OK code for reference
+  res.locals.statusCode = 200;
 };
 
 /**

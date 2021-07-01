@@ -35,13 +35,13 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - accounts
-  /api/v1/accounts/{id}:
+  /api/v1/accounts/{accountId}:
     get:
       summary: Get account by id
       description: Return the account transactions and balance information given an id
       operationId: getAccountById
       parameters:
-        - name: id
+        - name: accountId
           in: path
           required: true
           description: Account entity id
@@ -144,7 +144,7 @@ paths:
                     - message: "Invalid parameter: schedule.id"
       tags:
         - schedules
-  /api/v1/schedules/{id}:
+  /api/v1/schedules/{scheduleId}:
     get:
       summary: Get schedule by id
       description: Returns schedule information based on the given schedule id
@@ -303,7 +303,7 @@ paths:
                     - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
       tags:
         - transactions
-  /api/v1/topics/{id}/messages:
+  /api/v1/topics/{topicId}/messages:
     get:
       summary: List topic messages by id
       description: Returns the list of topic messages for the given topic id.
@@ -349,7 +349,7 @@ paths:
           $ref: '#/components/responses/TopicNotFound'
       tags:
         - topics
-  /api/v1/topics/{id}/messages/{sequencenumber}:
+  /api/v1/topics/{topicId}/messages/{sequenceNumber}:
     get:
       summary: Get topic message by id and sequence number
       description: Returns a single topic message the given topic id and sequence number.
@@ -460,7 +460,7 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - tokens
-  /api/v1/tokens/{id}:
+  /api/v1/tokens/{tokenId}:
     get:
       summary: Get token by id
       description: Returns token entity information given the id
@@ -488,7 +488,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
-  /api/v1/tokens/{id}/balances:
+  /api/v1/tokens/{tokenId}/balances:
     get:
       summary: List token balances
       description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
@@ -528,7 +528,7 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - tokens
-  /api/v1/tokens/{id}/nfts:
+  /api/v1/tokens/{tokenId}/nfts:
     get:
       summary: List nfts
       description: Returns a list of non-fungible tokens
@@ -562,7 +562,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
-  /api/v1/tokens/{id}/nfts/{serialnumber}:
+  /api/v1/tokens/{tokenId}/nfts/{serialNumber}:
     get:
       summary: Get nft info
       description: Returns information for a non-fungible token
@@ -581,7 +581,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
-  /api/v1/tokens/{id}/nfts/{serialnumber}/transactions:
+  /api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions:
     get:
       summary: Get an nfts transction history
       description: Returns a list of transactions for a given non-fungible token
@@ -1377,7 +1377,7 @@ components:
       schema:
         type: string
     scheduleIdPathParam:
-      name: id
+      name: scheduleId
       in: path
       required: true
       description: Schedule entity id
@@ -1496,7 +1496,7 @@ components:
         items:
           type: string
     tokenIdPathParam:
-      name: id
+      name: tokenid
       in: path
       required: true
       description: Token entity id
@@ -1516,7 +1516,7 @@ components:
         items:
           type: string
     topicIdPathParam:
-      name: id
+      name: topicId
       in: path
       required: true
       description: Topic entity id

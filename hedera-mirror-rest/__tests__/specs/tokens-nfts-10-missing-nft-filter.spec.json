@@ -1,0 +1,69 @@
+{
+  "description": "Token nfts api call for all nfts under a given token with none matching",
+  "setup": {
+    "entities": [
+      {
+        "num": 1001
+      },
+      {
+        "num": 2001
+      },
+      {
+        "num": 1500,
+        "type": 5
+      },
+      {
+        "num": 2500,
+        "type": 5
+      },
+      {
+        "num": 3500,
+        "type": 5
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.1500",
+        "symbol": "FIRSTMOVERLPDJH",
+        "created_timestamp": "1234567890000000002",
+        "type": "NON_FUNGIBLE_UNIQUE"
+      },
+      {
+        "token_id": "0.0.2500",
+        "symbol": "ORIGINALRDKSE",
+        "created_timestamp": "1234567890000000003",
+        "type": "NON_FUNGIBLE_UNIQUE"
+      },
+      {
+        "token_id": "0.0.3500",
+        "symbol": "MIRRORORIG",
+        "created_timestamp": "1234567890000000004",
+        "type": "NON_FUNGIBLE_UNIQUE"
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": [
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000005",
+        "metadata": "m1",
+        "serial_number": 1,
+        "token_id": "0.0.1500"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/tokens/0.0.1500/nfts?account.id=2001",
+    "/api/v1/tokens/0.0.1500/nfts?account.id=0.2001",
+    "/api/v1/tokens/0.0.1500/nfts?account.id=0.0.2001"
+  ],
+  "responseStatus": 204,
+  "responseJson": {
+    "nfts": [],
+    "links": {
+      "next": null
+    }
+  }
+}

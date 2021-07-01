@@ -29,8 +29,10 @@ const utils = require('./utils');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 const NftModel = require('./model/nft');
+const {statusMap} = require('./middleware/httpStatusHandler');
 const NftTransferModel = require('./model/nftTransfer');
 const TransactionModel = require('./model/transaction');
+const TransactionResultService = require('./service/transactionResultService');
 const TransactionTypeService = require('./service/transactionTypeService');
 const TokenService = require('./service/tokenService');
 const NftViewModel = require('./viewmodels/nftViewModel');
@@ -332,13 +334,13 @@ const validateTokenIdParam = (tokenId) => {
 };
 
 const getAndValidateTokenIdRequestPathParam = (req) => {
-  const tokenIdString = req.params.id;
+  const tokenIdString = req.params.tokenId;
   validateTokenIdParam(tokenIdString);
   return EntityId.fromString(tokenIdString, constants.filterKeys.TOKENID).getEncodedId();
 };
 
 const getTokenInfoRequest = async (req, res) => {
-  const tokenIdString = req.params.id;
+  const tokenIdString = req.params.tokenId;
   validateTokenIdParam(tokenIdString);
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
 
@@ -449,7 +451,7 @@ const formatTokenBalanceRow = (row) => {
 };
 
 /**
- * Handler function for /tokens/:id/balances API.
+ * Handler function for /tokens/:tokenId/balances API.
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
@@ -560,13 +562,13 @@ const validateSerialNumberParam = (serialNumber) => {
 };
 
 const getAndValidateSerialNumberRequestPathParam = (req) => {
-  const {serialnumber} = req.params;
-  validateSerialNumberParam(serialnumber);
-  return serialnumber;
+  const {serialNumber} = req.params;
+  validateSerialNumberParam(serialNumber);
+  return serialNumber;
 };
 
 /**
- * Handler function for /tokens/:id/nfts API.
+ * Handler function for /tokens/:tokenId/nfts API.
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
@@ -578,7 +580,7 @@ const getNftTokensRequest = async (req, res) => {
   // verify token exists
   const token = await TokenService.getToken(tokenId);
   if (token === null) {
-    throw new NotFoundError(`No such token id - ${req.params.id}`);
+    throw new NotFoundError(`No such token id - ${req.params.tokenId}`);
   }
 
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
@@ -588,14 +590,24 @@ const getNftTokensRequest = async (req, res) => {
 
   const {rows} = await utils.queryQuietly(query, ...params);
   const response = {
-    nfts: rows.map((row) => {
-      const nftModel = new NftModel(row);
-      return new NftViewModel(nftModel);
-    }),
+    nfts: [],
     links: {
       next: null,
     },
   };
+
+  // handle filter case with no returns
+  if (_.isEmpty(rows) && !_.isEmpty(filters)) {
+    res.locals.statusCode = statusMap.NoContentError.code;
+    logger.debug(`getNftTokens returning no content`);
+    res.locals[constants.responseDataLabel] = response;
+    return;
+  }
+
+  response.nfts = rows.map((row) => {
+    const nftModel = new NftModel(row);
+    return new NftViewModel(nftModel);
+  });
 
   // Pagination links
   const anchorSerialNumber = response.nfts.length > 0 ? response.nfts[response.nfts.length - 1].serial_number : 0;
@@ -612,7 +624,7 @@ const getNftTokensRequest = async (req, res) => {
 };
 
 /**
- * Handler function for /tokens/:id/nfts/:serialnumber API.
+ * Handler function for /tokens/:tokenId/nfts/:serialNumber API.
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
@@ -624,7 +636,7 @@ const getNftTokenInfoRequest = async (req, res) => {
   // verify token exists
   const token = await TokenService.getToken(tokenId);
   if (token === null) {
-    throw new NotFoundError(`No such token id - ${req.params.id}`);
+    throw new NotFoundError(`No such token id - ${req.params.tokenId}`);
   }
 
   const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialnumber, nftSelectQuery);
@@ -658,7 +670,6 @@ const getToken = async (pgSqlQuery, tokenId) => {
 
 const tokenDeleteTransactionType = 'TOKENDELETION';
 const successTransactionResult = 'SUCCESS';
-const successTransactionResultProtoId = '22'; // replace this with a service call to get id
 
 /**
  * Extracts SQL query, params, order, and limit
@@ -688,7 +699,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const deleteConditions = [
     `${TransactionModel.ENTITY_ID_FULL_NAME} = $1`,
     `${TransactionModel.TYPE_FULL_NAME} = ${TransactionTypeService.getProtoId(tokenDeleteTransactionType)}`,
-    `${TransactionModel.RESULT_FULL_NAME} = ${successTransactionResultProtoId}`,
+    `${TransactionModel.RESULT_FULL_NAME} = ${TransactionResultService.getProtoId(successTransactionResult)}`,
   ];
   const deleteWhereCondition = `where ${deleteConditions.join('\nand ')}`;
 
@@ -759,7 +770,7 @@ const nftDeleteHistorySelectQuery = [
 ].join('\n');
 
 /**
- * Handler function for /api/v1/tokens/{id}/nfts/{serialNumber}/transactions API.
+ * Handler function for /api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions API.
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object

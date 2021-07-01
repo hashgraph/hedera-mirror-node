@@ -57,6 +57,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions');
+const TransactionResultService = require('../service/transactionResultService');
 const TransactionTypeService = require('../service/transactionTypeService');
 const utils = require('../utils');
 
@@ -72,6 +73,7 @@ beforeAll(async () => {
 
   // set items that required db connection but weren't available due to integration db setup logic
   await TransactionTypeService.loadTransactionTypes();
+  await TransactionResultService.loadTransactionResults();
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
@@ -561,7 +563,7 @@ describe('DB integration test - spec based', () => {
         const response = await request(server).get(url);
 
         expect(response.status).toEqual(spec.responseStatus);
-        let jsonObj = JSON.parse(response.text);
+        let jsonObj = response.text === '' ? {} : JSON.parse(response.text);
         if (response.status === 200 && file.startsWith('stateproof')) {
           jsonObj = transformStateProofResponse(jsonObj);
         }

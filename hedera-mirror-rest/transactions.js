@@ -485,14 +485,14 @@ const getScheduledQuery = (query) => {
 };
 
 /**
- * Handler function for /transactions/:transaction_id API.
+ * Handler function for /transactions/:transactionId API.
  * @param {Request} req HTTP request object
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
   await utils.validateReq(req);
 
-  const transactionId = TransactionId.fromString(req.params.id);
+  const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduledQuery = getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause('t.payer_account_id = ?', 't.valid_start_ns = ?', scheduledQuery);

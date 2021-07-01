@@ -202,7 +202,7 @@ const getAccounts = async (req, res) => {
 };
 
 /**
- * Handler function for /account/:id API.
+ * Handler function for /account/:accountId API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @return {} None.
@@ -212,7 +212,7 @@ const getOneAccount = async (req, res) => {
   await utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
-  const accountId = EntityId.fromString(req.params.id, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+  const accountId = EntityId.fromString(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();
   const parsedQueryParams = req.query;
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const resultTypeQuery = utils.parseResultParams(req);

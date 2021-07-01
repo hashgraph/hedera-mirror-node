@@ -35,7 +35,8 @@ class TransactionTypeService {
     this.transactionTypeProtoToNameMap = new Map();
   }
 
-  static transactionTypesQuery = 'select entity_type, name, proto_id from t_transaction_types';
+  static transactionTypesQuery = `select ${TransactionTypeModel.ENTITY_TYPE}, ${TransactionTypeModel.NAME}, ${TransactionTypeModel.PROTO_ID}
+                                  from ${TransactionTypeModel.tableName}`;
 
   populateTransactionTypeMaps(transactionTypes) {
     this.transactionTypeToProtoMap = new Map();

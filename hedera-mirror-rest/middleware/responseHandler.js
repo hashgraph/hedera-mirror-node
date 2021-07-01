@@ -32,7 +32,7 @@ const responseHandler = async (req, res, next) => {
     throw new NotFoundError();
   } else {
     // set response json
-    res.json(res.locals[constants.responseDataLabel]);
+    res.status(res.locals.statusCode).json(res.locals[constants.responseDataLabel]);
   }
 };
 
