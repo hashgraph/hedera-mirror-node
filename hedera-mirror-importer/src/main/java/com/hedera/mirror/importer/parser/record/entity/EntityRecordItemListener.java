@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Predicate;
@@ -69,7 +68,6 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -96,7 +94,6 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -109,20 +106,17 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final Predicate<TransactionFilterFields> transactionFilter;
-    private final NftRepository nftRepository;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
-                                    TransactionHandlerFactory transactionHandlerFactory,
-                                    NftRepository nftRepository) {
+                                    TransactionHandlerFactory transactionHandlerFactory) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
-        this.nftRepository = nftRepository;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -490,7 +484,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     consensusTimestamp);
 
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimestamp)
+                    updateNftDeleteStatus(consensusTimestamp, serialNumber, tokenId)
             );
         }
     }
@@ -609,16 +603,14 @@ public class EntityRecordItemListener implements RecordItemListener {
                     consensusTimestamp);
 
             List<Long> serialNumbers = recordItem.getRecord().getReceipt().getSerialNumbersList();
-            List<Nft> nfts = new ArrayList<>();
             for (int i = 0; i < serialNumbers.size(); i++) {
-                Nft nft = new Nft();
+                Nft nft = new Nft(serialNumbers.get(i), tokenId);
                 nft.setCreatedTimestamp(consensusTimestamp);
-                nft.setId(new NftId(serialNumbers.get(i), tokenId));
+                nft.setDeleted(false);
                 nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
                 nft.setModifiedTimestamp(consensusTimestamp);
-                nfts.add(nft);
+                entityListener.onNft(nft);
             }
-            nftRepository.saveAll(nfts);
         }
     }
 
@@ -668,12 +660,19 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     entityListener.onNftTransfer(nftTransferDomain);
                     if (!EntityId.isEmpty(receiverId)) {
-                        nftRepository.transferNftOwnership(new NftId(serialNumber, tokenId), receiverId,
-                                consensusTimestamp);
+                        transferNftOwnership(consensusTimestamp, serialNumber, tokenId, receiverId);
                     }
                 });
             });
         }
+    }
+
+    private void transferNftOwnership(long modifiedTimeStamp, long serialNumber, EntityId tokenId,
+                                      EntityId receiverId) {
+        Nft nft = new Nft(serialNumber, tokenId);
+        nft.setAccountId(receiverId);
+        nft.setModifiedTimestamp(modifiedTimeStamp);
+        entityListener.onNft(nft);
     }
 
     private void insertTokenUpdate(RecordItem recordItem) {
@@ -750,7 +749,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     consensusTimestamp);
 
             tokenWipeAccountTransactionBody.getSerialNumbersList().forEach(serialNumber ->
-                    nftRepository.burnOrWipeNft(new NftId(serialNumber, tokenId), consensusTimestamp));
+                    updateNftDeleteStatus(consensusTimestamp, serialNumber, tokenId));
         }
     }
 
@@ -768,6 +767,13 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void updateToken(Token token, long modifiedTimestamp) {
         token.setModifiedTimestamp(modifiedTimestamp);
         entityListener.onToken(token);
+    }
+
+    private void updateNftDeleteStatus(long modifiedTimeStamp, long serialNumber, EntityId tokenId) {
+        Nft nft = new Nft(serialNumber, tokenId);
+        nft.setDeleted(true);
+        nft.setModifiedTimestamp(modifiedTimeStamp);
+        entityListener.onNft(nft);
     }
 
     private void updateTokenSupply(EntityId tokenId, long newTotalSupply, long modifiedTimestamp) {

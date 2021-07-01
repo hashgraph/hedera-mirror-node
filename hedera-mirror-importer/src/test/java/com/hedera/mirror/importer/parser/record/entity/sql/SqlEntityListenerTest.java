@@ -355,6 +355,18 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onNft() throws Exception {
+        // create token first
+        String tokenId1 = "0.0.1";
+        String tokenId2 = "0.0.3";
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, "0.0.98", 1L, 1L);
+        Token token2 = getToken(tokenId2, "0.0.98", 2L, 2L);
+        sqlEntityListener.onToken(token1);
+        sqlEntityListener.onToken(token2);
+        completeFileAndCommit();
+
+        // create nft
         Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 1L);
         Nft nft2 = getNft("0.0.3", 3L, "0.0.3", 3L);
 
@@ -370,6 +382,18 @@ public class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onNftTransferOwnershipAndDelete() throws Exception {
+        // create token first
+        String tokenId1 = "0.0.1";
+        String tokenId2 = "0.0.3";
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, "0.0.98", 1L, 1L);
+        Token token2 = getToken(tokenId2, "0.0.98", 2L, 2L);
+        sqlEntityListener.onToken(token1);
+        sqlEntityListener.onToken(token2);
+        completeFileAndCommit();
+
+        // create nfts
         Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 1L);
         Nft nft2 = getNft("0.0.3", 3L, "0.0.3", 3L);
 

@@ -519,9 +519,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
         assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER, null);
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 1);
-        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp, mintTimestamp, METADATA
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, false, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
-        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, false, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
     }
 
@@ -1056,7 +1056,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .returns(modifiedTimestamp, from(Nft::getModifiedTimestamp))
                     .returns(metadata, from(Nft::getMetadata))
                     .returns(accountId, from(Nft::getAccountId))
-                    .returns(deleted, from(Nft::isDeleted));
+                    .returns(deleted, from(Nft::getDeleted));
         } else {
             assertThat(nftOptional).isNotPresent();
         }

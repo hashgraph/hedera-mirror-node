@@ -27,7 +27,6 @@ import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.importer.domain.Entity_;
 import com.hedera.mirror.importer.domain.NftId_;
 import com.hedera.mirror.importer.domain.Nft_;
 import com.hedera.mirror.importer.domain.TokenId_;
@@ -36,15 +35,14 @@ import com.hedera.mirror.importer.domain.Token_;
 @Named
 @Value
 public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> {
-    private static final String JOIN_TABLE = "entity";
     private final String finalTableName = "nft";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> v1ConflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER);
     // createdTimestamp is needed for v2 schema compliance as it's used in index
     private final List<String> v2ConflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER,
             Nft_.CREATED_TIMESTAMP);
-    private final Set<String> nullableColumns = Set.of(Nft_.DELETED);
-    private final Set<String> nonUpdatableColumns = Set.of(Nft_.CREATED_TIMESTAMP, Nft_.METADATA,
+    private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID);
+    private final Set<String> nonUpdatableColumns = Set.of(Nft_.CREATED_TIMESTAMP, Nft_.ID, Nft_.METADATA,
             NftId_.SERIAL_NUMBER, NftId_.TOKEN_ID);
 
     @Getter(lazy = true)
@@ -57,32 +55,37 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
         StringBuilder insertWhereQueryBuilder = new StringBuilder();
 
         // optionally join with entity if present to allow for deleted reference if necessary
-        insertWhereQueryBuilder
-                .append(String.format(" right outer join %s on %s = %s", EntityUpsertQueryGenerator.TABLE,
-                        getFullTempTableColumnName(NftId_.TOKEN_ID),
-                        getFullTableColumnName(EntityUpsertQueryGenerator.TABLE, Entity_.ID)));
+//        insertWhereQueryBuilder
+//                .append(String.format(" right outer join %s on %s = %s", EntityUpsertQueryGenerator.TABLE,
+//                        getFullTempTableColumnName(NftId_.TOKEN_ID),
+//                        getFullTableColumnName(EntityUpsertQueryGenerator.TABLE, Entity_.ID)));
 
-        // optionally join with token if present to allow for treasuryAccount reference
+        // ignore entries where token not present
         insertWhereQueryBuilder
-                .append(String.format(" right outer join %s on %s = %s", TokenUpsertQueryGenerator.TABLE,
+                .append(String.format(" join %s on %s = %s", TokenUpsertQueryGenerator.TABLE,
                         getFullTempTableColumnName(NftId_.TOKEN_ID),
                         getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, TokenId_.TOKEN_ID)));
 
         // ignore entries where nft created timestamp is noted
-        insertWhereQueryBuilder.append(String.format(" where %s is not null",
-                getFullTempTableColumnName(Nft_.CREATED_TIMESTAMP)));
+//        insertWhereQueryBuilder.append(String.format(" where %s is not null",
+//                getFullTempTableColumnName(Nft_.CREATED_TIMESTAMP)));
 
         return insertWhereQueryBuilder.toString();
     }
 
     @Override
     public String getUpdateWhereClause() {
-        return String.format(" where %s = %s and %s = %s and %s is not null",
+//        return String.format(" where %s = %s and %s = %s and %s is not null",
+//                getFullFinalTableColumnName(NftId_.TOKEN_ID),
+//                getFullTempTableColumnName(NftId_.TOKEN_ID),
+//                getFullFinalTableColumnName(NftId_.SERIAL_NUMBER),
+//                getFullTempTableColumnName(NftId_.SERIAL_NUMBER),
+//                getFullFinalTableColumnName(Nft_.CREATED_TIMESTAMP));
+        return String.format(" where %s = %s and %s = %s",
                 getFullFinalTableColumnName(NftId_.TOKEN_ID),
                 getFullTempTableColumnName(NftId_.TOKEN_ID),
                 getFullFinalTableColumnName(NftId_.SERIAL_NUMBER),
-                getFullTempTableColumnName(NftId_.SERIAL_NUMBER),
-                getFullFinalTableColumnName(Nft_.CREATED_TIMESTAMP));
+                getFullTempTableColumnName(NftId_.SERIAL_NUMBER));
     }
 
     @Override
@@ -91,21 +94,12 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
             return getSelectCoalesceQuery(
                     Nft_.ACCOUNT_ID,
                     getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, Token_.TREASURY_ACCOUNT_ID));
-//            String treasuryAccountInsert = "coalesce() case when %s is not null then %s when" +
-//                    " %s is null then null else %s end %s";
-//            String treasuryAccountInsert = "case when %s is not null then %s when" +
-//                    " %s is null then null else %s end %s";
-//            return String.format(treasuryAccountInsert,
-//                    getFullTempTableColumnName(Nft_.DELETED),
-//                    getFullTempTableColumnName(Nft_.DELETED),
-//                    getFullTableColumnName(JOIN_TABLE, Entity_.DELETED),
-//                    getFullTableColumnName(JOIN_TABLE, Entity_.DELETED),
-//                    getFormattedColumnName(Nft_.DELETED));
-        } else if (attributeName.equalsIgnoreCase(Nft_.DELETED)) {
-            return getSelectCoalesceQuery(
-                    Nft_.DELETED,
-                    getFullTableColumnName(EntityUpsertQueryGenerator.TABLE, Entity_.DELETED));
         }
+//        else if (attributeName.equalsIgnoreCase(Nft_.DELETED)) {
+//            return getSelectCoalesceQuery(
+//                    Nft_.DELETED,
+//                    getFullTableColumnName(EntityUpsertQueryGenerator.TABLE, Entity_.DELETED));
+//        }
 
         return null;
     }

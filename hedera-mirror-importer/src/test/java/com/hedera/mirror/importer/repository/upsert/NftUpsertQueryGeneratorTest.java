@@ -52,7 +52,6 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     public String getUpdateQuery() {
         return "update nft set account_id = coalesce(nft_temp.account_id, nft.account_id), " +
                 "deleted = coalesce(nft_temp.deleted, nft.deleted), " +
-                "id = coalesce(nft_temp.id, nft.id), " +
                 "modified_timestamp = coalesce(nft_temp.modified_timestamp, nft.modified_timestamp) " +
                 "from nft_temp where nft.token_id = nft_temp.token_id and " +
                 "nft.serial_number = nft_temp.serial_number and nft.created_timestamp is not null";
