@@ -29,7 +29,7 @@ spec:
           externalLabels:
             cluster: mainnet-na
       prometheusOperator:
-        namespaces: {}
+        namespaces: null
     traefik:
       service:
         annotations:
