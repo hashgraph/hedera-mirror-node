@@ -20,6 +20,8 @@
 
 'use strict';
 
+const constants = require('../constants');
+
 class NftTransfer {
   /**
    * Parses nft_transfer table columns into object
@@ -45,6 +47,10 @@ class NftTransfer {
   static SERIAL_NUMBER_FULL_NAME = `${this.tableAlias}.${this.SERIAL_NUMBER}`;
   static TOKEN_ID = `token_id`;
   static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
+
+  static FILTER_MAP = {
+    [constants.filterKeys.TIMESTAMP]: NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME,
+  };
 }
 
 module.exports = NftTransfer;

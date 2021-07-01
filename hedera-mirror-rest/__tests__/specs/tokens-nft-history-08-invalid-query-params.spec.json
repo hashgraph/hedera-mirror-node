@@ -8,11 +8,14 @@
     "cryptotransfers": [],
     "nfts": []
   },
-  "urls": ["/api/v1/tokens/1500/nfts/2/transactions?order=down&limit=alot"],
+  "urls": ["/api/v1/tokens/1500/nfts/2/transactions?timestamp=now&order=down&limit=alot"],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
+        {
+          "message": "Invalid parameter: timestamp"
+        },
         {
           "message": "Invalid parameter: order"
         },

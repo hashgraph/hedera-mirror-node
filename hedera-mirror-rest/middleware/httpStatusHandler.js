@@ -41,6 +41,7 @@ const httpStatusCodes = {
   INTERNAL_ERROR: new StatusCode(500, 'Internal error'),
   NO_CONTENT: new StatusCode(204, 'No content'),
   NOT_FOUND: new StatusCode(404, 'Not found'),
+  PARTIAL_CONTENT: new StatusCode(206, 'Partial mirror node'),
   SERVICE_UNAVAILABLE: new StatusCode(503, 'Service unavailable'),
 };
 
@@ -96,5 +97,6 @@ const errorMessageFormat = (errorMessages) => {
 
 module.exports = {
   handleError,
+  httpStatusCodes,
   statusMap,
 };

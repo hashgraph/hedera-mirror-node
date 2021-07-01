@@ -60,10 +60,5 @@
     "/api/v1/tokens/0.0.1500/nfts?account.id=0.0.2001"
   ],
   "responseStatus": 204,
-  "responseJson": {
-    "nfts": [],
-    "links": {
-      "next": null
-    }
-  }
+  "responseJson": {}
 }

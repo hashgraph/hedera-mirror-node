@@ -1186,4 +1186,51 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       filters
     );
   });
+
+  test('Verify timestamp query', () => {
+    const tokenId = '1009'; // encoded
+    const serialNumber = '960';
+    const transferQuery = [tokens.nftTransferHistorySelectQuery].join('\n');
+    const deletedQuery = [tokens.nftDeleteHistorySelectQuery].join('\n');
+    const timestamp = 5;
+    const filters = [{key: filterKeys.TIMESTAMP, operator: ' > ', value: timestamp}];
+    const expectedQuery = `select nft_tr.consensus_timestamp,
+                                  t.payer_account_id,
+                                  t.valid_start_ns,
+                                  nft_tr.receiver_account_id,
+                                  nft_tr.sender_account_id,
+                                  t.type
+                           from nft
+                                  right outer join nft_transfer nft_tr
+                                                   on nft.token_id = nft_tr.token_id and
+                                                      nft.serial_number = nft_tr.serial_number
+                                  join transaction t on nft_tr.consensus_timestamp = t.consensus_ns
+                           where nft_tr.token_id = $1
+                             and nft_tr.serial_number = $2
+                             and nft_tr.consensus_timestamp > $3
+                           union
+                           select t.consensus_ns as consensus_timestamp,
+                                  t.payer_account_id,
+                                  t.valid_start_ns,
+                                  null           as receiver_account_id,
+                                  null           as sender_account_id,
+                                  t.type
+                           from transaction t
+                           where t.entity_id = $1
+                             and t.type = 35
+                             and t.result = 22
+                             and t.consensus_ns > $3
+                           order by consensus_timestamp desc
+                           limit $4`;
+    const expectedParams = [tokenId, serialNumber, timestamp, maxLimit];
+    verifyExtractSqlFromNftTransferHistoryRequest(
+      tokenId,
+      serialNumber,
+      transferQuery,
+      deletedQuery,
+      expectedQuery,
+      expectedParams,
+      filters
+    );
+  });
 });

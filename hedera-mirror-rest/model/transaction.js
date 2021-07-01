@@ -20,6 +20,8 @@
 
 'use strict';
 
+const constants = require('../constants');
+
 class Transaction {
   /**
    * Parses transaction table columns into object
@@ -75,6 +77,10 @@ class Transaction {
   static VALID_DURATION_SECONDS_FULL_NAME = `${this.tableAlias}.${this.VALID_DURATION_SECONDS}`;
   static VALID_START_NS = `valid_start_ns`;
   static VALID_START_NS_FULL_NAME = `${this.tableAlias}.${this.VALID_START_NS}`;
+
+  static FILTER_MAP = {
+    [constants.filterKeys.TIMESTAMP]: Transaction.CONSENSUS_NS_FULL_NAME,
+  };
 }
 
 module.exports = Transaction;

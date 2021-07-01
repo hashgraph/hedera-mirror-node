@@ -157,7 +157,7 @@
       }
     ]
   },
-  "url": "/api/v1/tokens/1500/nfts/2/transactions?order=asc&limit=2",
+  "url": "/api/v1/tokens/1500/nfts/2/transactions?timestamp=gte:1234567890.000000005&order=asc&limit=2",
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
