@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.23.0-rc5'
+      version: '0.23.0-rc6'
   install:
     crds: CreateReplace
   interval: 1m
@@ -24,8 +24,6 @@ spec:
       name: mirror
   values:
     prometheus:
-      grafana:
-        adminPassword: ""
       prometheus:
         prometheusSpec:
           externalLabels:
