@@ -25,8 +25,8 @@ import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcess
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -76,7 +76,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
-    @Transactional
+    @Transactional(timeoutString = "#{@balanceParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(AccountBalanceFile accountBalanceFile) {
         super.parse(accountBalanceFile);
     }
@@ -86,19 +86,31 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         log.info("Starting processing account balances file {}", accountBalanceFile.getName());
         DateRangeFilter filter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(StreamType.BALANCE);
         Connection connection = DataSourceUtils.getConnection(dataSource);
+        int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
+
         long count = 0L;
+        List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
+        List<TokenBalance> tokenBalances = new ArrayList<>(batchSize);
 
         try {
             if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
-                List<AccountBalance> accountBalances = accountBalanceFile.getItems();
-                List<TokenBalance> tokenBalances = accountBalances
-                        .stream()
-                        .flatMap(a -> a.getTokenBalances().stream())
-                        .collect(Collectors.toList());
+                count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
+                    accountBalances.add(accountBalance);
+                    tokenBalances.addAll(accountBalance.getTokenBalances());
+
+                    if (accountBalances.size() >= batchSize) {
+                        pgCopyAccountBalance.copy(accountBalances, connection);
+                        accountBalances.clear();
+                    }
+
+                    if (tokenBalances.size() >= batchSize) {
+                        pgCopyTokenBalance.copy(tokenBalances, connection);
+                        tokenBalances.clear();
+                    }
+                }).count().block();
 
                 pgCopyAccountBalance.copy(accountBalances, connection);
                 pgCopyTokenBalance.copy(tokenBalances, connection);
-                count = accountBalances.size();
             }
 
             Instant loadEnd = Instant.now();

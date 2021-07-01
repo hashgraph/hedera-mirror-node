@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -30,22 +29,15 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-@AllArgsConstructor
-public class CryptoCreateTransactionHandler implements TransactionHandler {
+public class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    public CryptoCreateTransactionHandler() {
+        super(EntityOperationEnum.CREATE);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
-    }
-
-    @Override
-    public EntityId getProxyAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoCreateAccount().getProxyAccountID());
-    }
-
-    @Override
-    public boolean updatesEntity() {
-        return true;
     }
 
     @Override
@@ -54,19 +46,21 @@ public class CryptoCreateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateEntity(final Entity entity, final RecordItem recordItem) {
         CryptoCreateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoCreateAccount();
         if (txMessage.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
         }
-
-        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-        entity.setDeleted(false);
 
         if (txMessage.hasKey()) {
             entity.setKey(txMessage.getKey().toByteArray());
         }
 
         entity.setMemo(txMessage.getMemo());
+    }
+
+    @Override
+    protected EntityId getProxyAccount(RecordItem recordItem) {
+        return EntityId.of(recordItem.getTransactionBody().getCryptoCreateAccount().getProxyAccountID());
     }
 }

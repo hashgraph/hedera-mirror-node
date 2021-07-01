@@ -3,10 +3,18 @@
 The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and gRPC API) all support loading
 configuration from an `application.yml` file or via the environment.
 
-Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
-should be changed is `hedera.mirror.importer.network` as it controls which of the Hedera networks to mirror.
-Additionally, the password properties have a default, but it is **strongly recommended passwords be changed from the
-default**.
+## Default Values
+
+The default configuration allows users to quickly get up and running without having to configure anything. This provides
+ease of use at the trade-off of some insecure default configuration. Most configuration settings have appropriate
+defaults and can be left unchanged. It is recommended to browse the properties below and adjust to your needs.
+
+One of the important settings that should be changed for all components is the `network` property as it controls which
+of the Hedera networks to mirror. Additionally, the password properties have a default, but it is **strongly recommended
+passwords be changed from the default**.
+
+Depending upon your deployment tool, the process to modify this configuration may vary. For our Helm charts, we do
+support automatic generation of random [passwords](/charts/README.md#passwords).
 
 ## Importer
 
@@ -71,26 +79,28 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.importHistoricalAccountInfo`                 | true                    | Import historical account information that occurred before the last stream reset. Skipped if `startDate` is unset or after 2019-09-14T00:00:10Z. |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
-| `hedera.mirror.importer.parser.balance.batchSize`                    | 2000                    | The number of balances to insert before committing                                             |
+| `hedera.mirror.importer.parser.balance.batchSize`                    | 200000                  | The number of balances to store in memory before saving to the database                        |
 | `hedera.mirror.importer.parser.balance.bufferSize`                   | 32768                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
 | `hedera.mirror.importer.parser.balance.frequency`                    | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
+| `hedera.mirror.importer.parser.balance.processingTimeout`            | 10s                     | The additional timeout to allow after the last balance stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.balance.queueCapacity`                | 0                       | How many balance files to queue in memory while waiting to be persisted by the parser          |
 | `hedera.mirror.importer.parser.balance.retry.maxAttempts`            | 3                       | How many attempts should be made to retry file parsing errors                                  |
 | `hedera.mirror.importer.parser.balance.retry.maxBackoff`             | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.minBackoff`             | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.balance.retry.multiplier`             | 2                       | Used to generate the next delay for backoff                                                    |
-| `hedera.mirror.importer.parser.balance.processingTimeout`            | 10s                     | The additional timeout to allow after the last balance stream file health check to verify that files are still being processed. |
+| `hedera.mirror.importer.parser.balance.transactionTimeout`           | 300s                    | The timeout in seconds for a database transaction                                              |
 | `hedera.mirror.importer.parser.event.bufferSize`                     | 32768                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.event.enabled`                        | false                   | Whether to enable event file parsing                                                           |
 | `hedera.mirror.importer.parser.event.frequency`                      | 100ms                   | How often to poll for new messages                                                             |
+| `hedera.mirror.importer.parser.event.processingTimeout`              | 10s                     | The additional timeout to allow after the last event stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.event.queueCapacity`                  | 10                      | How many event files to queue in memory while waiting to be persisted by the parser            |
 | `hedera.mirror.importer.parser.event.retry.maxAttempts`              | Integer.MAX_VALUE       | How many attempts should be made to retry file parsing errors                                  |
 | `hedera.mirror.importer.parser.event.retry.maxBackoff`               | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.event.retry.minBackoff`               | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.event.retry.multiplier`               | 2                       | Used to generate the next delay for backoff                                                    |
-| `hedera.mirror.importer.parser.event.processingTimeout`              | 10s                     | The additional timeout to allow after the last event stream file health check to verify that files are still being processed. |
+| `hedera.mirror.importer.parser.event.transactionTimeout`             | 30s                     | The timeout in seconds for a database transaction                                              |
 | `hedera.mirror.importer.parser.exclude`                              | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`                       | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
 | `hedera.mirror.importer.parser.exclude.transaction`                  | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
@@ -117,6 +127,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.sql.batchSize`                 | 20_000                  | When inserting transactions into db, executeBatches() is called every these many transactions  |
 | `hedera.mirror.importer.parser.record.entity.sql.enabled`                   | true                    | Whether to use PostgreSQL Copy mechanism to insert into the database                           |
 | `hedera.mirror.importer.parser.record.frequency`                            | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
+| `hedera.mirror.importer.parser.record.processingTimeout`                    | 10s                     | The additional timeout to allow after the last record stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.record.pubsub.topicName`                     |                         | Pubsub topic to publish transactions to                                                        |
 | `hedera.mirror.importer.parser.record.pubsub.maxSendAttempts`               | 5                       | Number of attempts when sending messages to PubSub (only for retryable errors)                 |
 | `hedera.mirror.importer.parser.record.queueCapacity`                        | 10                      | How many record files to queue in memory while waiting to be persisted by the parser           |
@@ -124,7 +135,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.retry.maxBackoff`                     | 10s                     | The maximum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.record.retry.minBackoff`                     | 250ms                   | The minimum amount of time to wait between retries                                             |
 | `hedera.mirror.importer.parser.record.retry.multiplier`                     | 2                       | Used to generate the next delay for backoff                                                    |
-| `hedera.mirror.importer.parser.record.processingTimeout`                    | 10s                     | The additional timeout to allow after the last record stream file health check to verify that files are still being processed. |
+| `hedera.mirror.importer.parser.record.transactionTimeout`                   | 30s                     | The timeout in seconds for a database transaction                                              |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 | `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |

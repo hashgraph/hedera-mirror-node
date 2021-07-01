@@ -183,19 +183,23 @@ class Pool {
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
       const row = {};
-      row.payer_account_id = EntityId.of(0, 0, i).getEncodedId();
+      row.payer_account_id = EntityId.of(0n, 0n, BigInt(i)).getEncodedId();
       row.memo = Buffer.from(`Test memo ${i}`);
       row.consensus_ns = this.toNs(this.timeNow - i);
       row.valid_start_ns = this.toNs(this.timeNow - i - 1);
       row.result = 'SUCCESS';
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
-      row.node_account_id = EntityId.of(0, 0, i % this.NUM_NODES).getEncodedId();
+      row.node_account_id = EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId();
 
       const accountNumValue = this.getAccountId(accountNum, i);
 
-      row.ctl_entity_id = EntityId.of(0, 0, accountNumValue).getEncodedId();
-      row.amount = i * 1000;
+      row.crypto_transfer_list = [
+        {
+          amount: i * 1000,
+          entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
+        },
+      ];
       row.charged_tx_fee = 100 + i;
       row.transaction_hash = '';
       row.scheduled = false;

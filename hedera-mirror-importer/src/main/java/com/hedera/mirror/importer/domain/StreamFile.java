@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import java.util.List;
 import lombok.NonNull;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.parser.domain.StreamItem;
 
@@ -46,7 +46,7 @@ public interface StreamFile<T extends StreamItem> {
         return null;
     }
 
-    List<T> getItems();
+    Flux<T> getItems();
 
     Long getLoadEnd();
 
@@ -72,7 +72,7 @@ public interface StreamFile<T extends StreamItem> {
 
     void setBytes(byte[] bytes);
 
-    void setItems(List<T> items);
+    void setItems(Flux<T> items);
 
     void setName(String name);
 

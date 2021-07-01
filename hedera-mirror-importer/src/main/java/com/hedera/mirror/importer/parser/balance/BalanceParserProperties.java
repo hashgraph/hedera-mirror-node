@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
+import java.time.Duration;
 import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -38,10 +39,11 @@ public class BalanceParserProperties extends AbstractParserProperties {
     public BalanceParserProperties() {
         queueCapacity = 0;
         retry.setMaxAttempts(3);
+        transactionTimeout = Duration.ofSeconds(300);
     }
 
     @Min(1)
-    private int batchSize = 2000;
+    private int batchSize = 200_000;
 
     @Min(1)
     private int fileBufferSize = 200_000;

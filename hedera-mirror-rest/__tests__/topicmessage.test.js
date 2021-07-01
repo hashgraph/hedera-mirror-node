@@ -165,7 +165,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
                          order by consensus_timestamp desc
                          limit $5;`;
   expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
-  expect(params).toStrictEqual([0, 7, '2', '1234567890.000000006', '3']);
+  expect(params).toStrictEqual([0n, 7n, '2', '1234567890.000000006', '3']);
   expect(order).toStrictEqual(constants.orderFilterValues.DESC);
   expect(limit).toStrictEqual(3);
 });

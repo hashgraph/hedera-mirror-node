@@ -22,6 +22,7 @@
 
 const _ = require('lodash');
 const crypto = require('crypto');
+const anonymize = require('ip-anonymize');
 const math = require('mathjs');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -578,11 +579,20 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
 
 /**
  * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
+ *
  * @param {String} ns Nanoseconds since epoch
+ * @param {String} sep separator between seconds and nanos, default is '.'
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
-const nsToSecNs = (ns) => {
-  return math.divide(math.bignumber(ns), math.bignumber(1e9)).toFixed(9).toString();
+const nsToSecNs = (ns, sep = '.') => {
+  if (!ns) {
+    return `0${sep}000000000`;
+  }
+
+  ns = `${ns}`;
+  const secs = ns.substr(0, ns.length - 9).padStart(1, '0');
+  const nanos = ns.slice(-9).padStart(9, '0');
+  return `${secs}${sep}${nanos}`;
 };
 
 /**
@@ -591,7 +601,7 @@ const nsToSecNs = (ns) => {
  * @return {String} Seconds since epoch (seconds-nnnnnnnnn format)
  */
 const nsToSecNsWithHyphen = (ns) => {
-  return nsToSecNs(ns).replace('.', '-');
+  return nsToSecNs(ns, '-');
 };
 
 /**
@@ -692,7 +702,7 @@ const encodeBinary = (buffer, encoding) => {
  * @returns {Any} representation of math.bignumber value of parameter or null if null
  */
 const getNullableNumber = (num) => {
-  return num == null ? null : math.bignumber(num).toString();
+  return num == null ? null : `${num}`;
 };
 
 /**
@@ -880,6 +890,15 @@ const queryQuietly = async (query, ...params) => {
   }
 };
 
+/**
+ * Masks the given IP based on Google Analytics standards
+ * @param {String} ip the IP address from the req object.
+ * @returns {String} The masked IP address
+ */
+const ipMask = (ip) => {
+  return anonymize(ip, 24, 48);
+};
+
 module.exports = {
   buildFilterObject,
   buildComparatorFilter,
@@ -898,6 +917,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
+  ipMask,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isValidPublicKeyQuery,

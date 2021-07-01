@@ -1,5 +1,125 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam for invalid  1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam for invalid -1 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam for invalid 0 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam for invalid 0 2`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam for invalid end 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam for invalid null 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`token validateSerialNumberParam tests Verify validateSerialNumberParam for invalid undefined 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid  1`] = `
+Array [
+  "Invalid parameter: tokenid",
+]
+`;
+
+exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid -1 1`] = `
+Array [
+  "Invalid parameter: tokenid",
+]
+`;
+
+exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid end 1`] = `
+Array [
+  "Invalid parameter: tokenid",
+]
+`;
+
+exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid null 1`] = `
+Array [
+  "Invalid parameter: tokenid",
+]
+`;
+
+exports[`token validateTokenIdParam tests Verify validateTokenIdParam for invalid undefined 1`] = `
+Array [
+  "Invalid parameter: tokenid",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"@.#.$"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"-1"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"-1.-1.-1"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"0.1.2.3"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"L"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters serialnumbers tests Verify validateAndParseFilters for invalid {"key":"serialnumber","operator":"eq","value":"-1"} 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`utils validateAndParseFilters serialnumbers tests Verify validateAndParseFilters for invalid {"key":"serialnumber","operator":"eq","value":"0"} 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`utils validateAndParseFilters serialnumbers tests Verify validateAndParseFilters for invalid {"key":"serialnumber","operator":"eq","value":"deb"} 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
 exports[`utils validateAndParseFilters token type tests Verify validateAndParseFilters for invalid {"key":"type","operator":"eq","value":"-1"} 1`] = `
 Array [
   "Invalid parameter: type",
