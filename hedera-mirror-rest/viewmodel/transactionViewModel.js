@@ -22,7 +22,7 @@
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
-const TransactionTypeService = require('../service/transactionTypesService');
+const {TransactionTypeService} = require('../service');
 
 /**
  * Transaction transfer view model

@@ -26,22 +26,22 @@ class Transaction {
   /**
    * Parses transaction table columns into object
    */
-  constructor(dbRow) {
-    this.chargedTxFee = dbRow.charged_tx_fee;
-    this.consensusNs = dbRow.consensus_ns;
-    this.entityId = dbRow.entity_id;
-    this.initialBalance = dbRow.initial_balance;
-    this.maxFee = dbRow.max_fee;
-    this.memo = dbRow.memo;
-    this.nodeAccountId = dbRow.node_account_id;
-    this.payerAccountId = dbRow.payer_account_id;
-    this.result = dbRow.result;
-    this.scheduled = dbRow.scheduled;
-    this.transactionHash = dbRow.transaction_hash;
-    this.transactionBytes = dbRow.transaction_bytes;
-    this.type = dbRow.type;
-    this.validDurationSeconds = dbRow.valid_duration_seconds;
-    this.validStartNs = dbRow.valid_start_ns;
+  constructor(transaction) {
+    this.chargedTxFee = transaction.charged_tx_fee;
+    this.consensusNs = transaction.consensus_ns;
+    this.entityId = transaction.entity_id;
+    this.initialBalance = transaction.initial_balance;
+    this.maxFee = transaction.max_fee;
+    this.memo = transaction.memo;
+    this.nodeAccountId = transaction.node_account_id;
+    this.payerAccountId = transaction.payer_account_id;
+    this.result = transaction.result;
+    this.scheduled = transaction.scheduled;
+    this.transactionHash = transaction.transaction_hash;
+    this.transactionBytes = transaction.transaction_bytes;
+    this.type = transaction.type;
+    this.validDurationSeconds = transaction.valid_duration_seconds;
+    this.validStartNs = transaction.valid_start_ns;
   }
 
   static tableAlias = 't';

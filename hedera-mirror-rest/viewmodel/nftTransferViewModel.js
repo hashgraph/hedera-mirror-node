@@ -21,7 +21,7 @@
 'use strict';
 
 const EntityId = require('../entityId');
-const NftTransferModel = require('../model/nftTransfer');
+const {NftTransfer} = require('../model');
 
 /**
  * Nft transfer view model
@@ -35,7 +35,7 @@ class NftTransferViewModel {
   }
 
   static fromDb(dbRow) {
-    const nftTransferModel = new NftTransferModel(dbRow);
+    const nftTransferModel = new NftTransfer(dbRow);
     return new NftTransferViewModel(nftTransferModel);
   }
 }

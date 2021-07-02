@@ -24,14 +24,14 @@ class Nft {
   /**
    * Parses nft table columns into object
    */
-  constructor(dbRow) {
-    this.accountId = dbRow.account_id;
-    this.createdTimestamp = dbRow.created_timestamp;
-    this.deleted = dbRow.deleted;
-    this.metadata = dbRow.metadata;
-    this.modifiedTimestamp = dbRow.modified_timestamp;
-    this.serialNumber = dbRow.serial_number;
-    this.tokenId = dbRow.token_id;
+  constructor(nft) {
+    this.accountId = nft.account_id;
+    this.createdTimestamp = nft.created_timestamp;
+    this.deleted = nft.deleted;
+    this.metadata = nft.metadata;
+    this.modifiedTimestamp = nft.modified_timestamp;
+    this.serialNumber = nft.serial_number;
+    this.tokenId = nft.token_id;
   }
 
   static tableAlias = 'nft';

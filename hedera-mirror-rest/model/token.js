@@ -24,28 +24,28 @@ class Token {
   /**
    * Parses token table columns into object
    */
-  constructor(dbRow) {
-    this.adminKey = dbRow.admin_key;
-    this.autoRenewAccount = dbRow.auto_renew_account;
-    this.autoRenewPeriod = dbRow.auto_renew_period;
-    this.createdTimestamp = dbRow.created_timestamp;
-    this.decimals = dbRow.decimals;
-    this.expiryTimestamp = dbRow.expiry_timestamp;
-    this.freezeDefault = dbRow.freeze_default;
-    this.freezeKey = dbRow.freeze_key;
-    this.initialSupply = dbRow.initial_supply;
-    this.kycKey = dbRow.kyc_key;
-    this.maxSupply = dbRow.max_supply;
-    this.modifiedTimestamp = dbRow.modified_timestamp;
-    this.name = dbRow.name;
-    this.supplyKey = dbRow.supply_key;
-    this.supplyType = dbRow.supply_type;
-    this.symbol = dbRow.symbol;
-    this.tokenId = dbRow.token_id;
-    this.totalSupply = dbRow.total_supply;
-    this.treasuryAccountId = dbRow.treasury_account_id;
-    this.type = dbRow.type;
-    this.wipeKey = dbRow.wipe_key;
+  constructor(token) {
+    this.adminKey = token.admin_key;
+    this.autoRenewAccount = token.auto_renew_account;
+    this.autoRenewPeriod = token.auto_renew_period;
+    this.createdTimestamp = token.created_timestamp;
+    this.decimals = token.decimals;
+    this.expiryTimestamp = token.expiry_timestamp;
+    this.freezeDefault = token.freeze_default;
+    this.freezeKey = token.freeze_key;
+    this.initialSupply = token.initial_supply;
+    this.kycKey = token.kyc_key;
+    this.maxSupply = token.max_supply;
+    this.modifiedTimestamp = token.modified_timestamp;
+    this.name = token.name;
+    this.supplyKey = token.supply_key;
+    this.supplyType = token.supply_type;
+    this.symbol = token.symbol;
+    this.tokenId = token.token_id;
+    this.totalSupply = token.total_supply;
+    this.treasuryAccountId = token.treasury_account_id;
+    this.type = token.type;
+    this.wipeKey = token.wipe_key;
   }
 
   static tableAlias = 'token';

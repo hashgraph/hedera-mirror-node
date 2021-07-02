@@ -24,10 +24,10 @@ class TransactionType {
   /**
    * Parses transaction type columns into object
    */
-  constructor(dbRow) {
-    this.name = dbRow.name;
-    this.entityType = dbRow.entity_type;
-    this.protoId = dbRow.proto_id;
+  constructor(type) {
+    this.name = type.name;
+    this.entityType = type.entity_type;
+    this.protoId = type.proto_id;
   }
 
   static tableAlias = 'ttt';

@@ -24,7 +24,7 @@ const _ = require('lodash');
 
 const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const TransactionTypeModel = require('../model/transactionType');
+const {TransactionType} = require('../model');
 
 /**
  * Transaction types retrieval business logic
@@ -35,8 +35,8 @@ class TransactionTypeService {
     this.transactionTypeProtoToNameMap = new Map();
   }
 
-  static transactionTypesQuery = `select ${TransactionTypeModel.ENTITY_TYPE}, ${TransactionTypeModel.NAME}, ${TransactionTypeModel.PROTO_ID}
-                                  from ${TransactionTypeModel.tableName}`;
+  static transactionTypesQuery = `select ${TransactionType.ENTITY_TYPE}, ${TransactionType.NAME}, ${TransactionType.PROTO_ID}
+                                  from ${TransactionType.tableName}`;
 
   populateTransactionTypeMaps(transactionTypes) {
     this.transactionTypeToProtoMap = new Map();
@@ -62,7 +62,7 @@ class TransactionTypeService {
       return [];
     }
 
-    return rows.map((row) => new TransactionTypeModel(row));
+    return rows.map((row) => new TransactionType(row));
   }
 
   async loadTransactionTypes() {

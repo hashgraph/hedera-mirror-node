@@ -24,7 +24,7 @@ const _ = require('lodash');
 
 const {DbError} = require('../errors/dbError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const TransactionResultModel = require('../model/transactionResult');
+const {TransactionResult} = require('../model');
 
 /**
  * Transaction results retrieval business logic
@@ -35,8 +35,8 @@ class TransactionResultService {
     this.transactionResultProtoToResultMap = new Map();
   }
 
-  static transactionResultsQuery = `select ${TransactionResultModel.PROTO_ID}, ${TransactionResultModel.RESULT}
-                                    from ${TransactionResultModel.tableName}`;
+  static transactionResultsQuery = `select ${TransactionResult.PROTO_ID}, ${TransactionResult.RESULT}
+                                    from ${TransactionResult.tableName}`;
 
   populateTransactionResultMaps(transactionResults) {
     this.transactionResultToProtoMap = new Map();
@@ -62,7 +62,7 @@ class TransactionResultService {
       return [];
     }
 
-    return rows.map((row) => new TransactionResultModel(row));
+    return rows.map((row) => new TransactionResult(row));
   }
 
   async loadTransactionResults() {

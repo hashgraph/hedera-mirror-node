@@ -26,12 +26,12 @@ class NftTransfer {
   /**
    * Parses nft_transfer table columns into object
    */
-  constructor(dbRow) {
-    this.consensusTimestamp = dbRow.consensus_timestamp;
-    this.receiverAccountId = dbRow.receiver_account_id;
-    this.senderAccountId = dbRow.sender_account_id;
-    this.serialNumber = dbRow.serial_number;
-    this.tokenId = dbRow.token_id;
+  constructor(nftTransfer) {
+    this.consensusTimestamp = nftTransfer.consensus_timestamp;
+    this.receiverAccountId = nftTransfer.receiver_account_id;
+    this.senderAccountId = nftTransfer.sender_account_id;
+    this.serialNumber = nftTransfer.serial_number;
+    this.tokenId = nftTransfer.token_id;
   }
 
   static tableAlias = 'nft_tr';

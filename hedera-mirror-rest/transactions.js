@@ -25,8 +25,8 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const NftTransferModel = require('./model/nftTransfer');
-const NftTransferViewModel = require('./viewmodels/nftTransferViewModel');
+const {NftTransfer} = require('./model');
+const {NftTransferViewModel} = require('./viewmodel');
 
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
@@ -146,8 +146,8 @@ const createNftTransferList = (nftTransferList) => {
   }
 
   return nftTransferList.map((transfer) => {
-    const nftTransferModel = new NftTransferModel(transfer);
-    return new NftTransferViewModel(nftTransferModel);
+    const nftTransfer = new NftTransfer(transfer);
+    return new NftTransferViewModel(nftTransfer);
   });
 };
 

@@ -22,7 +22,7 @@
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
-const TransactionTypeService = require('../service/transactionTypeService');
+const {TransactionTypeService} = require('../service');
 
 /**
  * Nft transaction history transfer view model

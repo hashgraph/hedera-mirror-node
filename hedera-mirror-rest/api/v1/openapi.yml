@@ -545,6 +545,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Nfts'
+        204:
+          description: No Content
+          content:
+            application/json:
+              schema:
+                type: object
         400:
           description: Bad Request
           content:
@@ -592,6 +598,18 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NftTransactionHistory'
+        204:
+          description: No Content
+          content:
+            application/json:
+              schema:
+                type: object
+        206:
+          description: Partial Content
           content:
             application/json:
               schema:
@@ -856,8 +874,7 @@ components:
         sender_account_id:
           $ref: '#/components/schemas/EntityId'
         type:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/TransactionTypes'
         token_id:
           $ref: '#/components/schemas/EntityId'
       example:
@@ -1069,6 +1086,46 @@ components:
           example: FUNGIBLE_COMMON
         wipe_key:
           $ref: '#/components/schemas/Key'
+    TransactionTypes:
+      type: string
+      enum:
+        - CONSENSUSCREATETOPIC
+        - CONSENSUSDELETETOPIC
+        - CONSENSUSSUBMITMESSAGE
+        - CONSENSUSUPDATETOPIC
+        - CONTRACTCALL
+        - CONTRACTCREATEINSTANCE
+        - CONTRACTDELETEINSTANCE
+        - CONTRACTUPDATEINSTANCE
+        - CRYPTOADDLIVEHASH
+        - CRYPTOCREATEACCOUNT
+        - CRYPTODELETE
+        - CRYPTODELETELIVEHASH
+        - CRYPTOTRANSFER
+        - CRYPTOUPDATEACCOUNT
+        - FILEAPPEND
+        - FILECREATE
+        - FILEDELETE
+        - FILEUPDATE
+        - FREEZE
+        - SCHEDULECREATE
+        - SCHEDULEDELETE
+        - SCHEDULESIGN
+        - SYSTEMDELETE
+        - SYSTEMUNDELETE
+        - TOKENASSOCIATE
+        - TOKENBURN
+        - TOKENCREATION
+        - TOKENDELETION
+        - TOKENDISSOCIATE
+        - TOKENFREEZE
+        - TOKENGRANTKYC
+        - TOKENMINT
+        - TOKENREVOKEKYC
+        - TOKENUNFREEZE
+        - TOKENUPDATE
+        - TOKENWIPE
+        - UNCHECKEDSUBMIT
     Tokens:
       type: array
       items:
