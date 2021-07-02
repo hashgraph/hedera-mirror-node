@@ -40,7 +40,9 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleCreateTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplier;
+import com.hedera.datagenerator.sdk.supplier.token.TokenMintTransactionSupplier;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
@@ -56,7 +58,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
     private static final String EXPRESSION_START = "${";
     private static final String EXPRESSION_END = "}";
     private static final Pattern EXPRESSION_PATTERN = Pattern
-            .compile("\\$\\{(account|token|topic|schedule)\\.([A-Za-z0-9_]+)}");
+            .compile("\\$\\{(account|nft|token|topic|schedule)\\.([A-Za-z0-9_]+)}");
 
     private final Map<Expression, String> expressions = new ConcurrentHashMap<>();
     private final MonitorProperties monitorProperties;
@@ -82,6 +84,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
         try {
             log.debug("Processing expression {}", expression);
             ExpressionType type = expression.getType();
+            boolean isNft = type == ExpressionType.NFT;
             Class<? extends TransactionSupplier<?>> supplierClass = type.getTransactionType().getSupplier();
             TransactionSupplier<?> transactionSupplier = supplierClass.getConstructor().newInstance();
 
@@ -106,6 +109,12 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                         .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
             }
 
+            if (isNft) {
+                TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
+                tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
+                tokenSupplier.setInitialSupply(0);
+            }
+
             PublishRequest request = PublishRequest.builder()
                     .logResponse(true)
                     .receipt(true)
@@ -118,6 +127,23 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
             PublishResponse publishResponse = transactionPublisher.publish(request).toFuture().join();
             String createdId = type.getIdExtractor().apply(publishResponse.getReceipt());
+            if (isNft) {
+                TokenMintTransactionSupplier mintTransactionSupplier = new TokenMintTransactionSupplier();
+                mintTransactionSupplier.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+                //TODO is this the right move?
+                mintTransactionSupplier.setAmount(1);
+                mintTransactionSupplier.setTokenId(createdId);
+                request = PublishRequest.builder()
+                        .logResponse(true)
+                        .receipt(true)
+                        .scenarioName(expression.toString())
+                        .timeout(Duration.ofSeconds(30L))
+                        .timestamp(Instant.now())
+                        .transaction(mintTransactionSupplier.get())
+                        .type(TransactionType.TOKEN_MINT)
+                        .build();
+                transactionPublisher.publish(request).toFuture().join();
+            }
             log.info("Created {} entity {}", type, createdId);
             return createdId;
         } catch (RuntimeException e) {
@@ -146,6 +172,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
     private enum ExpressionType {
 
         ACCOUNT(TransactionType.ACCOUNT_CREATE, r -> r.accountId.toString()),
+        NFT(TransactionType.TOKEN_CREATE, r -> r.tokenId.toString()),
         SCHEDULE(TransactionType.SCHEDULE_CREATE, r -> r.scheduleId.toString()),
         TOKEN(TransactionType.TOKEN_CREATE, r -> r.tokenId.toString()),
         TOPIC(TransactionType.CONSENSUS_CREATE_TOPIC, r -> r.topicId.toString());
