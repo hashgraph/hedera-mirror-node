@@ -55,8 +55,12 @@ describe('DB integration test - TokenService.getToken', () => {
     await integrationDomainOps.addToken({
       created_timestamp: 1,
       modified_timestamp: 1,
+      freeze_key_ed25519_hex: null,
+      kyc_key_ed25519_hex: null,
+      supply_key_ed25519_hex: null,
       token_id: '0.0.2',
       type: 'FUNGIBLE_COMMON',
+      wipe_key_ed25519_hex: null,
     });
 
     const expectedToken = new TokenModel({
@@ -64,12 +68,15 @@ describe('DB integration test - TokenService.getToken', () => {
       decimals: '1000',
       freeze_default: false,
       freeze_key: null,
+      freeze_key_ed25519_hex: null,
       initial_supply: '1000000',
       kyc_key: null,
+      kyc_key_ed25519_hex: null,
       max_supply: '9223372036854775807',
       modified_timestamp: '1',
       name: 'Token name',
       supply_key: null,
+      supply_key_ed25519_hex: null,
       supply_type: 'INFINITE',
       symbol: 'YBTJBOAZ',
       token_id: '2',
@@ -77,6 +84,7 @@ describe('DB integration test - TokenService.getToken', () => {
       treasury_account_id: '98',
       type: 'FUNGIBLE_COMMON',
       wipe_key: null,
+      wipe_key_ed25519_hex: null,
     });
     await expect(TokenService.getToken(2)).resolves.toMatchObject(expectedToken);
   });

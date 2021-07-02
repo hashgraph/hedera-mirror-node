@@ -25,27 +25,27 @@ class Token {
    * Parses token table columns into object
    */
   constructor(token) {
-    this.adminKey = token.admin_key;
-    this.autoRenewAccount = token.auto_renew_account;
-    this.autoRenewPeriod = token.auto_renew_period;
-    this.createdTimestamp = token.created_timestamp;
-    this.decimals = token.decimals;
-    this.expiryTimestamp = token.expiry_timestamp;
+    this.createdTimestamp = BigInt(token.created_timestamp);
+    this.decimals = BigInt(token.decimals);
     this.freezeDefault = token.freeze_default;
     this.freezeKey = token.freeze_key;
-    this.initialSupply = token.initial_supply;
+    this.freezeKeyEd25519Hex = token.freeze_key_ed25519_hex;
+    this.initialSupply = BigInt(token.initial_supply);
     this.kycKey = token.kyc_key;
-    this.maxSupply = token.max_supply;
-    this.modifiedTimestamp = token.modified_timestamp;
+    this.kycKeyEd25519Hex = token.kyc_key_ed25519_hex;
+    this.maxSupply = BigInt(token.max_supply);
+    this.modifiedTimestamp = BigInt(token.modified_timestamp);
     this.name = token.name;
     this.supplyKey = token.supply_key;
+    this.supplyKeyEd25519Hex = token.supply_key_ed25519_hex;
     this.supplyType = token.supply_type;
     this.symbol = token.symbol;
     this.tokenId = token.token_id;
-    this.totalSupply = token.total_supply;
+    this.totalSupply = BigInt(token.total_supply);
     this.treasuryAccountId = token.treasury_account_id;
     this.type = token.type;
     this.wipeKey = token.wipe_key;
+    this.wipeKeyEd25519Hex = token.wipe_key_ed25519_hex;
   }
 
   static tableAlias = 'token';

@@ -682,7 +682,9 @@ const successTransactionResult = 'SUCCESS';
  *
  * @param {string} tokenId encoded token ID
  * @param {string} serialNumber nft serial number
- * @param {string} query initial pg SQL query string
+ * @param {string} transferQuery pg SQL query for transfers
+ * @param {string} deleteQuery pg SQL query for deletion transaction
+ * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transferQuery, deleteQuery, filters) => {
@@ -725,15 +727,11 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
     }
   }
 
-  const joinNftTransferClause = `right outer join ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-    on ${Nft.TOKEN_ID_FULL_NAME} = ${NftTransfer.TOKEN_ID_FULL_NAME}
-    and ${Nft.SERIAL_NUMBER_FULL_NAME} = ${NftTransfer.SERIAL_NUMBER_FULL_NAME}`;
   const joinTransactionClause = `join ${Transaction.tableName} ${Transaction.tableAlias}
     on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}`;
 
   const transferWhereQuery = `where ${transferConditions.join('\nand ')}`;
 
-  // get deleted case, use modifiedTimestamp where deleted = true
   const unionQuery = `union\n${deleteQuery}`;
 
   const deleteWhereCondition = `where ${deleteConditions.join('\nand ')}`;
@@ -743,7 +741,6 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
 
   const finalQuery = [
     transferQuery,
-    joinNftTransferClause,
     joinTransactionClause,
     transferWhereQuery,
     unionQuery,
@@ -774,7 +771,7 @@ const nftTransferHistorySelectFields = [
 const nftTransferHistorySelectQuery = [
   'select',
   nftTransferHistorySelectFields.join(',\n'),
-  `from ${Nft.tableName}`,
+  `from ${NftTransfer.tableName} ${NftTransfer.tableAlias}`,
 ].join('\n');
 
 const nftDeleteHistorySelectFields = [

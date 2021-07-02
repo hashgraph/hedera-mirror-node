@@ -1106,10 +1106,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                                   nft_tr.receiver_account_id,
                                   nft_tr.sender_account_id,
                                   t.type
-                           from nft
-                                  right outer join nft_transfer nft_tr
-                                                   on nft.token_id = nft_tr.token_id and
-                                                      nft.serial_number = nft_tr.serial_number
+                           from nft_transfer nft_tr
                                   join transaction t on nft_tr.consensus_timestamp = t.consensus_ns
                            where nft_tr.token_id = $1
                              and nft_tr.serial_number = $2
@@ -1155,10 +1152,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                                   nft_tr.receiver_account_id,
                                   nft_tr.sender_account_id,
                                   t.type
-                           from nft
-                                  right outer join nft_transfer nft_tr
-                                                   on nft.token_id = nft_tr.token_id and
-                                                      nft.serial_number = nft_tr.serial_number
+                           from nft_transfer nft_tr
                                   join transaction t on nft_tr.consensus_timestamp = t.consensus_ns
                            where nft_tr.token_id = $1
                              and nft_tr.serial_number = $2
@@ -1200,10 +1194,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                                   nft_tr.receiver_account_id,
                                   nft_tr.sender_account_id,
                                   t.type
-                           from nft
-                                  right outer join nft_transfer nft_tr
-                                                   on nft.token_id = nft_tr.token_id and
-                                                      nft.serial_number = nft_tr.serial_number
+                           from nft_transfer nft_tr
                                   join transaction t on nft_tr.consensus_timestamp = t.consensus_ns
                            where nft_tr.token_id = $1
                              and nft_tr.serial_number = $2
