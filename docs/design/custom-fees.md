@@ -23,7 +23,7 @@ Custom Hedera Token Service Fees. This document explains how the mirror node can
 - Add new `t_transaction_types`
 
 ```sql
-insert into t_transaction_types (proto_id, name) values (45, 'TOKENFEESCHEDULEUPDATE');
+insert into t_transaction_types (proto_id, name, entity_type) values (45, 'TOKENFEESCHEDULEUPDATE', 5);
 ```
 
 - Update `t_transaction_results` with new response codes
@@ -40,7 +40,6 @@ create table if not exists custom_fee
     collector_account_id      bigint,
     created_timestamp         bigint not null,
     denominating_token_id     bigint,
-    has_custom_fee            boolean not null,
     maximum_amount            bigint,
     minimum_amount            bigint,
     token_id                  bigint not null
@@ -85,6 +84,8 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 
 ### Custom Fee Parsing
 
+Both new domain objects are insert-only.
+
 #### EntityListener
 
 - Add a `onAssessedCustomFee()` to handle inserts on the `assessed_custom_fee` table
@@ -107,7 +108,13 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 - Update `insertTokenUpdate` to save the updated fee schedule key
 - Add a function `insertTokenFeeScheduleUpdate` to insert updated custom fees of a token
 
-### Transaction Handler
+#### PgCopy in `SqlEntityListener`
+
+- Add pgcopy for domain class `AssessedCustomFee`
+
+- Add pgcopy for domain class `CustomFee`
+
+#### Transaction Handler
 
 - Add a new transaction handler `TokenFeeScheduleUpdateTransactionHandler` to extract the token entity and update
   the modified timestamp of the entity
@@ -116,7 +123,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 
 ### Transactions Endpoint
 
-- Update `/api/v1/transactions/{id}` response to add assessed custom fees. Note if an assessed custom fee doesn't have a
+- Update `/api/v1/transactions/{id}` response to add assessed custom fees. Note if an assessed custom fee have a `null`
   `token_id`, it's charged in HBAR; otherwise it's charged in the `token_id`
 
 ```json
@@ -178,13 +185,14 @@ create index if not exists assessed_custom_fee__consensus_timestamp
           {
             "amount": 150,
             "collector_account_id": "0.0.87501",
-            "payer_account_id": "0.0.10"
+            "payer_account_id": "0.0.10",
+            "token_id": null
           },
           {
             "amount": 10,
             "collector_account_id": "0.0.87502",
-            "token_id": "0.0.90000",
-            "payer_account_id": "0.0.10"
+            "payer_account_id": "0.0.10",
+            "token_id": "0.0.90000"
           }
         ]
       }
@@ -228,7 +236,8 @@ Add `fee_schedule_key` and `custom_fees` to the response json object of `/api/v1
       "fixed_fees": [
         {
           "amount": 10,
-          "collector_account_id": "0.0.99812"
+          "collector_account_id": "0.0.99812",
+          "denominating_token_id": null,
         },
         {
           "amount": 10,
