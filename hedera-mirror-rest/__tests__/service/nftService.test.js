@@ -22,10 +22,10 @@
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
-const NFTModel = require('../../model/nft');
+const {NFTModel} = require('../../model/nft');
 const NFTService = require('../../service/nftService');
 
-jest.setTimeout(20000);
+jest.setTimeout(40000);
 
 let sqlConnection;
 

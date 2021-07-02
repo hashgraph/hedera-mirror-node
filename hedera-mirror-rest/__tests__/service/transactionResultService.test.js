@@ -24,7 +24,7 @@ const integrationDbOps = require('../integrationDbOps');
 const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 const TransactionResultService = require('../../service/transactionResultService');
 
-jest.setTimeout(20000);
+jest.setTimeout(40000);
 
 let sqlConnection;
 

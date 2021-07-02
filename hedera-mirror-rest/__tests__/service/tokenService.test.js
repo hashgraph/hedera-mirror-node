@@ -25,7 +25,7 @@ const integrationDomainOps = require('../integrationDomainOps');
 const TokenModel = require('../../model/token');
 const TokenService = require('../../service/tokenService');
 
-jest.setTimeout(20000);
+jest.setTimeout(40000);
 
 let sqlConnection;
 
