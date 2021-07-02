@@ -108,10 +108,19 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void errorPublishing() {
-        when(transactionPublisher.publish(any())).thenThrow(new RuntimeException());
+    void error() throws InvalidProtocolBufferException {
+        TransactionType type = TransactionType.CONSENSUS_SUBMIT_MESSAGE;
+        when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
         assertThatThrownBy(() -> expressionConverter.convert("${topic.foo}"))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void errorPublishing() throws InvalidProtocolBufferException {
+        TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
+        when(transactionPublisher.publish(any())).thenReturn(Mono.error(new RuntimeException()))
+                .thenReturn(response(type, 100));
+        assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
     }
 
     @Test
