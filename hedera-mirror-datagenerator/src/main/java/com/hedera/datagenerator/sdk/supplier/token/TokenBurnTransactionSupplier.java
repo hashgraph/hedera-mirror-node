@@ -20,8 +20,6 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
@@ -31,7 +29,6 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenBurnTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TokenType;
 
 @Data
 public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBurnTransaction> {
@@ -45,28 +42,12 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
     @NotBlank
     private String tokenId;
 
-    TokenType tokenType = TokenType.FUNGIBLE_COMMON;
-
-    AtomicLong serialNumber = new AtomicLong(1);
-
     @Override
     public TokenBurnTransaction get() {
 
-        TokenBurnTransaction transaction = new TokenBurnTransaction().setAmount(amount)
+        return new TokenBurnTransaction().setAmount(amount)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node burned test token"));
-
-        switch (tokenType) {
-            case FUNGIBLE_COMMON:
-                transaction.setAmount(amount);
-            case NON_FUNGIBLE_UNIQUE:
-                Stream.iterate(0, n -> n + 1)
-                        .limit(amount)
-                        .forEach(x -> {
-                            transaction.addSerial(serialNumber.getAndIncrement());
-                        });
-        }
-        return transaction;
     }
 }
