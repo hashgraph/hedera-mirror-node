@@ -21,7 +21,6 @@
 'use strict';
 
 const EntityId = require('../entityId');
-const {NftTransfer} = require('../model');
 
 /**
  * Nft transfer view model
@@ -32,11 +31,6 @@ class NftTransferViewModel {
     this.sender_account_id = EntityId.fromEncodedId(nftTransferModel.senderAccountId, true).toString();
     this.serial_number = nftTransferModel.serialNumber;
     this.token_id = EntityId.fromEncodedId(nftTransferModel.tokenId).toString();
-  }
-
-  static fromDb(dbRow) {
-    const nftTransferModel = new NftTransfer(dbRow);
-    return new NftTransferViewModel(nftTransferModel);
   }
 }
 

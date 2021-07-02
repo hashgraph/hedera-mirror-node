@@ -625,6 +625,8 @@ paths:
                   messages:
                     - message: "Invalid parameter: limit"
                     - message: "Invalid parameter: order"
+        404:
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
 tags:
