@@ -39,13 +39,16 @@ import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
         "spring.cloud.gcp.pubsub.enabled=true",
         "hedera.mirror.importer.parser.record.entity.enabled=false",
         "hedera.mirror.importer.parser.record.pubsub.enabled=true"})
-public class PubSubIntegrationTest extends IntegrationTest {
+public abstract class PubSubIntegrationTest extends IntegrationTest {
+
     private static final String SUBSCRIPTION = "testSubscription";
 
     @Resource
     private PubSubProperties properties;
+
     @Resource
     private PubSubTemplate pubSubTemplate;
+
     @Resource
     private PubSubAdmin pubSubAdmin;
 

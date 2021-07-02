@@ -72,7 +72,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 import com.hedera.mirror.importer.util.Utility;
 
-public class AbstractEntityRecordItemListenerTest extends IntegrationTest {
+public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
     protected static final SignatureMap DEFAULT_SIG_MAP = getDefaultSigMap();
     protected static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
