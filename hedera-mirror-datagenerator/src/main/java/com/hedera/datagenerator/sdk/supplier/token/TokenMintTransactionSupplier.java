@@ -20,6 +20,7 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.stream.Stream;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
@@ -29,6 +30,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
+import com.hedera.hashgraph.sdk.TokenType;
 
 @Data
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
@@ -42,13 +44,23 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     @NotBlank
     private String tokenId;
 
+    TokenType tokenType = TokenType.FUNGIBLE_COMMON;
+
     @Override
     public TokenMintTransaction get() {
 
-        return new TokenMintTransaction()
-                .setAmount(amount)
+        TokenMintTransaction transaction = new TokenMintTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node minted test token"));
+        switch (tokenType) {
+            case FUNGIBLE_COMMON:
+                transaction.setAmount(amount);
+            case NON_FUNGIBLE_UNIQUE:
+                Stream.iterate(0, n -> n + 1)
+                        .limit(amount)
+                        .forEach(x -> transaction.addMetadata(Utility.generateMessage(10)));
+        }
+        return transaction;
     }
 }
