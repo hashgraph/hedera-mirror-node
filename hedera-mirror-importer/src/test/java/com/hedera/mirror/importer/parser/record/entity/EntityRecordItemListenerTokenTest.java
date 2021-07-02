@@ -27,9 +27,21 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.TokenIdConverter;
+import com.hedera.mirror.importer.domain.CustomFee;
+
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+
+import com.hedera.mirror.importer.util.EntityIdEndec;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -42,14 +54,23 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import lombok.Data;
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.TestUtils;
@@ -70,13 +91,29 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
+import org.springframework.context.support.ConversionServiceFactoryBean;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.ConversionServiceFactory;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.convert.support.GenericConversionService;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+
 public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
 
     private static final long ASSOCIATE_TIMESTAMP = 5L;
     private static final long AUTO_RENEW_PERIOD = 30L;
     private static final long CREATE_TIMESTAMP = 1L;
+    private static final String CUSTOM_FEE_QUERY = "select * from custom_fee";
+    private static final RowMapper<CustomFeeWrapper> CUSTOM_FEE_WRAPPER_ROW_MAPPER =
+            new DataClassRowMapper<>(CustomFeeWrapper.class);
     private static final Timestamp EXPIRY_TIMESTAMP = Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityId.of(0, 0, 1199, EntityTypeEnum.ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityId.of(0, 0, 1200, EntityTypeEnum.ACCOUNT);
+    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityId.of(0, 0, 9800, EntityTypeEnum.TOKEN);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final String METADATA = "METADATA";
     private static final long SERIAL_NUMBER_1 = 1L;
@@ -85,10 +122,14 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     private static final String SYMBOL = "FOOCOIN";
     private static final String TOKEN_CREATE_MEMO = "TokenCreate memo";
     private static final TokenID TOKEN_ID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(2).build();
+    private static final EntityId DOMAIN_TOKEN_ID = EntityId.of(TOKEN_ID);
     private static final Key TOKEN_REF_KEY = keyFromString(KEY);
     private static final long TOKEN_UPDATE_AUTO_RENEW_PERIOD = 12L;
     private static final Key TOKEN_UPDATE_REF_KEY = keyFromString(KEY2);
     private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
+
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
     @Resource
     protected TokenRepository tokenRepository;
@@ -115,17 +156,35 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenCreate() throws InvalidProtocolBufferException {
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
+    void tokenCreateNoCustomFees() throws InvalidProtocolBufferException {
+        tokenCreate(Lists.emptyList());
+    }
 
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+    @Test
+    void tokenCreateWithCustomFees() throws InvalidProtocolBufferException {
+        tokenCreate(nonEmptyCustomFees());
+    }
+
+    void tokenCreate(List<CustomFee> customFees) throws InvalidProtocolBufferException {
+        // given
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+        List<CustomFee> expectedCustomFees = customFees;
+        if (expectedCustomFees.isEmpty()) {
+            expectedCustomFees = deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
+        }
+
+        // when
+        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false, customFees);
+
+        // then
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
         // verify token
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
+        assertCustomFeesInDb(expectedCustomFees);
         assertThat(tokenTransferRepository.count()).isEqualTo(1L);
     }
 
@@ -137,24 +196,20 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertThat(tokenTransferRepository.count()).isZero();
+        assertCustomFeesInDb(Lists.emptyList());
     }
 
     @Test
     void tokenCreateWithNfts() throws InvalidProtocolBufferException {
         createTokenEntity(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, false, false);
 
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
         // verify token
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, 0);
-    }
-
-    @Test
-    void tokenCreateWithCustomFees() throws InvalidProtocolBufferException {
-
     }
 
     @Test
@@ -201,7 +256,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         long deleteTimeStamp = 10L;
         insertAndParseTransaction(deleteTransaction, deleteTimeStamp, INITIAL_SUPPLY, null);
 
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 true, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, deleteTimeStamp);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
@@ -224,7 +279,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         long updateTimeStamp = 10L;
         insertAndParseTransaction(transaction, updateTimeStamp, INITIAL_SUPPLY, null);
 
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
                 TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null, CREATE_TIMESTAMP,
                 updateTimeStamp);
         assertEquals(5, entityRepository.count()); // Node, payer, token, old autorenew, and new autorenew
@@ -734,7 +789,52 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenCreateTransaction(TokenType tokenType, boolean setFreezeKey, boolean setKycKey,
-                                               String symbol) {
+                                               String symbol,
+                                               List<CustomFee> customFees) {
+        List<com.hederahashgraph.api.proto.java.CustomFee> protoCustomFees = customFees.stream()
+                .filter(customFee -> customFee.getAmount() != null)
+                .map(customFee -> {
+                    EntityId accountId = customFee.getCollectorAccountId();
+                    var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+                            .setFeeCollectorAccountId(AccountID.newBuilder()
+                                    .setShardNum(accountId.getShardNum())
+                                    .setRealmNum(accountId.getRealmNum())
+                                    .setAccountNum(accountId.getEntityNum())
+                            );
+
+                    if (customFee.getAmountDenominator() == null) {
+                        // fixed fee
+                        var fixedFee = FixedFee.newBuilder().setAmount(customFee.getAmount());
+                        if (customFee.getDenominatingTokenId() != null) {
+                            EntityId domainTokenId = customFee.getDenominatingTokenId();
+                            TokenID tokenID = TokenID.newBuilder()
+                                    .setShardNum(domainTokenId.getShardNum())
+                                    .setRealmNum(domainTokenId.getRealmNum())
+                                    .setTokenNum(domainTokenId.getEntityNum())
+                                    .build();
+                            fixedFee.setDenominatingTokenId(tokenID);
+                        }
+
+                        protoCustomFee.setFixedFee(fixedFee).build();
+                    } else {
+                        // fractional fee
+                        long maximumAmount = customFee.getMaximumAmount() != null ? customFee.getMaximumAmount() : 0;
+                        long minimumAmount = customFee.getMinimumAmount() != null ? customFee.getMinimumAmount() : 0;
+                        protoCustomFee.setFractionalFee(FractionalFee.newBuilder()
+                                .setFractionalAmount(Fraction.newBuilder()
+                                        .setNumerator(customFee.getAmount())
+                                        .setDenominator(customFee.getAmountDenominator())
+                                )
+                                .setMaximumAmount(maximumAmount)
+                                .setMinimumAmount(minimumAmount)
+                                .build()
+                        );
+                    }
+
+                    return protoCustomFee.build();
+                })
+                .collect(Collectors.toList());
+
         return buildTransaction(builder -> {
             builder.getTokenCreationBuilder()
                     .setAdminKey(TOKEN_REF_KEY)
@@ -750,7 +850,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .setSymbol(symbol)
                     .setTokenType(tokenType)
                     .setTreasury(PAYER)
-                    .setWipeKey(TOKEN_REF_KEY);
+                    .setWipeKey(TOKEN_REF_KEY)
+                    .addAllCustomFees(protoCustomFees);
 
             if (tokenType == TokenType.FUNGIBLE_COMMON) {
                 builder.getTokenCreationBuilder().setInitialSupply(INITIAL_SUPPLY);
@@ -764,6 +865,11 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 builder.getTokenCreationBuilder().setKycKey(TOKEN_REF_KEY);
             }
         });
+    }
+
+    private Transaction tokenCreateTransaction(TokenType tokenType, boolean setFreezeKey, boolean setKycKey,
+            String symbol) {
+        return tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol, Lists.emptyList());
     }
 
     private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey,
@@ -972,6 +1078,11 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .returns(amount, from(com.hedera.mirror.importer.domain.TokenTransfer::getAmount));
     }
 
+    private void assertCustomFeesInDb(List<CustomFee> customFees) {
+        List<CustomFeeWrapper> actual = jdbcTemplate.query(CUSTOM_FEE_QUERY, CUSTOM_FEE_WRAPPER_ROW_MAPPER);
+        assertThat(actual).map(CustomFeeWrapper::getCustomFee).containsExactlyInAnyOrderElementsOf(customFees);
+    }
+
     private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
                                                AccountID receiverId, AccountID senderId) {
         EntityId receiver = receiverId != null ? EntityId.of(receiverId) : null;
@@ -987,8 +1098,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
-                                   boolean setFreezeKey, boolean setKycKey) throws InvalidProtocolBufferException {
-        Transaction createTransaction = tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol);
+                                   boolean setFreezeKey, boolean setKycKey,
+                                   List<CustomFee> customFees) throws InvalidProtocolBufferException {
+        Transaction createTransaction = tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol, customFees);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         TokenTransferList tokenTransfer = tokenType == TokenType.FUNGIBLE_COMMON ? tokenTransfer(tokenID, PAYER,
                 INITIAL_SUPPLY) : TokenTransferList.getDefaultInstance();
@@ -996,6 +1108,11 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, null, tokenTransfer);
 
         parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
+    }
+
+    private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
+            boolean setFreezeKey, boolean setKycKey) throws InvalidProtocolBufferException {
+        createTokenEntity(tokenID, tokenType, symbol, consensusTimestamp, setFreezeKey, setKycKey, Lists.emptyList());
     }
 
     private void createAndAssociateToken(TokenID tokenID, TokenType tokenType, String symbol, long createTimestamp,
@@ -1037,5 +1154,60 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
             );
         }
         return builder.build();
+    }
+
+    private List<CustomFee> deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
+        CustomFee customFee = new CustomFee();
+        customFee.setId(new CustomFee.Id(consensusTimestamp, tokenId));
+        return List.of(customFee);
+    }
+
+    private List<CustomFee> nonEmptyCustomFees() {
+        CustomFee.Id id = new CustomFee.Id(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
+
+        CustomFee fixedFee1 = new CustomFee();
+        fixedFee1.setAmount(11L);
+        fixedFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1);
+        fixedFee1.setId(id);
+
+        CustomFee fixedFee2 = new CustomFee();
+        fixedFee2.setAmount(12L);
+        fixedFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
+        fixedFee2.setId(id);
+
+        CustomFee fractionalFee = new CustomFee();
+        fractionalFee.setAmount(13L);
+        fractionalFee.setAmountDenominator(31L);
+        fractionalFee.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fractionalFee.setMaximumAmount(100L);
+        fractionalFee.setId(id);
+
+        return List.of(fixedFee1, fixedFee2, fractionalFee);
+    }
+
+    @Data
+    public static class CustomFeeWrapper {
+
+        private final CustomFee customFee;
+
+        public CustomFeeWrapper(Long amount, Long amountDenominator, Long collectorAccountId, long createdTimestamp,
+                                Long denominatingTokenId, Long maximumAmount, Long minimumAmount, long tokenId) {
+            customFee = new CustomFee();
+            customFee.setAmount(amount);
+            customFee.setAmountDenominator(amountDenominator);
+
+            if (collectorAccountId != null) {
+                customFee.setCollectorAccountId(EntityIdEndec.decode(collectorAccountId, EntityTypeEnum.ACCOUNT));
+            }
+
+            if (denominatingTokenId != null) {
+                customFee.setDenominatingTokenId(EntityIdEndec.decode(denominatingTokenId, EntityTypeEnum.TOKEN));
+            }
+
+            customFee.setMaximumAmount(maximumAmount);
+            customFee.setMinimumAmount(minimumAmount);
+            customFee.setId(new CustomFee.Id(createdTimestamp, EntityIdEndec.decode(tokenId, EntityTypeEnum.TOKEN)));
+        }
     }
 }

@@ -23,6 +23,11 @@ package com.hedera.mirror.importer.parser.record.entity;
 import java.util.List;
 import java.util.function.BiConsumer;
 import javax.inject.Named;
+
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
+
+import com.hedera.mirror.importer.domain.CustomFee;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
@@ -60,6 +65,11 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
+    public void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
+        onEach(EntityListener::onAssessedCustomFee, assessedCustomFee);
+    }
+
+    @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
         onEach(EntityListener::onContractResult, contractResult);
     }
@@ -67,6 +77,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
         onEach(EntityListener::onCryptoTransfer, cryptoTransfer);
+    }
+
+    @Override
+    public void onCustomFee(CustomFee customFee) throws ImporterException {
+        onEach(EntityListener::onCustomFee, customFee);
     }
 
     @Override

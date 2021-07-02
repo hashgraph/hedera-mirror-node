@@ -2,6 +2,10 @@
 -- Add constraints and indexes to tables
 -------------------
 
+-- assessed_custom_fee
+create index if not exists assessed_custom_fee__consensus_timestamp
+    on assessed_custom_fee (consensus_timestamp);
+
 -- account_balance
 alter table account_balance
     add primary key (consensus_timestamp, account_id);
@@ -37,6 +41,10 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
     on crypto_transfer (entity_id, consensus_timestamp)
     where entity_id != 98;
 -- id corresponding to treasury address 0.0.98
+
+-- custom_fee
+create index if not exists custom_fee__token_timestamp
+    on custom_fee (token_id, created_timestamp desc);
 
 -- entity
 alter table entity

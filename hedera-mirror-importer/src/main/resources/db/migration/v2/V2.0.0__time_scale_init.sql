@@ -7,6 +7,15 @@
 CREATE TYPE token_supply_type AS ENUM ('INFINITE', 'FINITE');
 CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 
+-- assessed_custom_fee
+create table if not exists assessed_custom_fee (
+   amount               bigint not null,
+   collector_account_id bigint not null,
+   consensus_timestamp  bigint not null,
+   token_id             bigint
+);
+comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
+
 -- account_balance
 create table if not exists account_balance
 (
@@ -83,6 +92,20 @@ create table if not exists crypto_transfer
     amount              bigint not null
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
+
+-- custom_fee
+create table if not exists custom_fee
+(
+    amount                bigint,
+    amount_denominator    bigint,
+    collector_account_id  bigint,
+    created_timestamp     bigint not null,
+    denominating_token_id bigint,
+    maximum_amount        bigint,
+    minimum_amount        bigint,
+    token_id              bigint not null
+);
+comment on table custom_fee is 'HTS Custom fees';
 
 -- entity
 create table if not exists entity

@@ -46,8 +46,8 @@ import com.hedera.mirror.importer.util.Utility;
         name = "pgsql_enum",
         typeClass = PostgreSQLEnumType.class
 )
-@ToString(exclude = {"freezeKey", "freezeKeyEd25519Hex", "kycKey", "kycKeyEd25519Hex", "supplyKey",
-        "supplyKeyEd25519Hex", "wipeKey", "wipeKeyEd25519Hex"})
+@ToString(exclude = {"feeScheduleKey", "feeScheduleKeyEd25519Hex", "freezeKey", "freezeKeyEd25519Hex",
+        "kycKey", "kycKeyEd25519Hex", "supplyKey", "supplyKeyEd25519Hex", "wipeKey", "wipeKeyEd25519Hex"})
 public class Token {
     @EmbeddedId
     @JsonUnwrapped
@@ -56,6 +56,12 @@ public class Token {
     private Long createdTimestamp;
 
     private Integer decimals;
+
+    private byte[] feeScheduleKey;
+
+    @Column(name = "fee_schedule_key_ed25519_hex")
+    @JsonSerialize(using = NullableStringSerializer.class)
+    private String feeScheduleKeyEd25519Hex;
 
     private Boolean freezeDefault;
 
@@ -111,6 +117,11 @@ public class Token {
 
         // default totalSupply to initial supply
         totalSupply = initialSupply;
+    }
+
+    public void setFeeScheduleKey(byte[] key) {
+        feeScheduleKey = key;
+        feeScheduleKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
     }
 
     public void setFreezeKey(byte[] key) {

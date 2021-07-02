@@ -20,16 +20,15 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
@@ -40,17 +39,6 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @Entity
 @NoArgsConstructor
 public class CustomFee implements Persistable<CustomFee.Id> {
-
-    public CustomFee(long amount, Long amountDenominator, EntityId collectorAccountId, long createdTimestamp,
-                     EntityId denominatingTokenId, Long maximumAmount, Long minimumAmount, EntityId tokenId) {
-        id = new Id(createdTimestamp, tokenId);
-        this.amount = amount;
-        this.amountDenominator = amountDenominator;
-        this.collectorAccountId = collectorAccountId;
-        this.denominatingTokenId = denominatingTokenId;
-        this.maximumAmount = maximumAmount;
-        this.minimumAmount = minimumAmount;
-    }
 
     @EmbeddedId
     @JsonUnwrapped
@@ -66,17 +54,11 @@ public class CustomFee implements Persistable<CustomFee.Id> {
     @Convert(converter = TokenIdConverter.class)
     private EntityId denominatingTokenId;
 
-    @Getter(AccessLevel.NONE)
-    private boolean hasCustomFee;
-
     private Long maximumAmount;
 
     private Long minimumAmount;
 
-    public boolean getHashCustomFee() {
-        return hasCustomFee;
-    }
-
+    @JsonIgnore
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert

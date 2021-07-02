@@ -2,32 +2,6 @@
 -- Update and add tables for custom fees support
 -------------------
 
-create table if not exists custom_fee
-(
-  amount                bigint,
-  amount_denominator    bigint,
-  collector_account_id  bigint,
-  created_timestamp     bigint not null,
-  denominating_token_id bigint,
-  has_custom_fee        boolean not null,
-  maximum_amount        bigint,
-  minimum_amount        bigint,
-  token_id              bigint not null
-);
-create index if not exists custom_fee__token_timestamp
-  on custom_fee (token_id, created_timestamp desc);
-comment on table custom_fee is 'HTS Custom fees';
-
-create table if not exists assessed_custom_fee (
-  amount               bigint not null,
-  collector_account_id bigint not null,
-  consensus_timestamp  bigint not null,
-  token_id             bigint
-);
-create index if not exists assessed_custom_fee__consensus_timestamp
-  on assessed_custom_fee (consensus_timestamp);
-comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
-
 -- Insert new response codes
 insert into t_transaction_results (result, proto_id)
 values ('FRACTION_DIVIDES_BY_ZERO', 230),
@@ -46,9 +20,41 @@ values ('FRACTION_DIVIDES_BY_ZERO', 230),
        ('FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT', 243),
        ('CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES', 244);
 
--- Add the new transaction type 'TOKENFEESCHEDULEUPDATE'
+-- Add the new transaction type
 insert into t_transaction_types (proto_id, name, entity_type) values (45, 'TOKENFEESCHEDULEUPDATE', 5);
 
+-- Add new columns to token
+alter table if exists token
+    add column if not exists fee_schedule_key bytea,
+    add column if not exists fee_schedule_key_ed25519_hex varchar;
+
+-- Add table assessed_custom_fee
+create table if not exists assessed_custom_fee (
+    amount               bigint not null,
+    collector_account_id bigint not null,
+    consensus_timestamp  bigint not null,
+    token_id             bigint
+);
+create index if not exists assessed_custom_fee__consensus_timestamp
+    on assessed_custom_fee (consensus_timestamp);
+comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
+
+-- Add table custom_fee
+create table if not exists custom_fee
+(
+    amount                bigint,
+    amount_denominator    bigint,
+    collector_account_id  bigint,
+    created_timestamp     bigint not null,
+    denominating_token_id bigint,
+    maximum_amount        bigint,
+    minimum_amount        bigint,
+    token_id              bigint not null
+);
+create index if not exists custom_fee__token_timestamp
+    on custom_fee (token_id, created_timestamp desc);
+comment on table custom_fee is 'HTS Custom fees';
+
 -- Add the default custom fee for existing tokens
-insert into custom_fee (has_custom_fee, created_timestamp, token_id)
-select false, created_timestamp, token_id from token;
+insert into custom_fee (created_timestamp, token_id)
+select created_timestamp, token_id from token;

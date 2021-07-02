@@ -21,12 +21,14 @@ end;
 $$ language plpgsql;
 
 -- set integer now functions for tables
+select set_integer_now_func('assessed_custom_fee', 'latest_consensus_timestamp');
 select set_integer_now_func('account_balance', 'latest_consensus_timestamp');
 select set_integer_now_func('account_balance_file', 'latest_consensus_timestamp');
 select set_integer_now_func('address_book_entry', 'latest_consensus_timestamp');
 select set_integer_now_func('address_book_service_endpoint', 'latest_consensus_timestamp');
 select set_integer_now_func('contract_result', 'latest_consensus_timestamp');
 select set_integer_now_func('crypto_transfer', 'latest_consensus_timestamp');
+select set_integer_now_func('custom_fee', 'latest_consensus_timestamp');
 select set_integer_now_func('event_file', 'latest_consensus_timestamp');
 select set_integer_now_func('file_data', 'latest_consensus_timestamp');
 select set_integer_now_func('live_hash', 'latest_consensus_timestamp');
@@ -40,6 +42,9 @@ select set_integer_now_func('topic_message', 'latest_consensus_timestamp');
 select set_integer_now_func('transaction', 'latest_consensus_timestamp');
 
 -- turn compression on
+alter table assessed_custom_fee
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'collector_account_id, token_id');
+
 alter table account_balance
     set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id');
 
@@ -59,6 +64,9 @@ alter table contract_result
 
 alter table crypto_transfer
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
+
+alter table custom_fee
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'token_id');
 
 alter table event_file
     set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
@@ -110,11 +118,13 @@ alter table transaction_signature
     set (timescaledb.compress, timescaledb.compress_segmentby = 'entity_id');
 
 -- add compression policy
+select add_compression_policy('assessed_custom_fee', bigint '${compressionAge}');
 select add_compression_policy('account_balance', bigint '${compressionAge}');
 select add_compression_policy('account_balance_file', bigint '${compressionAge}');
 select add_compression_policy('address_book_entry', bigint '${compressionAge}');
 select add_compression_policy('contract_result', bigint '${compressionAge}');
 select add_compression_policy('crypto_transfer', bigint '${compressionAge}');
+select add_compression_policy('custom_fee', bigint '${compressionAge}');
 select add_compression_policy('event_file', bigint '${compressionAge}');
 select add_compression_policy('file_data', bigint '${compressionAge}');
 select add_compression_policy('live_hash', bigint '${compressionAge}');
