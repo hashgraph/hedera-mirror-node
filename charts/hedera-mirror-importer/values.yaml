@@ -295,6 +295,19 @@ prometheusRules:
       application: hedera-mirror-importer
       area: log
 
+  ImporterNoBalanceFile:
+    annotations:
+      description: Have not processed a balance stream file in {{ $labels.namespace }} for the last 10 min
+      summary: Missing balance stream files
+    enabled: true
+    expr: sum(increase(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[11m])) by (namespace) < 1
+    for: 5m
+    labels:
+      application: hedera-mirror-importer
+      area: parser
+      severity: critical
+      type: BALANCE
+
   ImporterNoConsensus:
     annotations:
       description: "{{ $labels.namespace }} only able to achieve {{ $value | humanizePercentage }} consensus during {{ $labels.type }} stream signature verification"
