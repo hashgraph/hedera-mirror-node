@@ -45,12 +45,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
+import com.hedera.mirror.importer.domain.EntityId;
 
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
     private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
+    private static final String RESERVED_ENTITY_ID = EntityId.EMPTY.getId().toString();
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
@@ -82,6 +84,10 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     protected String getAttributeSelectQuery(String attributeName) {
+        return null;
+    }
+
+    protected String getAttributeUpdateQuery(String attributeName) {
         return null;
     }
 
@@ -205,7 +211,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String getUpdateNullableStringCaseCoalesceAssign(String column) {
-        // e.g. "case when entity_temp.memo = ' ' then '' else coalesce(entity_temp.memo, entity.memo) end"
+        // e.g. "case when entity_temp.memo = <uuid> then '' else coalesce(entity_temp.memo, entity.memo) end"
         String finalFormattedColumnName = getFullFinalTableColumnName(column);
         String tempFormattedColumnName = getFullTempTableColumnName(column);
         return String.format(
@@ -213,6 +219,19 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 getFormattedColumnName(column),
                 tempFormattedColumnName,
                 RESERVED_CHAR,
+                tempFormattedColumnName,
+                finalFormattedColumnName);
+    }
+
+    private String getUpdateNullableEntityCaseCoalesceAssign(String column) {
+        // e.g. "case when entity_temp.id = 0 then null else coalesce(entity_temp.memo, entity.memo) end"
+        String finalFormattedColumnName = getFullFinalTableColumnName(column);
+        String tempFormattedColumnName = getFullTempTableColumnName(column);
+        return String.format(
+                "%s = case when %s = %s then null else coalesce(%s, %s) end",
+                getFormattedColumnName(column),
+                tempFormattedColumnName,
+                RESERVED_ENTITY_ID,
                 tempFormattedColumnName,
                 finalFormattedColumnName);
     }
@@ -313,7 +332,11 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         Collections.sort(updatableAttributes, DOMAIN_FIELD_COMPARATOR); // sort fields alphabetically
         updatableAttributes.forEach(d -> {
             String attributeUpdateQuery = "";
-            if (d.getType() == String.class) {
+            // get column custom update implementations
+            String columnSelectQuery = getAttributeUpdateQuery(d.getName());
+            if (!StringUtils.isEmpty(columnSelectQuery)) {
+                attributeUpdateQuery = columnSelectQuery;
+            } else if (d.getType() == String.class) {
                 attributeUpdateQuery = getUpdateNullableStringCaseCoalesceAssign(d.getName());
             } else {
                 attributeUpdateQuery = getUpdateCoalesceAssign(d.getName());
