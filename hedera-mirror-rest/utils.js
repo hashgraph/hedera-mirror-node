@@ -713,17 +713,31 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
 };
 
 /**
- * Given the req.query object build the filters object
- * @param filters
+ * Builds the filters from HTTP request query, validates and parses the filters.
+ *
+ * @param query
+ * @param {function(string, string, string)} filterValidator
+ * @return {[]}
  */
-const buildFilterObject = (filters) => {
+const buildAndValidateFilters = async (query, filterValidator = filterValidityChecks) => {
+  const filters = buildFilters(query);
+  await validateAndParseFilters(filters, filterValidator);
+  return filters;
+};
+
+/**
+ * Build the filters from the HTTP request query
+ *
+ * @param query
+ */
+const buildFilters = (query) => {
   const filterObject = [];
-  if (filters === null) {
+  if (query === null) {
     return null;
   }
 
-  for (const key in filters) {
-    const values = filters[key];
+  for (const key in query) {
+    const values = query[key];
     // for repeated params val will be an array
     if (Array.isArray(values)) {
       for (const val of values) {
@@ -750,13 +764,15 @@ const buildComparatorFilter = (name, filter) => {
 
 /**
  * Verify param and filters meet expected format
+ *
  * @param filters
+ * @param filterValidator
  */
-const validateFilters = async (filters) => {
+const validateFilters = async (filters, filterValidator) => {
   const badParams = [];
 
   for (const filter of filters) {
-    if (!(await filterValidityChecks(filter.key, filter.operator, filter.value))) {
+    if (!(await filterValidator(filter.key, filter.operator, filter.value))) {
       badParams.push(filter.key);
     }
   }
@@ -780,11 +796,13 @@ const formatFilters = (filters) => {
 /**
  * Verify param and filters meet expected format
  * Additionally update format to be persistence query compatible
+ *
  * @param filters
+ * @param filterValidator
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = async (filters) => {
-  await validateFilters(filters);
+const validateAndParseFilters = async (filters, filterValidator) => {
+  await validateFilters(filters, filterValidator);
   formatFilters(filters);
 };
 
@@ -806,6 +824,9 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.ENTITY_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
+        break;
+      case constants.filterKeys.LIMIT:
+        comparator.value = Number(comparator.value);
         break;
       case constants.filterKeys.SCHEDULED:
         comparator.value = parseBooleanValue(comparator.value);
@@ -900,7 +921,7 @@ const ipMask = (ip) => {
 };
 
 module.exports = {
-  buildFilterObject,
+  buildAndValidateFilters,
   buildComparatorFilter,
   buildPgSqlObject,
   createTransactionId,
@@ -912,8 +933,6 @@ module.exports = {
   ENTITY_TYPE_ACCOUNT,
   ENTITY_TYPE_FILE,
   filterValidityChecks,
-  formatComparator,
-  formatFilters,
   getNullableNumber,
   getPaginationLink,
   getTransactionTypeQuery,
@@ -947,8 +966,17 @@ module.exports = {
   secNsToSeconds,
   toHexString,
   TRANSACTION_RESULT_SUCCESS,
-  validateAndParseFilters,
   validateReq,
   parseTokenBalances,
   opsMap,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(module.exports, {
+    buildFilters,
+    formatComparator,
+    formatFilters,
+    validateAndParseFilters,
+    validateFilters,
+  });
+}

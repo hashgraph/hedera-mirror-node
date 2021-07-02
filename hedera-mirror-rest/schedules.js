@@ -160,7 +160,7 @@ const extractSqlFromScheduleFilters = (filters) => {
 
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
-      filterQuery.limit = Number(filter.value);
+      filterQuery.limit = filter.value;
       continue;
     }
 
@@ -217,10 +217,7 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
  */
 const getSchedules = async (req, res) => {
   // extract filters from query param
-  const filters = utils.buildFilterObject(req.query);
-
-  // validate filters
-  await utils.validateAndParseFilters(filters);
+  const filters = await utils.buildAndValidateFilters(req.query);
 
   // get sql filter query, params, order and limit from query filters
   const {filterQuery, params, order, limit} = extractSqlFromScheduleFilters(filters);

@@ -83,6 +83,7 @@ const tokenInfoSelectFields = [
   't.created_timestamp',
   'decimals',
   'e.expiration_timestamp',
+  'fee_supply_key',
   'freeze_default',
   'freeze_key',
   'initial_supply',
@@ -100,7 +101,6 @@ const tokenInfoSelectFields = [
   't.type',
   'wipe_key',
 ];
-const tokenInfoSelectQuery = ['select', tokenInfoSelectFields.join(',\n'), 'from token t'].join('\n');
 const tokenIdMatchQuery = 'where token_id = $1';
 
 /**
@@ -160,14 +160,59 @@ const formatTokenRow = (row) => {
   };
 };
 
+/**
+ * Creates custom fees object from an array of aggregated json objects
+ *
+ * @param customFees
+ * @return {{}|*}
+ */
+const createCustomFeesObject = (customFees) => {
+  if (!customFees) {
+    return {};
+  }
+
+  return customFees.reduce(
+    (customFee, customFeesObject) => {
+      if (customFee.has_custom_fee) {
+        if (!customFee.amount_denominator) {
+          customFeesObject.fixed_fees.push({
+            amount: customFee.amount,
+            collector_account_id: EntityId.fromEncodedId(customFee.collector_account_id).toString(),
+            denominating_token_id: EntityId.fromEncodedId(customFee.denominating_token_id, true).toString(),
+          });
+        } else {
+          customFeesObject.fractional_fees.push({
+            amount: {
+              numerator: customFee.amount,
+              denominator: customFee.amount_denominator,
+            },
+            collector_account_id: EntityId.fromEncodedId(customFee.collector_account_id).toString(),
+            maxinum: customFee.maximum_amount,
+            minimum: customFee.minimum_amount,
+          });
+        }
+      }
+
+      return customFeesObject;
+    },
+    {
+      created_timestamp: utils.nsToSecNs(customFees[0].created_timestamp),
+      fixed_fees: [],
+      fractional_fees: [],
+    }
+  );
+};
+
 const formatTokenInfoRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
     auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
+    custom_fees: createCustomFeesObject(row.custom_fees),
     decimals: row.decimals,
     expiry_timestamp: row.expiration_timestamp,
+    fee_schedule_key: utils.encodeKey(row.fee_schedule_key),
     freeze_default: row.freeze_default,
     freeze_key: utils.encodeKey(row.freeze_key),
     initial_supply: row.initial_supply,
@@ -186,7 +231,7 @@ const formatTokenInfoRow = (row) => {
   };
 };
 
-const tokenQueryFilterValidityChecks = (param, op, val) => {
+const validateTokenQueryFilter = (param, op, val) => {
   let ret = false;
 
   if (op === undefined || val === undefined) {
@@ -235,33 +280,10 @@ const tokenQueryFilterValidityChecks = (param, op, val) => {
   return ret;
 };
 
-/**
- * Verify param and filters meet expected format
- * Additionally update format to be persistence query compatible
- * @param filters
- * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
- */
-const validateTokensFilters = (filters) => {
-  const badParams = [];
-
-  for (const filter of filters) {
-    if (!tokenQueryFilterValidityChecks(filter.key, filter.operator, filter.value)) {
-      badParams.push(filter.key);
-    }
-  }
-
-  if (badParams.length > 0) {
-    throw InvalidArgumentError.forParams(badParams);
-  }
-};
-
 const getTokensRequest = async (req, res) => {
-  // extract filters from query param
-  const filters = utils.buildFilterObject(req.query);
-
-  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
-  validateTokensFilters(filters);
-  utils.formatFilters(filters);
+  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle
+  // per resource unique param names
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
   const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
@@ -322,14 +344,54 @@ const getAndValidateTokenIdRequestPathParam = (req) => {
   return EntityId.fromString(tokenIdString, constants.filterKeys.TOKENID).getEncodedId();
 };
 
+const validateTokenInfoFilters = (filters) => {};
+
+/**
+ * Gets the token info query
+ *
+ * @param {boolean} hasTimestamp
+ * @return {string} the query string
+ */
+const getTokenInfoQuery = (hasTimestamp) => {
+  const aggregateCustomFeeQuery = `
+    select jsonb_agg(jsonb_build_object(
+        'amount', amount,
+        'amount_denominator', amount_denominator,
+        'collector_account_id', collector_account_id,
+        'created_timestamp', created_timestamp,
+        'denominating_token_id', denominating_token_id,
+        'has_custom_fee', has_custom_fee,
+        'maximum_amount', maximum_amount,
+        'minimum_amount', minimum_amount
+    ))
+    from custom_fee
+    where token_id = $1 ${hasTimestamp && 'and created_timestamp <= $2'}
+    group by created_timestamp
+    order by created_timestamp
+    limit 1
+  `;
+
+  return [
+    'select',
+    [...tokenInfoSelectFields, `(${aggregateCustomFeeQuery}) as custom_fees`].join(',\n'),
+    'from token t',
+    entityIdJoinQuery,
+    tokenIdMatchQuery,
+  ].join('\n');
+};
+
 const getTokenInfoRequest = async (req, res) => {
-  const tokenIdString = req.params.id;
-  validateTokenIdParam(tokenIdString);
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
 
-  // concatenate queries to produce final sql query
-  const pgSqlQuery = [tokenInfoSelectQuery, entityIdJoinQuery, tokenIdMatchQuery].join('\n');
-  const row = await getToken(pgSqlQuery, tokenId);
+  // extract filters from query param
+  const filters = utils.buildFilterObject(req.query);
+
+  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
+  validateTokenInfoFilters(filters);
+  utils.formatFilters(filters);
+
+  const query = getTokenInfoQuery(true);
+  const row = await getToken(query, tokenId);
   res.locals[constants.responseDataLabel] = formatTokenInfoRow(row);
 };
 

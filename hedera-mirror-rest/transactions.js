@@ -29,10 +29,10 @@ const {NotFoundError} = require('./errors/notFoundError');
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
- * @param {boolean} includeNftTransferList - include the nft transfer list or not
+ * @param {boolean} includeExtraInfo - include extra info: the nft transfer list, the assessed custom fees, and etc
  * @return {string}
  */
-const getSelectClauseWithTransfers = (includeNftTransferList) => {
+const getSelectClauseWithTransfers = (includeExtraInfo) => {
   // aggregate crypto transfers, token transfers, and nft transfers
   const aggregateCryptoTransferQuery = `
     select jsonb_agg(jsonb_build_object(
@@ -62,6 +62,15 @@ const getSelectClauseWithTransfers = (includeNftTransferList) => {
     from nft_transfer
     where nft_transfer.consensus_timestamp = t.consensus_ns
   `;
+  const aggregateAssessedCustomFeeQuery = `
+    select jsonb_agg(jsonb_build_object(
+        'amount', amount,
+        'collector_account_id', collector_account_id,
+        'token_id', token_id
+      ))
+    from assessed_custom_fee
+    where assessed_custom_fee.consensus_timestamp = t.consensus_ns
+  `;
   const fields = [
     't.payer_account_id',
     't.memo',
@@ -81,13 +90,34 @@ const getSelectClauseWithTransfers = (includeNftTransferList) => {
     `(${aggregateTokenTransferQuery}) AS token_transfer_list`,
   ];
 
-  if (includeNftTransferList) {
+  if (includeExtraInfo) {
     fields.push(`(${aggregateNftTransferQuery}) AS nft_transfer_list`);
+    fields.push(`(${aggregateAssessedCustomFeeQuery}) AS assessed_custom_fees`);
   }
 
   return `SELECT
     ${fields.join(',\n')}
   `;
+};
+
+/**
+ * Creates an assessed custom fee list from aggregated array of JSON objects in the query result
+ *
+ * @param assessedCustomFees assessed custom fees
+ * @param {string} payerAccountId the transaction payer account id
+ * @return {undefined|{amount: Number, collector_account_id: string, payer_account_id: string, token_id: string}[]}
+ */
+const createAssessedCustomFeeList = (assessedCustomFees, payerAccountId) => {
+  if (!assessedCustomFees) {
+    return undefined;
+  }
+
+  return assessedCustomFees.map((assessedCustomFee) => ({
+    amount: assessedCustomFee.amount,
+    collector_account_id: EntityId.fromEncodedId(assessedCustomFee.collector_account_id).toString(),
+    payer_account_id: payerAccountId,
+    token_id: EntityId.fromEncodedId(assessedCustomFee.token_id, true).toString(),
+  }));
 };
 
 /**
@@ -168,6 +198,7 @@ const createNftTransferList = (nftTransferList) => {
 const createTransferLists = (rows) => {
   const transactions = rows.map((row) => {
     const validStartTimestamp = row.valid_start_ns;
+    const payerAccountId = EntityId.fromEncodedId(row.payer_account_id).toString();
     return {
       charged_tx_fee: Number(row.charged_tx_fee),
       consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
@@ -182,13 +213,11 @@ const createTransferLists = (rows) => {
       token_transfers: createTokenTransferList(row.token_transfer_list),
       bytes: utils.encodeBase64(row.transaction_bytes),
       transaction_hash: utils.encodeBase64(row.transaction_hash),
-      transaction_id: utils.createTransactionId(
-        EntityId.fromEncodedId(row.payer_account_id).toString(),
-        validStartTimestamp
-      ),
+      transaction_id: utils.createTransactionId(payerAccountId, validStartTimestamp),
       transfers: createCryptoTransferList(row.crypto_transfer_list),
       valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
       valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
+      assessed_custom_fees: createAssessedCustomFeeList(row.assessed_custom_fees, payerAccountId),
     };
   });
 
@@ -544,6 +573,7 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    createAssessedCustomFeeList,
     createCryptoTransferList,
     createNftTransferList,
     createTokenTransferList,
