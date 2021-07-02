@@ -31,6 +31,9 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: preprod
+      prometheusOperator:
+        namespaces:
+          releaseNamespace: false
     traefik:
       service:
         annotations:
