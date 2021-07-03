@@ -3,10 +3,18 @@
 The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and gRPC API) all support loading
 configuration from an `application.yml` file or via the environment.
 
-Most configuration settings have appropriate defaults and can be left unchanged. One of the important settings that
-should be changed is `hedera.mirror.importer.network` as it controls which of the Hedera networks to mirror.
-Additionally, the password properties have a default, but it is **strongly recommended passwords be changed from the
-default**.
+## Default Values
+
+The default configuration allows users to quickly get up and running without having to configure anything. This provides
+ease of use at the trade-off of some insecure default configuration. Most configuration settings have appropriate
+defaults and can be left unchanged. It is recommended to browse the properties below and adjust to your needs.
+
+One of the important settings that should be changed for all components is the `network` property as it controls which
+of the Hedera networks to mirror. Additionally, the password properties have a default, but it is **strongly recommended
+passwords be changed from the default**.
+
+Depending upon your deployment tool, the process to modify this configuration may vary. For our Helm charts, we do
+support automatic generation of random [passwords](/charts/README.md#passwords).
 
 ## Importer
 

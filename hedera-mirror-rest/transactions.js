@@ -172,7 +172,6 @@ const createTransferLists = (rows) => {
       charged_tx_fee: Number(row.charged_tx_fee),
       consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
       entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
-      id: row.id,
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: row.name,

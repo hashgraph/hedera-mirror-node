@@ -260,7 +260,7 @@ prometheus:
         requests:
           cpu: 250m
           memory: 250Mi
-      retention: 30d
+      retention: 60d
       ruleSelectorNilUsesHelmValues: false
       scrapeInterval: 30s
       serviceMonitorSelectorNilUsesHelmValues: false
@@ -272,9 +272,6 @@ prometheus:
                 storage: 50Gi
       walCompression: true
   prometheusOperator:
-    namespaces:
-      additional: []
-      releaseNamespace: true
     resources:
       limits:
         cpu: 100m

@@ -24,8 +24,12 @@ const _ = require('lodash');
 const {shard: systemShard} = require('./config');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
-const realmOffset = 2n ** 32n; // realm is followed by 32 bits entity_num
-const shardOffset = 2n ** 48n; // shard is followed by 16 bits realm and 32 bits entity_num
+// format: |0|15-bit shard|16-bit realm|32-bit num|
+const numBits = 32n;
+const numMask = 2n ** numBits - 1n;
+const realmBits = 16n;
+const realmMask = 2n ** realmBits - 1n;
+const shardOffset = numBits + realmBits;
 const maxEncodedId = 2n ** 63n - 1n;
 
 class EntityId {
@@ -39,9 +43,7 @@ class EntityId {
    * @returns {string} encoded id corresponding to this EntityId.
    */
   getEncodedId() {
-    return this.num === null
-      ? null
-      : (BigInt(this.num) + BigInt(this.realm) * realmOffset + BigInt(this.shard) * shardOffset).toString();
+    return this.num === null ? null : ((this.shard << shardOffset) | (this.realm << numBits) | this.num).toString();
   }
 
   toString() {
@@ -54,6 +56,14 @@ const isValidEntityId = (entityId) => {
   return (typeof entityId === 'string' && /^(\d{1,10}\.){0,2}\d{1,10}$/.test(entityId)) || /^\d{1,10}$/.test(entityId);
 };
 
+/**
+ * Creates EntityId from shard, realm, and num.
+ *
+ * @param {BigInt} shard
+ * @param {BigInt} realm
+ * @param {BigInt} num
+ * @return {EntityId}
+ */
 const of = (shard, realm, num) => {
   return new EntityId(shard, realm, num);
 };
@@ -87,11 +97,11 @@ const fromEncodedId = (id, isNullable = false) => {
     throw new InvalidArgumentError(message);
   }
 
-  const shard = encodedId / shardOffset; // quotient is shard
-  const encodedRealmNum = encodedId % shardOffset; // realm and num remains
-  const realm = encodedRealmNum / realmOffset;
-  const num = encodedRealmNum % realmOffset;
-  return of(Number(shard), Number(realm), Number(num)); // convert from BigInt to number
+  const num = encodedId & numMask;
+  const shardRealm = encodedId >> numBits;
+  const realm = shardRealm & realmMask;
+  const shard = shardRealm >> realmBits;
+  return of(shard, realm, num);
 };
 
 /**
@@ -126,8 +136,8 @@ const fromString = (entityIdStr, paramName = '', isNullable = false) => {
 
   return of(
     ...parts.map((part) => {
-      const num = Number(part);
-      if (Number.isNaN(num) || num < 0) {
+      const num = BigInt(part);
+      if (num < 0) {
         throw error(`invalid entity ID string "${entityIdStr}"`);
       }
       return num;
