@@ -841,13 +841,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
+                EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
                 EntityId tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
                 if (EntityId.isEmpty((tokenId))) {
                     tokenId = null;
                 }
 
-                AssessedCustomFee assessedCustomFee = new AssessedCustomFee(protoAssessedCustomFee.getAmount(),
-                        EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId()), consensusTimestamp, tokenId);
+                AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
+                assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
+                assessedCustomFee.setId(new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp));
+                assessedCustomFee.setTokenId(tokenId);
                 entityListener.onAssessedCustomFee(assessedCustomFee);
             }
         }

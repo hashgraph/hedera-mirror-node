@@ -39,6 +39,7 @@ public class TokenTest {
     void createValidToken() throws DecoderException {
         Token token = token(1);
         assertAll(
+                () -> assertNotNull(token.getFeeScheduleKeyEd25519Hex()),
                 () -> assertNotNull(token.getFreezeKeyEd25519Hex()),
                 () -> assertNotNull(token.getKycKeyEd25519Hex()),
                 () -> assertNotNull(token.getSupplyKeyEd25519Hex()),
@@ -51,10 +52,13 @@ public class TokenTest {
     void createTokenWithBadKeys() {
         Token token = new Token();
         byte[] badBytes = "badkey".getBytes();
+        token.setFeeScheduleKey(badBytes);
         token.setFreezeKey(badBytes);
         token.setKycKey(badBytes);
         token.setSupplyKey(badBytes);
         token.setWipeKey(badBytes);
+
+        assertNull(token.getFeeScheduleKeyEd25519Hex());
         assertNull(token.getFreezeKeyEd25519Hex());
         assertNull(token.getKycKeyEd25519Hex());
         assertNull(token.getSupplyKeyEd25519Hex());
@@ -75,6 +79,7 @@ public class TokenTest {
         Token token = new Token();
         token.setCreatedTimestamp(consensusTimestamp);
         token.setDecimals(1000);
+        token.setFeeScheduleKey(hexKey);
         token.setFreezeDefault(false);
         token.setFreezeKey(hexKey);
         token.setInitialSupply(1_000_000_000L);

@@ -25,8 +25,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.annotation.Order;
 
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
@@ -43,8 +45,10 @@ import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
@@ -67,8 +71,10 @@ import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 public class RepositoryEntityListener implements EntityListener {
 
     private final RepositoryProperties repositoryProperties;
+    private final AssessedCustomFeeRepository assessedCustomFeeRepository;
     private final ContractResultRepository contractResultRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
+    private final CustomFeeRepository customFeeRepository;
     private final EntityRepository entityRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
@@ -89,6 +95,11 @@ public class RepositoryEntityListener implements EntityListener {
     }
 
     @Override
+    public void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
+        assessedCustomFeeRepository.save(assessedCustomFee);
+    }
+
+    @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
         contractResultRepository.save(contractResult);
     }
@@ -96,6 +107,11 @@ public class RepositoryEntityListener implements EntityListener {
     @Override
     public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
         cryptoTransferRepository.save(cryptoTransfer);
+    }
+
+    @Override
+    public void onCustomFee(CustomFee customFee) throws ImporterException {
+        customFeeRepository.save(customFee);
     }
 
     @Override

@@ -40,16 +40,14 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
-    public AssessedCustomFee(long amount, EntityId collectorAccountId, long consensusTimestamp, EntityId tokenId) {
-        id = new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp, tokenId);
-        this.amount = amount;
-    }
-
     @EmbeddedId
     @JsonUnwrapped
     private Id id;
 
     private long amount;
+
+    @Convert(converter = TokenIdConverter.class)
+    private EntityId tokenId;
 
     @JsonIgnore
     @Override
@@ -69,8 +67,5 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
         private EntityId collectorAccountId;
 
         private long consensusTimestamp;
-
-        @Convert(converter = TokenIdConverter.class)
-        private EntityId tokenId;
     }
 }
