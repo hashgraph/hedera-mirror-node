@@ -27,14 +27,11 @@ class NftUpsertQueryGeneratorV2Test extends NftUpsertQueryGeneratorTest {
     @Override
     public String getInsertQuery() {
         return "insert into nft (account_id, created_timestamp, deleted, metadata, modified_timestamp, serial_number," +
-                " token_id) select coalesce(nft_temp.account_id, token.treasury_account_id), " +
-                "nft_temp.created_timestamp, coalesce(nft_temp.deleted, entity.deleted), nft_temp.metadata, " +
-                "nft_temp.modified_timestamp, nft_temp.serial_number, nft_temp.token_id " +
+                " token_id) select nft_temp.account_id, nft_temp.created_timestamp, nft_temp.deleted, " +
+                "nft_temp.metadata, nft_temp.modified_timestamp, nft_temp.serial_number, nft_temp.token_id " +
                 "from nft_temp " +
-                "right outer join entity on nft_temp.token_id = entity.id " +
-                "right outer join token on nft_temp.token_id = token.token_id " +
-                "where nft_temp.created_timestamp is not null on conflict (created_timestamp, token_id, " +
-                "serial_number) " +
-                "do nothing";
+                "join token on nft_temp.token_id = token.token_id " +
+                "where nft_temp.created_timestamp is not null " +
+                "on conflict (created_timestamp, token_id, serial_number) do nothing";
     }
 }

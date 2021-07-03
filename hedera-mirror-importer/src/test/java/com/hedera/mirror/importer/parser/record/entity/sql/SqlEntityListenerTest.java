@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -366,22 +367,137 @@ public class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onToken(token2);
         completeFileAndCommit();
 
-        // create nft
-        Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 1L);
-        Nft nft2 = getNft("0.0.3", 3L, "0.0.3", 3L);
+        // create nft 1
+        sqlEntityListener.onNft(getNft("0.0.1", 1L, null, 3L, false, "nft1", 3L)); // mint
+        sqlEntityListener.onNft(getNft("0.0.1", 1L, "0.0.2", null, null, null, 3L)); // transfer
 
-        sqlEntityListener.onNft(nft1);
-        sqlEntityListener.onNft(nft2);
+        // create nft 2
+        sqlEntityListener.onNft(getNft("0.0.3", 1L, null, 4L, false, "nft2", 4L)); // mint
+        sqlEntityListener.onNft(getNft("0.0.3", 1L, "0.0.4", null, null, null, 4L)); // transfer
+
         completeFileAndCommit();
 
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, nftRepository.count());
+
+        Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 3L, false, "nft1", 3L); // transfer
+        Nft nft2 = getNft("0.0.3", 1L, "0.0.4", 4L, false, "nft2", 4L); // transfer
+
         assertExistsAndEquals(nftRepository, nft1, nft1.getId());
         assertExistsAndEquals(nftRepository, nft2, nft2.getId());
     }
 
     @Test
+    void onNftMintOutOfOrder() throws Exception {
+        // create token first
+        String tokenId1 = "0.0.1";
+        String tokenId2 = "0.0.3";
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, "0.0.98", 1L, 1L);
+        Token token2 = getToken(tokenId2, "0.0.98", 2L, 2L);
+        sqlEntityListener.onToken(token1);
+        sqlEntityListener.onToken(token2);
+
+        // create nft 1 w transfer coming first
+        sqlEntityListener.onNft(getNft("0.0.1", 1L, "0.0.2", null, null, null, 3L)); // transfer
+        sqlEntityListener.onNft(getNft("0.0.1", 1L, null, 3L, false, "nft1", 3L)); // mint
+
+        // create nft 2 w transfer coming first
+        sqlEntityListener.onNft(getNft("0.0.3", 1L, "0.0.4", null, null, null, 4L)); // transfer
+        sqlEntityListener.onNft(getNft("0.0.3", 1L, null, 4L, false, "nft2", 4L)); // mint
+
+        completeFileAndCommit();
+
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(2, nftRepository.count());
+
+        Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 3L, false, "nft1", 3L); // transfer
+        Nft nft2 = getNft("0.0.3", 1L, "0.0.4", 4L, false, "nft2", 4L); // transfer
+
+        assertExistsAndEquals(nftRepository, nft1, nft1.getId());
+        assertExistsAndEquals(nftRepository, nft2, nft2.getId());
+    }
+
+    @Test
+    void onNftDomainTransfer() throws Exception {
+        // create token first
+        String tokenId1 = "0.0.1";
+        String tokenId2 = "0.0.3";
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, "0.0.98", 1L, 1L);
+        Token token2 = getToken(tokenId2, "0.0.98", 2L, 2L);
+        sqlEntityListener.onToken(token1);
+        sqlEntityListener.onToken(token2);
+
+        // create nfts
+        Nft nft1Combined = getNft("0.0.1", 1L, "0.0.2", 3L, false, "nft1", 3L); // mint transfer combined
+        Nft nft2Combined = getNft("0.0.3", 1L, "0.0.3", 4L, false, "nft2", 4L); // mint transfer combined
+        sqlEntityListener.onNft(nft1Combined);
+        sqlEntityListener.onNft(nft2Combined);
+        completeFileAndCommit();
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(2, nftRepository.count());
+
+        // nft w transfers
+        sqlEntityListener.onNft(getNft("0.0.1", 1L, "0.0.5", null, null, null, 5L)); // transfer
+        sqlEntityListener.onNft(getNft("0.0.3", 1L, "0.0.6", null, null, null, 6L)); // transfer
+        completeFileAndCommit();
+
+        assertEquals(2, nftRepository.count());
+
+        Nft nft1 = getNft("0.0.1", 1L, "0.0.5", 3L, false, "nft1", 5L); // transfer
+        Nft nft2 = getNft("0.0.3", 1L, "0.0.6", 4L, false, "nft2", 6L); // transfer
+
+        assertExistsAndEquals(nftRepository, nft1, nft1Combined.getId());
+        assertExistsAndEquals(nftRepository, nft2, nft2Combined.getId());
+    }
+
+    @Test
     void onNftTransferOwnershipAndDelete() throws Exception {
+        // create token first
+        String tokenId1 = "0.0.1";
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, "0.0.98", 1L, 1L);
+        sqlEntityListener.onToken(token1);
+
+        // create nfts
+        Nft nft1Combined = getNft("0.0.1", 1L, "0.0.2", 3L, false, "nft1", 3L); // mint transfer combined
+        Nft nft2Combined = getNft("0.0.1", 2L, "0.0.3", 4L, false, "nft2", 4L); // mint transfer combined
+
+        sqlEntityListener.onNft(nft1Combined);
+        sqlEntityListener.onNft(nft2Combined);
+
+        completeFileAndCommit();
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(2, nftRepository.count());
+
+        Nft nft1Burn = getNft("0.0.1", 1L, "0.0.0", null, true, null, 5L); // mint/burn
+        Nft nft1BurnTransfer = getNft("0.0.1", 1L, null, null, null, null, 5L); // mint/burn transfer
+        sqlEntityListener.onNft(nft1Burn);
+        sqlEntityListener.onNft(nft1BurnTransfer);
+
+        Nft nft2Burn = getNft("0.0.1", 2L, "0.0.0", null, true, null, 6L); // mint/burn
+        Nft nft2BurnTransfer = getNft("0.0.1", 2L, null, null, null, null, 6L); // mint/burn transfer
+        sqlEntityListener.onNft(nft2Burn);
+        sqlEntityListener.onNft(nft2BurnTransfer);
+
+        completeFileAndCommit();
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertEquals(2, nftRepository.count());
+
+        // expected nfts
+        Nft nft1 = getNft("0.0.1", 1L, null, 3L, true, "nft1", 5L); // transfer
+        Nft nft2 = getNft("0.0.1", 2L, null, 4L, true, "nft2", 6L); // transfer
+
+        assertExistsAndEquals(nftRepository, nft1, nft1Combined.getId());
+        assertExistsAndEquals(nftRepository, nft2, nft2Combined.getId());
+    }
+
+    @Test
+    void onNftTransferOwnershipAndDeleteOutOfOrder() throws Exception {
         // create token first
         String tokenId1 = "0.0.1";
         String tokenId2 = "0.0.3";
@@ -394,20 +510,32 @@ public class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // create nfts
-        Nft nft1 = getNft("0.0.1", 1L, "0.0.2", 1L);
-        Nft nft2 = getNft("0.0.3", 3L, "0.0.3", 3L);
+        Nft nft1Combined = getNft("0.0.1", 1L, "0.0.2", 3L, false, "nft1", 3L); // mint transfer combined
+        Nft nft2Combined = getNft("0.0.1", 2L, "0.0.3", 4L, false, "nft2", 4L); // mint transfer combined
 
-        sqlEntityListener.onNft(nft1);
-        sqlEntityListener.onNft(nft2);
+        sqlEntityListener.onNft(nft1Combined);
+        sqlEntityListener.onNft(nft2Combined);
 
-        nft1.setAccountId(EntityId.of("0.0.10", ACCOUNT));
-        nft1.setDeleted(true);
-        sqlEntityListener.onNft(nft1);
-        sqlEntityListener.onNft(nft2);
+        // nft 1 burn w transfer coming first
+        Nft nft1Burn = getNft("0.0.1", 1L, "0.0.0", null, true, null, 5L); // mint/burn
+        Nft nft1BurnTransfer = getNft("0.0.1", 1L, null, null, null, null, 5L); // mint/burn transfer
+        sqlEntityListener.onNft(nft1BurnTransfer);
+        sqlEntityListener.onNft(nft1Burn);
+
+        // nft 2 burn w transfer coming first
+        Nft nft2Burn = getNft("0.0.1", 2L, "0.0.0", null, true, null, 6L); // mint/burn
+        Nft nft2BurnTransfer = getNft("0.0.1", 2L, null, null, null, null, 6L); // mint/burn transfer
+        sqlEntityListener.onNft(nft2BurnTransfer);
+        sqlEntityListener.onNft(nft2Burn);
         completeFileAndCommit();
 
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, nftRepository.count());
+
+        // expected nfts
+        Nft nft1 = getNft("0.0.1", 1L, null, 3L, true, "nft1", 5L); // transfer
+        Nft nft2 = getNft("0.0.1", 2L, null, 4L, true, "nft2", 6L); // transfer
+
         assertExistsAndEquals(nftRepository, nft1, nft1.getId());
         assertExistsAndEquals(nftRepository, nft2, nft2.getId());
     }
@@ -779,14 +907,36 @@ public class SqlEntityListenerTest extends IntegrationTest {
         return token;
     }
 
-    private Nft getNft(String tokenId, long serialNumber, String accountId, long createdTimestamp) throws DecoderException {
+    private Nft getNft(String tokenId, long serialNumber, String accountId, Long createdTimestamp, Boolean deleted,
+                       String metadata, long modifiedTimestamp) {
         Nft nft = new Nft();
-        nft.setAccountId(EntityId.of(accountId, ACCOUNT));
+        nft.setAccountId(accountId == null ? null : EntityId.of(accountId, ACCOUNT));
+        nft.setCreatedTimestamp(createdTimestamp);
+        nft.setDeleted(deleted);
+        nft.setMetadata(metadata == null ? null : metadata.getBytes(StandardCharsets.UTF_8));
+        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        nft.setModifiedTimestamp(modifiedTimestamp);
+
+        return nft;
+    }
+
+    private Nft getNftOnMint(String tokenId, long serialNumber, long createdTimestamp, String metadata) {
+        Nft nft = new Nft();
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(false);
-        nft.setMetadata(new byte[0]);
+        nft.setMetadata(metadata.getBytes(StandardCharsets.UTF_8));
         nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         nft.setModifiedTimestamp(createdTimestamp);
+
+        return nft;
+    }
+
+    private Nft getNftOnTransfer(String tokenId, long serialNumber, String accountId, long modifiedTimestamp) {
+        Nft nft = new Nft();
+        nft.setAccountId(EntityId.of(accountId, ACCOUNT));
+        nft.setDeleted(false);
+        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        nft.setModifiedTimestamp(modifiedTimestamp);
 
         return nft;
     }
