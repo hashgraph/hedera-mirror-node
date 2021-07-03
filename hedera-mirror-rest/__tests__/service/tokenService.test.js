@@ -22,8 +22,8 @@
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
-const TokenModel = require('../../model/token');
-const TokenService = require('../../service/tokenService');
+const {Token} = require('../../model');
+const {TokenService} = require('../../service');
 
 jest.setTimeout(40000);
 
@@ -63,7 +63,7 @@ describe('DB integration test - TokenService.getToken', () => {
       wipe_key_ed25519_hex: null,
     });
 
-    const expectedToken = new TokenModel({
+    const expectedToken = new Token({
       created_timestamp: '1',
       decimals: '1000',
       freeze_default: false,

@@ -57,8 +57,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions');
-const TransactionResultService = require('../service/transactionResultService');
-const TransactionTypeService = require('../service/transactionTypeService');
+const {TransactionResultService, TransactionTypeService} = require('../service');
 const utils = require('../utils');
 
 jest.setTimeout(20000);

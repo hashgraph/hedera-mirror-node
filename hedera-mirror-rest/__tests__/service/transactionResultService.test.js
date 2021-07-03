@@ -22,7 +22,7 @@
 
 const integrationDbOps = require('../integrationDbOps');
 const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
-const TransactionResultService = require('../../service/transactionResultService');
+const {TransactionResultService} = require('../../service');
 
 jest.setTimeout(40000);
 

@@ -22,8 +22,8 @@
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
-const {NFTModel} = require('../../model/nft');
-const NFTService = require('../../service/nftService');
+const {Nft} = require('../../model');
+const {NftService} = require('../../service');
 
 jest.setTimeout(40000);
 
@@ -61,7 +61,7 @@ describe('DB integration test - NFTService.getNft', () => {
       token_id: '0.0.2',
     });
 
-    const expectedNft = new NFTModel({
+    const expectedNft = new Nft({
       account_id: '1',
       created_timestamp: '1',
       deleted: false,
@@ -70,6 +70,6 @@ describe('DB integration test - NFTService.getNft', () => {
       serial_number: '1',
       token_id: '2',
     });
-    await expect(NFTService.getNft(2, 1)).resolves.toMatchObject(expectedNft);
+    await expect(NftService.getNft(2, 1)).resolves.toMatchObject(expectedNft);
   });
 });

@@ -25,8 +25,7 @@ const {filterKeys, orderFilterValues} = require('../constants');
 const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
-const TransactionResultService = require('../service/transactionResultService');
-const TransactionTypeService = require('../service/transactionTypeService');
+const {TransactionResultService, TransactionTypeService} = require('../service');
 
 const formatSqlQueryString = (query) => {
   return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');

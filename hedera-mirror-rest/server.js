@@ -48,8 +48,7 @@ const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandl
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const TransactionTypeService = require('./service/transactionTypeService');
-const TransactionResultService = require('./service/transactionResultService');
+const {TransactionResultService, TransactionTypeService} = require('./service');
 
 // Logger
 const logger = log4js.getLogger();
