@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: flux-system
 configMapGenerator:
   - name: flux-dashboards
+    namespace: common
     files:
       - cluster.json
       - control-plane.json
