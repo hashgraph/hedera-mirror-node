@@ -6,7 +6,6 @@ resources:
 - ../../base/common
 - helmrelease.yaml
 - helmrepository.yaml
-- kustomization.yaml
 - namespace.yaml
 - sealed-secret.yaml
 
