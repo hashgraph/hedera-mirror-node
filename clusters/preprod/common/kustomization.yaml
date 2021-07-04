@@ -5,7 +5,5 @@ metadata:
 resources:
 - ../../base/common
 - helmrelease.yaml
-- helmrepository.yaml
-- namespace.yaml
 - sealed-secret.yaml
 

@@ -11,5 +11,7 @@ generatorOptions:
     app.kubernetes.io/part-of: flux
     grafana_dashboard: "1"
 resources:
+  - helmrepository.yaml
+  - namespace.yaml
   - podmonitor.yaml
 
