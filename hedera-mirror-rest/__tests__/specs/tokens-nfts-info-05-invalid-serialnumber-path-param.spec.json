@@ -1,0 +1,22 @@
+{
+  "description": "Token nft info api call with invalid serialnumber",
+  "setup": {
+    "entities": [],
+    "tokens": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": []
+  },
+  "urls": ["/api/v1/tokens/0.1.2/nfts/mirror"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: serialnumber"
+        }
+      ]
+    }
+  }
+}

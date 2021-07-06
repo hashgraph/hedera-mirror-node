@@ -51,36 +51,14 @@
         "metadata": "m1",
         "serial_number": 1,
         "token_id": "0.0.1500"
-      },
-      {
-        "account_id": "0.0.2001",
-        "created_timestamp": "1234567890000000006",
-        "metadata": "m2",
-        "serial_number": 2,
-        "token_id": "0.0.1500"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000007",
-        "metadata": "s1",
-        "serial_number": 1,
-        "token_id": "0.0.2500"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000008",
-        "metadata": "m3",
-        "serial_number": 3,
-        "token_id": "0.0.1500"
       }
     ]
   },
-  "urls": ["/api/v1/tokens/3500/nfts", "/api/v1/tokens/0.3500/nfts", "/api/v1/tokens/0.0.3500/nfts"],
-  "responseStatus": 200,
-  "responseJson": {
-    "nfts": [],
-    "links": {
-      "next": null
-    }
-  }
+  "urls": [
+    "/api/v1/tokens/0.0.1500/nfts?account.id=2001",
+    "/api/v1/tokens/0.0.1500/nfts?account.id=0.2001",
+    "/api/v1/tokens/0.0.1500/nfts?account.id=0.0.2001"
+  ],
+  "responseStatus": 204,
+  "responseJson": {}
 }
