@@ -54,12 +54,11 @@ class TransactionResultService {
       const result = await pool.query(TransactionResultService.transactionResultsQuery);
       rows = result.rows;
     } catch (err) {
-      this.promise = null;
       throw new DbError(err.message);
     }
 
     if (_.isEmpty(rows)) {
-      return [];
+      throw new DbError('No transaction results found in DB');
     }
 
     return rows.map((row) => new TransactionResult(row));

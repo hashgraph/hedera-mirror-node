@@ -54,12 +54,11 @@ class TransactionTypeService {
       const result = await pool.query(TransactionTypeService.transactionTypesQuery);
       rows = result.rows;
     } catch (err) {
-      this.promise = null;
       throw new DbError(err.message);
     }
 
     if (_.isEmpty(rows)) {
-      return [];
+      throw new DbError('No transaction types found in DB');
     }
 
     return rows.map((row) => new TransactionType(row));
