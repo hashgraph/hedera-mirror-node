@@ -27,13 +27,11 @@ const {NftService} = require('../../service');
 
 jest.setTimeout(40000);
 
-let sqlConnection;
-
 // set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
 const defaultBeforeAllTimeoutMillis = 240 * 1000;
 
 beforeAll(async () => {
-  sqlConnection = await integrationDbOps.instantiateDatabase();
+  const sqlConnection = await integrationDbOps.instantiateDatabase();
   await integrationDomainOps.setUp({}, sqlConnection);
 }, defaultBeforeAllTimeoutMillis);
 
@@ -42,11 +40,6 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  if (!sqlConnection) {
-    logger.warn(`sqlConnection undefined, acquire new connection`);
-    sqlConnection = await integrationDbOps.instantiateDatabase();
-  }
-
   await integrationDbOps.cleanUp();
 });
 

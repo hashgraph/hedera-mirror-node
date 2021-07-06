@@ -82,7 +82,7 @@ afterAll(async () => {
 beforeEach(async () => {
   if (!sqlConnection) {
     logger.warn(`sqlConnection undefined, acquire new connection`);
-    sqlConnection = await integrationDbOps.instantiateDatabase();
+    sqlConnection = integrationDbOps.getConnection();
   }
 
   await integrationDbOps.cleanUp();

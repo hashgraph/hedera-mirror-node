@@ -64,6 +64,23 @@ const v2SchemaConfigs = {
 // if v2 schema is set in env use it, else default to v1
 const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
+const getConnection = () => {
+  logger.info(`sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`);
+  sqlConnection = new SqlConnectionPool({
+    user: dbAdminUser,
+    host: dbConfig.host,
+    database: dbConfig.name,
+    password: dbAdminPassword,
+    port: dbConfig.port,
+  });
+
+  // Until "server", "pool" and everything else is made non-static...
+  oldPool = global.pool;
+  global.pool = sqlConnection;
+
+  return sqlConnection;
+};
+
 /**
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
  * testContainers/dockerized postgresql instance.
@@ -85,22 +102,9 @@ const instantiateDatabase = async () => {
   dbConfig.host = dockerDb.getHost();
   logger.info('Started dockerized PostgreSQL');
 
-  logger.info(`sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`);
-  sqlConnection = new SqlConnectionPool({
-    user: dbAdminUser,
-    host: dbConfig.host,
-    database: dbConfig.name,
-    password: dbAdminPassword,
-    port: dbConfig.port,
-  });
-
-  // Until "server", "pool" and everything else is made non-static...
-  oldPool = global.pool;
-  global.pool = sqlConnection;
-
   flywayMigrate();
 
-  return sqlConnection;
+  return getConnection();
 };
 
 /**
@@ -197,6 +201,7 @@ const runSqlQuery = async (query, params) => {
 module.exports = {
   cleanUp,
   closeConnection,
+  getConnection,
   instantiateDatabase,
   runSqlQuery,
 };
