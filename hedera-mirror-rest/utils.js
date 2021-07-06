@@ -31,7 +31,7 @@ const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
-const transactionTypes = require('./transactionTypes');
+const TransactionTypeService = require('./service/transactionTypeService');
 
 const ENTITY_TYPE_ACCOUNT = 1;
 const ENTITY_TYPE_FILE = 3;
@@ -99,9 +99,9 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
-const isValidTransactionType = async (transactionType) => {
+const isValidTransactionType = (transactionType) => {
   try {
-    await transactionTypes.get(transactionType);
+    TransactionTypeService.getProtoId(transactionType);
     return true;
   } catch (err) {
     return false;
@@ -140,7 +140,7 @@ const paramValidityChecks = (param, opAndVal) => {
   return filterValidityChecks(param, op, val);
 };
 
-const filterValidityChecks = async (param, op, val) => {
+const filterValidityChecks = (param, op, val) => {
   let ret = false;
 
   if (op === undefined || val === undefined) {
@@ -210,7 +210,7 @@ const filterValidityChecks = async (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
-      ret = await isValidTransactionType(val);
+      ret = isValidTransactionType(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -756,7 +756,7 @@ const validateFilters = async (filters) => {
   const badParams = [];
 
   for (const filter of filters) {
-    if (!(await filterValidityChecks(filter.key, filter.operator, filter.value))) {
+    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
       badParams.push(filter.key);
     }
   }
@@ -861,7 +861,7 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
-const getTransactionTypeQuery = async (parsedQueryParams) => {
+const getTransactionTypeQuery = (parsedQueryParams) => {
   if (_.isNil(parsedQueryParams)) {
     return '';
   }
@@ -870,7 +870,7 @@ const getTransactionTypeQuery = async (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  const protoId = await transactionTypes.get(transactionType);
+  const protoId = TransactionTypeService.getProtoId(transactionType);
   return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 
