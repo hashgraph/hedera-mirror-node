@@ -53,7 +53,7 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "else coalesce(nft_temp.account_id, nft.account_id) end, " +
                 "deleted = coalesce(nft_temp.deleted, nft.deleted), " +
                 "modified_timestamp = coalesce(nft_temp.modified_timestamp, nft.modified_timestamp) " +
-                "from nft_temp where nft_temp.created_timestamp is null and " +
+                "from nft_temp where nft.created_timestamp is not null and " +
                 "nft.token_id = nft_temp.token_id and nft.serial_number = nft_temp.serial_number";
     }
 

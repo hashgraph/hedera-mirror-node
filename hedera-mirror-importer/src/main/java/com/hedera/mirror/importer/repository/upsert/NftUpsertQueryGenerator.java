@@ -68,8 +68,9 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
 
     @Override
     public String getUpdateWhereClause() {
-        return String.format(" where %s is null and %s = %s and %s = %s",
-                getFullTempTableColumnName(Nft_.CREATED_TIMESTAMP),
+        // update rows when incoming created is not set with matching ids
+        return String.format(" where %s is not null and %s = %s and %s = %s",
+                getFullFinalTableColumnName(Nft_.CREATED_TIMESTAMP),
                 getFullFinalTableColumnName(NftId_.TOKEN_ID),
                 getFullTempTableColumnName(NftId_.TOKEN_ID),
                 getFullFinalTableColumnName(NftId_.SERIAL_NUMBER),
@@ -79,6 +80,7 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
     @Override
     public String getAttributeUpdateQuery(String attributeName) {
         if (attributeName.equalsIgnoreCase(Nft_.ACCOUNT_ID)) {
+            // support account_id null set only on delete
             return String.format(
                     "%s = case when %s = true then null else coalesce(%s, %s) end",
                     getFormattedColumnName(Nft_.ACCOUNT_ID),
@@ -86,6 +88,7 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
                     getFullTempTableColumnName(Nft_.ACCOUNT_ID),
                     getFullFinalTableColumnName(Nft_.ACCOUNT_ID));
         } else if (attributeName.equalsIgnoreCase(Nft_.DELETED)) {
+            // ensure delete set factors in existing row as deleted is nullable
             return String.format(
                     "%s = coalesce(%s, %s)",
                     getFormattedColumnName(Nft_.DELETED),
