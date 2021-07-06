@@ -246,6 +246,12 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        assertThat(transactionRepository.findById(Utility.timestampInNanosMax(record.getConsensusTimestamp())))
+                .get()
+                .extracting(com.hedera.mirror.importer.domain.Transaction::getPayerAccountId,
+                        com.hedera.mirror.importer.domain.Transaction::getEntityId)
+                .containsOnly(EntityId.of(accountId));
     }
 
     // Transactions in production have proxyAccountID explicitly set to '0.0.0'. Test is to prevent code regression
@@ -266,6 +272,12 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
 
         // then: process the transaction without throwing NPE
         parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        assertThat(transactionRepository.count()).isEqualTo(1L);
+        assertThat(entityRepository.findById(EntityId.of(accountId).getId()))
+                .get()
+                .extracting(Entity::getProxyAccountId)
+                .isNull();
     }
 
     @DisplayName("update account such that expiration timestamp overflows nanos_timestamp")
