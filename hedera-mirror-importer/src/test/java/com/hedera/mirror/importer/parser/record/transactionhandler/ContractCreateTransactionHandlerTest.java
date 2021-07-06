@@ -43,7 +43,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return TransactionRecord.newBuilder()
+        return super.getDefaultTransactionRecord()
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()));
     }

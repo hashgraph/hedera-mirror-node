@@ -49,7 +49,7 @@ class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return TransactionRecord.newBuilder()
+        return super.getDefaultTransactionRecord()
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setFileID(FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM).build()));
     }
