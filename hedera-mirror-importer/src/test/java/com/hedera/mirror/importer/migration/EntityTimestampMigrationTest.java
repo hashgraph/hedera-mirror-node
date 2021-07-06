@@ -74,8 +74,8 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         // migration
         migrate();
 
-        assertThat(entityRepository.count()).isEqualTo(0);
-        assertThat(transactionRepository.count()).isEqualTo(0);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(transactionRepository.count()).isZero();
     }
 
     @Test

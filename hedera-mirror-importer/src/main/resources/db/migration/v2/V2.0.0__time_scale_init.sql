@@ -270,27 +270,29 @@ comment on table t_transaction_types is 'Transaction types';
 -- token
 create table if not exists token
 (
-    token_id               bigint,
-    created_timestamp      bigint                 not null,
-    decimals               bigint                 not null,
-    freeze_default         boolean                not null default false,
-    freeze_key             bytea,
-    freeze_key_ed25519_hex varchar                null,
-    initial_supply         bigint                 not null,
-    kyc_key                bytea,
-    kyc_key_ed25519_hex    varchar                null,
-    max_supply             bigint                 not null default 9223372036854775807, -- max long
-    modified_timestamp     bigint                 not null,
-    name                   character varying(100) not null,
-    supply_key             bytea,
-    supply_key_ed25519_hex varchar                null,
-    supply_type            token_supply_type      not null default 'INFINITE',
-    symbol                 character varying(100) not null,
-    total_supply           bigint                 not null default 0,
-    treasury_account_id    bigint                 not null,
-    type                   token_type             not null default 'FUNGIBLE_COMMON',
-    wipe_key               bytea,
-    wipe_key_ed25519_hex   varchar                null
+    token_id                     bigint,
+    created_timestamp            bigint                 not null,
+    decimals                     bigint                 not null,
+    fee_schedule_key             bytea,
+    fee_schedule_key_ed25519_hex varchar                null,
+    freeze_default               boolean                not null default false,
+    freeze_key                   bytea,
+    freeze_key_ed25519_hex       varchar                null,
+    initial_supply               bigint                 not null,
+    kyc_key                      bytea,
+    kyc_key_ed25519_hex          varchar                null,
+    max_supply                   bigint                 not null default 9223372036854775807, -- max long
+    modified_timestamp           bigint                 not null,
+    name                         character varying(100) not null,
+    supply_key                   bytea,
+    supply_key_ed25519_hex       varchar                null,
+    supply_type                  token_supply_type      not null default 'INFINITE',
+    symbol                       character varying(100) not null,
+    total_supply                 bigint                 not null default 0,
+    treasury_account_id          bigint                 not null,
+    type                         token_type             not null default 'FUNGIBLE_COMMON',
+    wipe_key                     bytea,
+    wipe_key_ed25519_hex         varchar                null
 );
 comment on table token is 'Token entity';
 

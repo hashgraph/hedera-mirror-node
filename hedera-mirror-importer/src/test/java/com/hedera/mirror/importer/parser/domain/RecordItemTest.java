@@ -72,23 +72,23 @@ class RecordItemTest {
             .build();
 
     @Test
-    public void testBadTransactionBytesThrowException() {
+    void testBadTransactionBytesThrowException() {
         testException(new byte[] { 0x0, 0x1 }, DEFAULT_RECORD_BYTES, RecordItem.BAD_TRANSACTION_BYTES_MESSAGE);
     }
 
     @Test
-    public void testBadRecordBytesThrowException() {
+    void testBadRecordBytesThrowException() {
         testException(DEFAULT_TRANSACTION_BYTES, new byte[] { 0x0, 0x1 }, RecordItem.BAD_RECORD_BYTES_MESSAGE);
     }
 
     @Test
-    public void testTransactionBytesWithoutTransactionBodyThrowException() {
+    void testTransactionBytesWithoutTransactionBodyThrowException() {
         testException(Transaction.newBuilder().build().toByteArray(),
                 DEFAULT_RECORD_BYTES, RecordItem.BAD_TRANSACTION_BODY_BYTES_MESSAGE);
     }
 
     @Test
-    public void testWithBody() {
+    void testWithBody() {
         Transaction transaction = Transaction.newBuilder()
                 .setBody(TRANSACTION_BODY)
                 .setSigMap(SIGNATURE_MAP)
@@ -98,7 +98,7 @@ class RecordItemTest {
     }
 
     @Test
-    public void testWithBodyProto() {
+    void testWithBodyProto() {
         //An encoded protobuf Transaction with the body set in TransactionBody, as seen in an older proto version
         byte[] transactionFromProto = Base64
                 .decodeBase64("CgoYCjIEbWVtb3IAGhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5");
@@ -113,7 +113,7 @@ class RecordItemTest {
     }
 
     @Test
-    public void testWithBodyBytes() {
+    void testWithBodyBytes() {
         Transaction transaction = Transaction.newBuilder()
                 .setBodyBytes(TRANSACTION_BODY.toByteString())
                 .setSigMap(SIGNATURE_MAP)
@@ -123,7 +123,7 @@ class RecordItemTest {
     }
 
     @Test
-    public void testWithSignedTransaction() {
+    void testWithSignedTransaction() {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
                 .build();

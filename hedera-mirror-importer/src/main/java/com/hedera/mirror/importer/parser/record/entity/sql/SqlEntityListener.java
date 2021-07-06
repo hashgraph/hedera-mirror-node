@@ -203,7 +203,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void cleanup() {
         try {
-            assessedCustomFees.clear();;
+            assessedCustomFees.clear();
             contractResults.clear();
             cryptoTransfers.clear();
             customFees.clear();
