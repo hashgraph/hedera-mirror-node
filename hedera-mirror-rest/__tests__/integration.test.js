@@ -60,7 +60,7 @@ const transactions = require('../transactions');
 const {TransactionResultService, TransactionTypeService} = require('../service');
 const utils = require('../utils');
 
-jest.setTimeout(20000);
+jest.setTimeout(40000);
 
 let sqlConnection;
 
