@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -140,7 +139,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideCustomFees")
-    void tokenCreate(String name, List<CustomFee> customFees) throws InvalidProtocolBufferException {
+    void tokenCreate(String name, List<CustomFee> customFees) {
         // given
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
@@ -160,7 +159,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenCreateWithoutPersistence() throws InvalidProtocolBufferException {
+    void tokenCreateWithoutPersistence() {
         entityProperties.getPersist().setTokens(false);
 
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
@@ -171,7 +170,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenCreateWithNfts() throws InvalidProtocolBufferException {
+    void tokenCreateWithNfts() {
         createTokenEntity(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, false, false);
 
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
@@ -185,7 +184,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAssociate() throws InvalidProtocolBufferException {
+    void tokenAssociate() {
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true);
 
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
@@ -196,7 +195,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAssociateWithMissingToken() throws InvalidProtocolBufferException {
+    void tokenAssociateWithMissingToken() {
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY);
 
@@ -206,7 +205,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenDissociate() throws InvalidProtocolBufferException {
+    void tokenDissociate() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -219,7 +218,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenDelete() throws InvalidProtocolBufferException {
+    void tokenDelete() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -237,12 +236,14 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenFeeScheduleUpdate() throws InvalidProtocolBufferException {
+    void tokenFeeScheduleUpdate() {
         // given
         // create the token entity with empty custom fees
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
         // update fee schedule
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
+        Entity expectedEntity = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, updateTimestamp);
         List<CustomFee> newCustomFees = nonEmptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID);
         List<CustomFee> expectedCustomFees = Lists.newArrayList(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID));
         expectedCustomFees.addAll(newCustomFees);
@@ -251,11 +252,13 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, newCustomFees);
 
         // then
+        assertEntity(expectedEntity);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimestamp, SYMBOL, INITIAL_SUPPLY);
         assertCustomFeesInDb(expectedCustomFees);
     }
 
     @Test
-    void tokenUpdate() throws InvalidProtocolBufferException {
+    void tokenUpdate() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -281,7 +284,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenUpdateWithMissingToken() throws InvalidProtocolBufferException {
+    void tokenUpdateWithMissingToken() {
         String newSymbol = "NEWSYMBOL";
         Transaction transaction = tokenUpdateTransaction(
                 TOKEN_ID,
@@ -296,7 +299,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountFreeze() throws InvalidProtocolBufferException {
+    void tokenAccountFreeze() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, true, false, INITIAL_SUPPLY);
 
@@ -309,7 +312,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountUnfreeze() throws InvalidProtocolBufferException {
+    void tokenAccountUnfreeze() {
         // create token with freeze default
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, false);
 
@@ -332,7 +335,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountGrantKyc() throws InvalidProtocolBufferException {
+    void tokenAccountGrantKyc() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, true, INITIAL_SUPPLY);
 
@@ -346,7 +349,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountGrantKycWithMissingTokenAccount() throws InvalidProtocolBufferException {
+    void tokenAccountGrantKycWithMissingTokenAccount() {
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
@@ -360,7 +363,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountRevokeKyc() throws InvalidProtocolBufferException {
+    void tokenAccountRevokeKyc() {
         // create token with kyc revoked
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
 
@@ -382,7 +385,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenBurn() throws InvalidProtocolBufferException {
+    void tokenBurn() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -400,7 +403,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenBurnNft() throws InvalidProtocolBufferException {
+    void tokenBurnNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0L);
 
@@ -432,7 +435,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenBurnNftMissingNft() throws InvalidProtocolBufferException {
+    void tokenBurnNftMissingNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0L);
 
@@ -464,7 +467,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenMint() throws InvalidProtocolBufferException {
+    void tokenMint() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -482,7 +485,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenMintNfts() throws InvalidProtocolBufferException {
+    void tokenMintNfts() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP, PAYER, false, false, 0);
 
@@ -504,8 +507,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenMintNftsMissingToken() throws InvalidProtocolBufferException {
-
+    void tokenMintNftsMissingToken() {
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
         Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 2,
@@ -525,7 +527,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideAssessedCustomFees")
-    void tokenTransfer(String name, List<AssessedCustomFee> assessedCustomFees) throws InvalidProtocolBufferException {
+    void tokenTransfer(String name, List<AssessedCustomFee> assessedCustomFees) {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
         TokenID tokenID2 = TokenID.newBuilder().setTokenNum(7).build();
@@ -559,7 +561,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void nftTransfer() throws InvalidProtocolBufferException {
+    void nftTransfer() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
@@ -614,7 +616,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void nftTransferMissingNft() throws InvalidProtocolBufferException {
+    void nftTransferMissingNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
@@ -649,7 +651,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenWipe() throws InvalidProtocolBufferException {
+    void tokenWipe() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -669,7 +671,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenWipeNft() throws InvalidProtocolBufferException {
+    void tokenWipeNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
@@ -700,7 +702,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenWipeWithMissingToken() throws InvalidProtocolBufferException {
+    void tokenWipeWithMissingToken() {
         Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, 100L, null);
         insertAndParseTransaction(transaction, 10L, INITIAL_SUPPLY);
 
@@ -708,7 +710,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenWipeNftMissingNft() throws InvalidProtocolBufferException {
+    void tokenWipeNftMissingNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
@@ -728,7 +730,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenCreateAndAssociateAndWipeInSameRecordFile() throws InvalidProtocolBufferException {
+    void tokenCreateAndAssociateAndWipeInSameRecordFile() {
         long transferAmount = -1000L;
         long wipeAmount = 100L;
         long wipeTimestamp = 10L;
@@ -772,8 +774,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void insertAndParseTransaction(Transaction transaction, long timestamp, long newTotalSupply,
-            List<AssessedCustomFee> assessedCustomFees, List<Long> serialNumbers,
-            TokenTransferList... tokenTransferLists) throws InvalidProtocolBufferException {
+                                           List<AssessedCustomFee> assessedCustomFees, List<Long> serialNumbers,
+                                           TokenTransferList... tokenTransferLists) {
         TransactionBody transactionBody = getTransactionBody(transaction);
 
         var transactionRecord = createTransactionRecord(timestamp, TOKEN_ID.getTokenNum(),
@@ -785,32 +787,29 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void insertAndParseTransaction(Transaction transaction, long timestamp, long newTotalSupply,
-            List<Long> serialNumbers,
-            TokenTransferList... tokenTransferLists) throws InvalidProtocolBufferException {
+                                           List<Long> serialNumbers, TokenTransferList... tokenTransferLists) {
         insertAndParseTransaction(transaction, timestamp, newTotalSupply, Lists.emptyList(), serialNumbers,
                 tokenTransferLists);
     }
 
-    private void insertAndParseTransaction(Transaction transaction, long timestamp,
-            long newTotalSupply) throws InvalidProtocolBufferException {
+    private void insertAndParseTransaction(Transaction transaction, long timestamp,long newTotalSupply) {
         insertAndParseTransaction(transaction, timestamp, newTotalSupply, Lists.emptyList());
     }
 
     private void insertAndParseTransaction(Transaction transaction, long timestamp, long newTotalSupply,
-            TokenTransferList... tokenTransferLists) throws InvalidProtocolBufferException {
+                                           TokenTransferList... tokenTransferLists) {
         insertAndParseTransaction(transaction, timestamp, newTotalSupply, Lists.emptyList(), tokenTransferLists);
     }
 
-    private void insertAndParseTransactionWithCustomFees(Transaction transaction, long timestamp,
-            long newTotalSupply, List<AssessedCustomFee> assessedCustomFees,
-            TokenTransferList... tokenTransferLists) throws InvalidProtocolBufferException {
+    private void insertAndParseTransactionWithCustomFees(Transaction transaction, long timestamp, long newTotalSupply,
+                                                         List<AssessedCustomFee> assessedCustomFees,
+                                                         TokenTransferList... tokenTransferLists) {
         insertAndParseTransaction(transaction, timestamp, newTotalSupply, assessedCustomFees, Lists.emptyList(),
                 tokenTransferLists);
     }
 
     private Transaction tokenCreateTransaction(TokenType tokenType, boolean setFreezeKey, boolean setKycKey,
-            String symbol,
-            List<CustomFee> customFees) {
+                                               String symbol, List<CustomFee> customFees) {
         return buildTransaction(builder -> {
             builder.getTokenCreationBuilder()
                     .setAdminKey(TOKEN_REF_KEY)
@@ -844,12 +843,12 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenCreateTransaction(TokenType tokenType, boolean setFreezeKey, boolean setKycKey,
-            String symbol) {
+                                               String symbol) {
         return tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol, Lists.emptyList());
     }
 
     private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey,
-            AccountID accountID) {
+                                               AccountID accountID) {
         return buildTransaction(builder -> builder.getTokenUpdateBuilder()
                 .setAdminKey(newKey)
                 .setAutoRenewAccount(accountID)
@@ -901,7 +900,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenKycTransaction(TokenID tokenID, boolean kyc) {
-        Transaction transaction = null;
+        Transaction transaction;
         if (kyc) {
             transaction = buildTransaction(builder -> builder.getTokenGrantKycBuilder()
                     .setToken(tokenID)
@@ -916,7 +915,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenSupplyTransaction(TokenID tokenID, TokenType tokenType, boolean mint, long amount,
-            List<Long> serialNumbers) {
+                                               List<Long> serialNumbers) {
         Transaction transaction = null;
         if (mint) {
             transaction = buildTransaction(builder -> {
@@ -946,7 +945,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenWipeTransaction(TokenID tokenID, TokenType tokenType, long amount,
-            List<Long> serialNumbers) {
+                                             List<Long> serialNumbers) {
         return buildTransaction(builder -> {
             builder.getTokenWipeBuilder()
 
@@ -966,12 +965,12 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
-            TransactionBody transactionBody,
-            ResponseCodeEnum responseCode,
-            long newTotalSupply,
-            List<AssessedCustomFee> assessedCustomFees,
-            List<Long> serialNumbers,
-            List<TokenTransferList> tokenTransferLists) {
+                                                      TransactionBody transactionBody,
+                                                      ResponseCodeEnum responseCode,
+                                                      long newTotalSupply,
+                                                      List<AssessedCustomFee> assessedCustomFees,
+                                                      List<Long> serialNumbers,
+                                                      List<TokenTransferList> tokenTransferLists) {
         var receipt = TransactionReceipt.newBuilder()
                 .setStatus(responseCode)
                 .setTokenID(TokenID.newBuilder().setTokenNum(tokenNum).build())
@@ -990,33 +989,33 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
-            TransactionBody transactionBody,
-            ResponseCodeEnum responseCode,
-            long newTotalSupply,
-            List<Long> serialNumbers,
-            List<TokenTransferList> tokenTransferLists) {
+                                                      TransactionBody transactionBody,
+                                                      ResponseCodeEnum responseCode,
+                                                      long newTotalSupply,
+                                                      List<Long> serialNumbers,
+                                                      List<TokenTransferList> tokenTransferLists) {
         return createTransactionRecord(consensusTimestamp, tokenNum, transactionBody, responseCode, newTotalSupply,
                 Lists.emptyList(), serialNumbers, tokenTransferLists);
     }
 
     private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
-            TransactionBody transactionBody,
-            ResponseCodeEnum responseCode, long newTotalSupply) {
+                                                      TransactionBody transactionBody,
+                                                      ResponseCodeEnum responseCode, long newTotalSupply) {
         return createTransactionRecord(consensusTimestamp, tokenNum, transactionBody, responseCode, newTotalSupply,
                 Lists.emptyList(), Lists.emptyList());
     }
 
     private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
-            TransactionBody transactionBody,
-            ResponseCodeEnum responseCode, long newTotalSupply,
-            TokenTransferList... tokenTransferLists) {
+                                                      TransactionBody transactionBody,
+                                                      ResponseCodeEnum responseCode, long newTotalSupply,
+                                                      TokenTransferList... tokenTransferLists) {
         return createTransactionRecord(consensusTimestamp, tokenNum, transactionBody, responseCode, newTotalSupply,
                 Lists.emptyList(), Arrays.asList(tokenTransferLists));
     }
 
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
-            long modifiedTimestamp, String symbol, long totalSupply,
-            byte[] keyData, String... keyFields) {
+                                         long modifiedTimestamp, String symbol, long totalSupply,
+                                         byte[] keyData, String... keyFields) {
         // clear cache for PgCopy scenarios which don't utilize it
         cacheManager.getCache("tokens").clear();
 
@@ -1043,15 +1042,16 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
-            long modifiedTimestamp, String symbol, long totalSupply) {
+                                         long modifiedTimestamp, String symbol, long totalSupply) {
         assertTokenInRepository(tokenID, present, createdTimestamp, modifiedTimestamp, symbol, totalSupply, null);
     }
 
     private void assertNftInRepository(TokenID tokenID, long serialNumber, boolean present, long createdTimestamp,
-            long modifiedTimestamp, byte[] metadata, EntityId accountId, boolean deleted) {
+                                       long modifiedTimestamp, byte[] metadata, EntityId accountId, boolean deleted) {
         Optional<Nft> nftOptional = nftRepository.findById(new NftId(serialNumber, EntityId.of(tokenID)));
         if (present) {
-            assertThat(nftOptional.get())
+            assertThat(nftOptional)
+                    .get()
                     .returns(createdTimestamp, from(Nft::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(Nft::getModifiedTimestamp))
                     .returns(metadata, from(Nft::getMetadata))
@@ -1063,8 +1063,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, boolean present,
-            long createdTimestamp, long modifiedTimestamp, boolean associated,
-            TokenFreezeStatusEnum frozenStatus, TokenKycStatusEnum kycStatus) {
+                                                long createdTimestamp, long modifiedTimestamp, boolean associated,
+                                                TokenFreezeStatusEnum frozenStatus, TokenKycStatusEnum kycStatus) {
         // clear cache for PgCopy scenarios which don't utilize it
         cacheManager.getCache("tokenaccounts").clear();
 
@@ -1083,7 +1083,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void assertTokenTransferInRepository(TokenID tokenID, AccountID accountID, long consensusTimestamp,
-            long amount) {
+                                                 long amount) {
         com.hedera.mirror.importer.domain.TokenTransfer tokenTransfer = tokenTransferRepository
                 .findById(new com.hedera.mirror.importer.domain.TokenTransfer.Id(consensusTimestamp, EntityId
                         .of(tokenID), EntityId.of(accountID))).get();
@@ -1104,7 +1104,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
-            AccountID receiverId, AccountID senderId) {
+                                               AccountID receiverId, AccountID senderId) {
         EntityId receiver = receiverId != null ? EntityId.of(receiverId) : null;
         EntityId sender = senderId != null ? EntityId.of(senderId) : null;
 
@@ -1118,8 +1118,8 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
-            boolean setFreezeKey, boolean setKycKey,
-            List<CustomFee> customFees) throws InvalidProtocolBufferException {
+                                   boolean setFreezeKey, boolean setKycKey,
+                                   List<CustomFee> customFees) {
         Transaction createTransaction = tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol, customFees);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         TokenTransferList tokenTransfer = tokenType == TokenType.FUNGIBLE_COMMON ? tokenTransfer(tokenID, PAYER,
@@ -1131,13 +1131,13 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
-            boolean setFreezeKey, boolean setKycKey) throws InvalidProtocolBufferException {
+                                   boolean setFreezeKey, boolean setKycKey) {
         createTokenEntity(tokenID, tokenType, symbol, consensusTimestamp, setFreezeKey, setKycKey, Lists.emptyList());
     }
 
     private void createAndAssociateToken(TokenID tokenID, TokenType tokenType, String symbol, long createTimestamp,
-            long associateTimestamp, AccountID accountID, boolean setFreezeKey,
-            boolean setKycKey, long initialSupply) throws InvalidProtocolBufferException {
+                                         long associateTimestamp, AccountID accountID, boolean setFreezeKey,
+                                         boolean setKycKey, long initialSupply) {
         createTokenEntity(tokenID, tokenType, symbol, createTimestamp, setFreezeKey, setKycKey);
         assertTokenInRepository(tokenID, true, createTimestamp, createTimestamp, symbol, initialSupply);
 
@@ -1149,8 +1149,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE);
     }
 
-    private void updateTokenFeeSchedule(TokenID tokenID, long consensusTimestamp,
-            List<CustomFee> customFees) throws InvalidProtocolBufferException {
+    private void updateTokenFeeSchedule(TokenID tokenID, long consensusTimestamp, List<CustomFee> customFees) {
         Transaction transaction = buildTransaction(builder -> builder.getTokenFeeScheduleUpdateBuilder()
                 .setTokenId(tokenID)
                 .addAllCustomFees(convertCustomFees(customFees))
@@ -1171,7 +1170,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private TokenTransferList nftTransfer(TokenID tokenId, AccountID receiverAccountId, AccountID senderAccountId,
-            List<Long> serialNumbers) {
+                                          List<Long> serialNumbers) {
         TokenTransferList.Builder builder = TokenTransferList.newBuilder();
         builder.setToken(tokenId);
         for (Long serialNumber : serialNumbers) {

@@ -29,6 +29,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.util.EntityIdEndec;
+
 public class TokenTest {
 
     private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
@@ -72,6 +74,17 @@ public class TokenTest {
         token.setSymbol("abc" + (char) 0);
         assertThat(token.getName()).isEqualTo("abc�");
         assertThat(token.getSymbol()).isEqualTo("abc�");
+    }
+
+    @Test
+    void of() {
+        EntityId tokenId = EntityIdEndec.decode(1057, EntityTypeEnum.TOKEN);
+        Token expected = new Token();
+        expected.setTokenId(new TokenId(tokenId));
+
+        Token actual = Token.of(tokenId);
+
+        assertThat(actual).isEqualTo(expected);
     }
 
     private Token token(long consensusTimestamp) throws DecoderException {

@@ -112,6 +112,12 @@ public class Token {
     @JsonSerialize(using = NullableStringSerializer.class)
     private String wipeKeyEd25519Hex;
 
+    public static Token of(EntityId tokenId) {
+        Token token = new Token();
+        token.setTokenId(new TokenId(tokenId));
+        return token;
+    }
+
     public void setInitialSupply(Long initialSupply) {
         this.initialSupply = initialSupply;
 

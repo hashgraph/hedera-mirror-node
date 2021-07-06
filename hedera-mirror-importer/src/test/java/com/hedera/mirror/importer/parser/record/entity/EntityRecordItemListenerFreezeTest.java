@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -43,7 +42,7 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void freeze() throws Exception {
+    void freeze() {
         Transaction transaction = freezeTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
@@ -57,7 +56,7 @@ public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void freezeInvalidTransaction() throws Exception {
+    void freezeInvalidTransaction() {
         Transaction transaction = freezeTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);

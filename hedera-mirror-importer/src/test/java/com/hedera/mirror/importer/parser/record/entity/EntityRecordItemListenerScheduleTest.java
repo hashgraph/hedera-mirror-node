@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -92,7 +91,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
     @ParameterizedTest(name = "{2}")
     @MethodSource("provideScheduleCreatePayer")
-    void scheduleCreate(AccountID payer, AccountID expectedPayer, String name) throws InvalidProtocolBufferException {
+    void scheduleCreate(AccountID payer, AccountID expectedPayer, String name) {
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, payer, SCHEDULE_ID);
 
         // verify entity count
@@ -115,7 +114,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
-    void scheduleSign() throws InvalidProtocolBufferException {
+    void scheduleSign() {
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, null, SCHEDULE_ID);
 
         // sign
@@ -142,7 +141,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
-    void scheduleSignTwoBatches() throws InvalidProtocolBufferException {
+    void scheduleSignTwoBatches() {
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, null, SCHEDULE_ID);
 
         // first sign
@@ -189,7 +188,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
-    void scheduleSignDuplicateEd25519Signatures() throws InvalidProtocolBufferException {
+    void scheduleSignDuplicateEd25519Signatures() {
         SignatureMap signatureMap = getSigMap(3, true);
         SignaturePair first = signatureMap.getSigPair(0);
         SignaturePair third = signatureMap.getSigPair(2);
@@ -206,16 +205,16 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
-    void scheduleExecuteOnSuccess() throws InvalidProtocolBufferException {
+    void scheduleExecuteOnSuccess() {
         scheduleExecute(ResponseCodeEnum.SUCCESS);
     }
 
     @Test
-    void scheduleExecuteOnFailure() throws InvalidProtocolBufferException {
+    void scheduleExecuteOnFailure() {
         scheduleExecute(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID);
     }
 
-    void scheduleExecute(ResponseCodeEnum responseCodeEnum) throws InvalidProtocolBufferException {
+    void scheduleExecute(ResponseCodeEnum responseCodeEnum) {
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, null, SCHEDULE_ID);
 
         // sign
@@ -318,9 +317,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 transactionBody, responseCode.getNumber());
     }
 
-    private void insertScheduleCreateTransaction(long createdTimestamp,
-                                                 AccountID payer,
-                                                 ScheduleID scheduleID) throws InvalidProtocolBufferException {
+    private void insertScheduleCreateTransaction(long createdTimestamp, AccountID payer, ScheduleID scheduleID) {
         Transaction createTransaction = scheduleCreateTransaction(payer);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         var createTransactionRecord = createTransactionRecord(createdTimestamp, scheduleID, createTransactionBody,
@@ -329,8 +326,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
     }
 
-    private void insertScheduleSign(long signTimestamp, SignatureMap signatureMap,
-                                    ScheduleID scheduleID) throws InvalidProtocolBufferException {
+    private void insertScheduleSign(long signTimestamp, SignatureMap signatureMap, ScheduleID scheduleID) {
         Transaction signTransaction = scheduleSignTransaction(scheduleID, signatureMap);
         TransactionBody signTransactionBody = getTransactionBody(signTransaction);
         var signTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, signTransactionBody,
@@ -340,7 +336,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     private void insertScheduledTransaction(long signTimestamp, ScheduleID scheduleID,
-                                            ResponseCodeEnum responseCodeEnum) throws InvalidProtocolBufferException {
+                                            ResponseCodeEnum responseCodeEnum) {
         Transaction scheduledTransaction = scheduledTransaction();
         TransactionBody scheduledTransactionBody = getTransactionBody(scheduledTransaction);
         var scheduledTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, scheduledTransactionBody,
