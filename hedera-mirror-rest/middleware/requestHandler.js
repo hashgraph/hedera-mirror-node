@@ -24,13 +24,14 @@ const httpContext = require('express-http-context');
 const qs = require('qs');
 const constants = require('../constants');
 const {randomString} = require('../utils');
+const {httpStatusCodes} = require('../constants');
 
 const requestLogger = async (req, res, next) => {
   httpContext.set(constants.requestIdLabel, randomString(8));
   logger.info(`${req.ip} ${req.method} ${req.originalUrl}`);
 
   // set default http OK code for reference
-  res.locals.statusCode = 200;
+  res.locals.statusCode = httpStatusCodes.OK.code;
 };
 
 /**

@@ -35,7 +35,7 @@ const {NotFoundError} = require('./errors/notFoundError');
 const {Nft, NftTransfer, Transaction} = require('./model');
 
 // middleware
-const {httpStatusCodes} = require('./middleware/httpStatusHandler');
+const {httpStatusCodes} = require('./constants');
 
 // services
 const {NftService, TokenService, TransactionResultService, TransactionTypeService} = require('./service');

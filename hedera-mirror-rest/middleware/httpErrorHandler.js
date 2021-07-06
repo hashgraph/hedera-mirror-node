@@ -20,30 +20,7 @@
 
 'use strict';
 
-class StatusCode {
-  constructor(code, message) {
-    this.code = code;
-    this.message = message;
-  }
-
-  isClientError() {
-    return this.code >= 400 && this.code < 500;
-  }
-
-  toString() {
-    return `${this.code} ${this.message}`;
-  }
-}
-
-const httpStatusCodes = {
-  BAD_GATEWAY: new StatusCode(502, 'Bad gateway'),
-  BAD_REQUEST: new StatusCode(400, 'Bad request'),
-  INTERNAL_ERROR: new StatusCode(500, 'Internal error'),
-  NO_CONTENT: new StatusCode(204, 'No content'),
-  NOT_FOUND: new StatusCode(404, 'Not found'),
-  PARTIAL_CONTENT: new StatusCode(206, 'Partial mirror node'),
-  SERVICE_UNAVAILABLE: new StatusCode(503, 'Service unavailable'),
-};
+const {httpStatusCodes} = require('../constants');
 
 const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
@@ -96,5 +73,4 @@ const errorMessageFormat = (errorMessages) => {
 
 module.exports = {
   handleError,
-  httpStatusCodes,
 };
