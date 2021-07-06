@@ -23,17 +23,14 @@ package com.hedera.mirror.importer.parser.record.entity;
 import java.util.List;
 import java.util.function.BiConsumer;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.AssessedCustomFee;
-
-import com.hedera.mirror.importer.domain.CustomFee;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
