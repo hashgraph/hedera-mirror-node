@@ -47,18 +47,17 @@ const httpStatusCodes = {
 
 const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
-const statusMap = {
+const errorMap = {
   DbError: httpStatusCodes.SERVICE_UNAVAILABLE,
   FileDownloadError: httpStatusCodes.BAD_GATEWAY,
   InvalidArgumentError: httpStatusCodes.BAD_REQUEST,
-  NoContentError: httpStatusCodes.NO_CONTENT,
   NotFoundError: httpStatusCodes.NOT_FOUND,
 };
 
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const handleError = async (err, req, res, next) => {
-  const statusCode = statusMap[err.constructor.name] || defaultStatusCode;
+  const statusCode = errorMap[err.constructor.name] || defaultStatusCode;
   let errorMessage;
 
   if (shouldReturnMessage(statusCode)) {
@@ -98,5 +97,4 @@ const errorMessageFormat = (errorMessages) => {
 module.exports = {
   handleError,
   httpStatusCodes,
-  statusMap,
 };
