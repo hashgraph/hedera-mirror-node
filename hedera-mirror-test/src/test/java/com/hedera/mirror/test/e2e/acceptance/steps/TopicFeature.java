@@ -325,7 +325,7 @@ public class TopicFeature {
     public void verifyTopicOnNetwork() {
         TopicInfo topicInfo = topicClient.getTopicInfo(consensusTopicId);
         assertNotNull(topicInfo, "topicInfo is null");
-        assertNotEquals(topicInfo.topicMemo, "", "topicMemo is not empty");
+        assertNotEquals("", topicInfo.topicMemo, "topicMemo is not empty");
         assertThat(topicInfo.sequenceNumber).isGreaterThanOrEqualTo(messageSubscribeCount);
     }
 

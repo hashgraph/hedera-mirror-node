@@ -100,85 +100,85 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
     }
 
     @Test
-    void contractCallItemizedTransfers() throws Exception {
+    void contractCallItemizedTransfers() {
         givenSuccessfulContractCallTransaction();
         assertEverything();
     }
 
     @Test
-    void contractCallAggregatedTransfers() throws Exception {
+    void contractCallAggregatedTransfers() {
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenSuccessfulContractCallTransactionAggregatedTransfers();
         assertEverything();
     }
 
     @Test
-    void contractCreateItemizedTransfers() throws Exception {
+    void contractCreateItemizedTransfers() {
         givenSuccessfulContractCreateTransaction();
         assertEverything();
     }
 
     @Test
-    void contractCreateAggregatedTransfers() throws Exception {
+    void contractCreateAggregatedTransfers() {
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenSuccessfulContractCreateTransactionAggregatedTransfers();
         assertEverything();
     }
 
     @Test
-    void cryptoCreateItemizedTransfers() throws Exception {
+    void cryptoCreateItemizedTransfers() {
         givenSuccessfulCryptoCreateTransaction();
         assertEverything();
     }
 
     @Test
-    void cryptoCreateItemizedTransfersStoreNonFeeTransfers() throws Exception {
+    void cryptoCreateItemizedTransfersStoreNonFeeTransfers() {
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenSuccessfulCryptoCreateTransaction();
         assertEverything();
     }
 
     @Test
-    void cryptoCreateAggregatedTransfers() throws Exception {
+    void cryptoCreateAggregatedTransfers() {
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenSuccessfulCryptoCreateTransactionAggregatedTransfers();
         assertEverything();
     }
 
     @Test
-    void cryptoTransferItemizedTransfers() throws Exception {
+    void cryptoTransferItemizedTransfers() {
         givenSuccessfulCryptoTransferTransaction();
         assertEverything();
     }
 
     @Test
-    void cryptoTransferAggregatedTransfers() throws Exception {
+    void cryptoTransferAggregatedTransfers() {
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenSuccessfulCryptoTransferTransactionAggregatedTransfers();
         assertEverything();
     }
 
     @Test
-    void cryptoTransferFailedItemizedTransfers() throws Exception {
+    void cryptoTransferFailedItemizedTransfers() {
         givenFailedCryptoTransferTransaction();
         assertEverything();
     }
 
     @Test
-    void cryptoTransferFailedAggregatedTransfers() throws Exception {
+    void cryptoTransferFailedAggregatedTransfers() {
         givenFailedCryptoTransferTransactionAggregatedTransfers();
         assertEverything();
     }
 
     @Test
-    void cryptoTransferFailedItemizedTransfersInvalidEntity() throws Exception {
+    void cryptoTransferFailedItemizedTransfersInvalidEntity() {
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenFailedCryptoTransferTransactionInvalidEntity();
         assertEverything();
     }
 
     @Test
-    void cryptoTransferFailedItemizedTransfersConfigAlways() throws Exception {
+    void cryptoTransferFailedItemizedTransfersConfigAlways() {
         entityProperties.getPersist().setNonFeeTransfers(true);
         givenFailedCryptoTransferTransaction();
         assertEverything();
@@ -240,7 +240,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
                 .build();
     }
 
-    private void contractCallWithTransferList(TransferList.Builder transferList) throws Exception {
+    private void contractCallWithTransferList(TransferList.Builder transferList) {
         var transaction = contractCall();
         var transactionBody = getTransactionBody(transaction);
         var record = transactionRecordSuccess(transactionBody, transferList).build();
@@ -261,7 +261,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
                 .build();
     }
 
-    private void contractCreateWithTransferList(TransferList.Builder transferList) throws Exception {
+    private void contractCreateWithTransferList(TransferList.Builder transferList) {
         var transaction = contractCreate();
         var transactionBody = getTransactionBody(transaction);
         var record = transactionRecordSuccess(transactionBody, transferList).build();
@@ -285,7 +285,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
                 .build();
     }
 
-    private void cryptoCreateWithTransferList(TransferList.Builder transferList) throws Exception {
+    private void cryptoCreateWithTransferList(TransferList.Builder transferList) {
         var transaction = cryptoCreate();
         var transactionBody = getTransactionBody(transaction);
         var record = transactionRecordSuccess(transactionBody, transferList).build();
@@ -314,7 +314,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
     }
 
     private void cryptoTransferWithTransferList(Transaction transaction, TransferList.Builder transferList,
-                                                ResponseCodeEnum rc) throws Exception {
+                                                ResponseCodeEnum rc) {
         var transactionBody = getTransactionBody(transaction);
         var record = transactionRecord(transactionBody, rc, transferList).build();
 
@@ -322,11 +322,11 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         parseRecordItemAndCommit(new RecordItem(transaction, record));
     }
 
-    private void cryptoTransferWithTransferList(TransferList.Builder transferList) throws Exception {
+    private void cryptoTransferWithTransferList(TransferList.Builder transferList) {
         cryptoTransferWithTransferList(cryptoTransfer(), transferList, ResponseCodeEnum.SUCCESS);
     }
 
-    private void givenSuccessfulContractCallTransaction() throws Exception {
+    private void givenSuccessfulContractCallTransaction() {
         contractCallWithTransferList(transferListForContractCallItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
         if (entityProperties.getPersist().isNonFeeTransfers()) {
@@ -334,7 +334,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         }
     }
 
-    private void givenSuccessfulContractCallTransactionAggregatedTransfers() throws Exception {
+    private void givenSuccessfulContractCallTransactionAggregatedTransfers() {
         contractCallWithTransferList(transferListForContractCallAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
         if (entityProperties.getPersist().isNonFeeTransfers()) {
@@ -342,7 +342,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         }
     }
 
-    private void givenSuccessfulContractCreateTransaction() throws Exception {
+    private void givenSuccessfulContractCreateTransaction() {
         contractCreateWithTransferList(transferListForContractCreateItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
         if (entityProperties.getPersist().isNonFeeTransfers()) {
@@ -350,7 +350,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         }
     }
 
-    private void givenSuccessfulContractCreateTransactionAggregatedTransfers() throws Exception {
+    private void givenSuccessfulContractCreateTransactionAggregatedTransfers() {
         contractCreateWithTransferList(transferListForContractCreateAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_CONTRACT_NUM));
 
@@ -359,7 +359,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         }
     }
 
-    private void givenSuccessfulCryptoCreateTransaction() throws Exception {
+    private void givenSuccessfulCryptoCreateTransaction() {
         cryptoCreateWithTransferList(transferListForCryptoCreateItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, PROXY_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM,
                 NEW_ACCOUNT_NUM));
@@ -368,7 +368,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         }
     }
 
-    private void givenSuccessfulCryptoCreateTransactionAggregatedTransfers() throws Exception {
+    private void givenSuccessfulCryptoCreateTransactionAggregatedTransfers() {
         cryptoCreateWithTransferList(transferListForCryptoCreateAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, PROXY_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM,
                 NEW_ACCOUNT_NUM));
@@ -377,25 +377,25 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         }
     }
 
-    private void givenFailedCryptoTransferTransaction() throws Exception {
+    private void givenFailedCryptoTransferTransaction() {
         cryptoTransferWithTransferList(cryptoTransfer(), transferListForFailedCryptoTransferItemized(),
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM));
     }
 
-    private void givenFailedCryptoTransferTransactionInvalidEntity() throws Exception {
+    private void givenFailedCryptoTransferTransactionInvalidEntity() {
         cryptoTransferWithTransferList(cryptoTransfer(100000000000L), transferListForFailedCryptoTransferItemized(),
                 ResponseCodeEnum.INVALID_ACCOUNT_ID);
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM));
     }
 
-    private void givenFailedCryptoTransferTransactionAggregatedTransfers() throws Exception {
+    private void givenFailedCryptoTransferTransactionAggregatedTransfers() {
         cryptoTransferWithTransferList(cryptoTransfer(), transferListForFailedCryptoTransferAggregated(),
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM));
     }
 
-    private void givenSuccessfulCryptoTransferTransaction() throws Exception {
+    private void givenSuccessfulCryptoTransferTransaction() {
         cryptoTransferWithTransferList(transferListForCryptoTransferItemized());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_ACCOUNT_NUM));
         if (entityProperties.getPersist().isNonFeeTransfers()) {
@@ -403,7 +403,7 @@ public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemLis
         }
     }
 
-    private void givenSuccessfulCryptoTransferTransactionAggregatedTransfers() throws Exception {
+    private void givenSuccessfulCryptoTransferTransactionAggregatedTransfers() {
         cryptoTransferWithTransferList(transferListForCryptoTransferAggregated());
         expectedEntityNum.addAll(List.of(PAYER_ACCOUNT_NUM, NODE_ACCOUNT_NUM, TREASURY_ACCOUNT_NUM, NEW_ACCOUNT_NUM));
         if (entityProperties.getPersist().isNonFeeTransfers()) {

@@ -68,7 +68,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCreate() throws Exception {
+    void contractCreate() {
         Transaction transaction = contractCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         ContractCreateTransactionBody contractCreateTransactionBody = transactionBody.getContractCreateInstance();
@@ -90,7 +90,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCreateFailedWithResult() throws Exception {
+    void contractCreateFailedWithResult() {
         Transaction transaction = contractCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         // Clear receipt.contractID since transaction is failure.
@@ -114,7 +114,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCreateFailedWithoutResult() throws Exception {
+    void contractCreateFailedWithoutResult() {
         Transaction transaction = contractCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         // Clear receipt.contractID since transaction is failure.
@@ -140,7 +140,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCreateDoNotPersist() throws Exception {
+    void contractCreateDoNotPersist() {
         entityProperties.getPersist().setContracts(false);
 
         Transaction transaction = contractCreateTransaction();
@@ -219,7 +219,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractUpdateAllToExistingInvalidTransaction() throws Exception {
+    void contractUpdateAllToExistingInvalidTransaction() {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
         TransactionBody createTransactionBody = getTransactionBody(contractCreateTransaction);
@@ -252,7 +252,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractDeleteToExisting() throws Exception {
+    void contractDeleteToExisting() {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
         TransactionBody createTransactionBody = getTransactionBody(contractCreateTransaction);
@@ -289,7 +289,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractDeleteToNew() throws Exception {
+    void contractDeleteToNew() {
         Transaction transaction = contractDeleteTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = createOrUpdateRecord(transactionBody);
@@ -310,7 +310,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractDeleteToNewInvalidTransaction() throws Exception {
+    void contractDeleteToNewInvalidTransaction() {
         Transaction transaction = contractDeleteTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = createOrUpdateRecord(transactionBody,
@@ -331,7 +331,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCallToExisting() throws Exception {
+    void contractCallToExisting() {
         // first create the contract
         Transaction contractCreateTransaction = contractCreateTransaction();
         TransactionBody createTransactionBody = getTransactionBody(contractCreateTransaction);
@@ -361,7 +361,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCallToNew() throws Exception {
+    void contractCallToNew() {
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = callRecord(transactionBody);
@@ -383,7 +383,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCallFailedWithResult() throws Exception {
+    void contractCallFailedWithResult() {
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
@@ -402,7 +402,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCallFailedWithoutResult() throws Exception {
+    void contractCallFailedWithoutResult() {
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE)
@@ -422,7 +422,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
     }
 
     @Test
-    void contractCallDoNotPersist() throws Exception {
+    void contractCallDoNotPersist() {
         entityProperties.getPersist().setContracts(false);
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
@@ -444,7 +444,7 @@ public class EntityRecordItemListenerContractTest extends AbstractEntityRecordIt
 
     // Test for bad entity id in a failed transaction
     @Test
-    void cryptoTransferBadContractId() throws Exception {
+    void cryptoTransferBadContractId() {
         Transaction transaction = contractCallTransaction(ContractID.newBuilder().setContractNum(-1L).build());
         var transactionBody = getTransactionBody(transaction);
         TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INVALID_CONTRACT_ID);

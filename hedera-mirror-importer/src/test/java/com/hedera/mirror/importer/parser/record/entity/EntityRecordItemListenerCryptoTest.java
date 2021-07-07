@@ -101,7 +101,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoCreateFailedTransaction() throws Exception {
+    void cryptoCreateFailedTransaction() {
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
@@ -129,7 +129,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoCreateInitialBalanceInTransferList() throws Exception {
+    void cryptoCreateInitialBalanceInTransferList() {
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
@@ -162,7 +162,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoCreateTwice() throws Exception {
+    void cryptoCreateTwice() {
         Transaction firstTransaction = cryptoCreateTransaction();
         TransactionBody firstTransactionBody = getTransactionBody(firstTransaction);
         TransactionRecord firstRecord = transactionRecordSuccess(firstTransactionBody);
@@ -190,7 +190,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoUpdateSuccessfulTransaction() throws Exception {
+    void cryptoUpdateSuccessfulTransaction() {
         createAccount();
 
         // now update
@@ -231,7 +231,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
      * Github issue #483
      */
     @Test
-    void samePayerAndUpdateAccount() throws Exception {
+    void samePayerAndUpdateAccount() {
         Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
         transactionBody = TransactionBody.newBuilder()
@@ -257,7 +257,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     // Transactions in production have proxyAccountID explicitly set to '0.0.0'. Test is to prevent code regression
     // in handling this weird case.
     @Test
-    void proxyAccountIdSetTo0() throws Exception {
+    void proxyAccountIdSetTo0() {
         // given
         Transaction transaction = cryptoUpdateTransaction(accountId);
         TransactionBody transactionBody = getTransactionBody(transaction);
@@ -288,7 +288,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
             "-9223372036854775808, -9223372036854775808",
             "-1000000000000000000, -9223372036854775808"
     })
-    void cryptoUpdateExpirationOverflow(long seconds, long expectedNanosTimestamp) throws Exception {
+    void cryptoUpdateExpirationOverflow(long seconds, long expectedNanosTimestamp) {
         createAccount();
 
         // now update
@@ -313,7 +313,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoUpdateFailedTransaction() throws Exception {
+    void cryptoUpdateFailedTransaction() {
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionRecord createRecord = transactionRecordSuccess(
                 getTransactionBody(createTransaction));
@@ -346,7 +346,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoDeleteSuccessfulTransaction() throws Exception {
+    void cryptoDeleteSuccessfulTransaction() {
         // first create the account
         createAccount();
 
@@ -380,7 +380,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoDeleteFailedTransaction() throws Exception {
+    void cryptoDeleteFailedTransaction() {
         createAccount();
 
         // now delete
@@ -414,7 +414,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoAddLiveHashPersist() throws Exception {
+    void cryptoAddLiveHashPersist() {
         // create the account and add live hash
         createAccount();
         Transaction transaction = cryptoAddLiveHashTransaction();
@@ -448,7 +448,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoAddLiveHashDoNotPersist() throws Exception {
+    void cryptoAddLiveHashDoNotPersist() {
         entityProperties.getPersist().setClaims(false);
         // create the account and add live hash
         createAccount();
@@ -477,7 +477,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoDeleteLiveHash() throws Exception {
+    void cryptoDeleteLiveHash() {
         // create the account and add live hash
         createAccount();
         Transaction transactionAddLiveHash = cryptoAddLiveHashTransaction();
@@ -511,7 +511,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoTransferWithPersistence() throws Exception {
+    void cryptoTransferWithPersistence() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
@@ -536,7 +536,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoTransferWithoutPersistence() throws Exception {
+    void cryptoTransferWithoutPersistence() {
         entityProperties.getPersist().setCryptoTransferAmounts(false);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
@@ -558,7 +558,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoTransferFailedTransaction() throws Exception {
+    void cryptoTransferFailedTransaction() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
         Transaction transaction = cryptoTransferTransaction();
@@ -580,7 +580,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void unknownTransactionResult() throws Exception {
+    void unknownTransactionResult() {
         int unknownResult = -1000;
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
@@ -594,7 +594,7 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
                 .containsOnly(unknownResult);
     }
 
-    private void createAccount() throws Exception {
+    private void createAccount() {
         Transaction createTransaction = cryptoCreateTransaction();
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
@@ -704,14 +704,14 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoTransferPersistRawBytesDefault() throws Exception {
+    void cryptoTransferPersistRawBytesDefault() {
         // Use the default properties for record parsing - the raw bytes should NOT be stored in the db
         Transaction transaction = cryptoTransferTransaction();
         testRawBytes(transaction, null);
     }
 
     @Test
-    void cryptoTransferPersistRawBytesTrue() throws Exception {
+    void cryptoTransferPersistRawBytesTrue() {
         // Explicitly persist the transaction bytes
         entityProperties.getPersist().setTransactionBytes(true);
         Transaction transaction = cryptoTransferTransaction();
@@ -719,14 +719,14 @@ public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItem
     }
 
     @Test
-    void cryptoTransferPersistRawBytesFalse() throws Exception {
+    void cryptoTransferPersistRawBytesFalse() {
         // Explicitly DO NOT persist the transaction bytes
         entityProperties.getPersist().setTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
         testRawBytes(transaction, null);
     }
 
-    private void testRawBytes(Transaction transaction, byte[] expectedBytes) throws Exception {
+    private void testRawBytes(Transaction transaction, byte[] expectedBytes) {
         // given
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecordSuccess(transactionBody);

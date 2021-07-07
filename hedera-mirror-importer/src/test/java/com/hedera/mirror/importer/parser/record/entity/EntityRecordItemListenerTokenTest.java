@@ -25,11 +25,13 @@ import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -46,16 +48,28 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Resource;
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.config.CacheConfiguration;
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
+import com.hedera.mirror.importer.domain.CustomFee;
+import com.hedera.mirror.importer.domain.CustomFeeWrapper;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Nft;
 import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.Token;
@@ -69,6 +83,7 @@ import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 
 public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
 
@@ -77,18 +92,26 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     private static final long CREATE_TIMESTAMP = 1L;
     private static final Timestamp EXPIRY_TIMESTAMP = Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityIdEndec.decode(1199, EntityTypeEnum.ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityIdEndec.decode(1200, EntityTypeEnum.ACCOUNT);
+    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityIdEndec.decode(9800, EntityTypeEnum.TOKEN);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final String METADATA = "METADATA";
     private static final long SERIAL_NUMBER_1 = 1L;
     private static final long SERIAL_NUMBER_2 = 2L;
-    private static final List SERIAL_NUMBER_LIST = Arrays.asList(SERIAL_NUMBER_1, SERIAL_NUMBER_2);
+    private static final List<Long> SERIAL_NUMBER_LIST = Arrays.asList(SERIAL_NUMBER_1, SERIAL_NUMBER_2);
     private static final String SYMBOL = "FOOCOIN";
     private static final String TOKEN_CREATE_MEMO = "TokenCreate memo";
-    private static final TokenID TOKEN_ID = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(2).build();
+    private static final TokenID TOKEN_ID = TokenID.newBuilder().setTokenNum(2).build();
+    private static final EntityId DOMAIN_TOKEN_ID = EntityId.of(TOKEN_ID);
     private static final Key TOKEN_REF_KEY = keyFromString(KEY);
     private static final long TOKEN_UPDATE_AUTO_RENEW_PERIOD = 12L;
     private static final Key TOKEN_UPDATE_REF_KEY = keyFromString(KEY2);
     private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
+    private static final long TRANSFER_TIMESTAMP = 15L;
+
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
     @Resource
     protected TokenRepository tokenRepository;
@@ -114,59 +137,67 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         entityProperties.getPersist().setTokens(true);
     }
 
-    @Test
-    void tokenCreate() throws InvalidProtocolBufferException {
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
-
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideCustomFees")
+    void tokenCreate(String name, List<CustomFee> customFees) {
+        // given
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+
+        // when
+        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false, customFees);
+
+        // then
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
         // verify token
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
+        assertCustomFeesInDb(customFees);
         assertThat(tokenTransferRepository.count()).isEqualTo(1L);
     }
 
     @Test
-    void tokenCreateWithoutPersistence() throws InvalidProtocolBufferException {
+    void tokenCreateWithoutPersistence() {
         entityProperties.getPersist().setTokens(false);
 
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertThat(tokenTransferRepository.count()).isZero();
+        assertCustomFeesInDb(Lists.emptyList());
     }
 
     @Test
-    void tokenCreateWithNfts() throws InvalidProtocolBufferException {
+    void tokenCreateWithNfts() {
         createTokenEntity(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, false, false);
 
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
         // verify token
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, 0);
+        assertCustomFeesInDb(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID));
     }
 
     @Test
-    void tokenAssociate() throws InvalidProtocolBufferException {
+    void tokenAssociate() {
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true);
 
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
-        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED);
     }
 
     @Test
-    void tokenAssociateWithMissingToken() throws InvalidProtocolBufferException {
+    void tokenAssociateWithMissingToken() {
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
-        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY);
 
         // verify token account was not created
         assertTokenAccountInRepository(TOKEN_ID, PAYER, false, CREATE_TIMESTAMP, CREATE_TIMESTAMP, true,
@@ -174,29 +205,29 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenDissociate() throws InvalidProtocolBufferException {
+    void tokenDissociate() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
         Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER);
         long dissociateTimeStamp = 10L;
-        insertAndParseTransaction(dissociateTransaction, dissociateTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(dissociateTransaction, dissociateTimeStamp, INITIAL_SUPPLY);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, dissociateTimeStamp, false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
     }
 
     @Test
-    void tokenDelete() throws InvalidProtocolBufferException {
+    void tokenDelete() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
         // delete token
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
         long deleteTimeStamp = 10L;
-        insertAndParseTransaction(deleteTransaction, deleteTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(deleteTransaction, deleteTimeStamp, INITIAL_SUPPLY);
 
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 true, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, deleteTimeStamp);
         assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
@@ -205,7 +236,29 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenUpdate() throws InvalidProtocolBufferException {
+    void tokenFeeScheduleUpdate() {
+        // given
+        // create the token entity with empty custom fees
+        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
+        // update fee schedule
+        long updateTimestamp = CREATE_TIMESTAMP + 10L;
+        Entity expectedEntity = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+        List<CustomFee> newCustomFees = nonEmptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID);
+        List<CustomFee> expectedCustomFees = Lists.newArrayList(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID));
+        expectedCustomFees.addAll(newCustomFees);
+
+        // when
+        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, newCustomFees);
+
+        // then
+        assertEntity(expectedEntity);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        assertCustomFeesInDb(expectedCustomFees);
+    }
+
+    @Test
+    void tokenUpdate() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -217,62 +270,64 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 TOKEN_UPDATE_REF_KEY,
                 PAYER2);
         long updateTimeStamp = 10L;
-        insertAndParseTransaction(transaction, updateTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(transaction, updateTimeStamp, INITIAL_SUPPLY);
 
-        Entity expected = createEntity(EntityId.of(TOKEN_ID), TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
                 TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null, CREATE_TIMESTAMP,
                 updateTimeStamp);
         assertEquals(5, entityRepository.count()); // Node, payer, token, old autorenew, and new autorenew
         assertEntity(expected);
 
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimeStamp, newSymbol, INITIAL_SUPPLY);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimeStamp, newSymbol, INITIAL_SUPPLY,
+                TOKEN_UPDATE_REF_KEY.toByteArray(), "feeScheduleKey", "freezeKey", "kycKey", "supplyKey",
+                "wipeKey");
     }
 
     @Test
-    void tokenUpdateWithMissingToken() throws InvalidProtocolBufferException {
+    void tokenUpdateWithMissingToken() {
         String newSymbol = "NEWSYMBOL";
         Transaction transaction = tokenUpdateTransaction(
                 TOKEN_ID,
                 newSymbol,
                 TOKEN_UPDATE_MEMO,
                 keyFromString("updated-key"),
-                AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build());
-        insertAndParseTransaction(transaction, 10L, INITIAL_SUPPLY, null);
+                AccountID.newBuilder().setAccountNum(2002).build());
+        insertAndParseTransaction(transaction, 10L, INITIAL_SUPPLY);
 
         // verify token was not created when missing
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
     }
 
     @Test
-    void tokenAccountFreeze() throws InvalidProtocolBufferException {
+    void tokenAccountFreeze() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, true, false, INITIAL_SUPPLY);
 
         Transaction transaction = tokenFreezeTransaction(TOKEN_ID, true);
         long freezeTimeStamp = 15L;
-        insertAndParseTransaction(transaction, freezeTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(transaction, freezeTimeStamp, INITIAL_SUPPLY);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, freezeTimeStamp, true,
                 TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.NOT_APPLICABLE);
     }
 
     @Test
-    void tokenAccountUnfreeze() throws InvalidProtocolBufferException {
+    void tokenAccountUnfreeze() {
         // create token with freeze default
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, false);
 
         // associate account
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
-        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY);
 
         Transaction freezeTransaction = tokenFreezeTransaction(TOKEN_ID, true);
         long freezeTimeStamp = 10L;
-        insertAndParseTransaction(freezeTransaction, freezeTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(freezeTransaction, freezeTimeStamp, INITIAL_SUPPLY);
 
         // unfreeze
         Transaction unfreezeTransaction = tokenFreezeTransaction(TOKEN_ID, false);
         long unfreezeTimeStamp = 444;
-        insertAndParseTransaction(unfreezeTransaction, unfreezeTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(unfreezeTransaction, unfreezeTimeStamp, INITIAL_SUPPLY);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, unfreezeTimeStamp, true,
                 TokenFreezeStatusEnum.UNFROZEN,
@@ -280,13 +335,13 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountGrantKyc() throws InvalidProtocolBufferException {
+    void tokenAccountGrantKyc() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, true, INITIAL_SUPPLY);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
-        insertAndParseTransaction(transaction, grantTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(transaction, grantTimeStamp, INITIAL_SUPPLY);
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, grantTimeStamp, true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -294,12 +349,12 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountGrantKycWithMissingTokenAccount() throws InvalidProtocolBufferException {
+    void tokenAccountGrantKycWithMissingTokenAccount() {
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
-        insertAndParseTransaction(transaction, grantTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(transaction, grantTimeStamp, INITIAL_SUPPLY);
 
         // verify token account was not created when missing
         assertTokenAccountInRepository(TOKEN_ID, PAYER, false, ASSOCIATE_TIMESTAMP, grantTimeStamp, true,
@@ -308,29 +363,29 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenAccountRevokeKyc() throws InvalidProtocolBufferException {
+    void tokenAccountRevokeKyc() {
         // create token with kyc revoked
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
 
         // associate account
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
-        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(associateTransaction, ASSOCIATE_TIMESTAMP, INITIAL_SUPPLY);
 
         Transaction grantTransaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
-        insertAndParseTransaction(grantTransaction, grantTimeStamp, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(grantTransaction, grantTimeStamp, INITIAL_SUPPLY);
 
         // revoke
         Transaction revokeTransaction = tokenKycTransaction(TOKEN_ID, false);
-        long revokeTimeStamp = 333;
-        insertAndParseTransaction(revokeTransaction, revokeTimeStamp, INITIAL_SUPPLY, null);
+        long revokeTimestamp = 333;
+        insertAndParseTransaction(revokeTransaction, revokeTimestamp, INITIAL_SUPPLY);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, revokeTimeStamp, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, ASSOCIATE_TIMESTAMP, revokeTimestamp, true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.REVOKED);
     }
 
     @Test
-    void tokenBurn() throws InvalidProtocolBufferException {
+    void tokenBurn() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -338,7 +393,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         long burnTimestamp = 10L;
         TokenTransferList tokenTransfer = tokenTransfer(TOKEN_ID, PAYER, amount);
         Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, false, amount, null);
-        insertAndParseTransaction(transaction, burnTimestamp, INITIAL_SUPPLY - amount, null, tokenTransfer);
+        insertAndParseTransaction(transaction, burnTimestamp, INITIAL_SUPPLY - amount, tokenTransfer);
 
         // Verify
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
@@ -348,7 +403,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenBurnNft() throws InvalidProtocolBufferException {
+    void tokenBurnNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0L);
 
@@ -365,7 +420,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .asList(SERIAL_NUMBER_1));
         Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, false, 0, Arrays
                 .asList(SERIAL_NUMBER_1));
-        insertAndParseTransaction(burnTransaction, burnTimestamp, 0, null, burnTranfer);
+        insertAndParseTransaction(burnTransaction, burnTimestamp, 0, burnTranfer);
 
         // Verify
         assertThat(nftTransferRepository.count()).isEqualTo(3L);
@@ -380,7 +435,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenBurnNftMissingNft() throws InvalidProtocolBufferException {
+    void tokenBurnNftMissingNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0L);
 
@@ -390,15 +445,15 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
                 Arrays.asList(SERIAL_NUMBER_2));
 
-        insertAndParseTransaction(mintTransaction, mintTimestamp, SERIAL_NUMBER_LIST.size(), Arrays
-                .asList(SERIAL_NUMBER_2), mintTransfer);
+        insertAndParseTransaction(mintTransaction, mintTimestamp, SERIAL_NUMBER_LIST.size(),
+                Arrays.asList(SERIAL_NUMBER_2), mintTransfer);
 
         long burnTimestamp = 15L;
-        TokenTransferList burnTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, PAYER, Arrays
-                .asList(SERIAL_NUMBER_1));
+        TokenTransferList burnTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, PAYER,
+                Arrays.asList(SERIAL_NUMBER_1));
         Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, false, 0, Arrays
                 .asList(SERIAL_NUMBER_1));
-        insertAndParseTransaction(burnTransaction, burnTimestamp, 0, null, burnTransfer);
+        insertAndParseTransaction(burnTransaction, burnTimestamp, 0, burnTransfer);
 
         // Verify
         assertThat(nftTransferRepository.count()).isEqualTo(2L);
@@ -412,7 +467,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenMint() throws InvalidProtocolBufferException {
+    void tokenMint() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -420,7 +475,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         long mintTimestamp = 10L;
         TokenTransferList tokenTransfer = tokenTransfer(TOKEN_ID, PAYER, amount);
         Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, true, amount, null);
-        insertAndParseTransaction(transaction, mintTimestamp, INITIAL_SUPPLY + amount, null, tokenTransfer);
+        insertAndParseTransaction(transaction, mintTimestamp, INITIAL_SUPPLY + amount, tokenTransfer);
 
         // Verify
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
@@ -430,7 +485,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenMintNfts() throws InvalidProtocolBufferException {
+    void tokenMintNfts() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP, PAYER, false, false, 0);
 
@@ -452,8 +507,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenMintNftsMissingToken() throws InvalidProtocolBufferException {
-
+    void tokenMintNftsMissingToken() {
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
         Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 2,
@@ -471,15 +525,16 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .getBytes(), EntityId.of(PAYER), false);
     }
 
-    @Test
-    void tokenTransfer() throws InvalidProtocolBufferException {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideAssessedCustomFees")
+    void tokenTransfer(String name, List<AssessedCustomFee> assessedCustomFees) {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
-        TokenID tokenID2 = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(7).build();
+        TokenID tokenID2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
         createTokenEntity(tokenID2, TokenType.FUNGIBLE_COMMON, symbol2, 10L, false, false);
 
-        AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build();
+        AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
 
         // token transfer
         Transaction transaction = tokenTransferTransaction();
@@ -495,21 +550,22 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(-333).build())
                 .build();
 
-        long transferTimeStamp = 15L;
-        insertAndParseTransaction(transaction, transferTimeStamp, INITIAL_SUPPLY, null, transferList1, transferList2);
+        insertAndParseTransactionWithCustomFees(transaction, TRANSFER_TIMESTAMP, INITIAL_SUPPLY, assessedCustomFees,
+                transferList1, transferList2);
 
-        assertTokenTransferInRepository(TOKEN_ID, PAYER, transferTimeStamp, -1000);
-        assertTokenTransferInRepository(TOKEN_ID, accountId, transferTimeStamp, 1000);
-        assertTokenTransferInRepository(tokenID2, PAYER, transferTimeStamp, 333);
-        assertTokenTransferInRepository(tokenID2, accountId, transferTimeStamp, -333);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, TRANSFER_TIMESTAMP, -1000);
+        assertTokenTransferInRepository(TOKEN_ID, accountId, TRANSFER_TIMESTAMP, 1000);
+        assertTokenTransferInRepository(tokenID2, PAYER, TRANSFER_TIMESTAMP, 333);
+        assertTokenTransferInRepository(tokenID2, accountId, TRANSFER_TIMESTAMP, -333);
+        assertAssessedCustomFeesInDb(assessedCustomFees);
     }
 
     @Test
-    void nftTransfer() throws InvalidProtocolBufferException {
+    void nftTransfer() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
-        TokenID tokenID2 = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(7).build();
+        TokenID tokenID2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
         createTokenEntity(tokenID2, TokenType.FUNGIBLE_COMMON, symbol2, 15L, false, false);
 
@@ -545,26 +601,26 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                         .setSerialNumber(SERIAL_NUMBER_2).build())
                 .build();
 
-        long transferTimeStamp = 40L;
-        insertAndParseTransaction(transaction, transferTimeStamp, 0, null, transferList1, transferList2);
+        long transferTimestamp = 40L;
+        insertAndParseTransaction(transaction, transferTimestamp, 0, transferList1, transferList2);
 
         assertThat(nftTransferRepository.count()).isEqualTo(4L);
         assertNftTransferInRepository(mintTimestamp1, SERIAL_NUMBER_1, TOKEN_ID, RECEIVER, null);
         assertNftTransferInRepository(mintTimestamp2, SERIAL_NUMBER_2, TOKEN_ID, RECEIVER, null);
-        assertNftTransferInRepository(transferTimeStamp, 1L, TOKEN_ID, RECEIVER, PAYER);
-        assertNftTransferInRepository(transferTimeStamp, 2L, tokenID2, RECEIVER, PAYER);
-        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp1, transferTimeStamp, METADATA
+        assertNftTransferInRepository(transferTimestamp, 1L, TOKEN_ID, RECEIVER, PAYER);
+        assertNftTransferInRepository(transferTimestamp, 2L, tokenID2, RECEIVER, PAYER);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp1, transferTimestamp, METADATA
                 .getBytes(), EntityId.of(RECEIVER), false);
-        assertNftInRepository(tokenID2, SERIAL_NUMBER_2, true, mintTimestamp2, transferTimeStamp, METADATA
+        assertNftInRepository(tokenID2, SERIAL_NUMBER_2, true, mintTimestamp2, transferTimestamp, METADATA
                 .getBytes(), EntityId.of(RECEIVER), false);
     }
 
     @Test
-    void nftTransferMissingNft() throws InvalidProtocolBufferException {
+    void nftTransferMissingNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
-        TokenID tokenID2 = TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(7).build();
+        TokenID tokenID2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
         createTokenEntity(tokenID2, TokenType.FUNGIBLE_COMMON, symbol2, 15L, false, false);
 
@@ -582,20 +638,20 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                         .setSerialNumber(SERIAL_NUMBER_2).build())
                 .build();
 
-        long transferTimeStamp = 25L;
-        insertAndParseTransaction(transaction, transferTimeStamp, 0, null, transferList1, transferList2);
+        long transferTimestamp = 25L;
+        insertAndParseTransaction(transaction, transferTimestamp, 0, transferList1, transferList2);
 
         assertThat(nftTransferRepository.count()).isEqualTo(2L);
-        assertNftTransferInRepository(transferTimeStamp, 1L, TOKEN_ID, RECEIVER, PAYER);
-        assertNftTransferInRepository(transferTimeStamp, 2L, tokenID2, RECEIVER, PAYER);
-        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, false, transferTimeStamp, transferTimeStamp, METADATA
+        assertNftTransferInRepository(transferTimestamp, 1L, TOKEN_ID, RECEIVER, PAYER);
+        assertNftTransferInRepository(transferTimestamp, 2L, tokenID2, RECEIVER, PAYER);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, false, transferTimestamp, transferTimestamp, METADATA
                 .getBytes(), EntityId.of(RECEIVER), false);
-        assertNftInRepository(tokenID2, SERIAL_NUMBER_2, false, transferTimeStamp, transferTimeStamp, METADATA
+        assertNftInRepository(tokenID2, SERIAL_NUMBER_2, false, transferTimestamp, transferTimestamp, METADATA
                 .getBytes(), EntityId.of(RECEIVER), false);
     }
 
     @Test
-    void tokenWipe() throws InvalidProtocolBufferException {
+    void tokenWipe() {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, INITIAL_SUPPLY);
 
@@ -603,8 +659,9 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         long wipeAmount = 100L;
         long wipeTimestamp = 10L;
         TokenTransferList tokenTransfer = tokenTransfer(TOKEN_ID, PAYER, transferAmount);
-        Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, wipeAmount, null);
-        insertAndParseTransaction(transaction, wipeTimestamp, INITIAL_SUPPLY - wipeAmount, null, tokenTransfer);
+        Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, wipeAmount,
+                Lists.emptyList());
+        insertAndParseTransaction(transaction, wipeTimestamp, INITIAL_SUPPLY - wipeAmount, tokenTransfer);
 
         // Verify
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, INITIAL_SUPPLY - wipeAmount);
@@ -614,7 +671,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenWipeNft() throws InvalidProtocolBufferException {
+    void tokenWipeNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
@@ -645,15 +702,15 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenWipeWithMissingToken() throws InvalidProtocolBufferException {
+    void tokenWipeWithMissingToken() {
         Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, 100L, null);
-        insertAndParseTransaction(transaction, 10L, INITIAL_SUPPLY, null);
+        insertAndParseTransaction(transaction, 10L, INITIAL_SUPPLY);
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
     }
 
     @Test
-    void tokenWipeNftMissingNft() throws InvalidProtocolBufferException {
+    void tokenWipeNftMissingNft() {
         createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER, false, false, 0);
 
@@ -673,7 +730,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     @Test
-    void tokenCreateAndAssociateAndWipeInSameRecordFile() throws InvalidProtocolBufferException {
+    void tokenCreateAndAssociateAndWipeInSameRecordFile() {
         long transferAmount = -1000L;
         long wipeAmount = 100L;
         long wipeTimestamp = 10L;
@@ -683,23 +740,23 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         Transaction createTransaction = tokenCreateTransaction(TokenType.FUNGIBLE_COMMON, false, false, SYMBOL);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         TokenTransferList createTokenTransfer = tokenTransfer(TOKEN_ID, PAYER, INITIAL_SUPPLY);
-        var createTransactionRecord = createTransactionRecord(CREATE_TIMESTAMP, TOKEN_ID
-                        .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, null,
+        var createTransactionRecord = createTransactionRecord(CREATE_TIMESTAMP,
+                TOKEN_ID.getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY,
                 createTokenTransfer);
 
         // associate with token
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         TransactionBody associateTransactionBody = getTransactionBody(associateTransaction);
         var associateRecord = createTransactionRecord(ASSOCIATE_TIMESTAMP, TOKEN_ID
-                .getTokenNum(), associateTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, null);
+                .getTokenNum(), associateTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY);
 
         // wipe amount from token with a transfer
         TokenTransferList wipeTokenTransfer = tokenTransfer(TOKEN_ID, PAYER, transferAmount);
         Transaction wipeTransaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, wipeAmount, null);
         TransactionBody wipeTransactionBody = getTransactionBody(wipeTransaction);
-        var wipeRecord = createTransactionRecord(wipeTimestamp, TOKEN_ID
-                        .getTokenNum(), wipeTransactionBody, ResponseCodeEnum.SUCCESS, newTotalSupply,
-                null, wipeTokenTransfer);
+        var wipeRecord = createTransactionRecord(wipeTimestamp,
+                TOKEN_ID.getTokenNum(), wipeTransactionBody, ResponseCodeEnum.SUCCESS,
+                newTotalSupply, wipeTokenTransfer);
 
         // process all record items in a single file
         parseRecordItemsAndCommit(List.of(
@@ -716,20 +773,43 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         assertTokenTransferInRepository(TOKEN_ID, PAYER, wipeTimestamp, transferAmount);
     }
 
-    private void insertAndParseTransaction(Transaction transaction, long timeStamp, long newTotalSupply,
-                                           List<Long> serialNumbers, TokenTransferList... tokenTransferLists) throws InvalidProtocolBufferException {
+    private void insertAndParseTransaction(Transaction transaction, long timestamp, long newTotalSupply,
+                                           List<AssessedCustomFee> assessedCustomFees, List<Long> serialNumbers,
+                                           TokenTransferList... tokenTransferLists) {
         TransactionBody transactionBody = getTransactionBody(transaction);
 
-        var transactionRecord = createTransactionRecord(timeStamp, TOKEN_ID
-                        .getTokenNum(), transactionBody, ResponseCodeEnum.SUCCESS, newTotalSupply, serialNumbers,
-                tokenTransferLists);
+        var transactionRecord = createTransactionRecord(timestamp, TOKEN_ID.getTokenNum(),
+                transactionBody, ResponseCodeEnum.SUCCESS, newTotalSupply, assessedCustomFees, serialNumbers,
+                Arrays.asList(tokenTransferLists));
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
-        assertTransactionInRepository(ResponseCodeEnum.SUCCESS, timeStamp, null);
+        assertTransactionInRepository(ResponseCodeEnum.SUCCESS, timestamp, null);
+    }
+
+    private void insertAndParseTransaction(Transaction transaction, long timestamp, long newTotalSupply,
+                                           List<Long> serialNumbers, TokenTransferList... tokenTransferLists) {
+        insertAndParseTransaction(transaction, timestamp, newTotalSupply, Lists.emptyList(), serialNumbers,
+                tokenTransferLists);
+    }
+
+    private void insertAndParseTransaction(Transaction transaction, long timestamp,long newTotalSupply) {
+        insertAndParseTransaction(transaction, timestamp, newTotalSupply, Lists.emptyList());
+    }
+
+    private void insertAndParseTransaction(Transaction transaction, long timestamp, long newTotalSupply,
+                                           TokenTransferList... tokenTransferLists) {
+        insertAndParseTransaction(transaction, timestamp, newTotalSupply, Lists.emptyList(), tokenTransferLists);
+    }
+
+    private void insertAndParseTransactionWithCustomFees(Transaction transaction, long timestamp, long newTotalSupply,
+                                                         List<AssessedCustomFee> assessedCustomFees,
+                                                         TokenTransferList... tokenTransferLists) {
+        insertAndParseTransaction(transaction, timestamp, newTotalSupply, assessedCustomFees, Lists.emptyList(),
+                tokenTransferLists);
     }
 
     private Transaction tokenCreateTransaction(TokenType tokenType, boolean setFreezeKey, boolean setKycKey,
-                                               String symbol) {
+                                               String symbol, List<CustomFee> customFees) {
         return buildTransaction(builder -> {
             builder.getTokenCreationBuilder()
                     .setAdminKey(TOKEN_REF_KEY)
@@ -745,21 +825,26 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                     .setSymbol(symbol)
                     .setTokenType(tokenType)
                     .setTreasury(PAYER)
-                    .setWipeKey(TOKEN_REF_KEY);
+                    .setWipeKey(TOKEN_REF_KEY)
+                    .addAllCustomFees(convertCustomFees(customFees));
 
-            if (tokenType == tokenType.FUNGIBLE_COMMON) {
-                builder.getTokenCreationBuilder().
-                        setInitialSupply(INITIAL_SUPPLY);
+            if (tokenType == TokenType.FUNGIBLE_COMMON) {
+                builder.getTokenCreationBuilder().setInitialSupply(INITIAL_SUPPLY);
             }
+
             if (setFreezeKey) {
-                builder.getTokenCreationBuilder()
-                        .setFreezeKey(TOKEN_REF_KEY);
+                builder.getTokenCreationBuilder().setFreezeKey(TOKEN_REF_KEY);
             }
 
             if (setKycKey) {
                 builder.getTokenCreationBuilder().setKycKey(TOKEN_REF_KEY);
             }
         });
+    }
+
+    private Transaction tokenCreateTransaction(TokenType tokenType, boolean setFreezeKey, boolean setKycKey,
+                                               String symbol) {
+        return tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol, Lists.emptyList());
     }
 
     private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey,
@@ -769,6 +854,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .setAutoRenewAccount(accountID)
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(TOKEN_UPDATE_AUTO_RENEW_PERIOD))
                 .setExpiry(EXPIRY_TIMESTAMP)
+                .setFeeScheduleKey(newKey)
                 .setFreezeKey(newKey)
                 .setKycKey(newKey)
                 .setMemo(StringValue.of(memo))
@@ -814,7 +900,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenKycTransaction(TokenID tokenID, boolean kyc) {
-        Transaction transaction = null;
+        Transaction transaction;
         if (kyc) {
             transaction = buildTransaction(builder -> builder.getTokenGrantKycBuilder()
                     .setToken(tokenID)
@@ -875,7 +961,31 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private Transaction tokenTransferTransaction() {
-        return buildTransaction(builder -> builder.getCryptoTransferBuilder());
+        return buildTransaction(TransactionBody.Builder::getCryptoTransferBuilder);
+    }
+
+    private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
+                                                      TransactionBody transactionBody,
+                                                      ResponseCodeEnum responseCode,
+                                                      long newTotalSupply,
+                                                      List<AssessedCustomFee> assessedCustomFees,
+                                                      List<Long> serialNumbers,
+                                                      List<TokenTransferList> tokenTransferLists) {
+        var receipt = TransactionReceipt.newBuilder()
+                .setStatus(responseCode)
+                .setTokenID(TokenID.newBuilder().setTokenNum(tokenNum).build())
+                .setNewTotalSupply(newTotalSupply)
+                .addAllSerialNumbers(serialNumbers);
+
+        return buildTransactionRecord(recordBuilder -> {
+            // note the custom fee crypto transfers and token transfers are not added to the transaction record since
+            // the test only has to verify the assessed custom fees get ingested.
+            recordBuilder
+                    .setReceipt(receipt)
+                    .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp))
+                    .addAllTokenTransferLists(tokenTransferLists)
+                    .addAllAssessedCustomFees(convertAssessedCustomFees(assessedCustomFees));
+        }, transactionBody, responseCode.getNumber());
     }
 
     private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
@@ -883,52 +993,65 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                                                       ResponseCodeEnum responseCode,
                                                       long newTotalSupply,
                                                       List<Long> serialNumbers,
+                                                      List<TokenTransferList> tokenTransferLists) {
+        return createTransactionRecord(consensusTimestamp, tokenNum, transactionBody, responseCode, newTotalSupply,
+                Lists.emptyList(), serialNumbers, tokenTransferLists);
+    }
+
+    private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
+                                                      TransactionBody transactionBody,
+                                                      ResponseCodeEnum responseCode, long newTotalSupply) {
+        return createTransactionRecord(consensusTimestamp, tokenNum, transactionBody, responseCode, newTotalSupply,
+                Lists.emptyList(), Lists.emptyList());
+    }
+
+    private TransactionRecord createTransactionRecord(long consensusTimestamp, long tokenNum,
+                                                      TransactionBody transactionBody,
+                                                      ResponseCodeEnum responseCode, long newTotalSupply,
                                                       TokenTransferList... tokenTransferLists) {
-        var receipt = TransactionReceipt.newBuilder()
-                .setStatus(responseCode)
-                .setTokenID(TokenID.newBuilder().setShardNum(0).setRealmNum(0).setTokenNum(tokenNum).build())
-                .setNewTotalSupply(newTotalSupply);
-
-        if (serialNumbers != null) {
-            receipt.addAllSerialNumbers(serialNumbers);
-        }
-
-        return buildTransactionRecord(recordBuilder -> {
-                    recordBuilder
-                            .setReceipt(receipt)
-                            .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp));
-
-                    if (tokenTransferLists != null && tokenTransferLists.length != 0) {
-                        recordBuilder.addAllTokenTransferLists(Arrays.asList(tokenTransferLists));
-                    }
-
-                    recordBuilder.getReceiptBuilder().setAccountID(PAYER);
-                },
-                transactionBody, responseCode.getNumber());
+        return createTransactionRecord(consensusTimestamp, tokenNum, transactionBody, responseCode, newTotalSupply,
+                Lists.emptyList(), Arrays.asList(tokenTransferLists));
     }
 
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
-                                         long modifiedTimestamp, String symbol, long totalSupply) {
+                                         long modifiedTimestamp, String symbol, long totalSupply,
+                                         byte[] keyData, String... keyFields) {
         // clear cache for PgCopy scenarios which don't utilize it
         cacheManager.getCache("tokens").clear();
 
         Optional<Token> tokenOptional = tokenRepository.findById(new TokenId(EntityId.of(tokenID)));
         if (present) {
-            assertThat(tokenOptional.get())
+            assertThat(tokenOptional)
+                    .get()
                     .returns(createdTimestamp, from(Token::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(Token::getModifiedTimestamp))
                     .returns(symbol, from(Token::getSymbol))
                     .returns(totalSupply, from(Token::getTotalSupply));
+            if (keyFields.length != 0) {
+                assertThat(tokenOptional)
+                        .get()
+                        .extracting(keyFields)
+                        .containsExactlyElementsOf(Arrays.stream(keyFields)
+                                .map((v) -> keyData)
+                                .collect(Collectors.toList())
+                        );
+            }
         } else {
             assertThat(tokenOptional).isNotPresent();
         }
+    }
+
+    private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
+                                         long modifiedTimestamp, String symbol, long totalSupply) {
+        assertTokenInRepository(tokenID, present, createdTimestamp, modifiedTimestamp, symbol, totalSupply, null);
     }
 
     private void assertNftInRepository(TokenID tokenID, long serialNumber, boolean present, long createdTimestamp,
                                        long modifiedTimestamp, byte[] metadata, EntityId accountId, boolean deleted) {
         Optional<Nft> nftOptional = nftRepository.findById(new NftId(serialNumber, EntityId.of(tokenID)));
         if (present) {
-            assertThat(nftOptional.get())
+            assertThat(nftOptional)
+                    .get()
                     .returns(createdTimestamp, from(Nft::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(Nft::getModifiedTimestamp))
                     .returns(metadata, from(Nft::getMetadata))
@@ -968,6 +1091,18 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
                 .returns(amount, from(com.hedera.mirror.importer.domain.TokenTransfer::getAmount));
     }
 
+    private void assertCustomFeesInDb(List<CustomFee> expected) {
+        var actual = jdbcTemplate.query(CustomFeeWrapper.SELECT_QUERY, CustomFeeWrapper.ROW_MAPPER);
+        assertThat(actual).map(CustomFeeWrapper::getCustomFee).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    private void assertAssessedCustomFeesInDb(List<AssessedCustomFee> expected) {
+        var actual = jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
+        assertThat(actual)
+                .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
+                .containsExactlyInAnyOrderElementsOf(expected);
+    }
+
     private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
                                                AccountID receiverId, AccountID senderId) {
         EntityId receiver = receiverId != null ? EntityId.of(receiverId) : null;
@@ -983,29 +1118,48 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
     }
 
     private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
-                                   boolean setFreezeKey, boolean setKycKey) throws InvalidProtocolBufferException {
-        Transaction createTransaction = tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol);
+                                   boolean setFreezeKey, boolean setKycKey,
+                                   List<CustomFee> customFees) {
+        Transaction createTransaction = tokenCreateTransaction(tokenType, setFreezeKey, setKycKey, symbol, customFees);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         TokenTransferList tokenTransfer = tokenType == TokenType.FUNGIBLE_COMMON ? tokenTransfer(tokenID, PAYER,
                 INITIAL_SUPPLY) : TokenTransferList.getDefaultInstance();
         var createTransactionRecord = createTransactionRecord(consensusTimestamp, tokenID
-                .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, null, tokenTransfer);
+                .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, tokenTransfer);
 
         parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
     }
 
+    private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
+                                   boolean setFreezeKey, boolean setKycKey) {
+        createTokenEntity(tokenID, tokenType, symbol, consensusTimestamp, setFreezeKey, setKycKey, Lists.emptyList());
+    }
+
     private void createAndAssociateToken(TokenID tokenID, TokenType tokenType, String symbol, long createTimestamp,
                                          long associateTimestamp, AccountID accountID, boolean setFreezeKey,
-                                         boolean setKycKey, long initialSupply) throws InvalidProtocolBufferException {
+                                         boolean setKycKey, long initialSupply) {
         createTokenEntity(tokenID, tokenType, symbol, createTimestamp, setFreezeKey, setKycKey);
         assertTokenInRepository(tokenID, true, createTimestamp, createTimestamp, symbol, initialSupply);
 
         Transaction associateTransaction = tokenAssociate(List.of(tokenID), accountID);
-        insertAndParseTransaction(associateTransaction, associateTimestamp, initialSupply, null);
+        insertAndParseTransaction(associateTransaction, associateTimestamp, initialSupply);
 
         assertTokenAccountInRepository(tokenID, accountID, true, associateTimestamp, associateTimestamp, true,
                 setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOT_APPLICABLE,
                 setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE);
+    }
+
+    private void updateTokenFeeSchedule(TokenID tokenID, long consensusTimestamp, List<CustomFee> customFees) {
+        Transaction transaction = buildTransaction(builder -> builder.getTokenFeeScheduleUpdateBuilder()
+                .setTokenId(tokenID)
+                .addAllCustomFees(convertCustomFees(customFees))
+        );
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord transactionRecord = buildTransactionRecord(
+                builder -> builder.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)),
+                transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
+
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
     }
 
     private TokenTransferList tokenTransfer(TokenID tokenId, AccountID accountId, long amount) {
@@ -1033,5 +1187,132 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
             );
         }
         return builder.build();
+    }
+
+    private static List<CustomFee> deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
+        CustomFee customFee = new CustomFee();
+        customFee.setId(new CustomFee.Id(consensusTimestamp, tokenId));
+        return List.of(customFee);
+    }
+
+    private static List<CustomFee> nonEmptyCustomFees(long consensusTimestamp, EntityId tokenId) {
+        CustomFee.Id id = new CustomFee.Id(consensusTimestamp, tokenId);
+
+        CustomFee fixedFee1 = new CustomFee();
+        fixedFee1.setAmount(11L);
+        fixedFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1);
+        fixedFee1.setId(id);
+
+        CustomFee fixedFee2 = new CustomFee();
+        fixedFee2.setAmount(12L);
+        fixedFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
+        fixedFee2.setId(id);
+
+        CustomFee fractionalFee = new CustomFee();
+        fractionalFee.setAmount(13L);
+        fractionalFee.setAmountDenominator(31L);
+        fractionalFee.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fractionalFee.setMaximumAmount(100L);
+        fractionalFee.setId(id);
+
+        return List.of(fixedFee1, fixedFee2, fractionalFee);
+    }
+
+    private static Stream<Arguments> provideCustomFees() {
+        return Stream.of(
+                Arguments.of("empty custom fees", deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)),
+                Arguments.of("non-empty custom fees", nonEmptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
+        );
+    }
+
+    private static Stream<Arguments> provideAssessedCustomFees() {
+        // paid in HBAR
+        AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
+        assessedCustomFee1.setAmount(12505L);
+        assessedCustomFee1.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
+
+        // paid in FEE_DOMAIN_TOKEN_ID
+        AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
+        assessedCustomFee2.setAmount(8750L);
+        assessedCustomFee2.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
+        assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
+
+        List<AssessedCustomFee> assessedCustomFees = List.of(assessedCustomFee1, assessedCustomFee2);
+
+        return Stream.of(
+                Arguments.of("no assessed custom fees", Lists.emptyList()),
+                Arguments.of("has assessed custom fees", assessedCustomFees)
+        );
+    }
+
+    private List<com.hederahashgraph.api.proto.java.AssessedCustomFee> convertAssessedCustomFees(
+            List<AssessedCustomFee> assessedCustomFees) {
+        return assessedCustomFees.stream()
+                .map(assessedCustomFee -> {
+                    EntityId collectorAccountId = assessedCustomFee.getId().getCollectorAccountId();
+                    var builder = com.hederahashgraph.api.proto.java.AssessedCustomFee.newBuilder()
+                            .setAmount(assessedCustomFee.getAmount())
+                            .setFeeCollectorAccountId(convertAccountId(collectorAccountId));
+
+                    if (assessedCustomFee.getTokenId() != null) {
+                        builder.setTokenId(convertTokenId(assessedCustomFee.getTokenId()));
+                    }
+
+                    return builder.build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    private com.hederahashgraph.api.proto.java.CustomFee convertCustomFee(CustomFee customFee) {
+        var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
+                .setFeeCollectorAccountId(convertAccountId(customFee.getCollectorAccountId()));
+
+        if (customFee.getAmountDenominator() == null) {
+            // fixed fee
+            var fixedFee = FixedFee.newBuilder().setAmount(customFee.getAmount());
+            if (customFee.getDenominatingTokenId() != null) {
+                fixedFee.setDenominatingTokenId(convertTokenId(customFee.getDenominatingTokenId()));
+            }
+
+            protoCustomFee.setFixedFee(fixedFee).build();
+        } else {
+            // fractional fee
+            long maximumAmount = customFee.getMaximumAmount() != null ? customFee.getMaximumAmount() : 0;
+            protoCustomFee.setFractionalFee(FractionalFee.newBuilder()
+                    .setFractionalAmount(Fraction.newBuilder()
+                            .setNumerator(customFee.getAmount())
+                            .setDenominator(customFee.getAmountDenominator())
+                    )
+                    .setMaximumAmount(maximumAmount)
+                    .setMinimumAmount(customFee.getMinimumAmount())
+                    .build()
+            );
+        }
+
+        return protoCustomFee.build();
+    }
+
+    private List<com.hederahashgraph.api.proto.java.CustomFee> convertCustomFees(List<CustomFee> customFees) {
+        return customFees.stream()
+                .filter(customFee -> customFee.getAmount() != null)
+                .map(this::convertCustomFee)
+                .collect(Collectors.toList());
+    }
+
+    private AccountID convertAccountId(EntityId accountId) {
+        return AccountID.newBuilder()
+                .setShardNum(accountId.getShardNum())
+                .setRealmNum(accountId.getRealmNum())
+                .setAccountNum(accountId.getEntityNum())
+                .build();
+    }
+
+    private TokenID convertTokenId(EntityId tokenId) {
+        return TokenID.newBuilder()
+                .setShardNum(tokenId.getShardNum())
+                .setRealmNum(tokenId.getRealmNum())
+                .setTokenNum(tokenId.getEntityNum())
+                .build();
     }
 }
