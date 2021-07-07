@@ -94,9 +94,10 @@ public class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandle
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
 
-        nftRepository.updateTreasury(tokenID.getTokenNum(), previousAccountId.getAccountNum(),
-                newAccountId.getAccountNum(), consensusTimestamp);
         transactionHandler.updateEntity(entity, recordItem);
+
+        Mockito.verify(nftRepository).updateTreasury(tokenID.getTokenNum(), previousAccountId.getAccountNum(),
+                newAccountId.getAccountNum(), consensusTimestamp);
     }
 
     @Test
@@ -113,7 +114,8 @@ public class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandle
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
 
-        Mockito.verifyNoInteractions(nftRepository);
         transactionHandler.updateEntity(entity, recordItem);
+
+        Mockito.verifyNoInteractions(nftRepository);
     }
 }
