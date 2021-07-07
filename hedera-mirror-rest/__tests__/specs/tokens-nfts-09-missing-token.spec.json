@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call for all nfts under a given token with none matching",
+  "description": "Token nfts api call for all nfts under a given token with missing token class",
   "setup": {
     "entities": [
       {
@@ -15,28 +15,18 @@
       {
         "num": 2500,
         "type": 5
-      },
-      {
-        "num": 3500,
-        "type": 5
       }
     ],
     "tokens": [
       {
         "token_id": "0.0.1500",
         "symbol": "FIRSTMOVERLPDJH",
-        "created_timestamp": "1234567890000000002",
+        "created_timestamp": "1234567890000000003",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
       {
         "token_id": "0.0.2500",
         "symbol": "ORIGINALRDKSE",
-        "created_timestamp": "1234567890000000003",
-        "type": "NON_FUNGIBLE_UNIQUE"
-      },
-      {
-        "token_id": "0.0.3500",
-        "symbol": "MIRRORORIG",
         "created_timestamp": "1234567890000000004",
         "type": "NON_FUNGIBLE_UNIQUE"
       }
@@ -75,12 +65,15 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/3500/nfts", "/api/v1/tokens/0.3500/nfts", "/api/v1/tokens/0.0.3500/nfts"],
-  "responseStatus": 200,
+  "url": "/api/v1/tokens/0.0.3500/nfts",
+  "responseStatus": 404,
   "responseJson": {
-    "nfts": [],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "No such token id - 0.0.3500"
+        }
+      ]
     }
   }
 }

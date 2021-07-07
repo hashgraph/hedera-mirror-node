@@ -25,6 +25,8 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
+const {NftTransfer} = require('./model');
+const {NftTransferViewModel} = require('./viewmodel');
 
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
@@ -174,18 +176,8 @@ const createNftTransferList = (nftTransferList) => {
   }
 
   return nftTransferList.map((transfer) => {
-    const {
-      receiver_account_id: receiverAccountId,
-      sender_account_id: senderAccountId,
-      serial_number: serialNumber,
-      token_id: tokenId,
-    } = transfer;
-    return {
-      receiver_account_id: EntityId.fromEncodedId(receiverAccountId, true).toString(),
-      sender_account_id: EntityId.fromEncodedId(senderAccountId, true).toString(),
-      serial_number: serialNumber,
-      token_id: EntityId.fromEncodedId(tokenId).toString(),
-    };
+    const nftTransfer = new NftTransfer(transfer);
+    return new NftTransferViewModel(nftTransfer);
   });
 };
 
@@ -319,11 +311,11 @@ const getTransferDistinctTimestampsQuery = function (
 
   return `
     SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
-      FROM ${tableName} AS ${tableAlias}
-      ${joinClause}
-      ${whereClause}
-      ORDER BY ${tableAlias}.consensus_timestamp ${order}
-      ${namedLimitQuery}`;
+    FROM ${tableName} AS ${tableAlias}
+    ${joinClause}
+    ${whereClause}
+    ORDER BY ${tableAlias}.consensus_timestamp ${order}
+    ${namedLimitQuery}`;
 };
 
 /**
@@ -437,7 +429,7 @@ const reqToSql = async function (req) {
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
   const [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const resultTypeQuery = utils.parseResultParams(req, 't.result');
-  const transactionTypeQuery = await utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
   const includeNftTransferList = false;
@@ -522,14 +514,14 @@ const getScheduledQuery = (query) => {
 };
 
 /**
- * Handler function for /transactions/:transaction_id API.
+ * Handler function for /transactions/:transactionId API.
  * @param {Request} req HTTP request object
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
   await utils.validateReq(req);
 
-  const transactionId = TransactionId.fromString(req.params.id);
+  const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduledQuery = getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause('t.payer_account_id = ?', 't.valid_start_ns = ?', scheduledQuery);

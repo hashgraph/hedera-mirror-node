@@ -116,13 +116,13 @@ const formatScheduleRow = (row) => {
 };
 
 /**
- * Handler function for /schedules/:id API
+ * Handler function for /schedules/:scheduleId API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}
  */
 const getScheduleById = async (req, res) => {
-  const scheduleId = EntityId.fromString(req.params.id, constants.filterKeys.SCHEDULEID).getEncodedId();
+  const scheduleId = EntityId.fromString(req.params.scheduleId, constants.filterKeys.SCHEDULEID).getEncodedId();
   if (logger.isTraceEnabled()) {
     logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
   }

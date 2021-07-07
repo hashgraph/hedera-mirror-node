@@ -270,7 +270,7 @@ const formatRecordFile = (data, transactionId, scheduled) => {
 };
 
 /**
- * Handler function for /transactions/:transaction_id/stateproof API.
+ * Handler function for /transactions/:transactionId/stateproof API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns none
@@ -278,7 +278,7 @@ const formatRecordFile = (data, transactionId, scheduled) => {
 const getStateProofForTransaction = async (req, res) => {
   const filters = await utils.buildAndValidateFilters(req.query);
 
-  const transactionId = TransactionId.fromString(req.params.id);
+  const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduled = getScheduledParamValue(filters);
   const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, scheduled);
   const rcdFileInfo = await getRCDFileInfoByConsensusNs(consensusNs);

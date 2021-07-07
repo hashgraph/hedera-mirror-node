@@ -35,13 +35,13 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - accounts
-  /api/v1/accounts/{id}:
+  /api/v1/accounts/{accountId}:
     get:
       summary: Get account by id
       description: Return the account transactions and balance information given an id
       operationId: getAccountById
       parameters:
-        - name: id
+        - name: accountId
           in: path
           required: true
           description: Account entity id
@@ -144,7 +144,7 @@ paths:
                     - message: "Invalid parameter: schedule.id"
       tags:
         - schedules
-  /api/v1/schedules/{id}:
+  /api/v1/schedules/{scheduleId}:
     get:
       summary: Get schedule by id
       description: Returns schedule information based on the given schedule id
@@ -303,7 +303,7 @@ paths:
                     - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
       tags:
         - transactions
-  /api/v1/topics/{id}/messages:
+  /api/v1/topics/{topicId}/messages:
     get:
       summary: List topic messages by id
       description: Returns the list of topic messages for the given topic id.
@@ -349,7 +349,7 @@ paths:
           $ref: '#/components/responses/TopicNotFound'
       tags:
         - topics
-  /api/v1/topics/{id}/messages/{sequencenumber}:
+  /api/v1/topics/{topicId}/messages/{sequenceNumber}:
     get:
       summary: Get topic message by id and sequence number
       description: Returns a single topic message the given topic id and sequence number.
@@ -460,7 +460,7 @@ paths:
                     - message: "Invalid parameter: account.id"
       tags:
         - tokens
-  /api/v1/tokens/{id}:
+  /api/v1/tokens/{tokenId}:
     get:
       summary: Get token by id
       description: Returns token entity information given the id
@@ -488,7 +488,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
-  /api/v1/tokens/{id}/balances:
+  /api/v1/tokens/{tokenId}/balances:
     get:
       summary: List token balances
       description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
@@ -526,6 +526,107 @@ paths:
                 _status:
                   messages:
                     - message: "Invalid parameter: account.id"
+      tags:
+        - tokens
+  /api/v1/tokens/{tokenId}/nfts:
+    get:
+      summary: List nfts
+      description: Returns a list of non-fungible tokens
+      operationId: listNfts
+      parameters:
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nfts'
+        204:
+          description: No Content
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: account.id"
+                    - message: "Invalid parameter: serialnumber"
+                    - message: "Invalid parameter: limit"
+                    - message: "Invalid parameter: order"
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - tokens
+  /api/v1/tokens/{tokenId}/nfts/{serialNumber}:
+    get:
+      summary: Get nft info
+      description: Returns information for a non-fungible token
+      operationId: listNftBySerialnumber
+      parameters:
+        - $ref: '#/components/parameters/serialNumberPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nft'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - tokens
+  /api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions:
+    get:
+      summary: Get an nfts transction history
+      description: Returns a list of transactions for a given non-fungible token
+      operationId: listNftTransactions
+      parameters:
+        - $ref: '#/components/parameters/serialNumberPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NftTransactionHistory'
+        204:
+          description: No Content
+          content:
+            application/json:
+              schema:
+                type: object
+        206:
+          description: Partial Content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NftTransactionHistory'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InvalidParameterError'
+              example:
+                _status:
+                  messages:
+                    - message: "Invalid parameter: limit"
+                    - message: "Invalid parameter: order"
+        404:
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
 tags:
@@ -730,6 +831,65 @@ components:
         next:
           example: null
           nullable: true
+    Nft:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/EntityId'
+        created_timestamp:
+          type: string
+          example: "1234567890.000000001"
+        deleted:
+          type: boolean
+        metadata:
+          description: base64 encoded binary data
+          type: string
+          format: byte
+        modified_timestamp:
+          type: string
+          example: "1234567890.000000001"
+        serial_number:
+          type: number
+        token_id:
+          $ref: '#/components/schemas/EntityId'
+      example:
+        account_id: "0.1.2"
+        created_timestamp: "1234567890.000000001"
+        deleted: false
+        metadata: "VGhpcyBpcyBhIHRlc3QgTkZU"
+        modified_timestamp: "1610682445.003266001"
+        serial_number: 124
+        token_id: "0.0.222"
+    Nfts:
+      type: array
+      items:
+        $ref: '#/components/schemas/Nft'
+    NftTransactionTransfer:
+      type: object
+      properties:
+        consensus_timestamp:
+          type: string
+        transaction_id:
+          type: string
+        receiver_account_id:
+          $ref: '#/components/schemas/EntityId'
+        sender_account_id:
+          $ref: '#/components/schemas/EntityId'
+        type:
+          $ref: '#/components/schemas/TransactionTypes'
+        token_id:
+          $ref: '#/components/schemas/EntityId'
+      example:
+        consensus_timestamp: "1618591023.997420021"
+        id: "0.0.19789-1618591023-997420021"
+        receiver_account_id: "0.0.11"
+        sender_account_id: "0.0.10"
+        type: "CRYPTOTRANSFER"
+        token_id: "0.0.1000"
+    NftTransactionHistory:
+      type: array
+      items:
+        $ref: '#/components/schemas/NftTransactionTransfer'
     Schedule:
       type: object
       properties:
@@ -928,6 +1088,46 @@ components:
           example: FUNGIBLE_COMMON
         wipe_key:
           $ref: '#/components/schemas/Key'
+    TransactionTypes:
+      type: string
+      enum:
+        - CONSENSUSCREATETOPIC
+        - CONSENSUSDELETETOPIC
+        - CONSENSUSSUBMITMESSAGE
+        - CONSENSUSUPDATETOPIC
+        - CONTRACTCALL
+        - CONTRACTCREATEINSTANCE
+        - CONTRACTDELETEINSTANCE
+        - CONTRACTUPDATEINSTANCE
+        - CRYPTOADDLIVEHASH
+        - CRYPTOCREATEACCOUNT
+        - CRYPTODELETE
+        - CRYPTODELETELIVEHASH
+        - CRYPTOTRANSFER
+        - CRYPTOUPDATEACCOUNT
+        - FILEAPPEND
+        - FILECREATE
+        - FILEDELETE
+        - FILEUPDATE
+        - FREEZE
+        - SCHEDULECREATE
+        - SCHEDULEDELETE
+        - SCHEDULESIGN
+        - SYSTEMDELETE
+        - SYSTEMUNDELETE
+        - TOKENASSOCIATE
+        - TOKENBURN
+        - TOKENCREATION
+        - TOKENDELETION
+        - TOKENDISSOCIATE
+        - TOKENFREEZE
+        - TOKENGRANTKYC
+        - TOKENMINT
+        - TOKENREVOKEKYC
+        - TOKENUNFREEZE
+        - TOKENUPDATE
+        - TOKENWIPE
+        - UNCHECKEDSUBMIT
     Tokens:
       type: array
       items:
@@ -1236,7 +1436,7 @@ components:
       schema:
         type: string
     scheduleIdPathParam:
-      name: id
+      name: scheduleId
       in: path
       required: true
       description: Schedule entity id
@@ -1255,6 +1455,29 @@ components:
         type: array
         items:
           type: string
+    serialNumberPathParam:
+      name: serialnumber
+      in: path
+      required: true
+      description: The nft serial number
+      example: 1
+      schema:
+        type: integer
+        format: int64
+        default: 1
+        minimum: 1
+        maximum: 9223372036854775807
+    serialNumberQueryParam:
+      name: serialnumber
+      in: query
+      description: The nft serial number (64 bit type)
+      example: 2
+      schema:
+        type: integer
+        format: int64
+        default: 1
+        minimum: 1
+        maximum: 9223372036854775807
     timestampQueryParam:
       name: timestamp
       in: query
@@ -1332,7 +1555,7 @@ components:
         items:
           type: string
     tokenIdPathParam:
-      name: id
+      name: tokenid
       in: path
       required: true
       description: Token entity id
@@ -1352,7 +1575,7 @@ components:
         items:
           type: string
     topicIdPathParam:
-      name: id
+      name: topicId
       in: path
       required: true
       description: Topic entity id

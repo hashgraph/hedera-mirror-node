@@ -43,55 +43,50 @@ const columnMap = {
   [constants.filterKeys.TIMESTAMP]: topicMessageColumns.CONSENSUS_TIMESTAMP,
 };
 
-const topicIdValidator = {
-  get: (params) => params.id,
-  name: topicMessageColumns.TOPIC_NUM,
-  parse: EntityId.fromString,
-  validate: (v) => EntityId.isValidEntityId(v),
+/**
+ * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
+ */
+const validateConsensusTimestampParam = (consensusTimestamp) => {
+  if (!utils.isValidTimestampParam(consensusTimestamp)) {
+    throw InvalidArgumentError.forParams(topicMessageColumns.CONSENSUS_TIMESTAMP);
+  }
 };
 
-const sequenceNumberValidator = {
-  get: (params) => params.sequencenumber,
-  name: topicMessageColumns.SEQUENCE_NUMBER,
-  parse: (v) => v,
-  validate: (v) => utils.isValidNum(v),
-};
-
-const consensusTimestampValidator = {
-  get: (params) => params.consensusTimestamp,
-  name: topicMessageColumns.CONSENSUS_TIMESTAMP,
-  parse: utils.parseTimestampParam,
-  validate: (v) => utils.isValidTimestampParam(v),
-};
-
-const validateRequestPathParams = (params, ...validators) => {
+/**
+ * Verify topicId and sequencenumber meet entity num format
+ */
+const validateGetSequenceMessageParams = (topicId, seqNum) => {
   const badParams = [];
-  const result = {};
+  if (!EntityId.isValidEntityId(topicId)) {
+    badParams.push(topicMessageColumns.TOPIC_NUM);
+  }
 
-  validators.forEach((validator) => {
-    const value = validator.get(params);
-    if (!validator.validate(value)) {
-      badParams.push(validator.name);
-      return;
-    }
-
-    result[validator.name] = validator.parse(value);
-  });
+  if (!utils.isValidNum(seqNum)) {
+    badParams.push(topicMessageColumns.SEQUENCE_NUMBER);
+  }
 
   if (badParams.length > 0) {
     throw InvalidArgumentError.forParams(badParams);
   }
+};
 
-  return result;
+/**
+ * Verify topicId and sequencenumber meet entity num and limit format
+ */
+const validateGetTopicMessagesParams = (topicId) => {
+  if (!EntityId.isValidEntityId(topicId)) {
+    throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_NUM);
+  }
 };
 
 /**
  * Verify topicId exists and is a topic id
  *
  * @param {EntityId} topicId the topic ID object
+ * @param {string} origTopicIdStr the original topic ID string
  * @return {Promise<void>}
  */
-const validateTopicId = async (topicId) => {
+const validateTopicId = async (topicId, origTopicIdStr) => {
   const encodedId = topicId.getEncodedId();
   const pgSqlQuery = `SELECT tet.name
                       FROM entity te
@@ -101,12 +96,19 @@ const validateTopicId = async (topicId) => {
 
   const {rows} = await utils.queryQuietly(pgSqlQuery, encodedId);
   if (_.isEmpty(rows)) {
-    throw new NotFoundError(`No such topic id - ${topicId}`);
+    throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
   }
 
   if (rows[0].name !== 'topic') {
-    throw new InvalidArgumentError(`${topicId} is not a topic id`);
+    throw new InvalidArgumentError(`${origTopicIdStr} is not a topic id`);
   }
+};
+
+const validateGetTopicMessagesRequest = async (topicId, filters) => {
+  validateGetTopicMessagesParams(topicId);
+
+  // validate filters
+  await utils.validateAndParseFilters(filters);
 };
 
 /**
@@ -129,26 +131,32 @@ const formatTopicMessageRow = (row, messageEncoding) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByConsensusTimestamp = async (req, res) => {
-  const params = validateRequestPathParams(req.params, consensusTimestampValidator);
+  const consensusTimestampParam = req.params.consensusTimestamp;
+  validateConsensusTimestampParam(consensusTimestampParam);
+
+  const consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
   const pgSqlQuery = `SELECT *
                       FROM topic_message
                       WHERE consensus_timestamp = $1`;
-  const pgSqlParams = [params[consensusTimestampValidator.name]];
+  const pgSqlParams = [consensusTimestamp];
+
   res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
 };
 
 /**
- * Handler function for /:id/messages/:sequencenumber API.
+ * Handler function for /:id/messages/:sequenceNumber API.
  * Extracts and validates topic and sequence params and creates db query statement in preparation for db call to get
  * message
  *
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByTopicAndSequenceRequest = async (req, res) => {
-  const params = validateRequestPathParams(req.params, topicIdValidator, sequenceNumberValidator);
-  const topicId = params[topicIdValidator.name];
-  await validateTopicId(topicId);
+  const topicIdStr = req.params.topicId;
+  const seqNum = req.params.sequenceNumber;
+  validateGetSequenceMessageParams(topicIdStr, seqNum);
+  const topicId = EntityId.fromString(topicIdStr);
+  await validateTopicId(topicId, topicIdStr);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
   const pgSqlQuery = `select *
@@ -157,14 +165,9 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
                         and topic_num = $2
                         and sequence_number = $3
                       limit 1`;
-  const pgSqlParams = [topicId.realm, topicId.num, params[sequenceNumberValidator.name]];
+  const pgSqlParams = [topicId.realm, topicId.num, seqNum];
 
   res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
-};
-
-const getAndValidateTopicIdRequestPathParam = (req) => {
-  const topicIdString = req.params.id;
-  return EntityId.fromString(topicIdString, topicMessageColumns.TOPIC_NUM);
 };
 
 /**
@@ -172,13 +175,14 @@ const getAndValidateTopicIdRequestPathParam = (req) => {
  * @returns {Promise} Promise for PostgreSQL query
  */
 const getTopicMessages = async (req, res) => {
-  // validate path param topic id and query params
-  const pathParams = validateRequestPathParams(req.params, topicIdValidator);
-  const topicId = pathParams[topicIdValidator.name];
-  const filters = await utils.buildAndValidateFilters(req.query);
+  // retrieve param and filters from request
+  const topicIdStr = req.params.topicId;
+  const filters = utils.buildFilterObject(req.query);
 
   // validate params
-  await validateTopicId(topicId);
+  await validateGetTopicMessagesRequest(topicIdStr, filters);
+  const topicId = EntityId.fromString(topicIdStr);
+  await validateTopicId(topicId, topicIdStr);
 
   // build sql query validated param and filters
   const {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
@@ -294,7 +298,7 @@ module.exports = {
   getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest,
   getTopicMessages,
-  // validateConsensusTimestampParam,
-  // validateGetSequenceMessageParams,
-  // validateGetTopicMessagesParams,
+  validateConsensusTimestampParam,
+  validateGetSequenceMessageParams,
+  validateGetTopicMessagesParams,
 };
