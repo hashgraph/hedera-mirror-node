@@ -2,6 +2,8 @@
 -- Backup tables use efficient COPY process to CSV's
 -------------------
 
+\copy assessed_custom_fee to assessed_custom_fee.csv delimiter ',' csv;
+
 \copy account_balance to account_balance.csv delimiter ',' csv;
 
 \copy account_balance_file to account_balance_file.csv delimiter ',' csv;
@@ -13,6 +15,8 @@
 \copy contract_result to contract_result.csv delimiter ',' csv;
 
 \copy crypto_transfer to crypto_transfer.csv delimiter ',' csv;
+
+\copy custom_fee to custom_fee.csv delimiter ',' csv;
 
 \copy file_data to file_data.csv delimiter ',' csv;
 

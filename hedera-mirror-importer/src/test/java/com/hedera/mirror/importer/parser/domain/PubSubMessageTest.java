@@ -238,7 +238,8 @@ class PubSubMessageTest {
                 "      \"amount\": \"100000000\"" +
                 "    }]" +
                 "  }," +
-                "  \"tokenTransferLists\":[]" +
+                "  \"tokenTransferLists\":[]," +
+                "  \"assessedCustomFees\":[]" +
                 "}";
     }
 }

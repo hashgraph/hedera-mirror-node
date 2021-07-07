@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.UnknownFieldSet;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -33,7 +32,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.io.IOException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
@@ -43,8 +41,7 @@ import com.hedera.mirror.importer.exception.ParserException;
 class RecordItemTest {
 
     private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
-            .setSignedTransactionBytes(
-                    SignedTransaction.getDefaultInstance().getBodyBytes())
+            .setSignedTransactionBytes(SignedTransaction.getDefaultInstance().getBodyBytes())
             .build();
     private static final byte[] DEFAULT_TRANSACTION_BYTES = DEFAULT_TRANSACTION.toByteArray();
     private static final TransactionRecord DEFAULT_RECORD = TransactionRecord.getDefaultInstance();
@@ -74,58 +71,49 @@ class RecordItemTest {
             .setMemo("memo")
             .build();
 
-    private static final UnknownFieldSet UNKNOWN_FIELD_SET = UnknownFieldSet.newBuilder()
-            .addField(RecordItem.TRANSACTION_BODY_PROTOBUF_TAG,
-                    UnknownFieldSet.Field.newBuilder()
-                            .addLengthDelimited(TRANSACTION_BODY.toByteString())
-                            .build())
-            .build();
-
     @Test
-    public void testBadTransactionBytesThrowException() {
-        testException(new byte[] {0x0, 0x1}, DEFAULT_RECORD_BYTES, RecordItem.BAD_TRANSACTION_BYTES_MESSAGE);
+    void testBadTransactionBytesThrowException() {
+        testException(new byte[] { 0x0, 0x1 }, DEFAULT_RECORD_BYTES, RecordItem.BAD_TRANSACTION_BYTES_MESSAGE);
     }
 
     @Test
-    public void testBadRecordBytesThrowException() {
-        testException(DEFAULT_TRANSACTION_BYTES, new byte[] {0x0, 0x1}, RecordItem.BAD_RECORD_BYTES_MESSAGE);
+    void testBadRecordBytesThrowException() {
+        testException(DEFAULT_TRANSACTION_BYTES, new byte[] { 0x0, 0x1 }, RecordItem.BAD_RECORD_BYTES_MESSAGE);
     }
 
     @Test
-    public void testTransactionBytesWithoutTransactionBodyThrowException() {
+    void testTransactionBytesWithoutTransactionBodyThrowException() {
         testException(Transaction.newBuilder().build().toByteArray(),
                 DEFAULT_RECORD_BYTES, RecordItem.BAD_TRANSACTION_BODY_BYTES_MESSAGE);
     }
 
     @Test
-    public void testWithBody() {
+    void testWithBody() {
         Transaction transaction = Transaction.newBuilder()
-                .setUnknownFields(UNKNOWN_FIELD_SET)
+                .setBody(TRANSACTION_BODY)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD
-                .toByteArray());
+        RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
         assertRecordItem(transaction, recordItem);
     }
 
     @Test
-    public void testWithBodyProto() throws IOException {
+    void testWithBodyProto() {
         //An encoded protobuf Transaction with the body set in TransactionBody, as seen in an older proto version
         byte[] transactionFromProto = Base64
-                .decodeBase64("GhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5CgoYCjIEbWVtb3IA");
+                .decodeBase64("CgoYCjIEbWVtb3IAGhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5");
 
         Transaction expectedTransaction = Transaction.newBuilder()
-                .setUnknownFields(UNKNOWN_FIELD_SET)
+                .setBody(TRANSACTION_BODY)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
 
-        RecordItem recordItem = new RecordItem(transactionFromProto, TRANSACTION_RECORD
-                .toByteArray());
+        RecordItem recordItem = new RecordItem(transactionFromProto, TRANSACTION_RECORD.toByteArray());
         assertRecordItem(expectedTransaction, recordItem);
     }
 
     @Test
-    public void testWithBodyBytes() {
+    void testWithBodyBytes() {
         Transaction transaction = Transaction.newBuilder()
                 .setBodyBytes(TRANSACTION_BODY.toByteString())
                 .setSigMap(SIGNATURE_MAP)
@@ -135,7 +123,7 @@ class RecordItemTest {
     }
 
     @Test
-    public void testWithSignedTransaction() {
+    void testWithSignedTransaction() {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
                 .build();
