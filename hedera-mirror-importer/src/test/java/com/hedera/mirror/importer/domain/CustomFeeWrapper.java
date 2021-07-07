@@ -35,7 +35,7 @@ public class CustomFeeWrapper {
     private final CustomFee customFee;
 
     public CustomFeeWrapper(Long amount, Long amountDenominator, Long collectorAccountId, long createdTimestamp,
-            Long denominatingTokenId, Long maximumAmount, Long minimumAmount, long tokenId) {
+                            Long denominatingTokenId, Long maximumAmount, long minimumAmount, long tokenId) {
         customFee = new CustomFee();
         customFee.setAmount(amount);
         customFee.setAmountDenominator(amountDenominator);
