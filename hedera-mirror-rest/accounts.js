@@ -170,7 +170,7 @@ const getAccounts = async (req, res) => {
   }
 
   // Execute query
-  const result = await utils.queryQuietly(pgEntityQuery, ...params);
+  const result = await pool.queryQuietly(pgEntityQuery, ...params);
   const ret = {
     accounts: result.rows.map((row) => processRow(row)),
     links: {

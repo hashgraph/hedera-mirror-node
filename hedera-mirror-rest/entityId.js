@@ -76,7 +76,7 @@ const of = (shard, realm, num) => {
  * @return {EntityId}
  */
 const fromEncodedId = (id, isNullable = false) => {
-  if (_.isNull(id)) {
+  if (_.isNil(id)) {
     if (isNullable) {
       return of(null, null, null);
     }

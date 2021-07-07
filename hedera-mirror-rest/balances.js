@@ -138,7 +138,7 @@ const getBalances = async (req, res) => {
   }
 
   // Execute query
-  const result = await utils.queryQuietly(pgSqlQuery, ...sqlParams);
+  const result = await pool.queryQuietly(pgSqlQuery, ...sqlParams);
   res.locals[constants.responseDataLabel] = formatBalancesResult(req, result, limit, order);
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };

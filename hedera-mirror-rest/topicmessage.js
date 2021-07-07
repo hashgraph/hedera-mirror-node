@@ -94,7 +94,7 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
                                   ON te.type = tet.id
                       WHERE te.id = $1`;
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, encodedId);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, encodedId);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
   }
@@ -272,7 +272,7 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
   // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -287,7 +287,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
   logger.debug(`getMessages returning ${rows.length} entries`);
   return rows;
 };

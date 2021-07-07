@@ -51,7 +51,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
     logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
-  const {rows} = await utils.queryQuietly(sqlQuery, ...sqlParams);
+  const {rows} = await pool.queryQuietly(sqlQuery, ...sqlParams);
   if (_.isEmpty(rows)) {
     throw new NotFoundError('Transaction not found');
   } else if (rows.length > 1) {
@@ -79,7 +79,7 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
     logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }
 
-  const {rows} = await utils.queryQuietly(sqlQuery, consensusNs);
+  const {rows} = await pool.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No matching RCD file found with ${consensusNs} in the range`);
   }
@@ -126,7 +126,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
     logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }
 
-  const {rows} = await utils.queryQuietly(sqlQuery, consensusNs);
+  const {rows} = await pool.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
     throw new NotFoundError('No address book found');
   }

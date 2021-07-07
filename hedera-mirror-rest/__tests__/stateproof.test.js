@@ -55,7 +55,8 @@ const emptyQueryResult = {
  */
 const verifyFakeCallCountAndLastCallParamsArg = (fake, expectedCount, expectedLastCallParams) => {
   expect(fake.callCount).toEqual(expectedCount);
-  expect(fake.lastArg.sort()).toEqual(expectedLastCallParams.sort());
+  const actualParams = fake.args[fake.args.length - 1].slice(1);
+  expect(actualParams).toEqual(expectedLastCallParams);
 };
 
 describe('getSuccessfulTransactionConsensusNs', () => {
@@ -67,7 +68,7 @@ describe('getSuccessfulTransactionConsensusNs', () => {
 
   test('with transaction found in db table', async () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
-    global.pool = {query: fakeQuery};
+    global.pool = {queryQuietly: fakeQuery};
 
     const consensusNs = await stateproof.getSuccessfulTransactionConsensusNs(transactionId);
     expect(consensusNs).toEqual(expectedValidConsensusNs);
@@ -79,7 +80,7 @@ describe('getSuccessfulTransactionConsensusNs', () => {
 
   test('with transaction not found', async () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
-    global.pool = {query: fakeQuery};
+    global.pool = {queryQuietly: fakeQuery};
 
     await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
@@ -90,7 +91,7 @@ describe('getSuccessfulTransactionConsensusNs', () => {
 
   test('with db query error', async () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
-    global.pool = {query: fakeQuery};
+    global.pool = {queryQuietly: fakeQuery};
 
     await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
@@ -115,7 +116,7 @@ describe('getRCDFileInfoByConsensusNs', () => {
 
   test('with record file found', async () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
-    global.pool = {query: fakeQuery};
+    global.pool = {queryQuietly: fakeQuery};
 
     const info = await stateproof.getRCDFileInfoByConsensusNs(consensusNs);
     expect(info).toEqual(expectedRCDFileInfo);
@@ -124,7 +125,7 @@ describe('getRCDFileInfoByConsensusNs', () => {
 
   test('with record file not found', async () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
-    global.pool = {query: fakeQuery};
+    global.pool = {queryQuietly: fakeQuery};
 
     await expect(stateproof.getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs]);
@@ -132,7 +133,7 @@ describe('getRCDFileInfoByConsensusNs', () => {
 
   test('with db query error', async () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
-    global.pool = {query: fakeQuery};
+    global.pool = {queryQuietly: fakeQuery};
 
     await expect(stateproof.getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [consensusNs]);
@@ -198,7 +199,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
       queryResult = queryResultOrFakeQueryFunc;
       queryStub.returns(queryResultOrFakeQueryFunc);
     }
-    global.pool = {query: queryStub};
+    global.pool = {queryQuietly: queryStub};
 
     if (expectPass) {
       const result = await stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);

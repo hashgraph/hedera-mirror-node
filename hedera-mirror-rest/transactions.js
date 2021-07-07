@@ -25,8 +25,8 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const {NftTransfer} = require('./model');
-const {NftTransferViewModel} = require('./viewmodel');
+const {AssessedCustomFee, NftTransfer} = require('./model');
+const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
 
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
@@ -56,22 +56,22 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
   `;
   const aggregateNftTransferQuery = `
     select jsonb_agg(jsonb_build_object(
-      'receiver_account_id', receiver_account_id,
-      'sender_account_id', sender_account_id,
-      'serial_number', serial_number,
-      'token_id', token_id
+      'receiver_account_id', ${NftTransfer.RECEIVER_ACCOUNT_ID},
+      'sender_account_id', ${NftTransfer.SENDER_ACCOUNT_ID},
+      'serial_number', ${NftTransfer.SERIAL_NUMBER},
+      'token_id', ${NftTransfer.TOKEN_ID}
       ))
-    from nft_transfer
-    where nft_transfer.consensus_timestamp = t.consensus_ns
+    from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
+    where ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = t.consensus_ns
   `;
   const aggregateAssessedCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
-        'amount', amount,
-        'collector_account_id', collector_account_id,
-        'token_id', token_id
+        'amount', ${AssessedCustomFee.AMOUNT},
+        'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+        'token_id', ${AssessedCustomFee.TOKEN_ID}
       ))
-    from assessed_custom_fee
-    where assessed_custom_fee.consensus_timestamp = t.consensus_ns
+    from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
+    where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = t.consensus_ns
   `;
   const fields = [
     't.payer_account_id',
@@ -114,12 +114,10 @@ const createAssessedCustomFeeList = (assessedCustomFees, payerAccountId) => {
     return undefined;
   }
 
-  return assessedCustomFees.map((assessedCustomFee) => ({
-    amount: assessedCustomFee.amount,
-    collector_account_id: EntityId.fromEncodedId(assessedCustomFee.collector_account_id).toString(),
-    payer_account_id: payerAccountId,
-    token_id: EntityId.fromEncodedId(assessedCustomFee.token_id, true).toString(),
-  }));
+  return assessedCustomFees.map((assessedCustomFee) => {
+    const model = new AssessedCustomFee(assessedCustomFee);
+    return new AssessedCustomFeeViewModel(model, payerAccountId);
+  });
 };
 
 /**
@@ -468,7 +466,7 @@ const getTransactions = async (req, res) => {
   }
 
   // Execute query
-  const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
+  const {rows, sqlQuery} = await pool.queryQuietly(query.query, ...query.params);
   const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,
@@ -541,7 +539,7 @@ const getOneTransaction = async (req, res) => {
   }
 
   // Execute query
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...sqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...sqlParams);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }

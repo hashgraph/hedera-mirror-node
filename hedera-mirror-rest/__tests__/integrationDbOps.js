@@ -24,13 +24,14 @@ const {execSync} = require('child_process');
 const fs = require('fs');
 const log4js = require('log4js');
 const path = require('path');
-const SqlConnectionPool = require('pg').Pool;
 const {GenericContainer} = require('testcontainers');
 const {db: dbConfig} = require('../config');
 const {isDockerInstalled} = require('./integrationUtils');
-const {randomString} = require('../utils');
+const {getPoolClass, randomString} = require('../utils');
 
 const logger = log4js.getLogger();
+
+const Pool = getPoolClass(false);
 
 let oldPool;
 let dockerDb;
@@ -66,7 +67,7 @@ const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs 
 
 const getConnection = () => {
   logger.info(`sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`);
-  sqlConnection = new SqlConnectionPool({
+  sqlConnection = new Pool({
     user: dbAdminUser,
     host: dbConfig.host,
     database: dbConfig.name,

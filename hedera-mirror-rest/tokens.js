@@ -32,7 +32,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // models
-const {Nft, NftTransfer, Transaction} = require('./model');
+const {CustomFee, Nft, NftTransfer, Transaction} = require('./model');
 
 // middleware
 const {httpStatusCodes} = require('./constants');
@@ -99,7 +99,7 @@ const tokenInfoSelectFields = [
   't.created_timestamp',
   'decimals',
   'e.expiration_timestamp',
-  'fee_supply_key',
+  'fee_schedule_key',
   'freeze_default',
   'freeze_key',
   'initial_supply',
@@ -180,16 +180,17 @@ const formatTokenRow = (row) => {
  * Creates custom fees object from an array of aggregated json objects
  *
  * @param customFees
+ * @param {string} tokenId
  * @return {{}|*}
  */
-const createCustomFeesObject = (customFees) => {
+const createCustomFeesObject = (customFees, tokenId) => {
   if (!customFees) {
-    return {};
+    return undefined;
   }
 
   return customFees.reduce(
-    (customFee, customFeesObject) => {
-      if (customFee.has_custom_fee) {
+    (customFeesObject, customFee) => {
+      if (customFee.amount) {
         if (!customFee.amount_denominator) {
           customFeesObject.fixed_fees.push({
             amount: customFee.amount,
@@ -203,7 +204,8 @@ const createCustomFeesObject = (customFees) => {
               denominator: customFee.amount_denominator,
             },
             collector_account_id: EntityId.fromEncodedId(customFee.collector_account_id).toString(),
-            maxinum: customFee.maximum_amount,
+            denominating_token_id: tokenId,
+            maximum: customFee.maximum_amount,
             minimum: customFee.minimum_amount,
           });
         }
@@ -220,12 +222,13 @@ const createCustomFeesObject = (customFees) => {
 };
 
 const formatTokenInfoRow = (row) => {
+  const tokenId = EntityId.fromEncodedId(row.token_id).toString();
   return {
     admin_key: utils.encodeKey(row.key),
     auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
-    custom_fees: createCustomFeesObject(row.custom_fees),
+    custom_fees: createCustomFeesObject(row.custom_fees, tokenId),
     decimals: row.decimals,
     expiry_timestamp: row.expiration_timestamp,
     fee_schedule_key: utils.encodeKey(row.fee_schedule_key),
@@ -360,55 +363,118 @@ const getAndValidateTokenIdRequestPathParam = (req) => {
   return EntityId.fromString(tokenIdString, constants.filterKeys.TOKENID).getEncodedId();
 };
 
-const validateTokenInfoFilters = (filters) => {};
+/**
+ * Validates the token info timestamp filter operator.
+ *
+ * @param {string} op
+ * @return {boolean}
+ */
+const isValidTokenInfoTimestampFilterOp = (op) => {
+  return op === 'eq' || op === 'lt' || op === 'lte';
+};
+
+/**
+ * Validates token info request filters. Only timestamp filter is supported.
+ *
+ * @param param
+ * @param op
+ * @param val
+ * @return {boolean}
+ */
+const validateTokenInfoFilter = (param, op, val) => {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
+  }
+
+  switch (param) {
+    case constants.filterKeys.TIMESTAMP:
+      ret = isValidTokenInfoTimestampFilterOp(op) && utils.isValidTimestampParam(val);
+      break;
+    default:
+      // unsupported param
+      ret = false;
+  }
+
+  return ret;
+};
+
+/**
+ * Transforms the timestamp filter operator: '=' maps to '<=', others stay the same
+ *
+ * @param {string} op
+ */
+const transformTimestampFilterOp = (op) => {
+  const {opsMap} = utils;
+  return op === opsMap.eq ? opsMap.lte : op;
+};
 
 /**
  * Gets the token info query
  *
- * @param {boolean} hasTimestamp
- * @return {string} the query string
+ * @param {string} tokenId
+ * @param {[]} filters
+ * @return {{query: string, params: []}} the query string and params
  */
-const getTokenInfoQuery = (hasTimestamp) => {
+const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
+  const conditions = ['token_id = $1'];
+  const params = [tokenId];
+
+  if (filters && filters.length !== 0) {
+    // honor the last timestamp filter
+    const filter = filters[filters.length - 1];
+    const op = transformTimestampFilterOp(filter.operator);
+    conditions.push(`${CustomFee.FILTER_MAP[filter.key]} ${op} $2`);
+    params.push(filter.value);
+  }
+
   const aggregateCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
-        'amount', amount,
-        'amount_denominator', amount_denominator,
-        'collector_account_id', collector_account_id,
-        'created_timestamp', created_timestamp,
-        'denominating_token_id', denominating_token_id,
-        'has_custom_fee', has_custom_fee,
-        'maximum_amount', maximum_amount,
-        'minimum_amount', minimum_amount
+        'amount', ${CustomFee.AMOUNT},
+        'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR},
+        'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID},
+        'created_timestamp', ${CustomFee.CREATED_TIMESTAMP},
+        'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID},
+        'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT},
+        'minimum_amount', ${CustomFee.MINIMUM_AMOUNT}
     ))
-    from custom_fee
-    where token_id = $1 ${hasTimestamp && 'and created_timestamp <= $2'}
-    group by created_timestamp
-    order by created_timestamp
+    from ${CustomFee.tableName} ${CustomFee.tableAlias}
+    where ${conditions.join(' and ')}
+    group by ${CustomFee.CREATED_TIMESTAMP_FULL_NAME}
+    order by ${CustomFee.CREATED_TIMESTAMP_FULL_NAME} desc
     limit 1
   `;
 
-  return [
+  const query = [
     'select',
     [...tokenInfoSelectFields, `(${aggregateCustomFeeQuery}) as custom_fees`].join(',\n'),
     'from token t',
     entityIdJoinQuery,
     tokenIdMatchQuery,
   ].join('\n');
+
+  return {
+    query,
+    params,
+  };
 };
 
 const getTokenInfoRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
 
-  // extract filters from query param
-  const filters = utils.buildFilterObject(req.query);
+  // extract and validate filters from query param
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenInfoFilter);
+  const {query, params} = extractSqlFromTokenInfoRequest(tokenId, filters);
 
-  // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle per resource unique param names
-  validateTokenInfoFilters(filters);
-  utils.formatFilters(filters);
+  const row = await getToken(query, ...params);
 
-  const query = getTokenInfoQuery(true);
-  const row = await getToken(query, tokenId);
-  res.locals[constants.responseDataLabel] = formatTokenInfoRow(row);
+  const tokenInfo = formatTokenInfoRow(row);
+  if (!tokenInfo.custom_fees) {
+    throw NotFoundError();
+  }
+
+  res.locals[constants.responseDataLabel] = tokenInfo;
 };
 
 const getTokens = async (pgSqlQuery, pgSqlParams) => {
@@ -416,7 +482,7 @@ const getTokens = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getTokens query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
   logger.debug(`getTokens returning ${rows.length} entries`);
   return rows;
 };
@@ -448,8 +514,6 @@ const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
-  const {opsMap} = utils;
-
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.DESC;
   let joinEntityClause = '';
@@ -472,8 +536,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
         order = filter.value;
         break;
       case constants.filterKeys.TIMESTAMP:
-        // transform '=' operator for timestamp to '<='
-        const op = filter.operator !== opsMap.eq ? filter.operator : opsMap.lte;
+        const op = transformTimestampFilterOp(filter.operator);
         params.push(filter.value);
         tsQueryConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${params.length}`);
         break;
@@ -527,7 +590,7 @@ const getTokenBalances = async (req, res) => {
     logger.trace(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await utils.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, ...params);
   const response = {
     timestamp: rows.length > 0 ? utils.nsToSecNs(rows[0].consensus_timestamp) : null,
     balances: rows.map((row) => formatTokenBalanceRow(row)),
@@ -636,7 +699,7 @@ const getAndValidateSerialNumberRequestPathParam = (req) => {
  */
 const getNftTokensRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
-  const filters = getValidatedFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
   // verify token exists
   const token = await TokenService.getToken(tokenId);
@@ -649,7 +712,7 @@ const getNftTokensRequest = async (req, res) => {
     logger.trace(`getNftTokens query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await utils.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, ...params);
   const response = {
     nfts: [],
     links: {
@@ -692,7 +755,7 @@ const getNftTokensRequest = async (req, res) => {
  */
 const getNftTokenInfoRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
-  const serialnumber = getAndValidateSerialNumberRequestPathParam(req);
+  const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
   // verify token exists
   const token = await TokenService.getToken(tokenId);
@@ -700,12 +763,12 @@ const getNftTokenInfoRequest = async (req, res) => {
     throw new NotFoundError(`No such token id - ${req.params.tokenId}`);
   }
 
-  const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialnumber, nftSelectQuery);
+  const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
   if (logger.isTraceEnabled()) {
     logger.trace(`getNftTokenInfo query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await utils.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, ...params);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
@@ -715,12 +778,12 @@ const getNftTokenInfoRequest = async (req, res) => {
   res.locals[constants.responseDataLabel] = new NftViewModel(nftModel);
 };
 
-const getToken = async (pgSqlQuery, tokenId) => {
+const getToken = async (pgSqlQuery, tokenId, ...rest) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getTokenInfo query: ${pgSqlQuery}, params: ${tokenId}`);
   }
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, tokenId);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, tokenId, ...rest);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
@@ -854,7 +917,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
-  const filters = getValidatedFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(
     tokenId,
@@ -867,7 +930,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
     logger.trace(`getNftTransferHistory query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await utils.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, ...params);
   const response = {
     transactions: [],
     links: {
@@ -927,6 +990,7 @@ if (utils.isTestEnv()) {
     accountIdJoinQuery,
     entityIdJoinQuery,
     extractSqlFromNftTransferHistoryRequest,
+    extractSqlFromTokenInfoRequest,
     extractSqlFromTokenRequest,
     extractSqlFromNftTokenInfoRequest,
     extractSqlFromNftTokensRequest,
@@ -941,6 +1005,7 @@ if (utils.isTestEnv()) {
     tokensSelectQuery,
     validateSerialNumberParam,
     validateTokenIdParam,
-    validateTokensFilters,
+    validateTokenInfoFilter,
+    validateTokenQueryFilter,
   });
 }

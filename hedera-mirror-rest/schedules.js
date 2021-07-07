@@ -126,7 +126,7 @@ const getScheduleById = async (req, res) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
   }
-  const {rows} = await utils.queryQuietly(getScheduleByIdQuery, scheduleId);
+  const {rows} = await pool.queryQuietly(getScheduleByIdQuery, scheduleId);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
@@ -203,7 +203,7 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getScheduleById query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
   logger.debug(`getScheduleEntities returning ${rows.length} entries`);
 
   return rows.map((m) => formatScheduleRow(m));

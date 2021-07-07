@@ -20,10 +20,50 @@
 
 'use strict';
 
+const sinon = require('sinon');
+
 const EntityId = require('../entityId');
 const utils = require('../utils.js');
 const constants = require('../constants.js');
-const config = require('../config.js');
+
+describe('utils buildAndValidateFilters test', () => {
+  const query = {
+    [constants.filterKeys.ACCOUNT_ID]: '6560',
+    [constants.filterKeys.LIMIT]: '1560',
+    [constants.filterKeys.TIMESTAMP]: '12345.001',
+  };
+
+  test('validator passes', () => {
+    const fakeValidator = sinon.fake.returns(true);
+    const expected = [
+      {
+        key: constants.filterKeys.ACCOUNT_ID,
+        operator: utils.opsMap.eq,
+        value: '6560',
+      },
+      {
+        key: constants.filterKeys.LIMIT,
+        operator: utils.opsMap.eq,
+        value: 1560,
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.eq,
+        value: '12345001000000',
+      },
+    ];
+
+    expect(utils.buildAndValidateFilters(query, fakeValidator)).toStrictEqual(expected);
+    expect(fakeValidator.callCount).toEqual(3);
+  });
+
+  test('validator fails', () => {
+    const fakeValidator = sinon.fake.returns(false);
+
+    expect(() => utils.buildAndValidateFilters(query, fakeValidator)).toThrowErrorMatchingSnapshot();
+    expect(fakeValidator.callCount).toEqual(3);
+  });
+});
 
 describe('utils buildComparatorFilter tests', () => {
   test('Verify buildComparatorFilter for scheduled=true', () => {
@@ -95,30 +135,30 @@ const verifyFilter = (filter, key, op, val) => {
   expect(filter.value).toStrictEqual(val);
 };
 
-describe('utils buildFilterObject tests', () => {
-  test('Verify buildComparatorFilter for /api/v1/topic/7/messages?sequencenumber=2', () => {
+describe('utils buildFilters tests', () => {
+  test('Verify buildFilters for /api/v1/topic/7/messages?sequencenumber=2', () => {
     const filters = {
       sequencenumber: '2',
     };
 
-    const formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilters(filters);
 
     expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'eq', '2');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/topic/7/messages?timestamp=1234567890.000000004', () => {
+  test('Verify buildFilters for /api/v1/topic/7/messages?timestamp=1234567890.000000004', () => {
     const filters = {
       timestamp: '1234567890.000000004',
     };
 
-    const formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilters(filters);
 
     expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.TIMESTAMP, 'eq', '1234567890.000000004');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/topic/7/messages?sequencenumber=lt:2&sequencenumber=gte:3&timestamp=1234567890.000000004&order=desc&limit=5', () => {
+  test('Verify buildFilters for /api/v1/topic/7/messages?sequencenumber=lt:2&sequencenumber=gte:3&timestamp=1234567890.000000004&order=desc&limit=5', () => {
     const filters = {
       sequencenumber: ['lt:2', 'gte:3'],
       timestamp: '1234567890.000000004',
@@ -126,7 +166,7 @@ describe('utils buildFilterObject tests', () => {
       order: 'desc',
     };
 
-    const formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilters(filters);
 
     expect(formattedFilters).toHaveLength(5);
     verifyFilter(formattedFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'lt', '2');
@@ -136,30 +176,30 @@ describe('utils buildFilterObject tests', () => {
     verifyFilter(formattedFilters[4], constants.filterKeys.ORDER, 'eq', 'desc');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/transactions/0.0.3-1234567890-000000123/stateproof?scheduled=true', () => {
+  test('Verify buildFilters for /api/v1/transactions/0.0.3-1234567890-000000123/stateproof?scheduled=true', () => {
     const filters = {
       scheduled: 'true',
     };
 
-    const formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilters(filters);
 
     expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.SCHEDULED, 'eq', 'true');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/transactions/0.0.3-1234567890-000000123/stateproof?scheduled=true&scheduled=false', () => {
+  test('Verify buildFilters for /api/v1/transactions/0.0.3-1234567890-000000123/stateproof?scheduled=true&scheduled=false', () => {
     const filters = {
       scheduled: ['true', 'false'],
     };
 
-    const formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilters(filters);
 
     expect(formattedFilters).toHaveLength(2);
     verifyFilter(formattedFilters[0], constants.filterKeys.SCHEDULED, 'eq', 'true');
     verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULED, 'eq', 'false');
   });
 
-  test('Verify buildComparatorFilter for /api/v1/schedules?account.id=0.0.1024&schedule.id=gte:4000&order=desc&limit=10', () => {
+  test('Verify buildFilters for /api/v1/schedules?account.id=0.0.1024&schedule.id=gte:4000&order=desc&limit=10', () => {
     const filters = {
       'account.id': 'lt:0.0.1024',
       'schedule.id': 'gte:4000',
@@ -167,7 +207,7 @@ describe('utils buildFilterObject tests', () => {
       limit: '10',
     };
 
-    const formattedFilters = utils.buildFilterObject(filters);
+    const formattedFilters = utils.buildFilters(filters);
 
     expect(formattedFilters).toHaveLength(4);
     verifyFilter(formattedFilters[0], constants.filterKeys.ACCOUNT_ID, 'lt', '0.0.1024');
@@ -235,23 +275,23 @@ describe('utils formatComparator tests', () => {
   });
 });
 
-const verifyInvalidFilters = async (filters) => {
-  await expect(utils.validateAndParseFilters(filters)).rejects.toThrowErrorMatchingSnapshot();
+const verifyInvalidFilters = (filters) => {
+  expect(() => utils.validateAndParseFilters(filters, utils.filterValidityChecks)).toThrowErrorMatchingSnapshot();
 };
 
 const validateAndParseFiltersNoExMessage = 'Verify validateAndParseFilters for valid filters does not throw exception';
-const verifyValidAndInvalidFilters = async (invalidFilters, validFilters) => {
+const verifyValidAndInvalidFilters = (invalidFilters, validFilters) => {
   invalidFilters.forEach((filter) => {
     const filterString = Array.isArray(filter)
       ? `${JSON.stringify(filter[0])} ${filter.length} times`
       : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for invalid ${filterString}`, async () => {
-      await verifyInvalidFilters([filter]);
+    test(`Verify validateAndParseFilters for invalid ${filterString}`, () => {
+      verifyInvalidFilters([filter]);
     });
   });
 
-  test(`${validateAndParseFiltersNoExMessage}`, async () => {
-    await utils.validateAndParseFilters(validFilters);
+  test(`${validateAndParseFiltersNoExMessage}`, () => {
+    utils.validateAndParseFilters(validFilters, utils.filterValidityChecks);
   });
 };
 

@@ -21,6 +21,7 @@
 'use strict';
 
 module.exports = {
+  AssessedCustomFeeViewModel: require('./assessedCustomFeeViewModel'),
   NftTransactionHistoryViewModel: require('./nftTransactionHistoryViewModel'),
   NftTransferViewModel: require('./nftTransferViewModel'),
   NftViewModel: require('./nftViewModel'),

@@ -41,7 +41,7 @@ const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
-const {isTestEnv} = require('./utils');
+const {getPoolClass, isTestEnv} = require('./utils');
 const {DbError} = require('./errors/dbError');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
@@ -74,23 +74,15 @@ log4js.configure({
 });
 global.logger = log4js.getLogger();
 
-let {port} = config;
-if (isTestEnv()) {
-  port = 3000; // Use a dummy port for jest unit tests
-}
+// use a dummy port for jest unit tests
+const port = isTestEnv() ? 3000 : config.port;
 if (port === undefined || Number.isNaN(Number(port))) {
   logger.error('Server started with unknown port');
   process.exit(1);
 }
 
 // Postgres pool
-let Pool;
-if (isTestEnv()) {
-  Pool = require('./__tests__/mockpool'); // Use a mocked up DB for jest unit tests
-} else {
-  Pool = require('pg').Pool;
-}
-
+const Pool = getPoolClass(isTestEnv());
 const pool = new Pool({
   user: config.db.username,
   host: config.db.host,

@@ -640,6 +640,7 @@ describe('token formatTokenInfoRow tests', () => {
     freeze_default: true,
     key: [1, 1, 1],
     kyc_key: [2, 2, 2],
+    fee_schedule_key: [6, 6, 6],
     freeze_key: [3, 3, 3],
     supply_key: [4, 4, 4],
     wipe_key: [5, 5, 5],
@@ -655,9 +656,30 @@ describe('token formatTokenInfoRow tests', () => {
     type: 'FUNGIBLE_COMMON',
     max_supply: '9000000',
     supply_type: 'FINITE',
+    custom_fees: [
+      {
+        amount: 55,
+        collector_account_id: 8901,
+        created_timestamp: 10,
+      },
+      {
+        amount: 59,
+        collector_account_id: 8901,
+        created_timestamp: 10,
+        denominating_token_id: 19502,
+      },
+      {
+        amount: 66,
+        amount_denominator: 77,
+        collector_account_id: 8902,
+        created_timestamp: 10,
+        maximum_amount: 150,
+        minimum_amount: 43,
+      },
+    ],
   };
 
-  const expectedFormat = {
+  const expected = {
     admin_key: {
       _type: 'ProtobufEncoded',
       key: '010101',
@@ -667,6 +689,10 @@ describe('token formatTokenInfoRow tests', () => {
     created_timestamp: '0.000000010',
     decimals: 10,
     expiry_timestamp: 1594431063696143000,
+    fee_schedule_key: {
+      _type: 'ProtobufEncoded',
+      key: '060606',
+    },
     freeze_default: true,
     freeze_key: {
       _type: 'ProtobufEncoded',
@@ -694,112 +720,143 @@ describe('token formatTokenInfoRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '050505',
     },
+    custom_fees: {
+      created_timestamp: '0.000000010',
+      fixed_fees: [
+        {
+          amount: 55,
+          collector_account_id: '0.0.8901',
+          denominating_token_id: null,
+        },
+        {
+          amount: 59,
+          collector_account_id: '0.0.8901',
+          denominating_token_id: '0.0.19502',
+        },
+      ],
+      fractional_fees: [
+        {
+          amount: {
+            numerator: 66,
+            denominator: 77,
+          },
+          collector_account_id: '0.0.8902',
+          denominating_token_id: '0.0.7',
+          maximum: 150,
+          minimum: 43,
+        },
+      ],
+    },
   };
 
   test('Verify formatTokenRow', () => {
-    const formattedInput = tokens.formatTokenInfoRow(rowInput);
-
-    expect(JSON.stringify(formattedInput)).toStrictEqual(JSON.stringify(expectedFormat));
+    const actual = tokens.formatTokenInfoRow(rowInput);
+    expect(actual).toStrictEqual(expected);
   });
 });
 
-const verifyInvalidAndValidTokensFilters = (invalidFilters, validFilters) => {
-  invalidFilters.forEach((filter) => {
-    const filterString = Array.isArray(filter)
-      ? `${JSON.stringify(filter[0])} ${filter.length} times`
-      : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for invalid ${filterString}`, () => {
-      expect(() => tokens.validateTokensFilters([filter])).toThrowErrorMatchingSnapshot();
+const verifyInvalidAndValidTokensFilters = (invalidQueries, validQueries, validator) => {
+  invalidQueries.forEach((query) => {
+    test(`Verify buildAndValidateFilters for invalid ${JSON.stringify(query)}`, () => {
+      expect(() => utils.buildAndValidateFilters(query, validator)).toThrowErrorMatchingSnapshot();
     });
   });
 
-  validFilters.forEach((filter) => {
-    const filterString = Array.isArray(filter)
-      ? `${JSON.stringify(filter[0])} ${filter.length} times`
-      : `${JSON.stringify(filter)}`;
-    test(`Verify validateAndParseFilters for valid ${filterString}`, () => {
-      tokens.validateTokensFilters([filter]);
+  validQueries.forEach((query) => {
+    test(`Verify buildAndValidateFilters for valid ${JSON.stringify(query)}`, () => {
+      utils.buildAndValidateFilters(query, validator);
     });
   });
 };
 
-describe('utils validateAndParseFilters token type tests', () => {
+const makeQueries = (key, values) => {
+  return values.map((v) => ({[key]: v}));
+};
+
+describe('utils buildAndValidateFilters token type tests', () => {
   const key = filterKeys.TOKEN_TYPE;
-  const invalidFilters = [
+  const invalidQueries = makeQueries(key, [
     // invalid format
-    utils.buildComparatorFilter(key, 'cred'),
-    utils.buildComparatorFilter(key, 'deb'),
+    'cred',
+    'deb',
     // erroneous data
-    utils.buildComparatorFilter(key, '-1'),
-  ];
+    '-1',
+  ]);
+  const validQueries = makeQueries(key, [
+    'all',
+    'ALL',
+    'NON_FUNGIBLE_UNIQUE',
+    'non_fungible_unique',
+    'FUNGIBLE_COMMON',
+    'fungible_common',
+  ]);
 
-  const validFilters = [
-    utils.buildComparatorFilter(key, 'all'),
-    utils.buildComparatorFilter(key, 'ALL'),
-    utils.buildComparatorFilter(key, 'NON_FUNGIBLE_UNIQUE'),
-    utils.buildComparatorFilter(key, 'non_fungible_unique'),
-    utils.buildComparatorFilter(key, 'FUNGIBLE_COMMON'),
-    utils.buildComparatorFilter(key, 'fungible_common'),
-  ];
-
-  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
+  verifyInvalidAndValidTokensFilters(invalidQueries, validQueries, tokens.validateTokenQueryFilter);
 });
 
-describe('utils validateAndParseFilters serialnumbers tests', () => {
+describe('utils buildAndValidateFilters serialnumbers tests', () => {
   const key = filterKeys.SERIAL_NUMBER;
-  const invalidFilters = [
+  const invalidQueries = makeQueries(key, [
     // invalid format
-    utils.buildComparatorFilter(key, '-1'),
-    utils.buildComparatorFilter(key, 'deb'),
+    '-1',
+    'deb',
     // erroneous data
-    utils.buildComparatorFilter(key, '0'),
-  ];
+    '0',
+  ]);
+  const validQueries = makeQueries(key, [
+    '1',
+    '21',
+    '9007199254740991',
+    'eq:324',
+    'gt:324',
+    'gte:324',
+    'lt:324',
+    'lte:324',
+  ]);
 
-  const validFilters = [
-    utils.buildComparatorFilter(key, '1'),
-    utils.buildComparatorFilter(key, '21'),
-    utils.buildComparatorFilter(key, '9007199254740991'),
-    utils.buildComparatorFilter(key, 'eq:324'),
-    utils.buildComparatorFilter(key, 'gt:324'),
-    utils.buildComparatorFilter(key, 'gte:324'),
-    utils.buildComparatorFilter(key, 'lt:324'),
-    utils.buildComparatorFilter(key, 'lte:324'),
-  ];
-
-  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
+  verifyInvalidAndValidTokensFilters(invalidQueries, validQueries, tokens.validateTokenQueryFilter);
 });
 
 describe('utils validateAndParseFilters account.id tests', () => {
   const key = filterKeys.ACCOUNT_ID;
-  const invalidFilters = [
+  const invalidQueries = makeQueries(key, [
     // invalid format
-    utils.buildComparatorFilter(key, 'L'),
-    utils.buildComparatorFilter(key, '@.#.$'),
+    'L',
+    '@.#.$',
     // erroneous data
-    utils.buildComparatorFilter(key, '-1'),
-    utils.buildComparatorFilter(key, '0.1.2.3'),
-    utils.buildComparatorFilter(key, '-1.-1.-1'),
-  ];
+    '-1',
+    '0.1.2.3',
+    '-1.-1.-1',
+  ]);
+  const validQueries = makeQueries(key, [
+    '1001',
+    '0.1001',
+    '0.0.1001',
+    '21',
+    '1234567890',
+    'eq:0.0.1001',
+    'lt:0.0.1001',
+    'lte:0.0.1001',
+    'gt:0.0.1001',
+    'gte:0.0.1001',
+    'eq:1001',
+    'lt:324',
+    'lte:324',
+    'gt:324',
+    'gte:324',
+  ]);
 
-  const validFilters = [
-    utils.buildComparatorFilter(key, '1001'),
-    utils.buildComparatorFilter(key, '0.1001'),
-    utils.buildComparatorFilter(key, '0.0.1001'),
-    utils.buildComparatorFilter(key, '21'),
-    utils.buildComparatorFilter(key, '1234567890'),
-    utils.buildComparatorFilter(key, 'eq:0.0.1001'),
-    utils.buildComparatorFilter(key, 'lt:0.0.1001'),
-    utils.buildComparatorFilter(key, 'lte:0.0.1001'),
-    utils.buildComparatorFilter(key, 'gt:0.0.1001'),
-    utils.buildComparatorFilter(key, 'gte:0.0.1001'),
-    utils.buildComparatorFilter(key, 'eq:1001'),
-    utils.buildComparatorFilter(key, 'lt:324'),
-    utils.buildComparatorFilter(key, 'lte:324'),
-    utils.buildComparatorFilter(key, 'gt:324'),
-    utils.buildComparatorFilter(key, 'gte:324'),
-  ];
+  verifyInvalidAndValidTokensFilters(invalidQueries, validQueries, tokens.validateTokenQueryFilter);
+});
 
-  verifyInvalidAndValidTokensFilters(invalidFilters, validFilters);
+describe('utils buildAndValidateFilters token info query timestamp filter tests', () => {
+  const key = filterKeys.TIMESTAMP;
+  const invalidQueries = makeQueries(key, ['abc', '', 'ne:1234', 'gt:1234', 'gte:1234']).concat(
+    makeQueries(filterKeys.SERIAL_NUMBER, ['123456'])
+  );
+  const validQueries = makeQueries(key, ['1', '123456789.000111', ['1', 'lt:123456789.000111']]);
+
+  verifyInvalidAndValidTokensFilters(invalidQueries, validQueries, tokens.validateTokenInfoFilter);
 });
 
 describe('token extractSqlFromNftTokensRequest tests', () => {
@@ -1222,5 +1279,175 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       expectedParams,
       filters
     );
+  });
+});
+
+describe('token extractSqlFromTokenInfoRequest tests', () => {
+  const verifyExtractSqlFromTokenInfoRequest = (tokenId, filters, expectedQuery, expectedParams) => {
+    const {query, params} = tokens.extractSqlFromTokenInfoRequest(tokenId, filters);
+
+    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
+    expect(params).toStrictEqual(expectedParams);
+  };
+
+  const timestamp = '123456789000111222';
+  const tokenId = '1009'; // encoded
+
+  test('Verify simple query', () => {
+    const expectedQuery = `select e.auto_renew_account_id,
+                                  e.auto_renew_period,
+                                  t.created_timestamp,
+                                  decimals,
+                                  e.expiration_timestamp,
+                                  fee_schedule_key,
+                                  freeze_default,
+                                  freeze_key,
+                                  initial_supply,
+                                  e.key,
+                                  kyc_key,
+                                  max_supply,
+                                  t.modified_timestamp,
+                                  name,
+                                  supply_key,
+                                  supply_type,
+                                  symbol,
+                                  token_id,
+                                  total_supply,
+                                  treasury_account_id,
+                                  t.type,
+                                  wipe_key,
+                                  (select jsonb_agg(jsonb_build_object(
+                                      'amount', amount,
+                                      'amount_denominator', amount_denominator,
+                                      'collector_account_id', collector_account_id,
+                                      'created_timestamp', created_timestamp,
+                                      'denominating_token_id', denominating_token_id,
+                                      'maximum_amount', maximum_amount,
+                                      'minimum_amount', minimum_amount
+                                   ))
+                                   from custom_fee cf
+                                   where token_id = $1
+                                   group by cf.created_timestamp
+                                   order by cf.created_timestamp desc
+                                   limit 1
+                                  ) as custom_fees
+                           from token t
+                           join entity e on e.id = t.token_id
+                           where token_id = $1`;
+    verifyExtractSqlFromTokenInfoRequest(tokenId, [], expectedQuery, [tokenId]);
+  });
+
+  [opsMap.lt, opsMap.lte].forEach((op) =>
+    test(`Verify query with timestamp and op ${op}`, () => {
+      const expectedQuery = `select e.auto_renew_account_id,
+                                  e.auto_renew_period,
+                                  t.created_timestamp,
+                                  decimals,
+                                  e.expiration_timestamp,
+                                  fee_schedule_key,
+                                  freeze_default,
+                                  freeze_key,
+                                  initial_supply,
+                                  e.key,
+                                  kyc_key,
+                                  max_supply,
+                                  t.modified_timestamp,
+                                  name,
+                                  supply_key,
+                                  supply_type,
+                                  symbol,
+                                  token_id,
+                                  total_supply,
+                                  treasury_account_id,
+                                  t.type,
+                                  wipe_key,
+                                  (select jsonb_agg(jsonb_build_object(
+                                      'amount', amount,
+                                      'amount_denominator', amount_denominator,
+                                      'collector_account_id', collector_account_id,
+                                      'created_timestamp', created_timestamp,
+                                      'denominating_token_id', denominating_token_id,
+                                      'maximum_amount', maximum_amount,
+                                      'minimum_amount', minimum_amount
+                                   ))
+                                   from custom_fee cf
+                                   where token_id = $1 and cf.created_timestamp ${op} $2
+                                   group by cf.created_timestamp
+                                   order by cf.created_timestamp desc
+                                   limit 1
+                                  ) as custom_fees
+                           from token t
+                           join entity e on e.id = t.token_id
+                           where token_id = $1`;
+      const expectedParams = [tokenId, timestamp];
+      const filters = [
+        {
+          key: filterKeys.TIMESTAMP,
+          operator: op,
+          value: timestamp,
+        },
+      ];
+
+      verifyExtractSqlFromTokenInfoRequest(tokenId, filters, expectedQuery, expectedParams);
+    })
+  );
+
+  test('Verify query with multiple timestamp filters', () => {
+    const expectedQuery = `select e.auto_renew_account_id,
+                                  e.auto_renew_period,
+                                  t.created_timestamp,
+                                  decimals,
+                                  e.expiration_timestamp,
+                                  fee_schedule_key,
+                                  freeze_default,
+                                  freeze_key,
+                                  initial_supply,
+                                  e.key,
+                                  kyc_key,
+                                  max_supply,
+                                  t.modified_timestamp,
+                                  name,
+                                  supply_key,
+                                  supply_type,
+                                  symbol,
+                                  token_id,
+                                  total_supply,
+                                  treasury_account_id,
+                                  t.type,
+                                  wipe_key,
+                                  (select jsonb_agg(jsonb_build_object(
+                                      'amount', amount,
+                                      'amount_denominator', amount_denominator,
+                                      'collector_account_id', collector_account_id,
+                                      'created_timestamp', created_timestamp,
+                                      'denominating_token_id', denominating_token_id,
+                                      'maximum_amount', maximum_amount,
+                                      'minimum_amount', minimum_amount
+                                   ))
+                                   from custom_fee cf
+                                   where token_id = $1 and cf.created_timestamp <= $2
+                                   group by cf.created_timestamp
+                                   order by cf.created_timestamp desc
+                                   limit 1
+                                  ) as custom_fees
+                           from token t
+                           join entity e on e.id = t.token_id
+                           where token_id = $1`;
+    const expectedParams = [tokenId, timestamp];
+    // honor the last one
+    const filters = [
+      {
+        key: filterKeys.TIMESTAMP,
+        operator: opsMap.lt,
+        value: timestamp,
+      },
+      {
+        key: filterKeys.TIMESTAMP,
+        operator: opsMap.lte,
+        value: timestamp,
+      },
+    ];
+
+    verifyExtractSqlFromTokenInfoRequest(tokenId, filters, expectedQuery, expectedParams);
   });
 });

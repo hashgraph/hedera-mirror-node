@@ -898,26 +898,30 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
 const isTestEnv = () => process.env.NODE_ENV === 'test';
 
 /**
- * Runs the sql query with params
- * @param {String} query SQL query string
- * @param params SQL query params
- * @returns {Promise<pg.Result | DbError>} The query result or DbError
- */
-const queryQuietly = async (query, ...params) => {
-  try {
-    return await pool.query(query, params);
-  } catch (err) {
-    throw new DbError(err.message);
-  }
-};
-
-/**
  * Masks the given IP based on Google Analytics standards
  * @param {String} ip the IP address from the req object.
  * @returns {String} The masked IP address
  */
 const ipMask = (ip) => {
   return anonymize(ip, 24, 48);
+};
+
+/**
+ * Gets the pool class with queryQuietly
+ *
+ * @param {boolean} mock
+ */
+const getPoolClass = (mock) => {
+  const Pool = mock ? require('./__tests__/mockpool') : require('pg').Pool;
+  Pool.prototype.queryQuietly = async function (query, ...params) {
+    try {
+      return await this.query(query, params);
+    } catch (err) {
+      throw new DbError(err.message);
+    }
+  };
+
+  return Pool;
 };
 
 module.exports = {
@@ -935,6 +939,7 @@ module.exports = {
   filterValidityChecks,
   getNullableNumber,
   getPaginationLink,
+  getPoolClass,
   getTransactionTypeQuery,
   ipMask,
   isRepeatedQueryParameterValidLength,
@@ -957,7 +962,6 @@ module.exports = {
   parseResultParams,
   parseBooleanValue,
   parseTimestampParam,
-  queryQuietly,
   nsToSecNs,
   nsToSecNsWithHyphen,
   randomString,
