@@ -29,8 +29,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.StringWriter;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.WriterAppender;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +47,8 @@ class SubscribeMetricsTest {
     private SubscribeProperties subscribeProperties;
     private SubscribeMetrics subscribeMetrics;
     private AbstractSubscriberProperties properties;
+    private StringWriter logOutput;
+    private WriterAppender writerAppender;
 
     @BeforeEach
     void setup() {
@@ -50,6 +57,22 @@ class SubscribeMetricsTest {
         meterRegistry = new SimpleMeterRegistry();
         subscribeProperties = new SubscribeProperties();
         subscribeMetrics = new SubscribeMetrics(meterRegistry, subscribeProperties);
+
+        logOutput = new StringWriter();
+        writerAppender = WriterAppender.newBuilder()
+                .setName("stringAppender")
+                .setTarget(logOutput)
+                .build();
+        Logger logger = (Logger) LogManager.getLogger(subscribeMetrics);
+        logger.addAppender(writerAppender);
+        writerAppender.start();
+    }
+
+    @AfterEach
+    void after() {
+        writerAppender.stop();
+        Logger logger = (Logger) LogManager.getLogger(subscribeMetrics);
+        logger.removeAppender(writerAppender);
     }
 
     @Test
@@ -98,6 +121,43 @@ class SubscribeMetricsTest {
                 .returns(subscription.getProtocol().toString(), t -> t.getId().getTag(TAG_PROTOCOL))
                 .returns(subscription.getName(), t -> t.getId().getTag(TAG_SCENARIO))
                 .returns(String.valueOf(subscription.getId()), t -> t.getId().getTag(TAG_SUBSCRIBER));
+    }
+
+    @Test
+    void status() {
+        TestSubscription testSubscription1 = new TestSubscription();
+        TestSubscription testSubscription2 = new TestSubscription();
+        testSubscription2.setName("Test2");
+
+        subscribeMetrics.onNext(response(testSubscription1));
+        subscribeMetrics.onNext(response(testSubscription2));
+        subscribeMetrics.status();
+
+        assertThat(logOutput).asString()
+                .hasLineCount(2)
+                .contains("GRPC Test: 1 transactions in 1s at 1.0/s. Errors: {}")
+                .contains("GRPC Test2: 1 transactions in 1s at 1.0/s. Errors: {}");
+    }
+
+    @Test
+    void statusDisabled() {
+        subscribeProperties.setEnabled(false);
+
+        subscribeMetrics.onNext(response(new TestSubscription()));
+        subscribeMetrics.status();
+
+        assertThat(logOutput).asString().isEmpty();
+    }
+
+    @Test
+    void statusNotRunning() {
+        TestSubscription testSubscription = new TestSubscription();
+        testSubscription.setStatus(SubscriptionStatus.COMPLETED);
+
+        subscribeMetrics.onNext(response(testSubscription));
+        subscribeMetrics.status();
+
+        assertThat(logOutput).asString().isEmpty();
     }
 
     private SubscribeResponse response(Subscription subscription) {
