@@ -26,11 +26,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-public class TokenFeeScheduleUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
-
-    public TokenFeeScheduleUpdateTransactionHandler() {
-        super(EntityOperationEnum.UPDATE);
-    }
+public class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {

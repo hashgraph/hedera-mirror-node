@@ -18,7 +18,10 @@ values ('FRACTION_DIVIDES_BY_ZERO', 230),
        ('CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE', 241),
        ('INVALID_CUSTOM_FRACTIONAL_FEES_SUM', 242),
        ('FRACTIONAL_FEE_MAX_AMOUNT_LESS_THAN_MIN_AMOUNT', 243),
-       ('CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES', 244);
+       ('CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES', 244),
+       ('CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON', 245),
+       ('CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON', 246),
+       ('INVALID_CUSTOM_FEE_SCHEDULE_KEY', 247);
 
 -- Add the new transaction type
 insert into t_transaction_types (proto_id, name, entity_type) values (45, 'TOKENFEESCHEDULEUPDATE', 5);
@@ -48,11 +51,11 @@ create table if not exists custom_fee
     created_timestamp     bigint not null,
     denominating_token_id bigint,
     maximum_amount        bigint,
-    minimum_amount        bigint,
+    minimum_amount        bigint not null default 0,
     token_id              bigint not null
 );
 create index if not exists custom_fee__token_timestamp
-    on custom_fee (token_id, created_timestamp desc);
+    on custom_fee (token_id desc, created_timestamp desc);
 comment on table custom_fee is 'HTS Custom fees';
 
 -- Add the default custom fee for existing tokens

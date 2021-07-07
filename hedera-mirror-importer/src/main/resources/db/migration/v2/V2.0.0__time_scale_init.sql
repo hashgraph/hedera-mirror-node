@@ -102,7 +102,7 @@ create table if not exists custom_fee
     created_timestamp     bigint not null,
     denominating_token_id bigint,
     maximum_amount        bigint,
-    minimum_amount        bigint,
+    minimum_amount        bigint not null default 0,
     token_id              bigint not null
 );
 comment on table custom_fee is 'HTS Custom fees';

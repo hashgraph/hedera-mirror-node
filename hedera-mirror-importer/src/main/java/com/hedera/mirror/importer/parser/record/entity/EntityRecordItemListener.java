@@ -762,7 +762,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
 
             insertCustomFees(transactionBody.getCustomFeesList(), consensusTimestamp, tokenId);
-            updateToken(Token.of(tokenId), consensusTimestamp);
         }
     }
 
@@ -844,9 +843,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
                 EntityId tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
-                if (EntityId.isEmpty((tokenId))) {
-                    tokenId = null;
-                }
 
                 AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
                 assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
@@ -893,11 +889,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void parseFixedFee(CustomFee customFee, FixedFee fixedFee) {
         customFee.setAmount(fixedFee.getAmount());
-
-        EntityId denominatingTokenId = EntityId.of(fixedFee.getDenominatingTokenId());
-        if (!EntityId.isEmpty(denominatingTokenId)) {
-            customFee.setDenominatingTokenId(denominatingTokenId);
-        }
+        customFee.setDenominatingTokenId(EntityId.of(fixedFee.getDenominatingTokenId()));
     }
 
     private void parseFractionalFee(CustomFee customFee, FractionalFee fractionalFee) {
@@ -909,9 +901,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             customFee.setMaximumAmount(maximumAmount);
         }
 
-        long minimumAmount = fractionalFee.getMinimumAmount();
-        if (minimumAmount != 0) {
-            customFee.setMinimumAmount(minimumAmount);
-        }
+        customFee.setMinimumAmount(fractionalFee.getMinimumAmount());
     }
 }

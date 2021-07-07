@@ -44,7 +44,7 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
 
 -- custom_fee
 create index if not exists custom_fee__token_timestamp
-    on custom_fee (token_id, created_timestamp desc);
+    on custom_fee (token_id desc, created_timestamp desc);
 
 -- entity
 alter table entity

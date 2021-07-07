@@ -243,7 +243,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         // update fee schedule
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
         Entity expectedEntity = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
-                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, updateTimestamp);
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         List<CustomFee> newCustomFees = nonEmptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID);
         List<CustomFee> expectedCustomFees = Lists.newArrayList(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID));
         expectedCustomFees.addAll(newCustomFees);
@@ -253,7 +253,7 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
 
         // then
         assertEntity(expectedEntity);
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimestamp, SYMBOL, INITIAL_SUPPLY);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertCustomFeesInDb(expectedCustomFees);
     }
 
@@ -1279,14 +1279,13 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         } else {
             // fractional fee
             long maximumAmount = customFee.getMaximumAmount() != null ? customFee.getMaximumAmount() : 0;
-            long minimumAmount = customFee.getMinimumAmount() != null ? customFee.getMinimumAmount() : 0;
             protoCustomFee.setFractionalFee(FractionalFee.newBuilder()
                     .setFractionalAmount(Fraction.newBuilder()
                             .setNumerator(customFee.getAmount())
                             .setDenominator(customFee.getAmountDenominator())
                     )
                     .setMaximumAmount(maximumAmount)
-                    .setMinimumAmount(minimumAmount)
+                    .setMinimumAmount(customFee.getMinimumAmount())
                     .build()
             );
         }

@@ -56,7 +56,7 @@ public class CustomFee implements Persistable<CustomFee.Id> {
 
     private Long maximumAmount;
 
-    private Long minimumAmount;
+    private long minimumAmount;
 
     @JsonIgnore
     @Override

@@ -23,9 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 
-import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 public class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -46,20 +44,5 @@ public class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransa
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.TOKEN;
-    }
-
-    @Override
-    protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecs() {
-        String description = "update token custom fees schedule, token entity modified timestamp should get updated";
-        Entity expected = getExpectedEntityWithTimestamp();
-        Entity input = new Entity();
-        return List.of(
-                UpdateEntityTestSpec.builder()
-                        .description(description)
-                        .expected(expected)
-                        .input(input)
-                        .recordItem(getRecordItem(getDefaultTransactionBody().build()))
-                        .build()
-        );
     }
 }
