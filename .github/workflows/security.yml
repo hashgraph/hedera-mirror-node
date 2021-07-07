@@ -3,6 +3,9 @@ name: Security
 on:
   pull_request:
     branches: [ main, release/** ]
+  push:
+    branches: [ main ]
+    tags: [ v* ]
 
 env:
   MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
