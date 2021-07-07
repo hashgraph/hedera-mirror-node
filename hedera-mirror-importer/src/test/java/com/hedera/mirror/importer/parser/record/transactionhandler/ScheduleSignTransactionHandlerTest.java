@@ -42,7 +42,6 @@ public class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandl
         return TransactionBody.newBuilder()
                 .setScheduleSign(ScheduleSignTransactionBody.newBuilder()
                         .setScheduleID(ScheduleID.newBuilder().setScheduleNum(DEFAULT_ENTITY_NUM).build()));
-
     }
 
     @Override
@@ -61,7 +60,7 @@ public class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandl
 
     @Override
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return TransactionRecord.newBuilder()
+        return super.getDefaultTransactionRecord()
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setScheduleID(ScheduleID.newBuilder().setScheduleNum(DEFAULT_ENTITY_NUM).build()));
     }

@@ -20,19 +20,26 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    public TokenUpdateTransactionHandler() {
+    static final long WILDCARD_SERIAL_NUMBER = -1;
+    private final NftRepository nftRepository;
+
+    public TokenUpdateTransactionHandler(NftRepository nftRepository) {
         super(EntityOperationEnum.UPDATE);
+        this.nftRepository = nftRepository;
     }
 
     @Override
@@ -58,10 +65,27 @@ public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransaction
         if (tokenUpdateTransactionBody.hasMemo()) {
             entity.setMemo(tokenUpdateTransactionBody.getMemo().getValue());
         }
+
+        updateTreasury(recordItem);
     }
 
     @Override
     protected EntityId getAutoRenewAccount(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getAutoRenewAccount());
+    }
+
+    private void updateTreasury(RecordItem recordItem) {
+        for (TokenTransferList tokenTransferList : recordItem.getRecord().getTokenTransferListsList()) {
+            for (NftTransfer nftTransfer : tokenTransferList.getNftTransfersList()) {
+                if (nftTransfer.getSerialNumber() == WILDCARD_SERIAL_NUMBER) {
+                    EntityId newTreasury = EntityId.of(nftTransfer.getReceiverAccountID());
+                    EntityId previousTreasury = EntityId.of(nftTransfer.getSenderAccountID());
+                    EntityId tokenId = EntityId.of(tokenTransferList.getToken());
+
+                    nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
+                            recordItem.getConsensusTimestamp());
+                }
+            }
+        }
     }
 }

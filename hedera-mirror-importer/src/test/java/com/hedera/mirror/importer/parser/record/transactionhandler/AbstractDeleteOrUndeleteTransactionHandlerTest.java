@@ -47,7 +47,8 @@ abstract class AbstractDeleteOrUndeleteTransactionHandlerTest extends AbstractTr
                         .description(description)
                         .expected(expected)
                         .input(input)
-                        .recordItem(getRecordItem(getDefaultTransactionBody().build()))
+                        .recordItem(getRecordItem(getDefaultTransactionBody().build(),
+                                getDefaultTransactionRecord().build()))
                         .build()
         );
     }
