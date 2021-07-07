@@ -225,7 +225,7 @@ const filterValidityChecks = (param, op, val) => {
  * @param {Request} req HTTP request object
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = async (req) => {
+const validateReq = (req) => {
   const badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {
@@ -240,11 +240,11 @@ const validateReq = async (req) => {
         continue;
       }
       for (const val of req.query[key]) {
-        if (!(await paramValidityChecks(key, val))) {
+        if (!paramValidityChecks(key, val)) {
           badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
         }
       }
-    } else if (!(await paramValidityChecks(key, req.query[key]))) {
+    } else if (!paramValidityChecks(key, req.query[key])) {
       badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
     }
   }
@@ -719,9 +719,9 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * @param {function(string, string, string)} filterValidator
  * @return {[]}
  */
-const buildAndValidateFilters = async (query, filterValidator = filterValidityChecks) => {
+const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) => {
   const filters = buildFilters(query);
-  await validateAndParseFilters(filters, filterValidator);
+  validateAndParseFilters(filters, filterValidator);
   return filters;
 };
 
@@ -772,7 +772,7 @@ const validateFilters = (filters, filterValidator) => {
   const badParams = [];
 
   for (const filter of filters) {
-    if (!filterValidityChecks(filter.key, filter.operator, filter.value)) {
+    if (!filterValidator(filter.key, filter.operator, filter.value)) {
       badParams.push(filter.key);
     }
   }
@@ -801,8 +801,8 @@ const formatFilters = (filters) => {
  * @param filterValidator
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = async (filters, filterValidator) => {
-  await validateFilters(filters, filterValidator);
+const validateAndParseFilters = (filters, filterValidator) => {
+  validateFilters(filters, filterValidator);
   formatFilters(filters);
 };
 
@@ -971,7 +971,7 @@ module.exports = {
   opsMap,
 };
 
-if (utils.isTestEnv()) {
+if (isTestEnv()) {
   Object.assign(module.exports, {
     buildFilters,
     formatComparator,
