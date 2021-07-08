@@ -705,7 +705,7 @@ components:
           type: boolean
       example:
         balance:
-          timestamp: 0.000002345
+          timestamp: "0.000002345"
           balance: 80
           tokens:
             - token_id: 0.0.200001
@@ -780,7 +780,7 @@ components:
               balance:
                 type: number
       example:
-        timestamp: 0.000002345
+        timestamp: "0.000002345"
         balance: 80
         tokens:
           - token_id: 0.0.200001
@@ -798,10 +798,7 @@ components:
           type: number
         num:
           type: number
-      example:
-        shard: 0
-        realm: 1
-        num: 2
+      example: "0.1.2"
     Error:
       type: object
       properties:
@@ -979,7 +976,7 @@ components:
           0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
     Timestamp:
       type: string
-      example: 1586567700.453054000
+      example: "1586567700.453054000"
     Token:
       type: object
       properties:
@@ -1041,7 +1038,7 @@ components:
           nullable: true
         created_timestamp:
           type: string
-          example: 1234567890.000000001
+          example: "1234567890.000000001"
         decimals:
           type: string
           example: 1000
@@ -1063,7 +1060,7 @@ components:
           example: 9223372036854775807
         modified_timestamp:
           type: string
-          example: 1234567890.000000001
+          example: "1234567890.000000001"
         name:
           type: string
           example: Token name
@@ -1094,7 +1091,7 @@ components:
           properties:
             created_timestamp:
               type: string
-              example: 1234567890.000000001
+              example: "1234567890.000000001"
             fixed_fees:
               type: array
               items:
@@ -1200,7 +1197,7 @@ components:
         - running_hash_version
         - sequence_number
       example:
-        consensus_timestamp: 1234567890.000000001
+        consensus_timestamp: "1234567890.000000001"
         topic_id: 0.0.7
         message: bWVzc2FnZQ==
         running_hash: cnVubmluZ19oYXNo
@@ -1295,9 +1292,9 @@ components:
               token_id:
                 $ref: '#/components/schemas/EntityId'
       example:
-        consensus_timestamp: 1234567890.000000007
+        consensus_timestamp: "1234567890.000000007"
         transaction_hash: aGFzaA==
-        valid_start_timestamp: 1234567890.000000006
+        valid_start_timestamp: "1234567890.000000006"
         charged_tx_fee: 7
         memo_base64: null
         result: SUCCESS
