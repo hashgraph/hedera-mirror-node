@@ -329,7 +329,7 @@ public class TokenFeature {
     }
 
     private MirrorTransaction verifyTransactions(int status) {
-        String transactionId = networkTransactionResponse.getTransactionIdString();
+        String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
@@ -357,7 +357,7 @@ public class TokenFeature {
     }
 
     private void verifyTokenTransfers() {
-        String transactionId = networkTransactionResponse.getTransactionIdString();
+        String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();

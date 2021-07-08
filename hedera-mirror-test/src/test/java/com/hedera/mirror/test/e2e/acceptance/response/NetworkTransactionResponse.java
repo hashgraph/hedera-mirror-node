@@ -36,6 +36,13 @@ public class NetworkTransactionResponse {
                 .getEpochSecond() + "-" + getPaddedNanos();
     }
 
+    // interim function until mirror node supports checksum
+    public String getTransactionIdStringNoCheckSum() {
+        String accountIdString = transactionId.accountId.toString().split("-")[0];
+        return accountIdString + "-" + transactionId.validStart
+                .getEpochSecond() + "-" + getPaddedNanos();
+    }
+
     public String getValidStartString() {
 
         // left pad nanos with zeros where applicable
