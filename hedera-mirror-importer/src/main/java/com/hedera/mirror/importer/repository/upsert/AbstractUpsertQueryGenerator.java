@@ -85,6 +85,10 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return null;
     }
 
+    protected String getAttributeUpdateQuery(String attributeName) {
+        return null;
+    }
+
     protected List<String> getV1ConflictIdColumns() {
         return Collections.emptyList();
     }
@@ -179,7 +183,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 camelCaseName);
     }
 
-    private String getSelectCoalesceQuery(String column, String defaultValue) {
+    protected String getSelectCoalesceQuery(String column, String defaultValue) {
         // e.g. "coalesce(delete, 'false')"
         String formattedColumnName = getFullTempTableColumnName(column);
         return String.format("coalesce(%s, %s)", formattedColumnName, defaultValue);
@@ -205,7 +209,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String getUpdateNullableStringCaseCoalesceAssign(String column) {
-        // e.g. "case when entity_temp.memo = ' ' then '' else coalesce(entity_temp.memo, entity.memo) end"
+        // e.g. "case when entity_temp.memo = <uuid> then '' else coalesce(entity_temp.memo, entity.memo) end"
         String finalFormattedColumnName = getFullFinalTableColumnName(column);
         String tempFormattedColumnName = getFullTempTableColumnName(column);
         return String.format(
@@ -313,7 +317,11 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         Collections.sort(updatableAttributes, DOMAIN_FIELD_COMPARATOR); // sort fields alphabetically
         updatableAttributes.forEach(d -> {
             String attributeUpdateQuery = "";
-            if (d.getType() == String.class) {
+            // get column custom update implementations
+            String columnSelectQuery = getAttributeUpdateQuery(d.getName());
+            if (!StringUtils.isEmpty(columnSelectQuery)) {
+                attributeUpdateQuery = columnSelectQuery;
+            } else if (d.getType() == String.class) {
                 attributeUpdateQuery = getUpdateNullableStringCaseCoalesceAssign(d.getName());
             } else {
                 attributeUpdateQuery = getUpdateCoalesceAssign(d.getName());
