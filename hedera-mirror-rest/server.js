@@ -181,7 +181,8 @@ const verifyDbConnection = async () => {
 if (!isTestEnv()) {
   verifyDbConnection()
     .catch((err) => {
-      throw new DbError(err.message);
+      logger.error(err);
+      process.exit(1);
     })
     .then(() => {
       logger.info(`DB connection validated`);

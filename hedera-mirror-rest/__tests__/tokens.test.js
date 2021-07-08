@@ -1305,46 +1305,46 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
 describe('token extractSqlFromTokenInfoRequest tests', () => {
   const getExpectedQuery = (timestampCondition = '') => {
     return `select e.auto_renew_account_id,
-                                  e.auto_renew_period,
-                                  t.created_timestamp,
-                                  decimals,
-                                  e.expiration_timestamp,
-                                  fee_schedule_key,
-                                  freeze_default,
-                                  freeze_key,
-                                  initial_supply,
-                                  e.key,
-                                  kyc_key,
-                                  max_supply,
-                                  t.modified_timestamp,
-                                  name,
-                                  supply_key,
-                                  supply_type,
-                                  symbol,
-                                  token_id,
-                                  total_supply,
-                                  treasury_account_id,
-                                  t.type,
-                                  wipe_key,
-                                  (select jsonb_agg(jsonb_build_object(
-                                    'amount', amount::text,
-                                    'amount_denominator', amount_denominator::text,
-                                    'collector_account_id', collector_account_id::text,
-                                    'created_timestamp', created_timestamp::text,
-                                    'denominating_token_id', denominating_token_id::text,
-                                    'maximum_amount', maximum_amount::text,
-                                    'minimum_amount', minimum_amount::text,
-                                    'token_id', token_id::text
-                                   ) order by amount, collector_account_id, denominating_token_id)
-                                   from custom_fee cf
-                                   where token_id = $1 ${timestampCondition && 'and ' + timestampCondition}
-                                   group by cf.created_timestamp
-                                   order by cf.created_timestamp desc
-                                   limit 1
-                                  ) as custom_fees
-                           from token t
-                           join entity e on e.id = t.token_id
-                           where token_id = $1`;
+                   e.auto_renew_period,
+                   t.created_timestamp,
+                   decimals,
+                   e.expiration_timestamp,
+                   fee_schedule_key,
+                   freeze_default,
+                   freeze_key,
+                   initial_supply,
+                   e.key,
+                   kyc_key,
+                   max_supply,
+                   t.modified_timestamp,
+                   name,
+                   supply_key,
+                   supply_type,
+                   symbol,
+                   token_id,
+                   total_supply,
+                   treasury_account_id,
+                   t.type,
+                   wipe_key,
+                   (select jsonb_agg(jsonb_build_object(
+                     'amount', amount::text,
+                     'amount_denominator', amount_denominator::text,
+                     'collector_account_id', collector_account_id::text,
+                     'created_timestamp', created_timestamp::text,
+                     'denominating_token_id', denominating_token_id::text,
+                     'maximum_amount', maximum_amount::text,
+                     'minimum_amount', minimum_amount::text,
+                     'token_id', token_id::text
+                    ) order by amount, collector_account_id, denominating_token_id)
+                    from custom_fee cf
+                    where token_id = $1 ${timestampCondition && 'and ' + timestampCondition}
+                    group by cf.created_timestamp
+                    order by cf.created_timestamp desc
+                    limit 1
+                   ) as custom_fees
+            from token t
+            join entity e on e.id = t.token_id
+            where token_id = $1`;
   };
 
   const verifyExtractSqlFromTokenInfoRequest = (tokenId, filters, expectedQuery, expectedParams) => {
