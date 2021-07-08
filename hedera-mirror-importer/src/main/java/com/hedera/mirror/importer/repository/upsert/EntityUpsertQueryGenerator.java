@@ -30,8 +30,8 @@ import com.hedera.mirror.importer.domain.Entity_;
 @Named
 @Value
 public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Entity_> {
-    public final String finalTableName = "entity";
-    public final String temporaryTableName = getFinalTableName() + "_temp";
+    private final String finalTableName = "entity";
+    private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> v1ConflictIdColumns = List.of(Entity_.ID);
     private final List<String> v2ConflictIdColumns = List.of(Entity_.ID);
     private final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,

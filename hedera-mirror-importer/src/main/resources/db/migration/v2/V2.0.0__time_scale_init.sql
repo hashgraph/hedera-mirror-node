@@ -169,9 +169,9 @@ create table if not exists nft
 (
   account_id            bigint,
   created_timestamp     bigint,
-  deleted               boolean default false   not null,
+  deleted               boolean,
   modified_timestamp    bigint                  not null,
-  metadata              bytea   default ''      not null,
+  metadata              bytea,
   serial_number         bigint                  not null,
   token_id              bigint                  not null
 );
