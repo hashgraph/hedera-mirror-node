@@ -27,7 +27,7 @@ class CustomFee {
    * Parses custom_fee table columns into object
    */
   constructor(customFee) {
-    this.amount = amount;
+    this.amount = customFee.amount;
     this.amountDenominator = customFee.amount_denominator;
     this.collectorAccountId = customFee.collector_account_id;
     this.createdTimestamp = customFee.created_timestamp;
@@ -41,21 +41,21 @@ class CustomFee {
   static tableName = 'custom_fee';
 
   static AMOUNT = `amount`;
-  static AMOUNT_FULL_NAME = CustomFee._getFullName(CustomFee.AMOUNT);
+  static AMOUNT_FULL_NAME = this._getFullName(this.AMOUNT);
   static AMOUNT_DENOMINATOR = `amount_denominator`;
-  static AMOUNT_DENOMINATOR_FULL_NAME = CustomFee._getFullName(CustomFee.AMOUNT_DENOMINATOR);
+  static AMOUNT_DENOMINATOR_FULL_NAME = this._getFullName(this.AMOUNT_DENOMINATOR);
   static COLLECTOR_ACCOUNT_ID = `collector_account_id`;
-  static COLLECTOR_ACCOUNT_ID_FULL_NAME = CustomFee._getFullName(CustomFee.COLLECTOR_ACCOUNT_ID);
+  static COLLECTOR_ACCOUNT_ID_FULL_NAME = this._getFullName(this.COLLECTOR_ACCOUNT_ID);
   static CREATED_TIMESTAMP = `created_timestamp`;
-  static CREATED_TIMESTAMP_FULL_NAME = CustomFee._getFullName(CustomFee.CREATED_TIMESTAMP);
+  static CREATED_TIMESTAMP_FULL_NAME = this._getFullName(this.CREATED_TIMESTAMP);
   static DENOMINATING_TOKEN_ID = `denominating_token_id`;
-  static DENOMINATING_TOKEN_ID_FULL_NAME = CustomFee._getFullName(CustomFee.DENOMINATING_TOKEN_ID);
+  static DENOMINATING_TOKEN_ID_FULL_NAME = this._getFullName(this.DENOMINATING_TOKEN_ID);
   static MAXIMUM_AMOUNT = `maximum_amount`;
-  static MAXIMUM_AMOUNT_FULL_NAME = CustomFee._getFullName(CustomFee.MAXIMUM_AMOUNT);
+  static MAXIMUM_AMOUNT_FULL_NAME = this._getFullName(this.MAXIMUM_AMOUNT);
   static MINIMUM_AMOUNT = `minimum_amount`;
-  static MINIMUM_AMOUNT_FULL_NAME = CustomFee._getFullName(CustomFee.MINIMUM_AMOUNT);
+  static MINIMUM_AMOUNT_FULL_NAME = this._getFullName(this.MINIMUM_AMOUNT);
   static TOKEN_ID = `token_id`;
-  static TOKEN_ID_FULL_NAME = CustomFee._getFullName(CustomFee.TOKEN_ID);
+  static TOKEN_ID_FULL_NAME = this._getFullName(this.TOKEN_ID);
 
   static FILTER_MAP = {
     [constants.filterKeys.TIMESTAMP]: CustomFee.CREATED_TIMESTAMP_FULL_NAME,

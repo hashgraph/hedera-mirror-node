@@ -146,7 +146,7 @@ const toQueryObject = (queryAndParams) => {
  */
 const getAccounts = async (req, res) => {
   // Validate query parameters first
-  await utils.validateReq(req);
+  utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
@@ -209,7 +209,7 @@ const getAccounts = async (req, res) => {
  */
 const getOneAccount = async (req, res) => {
   // Validate query parameters first
-  await utils.validateReq(req);
+  utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
   const accountId = EntityId.fromString(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();

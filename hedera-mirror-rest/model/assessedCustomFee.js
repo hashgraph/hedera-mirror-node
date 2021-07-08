@@ -32,7 +32,7 @@ class AssessedCustomFee {
   }
 
   static tableAlias = 'acf';
-  static tableName = 'accessed_custom_fee';
+  static tableName = 'assessed_custom_fee';
 
   static AMOUNT = `amount`;
   static AMOUNT_FULL_NAME = `${this.tableAlias}.${this.AMOUNT}`;

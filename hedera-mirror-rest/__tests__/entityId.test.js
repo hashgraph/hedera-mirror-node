@@ -242,7 +242,14 @@ describe('EntityId fromEncodedId', () => {
       expected: EntityId.of(null, null, null),
     },
     {
+      isNullable: true,
+      expected: EntityId.of(null, null, null),
+    },
+    {
       encodedId: null,
+      expectErr: true,
+    },
+    {
       expectErr: true,
     },
   ];

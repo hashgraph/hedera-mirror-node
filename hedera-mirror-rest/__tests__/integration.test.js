@@ -551,6 +551,7 @@ describe('DB integration test - spec based', () => {
   });
 
   const specPath = path.join(__dirname, 'specs');
+  // fs.readdirSync(specPath).filter((f) => f.startsWith('token-info-01-')).forEach((file) => {
   fs.readdirSync(specPath).forEach((file) => {
     const p = path.join(specPath, file);
     const specText = fs.readFileSync(p, 'utf8');

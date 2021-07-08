@@ -420,7 +420,7 @@ const getTransactionsInnerQuery = function (
   return transactionOnlyQuery;
 };
 
-const reqToSql = async function (req) {
+const reqToSql = function (req) {
   // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
   const parsedQueryParams = req.query;
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
@@ -458,9 +458,9 @@ const reqToSql = async function (req) {
  */
 const getTransactions = async (req, res) => {
   // Validate query parameters first
-  await utils.validateReq(req);
+  utils.validateReq(req);
 
-  const query = await reqToSql(req);
+  const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   }
@@ -517,7 +517,7 @@ const getScheduledQuery = (query) => {
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
-  await utils.validateReq(req);
+  utils.validateReq(req);
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduledQuery = getScheduledQuery(req.query);

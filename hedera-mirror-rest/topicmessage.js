@@ -104,13 +104,6 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
   }
 };
 
-const validateGetTopicMessagesRequest = async (topicId, filters) => {
-  validateGetTopicMessagesParams(topicId);
-
-  // validate filters
-  await utils.validateAndParseFilters(filters);
-};
-
 /**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
@@ -171,16 +164,14 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 };
 
 /**
- * Handler function for /topics/:id API.
+ * Handler function for /topics/:topicId API.
  * @returns {Promise} Promise for PostgreSQL query
  */
 const getTopicMessages = async (req, res) => {
-  // retrieve param and filters from request
   const topicIdStr = req.params.topicId;
+  validateGetTopicMessagesParams(topicIdStr);
   const filters = utils.buildAndValidateFilters(req.query);
 
-  // validate params
-  await validateGetTopicMessagesRequest(topicIdStr, filters);
   const topicId = EntityId.fromString(topicIdStr);
   await validateTopicId(topicId, topicIdStr);
 

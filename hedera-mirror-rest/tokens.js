@@ -467,11 +467,11 @@ const getTokenInfoRequest = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, validateTokenInfoFilter);
   const {query, params} = extractSqlFromTokenInfoRequest(tokenId, filters);
 
-  const row = await getToken(query, ...params);
+  const row = await getTokenInfo(query, ...params);
 
   const tokenInfo = formatTokenInfoRow(row);
   if (!tokenInfo.custom_fees) {
-    throw NotFoundError();
+    throw new NotFoundError();
   }
 
   res.locals[constants.responseDataLabel] = tokenInfo;
@@ -582,8 +582,7 @@ const formatTokenBalanceRow = (row) => {
  */
 const getTokenBalances = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
-  const filters = utils.buildFilterObject(req.query);
-  await utils.validateAndParseFilters(filters);
+  const filters = utils.buildAndValidateFilters(req.query);
 
   const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
   if (logger.isTraceEnabled()) {
@@ -778,7 +777,7 @@ const getNftTokenInfoRequest = async (req, res) => {
   res.locals[constants.responseDataLabel] = new NftViewModel(nftModel);
 };
 
-const getToken = async (pgSqlQuery, tokenId, ...rest) => {
+const getTokenInfo = async (pgSqlQuery, tokenId, ...rest) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getTokenInfo query: ${pgSqlQuery}, params: ${tokenId}`);
   }
