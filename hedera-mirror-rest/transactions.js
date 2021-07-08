@@ -430,7 +430,6 @@ const reqToSql = function (req) {
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
-  const includeExtraInfo = false;
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,
@@ -441,7 +440,7 @@ const reqToSql = function (req) {
     transactionTypeQuery,
     order
   );
-  const sqlQuery = getTransactionsOuterQuery(innerQuery, order, includeExtraInfo);
+  const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
 
   return {
     limit,

@@ -276,7 +276,7 @@ const formatRecordFile = (data, transactionId, scheduled) => {
  * @returns none
  */
 const getStateProofForTransaction = async (req, res) => {
-  const filters = await utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query);
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduled = getScheduledParamValue(filters);

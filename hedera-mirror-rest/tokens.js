@@ -277,7 +277,7 @@ const validateTokenQueryFilter = (param, op, val) => {
       break;
     default:
       // Every token parameter should be included here. Otherwise, it will not be accepted.
-      ret = false;
+      break;
   }
 
   return ret;
@@ -372,13 +372,8 @@ const validateTokenInfoFilter = (param, op, val) => {
     return ret;
   }
 
-  switch (param) {
-    case constants.filterKeys.TIMESTAMP:
-      ret = isValidTokenInfoTimestampFilterOp(op) && utils.isValidTimestampParam(val);
-      break;
-    default:
-      // unsupported param
-      ret = false;
+  if (param === constants.filterKeys.TIMESTAMP) {
+    ret = isValidTokenInfoTimestampFilterOp(op) && utils.isValidTimestampParam(val);
   }
 
   return ret;
@@ -452,7 +447,7 @@ const getTokenInfoRequest = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, validateTokenInfoFilter);
   const {query, params} = extractSqlFromTokenInfoRequest(tokenId, filters);
 
-  const row = await getTokenInfo(query, ...params);
+  const row = await getTokenInfo(query, params);
 
   const tokenInfo = formatTokenInfoRow(row);
   if (!tokenInfo.custom_fees) {
@@ -762,12 +757,12 @@ const getNftTokenInfoRequest = async (req, res) => {
   res.locals[constants.responseDataLabel] = new NftViewModel(nftModel);
 };
 
-const getTokenInfo = async (pgSqlQuery, tokenId, ...rest) => {
+const getTokenInfo = async (query, params) => {
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenInfo query: ${pgSqlQuery}, params: ${tokenId}`);
+    logger.trace(`getTokenInfo query: ${query}, params: ${params}`);
   }
 
-  const {rows} = await pool.queryQuietly(pgSqlQuery, tokenId, ...rest);
+  const {rows} = await pool.queryQuietly(query, ...params);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }

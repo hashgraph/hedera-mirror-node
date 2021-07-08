@@ -288,19 +288,19 @@ const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) =
 }, {});
 
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
-  const sql = await transactions.reqToSql({query: {}});
+  const sql = transactions.reqToSql({query: {}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(mapTransactionResults(res.rows)).toEqual(expectedTransactionRowsDesc);
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
-  const sql = await transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
+  const sql = transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(mapTransactionResults(res.rows)).toEqual([expectedTransactionRowsMap['1052']]);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
-  const sql = await transactions.reqToSql({query: {'account.id': '0.17.666'}});
+  const sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(res.rowCount).toEqual(0);
 });
@@ -310,7 +310,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   await addCryptoTransferTransaction(1063, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
   await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
-  const sql = await transactions.reqToSql({query: {'account.id': '0.15.5'}});
+  const sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows)).toEqual(['null, null', 'null, 777', '5, null']);
 });
@@ -318,7 +318,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
 test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
   await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
 
-  const sql = await transactions.reqToSql({query: {timestamp: '0.000001070'}});
+  const sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['UNKNOWN, UNKNOWN']);
 });
@@ -352,7 +352,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
     },
   ];
 
-  const sql = await transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
+  const sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
 
   // 2 transactions, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
