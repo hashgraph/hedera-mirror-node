@@ -397,7 +397,7 @@ const transformTimestampFilterOp = (op) => {
  * @return {{query: string, params: []}} the query string and params
  */
 const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
-  const conditions = ['token_id = $1'];
+  const conditions = [`${CustomFee.TOKEN_ID} = $1`];
   const params = [tokenId];
 
   if (filters && filters.length !== 0) {

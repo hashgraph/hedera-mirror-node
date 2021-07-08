@@ -25,7 +25,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const {AssessedCustomFee, NftTransfer} = require('./model');
+const {AssessedCustomFee, NftTransfer, Transaction} = require('./model');
 const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
 
 /**
@@ -62,7 +62,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
       'token_id', ${NftTransfer.TOKEN_ID}
       ))
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-    where ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = t.consensus_ns
+    where ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
   `;
   const aggregateAssessedCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
@@ -71,7 +71,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
         'token_id', ${AssessedCustomFee.TOKEN_ID}
       ))
     from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
-    where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = t.consensus_ns
+    where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
   `;
   const fields = [
     't.payer_account_id',

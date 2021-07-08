@@ -556,6 +556,7 @@ const addToken = async (token) => {
   );
 
   if (!token.custom_fees) {
+    // if there is no custom fees schedule for the token, add the default empty fee schedule at created_timestamp
     await addCustomFee({
       created_timestamp: token.created_timestamp,
       token_id: token.token_id,
