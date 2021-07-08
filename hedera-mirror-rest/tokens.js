@@ -418,7 +418,7 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
         'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT}::text,
         'minimum_amount', ${CustomFee.MINIMUM_AMOUNT}::text,
         'token_id', ${CustomFee.TOKEN_ID}::text
-    ))
+    ) order by ${CustomFee.AMOUNT}, ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID})
     from ${CustomFee.tableName} ${CustomFee.tableAlias}
     where ${conditions.join(' and ')}
     group by ${CustomFee.CREATED_TIMESTAMP_FULL_NAME}

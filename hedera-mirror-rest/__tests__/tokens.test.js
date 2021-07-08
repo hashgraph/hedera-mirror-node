@@ -1303,18 +1303,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
 });
 
 describe('token extractSqlFromTokenInfoRequest tests', () => {
-  const verifyExtractSqlFromTokenInfoRequest = (tokenId, filters, expectedQuery, expectedParams) => {
-    const {query, params} = tokens.extractSqlFromTokenInfoRequest(tokenId, filters);
-
-    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
-    expect(params).toStrictEqual(expectedParams);
-  };
-
-  const timestamp = '123456789000111222';
-  const tokenId = '1009'; // encoded
-
-  test('Verify simple query', () => {
-    const expectedQuery = `select e.auto_renew_account_id,
+  const getExpectedQuery = (timestampCondition = '') => {
+    return `select e.auto_renew_account_id,
                                   e.auto_renew_period,
                                   t.created_timestamp,
                                   decimals,
@@ -1345,9 +1335,9 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                                     'maximum_amount', maximum_amount::text,
                                     'minimum_amount', minimum_amount::text,
                                     'token_id', token_id::text
-                                   ))
+                                   ) order by amount, collector_account_id, denominating_token_id)
                                    from custom_fee cf
-                                   where token_id = $1
+                                   where token_id = $1 ${timestampCondition && 'and ' + timestampCondition}
                                    group by cf.created_timestamp
                                    order by cf.created_timestamp desc
                                    limit 1
@@ -1355,53 +1345,26 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                            from token t
                            join entity e on e.id = t.token_id
                            where token_id = $1`;
-    verifyExtractSqlFromTokenInfoRequest(tokenId, [], expectedQuery, [tokenId]);
+  };
+
+  const verifyExtractSqlFromTokenInfoRequest = (tokenId, filters, expectedQuery, expectedParams) => {
+    const {query, params} = tokens.extractSqlFromTokenInfoRequest(tokenId, filters);
+
+    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
+    expect(params).toStrictEqual(expectedParams);
+  };
+
+  const timestamp = '123456789000111222';
+  const encodedTokenId = '1009'; // encoded
+
+  test('Verify simple query', () => {
+    verifyExtractSqlFromTokenInfoRequest(encodedTokenId, [], getExpectedQuery(), [encodedTokenId]);
   });
 
   [opsMap.lt, opsMap.lte].forEach((op) =>
     test(`Verify query with timestamp and op ${op}`, () => {
-      const expectedQuery = `select e.auto_renew_account_id,
-                                  e.auto_renew_period,
-                                  t.created_timestamp,
-                                  decimals,
-                                  e.expiration_timestamp,
-                                  fee_schedule_key,
-                                  freeze_default,
-                                  freeze_key,
-                                  initial_supply,
-                                  e.key,
-                                  kyc_key,
-                                  max_supply,
-                                  t.modified_timestamp,
-                                  name,
-                                  supply_key,
-                                  supply_type,
-                                  symbol,
-                                  token_id,
-                                  total_supply,
-                                  treasury_account_id,
-                                  t.type,
-                                  wipe_key,
-                                  (select jsonb_agg(jsonb_build_object(
-                                      'amount', amount::text,
-                                      'amount_denominator', amount_denominator::text,
-                                      'collector_account_id', collector_account_id::text,
-                                      'created_timestamp', created_timestamp::text,
-                                      'denominating_token_id', denominating_token_id::text,
-                                      'maximum_amount', maximum_amount::text,
-                                      'minimum_amount', minimum_amount::text,
-                                      'token_id', token_id::text
-                                   ))
-                                   from custom_fee cf
-                                   where token_id = $1 and cf.created_timestamp ${op} $2
-                                   group by cf.created_timestamp
-                                   order by cf.created_timestamp desc
-                                   limit 1
-                                  ) as custom_fees
-                           from token t
-                           join entity e on e.id = t.token_id
-                           where token_id = $1`;
-      const expectedParams = [tokenId, timestamp];
+      const expectedQuery = getExpectedQuery(`cf.created_timestamp ${op} $2`);
+      const expectedParams = [encodedTokenId, timestamp];
       const filters = [
         {
           key: filterKeys.TIMESTAMP,
@@ -1410,53 +1373,13 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
         },
       ];
 
-      verifyExtractSqlFromTokenInfoRequest(tokenId, filters, expectedQuery, expectedParams);
+      verifyExtractSqlFromTokenInfoRequest(encodedTokenId, filters, expectedQuery, expectedParams);
     })
   );
 
   test('Verify query with multiple timestamp filters', () => {
-    const expectedQuery = `select e.auto_renew_account_id,
-                                  e.auto_renew_period,
-                                  t.created_timestamp,
-                                  decimals,
-                                  e.expiration_timestamp,
-                                  fee_schedule_key,
-                                  freeze_default,
-                                  freeze_key,
-                                  initial_supply,
-                                  e.key,
-                                  kyc_key,
-                                  max_supply,
-                                  t.modified_timestamp,
-                                  name,
-                                  supply_key,
-                                  supply_type,
-                                  symbol,
-                                  token_id,
-                                  total_supply,
-                                  treasury_account_id,
-                                  t.type,
-                                  wipe_key,
-                                  (select jsonb_agg(jsonb_build_object(
-                                      'amount', amount::text,
-                                      'amount_denominator', amount_denominator::text,
-                                      'collector_account_id', collector_account_id::text,
-                                      'created_timestamp', created_timestamp::text,
-                                      'denominating_token_id', denominating_token_id::text,
-                                      'maximum_amount', maximum_amount::text,
-                                      'minimum_amount', minimum_amount::text,
-                                      'token_id', token_id::text
-                                   ))
-                                   from custom_fee cf
-                                   where token_id = $1 and cf.created_timestamp <= $2
-                                   group by cf.created_timestamp
-                                   order by cf.created_timestamp desc
-                                   limit 1
-                                  ) as custom_fees
-                           from token t
-                           join entity e on e.id = t.token_id
-                           where token_id = $1`;
-    const expectedParams = [tokenId, timestamp];
+    const expectedQuery = getExpectedQuery('cf.created_timestamp <= $2');
+    const expectedParams = [encodedTokenId, timestamp];
     // honor the last one
     const filters = [
       {
@@ -1471,6 +1394,6 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
       },
     ];
 
-    verifyExtractSqlFromTokenInfoRequest(tokenId, filters, expectedQuery, expectedParams);
+    verifyExtractSqlFromTokenInfoRequest(encodedTokenId, filters, expectedQuery, expectedParams);
   });
 });

@@ -93,7 +93,7 @@ const fromEncodedId = (id, isNullable = false) => {
   }
 
   const encodedId = BigInt(id);
-  if (encodedId < 0 || encodedId > maxEncodedId) {
+  if (encodedId < 0n || encodedId > maxEncodedId) {
     throw new InvalidArgumentError(message);
   }
 
@@ -137,7 +137,7 @@ const fromString = (entityIdStr, paramName = '', isNullable = false) => {
   return of(
     ...parts.map((part) => {
       const num = BigInt(part);
-      if (num < 0) {
+      if (num < 0n) {
         throw error(`invalid entity ID string "${entityIdStr}"`);
       }
       return num;

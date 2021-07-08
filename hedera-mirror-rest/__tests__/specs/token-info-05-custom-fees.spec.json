@@ -37,6 +37,7 @@
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
+        "fee_schedule_key": [1, 2, 3],
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -113,7 +114,10 @@
     "created_timestamp": "1234567890.000000002",
     "decimals": "1000",
     "expiry_timestamp": null,
-    "fee_schedule_key": null,
+    "fee_schedule_key": {
+      "_type": "ProtobufEncoded",
+      "key": "7b2231222c2232222c2233227d"
+    },
     "freeze_default": false,
     "freeze_key": null,
     "initial_supply": "1000000",
@@ -131,26 +135,17 @@
       "created_timestamp": "1234567899.999999007",
       "fixed_fees": [
         {
-          "amount": "13",
-          "collector_account_id": "0.0.8905",
-          "denominating_token_id": null
-        },
-        {
           "amount": "12",
           "collector_account_id": "0.0.8904",
           "denominating_token_id": "0.0.1137"
+        },
+        {
+          "amount": "13",
+          "collector_account_id": "0.0.8905",
+          "denominating_token_id": null
         }
       ],
       "fractional_fees": [
-        {
-          "amount": {
-            "denominator": "131",
-            "numerator": "41"
-          },
-          "collector_account_id": "0.0.8904",
-          "denominating_token_id": "0.0.1135",
-          "minimum": "0"
-        },
         {
           "amount": {
             "denominator": "13",
@@ -169,6 +164,15 @@
           "denominating_token_id": "0.0.1135",
           "maximum": "987",
           "minimum": "79"
+        },
+        {
+          "amount": {
+            "denominator": "131",
+            "numerator": "41"
+          },
+          "collector_account_id": "0.0.8904",
+          "denominating_token_id": "0.0.1135",
+          "minimum": "0"
         }
       ]
     }

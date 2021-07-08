@@ -64,7 +64,7 @@ jest.setTimeout(40000);
 
 let sqlConnection;
 
-// set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
+// set timeout for beforeAll to 4 minutes as downloading docker image if not exists can take quite some time
 const defaultBeforeAllTimeoutMillis = 240 * 1000;
 
 beforeAll(async () => {
