@@ -47,6 +47,7 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
 
 @Configuration
 @RequiredArgsConstructor
@@ -63,7 +64,8 @@ class ClientConfiguration {
         Map retryableExceptionMap = Map.of(
                 PrecheckStatusException.class, true,
                 TimeoutException.class, true,
-                RuntimeException.class, true); // make configurable
+                RuntimeException.class, true,
+                ReceiptStatusException.class, true); // make configurable
         SimpleRetryPolicy simpleRetryPolicy = new SimpleRetryPolicy(
                 acceptanceTestProperties.getMaxRetries(),
                 retryableExceptionMap,
