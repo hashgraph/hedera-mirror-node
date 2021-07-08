@@ -51,8 +51,11 @@ import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 @RequiredArgsConstructor
 public class PublishMetrics {
 
-    private static final String SUCCESS = "SUCCESS";
-    private static final String UNKNOWN = "unknown";
+    static final String METRIC_DURATION = "hedera.mirror.monitor.publish.duration";
+    static final String METRIC_HANDLE = "hedera.mirror.monitor.publish.handle";
+    static final String METRIC_SUBMIT = "hedera.mirror.monitor.publish.submit";
+    static final String SUCCESS = "SUCCESS";
+    static final String UNKNOWN = "unknown";
 
     private final PublishProperties publishProperties;
     private final AtomicLong counter = new AtomicLong(0L);
@@ -123,7 +126,7 @@ public class PublishMetrics {
 
     private TimeGauge newDurationMetric(Tags tags) {
         TimeUnit unit = TimeUnit.NANOSECONDS;
-        return TimeGauge.builder("hedera.mirror.monitor.publish.duration", stopwatch, unit, s -> s.elapsed(unit))
+        return TimeGauge.builder(METRIC_DURATION, stopwatch, unit, s -> s.elapsed(unit))
                 .description("The amount of time this scenario has been publishing transactions")
                 .tag(Tags.TAG_NODE, tags.getNode())
                 .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
@@ -132,7 +135,7 @@ public class PublishMetrics {
     }
 
     private Timer newHandleMetric(Tags tags) {
-        return Timer.builder("hedera.mirror.monitor.publish.handle")
+        return Timer.builder(METRIC_HANDLE)
                 .description("The time it takes from submit to being handled by the main nodes")
                 .tag(Tags.TAG_NODE, tags.getNode())
                 .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
@@ -142,7 +145,7 @@ public class PublishMetrics {
     }
 
     private Timer newSubmitMetric(Tags tags) {
-        return Timer.builder("hedera.mirror.monitor.publish.submit")
+        return Timer.builder(METRIC_SUBMIT)
                 .description("The time it takes to submit a transaction")
                 .tag(Tags.TAG_NODE, tags.getNode())
                 .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
@@ -173,11 +176,11 @@ public class PublishMetrics {
     }
 
     @Value
-    private class Tags {
-        private static final String TAG_NODE = "node";
-        private static final String TAG_SCENARIO = "scenario";
-        private static final String TAG_STATUS = "status";
-        private static final String TAG_TYPE = "type";
+    class Tags {
+        static final String TAG_NODE = "node";
+        static final String TAG_SCENARIO = "scenario";
+        static final String TAG_STATUS = "status";
+        static final String TAG_TYPE = "type";
 
         private final String node;
         private final String scenarioName;

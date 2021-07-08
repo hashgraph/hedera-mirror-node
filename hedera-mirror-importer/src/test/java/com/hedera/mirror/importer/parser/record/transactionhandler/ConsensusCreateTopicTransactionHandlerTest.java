@@ -43,7 +43,7 @@ class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHand
 
     @Override
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return TransactionRecord.newBuilder()
+        return super.getDefaultTransactionRecord()
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setTopicID(TopicID.newBuilder().setTopicNum(DEFAULT_ENTITY_NUM).build()));
     }

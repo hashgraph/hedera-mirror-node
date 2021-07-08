@@ -5,6 +5,10 @@
 -- By default TimescaleDB adds an index in DESC order for partitioning column
 -------------------
 
+-- assessed_custom_fee
+select create_hypertable('assessed_custom_fee', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
 -- account_balance
 select create_hypertable('account_balance', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
@@ -32,6 +36,10 @@ select create_hypertable('contract_result', 'consensus_timestamp', chunk_time_in
 
 -- crypto_transfer
 select create_hypertable('crypto_transfer', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
+-- custom_fee
+select create_hypertable('custom_fee', 'created_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
 -- event_file

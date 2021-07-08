@@ -26,12 +26,14 @@ import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
 @Data
 @Entity
+@NoArgsConstructor
 public class Nft {
 
     @JsonUnwrapped
@@ -44,9 +46,13 @@ public class Nft {
 
     private Long createdTimestamp;
 
-    private boolean deleted;
+    private Boolean deleted;
 
     private byte[] metadata;
 
     private long modifiedTimestamp;
+
+    public Nft(long serialNumber, EntityId tokenId) {
+        id = new NftId(serialNumber, tokenId);
+    }
 }

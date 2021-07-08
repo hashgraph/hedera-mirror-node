@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -78,13 +80,15 @@ public abstract class AbstractTransactionHandlerTest {
 
     private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
 
-    private static final Timestamp MODIFIED_TIMESTAMP = Timestamp.newBuilder().setSeconds(200).setNanos(2).build();
+    protected static final Timestamp MODIFIED_TIMESTAMP = Timestamp.newBuilder().setSeconds(200).setNanos(2).build();
 
     private static final Long CREATED_TIMESTAMP_NS = Utility.timestampInNanosMax(CREATED_TIMESTAMP);
 
     private static final Long MODIFIED_TIMESTAMP_NS = Utility.timestampInNanosMax(MODIFIED_TIMESTAMP);
 
-    private TransactionHandler transactionHandler;
+    protected final Logger log = LogManager.getLogger(getClass());
+
+    protected TransactionHandler transactionHandler;
 
     private EntityOperationEnum entityOperationEnum;
 
@@ -98,7 +102,13 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return TransactionRecord.newBuilder();
+        TransactionRecord.Builder builder = TransactionRecord.newBuilder();
+        if (transactionHandler.updatesEntity()) {
+            Timestamp consensusTimestamp =
+                    entityOperationEnum == EntityOperationEnum.CREATE ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
+            builder.setConsensusTimestamp(consensusTimestamp);
+        }
+        return builder;
     }
 
     // For testGetEntityId
@@ -110,7 +120,7 @@ public abstract class AbstractTransactionHandlerTest {
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) {
-        System.out.println("Before test: " + testInfo.getTestMethod().get().getName());
+        log.info("Executing: {}", testInfo.getDisplayName());
         transactionHandler = getTransactionHandler();
 
         if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
@@ -316,7 +326,7 @@ public abstract class AbstractTransactionHandlerTest {
         return testSpecs;
     }
 
-    private Entity getExpectedUpdatedEntity() {
+    protected Entity getExpectedUpdatedEntity() {
         Entity entity = getExpectedEntityWithTimestamp();
 
         TransactionBody defaultBody = getDefaultTransactionBody().build();
@@ -400,10 +410,10 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     private RecordItem getRecordItem(TransactionBody body, Message innerBody) {
-        return getRecordItem(getTransactionBody(body, innerBody));
+        return getRecordItem(getTransactionBody(body, innerBody), getDefaultTransactionRecord().build());
     }
 
-    protected RecordItem getRecordItem(TransactionBody body) {
+    protected RecordItem getRecordItem(TransactionBody body, TransactionRecord record) {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(
                         SignedTransaction.newBuilder()
@@ -413,15 +423,6 @@ public abstract class AbstractTransactionHandlerTest {
                                 .toByteString()
                 )
                 .build();
-
-        TransactionRecord record;
-        if (transactionHandler.updatesEntity()) {
-            Timestamp consensusTimestamp =
-                    entityOperationEnum == EntityOperationEnum.CREATE ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
-            record = getDefaultTransactionRecord().setConsensusTimestamp(consensusTimestamp).build();
-        } else {
-            record = getDefaultTransactionRecord().build();
-        }
 
         return new RecordItem(transaction, record);
     }

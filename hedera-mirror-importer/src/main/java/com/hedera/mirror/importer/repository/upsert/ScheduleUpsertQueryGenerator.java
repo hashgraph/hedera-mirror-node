@@ -30,8 +30,8 @@ import com.hedera.mirror.importer.domain.Schedule_;
 @Named
 @Value
 public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Schedule_> {
-    public final String finalTableName = "schedule";
-    public final String temporaryTableName = getFinalTableName() + "_temp";
+    private final String finalTableName = "schedule";
+    private final String temporaryTableName = getFinalTableName() + "_temp";
     // scheduleId is used for completeness
     private final List<String> v1ConflictIdColumns = List.of(Schedule_.SCHEDULE_ID);
     private final List<String> v2ConflictIdColumns = List.of(Schedule_.CONSENSUS_TIMESTAMP, Schedule_.SCHEDULE_ID);

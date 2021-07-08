@@ -68,7 +68,8 @@ public enum TransactionTypeEnum {
     TOKENDISSOCIATE(41),
     SCHEDULECREATE(42),
     SCHEDULEDELETE(43),
-    SCHEDULESIGN(44);
+    SCHEDULESIGN(44),
+    TOKENFEESCHEDULEUPDATE(45);
 
     private static final Map<Integer, TransactionTypeEnum> idMap = Arrays.stream(values())
             .collect(Collectors.toMap(TransactionTypeEnum::getProtoId, Function.identity()));
