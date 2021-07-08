@@ -135,12 +135,12 @@
       "created_timestamp": "1234567899.999999007",
       "fixed_fees": [
         {
-          "amount": "12",
+          "amount": 12,
           "collector_account_id": "0.0.8904",
           "denominating_token_id": "0.0.1137"
         },
         {
-          "amount": "13",
+          "amount": 13,
           "collector_account_id": "0.0.8905",
           "denominating_token_id": null
         }
@@ -148,31 +148,31 @@
       "fractional_fees": [
         {
           "amount": {
-            "denominator": "13",
-            "numerator": "9"
+            "denominator": 13,
+            "numerator": 9
           },
           "collector_account_id": "0.0.8902",
           "denominating_token_id": "0.0.1135",
-          "minimum": "1"
+          "minimum": 1
         },
         {
           "amount": {
-            "denominator": "17",
-            "numerator": "11"
+            "denominator": 17,
+            "numerator": 11
           },
           "collector_account_id": "0.0.8901",
           "denominating_token_id": "0.0.1135",
-          "maximum": "987",
-          "minimum": "79"
+          "maximum": 987,
+          "minimum": 79
         },
         {
           "amount": {
-            "denominator": "131",
-            "numerator": "41"
+            "denominator": 131,
+            "numerator": 41
           },
           "collector_account_id": "0.0.8904",
           "denominating_token_id": "0.0.1135",
-          "minimum": "0"
+          "minimum": 0
         }
       ]
     }

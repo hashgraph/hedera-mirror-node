@@ -800,18 +800,9 @@ components:
           items:
             $ref: '#/components/schemas/FractionalFee'
     EntityId:
-      type: object
-      required:
-        - shard
-        - realm
-        - num
-      properties:
-        shard:
-          type: number
-        realm:
-          type: number
-        num:
-          type: number
+      type: string
+      description: "Network entity ID in the format of `shard.realm.num`"
+      pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
       example: "0.1.2"
     Error:
       type: object
@@ -833,14 +824,9 @@ components:
           type: number
           example: 100
         collector_account_id:
-          schema:
-            $ref: '#/components/schemas/EntityId'
-          example: "0.0.1050"
+          $ref: '#/components/schemas/EntityId'
         denominating_token_id:
-          schema:
-            $ref: '#/components/schemas/EntityId'
-          nullable: true
-          example: "0.0.90000"
+          $ref: '#/components/schemas/EntityId'
     FractionalFee:
       type: object
       properties:
@@ -854,13 +840,9 @@ components:
               type: number
               example: 29
         collector_account_id:
-          schema:
-            $ref: '#/components/schemas/EntityId'
-          example: "0.0.1051"
+          $ref: '#/components/schemas/EntityId'
         denominating_token_id:
-          schema:
-            $ref: '#/components/schemas/EntityId'
-          example: "0.0.90001"
+          $ref: '#/components/schemas/EntityId'
         maximum:
           type: number
           nullable: true

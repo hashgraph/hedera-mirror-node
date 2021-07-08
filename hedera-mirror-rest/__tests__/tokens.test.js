@@ -1327,13 +1327,13 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    t.type,
                    wipe_key,
                    (select jsonb_agg(jsonb_build_object(
-                     'amount', amount::text,
-                     'amount_denominator', amount_denominator::text,
+                     'amount', amount,
+                     'amount_denominator', amount_denominator,
                      'collector_account_id', collector_account_id::text,
                      'created_timestamp', created_timestamp::text,
                      'denominating_token_id', denominating_token_id::text,
-                     'maximum_amount', maximum_amount::text,
-                     'minimum_amount', minimum_amount::text,
+                     'maximum_amount', maximum_amount,
+                     'minimum_amount', minimum_amount,
                      'token_id', token_id::text
                     ) order by amount, collector_account_id, denominating_token_id)
                     from custom_fee cf

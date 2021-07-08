@@ -410,13 +410,13 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
 
   const aggregateCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
-        'amount', ${CustomFee.AMOUNT}::text,
-        'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR}::text,
+        'amount', ${CustomFee.AMOUNT},
+        'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR},
         'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID}::text,
         'created_timestamp', ${CustomFee.CREATED_TIMESTAMP}::text,
         'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID}::text,
-        'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT}::text,
-        'minimum_amount', ${CustomFee.MINIMUM_AMOUNT}::text,
+        'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT},
+        'minimum_amount', ${CustomFee.MINIMUM_AMOUNT},
         'token_id', ${CustomFee.TOKEN_ID}::text
     ) order by ${CustomFee.AMOUNT}, ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID})
     from ${CustomFee.tableName} ${CustomFee.tableAlias}
