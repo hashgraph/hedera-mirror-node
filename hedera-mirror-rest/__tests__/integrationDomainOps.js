@@ -34,8 +34,10 @@ let sqlConnection;
 const setUp = async (testDataJson, sqlconn) => {
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson.accounts);
+  await loadAssessedCustomFees(testDataJson.assessedcustomfees);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
+  await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadNfts(testDataJson.nfts);
   await loadSchedules(testDataJson.schedules);
@@ -56,6 +58,16 @@ const loadAccounts = async (accounts) => {
   }
 };
 
+const loadAssessedCustomFees = async (assessedCustomFees) => {
+  if (assessedCustomFees == null) {
+    return;
+  }
+
+  for (const assessedCustomFee of assessedCustomFees) {
+    await addAssessedCustomFee(assessedCustomFee);
+  }
+};
+
 const loadBalances = async (balances) => {
   if (balances == null) {
     return;
@@ -73,6 +85,16 @@ const loadCryptoTransfers = async (cryptoTransfers) => {
 
   for (let i = 0; i < cryptoTransfers.length; ++i) {
     await addCryptoTransaction(cryptoTransfers[i]);
+  }
+};
+
+const loadCustomFees = async (customFees) => {
+  if (customFees == null) {
+    return;
+  }
+
+  for (const customFee of customFees) {
+    await addCustomFee(customFee);
   }
 };
 
@@ -198,6 +220,37 @@ const addAccount = async (account) => {
       type: 1,
     },
     account
+  );
+};
+
+const addAssessedCustomFee = async (assessedCustomFee) => {
+  const {amount, collector_account_id, consensus_timestamp, token_id} = assessedCustomFee;
+  await sqlConnection.query(
+    `insert into assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id)
+     values ($1, $2, $3, $4);`,
+    [
+      amount,
+      EntityId.fromString(collector_account_id).getEncodedId(),
+      consensus_timestamp.toString(),
+      EntityId.fromString(token_id, 'tokenId', true).getEncodedId(),
+    ]
+  );
+};
+
+const addCustomFee = async (customFee) => {
+  await sqlConnection.query(
+    `insert into custom_fee (amount, amount_denominator, collector_account_id, created_timestamp, denominating_token_id, maximum_amount, minimum_amount, token_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8);`,
+    [
+      customFee.amount || null,
+      customFee.amount_denominator || null,
+      EntityId.fromString(customFee.collector_account_id, 'collectorAccountId', true).getEncodedId(),
+      customFee.created_timestamp.toString(),
+      EntityId.fromString(customFee.denominating_token_id, 'denominatingTokenId', true).getEncodedId(),
+      customFee.maximum_amount || null,
+      customFee.minimum_amount || '0',
+      EntityId.fromString(customFee.token_id).getEncodedId(),
+    ]
   );
 };
 
@@ -428,6 +481,8 @@ const addToken = async (token) => {
     token_id: '0.0.0',
     created_timestamp: 0,
     decimals: 1000,
+    fee_schedule_key: null,
+    fee_schedule_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     freeze_default: false,
     freeze_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     initial_supply: 1000000,
@@ -454,6 +509,8 @@ const addToken = async (token) => {
     `INSERT INTO token (token_id,
                         created_timestamp,
                         decimals,
+                        fee_schedule_key,
+                        fee_schedule_key_ed25519_hex,
                         freeze_default,
                         freeze_key_ed25519_hex,
                         initial_supply,
@@ -471,11 +528,13 @@ const addToken = async (token) => {
                         type,
                         wipe_key,
                         wipe_key_ed25519_hex)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20);`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22);`,
     [
       EntityId.fromString(token.token_id).getEncodedId(),
       token.created_timestamp,
       token.decimals,
+      token.fee_schedule_key,
+      token.fee_schedule_key_ed25519_hex,
       token.freeze_default,
       token.freeze_key_ed25519_hex,
       token.initial_supply,
@@ -495,6 +554,15 @@ const addToken = async (token) => {
       token.wipe_key_ed25519_hex,
     ]
   );
+
+  if (!token.custom_fees) {
+    await addCustomFee({
+      created_timestamp: token.created_timestamp,
+      token_id: token.token_id,
+    });
+  } else {
+    await loadCustomFees(token.custom_fees);
+  }
 };
 
 const addTokenAccount = async (tokenAccount) => {

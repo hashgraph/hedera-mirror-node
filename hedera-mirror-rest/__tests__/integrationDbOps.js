@@ -31,7 +31,7 @@ const {getPoolClass, randomString} = require('../utils');
 
 const logger = log4js.getLogger();
 
-const Pool = getPoolClass(false);
+const Pool = getPoolClass();
 
 let oldPool;
 let dockerDb;

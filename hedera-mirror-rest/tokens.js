@@ -41,7 +41,7 @@ const {httpStatusCodes} = require('./constants');
 const {NftService, TokenService, TransactionResultService, TransactionTypeService} = require('./service');
 
 // view models
-const {NftViewModel, NftTransactionHistoryViewModel} = require('./viewmodel');
+const {CustomFeeViewModel, NftViewModel, NftTransactionHistoryViewModel} = require('./viewmodel');
 
 // select columns
 const sqlQueryColumns = {
@@ -180,55 +180,39 @@ const formatTokenRow = (row) => {
  * Creates custom fees object from an array of aggregated json objects
  *
  * @param customFees
- * @param {string} tokenId
  * @return {{}|*}
  */
-const createCustomFeesObject = (customFees, tokenId) => {
+const createCustomFeesObject = (customFees) => {
   if (!customFees) {
-    return undefined;
+    return null;
   }
 
-  return customFees.reduce(
-    (customFeesObject, customFee) => {
-      if (customFee.amount) {
-        if (!customFee.amount_denominator) {
-          customFeesObject.fixed_fees.push({
-            amount: customFee.amount,
-            collector_account_id: EntityId.fromEncodedId(customFee.collector_account_id).toString(),
-            denominating_token_id: EntityId.fromEncodedId(customFee.denominating_token_id, true).toString(),
-          });
-        } else {
-          customFeesObject.fractional_fees.push({
-            amount: {
-              numerator: customFee.amount,
-              denominator: customFee.amount_denominator,
-            },
-            collector_account_id: EntityId.fromEncodedId(customFee.collector_account_id).toString(),
-            denominating_token_id: tokenId,
-            maximum: customFee.maximum_amount,
-            minimum: customFee.minimum_amount,
-          });
-        }
-      }
+  const result = {
+    created_timestamp: utils.nsToSecNs(customFees[0].created_timestamp),
+    fixed_fees: [],
+    fractional_fees: [],
+  };
 
-      return customFeesObject;
-    },
-    {
-      created_timestamp: utils.nsToSecNs(customFees[0].created_timestamp),
-      fixed_fees: [],
-      fractional_fees: [],
+  return customFees.reduce((customFeesObject, customFee) => {
+    const model = new CustomFee(customFee);
+    const viewModel = new CustomFeeViewModel(model);
+
+    if (viewModel.hasFee()) {
+      const fees = viewModel.isFractionalFee() ? customFeesObject.fractional_fees : customFeesObject.fixed_fees;
+      fees.push(viewModel);
     }
-  );
+
+    return customFeesObject;
+  }, result);
 };
 
 const formatTokenInfoRow = (row) => {
-  const tokenId = EntityId.fromEncodedId(row.token_id).toString();
   return {
     admin_key: utils.encodeKey(row.key),
     auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
-    custom_fees: createCustomFeesObject(row.custom_fees, tokenId),
+    custom_fees: createCustomFeesObject(row.custom_fees),
     decimals: row.decimals,
     expiry_timestamp: row.expiration_timestamp,
     fee_schedule_key: utils.encodeKey(row.fee_schedule_key),
@@ -431,13 +415,14 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
 
   const aggregateCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
-        'amount', ${CustomFee.AMOUNT},
-        'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR},
-        'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID},
-        'created_timestamp', ${CustomFee.CREATED_TIMESTAMP},
-        'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID},
-        'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT},
-        'minimum_amount', ${CustomFee.MINIMUM_AMOUNT}
+        'amount', ${CustomFee.AMOUNT}::text,
+        'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR}::text,
+        'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID}::text,
+        'created_timestamp', ${CustomFee.CREATED_TIMESTAMP}::text,
+        'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID}::text,
+        'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT}::text,
+        'minimum_amount', ${CustomFee.MINIMUM_AMOUNT}::text,
+        'token_id', ${CustomFee.TOKEN_ID}::text
     ))
     from ${CustomFee.tableName} ${CustomFee.tableAlias}
     where ${conditions.join(' and ')}

@@ -911,7 +911,7 @@ const ipMask = (ip) => {
  *
  * @param {boolean} mock
  */
-const getPoolClass = (mock) => {
+const getPoolClass = (mock = false) => {
   const Pool = mock ? require('./__tests__/mockpool') : require('pg').Pool;
   Pool.prototype.queryQuietly = async function (query, ...params) {
     try {

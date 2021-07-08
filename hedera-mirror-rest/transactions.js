@@ -228,12 +228,12 @@ const createTransferLists = (rows) => {
  *
  * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
  * @param {String} order Sorting order
- * @param {boolean} includeNftTransferList include the nft transfer list or not
+ * @param {boolean} includeExtraInfo include extra info or not
  * @return {String} outerQuery Fully formed SQL query
  */
-const getTransactionsOuterQuery = (innerQuery, order, includeNftTransferList) => {
+const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) => {
   return `
-    ${getSelectClauseWithTransfers(includeNftTransferList)}
+    ${getSelectClauseWithTransfers(includeExtraInfo)}
     FROM ( ${innerQuery} ) AS tlist
        JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
@@ -430,7 +430,7 @@ const reqToSql = function (req) {
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
-  const includeNftTransferList = false;
+  const includeExtraInfo = false;
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,
@@ -441,7 +441,7 @@ const reqToSql = function (req) {
     transactionTypeQuery,
     order
   );
-  const sqlQuery = getTransactionsOuterQuery(innerQuery, order, includeNftTransferList);
+  const sqlQuery = getTransactionsOuterQuery(innerQuery, order, includeExtraInfo);
 
   return {
     limit,
@@ -523,10 +523,10 @@ const getOneTransaction = async (req, res) => {
   const scheduledQuery = getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause('t.payer_account_id = ?', 't.valid_start_ns = ?', scheduledQuery);
-  const includeNftTransferList = true;
+  const includeExtraInfo = true;
 
   const sqlQuery = `
-    ${getSelectClauseWithTransfers(includeNftTransferList)}
+    ${getSelectClauseWithTransfers(includeExtraInfo)}
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type

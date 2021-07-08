@@ -467,6 +467,7 @@ paths:
       operationId: getTokenById
       parameters:
         - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/tokenInfoTimestampQueryParam'
       responses:
         200:
           description: OK
@@ -1088,6 +1089,48 @@ components:
           example: FUNGIBLE_COMMON
         wipe_key:
           $ref: '#/components/schemas/Key'
+        custom_fees:
+          type: object
+          properties:
+            created_timestamp:
+              type: string
+              example: 1234567890.000000001
+            fixed_fees:
+              type: array
+              items:
+                type: object
+                properties:
+                  amount:
+                    type: number
+                    example: 100
+                  collector_account_id:
+                    $ref: '#/components/schemas/EntityId'
+                  denominating_token_id:
+                    $ref: '#/components/schemas/EntityId'
+            fractional_fees:
+              type: array
+              items:
+                type: object
+                properties:
+                  amount:
+                    type: object
+                    properties:
+                      numerator:
+                        type: number
+                        example: 12
+                      denominator:
+                        type: number
+                        example: 29
+                  collector_account_id:
+                    $ref: '#/components/schemas/EntityId'
+                  denominating_token_id:
+                    $ref: '#/components/schemas/EntityId'
+                  maximum:
+                    type: number
+                    example: 120
+                  minimum:
+                    type: number
+                    example: 30
     TransactionTypes:
       type: string
       enum:
@@ -1238,6 +1281,19 @@ components:
               - token_id
               - account
               - amount
+        assessed_custom_fees:
+          type: array
+          items:
+            type: object
+            properties:
+              amount:
+                type: number
+              collector_account_id:
+                $ref: '#/components/schemas/EntityId'
+              payer_account_id:
+                $ref: '#/components/schemas/EntityId'
+              token_id:
+                $ref: '#/components/schemas/EntityId'
       example:
         consensus_timestamp: 1234567890.000000007
         transaction_hash: aGFzaA==
@@ -1274,6 +1330,11 @@ components:
           - token_id: 0.0.90000
             account: 0.0.8
             amount: -1200
+        assessed_custom_fees:
+          - amount: 100
+            collector_account_id: 0.0.10
+            payer_account_id: 0.0.8
+            token_id: 0.0.90001
     Transactions:
       type: array
       items:
@@ -1513,6 +1574,39 @@ components:
         timestampGteOperator:
           summary: Example of timestamp greater than or equals operator
           value: gte:1234567890.000000500
+        secondsLtOperator:
+          summary: Example of seconds less than operator
+          value: lt:1234567890
+        timestampLtOperator:
+          summary: Example of timestamp less than operator
+          value: lt:1234567890.000000600
+        secondsLteOperator:
+          summary: Example of seconds less than or equals operator
+          value: lte:1234567890
+        timestampLteOperator:
+          summary: Example of timestamp less than or equals operator
+          value: lte:1234567890.000000700
+      schema:
+        type: string
+        format: >
+          ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
+    tokenInfoTimestampQueryParam:
+      name: timestamp
+      in: query
+      explode: true
+      examples:
+        secondsNoOperator:
+          summary: Example of seconds equals with no operator
+          value: 1234567890
+        timestampNoOperator:
+          summary: Example of timestamp equals with no operator
+          value: 1234567890.000000100
+        secondsEqOperator:
+          summary: Example of seconds equals with operator
+          value: eq:1234567890
+        timestampEqOperator:
+          summary: Example of timestamp equals with operator
+          value: eq:1234567890.000000200
         secondsLtOperator:
           summary: Example of seconds less than operator
           value: lt:1234567890

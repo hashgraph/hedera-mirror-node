@@ -377,7 +377,7 @@ describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
   const s3TestDataRoot = path.join(__dirname, 'data', 's3');
 
-  let configOverriden = false;
+  let configOverridden = false;
   let configClone;
   let s3Ops;
 
@@ -495,18 +495,18 @@ describe('DB integration test - spec based', () => {
     }
 
     _.merge(config, override);
-    configOverriden = true;
+    configOverridden = true;
   };
 
   const restoreConfig = () => {
-    if (configOverriden) {
+    if (configOverridden) {
       Object.assign(config, configClone);
       Object.keys(config).forEach((key) => {
         if (!(key in configClone)) {
           delete config[key];
         }
       });
-      configOverriden = false;
+      configOverridden = false;
     }
   };
 
@@ -551,7 +551,6 @@ describe('DB integration test - spec based', () => {
   });
 
   const specPath = path.join(__dirname, 'specs');
-  // fs.readdirSync(specPath).filter((f) => f.startsWith('token-info-01-')).forEach((file) => {
   fs.readdirSync(specPath).forEach((file) => {
     const p = path.join(specPath, file);
     const specText = fs.readFileSync(p, 'utf8');

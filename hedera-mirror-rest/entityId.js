@@ -116,7 +116,7 @@ const fromString = (entityIdStr, paramName = '', isNullable = false) => {
   const error = (message) =>
     paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(message);
 
-  if (_.isNull(entityIdStr)) {
+  if (_.isNil(entityIdStr)) {
     if (isNullable) {
       return of(null, null, null);
     }

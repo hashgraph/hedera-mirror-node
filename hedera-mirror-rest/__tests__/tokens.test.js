@@ -661,12 +661,14 @@ describe('token formatTokenInfoRow tests', () => {
         amount: 55,
         collector_account_id: 8901,
         created_timestamp: 10,
+        token_id: '7',
       },
       {
         amount: 59,
         collector_account_id: 8901,
         created_timestamp: 10,
         denominating_token_id: 19502,
+        token_id: '7',
       },
       {
         amount: 66,
@@ -675,6 +677,15 @@ describe('token formatTokenInfoRow tests', () => {
         created_timestamp: 10,
         maximum_amount: 150,
         minimum_amount: 43,
+        token_id: '7',
+      },
+      {
+        amount: 83,
+        amount_denominator: 94,
+        collector_account_id: 8903,
+        created_timestamp: 10,
+        minimum_amount: 1,
+        token_id: '7',
       },
     ],
   };
@@ -745,13 +756,22 @@ describe('token formatTokenInfoRow tests', () => {
           maximum: 150,
           minimum: 43,
         },
+        {
+          amount: {
+            numerator: 83,
+            denominator: 94,
+          },
+          collector_account_id: '0.0.8903',
+          denominating_token_id: '0.0.7',
+          minimum: 1,
+        },
       ],
     },
   };
 
   test('Verify formatTokenRow', () => {
     const actual = tokens.formatTokenInfoRow(rowInput);
-    expect(actual).toStrictEqual(expected);
+    expect(actual).toEqual(expected);
   });
 });
 
@@ -1317,13 +1337,14 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                                   t.type,
                                   wipe_key,
                                   (select jsonb_agg(jsonb_build_object(
-                                      'amount', amount,
-                                      'amount_denominator', amount_denominator,
-                                      'collector_account_id', collector_account_id,
-                                      'created_timestamp', created_timestamp,
-                                      'denominating_token_id', denominating_token_id,
-                                      'maximum_amount', maximum_amount,
-                                      'minimum_amount', minimum_amount
+                                    'amount', amount::text,
+                                    'amount_denominator', amount_denominator::text,
+                                    'collector_account_id', collector_account_id::text,
+                                    'created_timestamp', created_timestamp::text,
+                                    'denominating_token_id', denominating_token_id::text,
+                                    'maximum_amount', maximum_amount::text,
+                                    'minimum_amount', minimum_amount::text,
+                                    'token_id', token_id::text
                                    ))
                                    from custom_fee cf
                                    where token_id = $1
@@ -1362,13 +1383,14 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                                   t.type,
                                   wipe_key,
                                   (select jsonb_agg(jsonb_build_object(
-                                      'amount', amount,
-                                      'amount_denominator', amount_denominator,
-                                      'collector_account_id', collector_account_id,
-                                      'created_timestamp', created_timestamp,
-                                      'denominating_token_id', denominating_token_id,
-                                      'maximum_amount', maximum_amount,
-                                      'minimum_amount', minimum_amount
+                                      'amount', amount::text,
+                                      'amount_denominator', amount_denominator::text,
+                                      'collector_account_id', collector_account_id::text,
+                                      'created_timestamp', created_timestamp::text,
+                                      'denominating_token_id', denominating_token_id::text,
+                                      'maximum_amount', maximum_amount::text,
+                                      'minimum_amount', minimum_amount::text,
+                                      'token_id', token_id::text
                                    ))
                                    from custom_fee cf
                                    where token_id = $1 and cf.created_timestamp ${op} $2
@@ -1416,13 +1438,14 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                                   t.type,
                                   wipe_key,
                                   (select jsonb_agg(jsonb_build_object(
-                                      'amount', amount,
-                                      'amount_denominator', amount_denominator,
-                                      'collector_account_id', collector_account_id,
-                                      'created_timestamp', created_timestamp,
-                                      'denominating_token_id', denominating_token_id,
-                                      'maximum_amount', maximum_amount,
-                                      'minimum_amount', minimum_amount
+                                      'amount', amount::text,
+                                      'amount_denominator', amount_denominator::text,
+                                      'collector_account_id', collector_account_id::text,
+                                      'created_timestamp', created_timestamp::text,
+                                      'denominating_token_id', denominating_token_id::text,
+                                      'maximum_amount', maximum_amount::text,
+                                      'minimum_amount', minimum_amount::text,
+                                      'token_id', token_id::text
                                    ))
                                    from custom_fee cf
                                    where token_id = $1 and cf.created_timestamp <= $2

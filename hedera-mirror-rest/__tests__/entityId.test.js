@@ -101,7 +101,15 @@ describe('EntityId fromString', () => {
       expected: EntityId.of(null, null, null),
     },
     {
+      isNullable: true,
+      expected: EntityId.of(null, null, null),
+    },
+    {
       entityIdStr: null,
+      isNullable: false,
+      expectErr: true,
+    },
+    {
       isNullable: false,
       expectErr: true,
     },

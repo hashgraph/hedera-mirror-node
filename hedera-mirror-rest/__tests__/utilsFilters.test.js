@@ -273,6 +273,12 @@ describe('utils formatComparator tests', () => {
     utils.formatComparator(filter);
     verifyFilter(filter, constants.filterKeys.SCHEDULED, ' = ', false);
   });
+
+  test('Verify formatComparator for limit=10', () => {
+    const filter = utils.buildComparatorFilter(constants.filterKeys.LIMIT, '10');
+    utils.formatComparator(filter);
+    verifyFilter(filter, constants.filterKeys.LIMIT, ' = ', 10);
+  });
 });
 
 const verifyInvalidFilters = (filters) => {

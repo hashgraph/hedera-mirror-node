@@ -29,14 +29,14 @@ class AssessedCustomFeeViewModel {
   /**
    * Constructs the assessed custom fee view model
    *
-   * @param {AssessedCustomFee} assessedCustomFeeModel
+   * @param {AssessedCustomFee} assessedCustomFee
    * @param {String} payerAccountId
    */
-  constructor(assessedCustomFeeModel, payerAccountId) {
-    this.amount = assessedCustomFeeModel.amount;
-    this.collector_account_id = EntityId.fromEncodedId(assessedCustomFeeModel.collectorAccountId).toString();
+  constructor(assessedCustomFee, payerAccountId) {
+    this.amount = assessedCustomFee.amount;
+    this.collector_account_id = EntityId.fromEncodedId(assessedCustomFee.collectorAccountId).toString();
     this.payer_account_id = payerAccountId;
-    this.token_id = EntityId.fromEncodedId(assessedCustomFeeModel.tokenId, true).toString();
+    this.token_id = EntityId.fromEncodedId(assessedCustomFee.tokenId, true).toString();
   }
 }
 
