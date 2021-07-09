@@ -11,4 +11,4 @@ maintainers:
 name: hedera-mirror-rest
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.24.0-SNAPSHOT
+version: 0.25.0-SNAPSHOT
