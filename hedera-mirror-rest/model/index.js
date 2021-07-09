@@ -21,6 +21,8 @@
 'use strict';
 
 module.exports = {
+  AssessedCustomFee: require('./assessedCustomFee'),
+  CustomFee: require('./customFee'),
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),
   Token: require('./token'),

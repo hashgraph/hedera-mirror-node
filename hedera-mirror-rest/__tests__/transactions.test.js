@@ -27,6 +27,7 @@ const testutils = require('./testutils');
 const utils = require('../utils');
 const {
   buildWhereClause,
+  createAssessedCustomFeeList,
   createCryptoTransferList,
   createNftTransferList,
   createTransferLists,
@@ -398,6 +399,59 @@ describe('buildWhereClause', () => {
       const whereClause = buildWhereClause(...conditions);
       expect(whereClause.toLowerCase()).toEqual(expected);
     });
+  });
+});
+
+describe('createAssessedCustomFeeList', () => {
+  test('From null', () => {
+    expect(createAssessedCustomFeeList(null)).toEqual(undefined);
+  });
+
+  test('From undefined', () => {
+    expect(createAssessedCustomFeeList(undefined)).toEqual(undefined);
+  });
+
+  test('Simple createAssessedCustomFeeList', () => {
+    const payerAccountId = '0.0.8001';
+    const rowsFromDb = [
+      {
+        amount: 8,
+        collector_account_id: 9901,
+        token_id: null,
+      },
+      {
+        amount: 9,
+        collector_account_id: 9901,
+        token_id: 10001,
+      },
+      {
+        amount: 29,
+        collector_account_id: 9902,
+        token_id: 10002,
+      },
+    ];
+    const expected = [
+      {
+        amount: 8,
+        collector_account_id: '0.0.9901',
+        payer_account_id: payerAccountId,
+        token_id: null,
+      },
+      {
+        amount: 9,
+        collector_account_id: '0.0.9901',
+        payer_account_id: payerAccountId,
+        token_id: '0.0.10001',
+      },
+      {
+        amount: 29,
+        collector_account_id: '0.0.9902',
+        payer_account_id: payerAccountId,
+        token_id: '0.0.10002',
+      },
+    ];
+
+    expect(createAssessedCustomFeeList(rowsFromDb, payerAccountId)).toEqual(expected);
   });
 });
 

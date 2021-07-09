@@ -1,5 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`utils buildAndValidateFilters test validator fails 1`] = `
+Array [
+  "Invalid parameter: account.id",
+  "Invalid parameter: limit",
+  "Invalid parameter: timestamp",
+]
+`;
+
 exports[`utils validateAndParseFilters account balance key tests Verify validateAndParseFilters for invalid {"key":"account.balance","operator":"eq","value":"-1"} 1`] = `
 Array [
   "Invalid parameter: account.balance",

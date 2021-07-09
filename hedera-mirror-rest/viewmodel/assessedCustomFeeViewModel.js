@@ -20,10 +20,24 @@
 
 'use strict';
 
-module.exports = {
-  AssessedCustomFeeViewModel: require('./assessedCustomFeeViewModel'),
-  CustomFeeViewModel: require('./customFeeViewModel'),
-  NftTransactionHistoryViewModel: require('./nftTransactionHistoryViewModel'),
-  NftTransferViewModel: require('./nftTransferViewModel'),
-  NftViewModel: require('./nftViewModel'),
-};
+const EntityId = require('../entityId');
+
+/**
+ * Assessed custom fee view model
+ */
+class AssessedCustomFeeViewModel {
+  /**
+   * Constructs the assessed custom fee view model
+   *
+   * @param {AssessedCustomFee} assessedCustomFee
+   * @param {String} payerAccountId
+   */
+  constructor(assessedCustomFee, payerAccountId) {
+    this.amount = assessedCustomFee.amount;
+    this.collector_account_id = EntityId.fromEncodedId(assessedCustomFee.collectorAccountId).toString();
+    this.payer_account_id = payerAccountId;
+    this.token_id = EntityId.fromEncodedId(assessedCustomFee.tokenId, true).toString();
+  }
+}
+
+module.exports = AssessedCustomFeeViewModel;
