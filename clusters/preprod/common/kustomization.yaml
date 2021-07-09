@@ -6,4 +6,5 @@ resources:
 - ../../base/common
 - helmrelease.yaml
 - sealed-secret.yaml
+- sealed-secret-grafana.yaml
 
