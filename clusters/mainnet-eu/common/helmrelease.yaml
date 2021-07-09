@@ -24,6 +24,10 @@ spec:
       name: mirror
   values:
     prometheus:
+      kubeApiServer:
+        enabled: false
+      kubeDns:
+        enabled: false
       prometheus:
         prometheusSpec:
           externalLabels:
