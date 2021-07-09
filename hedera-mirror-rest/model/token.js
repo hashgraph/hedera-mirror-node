@@ -27,6 +27,8 @@ class Token {
   constructor(token) {
     this.createdTimestamp = BigInt(token.created_timestamp);
     this.decimals = BigInt(token.decimals);
+    this.feeScheduleKey = token.fee_schedule_key;
+    this.feeScheduleKeyEd25519Hex = token.fee_schedule_key_ed25519_hex;
     this.freezeDefault = token.freeze_default;
     this.freezeKey = token.freeze_key;
     this.freezeKeyEd25519Hex = token.freeze_key_ed25519_hex;

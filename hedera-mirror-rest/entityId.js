@@ -76,7 +76,7 @@ const of = (shard, realm, num) => {
  * @return {EntityId}
  */
 const fromEncodedId = (id, isNullable = false) => {
-  if (_.isNull(id)) {
+  if (_.isNil(id)) {
     if (isNullable) {
       return of(null, null, null);
     }
@@ -93,7 +93,7 @@ const fromEncodedId = (id, isNullable = false) => {
   }
 
   const encodedId = BigInt(id);
-  if (encodedId < 0 || encodedId > maxEncodedId) {
+  if (encodedId < 0n || encodedId > maxEncodedId) {
     throw new InvalidArgumentError(message);
   }
 
@@ -116,7 +116,7 @@ const fromString = (entityIdStr, paramName = '', isNullable = false) => {
   const error = (message) =>
     paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(message);
 
-  if (_.isNull(entityIdStr)) {
+  if (_.isNil(entityIdStr)) {
     if (isNullable) {
       return of(null, null, null);
     }
@@ -137,7 +137,7 @@ const fromString = (entityIdStr, paramName = '', isNullable = false) => {
   return of(
     ...parts.map((part) => {
       const num = BigInt(part);
-      if (num < 0) {
+      if (num < 0n) {
         throw error(`invalid entity ID string "${entityIdStr}"`);
       }
       return num;

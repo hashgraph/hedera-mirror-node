@@ -72,68 +72,104 @@ Array [
 ]
 `;
 
-exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"@.#.$"} 1`] = `
-Array [
-  "Invalid parameter: account.id",
-]
-`;
-
-exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"-1"} 1`] = `
-Array [
-  "Invalid parameter: account.id",
-]
-`;
-
-exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"-1.-1.-1"} 1`] = `
-Array [
-  "Invalid parameter: account.id",
-]
-`;
-
-exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"0.1.2.3"} 1`] = `
-Array [
-  "Invalid parameter: account.id",
-]
-`;
-
-exports[`utils validateAndParseFilters account.id tests Verify validateAndParseFilters for invalid {"key":"account.id","operator":"eq","value":"L"} 1`] = `
-Array [
-  "Invalid parameter: account.id",
-]
-`;
-
-exports[`utils validateAndParseFilters serialnumbers tests Verify validateAndParseFilters for invalid {"key":"serialnumber","operator":"eq","value":"-1"} 1`] = `
+exports[`utils buildAndValidateFilters serialnumbers tests Verify buildAndValidateFilters for invalid {"serialnumber":"-1"} 1`] = `
 Array [
   "Invalid parameter: serialnumber",
 ]
 `;
 
-exports[`utils validateAndParseFilters serialnumbers tests Verify validateAndParseFilters for invalid {"key":"serialnumber","operator":"eq","value":"0"} 1`] = `
+exports[`utils buildAndValidateFilters serialnumbers tests Verify buildAndValidateFilters for invalid {"serialnumber":"0"} 1`] = `
 Array [
   "Invalid parameter: serialnumber",
 ]
 `;
 
-exports[`utils validateAndParseFilters serialnumbers tests Verify validateAndParseFilters for invalid {"key":"serialnumber","operator":"eq","value":"deb"} 1`] = `
+exports[`utils buildAndValidateFilters serialnumbers tests Verify buildAndValidateFilters for invalid {"serialnumber":"deb"} 1`] = `
 Array [
   "Invalid parameter: serialnumber",
 ]
 `;
 
-exports[`utils validateAndParseFilters token type tests Verify validateAndParseFilters for invalid {"key":"type","operator":"eq","value":"-1"} 1`] = `
+exports[`utils buildAndValidateFilters token info query timestamp filter tests Verify buildAndValidateFilters for invalid {"serialnumber":"123456"} 1`] = `
+Array [
+  "Invalid parameter: serialnumber",
+]
+`;
+
+exports[`utils buildAndValidateFilters token info query timestamp filter tests Verify buildAndValidateFilters for invalid {"timestamp":""} 1`] = `
+Array [
+  "Invalid parameter: timestamp",
+]
+`;
+
+exports[`utils buildAndValidateFilters token info query timestamp filter tests Verify buildAndValidateFilters for invalid {"timestamp":"abc"} 1`] = `
+Array [
+  "Invalid parameter: timestamp",
+]
+`;
+
+exports[`utils buildAndValidateFilters token info query timestamp filter tests Verify buildAndValidateFilters for invalid {"timestamp":"gt:1234"} 1`] = `
+Array [
+  "Invalid parameter: timestamp",
+]
+`;
+
+exports[`utils buildAndValidateFilters token info query timestamp filter tests Verify buildAndValidateFilters for invalid {"timestamp":"gte:1234"} 1`] = `
+Array [
+  "Invalid parameter: timestamp",
+]
+`;
+
+exports[`utils buildAndValidateFilters token info query timestamp filter tests Verify buildAndValidateFilters for invalid {"timestamp":"ne:1234"} 1`] = `
+Array [
+  "Invalid parameter: timestamp",
+]
+`;
+
+exports[`utils buildAndValidateFilters token type tests Verify buildAndValidateFilters for invalid {"type":"-1"} 1`] = `
 Array [
   "Invalid parameter: type",
 ]
 `;
 
-exports[`utils validateAndParseFilters token type tests Verify validateAndParseFilters for invalid {"key":"type","operator":"eq","value":"cred"} 1`] = `
+exports[`utils buildAndValidateFilters token type tests Verify buildAndValidateFilters for invalid {"type":"cred"} 1`] = `
 Array [
   "Invalid parameter: type",
 ]
 `;
 
-exports[`utils validateAndParseFilters token type tests Verify validateAndParseFilters for invalid {"key":"type","operator":"eq","value":"deb"} 1`] = `
+exports[`utils buildAndValidateFilters token type tests Verify buildAndValidateFilters for invalid {"type":"deb"} 1`] = `
 Array [
   "Invalid parameter: type",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify buildAndValidateFilters for invalid {"account.id":"@.#.$"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify buildAndValidateFilters for invalid {"account.id":"-1"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify buildAndValidateFilters for invalid {"account.id":"-1.-1.-1"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify buildAndValidateFilters for invalid {"account.id":"0.1.2.3"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
+]
+`;
+
+exports[`utils validateAndParseFilters account.id tests Verify buildAndValidateFilters for invalid {"account.id":"L"} 1`] = `
+Array [
+  "Invalid parameter: account.id",
 ]
 `;

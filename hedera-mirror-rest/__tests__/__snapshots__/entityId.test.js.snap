@@ -17,3 +17,5 @@ exports[`EntityId fromString a 1`] = `"invalid entity ID string \\"a\\""`;
 exports[`EntityId fromString a.b.c 1`] = `"invalid entity ID string \\"a.b.c\\""`;
 
 exports[`EntityId fromString null 1`] = `"Null entity ID"`;
+
+exports[`EntityId fromString undefined 1`] = `"Null entity ID"`;

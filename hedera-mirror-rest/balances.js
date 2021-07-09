@@ -73,7 +73,7 @@ const formatBalancesResult = (req, result, limit, order) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = async (req, res) => {
-  await utils.validateReq(req);
+  utils.validateReq(req);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
@@ -138,7 +138,7 @@ const getBalances = async (req, res) => {
   }
 
   // Execute query
-  const result = await utils.queryQuietly(pgSqlQuery, ...sqlParams);
+  const result = await pool.queryQuietly(pgSqlQuery, ...sqlParams);
   res.locals[constants.responseDataLabel] = formatBalancesResult(req, result, limit, order);
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };

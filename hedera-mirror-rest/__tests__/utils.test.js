@@ -728,8 +728,8 @@ describe('utils validateReq', () => {
   ];
 
   specs.forEach((spec) => {
-    test(`utils validateReq - ${spec.name}`, async () => {
-      await expect(() => utils.validateReq(spec.req)).rejects.toThrow(InvalidArgumentError);
+    test(`utils validateReq - ${spec.name}`, () => {
+      expect(() => utils.validateReq(spec.req)).toThrow(InvalidArgumentError);
     });
   });
 });

@@ -23,18 +23,15 @@
 const _ = require('lodash');
 
 const {Nft} = require('../model');
-const utils = require('../utils');
 
 /**
  * Nft business model
  */
 class NftService {
-  constructor() {}
-
   static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
 
   async getNft(tokenId, serialNumber) {
-    const {rows} = await utils.queryQuietly(NftService.nftByIdQuery, tokenId, serialNumber);
+    const {rows} = await pool.queryQuietly(NftService.nftByIdQuery, tokenId, serialNumber);
     return _.isEmpty(rows) ? null : new Nft(rows[0]);
   }
 }
