@@ -28,6 +28,16 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-na
+          remoteWrite:
+            - basicAuth:
+                password:
+                  key: password
+                  name: grafana-cloud
+                username:
+                  key: username
+                  name: grafana-cloud
+              url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
+          replicaExternalLabelName: __replica__
       prometheusOperator:
         namespaces:
           releaseNamespace: false
