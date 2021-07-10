@@ -30,6 +30,12 @@ spec:
         enabled: false
       prometheus:
         prometheusSpec:
+          additionalScrapeConfigs:
+            - job_name: 'drop_metrics'
+              metric_relabel_configs:
+                - source_labels: [__name__]
+                  regex: 'rest_client_request_.*'
+                  action: drop
           externalLabels:
             cluster: preprod
           remoteWrite:
