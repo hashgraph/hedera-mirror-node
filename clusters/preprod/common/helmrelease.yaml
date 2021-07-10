@@ -32,6 +32,11 @@ spec:
         prometheusSpec:
           additionalScrapeConfigs:
             - job_name: 'drop_metrics'
+              kubernetes_sd_configs:
+                - role: pod
+                  follow_redirects: true
+                  namespaces:
+                    names: [flux-system]
               metric_relabel_configs:
                 - source_labels: [__name__]
                   regex: 'rest_client_request_.*'
