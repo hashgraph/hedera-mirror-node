@@ -4,5 +4,7 @@ resources:
 - alert.yaml
 - gotk-components.yaml
 - gotk-sync.yaml
-- provider.yaml
+- provider-github.yaml
+- provider-slack.yaml
+- sealed-secret-github.yaml
 - sealed-secret-slack.yaml
