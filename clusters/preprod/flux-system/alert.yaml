@@ -23,4 +23,8 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: performance
+    - kind: Kustomization
+      name: '*'
+      namespace: flux-system
+  summary: "Pre-prod cluster"
 
