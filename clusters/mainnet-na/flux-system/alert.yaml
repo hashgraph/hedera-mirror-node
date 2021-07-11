@@ -17,4 +17,8 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: mainnet
+    - kind: Kustomization
+      name: '*'
+      namespace: flux-system
+  summary: "mainnet-na cluster"
 
