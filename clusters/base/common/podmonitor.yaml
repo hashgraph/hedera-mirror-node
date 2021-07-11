@@ -22,4 +22,8 @@ spec:
           - image-reflector-controller
   podMetricsEndpoints:
     - targetPort: http-prom
+      metricRelabelings:
+        - action: drop
+          regex: rest_client_request_.*
+          sourceLabels: [__name__]
 
