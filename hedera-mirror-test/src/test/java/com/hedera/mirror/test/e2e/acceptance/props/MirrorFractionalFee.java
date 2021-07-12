@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -22,16 +22,16 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import lombok.Data;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
-
 @Data
-public class MirrorTokenResponse {
+public class MirrorFractionalFee {
 
-    private String createdTimestamp;
+    private MirrorFraction amount;
 
-    private MirrorCustomFees customFees;
+    private String collectorAccountId;
 
-    private String modifiedTimestamp;
+    private String denominatingTokenId;
 
-    private String tokenId;
+    private String maximum;
+
+    private String minimum;
 }

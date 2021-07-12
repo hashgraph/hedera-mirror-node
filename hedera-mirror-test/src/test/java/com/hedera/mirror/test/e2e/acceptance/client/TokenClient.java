@@ -25,6 +25,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import javax.inject.Named;
+
+import com.hedera.hashgraph.sdk.CustomFixedFee;
+import com.hedera.hashgraph.sdk.proto.FixedFee;
+
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -59,6 +63,10 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Named
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TokenClient extends AbstractNetworkClient {
+
+    // tokens arraylist
+    // senders arraylist
+    // recipients arraylist
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);

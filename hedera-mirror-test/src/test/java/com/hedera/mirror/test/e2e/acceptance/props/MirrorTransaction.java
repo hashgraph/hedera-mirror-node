@@ -25,19 +25,23 @@ import lombok.Data;
 
 @Data
 public class MirrorTransaction {
+
+    private List<MirrorAssessedCustomFee> assessedCustomFees;
+
+    private String consensusTimestamp;
+
     private String name;
 
     private String result;
 
-    List<MirrorTokenTransfer> tokenTransfers;
+    private boolean scheduled;
+
+    private List<MirrorTokenTransfer> tokenTransfers;
 
     private String transactionId;
 
-    List<MirrorTransfer> transfers;
-
-    private String consensusTimestamp;
+    private List<MirrorTransfer> transfers;
 
     private String validStartTimestamp;
 
-    private boolean scheduled;
 }
