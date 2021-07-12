@@ -23,9 +23,9 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 import java.util.List;
 import lombok.Data;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransaction;
 
 @Data
-public class MirrorTransactionsResponse {
-    List<MirrorTransaction> transactions;
+public class MirrorNftTransactionsResponse {
+    List<MirrorNftTransaction> transactions;
 }

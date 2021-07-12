@@ -23,10 +23,9 @@ package com.hedera.mirror.test.e2e.acceptance.props;
 import lombok.Data;
 
 @Data
-public class MirrorNftTransaction {
-    private String transactionId;
-    private String consensusTimestamp;
-    private String receiverAccountId;
+public class MirrorNftTransfer {
     private String senderAccountId;
-    private String type;
+    private String receiverAccountId;
+    private String tokenId;
+    private String serialNumber;
 }
