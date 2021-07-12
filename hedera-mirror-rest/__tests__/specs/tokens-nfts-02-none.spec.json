@@ -15,18 +15,28 @@
       {
         "num": 2500,
         "type": 5
+      },
+      {
+        "num": 3500,
+        "type": 5
       }
     ],
     "tokens": [
       {
         "token_id": "0.0.1500",
         "symbol": "FIRSTMOVERLPDJH",
-        "created_timestamp": "1234567890000000003",
+        "created_timestamp": "1234567890000000002",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
       {
         "token_id": "0.0.2500",
         "symbol": "ORIGINALRDKSE",
+        "created_timestamp": "1234567890000000003",
+        "type": "NON_FUNGIBLE_UNIQUE"
+      },
+      {
+        "token_id": "0.0.3500",
+        "symbol": "MIRRORORIG",
         "created_timestamp": "1234567890000000004",
         "type": "NON_FUNGIBLE_UNIQUE"
       }

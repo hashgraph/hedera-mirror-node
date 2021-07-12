@@ -495,7 +495,7 @@ describe('getStateProofForTransaction', () => {
       defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await stateproofRewired.getStateProofForTransaction(req, res);
 
     verifyResponseData(
@@ -533,7 +533,7 @@ describe('getStateProofForTransaction', () => {
       defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
-    req.params.id = '0.0.a-abcd-ddfff';
+    req.params.transactionId = '0.0.a-abcd-ddfff';
     await expect(stateproofRewired.getStateProofForTransaction(req, res)).rejects.toThrow();
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.callCount).toEqual(0);
@@ -550,7 +550,7 @@ describe('getStateProofForTransaction', () => {
       defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await expect(stateproofRewired.getStateProofForTransaction(req, res)).rejects.toThrow();
 
     expect(alwaysThrowErrorStub.callCount).toEqual(1);
@@ -567,7 +567,7 @@ describe('getStateProofForTransaction', () => {
       defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await expect(stateproofRewired.getStateProofForTransaction(req, res)).rejects.toThrow();
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.callCount).toEqual(1);
@@ -584,7 +584,7 @@ describe('getStateProofForTransaction', () => {
       defaultDownloadRecordStreamFilesFromObjectStorageStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await expect(stateproofRewired.getStateProofForTransaction(req, res)).rejects.toThrow();
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.callCount).toEqual(1);
@@ -601,7 +601,7 @@ describe('getStateProofForTransaction', () => {
       alwaysThrowErrorStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await expect(stateproofRewired.getStateProofForTransaction(req, res)).rejects.toThrow();
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.callCount).toEqual(1);
@@ -624,7 +624,7 @@ describe('getStateProofForTransaction', () => {
       failAllRecordFileDownloadStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await expect(stateproofRewired.getStateProofForTransaction(req, res)).rejects.toThrow();
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.callCount).toEqual(1);
@@ -652,7 +652,7 @@ describe('getStateProofForTransaction', () => {
       failOneSignatureFileDownloadStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await stateproofRewired.getStateProofForTransaction(req, res);
 
     let {nodeAccountIds} = defaultAddressBooksAndNodeAccountIdsResult;
@@ -686,7 +686,7 @@ describe('getStateProofForTransaction', () => {
       failSignatureFileDownloadStub
     );
 
-    req.params.id = defaultTransactionIdStr;
+    req.params.transactionId = defaultTransactionIdStr;
     await expect(stateproofRewired.getStateProofForTransaction(req, res)).rejects.toThrow();
 
     expect(defaultGetSuccessfulTransactionConsensusNsStub.callCount).toEqual(1);

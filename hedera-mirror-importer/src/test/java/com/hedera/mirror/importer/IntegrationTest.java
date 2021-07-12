@@ -34,7 +34,7 @@ import org.springframework.test.context.jdbc.Sql;
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
-public class IntegrationTest {
+public abstract class IntegrationTest {
 
     protected final Logger log = LogManager.getLogger(getClass());
 

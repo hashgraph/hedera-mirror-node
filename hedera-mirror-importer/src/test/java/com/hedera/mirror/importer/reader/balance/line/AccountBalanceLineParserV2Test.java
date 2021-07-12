@@ -113,7 +113,7 @@ class AccountBalanceLineParserV2Test {
                     TokenBalance actualTokenBalance = actualTokenBalanceList.get(i);
                     TokenBalance.Id actualId = actualTokenBalance.getId();
 
-                    assertThat(expectedTokenBalances.containsKey(actualId.getTokenId().getEntityNum()));
+                    assertThat(expectedTokenBalances).containsKey(actualId.getTokenId().getEntityNum());
                     assertThat(actualTokenBalance.getBalance())
                             .isEqualTo(expectedTokenBalances.get(actualId.getTokenId().getEntityNum()));
                     assertThat(actualId).isNotNull();

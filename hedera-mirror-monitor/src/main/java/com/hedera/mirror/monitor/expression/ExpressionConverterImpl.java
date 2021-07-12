@@ -34,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.RetrySpec;
 
 import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -125,7 +127,10 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .type(type.getTransactionType())
                     .build();
 
-            PublishResponse publishResponse = transactionPublisher.publish(request).toFuture().join();
+            PublishResponse publishResponse = Mono.defer(() -> transactionPublisher.publish(request))
+                    .retryWhen(RetrySpec.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
+                            .maxBackoff(Duration.ofSeconds(8L)))
+                    .toFuture().join();
             String createdId = type.getIdExtractor().apply(publishResponse.getReceipt());
             if (isNft) {
                 TokenMintTransactionSupplier mintTransactionSupplier = new TokenMintTransactionSupplier();
@@ -146,9 +151,6 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             }
             log.info("Created {} entity {}", type, createdId);
             return createdId;
-        } catch (RuntimeException e) {
-            log.error("Error converting expression {}:", expression, e);
-            throw e;
         } catch (Exception e) {
             log.error("Error converting expression {}:", expression, e);
             throw new RuntimeException(e);

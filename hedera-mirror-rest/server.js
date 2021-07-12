@@ -29,7 +29,6 @@ const cors = require('cors');
 const httpContext = require('express-http-context');
 const log4js = require('log4js');
 const compression = require('compression');
-const _ = require('lodash');
 
 // local files
 const accounts = require('./accounts');
@@ -42,12 +41,14 @@ const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
+const {isTestEnv} = require('./utils');
+const {DbError} = require('./errors/dbError');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const {isTestEnv} = require('./utils');
+const {TransactionResultService, TransactionTypeService} = require('./service');
 
 // Logger
 const logger = log4js.getLogger();
@@ -134,7 +135,7 @@ if (config.metrics.enabled) {
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
-app.getAsync(`${apiPrefix}/accounts/:id`, accounts.getOneAccount);
+app.getAsync(`${apiPrefix}/accounts/:accountId`, accounts.getOneAccount);
 
 // balances routes
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
@@ -142,30 +143,31 @@ app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 // stateproof route
 if (config.stateproof.enabled || isTestEnv()) {
   logger.info('stateproof REST API is enabled, install handler');
-  app.getAsync(`${apiPrefix}/transactions/:id/stateproof`, stateproof.getStateProofForTransaction);
+  app.getAsync(`${apiPrefix}/transactions/:transactionId/stateproof`, stateproof.getStateProofForTransaction);
 } else {
   logger.info('stateproof REST API is disabled');
 }
 
 // tokens routes
 app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
-app.getAsync(`${apiPrefix}/tokens/:id`, tokens.getTokenInfoRequest);
-app.getAsync(`${apiPrefix}/tokens/:id/balances`, tokens.getTokenBalances);
-app.getAsync(`${apiPrefix}/tokens/:id/nfts`, tokens.getNftTokensRequest);
-app.getAsync(`${apiPrefix}/tokens/:id/nfts/:serialnumber`, tokens.getNftTokenInfoRequest);
+app.getAsync(`${apiPrefix}/tokens/:tokenId`, tokens.getTokenInfoRequest);
+app.getAsync(`${apiPrefix}/tokens/:tokenId/balances`, tokens.getTokenBalances);
+app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts`, tokens.getNftTokensRequest);
+app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber`, tokens.getNftTokenInfoRequest);
+app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber/transactions`, tokens.getNftTransferHistoryRequest);
 
 // topics routes
-app.getAsync(`${apiPrefix}/topics/:id/messages`, topicmessage.getTopicMessages);
-app.getAsync(`${apiPrefix}/topics/:id/messages/:sequencenumber`, topicmessage.getMessageByTopicAndSequenceRequest);
+app.getAsync(`${apiPrefix}/topics/:topicId/messages`, topicmessage.getTopicMessages);
+app.getAsync(`${apiPrefix}/topics/:topicId/messages/:sequenceNumber`, topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
 // schedules routes
 app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
-app.getAsync(`${apiPrefix}/schedules/:id`, schedules.getScheduleById);
+app.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
 
 // transactions routes
 app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
-app.getAsync(`${apiPrefix}/transactions/:id`, transactions.getOneTransaction);
+app.getAsync(`${apiPrefix}/transactions/:transactionId`, transactions.getOneTransaction);
 
 // record ip metrics if enabled
 if (config.metrics.ipMetrics) {
@@ -178,19 +180,32 @@ app.useAsync(responseHandler);
 // response error handling middleware
 app.useAsync(handleError);
 
-if (!isTestEnv()) {
-  const server = app.listen(port, () => {
-    logger.info(`Server running on port: ${port}`);
-  });
+const verifyDbConnection = async () => {
+  // initial db calls, serves as connection validation
+  await TransactionTypeService.loadTransactionTypes();
+  await TransactionResultService.loadTransactionResults();
+};
 
-  // Health check endpoints
-  createTerminus(server, {
-    healthChecks: {
-      '/health/readiness': health.readinessCheck,
-      '/health/liveness': health.livenessCheck,
-    },
-    beforeShutdown: health.beforeShutdown,
-  });
+if (!isTestEnv()) {
+  verifyDbConnection()
+    .catch((err) => {
+      throw new DbError(err.message);
+    })
+    .then(() => {
+      logger.info(`DB connection validated`);
+      const server = app.listen(port, () => {
+        logger.info(`Server running on port: ${port}`);
+      });
+
+      // Health check endpoints
+      createTerminus(server, {
+        healthChecks: {
+          '/health/readiness': health.readinessCheck,
+          '/health/liveness': health.livenessCheck,
+        },
+        beforeShutdown: health.beforeShutdown,
+      });
+    });
 }
 
 module.exports = app;
