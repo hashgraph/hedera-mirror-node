@@ -35,6 +35,7 @@ import org.threeten.bp.temporal.ChronoUnit;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
@@ -77,11 +78,6 @@ public class TokenClient extends AbstractNetworkClient {
         PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
-                .setAutoRenewPeriod(org.threeten.bp.Duration.ofSeconds(6_999_999L))
-                .setDecimals(10)
-                .setFreezeDefault(false)
-                .setInitialSupply(initialSupply)
-                .setMaxSupply(maxSupply)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
@@ -90,6 +86,10 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenType(tokenType)
                 .setTreasuryAccountId(treasuryAccount.getAccountId())
                 .setTransactionMemo(memo);
+
+        if (tokenType == TokenType.FUNGIBLE_COMMON) {
+            tokenCreateTransaction.setDecimals(10);
+        }
 
         if (adminKey != null) {
             tokenCreateTransaction
@@ -239,7 +239,9 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Transfer token_" + refInstant);
         if (serialNumbers != null) {
-            transaction.addTokenNftTransfers(tokenId, serialNumbers, sender, recipient);
+            for (Long serialNumber : serialNumbers) {
+                transaction.addNftTransfer(new NftId(tokenId, serialNumber), sender, recipient);
+            }
         } else {
             transaction
                     .addTokenTransfer(tokenId, sender, Math.negateExact(amount))

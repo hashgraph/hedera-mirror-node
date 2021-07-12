@@ -52,9 +52,12 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransaction;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransfer;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -121,7 +124,7 @@ public class TokenFeature {
     @Given("I associate a new recipient account with token")
     public void associateRecipientWithToken() {
 
-        recipient = accountClient.createNewAccount(10_000_000);
+        recipient = accountClient.createNewAccount(100);
         associateWithToken(recipient);
     }
 
@@ -222,7 +225,6 @@ public class TokenFeature {
                 .delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        tokenId = null;
     }
 
     @Then("the mirror node REST API should return status {int}")
@@ -235,6 +237,16 @@ public class TokenFeature {
         publishBackgroundMessages();
     }
 
+    @Then("the mirror node nft transactions REST API should return status {int}")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyMirrorNftTransactionsAPIResponses(int status) {
+        verifyTransactions(status);
+        verifyNftTransactions();
+        publishBackgroundMessages();
+    }
+
     @Then("the mirror node REST API should return status {int} for token fund flow")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
@@ -243,7 +255,6 @@ public class TokenFeature {
         verifyTransactions(status);
         verifyToken();
         verifyTokenTransfers();
-
         publishBackgroundMessages();
     }
 
@@ -255,8 +266,8 @@ public class TokenFeature {
         verifyTransactions(status);
         verifyToken();
         verifyNft();
-        verifyTokenTransfers();
-
+        verifyNftTransfers();
+        verifyNftTransactions();
         publishBackgroundMessages();
     }
 
@@ -350,7 +361,7 @@ public class TokenFeature {
                 freezeStatus,
                 kycStatus,
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                INITIAL_SUPPLY, tokenType, MAX_SUPPLY);
+                initialSupply, tokenType, maxSupply);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         tokenId = networkTransactionResponse.getReceipt().tokenId;
@@ -409,7 +420,7 @@ public class TokenFeature {
                 .transferToken(tokenId, sender, receiver, 0, Arrays.asList(serialNumber));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + serialNumbers.size());
+        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + 1);
     }
 
     private MirrorTransaction verifyTransactions(int status) {
@@ -431,6 +442,20 @@ public class TokenFeature {
         return mirrorTransaction;
     }
 
+    private MirrorNftTransaction verifyNftTransactions() {
+        String transactionId = networkTransactionResponse.getTransactionIdString();
+        MirrorNftTransactionsResponse mirrorTransactionsResponse = mirrorClient
+                .getNftTransactions(tokenId, serialNumber);
+
+        List<MirrorNftTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+        assertNotNull(transactions);
+        assertThat(transactions).isNotEmpty();
+        MirrorNftTransaction mirrorTransaction = transactions.get(0);
+        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
+
+        return mirrorTransaction;
+    }
+
     private MirrorTokenResponse verifyToken() {
         MirrorTokenResponse mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
 
@@ -440,7 +465,7 @@ public class TokenFeature {
         return mirrorToken;
     }
 
-    private MirrorTokenResponse verifyNft() {
+    private MirrorNftResponse verifyNft() {
         MirrorNftResponse mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
 
         assertNotNull(mirrorNft);
@@ -474,6 +499,33 @@ public class TokenFeature {
         }
 
         assertTrue(tokenIdFound);
+    }
+
+    private void verifyNftTransfers() {
+        String transactionId = networkTransactionResponse.getTransactionIdString();
+        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+
+        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+        assertNotNull(transactions);
+        assertThat(transactions).isNotEmpty();
+        MirrorTransaction mirrorTransaction = transactions.get(0);
+        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
+        assertThat(mirrorTransaction.getValidStartTimestamp())
+                .isEqualTo(networkTransactionResponse.getValidStartString());
+
+        boolean serialNumberFound = false;
+
+        String tokenIdString = tokenId.toString();
+        String serialNumberString = String.valueOf(serialNumber);
+        for (MirrorNftTransfer nftTransfer : mirrorTransaction.getNftTransfers()) {
+            if (nftTransfer.getTokenId().equalsIgnoreCase(tokenIdString) && nftTransfer.getSerialNumber()
+                    .equals(serialNumberString)) {
+                serialNumberFound = true;
+                break;
+            }
+        }
+
+        assertTrue(serialNumberFound);
     }
 
     private void verifyTokenUpdate() {
