@@ -3,7 +3,7 @@ applicationResource:
   partnerId: mirror-node-public
   partnerName: mirror-node-public
   solutionId: hedera-mirror-node
-  version: ''
+  version: 0.37.0-rc1
 
 global:
   db:
