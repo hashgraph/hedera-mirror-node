@@ -42,7 +42,6 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.datagenerator.sdk.supplier.schedule.ScheduleCreateTransactionSupplier;
 import com.hedera.datagenerator.sdk.supplier.token.TokenCreateTransactionSupplier;
-import com.hedera.datagenerator.sdk.supplier.token.TokenMintTransactionSupplier;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
@@ -115,6 +114,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                 TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
                 tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
                 tokenSupplier.setInitialSupply(0);
+                tokenSupplier.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
             }
 
             PublishRequest request = PublishRequest.builder()
@@ -132,23 +132,6 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                             .maxBackoff(Duration.ofSeconds(8L)))
                     .toFuture().join();
             String createdId = type.getIdExtractor().apply(publishResponse.getReceipt());
-            if (isNft) {
-                TokenMintTransactionSupplier mintTransactionSupplier = new TokenMintTransactionSupplier();
-                mintTransactionSupplier.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
-                //TODO is this the right move?
-                mintTransactionSupplier.setAmount(1);
-                mintTransactionSupplier.setTokenId(createdId);
-                request = PublishRequest.builder()
-                        .logResponse(true)
-                        .receipt(true)
-                        .scenarioName(expression.toString())
-                        .timeout(Duration.ofSeconds(30L))
-                        .timestamp(Instant.now())
-                        .transaction(mintTransactionSupplier.get())
-                        .type(TransactionType.TOKEN_MINT)
-                        .build();
-                transactionPublisher.publish(request).toFuture().join();
-            }
             log.info("Created {} entity {}", type, createdId);
             return createdId;
         } catch (Exception e) {
