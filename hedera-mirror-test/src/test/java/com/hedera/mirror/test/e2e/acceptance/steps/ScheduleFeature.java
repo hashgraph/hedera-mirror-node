@@ -30,6 +30,7 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -182,7 +183,9 @@ public class ScheduleFeature {
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
                 tokenTreasuryAccount,
-                DEFAULT_TINY_HBAR);
+                DEFAULT_TINY_HBAR,
+                Collections.emptyList()
+        );
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         tokenId = networkTransactionResponse.getReceipt().tokenId;
