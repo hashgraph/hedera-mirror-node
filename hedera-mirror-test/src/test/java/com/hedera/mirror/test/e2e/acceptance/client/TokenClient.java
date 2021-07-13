@@ -61,10 +61,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TokenClient extends AbstractNetworkClient {
 
-    // tokens arraylist
-    // senders arraylist
-    // recipients arraylist
-
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
         log.debug("Creating Token Client");
