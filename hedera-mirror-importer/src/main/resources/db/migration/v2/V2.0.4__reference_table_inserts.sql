@@ -217,7 +217,11 @@ values ('OK', 0),
        ('INVALID_CUSTOM_FEE_SCHEDULE_KEY', 247),
        ('INVALID_TOKEN_MINT_METADATA', 248),
        ('INVALID_TOKEN_BURN_METADATA', 249),
-       ('CURRENT_TREASURY_STILL_OWNS_NFTS', 250);
+       ('CURRENT_TREASURY_STILL_OWNS_NFTS', 250),
+       ('ACCOUNT_STILL_OWNS_NFTS', 251),
+       ('TREASURY_MUST_OWN_BURNED_NFT', 252),
+       ('ACCOUNT_DOES_NOT_OWN_WIPED_NFT', 253),
+       ('ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON', 254);
 
 -- t_transaction_types
 insert into t_transaction_types (proto_id, name, entity_type)
