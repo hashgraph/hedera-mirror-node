@@ -32,7 +32,6 @@ import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import junit.framework.AssertionFailedError;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -55,6 +54,10 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorAssessedCustomFee;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorFixedFee;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorFraction;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorFractionalFee;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
@@ -84,7 +87,7 @@ public class TokenFeature {
     private final List<ExpandedAccountId> recipients = new ArrayList<>();
     private NetworkTransactionResponse networkTransactionResponse;
 
-    @Given("^I successfully create a new token(?: with custom fees (.*))?")
+    @Given("^I successfully create a new token(?: with custom fees schedule (.*))?")
     public void createNewToken(String customFees) {
         createNewToken(
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
@@ -112,11 +115,17 @@ public class TokenFeature {
         associateWithToken(sender, tokenIds.get(getIndexOrDefault(tokenIndex)));
     }
 
-    @Given("^I associate a new recipient account with token(?: (.*))?$")
-    public void associateRecipientWithToken(Integer tokenIndex) {
-        ExpandedAccountId recipient = accountClient.createNewAccount(10_000_000);
+    @Given("^I associate a(?:n)? (?:existing|new) recipient account(?: (.*))? with token(?: (.*))?$")
+    public void associateRecipientWithToken(Integer recipientIndex, Integer tokenIndex) {
+        ExpandedAccountId recipient;
+        if (recipientIndex == null) {
+            recipient = accountClient.createNewAccount(10_000_000);
+            recipients.add(recipient);
+        } else {
+            recipient = recipients.get(recipientIndex);
+        }
+
         associateWithToken(recipient, tokenIds.get(getIndexOrDefault(tokenIndex)));
-        recipients.add(recipient);
     }
 
     @When("^I set new account (?:(.*) )?freeze status to (.*)$")
@@ -259,6 +268,17 @@ public class TokenFeature {
         topicClient.publishMessageToDefaultTopic();
     }
 
+    @Then("^the mirror node REST API should confirm token (?:(.*) )?with custom fees schedule (.*)$")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyMirrorTokenWithCustomFeesSchedule(Integer tokenIndex, String customFees) {
+        MirrorTransaction transaction = verifyTransactions(200);
+
+        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));;
+        verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp(), parseCustomFees(customFees));
+    }
+
     @After
     public void cleanup() {
         // dissociate all applicable accounts from token to reduce likelihood of max token association error
@@ -269,6 +289,7 @@ public class TokenFeature {
             ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
             try {
                 tokenClient.delete(admin, tokenId);
+
                 dissociateAccounts(tokenId, List.of(admin));
                 dissociateAccounts(tokenId, senders);
                 dissociateAccounts(tokenId, recipients);
@@ -277,9 +298,9 @@ public class TokenFeature {
             }
         }
 
-        tokenIds.clear();
-        senders.clear();
         recipients.clear();
+        senders.clear();
+        tokenIds.clear();
     }
 
     private void dissociateAccounts(TokenId tokenId, List<ExpandedAccountId> accountIds) {
@@ -504,6 +525,57 @@ public class TokenFeature {
         MirrorTokenResponse mirrorToken = verifyToken(tokenId);
 
         assertThat(mirrorToken.getCreatedTimestamp()).isNotEqualTo(mirrorToken.getModifiedTimestamp());
+    }
+
+    private void verifyTokenWithCustomFeesSchedule(TokenId tokenId, String createdTimestamp,
+                                                   List<CustomFee> customFees) {
+        MirrorTokenResponse response = verifyToken(tokenId);
+
+        MirrorCustomFees expected = new MirrorCustomFees();
+        expected.setCreatedTimestamp(createdTimestamp);
+        for (CustomFee customFee : customFees) {
+            if (customFee instanceof CustomFixedFee) {
+                CustomFixedFee sdkFixedFee = (CustomFixedFee) customFee;
+                MirrorFixedFee fixedFee = new MirrorFixedFee();
+
+                fixedFee.setAmount(Long.toString(sdkFixedFee.getAmount()));
+                fixedFee.setCollectorAccountId(sdkFixedFee.getFeeCollectorAccountId().toString());
+
+                if (sdkFixedFee.getDenominatingTokenId() != null) {
+                    fixedFee.setDenominatingTokenId(sdkFixedFee.getDenominatingTokenId().toString());
+                }
+
+                expected.getFixedFees().add(fixedFee);
+            } else {
+                CustomFractionalFee sdkFractionalFee = (CustomFractionalFee) customFee;
+                MirrorFractionalFee fractionalFee = new MirrorFractionalFee();
+
+                MirrorFraction fraction = new MirrorFraction();
+                fraction.setNumerator(Long.toString(sdkFractionalFee.getNumerator()));
+                fraction.setDenominator(Long.toString(sdkFractionalFee.getDenominator()));
+                fractionalFee.setAmount(fraction);
+
+                fractionalFee.setCollectorAccountId(sdkFractionalFee.getFeeCollectorAccountId().toString());
+                fractionalFee.setDenominatingTokenId(tokenId.toString());
+
+                if (sdkFractionalFee.getMax() != 0) {
+                    fractionalFee.setMaximum(Long.toString(sdkFractionalFee.getMax()));
+                }
+
+                fractionalFee.setMinimum(Long.toString(sdkFractionalFee.getMin()));
+
+                expected.getFractionalFees().add(fractionalFee);
+            }
+        }
+
+        MirrorCustomFees actual = response.getCustomFees();
+
+        assertAll(
+                () -> assertThat(actual).returns(expected.getCreatedTimestamp(), MirrorCustomFees::getCreatedTimestamp),
+                () -> assertThat(actual.getFixedFees()).containsExactlyInAnyOrderElementsOf(expected.getFixedFees()),
+                () -> assertThat(actual.getFractionalFees())
+                        .containsExactlyInAnyOrderElementsOf(expected.getFractionalFees())
+        );
     }
 
     private void publishBackgroundMessages() {

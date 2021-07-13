@@ -99,3 +99,17 @@ Feature: HTS Base Coverage Feature
         # "amount,recipient account index,sender(payer) account index,denominating token index"
             | fundAmount | httpStatusCode | customFeesSchedule     | transferAmount | assessedCustomFees         |
             | 3000       | 200            | 100,0,;10,1,0;1/10,2,, | 200            | 100,0,0,;10,1,0,0;20,2,0,1 |
+
+    @acceptance
+    Scenario Outline: Validate Base Token Creation with Updated Custom Fees Schedule - Create, UpdateFeeSchedule
+        Given I successfully create a new token
+        And I associate a new recipient account with token 0
+        And I successfully create a new token with custom fees schedule <initialCustomFeesSchedule>
+        Then the mirror node REST API should confirm token 1 with custom fees schedule <initialCustomFeesSchedule>
+        Given I associate an existing recipient account 0 with token 1
+        And I update token 1 with new custom fees schedule "<newCustomFeesSchedule>"
+        Then the mirror node REST API should confirm token 1 with custom fees schedule <newCustomFeesSchedule>
+
+        Examples:
+            | initialCustomFeesSchedule | newCustomFeesSchedule  |
+            | 50,0,;20,0,0              | 7,0,;13,0,0;1/20,0,8,1 |
