@@ -64,7 +64,8 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     TokenSupplyType tokenSupplyType = TokenSupplyType.INFINITE;
 
-    Long maxSupply;
+    @Min(1)
+    long maxSupply = 1;
 
     @Override
     public TokenCreateTransaction get() {
@@ -72,27 +73,28 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
         AccountId treasuryAccount = AccountId.fromString(treasuryAccountId);
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
                 .setAutoRenewAccountId(treasuryAccount)
-                .setDecimals(decimals)
                 .setFreezeDefault(freezeDefault)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
+                .setSupplyType(tokenSupplyType)
                 .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
                 .setTokenSymbol(symbol)
-                .setTransactionMemo(memo)
-                .setTreasuryAccountId(treasuryAccount)
                 .setTokenType(tokenType)
-                .setSupplyType(tokenSupplyType);
+                .setTransactionMemo(memo)
+                .setTreasuryAccountId(treasuryAccount);
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);
             tokenCreateTransaction.setAdminKey(key).setFreezeKey(key).setKycKey(key).setSupplyKey(key).setWipeKey(key);
         }
-        if (maxSupply != null) {
-            tokenCreateTransaction.setMaxSupply(maxSupply);
-        }
 
         if (tokenType == TokenType.FUNGIBLE_COMMON) {
-            tokenCreateTransaction.setInitialSupply(initialSupply);
+            tokenCreateTransaction
+                    .setDecimals(decimals)
+                    .setInitialSupply(initialSupply);
+        }
+        if (tokenSupplyType == TokenSupplyType.FINITE) {
+            tokenCreateTransaction.setMaxSupply(maxSupply);
         }
 
         return tokenCreateTransaction;

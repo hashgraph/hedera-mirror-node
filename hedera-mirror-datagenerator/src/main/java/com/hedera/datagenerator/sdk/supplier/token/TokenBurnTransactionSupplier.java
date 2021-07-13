@@ -52,7 +52,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
     @Override
     public TokenBurnTransaction get() {
 
-        TokenBurnTransaction transaction = new TokenBurnTransaction().setAmount(amount)
+        TokenBurnTransaction transaction = new TokenBurnTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node burned test token"));
@@ -60,6 +60,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
         switch (tokenType) {
             case FUNGIBLE_COMMON:
                 transaction.setAmount(amount);
+                break;
             case NON_FUNGIBLE_UNIQUE:
                 Stream.iterate(0, n -> n + 1)
                         .limit(amount)

@@ -364,7 +364,7 @@ Optional Filters
     - Alernatively, the `ExpressionConverter` could just generate a large amount of serial numbers, and
       the `CryptoTransferTransactionSupplier` could just transfer one at a time via a counter until it runs out. This
       would be a much simpler approach, but it would cap the number of transactions possible in a scenario, and it would
-      require a longer startup time to generate all the serial nunmbers.
+      require a longer startup time to generate all the serial numbers.
 
 ### Acceptance Tests
 

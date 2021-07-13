@@ -20,6 +20,7 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -53,14 +54,18 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private String tokenId;
 
     @NotNull
-    private TransferType transferType = TransferType.CRYPTO;
+    private TransferType transferType = TransferType.NFT;
 
-    private AccountId recipientId = AccountId.fromString(recipientAccountId);
+    @Getter(lazy = true)
+    private final AccountId recipientId = AccountId.fromString(recipientAccountId);
 
-    private AccountId senderId = AccountId.fromString(senderAccountId);
+    @Getter(lazy = true)
+    private final AccountId senderId = AccountId.fromString(senderAccountId);
 
     @Getter(lazy = true)
     private final TokenId transferTokenId = TokenId.fromString(tokenId);
+
+    private final AtomicLong serialNumber = new AtomicLong(1);
 
     @Override
     public TransferTransaction get() {
@@ -108,16 +113,10 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
 
     private void addNftTransfers(TransferTransaction transferTransaction, TokenId token, AccountId recipientId,
                                  AccountId senderId) {
-        Stream.iterate(1, n -> n + 1)
-                .limit(amount + 1)
-                .forEach(x -> transferTransaction.addTokenNftTransfer(new NftId(token, x), senderId, recipientId));
-        swapAccounts();
-    }
-
-    private synchronized void swapAccounts() {
-        AccountId temp = recipientId;
-        recipientId = senderId;
-        senderId = temp;
+        Stream.iterate(0, n -> n + 1)
+                .limit(amount)
+                .forEach(x -> transferTransaction
+                        .addNftTransfer(new NftId(token, serialNumber.getAndIncrement()), senderId, recipientId));
     }
 
     public enum TransferType {
