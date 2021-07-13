@@ -93,5 +93,9 @@ Feature: HTS Base Coverage Feature
         Then the mirror node REST API should return status <httpStatusCode> for token 1 fund flow with assessed custom fees <assessedCustomFees>
 
         Examples:
+        # A custom fees schedule entry is in the format of "amount,recipient account index,denominating token index,max,min"
+        # For a fractional fee, amount is presented as, e.g., "1/10", empty string is used for an unset optional field.
+        # fees are separated by ";". Same rules apply to assessed custom fees in the format of
+        # "amount,recipient account index,sender(payer) account index,denominating token index"
             | fundAmount | httpStatusCode | customFeesSchedule     | transferAmount | assessedCustomFees         |
             | 3000       | 200            | 100,0,;10,1,0;1/10,2,, | 200            | 100,0,0,;10,1,0,0;20,2,0,1 |

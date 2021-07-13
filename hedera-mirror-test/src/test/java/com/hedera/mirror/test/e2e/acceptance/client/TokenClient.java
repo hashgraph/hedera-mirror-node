@@ -114,8 +114,8 @@ public class TokenClient extends AbstractNetworkClient {
         }
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenCreateTransaction, KeyList
-                        .of(treasuryAccount.getPrivateKey()));
+                executeTransactionAndRetrieveReceipt(tokenCreateTransaction,
+                        KeyList.of(treasuryAccount.getPrivateKey()), null);
         TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
         log.debug("Created new token {}", tokenId);
 
@@ -133,7 +133,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
-                        KeyList.of(accountId.getPrivateKey()));
+                        KeyList.of(accountId.getPrivateKey()), null);
 
         log.debug("Associated {} with token {}", accountId, token);
 
@@ -242,7 +242,8 @@ public class TokenClient extends AbstractNetworkClient {
         TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender.getAccountId(),
                 recipient, amount);
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender);
+        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenTransferTransaction,
+                null, sender);
 
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender, recipient);
 
@@ -319,7 +320,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
-                        KeyList.of(accountId.getPrivateKey()));
+                        KeyList.of(accountId.getPrivateKey()), null);
 
         log.debug("Dissociated {} with token {}", accountId, token);
 
@@ -337,7 +338,7 @@ public class TokenClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
-                        KeyList.of(accountId.getPrivateKey()));
+                        KeyList.of(accountId.getPrivateKey()), null);
 
         log.debug("Deleted token {}", token);
 
@@ -352,7 +353,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId);
 
         NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(transaction,
-                KeyList.of(expandedAccountId.getPrivateKey()));
+                KeyList.of(expandedAccountId.getPrivateKey()), null);
 
         log.debug("Updated custom fees schedule for token {}", tokenId);
         return response;

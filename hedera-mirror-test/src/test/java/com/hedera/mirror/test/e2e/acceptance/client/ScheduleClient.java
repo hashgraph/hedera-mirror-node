@@ -97,7 +97,8 @@ public class ScheduleClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 scheduleSignTransaction,
-                KeyList.of(expandedAccountId.getPrivateKey()));
+                KeyList.of(expandedAccountId.getPrivateKey()),
+                null);
         log.debug("Signed schedule {}", scheduleId);
 
         return networkTransactionResponse;
