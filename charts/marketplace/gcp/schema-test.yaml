@@ -11,3 +11,6 @@ properties:
   importer.config.hedera.mirror.importer.network:
     default: "DEMO"
     type: string
+  importer.db.username:
+    default: "mirror_node"
+    type: string

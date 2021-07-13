@@ -165,9 +165,10 @@ properties:
         length: 24
         base64: False
   importer.db.username:
+    default: mirror_importer
     type: string
     description: The db user used by the importer to persist parsed stream files to the database. This is needed to support backwards compatability.
-    title: Importer database password
+    title: Importer database username
   importer.serviceAccount.name:
     type: string
     title: Importer service account
@@ -208,6 +209,23 @@ properties:
       generatedPassword:
         length: 24
         base64: False
+  postgresql.serviceAccount.name:
+    type: string
+    title: Postgres service account
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        description: The Kubernetes service account to assign to the postgres server
+        roles:
+          - type: Role
+            rulesType: CUSTOM
+            rules:
+              - apiGroups: [ '' ]
+                resources: [ 'configmaps' ]
+                verbs: [ 'get', 'list','watch', 'create', 'update' ]
+              - apiGroups: [ '' ]
+                resources: [ 'pods' ]
+                verbs: [ 'get', 'watch' ]
   rest.db.password:
     type: string
     description: The password used by the REST API to connect to the database
@@ -236,4 +254,5 @@ required:
   - importer.db.username
   - importer.serviceAccount.name
   - postgresql.persistence.size
+  - postgresql.serviceAccount.name
   - rest.replicas
