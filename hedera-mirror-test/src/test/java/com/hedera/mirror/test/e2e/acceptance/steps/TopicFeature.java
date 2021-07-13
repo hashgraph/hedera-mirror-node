@@ -79,7 +79,7 @@ public class TopicFeature {
 
         submitKey = PrivateKey.generate();
         PublicKey submitPublicKey = submitKey.getPublicKey();
-        log.trace("Topic creation PrivateKey : {}, PublicKey : {}", submitPublicKey);
+        log.trace("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
         NetworkTransactionResponse networkTransactionResponse = topicClient
                 .createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), submitPublicKey);

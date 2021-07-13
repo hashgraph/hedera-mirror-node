@@ -20,29 +20,18 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Data;
 
 @Data
-public class MirrorTransaction {
+public class MirrorFractionalFee {
 
-    private List<MirrorAssessedCustomFee> assessedCustomFees = new ArrayList<>();
+    private MirrorFraction amount;
 
-    private String consensusTimestamp;
+    private String collectorAccountId;
 
-    private String name;
+    private String denominatingTokenId;
 
-    private String result;
+    private String maximum;
 
-    private boolean scheduled;
-
-    private List<MirrorTokenTransfer> tokenTransfers;
-
-    private String transactionId;
-
-    private List<MirrorTransfer> transfers;
-
-    private String validStartTimestamp;
-
+    private String minimum;
 }
