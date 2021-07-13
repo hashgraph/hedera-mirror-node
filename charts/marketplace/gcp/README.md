@@ -399,14 +399,14 @@ upgrade process:
 2. Delete the `${APP_NAME}-importer` and `${APP_NAME}-postgres` Stateful Set workloads.
 3. Install the v0.27 solution
 
-## v0.36
+## v0.37
 
-The Marketplace solution update from v0.27 to v0.36+ includes many noteworthy improvements and changes. To ensure a
-smooth upgrade process:
+The Marketplace solution update from v0.27 to v0.37+ includes many noteworthy improvements and changes such as Scheduled Transactions and NFT support. 
+To ensure a smooth upgrade process:
 
 1. Verify your importer is up to date on file processing by inspecting logs before beginning.
-2. Delete the `${APP_NAME}-importer` and `${APP_NAME}-postgres` Stateful Set workloads.
-3. Install the v0.36 solution
+2. Delete the `${APP_NAME}-importer` Stateful Set workload.
+3. Install the v0.37 solution
 
 # Scaling
 
@@ -428,9 +428,17 @@ helm upgrade "${APP_NAME}" charts/hedera-mirror \
 
 1. In the Cloud Console, open [Kubernetes Applications](https://console.cloud.google.com/kubernetes/application).
 
-2. From the list of apps, choose your app installation.
+2. Navigate to the Applications page for the list of apps, choose your app installation.
 
-3. On the Application Details page, click **Delete**.
+3. Select ${APP_NAME}, click **Delete**.
+
+4. Navigate to the Configuration page for the list of configurations.
+
+5. Select the `leaders` Config Map, click **Delete**.
+
+6. Navigate to the Storage page for the list of storage resources. 
+
+7. Select the `data-<NAMESPACE>-postgres-postgresql-0` Persistent Volume Claim, click **Delete**.
 
 ## Using the command-line
 
@@ -440,6 +448,17 @@ Delete the Kubernetes resources using Helm:
 
 ```shell
 helm delete "${APP_NAME}" --namespace "${NAMESPACE}"
+```
+
+### Delete the Leaders Config Map
+The Mirror Node chart used by the Marketplace solution utilizes the Spring Cloud Kubernetes leader election mechanism.
+This enables importer high availability and stores the importer leader in the `leaders` Config Map.
+This resource lacks the resource labels to associate it with the Mirror Node chart and is left over after application deletion.
+
+To delete the Kubernetes `leaders` Config Map, run the following kubectl command:
+
+```shell
+kubectl delete configmap leaders --namespace "${NAMESPACE}"
 ```
 
 ### Delete the data

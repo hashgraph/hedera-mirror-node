@@ -17,8 +17,8 @@ x-google-marketplace:
   publishedVersion: "$TAG"
   publishedVersionMetadata:
     releaseNote: >-
-      v0.36 brings many new features to the mirror node marketplace application since v0.27.
-      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/main/charts/marketplace/gcp#v036">v0.36 Upgrade</a> for additional upgrade steps.
+      v0.37 brings many new features to the mirror node marketplace application since v0.27.
+      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/main/charts/marketplace/gcp#v037">v0.37 Upgrade</a> for additional upgrade steps.
 
       The largest feature introduced since v0.13 is that of the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
       Token entity types are now ingested to the DB and can be queried through new REST APIs.
