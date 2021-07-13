@@ -103,8 +103,7 @@ public class TopicClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction,
-                        null);
+                executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction);
 
         log.debug("Updated topic '{}'.", topicId);
         return networkTransactionResponse;
@@ -116,8 +115,7 @@ public class TopicClient extends AbstractNetworkClient {
                 .setTopicId(topicId);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction,
-                        null);
+                executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
 
         log.debug("Deleted topic : '{}'.", topicId);
 

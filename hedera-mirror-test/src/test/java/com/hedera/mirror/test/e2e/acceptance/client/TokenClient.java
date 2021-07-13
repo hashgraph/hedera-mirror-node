@@ -107,7 +107,7 @@ public class TokenClient extends AbstractNetworkClient {
             tokenCreateTransaction.setKycKey(adminKey);
         }
 
-        if (!customFees.isEmpty() && adminKey != null) {
+        if (customFees != null && adminKey != null) {
             tokenCreateTransaction
                     .setCustomFees(customFees)
                     .setFeeScheduleKey(adminKey);
@@ -150,7 +150,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Mint token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenMintTransaction, null);
+                executeTransactionAndRetrieveReceipt(tokenMintTransaction);
 
         log.debug("Minted {} extra tokens for token {}", amount, tokenId);
 
@@ -166,8 +166,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTransactionMemo("Freeze account_" + refInstant);
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction,
-                null);
+        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction);
 
         log.debug("Freeze account {} with token {}", accountId, tokenId);
 
@@ -183,7 +182,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTransactionMemo("Unfreeze account_" + refInstant);
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction, null);
+        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction);
 
         log.debug("Unfreeze account {} with token {}", accountId, tokenId);
 
@@ -201,7 +200,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Grant kyc for token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                tokenGrantKycTransaction, null);
+                tokenGrantKycTransaction);
 
         log.debug("Granted Kyc for account {} with token {}", accountId, tokenId);
 
@@ -219,7 +218,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Revoke kyc for token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                tokenRevokeKycTransaction, null);
+                tokenRevokeKycTransaction);
 
         log.debug("Revoked Kyc for account {} with token {}", accountId, tokenId);
 
@@ -240,15 +239,14 @@ public class TokenClient extends AbstractNetworkClient {
                                                     long amount) {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
-        TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender
-                .getAccountId(), recipient, amount);
+        TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender.getAccountId(),
+                recipient, amount);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenTransferTransaction, KeyList.of(sender.getPrivateKey()));
+        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender);
 
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender, recipient);
 
-        return networkTransactionResponse;
+        return response;
     }
 
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
@@ -268,7 +266,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, null);
+                executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
 
         log.debug("Updated token {}.", tokenId);
 
@@ -286,7 +284,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Burn token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenBurnTransaction, null);
+                executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
 
         log.debug("Burned {} extra tokens for token {}", amount, tokenId);
 
@@ -305,7 +303,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo("Wipe token_" + refInstant);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(tokenWipeAccountTransaction, null);
+                executeTransactionAndRetrieveReceipt(tokenWipeAccountTransaction);
 
         log.debug("Wiped {} tokens from account {}", amount, expandedAccountId.getAccountId());
 

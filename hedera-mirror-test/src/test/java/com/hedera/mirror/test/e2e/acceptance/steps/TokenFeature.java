@@ -99,11 +99,17 @@ public class TokenFeature {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
     }
 
-    @Given("^I associate a new sender account with token(?: (.*))?$")
-    public void associateSenderWithToken(Integer tokenIndex) {
-        ExpandedAccountId sender = accountClient.createNewAccount(10_000_000);
+    @Given("^I associate a(?:n)? (?:existing|new) sender account(?: (.*))? with token(?: (.*))?$")
+    public void associateSenderWithToken(Integer senderIndex, Integer tokenIndex) {
+        ExpandedAccountId sender;
+        if (senderIndex == null) {
+            sender = accountClient.createNewAccount(10_000_000);
+            senders.add(sender);
+        } else {
+            sender = senders.get(senderIndex);
+        }
+
         associateWithToken(sender, tokenIds.get(getIndexOrDefault(tokenIndex)));
-        senders.add(sender);
     }
 
     @Given("^I associate a new recipient account with token(?: (.*))?$")
@@ -135,6 +141,13 @@ public class TokenFeature {
         ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         transferTokens(tokenIds.get(getIndexOrDefault(tokenIndex)), amount, payer,
                 senders.get(getIndexOrDefault(senderIndex)).getAccountId());
+    }
+
+    @Then("^Sender(?: (.*))? transfers (.*) tokens (?:(.*) )?to recipient(?: (.*))?$")
+    public void transferTokensFromSenderToRecipient(Integer senderIndex, int amount, Integer tokenIndex,
+                                                    Integer recipientIndex) {
+        transferTokens(tokenIds.get(getIndexOrDefault(tokenIndex)), amount, senders.get(getIndexOrDefault(senderIndex)),
+                recipients.get(getIndexOrDefault(recipientIndex)).getAccountId());
     }
 
     @Given("^I update the token(?: (.*))?$")
@@ -201,12 +214,12 @@ public class TokenFeature {
         publishBackgroundMessages();
     }
 
-    @Then("^the mirror node REST API should return status (.*) for token fund flow(?: with assessed custom fees (.*))?$")
+    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow(?: with assessed custom fees (.*))?$")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenFundFlow(int status, String assessedCustomFees) {
-        TokenId tokenId = tokenIds.get(0);
+    public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex, String assessedCustomFees) {
+        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         verifyTransactions(status, parseAssessedCustomFees(assessedCustomFees));
         verifyToken(tokenId);
         verifyTokenTransfers(tokenId);
@@ -281,7 +294,7 @@ public class TokenFeature {
     }
 
     private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(symbol, freezeStatus, kycStatus, Collections.emptyList());
+        createNewToken(symbol, freezeStatus, kycStatus, null);
     }
 
     private void createNewToken(String symbol, int freezeStatus, int kycStatus, List<CustomFee> customFees) {
@@ -308,6 +321,7 @@ public class TokenFeature {
     }
 
     private List<MirrorAssessedCustomFee> parseAssessedCustomFees(String assessedCustomFees) {
+        log.debug("got assessed custom fees string: {}", assessedCustomFees);
         if (Strings.isEmpty(assessedCustomFees)) {
             return Collections.emptyList();
         }
@@ -442,6 +456,7 @@ public class TokenFeature {
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
+        assertThat(mirrorTransaction.getAssessedCustomFees()).containsExactlyInAnyOrderElementsOf(assessedCustomFees);
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
@@ -501,6 +516,6 @@ public class TokenFeature {
     }
 
     private int getIndexOrDefault(Integer index) {
-        return Optional.ofNullable(index).orElse(0);
+        return index != null ? index : 0;
     }
 }

@@ -20,6 +20,8 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
@@ -58,15 +60,29 @@ public abstract class AbstractNetworkClient {
         if (keyList != null) {
             transaction.freezeWith(client); // Signing requires transaction to be frozen
             for (Key k : keyList) {
-                transaction = transaction.sign((PrivateKey) k);
+                transaction.sign((PrivateKey) k);
             }
             log.debug("{} additional signatures added to transaction", keyList.size());
         }
 
-        Transaction finalTransaction = transaction;
-        TransactionResponse transactionResponse = retryTemplate.execute(x -> executeTransaction(finalTransaction));
+        TransactionResponse transactionResponse = retryTemplate.execute(x -> executeTransaction(transaction));
         TransactionId transactionId = transactionResponse.transactionId;
         log.debug("Executed transaction {} with {} signatures.", transactionId, keyList == null ? 0 : keyList.size());
+
+        return transactionId;
+    }
+
+    public TransactionId executeTransaction(Transaction transaction, ExpandedAccountId payer) {
+        // set max retries on sdk
+        transaction.setMaxAttempts(sdkClient.getAcceptanceTestProperties().getSdkProperties().getMaxAttempts());
+        transaction.setTransactionId(TransactionId.generate(payer.getAccountId()));
+
+        transaction.freezeWith(client);
+        transaction.sign(payer.getPrivateKey());
+
+        TransactionResponse response = retryTemplate.execute(x -> executeTransaction(transaction));
+        TransactionId transactionId = response.transactionId;
+        log.debug("Executed transaction {}", transactionId);
 
         return transactionId;
     }
@@ -80,6 +96,23 @@ public abstract class AbstractNetworkClient {
                                                                            KeyList keyList) {
         long startBalance = getBalance();
         TransactionId transactionId = executeTransaction(transaction, keyList);
+        TransactionReceipt transactionReceipt = getTransactionReceipt(transactionId);
+        log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
+        return new NetworkTransactionResponse(transactionId, transactionReceipt);
+    }
+
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
+                                                                           ExpandedAccountId payer) {
+        long startBalance = getBalance();
+        TransactionId transactionId = executeTransaction(transaction, payer);
+        TransactionReceipt transactionReceipt = getTransactionReceipt(transactionId);
+        log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
+        return new NetworkTransactionResponse(transactionId, transactionReceipt);
+    }
+
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction) {
+        long startBalance = getBalance();
+        TransactionId transactionId = executeTransaction(transaction, (KeyList) null);
         TransactionReceipt transactionReceipt = getTransactionReceipt(transactionId);
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
