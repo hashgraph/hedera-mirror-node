@@ -1,44 +1,21 @@
 hedera:
   mirror:
     monitor:
-      mirrorNode:
-        rest:
-          host: http://localhost:5551/
-      network: OTHER
-      nodes:
-        - accountId: 0.0.3
-          host: 34.74.191.8
-        - accountId: 0.0.4
-          host: 35.245.150.69
-        - accountId: 0.0.5
-          host: 34.70.193.123
-        - accountId: 0.0.6
-          host: 35.197.75.89
-        - accountId: 0.0.7
-          host: 34.94.114.236
-      operator:
-        accountId: 0.0.2
-        privateKey: 302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
       publish:
         scenarios:
-          nftCreate:
+          - name: HCS Pinger
             properties:
-              treasuryAccountId: 0.0.2
-              tokenType: NON_FUNGIBLE_UNIQUE
-              tokenSupplyType: FINITE
+              topicId: ${topic.ping}
             receiptPercent: 1.0
-            tps: 1.0
-            type: TOKEN_CREATE
+            tps: 0.1
+            type: CONSENSUS_SUBMIT_MESSAGE
       subscribe:
         grpc:
-          hcs:
+          - name: HCS Subscribe
             topicId: ${topic.ping}
         rest:
-          transactionId:
-            publishers: [ "pinger" ]
+          - name: HCS REST
             samplePercent: 1.0
-        enabled: false
-
 logging:
   level:
     root: warn
