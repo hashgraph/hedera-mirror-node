@@ -316,7 +316,7 @@ public class TokenFeature {
 
         recipients.clear();
         senders.clear();
-        tokenCustomFees.clear();;
+        tokenCustomFees.clear();
         tokenIds.clear();
     }
 
