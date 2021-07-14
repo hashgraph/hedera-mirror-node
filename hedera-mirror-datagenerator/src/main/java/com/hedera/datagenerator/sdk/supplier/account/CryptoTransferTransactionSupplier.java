@@ -51,6 +51,9 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @NotBlank
     private String senderAccountId;
 
+    @NotNull
+    private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+
     private String tokenId;
 
     @NotNull
@@ -64,8 +67,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
 
     @Getter(lazy = true)
     private final TokenId transferTokenId = TokenId.fromString(tokenId);
-
-    private final AtomicLong serialNumber = new AtomicLong(1);
 
     @Override
     public TransferTransaction get() {
@@ -86,7 +87,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
                 addNftTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
                 transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test nft transfer"));
                 break;
-            case ALL:
+            case CRYPTO_AND_TOKEN:
                 addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
                 addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
                 transferTransaction
@@ -120,6 +121,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     }
 
     public enum TransferType {
-        CRYPTO, TOKEN, NFT, ALL
+        CRYPTO, TOKEN, NFT, CRYPTO_AND_TOKEN
     }
 }

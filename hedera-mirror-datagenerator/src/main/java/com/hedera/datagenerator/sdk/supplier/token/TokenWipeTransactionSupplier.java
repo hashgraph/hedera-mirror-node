@@ -21,9 +21,9 @@ package com.hedera.datagenerator.sdk.supplier.token;
  */
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
@@ -46,12 +46,13 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    @NotNull
+    private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+
     @NotBlank
     private String tokenId;
 
-    TokenType tokenType = TokenType.FUNGIBLE_COMMON;
-
-    AtomicLong serialNumber = new AtomicLong(1);
+    TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenWipeTransaction get() {
@@ -62,15 +63,14 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node wiped test token"));
 
-        switch (tokenType) {
+        switch (type) {
             case FUNGIBLE_COMMON:
                 transaction.setAmount(amount);
+                break;
             case NON_FUNGIBLE_UNIQUE:
-                Stream.iterate(0, n -> n + 1)
-                        .limit(amount)
-                        .forEach(x -> {
-                            transaction.addSerial(serialNumber.getAndIncrement());
-                        });
+                for (int i = 0; i < amount; i++) {
+                    transaction.addSerial(serialNumber.getAndIncrement());
+                }
         }
 
         return transaction;

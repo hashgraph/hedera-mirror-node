@@ -20,10 +20,12 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
-import java.util.stream.Stream;
+import java.nio.charset.StandardCharsets;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -41,10 +43,16 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    @NotNull
+    private String metadata = StringUtils.EMPTY;
+
+    @Min(1)
+    private int metadataSize = 16;
+
     @NotBlank
     private String tokenId;
 
-    TokenType tokenType = TokenType.FUNGIBLE_COMMON;
+    TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenMintTransaction get() {
@@ -53,13 +61,15 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node minted test token"));
-        switch (tokenType) {
+        switch (type) {
             case FUNGIBLE_COMMON:
                 transaction.setAmount(amount);
+                break;
             case NON_FUNGIBLE_UNIQUE:
-                Stream.iterate(0, n -> n + 1)
-                        .limit(amount)
-                        .forEach(x -> transaction.addMetadata(Utility.generateMessage(10)));
+                for (int i = 0; i < amount; i++) {
+                    transaction.addMetadata(!metadata.isEmpty() ? metadata.getBytes(StandardCharsets.UTF_8) : Utility
+                            .generateMessage(metadataSize));
+                }
         }
         return transaction;
     }

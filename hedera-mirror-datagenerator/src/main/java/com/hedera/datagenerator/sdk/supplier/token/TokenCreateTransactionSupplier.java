@@ -51,7 +51,12 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     private int initialSupply = 1000000000;
 
     @Min(1)
+    long maxSupply = 100000000000L;
+
+    @Min(1)
     private long maxTransactionFee = 1_000_000_000;
+
+    TokenSupplyType supplyType = TokenSupplyType.INFINITE;
 
     @NotBlank
     private String symbol = RANDOM.ints(5, 'A', 'Z')
@@ -60,12 +65,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     @NotBlank
     private String treasuryAccountId;
 
-    TokenType tokenType = TokenType.FUNGIBLE_COMMON;
-
-    TokenSupplyType tokenSupplyType = TokenSupplyType.INFINITE;
-
-    @Min(1)
-    long maxSupply = 1;
+    TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenCreateTransaction get() {
@@ -75,11 +75,11 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
                 .setAutoRenewAccountId(treasuryAccount)
                 .setFreezeDefault(freezeDefault)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setSupplyType(tokenSupplyType)
+                .setSupplyType(supplyType)
                 .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
                 .setTokenSymbol(symbol)
-                .setTokenType(tokenType)
+                .setTokenType(type)
                 .setTransactionMemo(memo)
                 .setTreasuryAccountId(treasuryAccount);
 
@@ -88,12 +88,12 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
             tokenCreateTransaction.setAdminKey(key).setFreezeKey(key).setKycKey(key).setSupplyKey(key).setWipeKey(key);
         }
 
-        if (tokenType == TokenType.FUNGIBLE_COMMON) {
+        if (type == TokenType.FUNGIBLE_COMMON) {
             tokenCreateTransaction
                     .setDecimals(decimals)
                     .setInitialSupply(initialSupply);
         }
-        if (tokenSupplyType == TokenSupplyType.FINITE) {
+        if (supplyType == TokenSupplyType.FINITE) {
             tokenCreateTransaction.setMaxSupply(maxSupply);
         }
 
