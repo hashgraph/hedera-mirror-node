@@ -55,7 +55,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private String tokenId;
 
     @NotNull
-    private TransferType transferType = TransferType.NFT;
+    private TransferType transferType = TransferType.CRYPTO;
 
     @Getter(lazy = true)
     private final AccountId recipientId = AccountId.fromString(recipientAccountId);
