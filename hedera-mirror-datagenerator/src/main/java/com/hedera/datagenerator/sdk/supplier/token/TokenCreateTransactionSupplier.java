@@ -23,6 +23,7 @@ package com.hedera.datagenerator.sdk.supplier.token;
 import java.security.SecureRandom;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
@@ -65,7 +66,8 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     @NotBlank
     private String treasuryAccountId;
 
-    private final TokenType type = TokenType.FUNGIBLE_COMMON;
+    @NotNull
+    private TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenCreateTransaction get() {
