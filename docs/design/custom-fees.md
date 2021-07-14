@@ -41,11 +41,11 @@ create table if not exists custom_fee
     created_timestamp         bigint not null,
     denominating_token_id     bigint,
     maximum_amount            bigint,
-    minimum_amount            bigint,
+    minimum_amount            bigint not null default 0,
     token_id                  bigint not null
 );
 create index if not exists
-    custom_fee__token_timestamp on custom_fee (token_id, created_timestamp desc);
+    custom_fee__token_timestamp on custom_fee (token_id desc, created_timestamp desc);
 ```
 
 - Add a new `assessed_custom_fee` table
@@ -116,8 +116,7 @@ Both new domain objects are insert-only.
 
 #### Transaction Handler
 
-- Add a new transaction handler `TokenFeeScheduleUpdateTransactionHandler` to extract the token entity and update
-  the modified timestamp of the entity
+- Add a new transaction handler `TokenFeeScheduleUpdateTransactionHandler` to extract the token entity
 
 ## REST API
 
@@ -206,66 +205,68 @@ Add `fee_schedule_key` and `custom_fees` to the response json object of `/api/v1
 
 ```json
   {
-    "token_id": "0.0.1135",
-    "symbol": "ORIGINALRDKSE",
-    "admin_key": null,
-    "auto_renew_account": null,
-    "auto_renew_period": null,
-    "created_timestamp": "1234567890.000000002",
-    "decimals": "1000",
-    "expiry_timestamp": null,
-    "freeze_default": false,
-    "freeze_key": null,
-    "initial_supply": "1000000",
-    "kyc_key": null,
-    "max_supply": "9223372036854775807",
-    "modified_timestamp": "1234567899.000000002",
-    "name": "Token name",
-    "supply_key": null,
-    "supply_type": "INFINITE",
-    "total_supply": "1000000",
-    "treasury_account_id": "0.0.98",
-    "type": "FUNGIBLE_COMMON",
-    "wipe_key": null,
-    "fee_schedule_key": {
-      "_type": "ProtobufEncoded",
-      "key": "7b2231222c2231222c2231227d"
-    },
-    "custom_fees": {
-      "created_timestamp": "1234567896.000000001",
-      "fixed_fees": [
-        {
-          "amount": 10,
-          "collector_account_id": "0.0.99812",
-          "denominating_token_id": null,
+  "token_id": "0.0.1135",
+  "symbol": "ORIGINALRDKSE",
+  "admin_key": null,
+  "auto_renew_account": null,
+  "auto_renew_period": null,
+  "created_timestamp": "1234567890.000000002",
+  "decimals": "1000",
+  "expiry_timestamp": null,
+  "freeze_default": false,
+  "freeze_key": null,
+  "initial_supply": "1000000",
+  "kyc_key": null,
+  "max_supply": "9223372036854775807",
+  "modified_timestamp": "1234567899.000000002",
+  "name": "Token name",
+  "supply_key": null,
+  "supply_type": "INFINITE",
+  "total_supply": "1000000",
+  "treasury_account_id": "0.0.98",
+  "type": "FUNGIBLE_COMMON",
+  "wipe_key": null,
+  "fee_schedule_key": {
+    "_type": "ProtobufEncoded",
+    "key": "7b2231222c2231222c2231227d"
+  },
+  "custom_fees": {
+    "created_timestamp": "1234567896.000000001",
+    "fixed_fees": [
+      {
+        "amount": 10,
+        "collector_account_id": "0.0.99812",
+        "denominating_token_id": null
+      },
+      {
+        "amount": 10,
+        "collector_account_id": "0.0.99813",
+        "denominating_token_id": "0.0.10020"
+      }
+    ],
+    "fractional_fees": [
+      {
+        "amount": {
+          "numerator": 1,
+          "denominator": 10
         },
-        {
-          "amount": 10,
-          "collector_account_id": "0.0.99813",
-          "denominating_token_id": "0.0.10020"
-        }
-      ],
-      "fractional_fees": [
-        {
-          "amount": {
-            "numerator": 1,
-            "denominator": 10
-          },
-          "collector_account_id": "0.0.99820",
-          "maximum": 200,
-          "minimum": 50
+        "collector_account_id": "0.0.99820",
+        "denominating_token_id": "0.0.1135",
+        "maximum": 200,
+        "minimum": 0
+      },
+      {
+        "amount": {
+          "numerator": 3,
+          "denominator": 20
         },
-        {
-          "amount": {
-            "numerator": 3,
-            "denominator": 20
-          },
-          "collector_account_id": "0.0.99821",
-          "minimum": 10
-        }
-      ]
-    }
+        "collector_account_id": "0.0.99821",
+        "denominating_token_id": "0.0.1135",
+        "minimum": 10
+      }
+    ]
   }
+}
 ```
 
 Add optional filters

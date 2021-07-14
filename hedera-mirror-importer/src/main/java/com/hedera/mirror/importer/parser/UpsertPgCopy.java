@@ -100,7 +100,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         }
     }
 
-    public int insertToFinalTable(Connection connection) throws SQLException {
+    private int insertToFinalTable(Connection connection) throws SQLException {
         int insertCount = 0;
         try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
             insertCount = preparedStatement.executeUpdate();
@@ -109,7 +109,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         return insertCount;
     }
 
-    public void updateFinalTable(Connection connection) throws SQLException {
+    private void updateFinalTable(Connection connection) throws SQLException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
             preparedStatement.execute();
         }

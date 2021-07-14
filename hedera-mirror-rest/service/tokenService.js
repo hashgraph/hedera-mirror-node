@@ -23,20 +23,17 @@
 const _ = require('lodash');
 
 const {Token} = require('../model');
-const utils = require('../utils');
 
 /**
  * Token retrieval business logic
  */
 class TokenService {
-  constructor() {}
-
   static tokenByIdQuery = `select *
                            from ${Token.tableName}
                            where ${Token.TOKEN_ID} = $1`;
 
   async getToken(tokenId) {
-    const {rows} = await utils.queryQuietly(TokenService.tokenByIdQuery, tokenId);
+    const {rows} = await pool.queryQuietly(TokenService.tokenByIdQuery, tokenId);
     return _.isEmpty(rows) ? null : new Token(rows[0]);
   }
 }

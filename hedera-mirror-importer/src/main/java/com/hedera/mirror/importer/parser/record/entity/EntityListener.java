@@ -20,8 +20,10 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
@@ -47,7 +49,13 @@ public interface EntityListener {
         return true;
     }
 
+    default void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
+    }
+
     default void onContractResult(ContractResult contractResult) throws ImporterException {
+    }
+
+    default void onCustomFee(CustomFee customFee) throws ImporterException {
     }
 
     default void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {

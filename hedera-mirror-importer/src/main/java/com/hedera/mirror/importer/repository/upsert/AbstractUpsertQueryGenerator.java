@@ -53,15 +53,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
-    private final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator
-            .comparing(DomainField::getName);
+    private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
     private Set<Field> attributes = null;
 
     @Value("${spring.flyway.locations:v1}")
     private String version;
 
-    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
-    }.getRawType();
+    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
 
     @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
@@ -84,6 +82,10 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     protected String getAttributeSelectQuery(String attributeName) {
+        return null;
+    }
+
+    protected String getAttributeUpdateQuery(String attributeName) {
         return null;
     }
 
@@ -181,7 +183,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 camelCaseName);
     }
 
-    private String getSelectCoalesceQuery(String column, String defaultValue) {
+    protected String getSelectCoalesceQuery(String column, String defaultValue) {
         // e.g. "coalesce(delete, 'false')"
         String formattedColumnName = getFullTempTableColumnName(column);
         return String.format("coalesce(%s, %s)", formattedColumnName, defaultValue);
@@ -207,7 +209,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String getUpdateNullableStringCaseCoalesceAssign(String column) {
-        // e.g. "case when entity_temp.memo = ' ' then '' else coalesce(entity_temp.memo, entity.memo) end"
+        // e.g. "case when entity_temp.memo = <uuid> then '' else coalesce(entity_temp.memo, entity.memo) end"
         String finalFormattedColumnName = getFullFinalTableColumnName(column);
         String tempFormattedColumnName = getFullTempTableColumnName(column);
         return String.format(
@@ -315,7 +317,11 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         Collections.sort(updatableAttributes, DOMAIN_FIELD_COMPARATOR); // sort fields alphabetically
         updatableAttributes.forEach(d -> {
             String attributeUpdateQuery = "";
-            if (d.getType() == String.class) {
+            // get column custom update implementations
+            String columnSelectQuery = getAttributeUpdateQuery(d.getName());
+            if (!StringUtils.isEmpty(columnSelectQuery)) {
+                attributeUpdateQuery = columnSelectQuery;
+            } else if (d.getType() == String.class) {
                 attributeUpdateQuery = getUpdateNullableStringCaseCoalesceAssign(d.getName());
             } else {
                 attributeUpdateQuery = getUpdateCoalesceAssign(d.getName());
@@ -341,7 +347,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     @Data
     @AllArgsConstructor
-    private class DomainField {
+    private static class DomainField {
         private Type type;
         private String name;
     }

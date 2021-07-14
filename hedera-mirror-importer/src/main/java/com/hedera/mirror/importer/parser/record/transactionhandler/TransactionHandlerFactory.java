@@ -52,6 +52,7 @@ public class TransactionHandlerFactory {
     private final TokenCreateTransactionHandler tokenCreateTransactionHandler;
     private final TokenDeleteTransactionHandler tokenDeleteTransactionHandler;
     private final TokenDissociateTransactionHandler tokenDissociateTransactionHandler;
+    private final TokenFeeScheduleUpdateTransactionHandler tokenFeeScheduleUpdateTransactionHandler;
     private final TokenFreezeTransactionHandler tokenFreezeTransactionHandler;
     private final TokenGrantKycTransactionHandler tokenGrantKycTransactionHandler;
     private final TokenMintTransactionHandler tokenMintTransactionHandler;
@@ -114,6 +115,8 @@ public class TransactionHandlerFactory {
             return tokenDeleteTransactionHandler;
         } else if (body.hasTokenDissociate()) {
             return tokenDissociateTransactionHandler;
+        } else if (body.hasTokenFeeScheduleUpdate()) {
+            return tokenFeeScheduleUpdateTransactionHandler;
         } else if (body.hasTokenFreeze()) {
             return tokenFreezeTransactionHandler;
         } else if (body.hasTokenGrantKyc()) {

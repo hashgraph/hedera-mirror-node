@@ -347,9 +347,13 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .setAmount(amount);
     }
 
-    protected TransactionBody getTransactionBody(com.hederahashgraph.api.proto.java.Transaction transaction) throws InvalidProtocolBufferException {
-        return TransactionBody.parseFrom(
-                SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+    protected TransactionBody getTransactionBody(com.hederahashgraph.api.proto.java.Transaction transaction) {
+        try {
+            return TransactionBody.parseFrom(
+                    SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes());
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected Entity createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,

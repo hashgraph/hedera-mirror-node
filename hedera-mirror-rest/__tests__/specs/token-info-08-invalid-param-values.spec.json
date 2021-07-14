@@ -1,0 +1,27 @@
+{
+  "description": "Token info api call for for invalid query params",
+  "setup": {},
+  "url": "/api/v1/tokens/1135?timestamp=-1&account.id=1001&timestamp=gt:1&timestamp=gte:1&timestamp=ne:1",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: account.id"
+        }
+      ]
+    }
+  }
+}

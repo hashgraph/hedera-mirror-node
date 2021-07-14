@@ -1,4 +1,4 @@
-openapi: 3.0.0
+openapi: 3.0.3
 paths:
   /api/v1/accounts:
     get:
@@ -467,6 +467,7 @@ paths:
       operationId: getTokenById
       parameters:
         - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/tokenInfoTimestampQueryParam'
       responses:
         200:
           description: OK
@@ -652,7 +653,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.37.0-SNAPSHOT
+  version: 0.38.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -704,7 +705,7 @@ components:
           type: boolean
       example:
         balance:
-          timestamp: 0.000002345
+          timestamp: "0.000002345"
           balance: 80
           tokens:
             - token_id: 0.0.200001
@@ -779,28 +780,30 @@ components:
               balance:
                 type: number
       example:
-        timestamp: 0.000002345
+        timestamp: "0.000002345"
         balance: 80
         tokens:
           - token_id: 0.0.200001
             balance: 8
-    EntityId:
+    CustomFees:
       type: object
-      required:
-        - shard
-        - realm
-        - num
       properties:
-        shard:
-          type: number
-        realm:
-          type: number
-        num:
-          type: number
-      example:
-        shard: 0
-        realm: 1
-        num: 2
+        created_timestamp:
+          type: string
+          example: "1234567890.000000001"
+        fixed_fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/FixedFee'
+        fractional_fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/FractionalFee'
+    EntityId:
+      type: string
+      description: "Network entity ID in the format of `shard.realm.num`"
+      pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
+      example: "0.1.2"
     Error:
       type: object
       properties:
@@ -814,6 +817,39 @@ components:
                 properties:
                   message:
                     type: string
+    FixedFee:
+      type: object
+      properties:
+        amount:
+          type: number
+          example: 100
+        collector_account_id:
+          $ref: '#/components/schemas/EntityId'
+        denominating_token_id:
+          $ref: '#/components/schemas/EntityId'
+    FractionalFee:
+      type: object
+      properties:
+        amount:
+          type: object
+          properties:
+            numerator:
+              type: number
+              example: 12
+            denominator:
+              type: number
+              example: 29
+        collector_account_id:
+          $ref: '#/components/schemas/EntityId'
+        denominating_token_id:
+          $ref: '#/components/schemas/EntityId'
+        maximum:
+          type: number
+          nullable: true
+          example: 120
+        minimum:
+          type: number
+          example: 30
     Key:
       type: object
       nullable: true
@@ -978,7 +1014,7 @@ components:
           0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
     Timestamp:
       type: string
-      example: 1586567700.453054000
+      example: "1586567700.453054000"
     Token:
       type: object
       properties:
@@ -1040,7 +1076,7 @@ components:
           nullable: true
         created_timestamp:
           type: string
-          example: 1234567890.000000001
+          example: "1234567890.000000001"
         decimals:
           type: string
           example: 1000
@@ -1062,7 +1098,7 @@ components:
           example: 9223372036854775807
         modified_timestamp:
           type: string
-          example: 1234567890.000000001
+          example: "1234567890.000000001"
         name:
           type: string
           example: Token name
@@ -1088,6 +1124,8 @@ components:
           example: FUNGIBLE_COMMON
         wipe_key:
           $ref: '#/components/schemas/Key'
+        custom_fees:
+          $ref: '#/components/schemas/CustomFees'
     TransactionTypes:
       type: string
       enum:
@@ -1157,7 +1195,7 @@ components:
         - running_hash_version
         - sequence_number
       example:
-        consensus_timestamp: 1234567890.000000001
+        consensus_timestamp: "1234567890.000000001"
         topic_id: 0.0.7
         message: bWVzc2FnZQ==
         running_hash: cnVubmluZ19oYXNo
@@ -1238,10 +1276,23 @@ components:
               - token_id
               - account
               - amount
+        assessed_custom_fees:
+          type: array
+          items:
+            type: object
+            properties:
+              amount:
+                type: number
+              collector_account_id:
+                $ref: '#/components/schemas/EntityId'
+              payer_account_id:
+                $ref: '#/components/schemas/EntityId'
+              token_id:
+                $ref: '#/components/schemas/EntityId'
       example:
-        consensus_timestamp: 1234567890.000000007
+        consensus_timestamp: "1234567890.000000007"
         transaction_hash: aGFzaA==
-        valid_start_timestamp: 1234567890.000000006
+        valid_start_timestamp: "1234567890.000000006"
         charged_tx_fee: 7
         memo_base64: null
         result: SUCCESS
@@ -1274,6 +1325,11 @@ components:
           - token_id: 0.0.90000
             account: 0.0.8
             amount: -1200
+        assessed_custom_fees:
+          - amount: 100
+            collector_account_id: 0.0.10
+            payer_account_id: 0.0.8
+            token_id: 0.0.90001
     Transactions:
       type: array
       items:
@@ -1513,6 +1569,39 @@ components:
         timestampGteOperator:
           summary: Example of timestamp greater than or equals operator
           value: gte:1234567890.000000500
+        secondsLtOperator:
+          summary: Example of seconds less than operator
+          value: lt:1234567890
+        timestampLtOperator:
+          summary: Example of timestamp less than operator
+          value: lt:1234567890.000000600
+        secondsLteOperator:
+          summary: Example of seconds less than or equals operator
+          value: lte:1234567890
+        timestampLteOperator:
+          summary: Example of timestamp less than or equals operator
+          value: lte:1234567890.000000700
+      schema:
+        type: string
+        format: >
+          ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
+    tokenInfoTimestampQueryParam:
+      name: timestamp
+      in: query
+      explode: true
+      examples:
+        secondsNoOperator:
+          summary: Example of seconds equals with no operator
+          value: 1234567890
+        timestampNoOperator:
+          summary: Example of timestamp equals with no operator
+          value: 1234567890.000000100
+        secondsEqOperator:
+          summary: Example of seconds equals with operator
+          value: eq:1234567890
+        timestampEqOperator:
+          summary: Example of timestamp equals with operator
+          value: eq:1234567890.000000200
         secondsLtOperator:
           summary: Example of seconds less than operator
           value: lt:1234567890

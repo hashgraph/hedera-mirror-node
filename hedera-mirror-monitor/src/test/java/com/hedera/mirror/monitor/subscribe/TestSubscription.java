@@ -37,4 +37,9 @@ public class TestSubscription implements Subscription {
     private SubscriberProtocol protocol = SubscriberProtocol.GRPC;
     private double rate = 1.0;
     private SubscriptionStatus status = SubscriptionStatus.RUNNING;
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

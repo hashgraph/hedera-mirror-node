@@ -49,13 +49,7 @@ class TransactionTypeService {
   }
 
   async getTransactionTypes() {
-    let rows;
-    try {
-      const result = await pool.query(TransactionTypeService.transactionTypesQuery);
-      rows = result.rows;
-    } catch (err) {
-      throw new DbError(err.message);
-    }
+    const {rows} = await pool.queryQuietly(TransactionTypeService.transactionTypesQuery);
 
     if (_.isEmpty(rows)) {
       throw new DbError('No transaction types found in DB');

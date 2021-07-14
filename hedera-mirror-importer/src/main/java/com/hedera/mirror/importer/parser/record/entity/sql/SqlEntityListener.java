@@ -35,13 +35,16 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -63,10 +66,9 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.NftUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.TokenAccountUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
@@ -81,11 +83,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
     private final ApplicationEventPublisher eventPublisher;
-    private final NftRepository nftRepository;
 
     // init schemas, writers, etc once per process
+    private final PgCopy<AssessedCustomFee> assessedCustomFeePgCopy;
     private final PgCopy<ContractResult> contractResultPgCopy;
     private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
+    private final PgCopy<CustomFee> customFeePgCopy;
     private final PgCopy<FileData> fileDataPgCopy;
     private final PgCopy<LiveHash> liveHashPgCopy;
     private final PgCopy<NftTransfer> nftTransferPgCopy;
@@ -96,13 +99,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<TransactionSignature> transactionSignaturePgCopy;
 
     private final UpsertPgCopy<Entity> entityPgCopy;
+    private final UpsertPgCopy<Nft> nftPgCopy;
     private final UpsertPgCopy<Schedule> schedulePgCopy;
     private final UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
     private final UpsertPgCopy<Token> tokenPgCopy;
 
     // lists of insert only domains
+    private final Collection<AssessedCustomFee> assessedCustomFees;
     private final Collection<ContractResult> contractResults;
     private final Collection<CryptoTransfer> cryptoTransfers;
+    private final Collection<CustomFee> customFees;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftTransfer> nftTransfers;
@@ -117,6 +123,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<TokenAccountId, TokenAccount> tokenAccounts;
+    private final Map<NftId, Nft> nfts;
 
     public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
                              DataSource dataSource,
@@ -125,16 +132,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              EntityUpsertQueryGenerator entityUpsertQueryGenerator,
                              ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator,
                              TokenUpsertQueryGenerator tokenUpsertQueryGenerator,
-                             TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator, NftRepository nftRepository) {
+                             TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator,
+                             NftUpsertQueryGenerator nftUpsertQueryGenerator) {
         this.dataSource = dataSource;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
         this.eventPublisher = eventPublisher;
-        this.nftRepository = nftRepository;
 
         // insert only tables
+        assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, recordParserProperties);
         contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, recordParserProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, recordParserProperties);
+        customFeePgCopy = new PgCopy<>(CustomFee.class, meterRegistry, recordParserProperties);
         fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, recordParserProperties);
         liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, recordParserProperties);
         nftTransferPgCopy = new PgCopy<>(NftTransfer.class, meterRegistry, recordParserProperties);
@@ -147,6 +156,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // updatable tables
         entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
                 entityUpsertQueryGenerator);
+        nftPgCopy = new UpsertPgCopy<>(Nft.class, meterRegistry, recordParserProperties,
+                nftUpsertQueryGenerator);
         schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
                 scheduleUpsertQueryGenerator);
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
@@ -154,8 +165,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
                 tokenUpsertQueryGenerator);
 
+        assessedCustomFees = new ArrayList<>();
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
+        customFees = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftTransfers = new ArrayList<>();
@@ -166,6 +179,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures = new ArrayList<>();
 
         entities = new HashMap<>();
+        nfts = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccounts = new HashMap<>();
@@ -194,19 +208,22 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void cleanup() {
         try {
+            assessedCustomFees.clear();
             contractResults.clear();
             cryptoTransfers.clear();
+            customFees.clear();
             entities.clear();
             fileData.clear();
             liveHashes.clear();
             nonFeeTransfers.clear();
+            nfts.clear();
             nftTransfers.clear();
             schedules.clear();
             topicMessages.clear();
-            transactions.clear();
             tokenAccounts.clear();
             tokens.clear();
             tokenTransfers.clear();
+            transactions.clear();
             transactionSignatures.clear();
             eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
         } catch (BeanCreationNotAllowedException e) {
@@ -225,22 +242,28 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // insert only operations
+            assessedCustomFeePgCopy.copy(assessedCustomFees, connection);
             contractResultPgCopy.copy(contractResults, connection);
             cryptoTransferPgCopy.copy(cryptoTransfers, connection);
+            customFeePgCopy.copy(customFees, connection);
             fileDataPgCopy.copy(fileData, connection);
             liveHashPgCopy.copy(liveHashes, connection);
-            nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
-            nftTransferPgCopy.copy(nftTransfers, connection);
-            tokenTransferPgCopy.copy(tokenTransfers, connection);
             topicMessagePgCopy.copy(topicMessages, connection);
             transactionPgCopy.copy(transactions, connection);
             transactionSignaturePgCopy.copy(transactionSignatures, connection);
 
-            // insert operations with conflict management for updates
+            // insert operations with conflict management
             entityPgCopy.copy(entities.values(), connection);
-            schedulePgCopy.copy(schedules.values(), connection);
             tokenPgCopy.copy(tokens.values(), connection);
             tokenAccountPgCopy.copy(tokenAccounts.values(), connection);
+            nftPgCopy.copy(nfts.values(), connection); // persist nft after token entity
+            schedulePgCopy.copy(schedules.values(), connection);
+
+            // transfers operations should be last to ensure insert logic completeness, entities should already exist
+            nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
+            nftTransferPgCopy.copy(nftTransfers, connection);
+            tokenTransferPgCopy.copy(tokenTransfers, connection);
+
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -253,11 +276,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onTransaction(Transaction transaction) throws ImporterException {
-        transactions.add(transaction);
-        if (transactions.size() == sqlProperties.getBatchSize()) {
-            executeBatches();
-        }
+    public void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
+        assessedCustomFees.add(assessedCustomFee);
+    }
+
+    @Override
+    public void onContractResult(ContractResult contractResult) throws ImporterException {
+        contractResults.add(contractResult);
+    }
+
+    @Override
+    public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
+        cryptoTransfers.add(cryptoTransfer);
+    }
+
+    @Override
+    public void onCustomFee(CustomFee customFee) throws ImporterException {
+        customFees.add(customFee);
     }
 
     @Override
@@ -272,13 +307,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
-        cryptoTransfers.add(cryptoTransfer);
+    public void onFileData(FileData fd) {
+        fileData.add(fd);
+    }
+
+    @Override
+    public void onLiveHash(LiveHash liveHash) throws ImporterException {
+        liveHashes.add(liveHash);
     }
 
     @Override
     public void onNft(Nft nft) throws ImporterException {
-        nftRepository.save(nft);
+        nfts.merge(nft.getId(), nft, this::mergeNft);
     }
 
     @Override
@@ -292,23 +332,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        topicMessages.add(topicMessage);
-    }
-
-    @Override
-    public void onContractResult(ContractResult contractResult) throws ImporterException {
-        contractResults.add(contractResult);
-    }
-
-    @Override
-    public void onFileData(FileData fd) {
-        fileData.add(fd);
-    }
-
-    @Override
-    public void onLiveHash(LiveHash liveHash) throws ImporterException {
-        liveHashes.add(liveHash);
+    public void onSchedule(Schedule schedule) throws ImporterException {
+        // schedules could experience multiple updates in a single record file, handle updates in memory for this case
+        schedules.merge(schedule.getScheduleId().getId(), schedule, this::mergeSchedule);
     }
 
     @Override
@@ -329,9 +355,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onSchedule(Schedule schedule) throws ImporterException {
-        // schedules could experience multiple updates in a single record file, handle updates in memory for this case
-        schedules.merge(schedule.getScheduleId().getId(), schedule, this::mergeSchedule);
+    public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
+        topicMessages.add(topicMessage);
+    }
+
+    @Override
+    public void onTransaction(Transaction transaction) throws ImporterException {
+        transactions.add(transaction);
+        if (transactions.size() == sqlProperties.getBatchSize()) {
+            executeBatches();
+        }
     }
 
     @Override
@@ -380,6 +413,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return cachedEntity;
     }
 
+    private Schedule mergeSchedule(Schedule cachedSchedule, Schedule schedule) {
+        cachedSchedule.setExecutedTimestamp(schedule.getExecutedTimestamp());
+        return cachedSchedule;
+    }
+
     private Token mergeToken(Token cachedToken, Token newToken) {
         if (newToken.getFreezeKey() != null) {
             cachedToken.setFreezeKey(newToken.getFreezeKey());
@@ -417,6 +455,27 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return cachedToken;
     }
 
+    private Nft mergeNft(Nft cachedNft, Nft newNft) {
+        if (cachedNft.getCreatedTimestamp() == null && newNft.getCreatedTimestamp() != null) {
+            cachedNft.setCreatedTimestamp(newNft.getCreatedTimestamp());
+        }
+
+        if (newNft.getMetadata() == null) { // only domains generated by NftTransfers should set account
+            cachedNft.setAccountId(newNft.getAccountId() == null ? EntityId.EMPTY : newNft.getAccountId());
+        }
+
+        if (newNft.getDeleted() != null) {
+            cachedNft.setDeleted(newNft.getDeleted());
+        }
+
+        if (newNft.getMetadata() != null) {
+            cachedNft.setMetadata(newNft.getMetadata());
+        }
+
+        cachedNft.setModifiedTimestamp(newNft.getModifiedTimestamp());
+        return cachedNft;
+    }
+
     private TokenAccount mergeTokenAccount(TokenAccount cachedTokenAccount, TokenAccount newTokenAccount) {
         if (newTokenAccount.getAssociated() != null) {
             cachedTokenAccount.setAssociated(newTokenAccount.getAssociated());
@@ -432,10 +491,5 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());
         return cachedTokenAccount;
-    }
-
-    private Schedule mergeSchedule(Schedule cachedSchedule, Schedule schedule) {
-        cachedSchedule.setExecutedTimestamp(schedule.getExecutedTimestamp());
-        return cachedSchedule;
     }
 }

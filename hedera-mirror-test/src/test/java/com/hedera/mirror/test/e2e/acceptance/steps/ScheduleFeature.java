@@ -305,7 +305,7 @@ public class ScheduleFeature {
     @Then("the mirror node REST API should return status {int} for the schedule transaction")
     public void verifyMirrorAPIResponses(int status) {
         log.info("Verify schedule transaction");
-        String transactionId = networkTransactionResponse.getTransactionIdString();
+        String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status);

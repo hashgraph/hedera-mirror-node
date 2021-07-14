@@ -62,7 +62,7 @@ public class TokenCreateTransactionHandlerTest extends AbstractTransactionHandle
 
     @Override
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return TransactionRecord.newBuilder()
+        return super.getDefaultTransactionRecord()
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setTokenID(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()));
     }

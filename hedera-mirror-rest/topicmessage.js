@@ -94,7 +94,7 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
                                   ON te.type = tet.id
                       WHERE te.id = $1`;
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, encodedId);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, encodedId);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
   }
@@ -102,13 +102,6 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
   if (rows[0].name !== 'topic') {
     throw new InvalidArgumentError(`${origTopicIdStr} is not a topic id`);
   }
-};
-
-const validateGetTopicMessagesRequest = async (topicId, filters) => {
-  validateGetTopicMessagesParams(topicId);
-
-  // validate filters
-  await utils.validateAndParseFilters(filters);
 };
 
 /**
@@ -171,16 +164,14 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 };
 
 /**
- * Handler function for /topics/:id API.
+ * Handler function for /topics/:topicId API.
  * @returns {Promise} Promise for PostgreSQL query
  */
 const getTopicMessages = async (req, res) => {
-  // retrieve param and filters from request
   const topicIdStr = req.params.topicId;
-  const filters = utils.buildFilterObject(req.query);
+  validateGetTopicMessagesParams(topicIdStr);
+  const filters = utils.buildAndValidateFilters(req.query);
 
-  // validate params
-  await validateGetTopicMessagesRequest(topicIdStr, filters);
   const topicId = EntityId.fromString(topicIdStr);
   await validateTopicId(topicId, topicIdStr);
 
@@ -272,7 +263,7 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
   // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -287,7 +278,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
   logger.debug(`getMessages returning ${rows.length} entries`);
   return rows;
 };

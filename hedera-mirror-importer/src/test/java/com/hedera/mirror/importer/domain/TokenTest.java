@@ -29,6 +29,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.util.EntityIdEndec;
+
 public class TokenTest {
 
     private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
@@ -39,6 +41,7 @@ public class TokenTest {
     void createValidToken() throws DecoderException {
         Token token = token(1);
         assertAll(
+                () -> assertNotNull(token.getFeeScheduleKeyEd25519Hex()),
                 () -> assertNotNull(token.getFreezeKeyEd25519Hex()),
                 () -> assertNotNull(token.getKycKeyEd25519Hex()),
                 () -> assertNotNull(token.getSupplyKeyEd25519Hex()),
@@ -51,10 +54,13 @@ public class TokenTest {
     void createTokenWithBadKeys() {
         Token token = new Token();
         byte[] badBytes = "badkey".getBytes();
+        token.setFeeScheduleKey(badBytes);
         token.setFreezeKey(badBytes);
         token.setKycKey(badBytes);
         token.setSupplyKey(badBytes);
         token.setWipeKey(badBytes);
+
+        assertNull(token.getFeeScheduleKeyEd25519Hex());
         assertNull(token.getFreezeKeyEd25519Hex());
         assertNull(token.getKycKeyEd25519Hex());
         assertNull(token.getSupplyKeyEd25519Hex());
@@ -70,11 +76,23 @@ public class TokenTest {
         assertThat(token.getSymbol()).isEqualTo("abc�");
     }
 
+    @Test
+    void of() {
+        EntityId tokenId = EntityIdEndec.decode(1057, EntityTypeEnum.TOKEN);
+        Token expected = new Token();
+        expected.setTokenId(new TokenId(tokenId));
+
+        Token actual = Token.of(tokenId);
+
+        assertThat(actual).isEqualTo(expected);
+    }
+
     private Token token(long consensusTimestamp) throws DecoderException {
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(key))).build().toByteArray();
         Token token = new Token();
         token.setCreatedTimestamp(consensusTimestamp);
         token.setDecimals(1000);
+        token.setFeeScheduleKey(hexKey);
         token.setFreezeDefault(false);
         token.setFreezeKey(hexKey);
         token.setInitialSupply(1_000_000_000L);

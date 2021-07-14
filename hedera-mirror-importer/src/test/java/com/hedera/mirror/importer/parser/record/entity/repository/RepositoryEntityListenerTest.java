@@ -29,10 +29,15 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.CustomFee;
+import com.hedera.mirror.importer.domain.CustomFeeWrapper;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -95,6 +100,8 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
     private final ScheduleRepository scheduleRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
 
+    private final JdbcTemplate jdbcTemplate;
+
     @Test
     void isEnabled() {
         repositoryProperties.setEnabled(false);
@@ -103,6 +110,26 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         repositoryProperties.setEnabled(true);
         assertThat(repositoryEntityListener.isEnabled()).isTrue();
         repositoryProperties.setEnabled(false);
+    }
+
+    @Test
+    void onAssessedCustomFee() {
+        AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
+        assessedCustomFee1.setAmount(10L);
+        assessedCustomFee1.setId(new AssessedCustomFee.Id(ENTITY_ID, 1010L));
+
+        AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
+        assessedCustomFee2.setAmount(11L);
+        assessedCustomFee2.setId(new AssessedCustomFee.Id(ENTITY_ID, 1031L));
+        assessedCustomFee2.setTokenId(TOKEN_ID);
+
+        repositoryEntityListener.onAssessedCustomFee(assessedCustomFee1);
+        repositoryEntityListener.onAssessedCustomFee(assessedCustomFee2);
+
+        var actual = jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
+        assertThat(actual)
+                .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
+                .containsExactlyInAnyOrder(assessedCustomFee1, assessedCustomFee2);
     }
 
     @Test
@@ -118,6 +145,32 @@ public class RepositoryEntityListenerTest extends IntegrationTest {
         CryptoTransfer cryptoTransfer = new CryptoTransfer(1L, 100L, ENTITY_ID);
         repositoryEntityListener.onCryptoTransfer(cryptoTransfer);
         assertThat(cryptoTransferRepository.findAll()).contains(cryptoTransfer);
+    }
+
+    @Test
+    void onCustomFee() {
+        CustomFee customFee1 = new CustomFee();
+        customFee1.setId(new CustomFee.Id(1010L, TOKEN_ID));
+
+        CustomFee customFee2 = new CustomFee();
+        customFee2.setAmount(33L);
+        customFee2.setCollectorAccountId(ENTITY_ID);
+        customFee2.setId(new CustomFee.Id(1020L, TOKEN_ID));
+
+        CustomFee customFee3 = new CustomFee();
+        customFee3.setAmount(33L);
+        customFee3.setAmountDenominator(47L);
+        customFee3.setCollectorAccountId(ENTITY_ID);
+        customFee3.setId(new CustomFee.Id(1020L, TOKEN_ID));
+
+        repositoryEntityListener.onCustomFee(customFee1);
+        repositoryEntityListener.onCustomFee(customFee2);
+        repositoryEntityListener.onCustomFee(customFee3);
+
+        var actual = jdbcTemplate.query(CustomFeeWrapper.SELECT_QUERY, CustomFeeWrapper.ROW_MAPPER);
+        assertThat(actual)
+                .map(CustomFeeWrapper::getCustomFee)
+                .containsExactlyInAnyOrder(customFee1, customFee2, customFee3);
     }
 
     @Test

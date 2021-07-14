@@ -25,16 +25,16 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const {NftTransfer} = require('./model');
-const {NftTransferViewModel} = require('./viewmodel');
+const {AssessedCustomFee, NftTransfer, Transaction} = require('./model');
+const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
 
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
- * @param {boolean} includeNftTransferList - include the nft transfer list or not
+ * @param {boolean} includeExtraInfo - include extra info: the nft transfer list, the assessed custom fees, and etc
  * @return {string}
  */
-const getSelectClauseWithTransfers = (includeNftTransferList) => {
+const getSelectClauseWithTransfers = (includeExtraInfo) => {
   // aggregate crypto transfers, token transfers, and nft transfers
   const aggregateCryptoTransferQuery = `
     select jsonb_agg(jsonb_build_object(
@@ -56,13 +56,22 @@ const getSelectClauseWithTransfers = (includeNftTransferList) => {
   `;
   const aggregateNftTransferQuery = `
     select jsonb_agg(jsonb_build_object(
-      'receiver_account_id', receiver_account_id,
-      'sender_account_id', sender_account_id,
-      'serial_number', serial_number,
-      'token_id', token_id
+      'receiver_account_id', ${NftTransfer.RECEIVER_ACCOUNT_ID},
+      'sender_account_id', ${NftTransfer.SENDER_ACCOUNT_ID},
+      'serial_number', ${NftTransfer.SERIAL_NUMBER},
+      'token_id', ${NftTransfer.TOKEN_ID}
       ))
-    from nft_transfer
-    where nft_transfer.consensus_timestamp = t.consensus_ns
+    from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
+    where ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
+  `;
+  const aggregateAssessedCustomFeeQuery = `
+    select jsonb_agg(jsonb_build_object(
+        'amount', ${AssessedCustomFee.AMOUNT},
+        'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+        'token_id', ${AssessedCustomFee.TOKEN_ID}
+      ))
+    from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
+    where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
   `;
   const fields = [
     't.payer_account_id',
@@ -83,13 +92,32 @@ const getSelectClauseWithTransfers = (includeNftTransferList) => {
     `(${aggregateTokenTransferQuery}) AS token_transfer_list`,
   ];
 
-  if (includeNftTransferList) {
+  if (includeExtraInfo) {
     fields.push(`(${aggregateNftTransferQuery}) AS nft_transfer_list`);
+    fields.push(`(${aggregateAssessedCustomFeeQuery}) AS assessed_custom_fees`);
   }
 
   return `SELECT
     ${fields.join(',\n')}
   `;
+};
+
+/**
+ * Creates an assessed custom fee list from aggregated array of JSON objects in the query result
+ *
+ * @param assessedCustomFees assessed custom fees
+ * @param {string} payerAccountId the transaction payer account id
+ * @return {undefined|{amount: Number, collector_account_id: string, payer_account_id: string, token_id: string}[]}
+ */
+const createAssessedCustomFeeList = (assessedCustomFees, payerAccountId) => {
+  if (!assessedCustomFees) {
+    return undefined;
+  }
+
+  return assessedCustomFees.map((assessedCustomFee) => {
+    const model = new AssessedCustomFee(assessedCustomFee);
+    return new AssessedCustomFeeViewModel(model, payerAccountId);
+  });
 };
 
 /**
@@ -160,6 +188,7 @@ const createNftTransferList = (nftTransferList) => {
 const createTransferLists = (rows) => {
   const transactions = rows.map((row) => {
     const validStartTimestamp = row.valid_start_ns;
+    const payerAccountId = EntityId.fromEncodedId(row.payer_account_id).toString();
     return {
       charged_tx_fee: Number(row.charged_tx_fee),
       consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
@@ -174,13 +203,11 @@ const createTransferLists = (rows) => {
       token_transfers: createTokenTransferList(row.token_transfer_list),
       bytes: utils.encodeBase64(row.transaction_bytes),
       transaction_hash: utils.encodeBase64(row.transaction_hash),
-      transaction_id: utils.createTransactionId(
-        EntityId.fromEncodedId(row.payer_account_id).toString(),
-        validStartTimestamp
-      ),
+      transaction_id: utils.createTransactionId(payerAccountId, validStartTimestamp),
       transfers: createCryptoTransferList(row.crypto_transfer_list),
       valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
       valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
+      assessed_custom_fees: createAssessedCustomFeeList(row.assessed_custom_fees, payerAccountId),
     };
   });
 
@@ -201,12 +228,12 @@ const createTransferLists = (rows) => {
  *
  * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
  * @param {String} order Sorting order
- * @param {boolean} includeNftTransferList include the nft transfer list or not
+ * @param {boolean} includeExtraInfo include extra info or not
  * @return {String} outerQuery Fully formed SQL query
  */
-const getTransactionsOuterQuery = (innerQuery, order, includeNftTransferList) => {
+const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) => {
   return `
-    ${getSelectClauseWithTransfers(includeNftTransferList)}
+    ${getSelectClauseWithTransfers(includeExtraInfo)}
     FROM ( ${innerQuery} ) AS tlist
        JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
@@ -393,7 +420,7 @@ const getTransactionsInnerQuery = function (
   return transactionOnlyQuery;
 };
 
-const reqToSql = async function (req) {
+const reqToSql = function (req) {
   // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
   const parsedQueryParams = req.query;
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
@@ -403,7 +430,6 @@ const reqToSql = async function (req) {
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
-  const includeNftTransferList = false;
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,
@@ -414,7 +440,7 @@ const reqToSql = async function (req) {
     transactionTypeQuery,
     order
   );
-  const sqlQuery = getTransactionsOuterQuery(innerQuery, order, includeNftTransferList);
+  const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
 
   return {
     limit,
@@ -431,15 +457,15 @@ const reqToSql = async function (req) {
  */
 const getTransactions = async (req, res) => {
   // Validate query parameters first
-  await utils.validateReq(req);
+  utils.validateReq(req);
 
-  const query = await reqToSql(req);
+  const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
   }
 
   // Execute query
-  const {rows, sqlQuery} = await utils.queryQuietly(query.query, ...query.params);
+  const {rows, sqlQuery} = await pool.queryQuietly(query.query, ...query.params);
   const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,
@@ -490,16 +516,16 @@ const getScheduledQuery = (query) => {
  * @return {} None.
  */
 const getOneTransaction = async (req, res) => {
-  await utils.validateReq(req);
+  utils.validateReq(req);
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduledQuery = getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause('t.payer_account_id = ?', 't.valid_start_ns = ?', scheduledQuery);
-  const includeNftTransferList = true;
+  const includeExtraInfo = true;
 
   const sqlQuery = `
-    ${getSelectClauseWithTransfers(includeNftTransferList)}
+    ${getSelectClauseWithTransfers(includeExtraInfo)}
     FROM transaction t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
@@ -512,7 +538,7 @@ const getOneTransaction = async (req, res) => {
   }
 
   // Execute query
-  const {rows} = await utils.queryQuietly(pgSqlQuery, ...sqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, ...sqlParams);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }
@@ -536,6 +562,7 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    createAssessedCustomFeeList,
     createCryptoTransferList,
     createNftTransferList,
     createTokenTransferList,

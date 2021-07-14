@@ -62,6 +62,7 @@
     "created_timestamp": "1234567890.000000002",
     "decimals": "1000",
     "expiry_timestamp": null,
+    "fee_schedule_key": null,
     "freeze_default": false,
     "freeze_key": null,
     "initial_supply": "1000000",
@@ -74,6 +75,11 @@
     "total_supply": "1000000",
     "treasury_account_id": "0.0.98",
     "type": "FUNGIBLE_COMMON",
-    "wipe_key": null
+    "wipe_key": null,
+    "custom_fees": {
+      "created_timestamp": "1234567890.000000002",
+      "fixed_fees": [],
+      "fractional_fees": []
+    }
   }
 }

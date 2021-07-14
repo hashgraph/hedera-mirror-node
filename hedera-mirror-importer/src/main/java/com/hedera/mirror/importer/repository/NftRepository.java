@@ -41,4 +41,15 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
     @Modifying
     @Query("update Nft set deleted = true, modifiedTimestamp = :timestamp where id = :id")
     void burnOrWipeNft(@Param("id") NftId nftId, @Param("timestamp") long modifiedTimestamp);
+
+    @Modifying
+    @Query(value = "with nft_updated as (" +
+            "  update nft set account_id = ?3, modified_timestamp = ?4 " +
+            "  where token_id = ?1 and account_id = ?2" +
+            "  returning serial_number) " +
+            "insert into nft_transfer " +
+            "(token_id, sender_account_id, receiver_account_id, consensus_timestamp, serial_number) " +
+            "select ?1, ?2, ?3, ?4, nft_updated.serial_number " +
+            "from nft_updated", nativeQuery = true)
+    void updateTreasury(long tokenId, long previousAccountId, long newAccountId, long consensusTimestamp);
 }
