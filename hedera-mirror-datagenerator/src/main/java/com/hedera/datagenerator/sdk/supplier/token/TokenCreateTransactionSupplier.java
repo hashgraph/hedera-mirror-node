@@ -52,7 +52,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     private int initialSupply = 1000000000;
 
     @Min(1)
-    long maxSupply = 100000000000L;
+    private long maxSupply = 100000000000L;
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
