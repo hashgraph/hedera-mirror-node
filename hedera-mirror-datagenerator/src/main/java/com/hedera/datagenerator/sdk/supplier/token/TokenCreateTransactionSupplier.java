@@ -57,7 +57,8 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
-    private final TokenSupplyType supplyType = TokenSupplyType.INFINITE;
+    @NotNull
+    private TokenSupplyType supplyType = TokenSupplyType.INFINITE;
 
     @NotBlank
     private String symbol = RANDOM.ints(5, 'A', 'Z')

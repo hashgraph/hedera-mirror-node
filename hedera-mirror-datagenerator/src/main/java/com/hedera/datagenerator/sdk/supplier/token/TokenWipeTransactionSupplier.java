@@ -47,7 +47,7 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
     private long maxTransactionFee = 1_000_000_000;
 
     @NotNull
-    private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+    private AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
 
     @NotBlank
     private String tokenId;

@@ -51,7 +51,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private String senderAccountId;
 
     @NotNull
-    private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+    private AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
 
     private String tokenId;
 
