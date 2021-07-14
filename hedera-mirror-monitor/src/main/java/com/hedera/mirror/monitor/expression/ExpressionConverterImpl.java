@@ -98,6 +98,9 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             if (transactionSupplier instanceof TokenCreateTransactionSupplier) {
                 TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
                 tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
+                if (type == ExpressionType.NFT) {
+                    tokenSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+                }
             }
 
             // if ScheduleCreate set the properties to the inner scheduledTransactionProperties
@@ -108,13 +111,6 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                 scheduleCreateTransactionSupplier.setNodeAccountId(singleNodeProperty.getAccountId());
                 scheduleCreateTransactionSupplier
                         .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
-            }
-
-            if (isNft) {
-                TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
-                tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
-                tokenSupplier.setInitialSupply(0);
-                tokenSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
             }
 
             PublishRequest request = PublishRequest.builder()
