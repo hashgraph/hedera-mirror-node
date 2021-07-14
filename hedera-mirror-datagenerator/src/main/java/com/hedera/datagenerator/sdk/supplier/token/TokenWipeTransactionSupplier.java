@@ -52,7 +52,7 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
     @NotBlank
     private String tokenId;
 
-    TokenType type = TokenType.FUNGIBLE_COMMON;
+    private final TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenWipeTransaction get() {

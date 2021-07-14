@@ -52,7 +52,7 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     @NotBlank
     private String tokenId;
 
-    TokenType type = TokenType.FUNGIBLE_COMMON;
+    private final TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenMintTransaction get() {

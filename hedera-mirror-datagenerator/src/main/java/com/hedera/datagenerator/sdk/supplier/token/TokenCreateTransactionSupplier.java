@@ -56,7 +56,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
-    TokenSupplyType supplyType = TokenSupplyType.INFINITE;
+    private final TokenSupplyType supplyType = TokenSupplyType.INFINITE;
 
     @NotBlank
     private String symbol = RANDOM.ints(5, 'A', 'Z')
@@ -65,7 +65,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
     @NotBlank
     private String treasuryAccountId;
 
-    TokenType type = TokenType.FUNGIBLE_COMMON;
+    private final TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenCreateTransaction get() {

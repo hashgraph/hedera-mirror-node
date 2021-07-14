@@ -48,7 +48,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
     @NotBlank
     private String tokenId;
 
-    TokenType type = TokenType.FUNGIBLE_COMMON;
+    private final TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenBurnTransaction get() {
