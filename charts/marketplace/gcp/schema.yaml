@@ -165,10 +165,9 @@ properties:
         length: 24
         base64: False
   importer.db.username:
-    default: mirror_importer
     type: string
-    description: The db user used by the importer to persist parsed stream files to the database. This is needed to support backwards compatability.
-    title: Importer database username
+    description: The db user used by the importer to persist parsed stream files to the database. Set to 'mirror_node' when upgrading from versions before v0.37.
+    title: Importer database username.
   importer.serviceAccount.name:
     type: string
     title: Importer service account
@@ -225,6 +224,10 @@ properties:
       generatedPassword:
         length: 24
         base64: False
+  rest.db.username:
+    type: string
+    description: The db user used by the REST API to query the database. Set to 'mirror_api' when upgrading from versions before v0.37.
+    title: REST API database username.
   rest.replicas:
     type: integer
     default: 1
@@ -246,3 +249,4 @@ required:
   - postgresql.persistence.size
   - postgresql.serviceAccount.name
   - rest.replicas
+  - rest.db.username

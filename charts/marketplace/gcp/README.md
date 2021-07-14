@@ -407,6 +407,7 @@ To ensure a smooth upgrade process:
 1. Verify your importer is up to date on file processing by inspecting logs before beginning.
 2. Delete the `${APP_NAME}-importer` Stateful Set workload.
 3. Install the v0.37 solution
+4. Post successful install and confirmed importer operation, delete the leftover `data-${APP_NAME}-importer-0` persistent volume claim (Importer is no longer stateful)
 
 # Scaling
 
