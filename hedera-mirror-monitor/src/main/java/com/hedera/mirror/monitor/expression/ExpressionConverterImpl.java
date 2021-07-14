@@ -114,7 +114,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                 TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
                 tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
                 tokenSupplier.setInitialSupply(0);
-                tokenSupplier.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
+                tokenSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
             }
 
             PublishRequest request = PublishRequest.builder()
