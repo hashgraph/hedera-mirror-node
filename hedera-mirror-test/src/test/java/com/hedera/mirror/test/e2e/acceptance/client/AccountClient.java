@@ -177,7 +177,7 @@ public class AccountClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(accountCreateTransaction,
-                        receiverSigRequired ? KeyList.of(privateKey) : null, null);
+                        receiverSigRequired ? KeyList.of(privateKey) : null);
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
 
         AccountId newAccountId = receipt.accountId;

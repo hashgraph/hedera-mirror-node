@@ -25,7 +25,7 @@ import lombok.Data;
 @Data
 public class MirrorFraction {
 
-    private String denominator;
+    private long denominator;
 
-    private String numerator;
+    private long numerator;
 }

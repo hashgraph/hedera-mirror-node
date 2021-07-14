@@ -83,7 +83,7 @@ public class TopicClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction,
-                        KeyList.of(adminAccount.getPrivateKey()), null);
+                        KeyList.of(adminAccount.getPrivateKey()));
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         log.debug("Created new topic {}", topicId);
 
@@ -168,7 +168,7 @@ public class TopicClient extends AbstractNetworkClient {
                 .setTopicId(topicId)
                 .setMessage(message);
 
-        TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKeys, null);
+        TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKeys);
 
         TransactionRecord transactionRecord = getTransactionRecord(transactionId);
         // get only the 1st sequence number

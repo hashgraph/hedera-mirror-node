@@ -36,6 +36,7 @@ import junit.framework.AssertionFailedError;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.util.Strings;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
@@ -291,8 +292,8 @@ public class TokenFeature {
                 tokenClient.delete(admin, tokenId);
 
                 dissociateAccounts(tokenId, List.of(admin));
-                dissociateAccounts(tokenId, senders);
                 dissociateAccounts(tokenId, recipients);
+                dissociateAccounts(tokenId, senders);
             } catch (Exception ex) {
                 log.warn("Error cleaning up token {} and associations error: {}", tokenId, ex);
             }
@@ -538,7 +539,7 @@ public class TokenFeature {
                 CustomFixedFee sdkFixedFee = (CustomFixedFee) customFee;
                 MirrorFixedFee fixedFee = new MirrorFixedFee();
 
-                fixedFee.setAmount(Long.toString(sdkFixedFee.getAmount()));
+                fixedFee.setAmount(sdkFixedFee.getAmount());
                 fixedFee.setCollectorAccountId(sdkFixedFee.getFeeCollectorAccountId().toString());
 
                 if (sdkFixedFee.getDenominatingTokenId() != null) {
@@ -551,18 +552,18 @@ public class TokenFeature {
                 MirrorFractionalFee fractionalFee = new MirrorFractionalFee();
 
                 MirrorFraction fraction = new MirrorFraction();
-                fraction.setNumerator(Long.toString(sdkFractionalFee.getNumerator()));
-                fraction.setDenominator(Long.toString(sdkFractionalFee.getDenominator()));
+                fraction.setNumerator(sdkFractionalFee.getNumerator());
+                fraction.setDenominator(sdkFractionalFee.getDenominator());
                 fractionalFee.setAmount(fraction);
 
                 fractionalFee.setCollectorAccountId(sdkFractionalFee.getFeeCollectorAccountId().toString());
                 fractionalFee.setDenominatingTokenId(tokenId.toString());
 
                 if (sdkFractionalFee.getMax() != 0) {
-                    fractionalFee.setMaximum(Long.toString(sdkFractionalFee.getMax()));
+                    fractionalFee.setMaximum(sdkFractionalFee.getMax());
                 }
 
-                fractionalFee.setMinimum(Long.toString(sdkFractionalFee.getMin()));
+                fractionalFee.setMinimum(sdkFractionalFee.getMin());
 
                 expected.getFractionalFees().add(fractionalFee);
             }
@@ -570,12 +571,14 @@ public class TokenFeature {
 
         MirrorCustomFees actual = response.getCustomFees();
 
-        assertAll(
-                () -> assertThat(actual).returns(expected.getCreatedTimestamp(), MirrorCustomFees::getCreatedTimestamp),
-                () -> assertThat(actual.getFixedFees()).containsExactlyInAnyOrderElementsOf(expected.getFixedFees()),
-                () -> assertThat(actual.getFractionalFees())
-                        .containsExactlyInAnyOrderElementsOf(expected.getFractionalFees())
-        );
+        assertThat(actual)
+                .usingRecursiveComparison(
+                        RecursiveComparisonConfiguration
+                                .builder()
+                                .withIgnoreCollectionOrder(true)
+                                .build()
+                )
+                .isEqualTo(expected);
     }
 
     private void publishBackgroundMessages() {

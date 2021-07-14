@@ -81,6 +81,10 @@ public abstract class AbstractNetworkClient {
         return transactionId;
     }
 
+    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
+        return executeTransaction(transaction, keyList, null);
+    }
+
     @SneakyThrows
     private TransactionResponse executeTransaction(Transaction transaction) {
         return (TransactionResponse) transaction.execute(client);
@@ -93,6 +97,15 @@ public abstract class AbstractNetworkClient {
         TransactionReceipt transactionReceipt = getTransactionReceipt(transactionId);
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
+    }
+
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList) {
+        return executeTransactionAndRetrieveReceipt(transaction, keyList, null);
+    }
+
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
+                                                                           ExpandedAccountId payer) {
+        return executeTransactionAndRetrieveReceipt(transaction, null, payer);
     }
 
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction) {

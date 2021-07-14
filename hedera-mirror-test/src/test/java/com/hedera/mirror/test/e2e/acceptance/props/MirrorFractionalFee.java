@@ -31,7 +31,7 @@ public class MirrorFractionalFee {
 
     private String denominatingTokenId;
 
-    private String maximum;
+    private Long maximum;
 
-    private String minimum;
+    private long minimum;
 }
