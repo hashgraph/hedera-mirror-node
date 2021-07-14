@@ -28,7 +28,7 @@ const EntityId = require('../entityId');
  */
 class NftViewModel {
   constructor(nftModel) {
-    this.account_id = EntityId.fromEncodedId(nftModel.accountId).toString();
+    this.account_id = nftModel.accountId != undefined ? EntityId.fromEncodedId(nftModel.accountId).toString() : null;
     this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
     this.deleted = nftModel.deleted;
     this.metadata = utils.encodeBase64(nftModel.metadata);

@@ -620,7 +620,7 @@ const addNft = async (nft) => {
     `INSERT INTO nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7);`,
     [
-      EntityId.fromString(nft.account_id).getEncodedId(),
+      nft.account_id != undefined ? EntityId.fromString(nft.account_id).getEncodedId() : null,
       nft.created_timestamp,
       nft.deleted,
       nft.modified_timestamp,
