@@ -25,7 +25,7 @@ import lombok.Data;
 @Data
 public class MirrorAssessedCustomFee {
 
-    String amount;
+    long amount;
 
     String collectorAccountId;
 

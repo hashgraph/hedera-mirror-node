@@ -23,7 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.common.base.Splitter;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -31,11 +30,12 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import junit.framework.AssertionFailedError;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -69,11 +69,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Cucumber
 public class TokenFeature {
     private static final int INITIAL_SUPPLY = 1_000_000;
-    private static final Splitter ASSESSED_CUSTOM_FEES_SPLITTER = Splitter.on(';').trimResults().omitEmptyStrings();
-    private static final Splitter ASSESSED_CUSTOM_FEE_SPLITTER = Splitter.on(',').trimResults();
-    private static final Splitter CUSTOM_FEES_SPLITTER = ASSESSED_CUSTOM_FEES_SPLITTER;
-    private static final Splitter CUSTOM_FEE_SPLITTER = ASSESSED_CUSTOM_FEE_SPLITTER;
-    private static final Splitter FRACTION_SPLITTER = Splitter.on('/').trimResults();
 
     @Autowired
     private TokenClient tokenClient;
@@ -83,18 +78,29 @@ public class TokenFeature {
     private MirrorNodeClient mirrorClient;
     @Autowired
     private TopicClient topicClient;
-    private final List<TokenId> tokenIds = new ArrayList<>();
-    private final List<ExpandedAccountId> senders = new ArrayList<>();
-    private final List<ExpandedAccountId> recipients = new ArrayList<>();
-    private NetworkTransactionResponse networkTransactionResponse;
 
-    @Given("^I successfully create a new token(?: with custom fees schedule (.*))?")
-    public void createNewToken(String customFees) {
+    private NetworkTransactionResponse networkTransactionResponse;
+    private final List<ExpandedAccountId> recipients = new ArrayList<>();
+    private final List<ExpandedAccountId> senders = new ArrayList<>();
+    private final Map<TokenId, List<CustomFee>> tokenCustomFees = new HashMap<>();
+    private final List<TokenId> tokenIds = new ArrayList<>();
+
+    @Given("I successfully create a new token")
+    public void createNewToken() {
+        createNewToken(
+                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+                TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE
+        );
+    }
+
+    @Given("I successfully create a new token with custom fees schedule")
+    public void createNewToken(List<CustomFee> customFees) {
         createNewToken(
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
-                parseCustomFees(customFees)
+                customFees
         );
     }
 
@@ -205,13 +211,14 @@ public class TokenFeature {
         tokenIds.remove(0);
     }
 
-    @Given("I update token {int} with new custom fees schedule {string}")
-    public void updateTokenFeeSchedule(int tokenIndex, String customFees) {
+    @Given("I update token {int} with new custom fees schedule")
+    public void updateTokenFeeSchedule(int tokenIndex, List<CustomFee> customFees) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = tokenClient
-                .updateTokenFeeSchedule(tokenIds.get(tokenIndex), admin, parseCustomFees(customFees));
+        TokenId tokenId = tokenIds.get(tokenIndex);
+        networkTransactionResponse = tokenClient.updateTokenFeeSchedule(tokenId, admin, customFees);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+        tokenCustomFees.put(tokenId, customFees);
     }
 
     @Then("the mirror node REST API should return status {int}")
@@ -224,13 +231,21 @@ public class TokenFeature {
         publishBackgroundMessages();
     }
 
-    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow(?: with assessed custom fees (.*))?$")
+    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow$")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex, String assessedCustomFees) {
+    public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex) {
+        verifyMirrorTokenFundFlow(status, tokenIndex, Collections.emptyList());
+    }
+
+    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow with assessed custom fees$")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex, List<MirrorAssessedCustomFee> assessedCustomFees) {
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
-        verifyTransactions(status, parseAssessedCustomFees(assessedCustomFees));
+        verifyTransactions(status, assessedCustomFees);
         verifyToken(tokenId);
         verifyTokenTransfers(tokenId);
 
@@ -269,15 +284,15 @@ public class TokenFeature {
         topicClient.publishMessageToDefaultTopic();
     }
 
-    @Then("^the mirror node REST API should confirm token (?:(.*) )?with custom fees schedule (.*)$")
+    @Then("the mirror node REST API should confirm token {int} with custom fees schedule")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenWithCustomFeesSchedule(Integer tokenIndex, String customFees) {
+    public void verifyMirrorTokenWithCustomFeesSchedule(Integer tokenIndex) {
         MirrorTransaction transaction = verifyTransactions(200);
 
-        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));;
-        verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp(), parseCustomFees(customFees));
+        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
+        verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
     }
 
     @After
@@ -301,7 +316,20 @@ public class TokenFeature {
 
         recipients.clear();
         senders.clear();
+        tokenCustomFees.clear();;
         tokenIds.clear();
+    }
+
+    public AccountId getRecipientAccountId(int index) {
+        return recipients.get(index).getAccountId();
+    }
+
+    public String getSender(int index) {
+        return senders.get(index).getAccountId().toString();
+    }
+
+    public TokenId getTokenId(int index) {
+        return tokenIds.get(index);
     }
 
     private void dissociateAccounts(TokenId tokenId, List<ExpandedAccountId> accountIds) {
@@ -313,10 +341,6 @@ public class TokenFeature {
                 log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
             }
         }
-    }
-
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(symbol, freezeStatus, kycStatus, null);
     }
 
     private void createNewToken(String symbol, int freezeStatus, int kycStatus, List<CustomFee> customFees) {
@@ -334,96 +358,17 @@ public class TokenFeature {
         TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
         assertNotNull(tokenId);
         tokenIds.add(tokenId);
+        tokenCustomFees.put(tokenId, customFees);
+    }
+
+    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
+        createNewToken(symbol, freezeStatus, kycStatus, Collections.emptyList());
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {
         networkTransactionResponse = tokenClient.associate(accountId, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private List<MirrorAssessedCustomFee> parseAssessedCustomFees(String assessedCustomFees) {
-        log.debug("got assessed custom fees string: {}", assessedCustomFees);
-        if (Strings.isEmpty(assessedCustomFees)) {
-            return Collections.emptyList();
-        }
-
-        List<MirrorAssessedCustomFee> assessedCustomFeeList = new ArrayList<>();
-        for (String fee : ASSESSED_CUSTOM_FEES_SPLITTER.split(assessedCustomFees)) {
-            MirrorAssessedCustomFee assessedCustomFee = new MirrorAssessedCustomFee();
-
-            List<String> parts = ASSESSED_CUSTOM_FEE_SPLITTER.splitToList(fee);
-            assessedCustomFee.setAmount(parts.get(0));
-
-            int recipientIndex = Integer.parseInt(parts.get(1));
-            assessedCustomFee.setCollectorAccountId(recipients.get(recipientIndex).getAccountId().toString());
-
-            int senderIndex = Integer.parseInt(parts.get(2));
-            assessedCustomFee.setPayerAccountId(senders.get(senderIndex).getAccountId().toString());
-
-            String tokenIndex = parts.get(3);
-            if (Strings.isNotEmpty(tokenIndex)) {
-                assessedCustomFee.setTokenId(tokenIds.get(Integer.parseInt(tokenIndex)).toString());
-            }
-
-            assessedCustomFeeList.add(assessedCustomFee);
-        }
-
-        return assessedCustomFeeList;
-    }
-
-    private List<CustomFee> parseCustomFees(String customFees) {
-        if (customFees == null) {
-            return Collections.emptyList();
-        }
-
-        List<CustomFee> customFeeList = new ArrayList<>();
-        for (String fee : CUSTOM_FEES_SPLITTER.split(customFees)) {
-            List<String> parts = CUSTOM_FEE_SPLITTER.splitToList(fee);
-            int partIndex = 0;
-            String amount = parts.get(partIndex++);
-            AccountId collector = recipients.get(Integer.parseInt(parts.get(partIndex++))).getAccountId();
-
-            CustomFee customFee;
-            if (amount.contains("/")) {
-                // fractional fee
-                CustomFractionalFee fractionalFee = new CustomFractionalFee();
-
-                List<String> fractionComponents = FRACTION_SPLITTER.splitToList(amount);
-                fractionalFee.setNumerator(Long.parseLong(fractionComponents.get(0)));
-                fractionalFee.setDenominator(Long.parseLong(fractionComponents.get(1)));
-                fractionalFee.setFeeCollectorAccountId(collector);
-
-                String maximumAmount = parts.get(partIndex++);
-                if (Strings.isNotEmpty(maximumAmount)) {
-                    fractionalFee.setMax(Long.parseLong(maximumAmount));
-                }
-
-                String minimumAmount = parts.get(partIndex);
-                if (Strings.isNotEmpty(minimumAmount)) {
-                    fractionalFee.setMin(Long.parseLong(minimumAmount));
-                }
-
-                customFee = fractionalFee;
-            } else {
-                // fixed fee
-                CustomFixedFee fixedFee = new CustomFixedFee();
-
-                fixedFee.setAmount(Long.parseLong(amount));
-                fixedFee.setFeeCollectorAccountId(collector);
-
-                String tokenIndex = parts.get(partIndex);
-                if (Strings.isNotEmpty(tokenIndex)) {
-                    fixedFee.setDenominatingTokenId(tokenIds.get(Integer.parseInt(tokenIndex)));
-                }
-
-                customFee = fixedFee;
-            }
-
-            customFeeList.add(customFee);
-        }
-
-        return customFeeList;
     }
 
     private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) {
@@ -528,13 +473,12 @@ public class TokenFeature {
         assertThat(mirrorToken.getCreatedTimestamp()).isNotEqualTo(mirrorToken.getModifiedTimestamp());
     }
 
-    private void verifyTokenWithCustomFeesSchedule(TokenId tokenId, String createdTimestamp,
-                                                   List<CustomFee> customFees) {
+    private void verifyTokenWithCustomFeesSchedule(TokenId tokenId, String createdTimestamp) {
         MirrorTokenResponse response = verifyToken(tokenId);
 
         MirrorCustomFees expected = new MirrorCustomFees();
         expected.setCreatedTimestamp(createdTimestamp);
-        for (CustomFee customFee : customFees) {
+        for (CustomFee customFee : tokenCustomFees.get(tokenId)) {
             if (customFee instanceof CustomFixedFee) {
                 CustomFixedFee sdkFixedFee = (CustomFixedFee) customFee;
                 MirrorFixedFee fixedFee = new MirrorFixedFee();
