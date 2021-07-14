@@ -216,16 +216,6 @@ properties:
       type: SERVICE_ACCOUNT
       serviceAccount:
         description: The Kubernetes service account to assign to the postgres server
-        roles:
-          - type: Role
-            rulesType: CUSTOM
-            rules:
-              - apiGroups: [ '' ]
-                resources: [ 'configmaps' ]
-                verbs: [ 'get', 'list','watch', 'create', 'update' ]
-              - apiGroups: [ '' ]
-                resources: [ 'pods' ]
-                verbs: [ 'get', 'watch' ]
   rest.db.password:
     type: string
     description: The password used by the REST API to connect to the database
