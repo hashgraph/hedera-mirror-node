@@ -47,7 +47,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
     private boolean freezeDefault = false;
 
-    @Min(0)
+    @Min(1)
     private int initialSupply = 1000000000;
 
     @Min(1)
