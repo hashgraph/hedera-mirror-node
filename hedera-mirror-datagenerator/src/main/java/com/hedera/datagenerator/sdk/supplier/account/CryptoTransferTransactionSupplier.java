@@ -45,13 +45,12 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private long maxTransactionFee = 10_000_000L;
 
     @NotBlank
-    private String recipientAccountId;
+    private final String recipientAccountId;
 
     @NotBlank
-    private String senderAccountId;
+    private final String senderAccountId;
 
-    @NotNull
-    private AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+    private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
 
     private String tokenId;
 
