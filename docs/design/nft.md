@@ -335,11 +335,11 @@ Optional Filters
     attribute.
     - Some fields will now have stricter requirements now, such as for NFTs `decimals` has to be 0, as
       does `initialSupply`. Add logic to enforce these based on the `type` and `supplyType` enums.
-  - `TokenMintTransactionSupplier` will need an enum `type` attribute, as well as a `metadata` field and
-    a `metadataSize` field (to generate metadata if not set, similar to how `ConsensusSubmitMessageTransactionSupplier`
+  - `TokenMintTransactionSupplier` will need an enum `type` attribute, as well as a `metadata` string and
+    a `metadataSize` int (to generate metadata if not set, similar to how `ConsensusSubmitMessageTransactionSupplier`
     works). The supplier should only set `amount` for fungible tokens, and only `metadata` for NFTs.
   - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need an enum `type` attribute, and it will
-    a `serialNumber` AtomicLong field that the supplier will start at and increment.
+    a `serialNumber` AtomicLong field that the supplier will start at and increment as serial numbers are wiped/burned.
 
 - Add support for transferring NFTs in `CryptoTransferTransactionSupplier`.
   - Add a new `transferType` `NFT` that will allow for transferring NFTs. Change the name of `BOTH`
