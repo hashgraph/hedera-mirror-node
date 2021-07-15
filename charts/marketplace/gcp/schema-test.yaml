@@ -11,9 +11,3 @@ properties:
   importer.config.hedera.mirror.importer.network:
     default: "DEMO"
     type: string
-  importer.db.username:
-    default: mirror_importer
-    type: string
-  rest.db.username:
-    default: mirror_rest
-    type: string
