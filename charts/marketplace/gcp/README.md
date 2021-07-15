@@ -424,9 +424,9 @@ To ensure a smooth upgrade process:
     ```shell
     kubectl edit secrets mirror-passwords
     ```
-6. Set the `HEDERA_MIRROR_IMPORTER_DB_USERNAME` value to `bWlycm9yX2FwaQ==` (the base64 encoded value of the
+6. Set the `HEDERA_MIRROR_IMPORTER_DB_USERNAME` value to `bWlycm9yX25vZGU=` (the base64 encoded value of the
    default `mirror_node` value)
-7. Set the `HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME` value to `bWlycm9yX25vZGU=` (the base64 encoded value of the
+7. Set the `HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME` value to `bWlycm9yX2FwaQ==` (the base64 encoded value of the
    default `mirror_api` value)
 8. Scale up the Importer Deployment resource
     ```shell
@@ -438,6 +438,9 @@ To ensure a smooth upgrade process:
     ```
 10. Post importer and rest operation confirmation, delete the leftover `data-${APP_NAME}-importer-0` persistent volume
     claim (Importer is no longer stateful)
+    ```shell
+    kubectl delete pvc "data-${APP_NAME}-importer-0"
+    ```
 
 # Scaling
 
