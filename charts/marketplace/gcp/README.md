@@ -401,9 +401,11 @@ upgrade process:
 
 ## v0.37
 
-The Marketplace solution update from v0.27 to v0.37+ includes many noteworthy improvements and changes such as Scheduled Transactions and NFT support. 
-As part of these changes the importer db and rest db user names were modified from `mirror_node` to `mirror_importer` and `mirror_api` to `mirror_rest` respectively.
-In the upgrade scenario these values will need to be reverted using the [Editing a Secret](https://kubernetes.io/docs/concepts/configuration/secret/#editing-a-secret) flow.
+The Marketplace solution update from v0.27 to v0.37+ includes many noteworthy improvements and changes such as Scheduled
+Transactions and NFT support. As part of these changes the importer db and rest db user names were modified
+from `mirror_node` to `mirror_importer` and `mirror_api` to `mirror_rest` respectively. In the upgrade scenario these
+values will need to be reverted using
+the [Editing a Secret](https://kubernetes.io/docs/concepts/configuration/secret/#editing-a-secret) flow.
 
 To ensure a smooth upgrade process:
 
@@ -422,8 +424,10 @@ To ensure a smooth upgrade process:
     ```shell
     kubectl edit secrets mirror-passwords
     ```
-6. Set the `HEDERA_MIRROR_IMPORTER_DB_USERNAME` value to `bWlycm9yX2FwaQ==` (the base64 encoded value of the default `mirror_node` value)
-7. Set the `HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME` value to `bWlycm9yX25vZGU=` (the base64 encoded value of the default `mirror_api` value)
+6. Set the `HEDERA_MIRROR_IMPORTER_DB_USERNAME` value to `bWlycm9yX2FwaQ==` (the base64 encoded value of the
+   default `mirror_node` value)
+7. Set the `HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME` value to `bWlycm9yX25vZGU=` (the base64 encoded value of the
+   default `mirror_api` value)
 8. Scale up the Importer Deployment resource
     ```shell
     kubectl scale deployment "${APP_NAME}-importer" --replicas=1
@@ -432,7 +436,8 @@ To ensure a smooth upgrade process:
     ```shell
     kubectl scale deployment "${APP_NAME}-rest" --replicas=1
     ```
-10. Post importer and rest operation confirmation, delete the leftover `data-${APP_NAME}-importer-0` persistent volume claim (Importer is no longer stateful)
+10. Post importer and rest operation confirmation, delete the leftover `data-${APP_NAME}-importer-0` persistent volume
+    claim (Importer is no longer stateful)
 
 # Scaling
 
@@ -462,7 +467,7 @@ helm upgrade "${APP_NAME}" charts/hedera-mirror \
 
 5. Select the `leaders` Config Map, click **Delete**.
 
-6. Navigate to the Storage page for the list of storage resources. 
+6. Navigate to the Storage page for the list of storage resources.
 
 7. Select the `data-<NAMESPACE>-postgres-postgresql-0` Persistent Volume Claim, click **Delete**.
 
@@ -477,9 +482,10 @@ helm delete "${APP_NAME}" --namespace "${NAMESPACE}"
 ```
 
 ### Delete the Leaders Config Map
+
 The Mirror Node chart used by the Marketplace solution utilizes the Spring Cloud Kubernetes leader election mechanism.
-This enables importer high availability and stores the importer leader in the `leaders` Config Map.
-This resource lacks the resource labels to associate it with the Mirror Node chart and is left over after application deletion.
+This enables importer high availability and stores the importer leader in the `leaders` Config Map. This resource lacks
+the resource labels to associate it with the Mirror Node chart and is left over after application deletion.
 
 To delete the Kubernetes `leaders` Config Map, run the following kubectl command:
 
