@@ -25,6 +25,8 @@ const httpErrors = require('http-errors');
 const _ = require('lodash');
 const log4js = require('log4js');
 const fetch = require('node-fetch');
+const math = require('mathjs');
+const parseDuration = require('parse-duration');
 const prettyMilliseconds = require('pretty-ms');
 const querystring = require('querystring');
 const config = require('./config');
@@ -59,6 +61,34 @@ const getUrl = (server, path, query = undefined) => {
 };
 
 /**
+ * Fetch the url with opts and retry on 429 with the retry max and minMillisToWait from config file.
+ *
+ * @param url
+ * @param opts
+ * @returns {Promise<Response>}
+ */
+const fetchWithRetry = async (url, opts = {}) => {
+  for (let i = 0; ; i++) {
+    const response = await fetch(url, opts);
+
+    if (response.status !== 429 || i === config.retry.max) {
+      return response;
+    }
+
+    const secondsToWait = Number(response.headers.get('retry-after'));
+    let millisToWait = isNaN(secondsToWait) ? 0 : secondsToWait * 1000;
+    if (millisToWait === 0) {
+      millisToWait = parseDuration(response.headers.get('x-retry-in') || '0ms');
+      millisToWait = math.ceil(millisToWait);
+    }
+    millisToWait = math.max(config.retry.minMillisToWait, millisToWait);
+
+    logger.warn(`url: ${url}, response status: 429, retry in ${millisToWait}ms`);
+    await new Promise((resolve) => setTimeout(resolve, millisToWait));
+  }
+};
+
+/**
  * Make an http request to mirror-node api
  * Host info is prepended to if only path is provided
  * @param {*} url rest-api endpoint
@@ -75,7 +105,7 @@ const getAPIResponse = async (url, key = undefined) => {
   );
 
   try {
-    const response = await fetch(url, {signal: controller.signal});
+    const response = await fetchWithRetry(url, {signal: controller.signal});
     if (!response.ok) {
       const message = `GET ${url} failed with ${response.statusText} (${response.status})`;
       return httpErrors(message);
@@ -129,7 +159,7 @@ class ServerTestResult {
 const testRunner = (server, testClassResult, resource) => {
   return async (testFunc) => {
     const start = Date.now();
-    const result = await testFunc(`http://${server.ip}:${server.port}`);
+    const result = await testFunc(server.baseUrl);
     if (result.skipped) {
       return;
     }

@@ -2,12 +2,15 @@
   "port": 3000,
   "servers": [
     {
-      "ip": "127.0.0.1",
-      "port": 5551,
+      "baseUrl": "http://127.0.0.1:5551",
       "name": "local"
     }
   ],
   "interval": 60,
+  "retry": {
+    "max": 10,
+    "minMillisToWait": 50
+  },
   "shard": 0,
   "account": {
     "enabled": true,
