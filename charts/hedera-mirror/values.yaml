@@ -1,6 +1,18 @@
 alertmanager:
   inhibitRules:
     enabled: false
+    InhibitAllWhenPlatformNotActive:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: alertname
+              value: MonitorPublishPlatformNotActive
+          targetMatch:
+            - name: application
+              regex: true
+              value: .*
+          equal:
+            - namespace
     InhibitGrpcAndMonitorHighLatencyWhenImporterRecordFileIssues:
       enabled: true
       matches:

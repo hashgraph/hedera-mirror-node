@@ -82,7 +82,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         if (filter.hasLimit()) {
-            flux = flux.limitRequest(filter.getLimit());
+            flux = flux.take(filter.getLimit());
         }
 
         return topicExists(filter).thenMany(flux.doOnNext(topicContext::onNext)

@@ -24,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.time.Instant;
@@ -69,11 +69,11 @@ class GrpcClientSDKTest {
         properties.setTopicId("0.0.1000");
         subscription = new GrpcSubscription(1, properties);
         monitorProperties = new MonitorProperties();
-        monitorProperties.getMirrorNode().getGrpc().setHost("127.0.0.1");
+        monitorProperties.getMirrorNode().getGrpc().setHost("in-process:test");
         grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
 
         consensusServiceStub = new ConsensusServiceStub();
-        server = ServerBuilder.forPort(5600)
+        server = InProcessServerBuilder.forName("test")
                 .addService(consensusServiceStub)
                 .build()
                 .start();

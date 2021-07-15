@@ -21,12 +21,15 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.step.StepLong;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -56,20 +59,21 @@ public class PublishMetrics {
     static final String METRIC_SUBMIT = "hedera.mirror.monitor.publish.submit";
     static final String SUCCESS = "SUCCESS";
     static final String UNKNOWN = "unknown";
+    private static final long UPDATE_INTERVAL = 10_000L; // 10s
 
     private final PublishProperties publishProperties;
     private final AtomicLong counter = new AtomicLong(0L);
     private final Multiset<String> errors = ConcurrentHashMultiset.create();
+    private final StepLong intervalCounter = new StepLong(Clock.SYSTEM, UPDATE_INTERVAL);
     private final Stopwatch stopwatch = Stopwatch.createStarted();
     private final Map<Tags, Timer> handleTimers = new ConcurrentHashMap<>();
     private final Map<Tags, Timer> submitTimers = new ConcurrentHashMap<>();
     private final Map<Tags, TimeGauge> durationGauges = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
-    private final AtomicLong lastCount = new AtomicLong();
-    private final AtomicLong lastElapsed = new AtomicLong();
 
     public void onSuccess(PublishResponse response) {
         counter.incrementAndGet();
+        intervalCounter.getCurrent().increment();
         recordMetric(response.getRequest(), response, SUCCESS);
     }
 
@@ -77,7 +81,7 @@ public class PublishMetrics {
         PublishRequest request = publishException.getPublishRequest();
         String status;
         TransactionType type = request.getType();
-        Throwable throwable = publishException.getCause() != null ? publishException.getCause() : publishException;
+        Throwable throwable = Throwables.getRootCause(publishException);
 
         if (throwable instanceof PrecheckStatusException) {
             PrecheckStatusException pse = (PrecheckStatusException) throwable;
@@ -161,18 +165,12 @@ public class PublishMetrics {
         }
 
         long count = counter.get();
-        long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        long instantCount = count - lastCount.getAndSet(count);
-        long instantElapsed = elapsed - lastElapsed.getAndSet(elapsed);
-        double instantRate = getRate(instantCount, instantElapsed);
+        long intervalCount = intervalCounter.poll();
+        double rate = Precision.round((intervalCount * 1000.0) / UPDATE_INTERVAL, 1);
         Map<String, Integer> errorCounts = new HashMap<>();
         errors.forEachEntry((k, v) -> errorCounts.put(k, v));
         String elapsedStr = DurationToStringSerializer.convert(stopwatch.elapsed());
-        log.info("Published {} transactions in {} at {}/s. Errors: {}", count, elapsedStr, instantRate, errorCounts);
-    }
-
-    private double getRate(long count, long elapsedMicros) {
-        return Precision.round(elapsedMicros > 0 ? (count * 1000000.0) / elapsedMicros : 0.0, 1);
+        log.info("Published {} transactions in {} at {}/s. Errors: {}", count, elapsedStr, rate, errorCounts);
     }
 
     @Value

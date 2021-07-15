@@ -219,10 +219,12 @@ prometheus:
       requests:
         cpu: 5m
         memory: 16Mi
+  kubeApiServer:
+    enabled: false
   kubeControllerManager:
     enabled: false
   kubeDns:
-    enabled: true
+    enabled: false
   kubeEtcd:
     enabled: false
   kubeProxy:

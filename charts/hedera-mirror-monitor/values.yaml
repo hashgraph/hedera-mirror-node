@@ -181,9 +181,9 @@ prometheusRules:
   MonitorPublishErrors:
     annotations:
       description: "Averaging {{ $value | humanizePercentage }} error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Publish error rate exceeds 5%"
+      summary: "Publish error rate exceeds 15%"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 0.05
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 0.15
     for: 2m
     labels:
       severity: critical
@@ -201,6 +201,18 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-monitor
       mode: publish
+
+  MonitorPublishPlatformNotActive:
+    annotations:
+      description: "Averaging {{ $value | humanizePercentage }} PLATFORM_NOT_ACTIVE error rate while attempting to publish in {{ $labels.namespace }}"
+      summary: "Platform is not active"
+    enabled: true
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor",status="PLATFORM_NOT_ACTIVE"}[2m])) by (namespace) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace) > 0
+    for: 1m
+    labels:
+      application: hedera-mirror-monitor
+      mode: publish
+      severity: warning
 
   MonitorPublishStopped:
     annotations:
