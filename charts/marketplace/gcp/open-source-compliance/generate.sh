@@ -28,7 +28,8 @@ tar t --file="hedera-mirror-importer:${target_tag}.tar" | grep -F "/sources/" | 
 echo "Created temporary grpc and importer source files"
 
 sort -u  *-licenses.txt > mirror-java-licenses.txt
-echo "Created merged license file"
+echo "Created merged licenses file"
+
 sort -u  *-sources.txt > mirror-java-sources.txt
 echo "Created merged sources file"
 
