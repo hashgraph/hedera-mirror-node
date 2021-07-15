@@ -51,6 +51,10 @@ spec:
                   key: username
                   name: grafana-cloud
               url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
+              writeRelabelConfigs:
+                - action: keep
+                  regex: .*(flux|grpc|importer|monitor|rest|traefik)$
+                  sourceLabels: [job]
           replicaExternalLabelName: __replica__
       prometheusOperator:
         namespaces:
