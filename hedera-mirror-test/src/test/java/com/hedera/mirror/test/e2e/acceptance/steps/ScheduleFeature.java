@@ -31,6 +31,7 @@ import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -187,7 +188,10 @@ public class ScheduleFeature {
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
                 tokenTreasuryAccount,
-                DEFAULT_TINY_HBAR, TokenType.FUNGIBLE_COMMON, DEFAULT_MAX);
+                DEFAULT_TINY_HBAR,
+                TokenType.FUNGIBLE_COMMON,
+                Collections.emptyList()
+        );
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         tokenId = networkTransactionResponse.getReceipt().tokenId;
@@ -231,7 +235,7 @@ public class ScheduleFeature {
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
                 tokenTreasuryAccount,
-                0, TokenType.NON_FUNGIBLE_UNIQUE, DEFAULT_MAX);
+                0, TokenType.NON_FUNGIBLE_UNIQUE, Collections.emptyList());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         tokenId = networkTransactionResponse.getReceipt().tokenId;

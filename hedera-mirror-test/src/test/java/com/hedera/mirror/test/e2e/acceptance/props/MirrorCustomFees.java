@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,18 +20,16 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
-
 @Data
-public class MirrorTokenResponse {
+public class MirrorCustomFees {
 
-    private String createdTimestamp;
+    String createdTimestamp;
 
-    private MirrorCustomFees customFees;
+    private List<MirrorFixedFee> fixedFees = new ArrayList<>();
 
-    private String modifiedTimestamp;
-
-    private String tokenId;
+    private List<MirrorFractionalFee> fractionalFees = new ArrayList<>();
 }
