@@ -14,8 +14,6 @@ grpc_container_name="osc_mirror_grpc_${target_tag}"
 importer_container_name="osc_mirror_importer_${target_tag}"
 
 # create tars file references
-# docker export "$(docker create gcr.io/mirrornode/hedera-mirror-grpc:${target_tag})" > "hedera-mirror-grpc:${target_tag}.tar"
-# docker export "$(docker create gcr.io/mirrornode/hedera-mirror-importer:${target_tag})" > "hedera-mirror-importer:${target_tag}.tar"
 docker export --output="hedera-mirror-grpc:${target_tag}.tar" "$(docker create --name ${grpc_container_name} gcr.io/mirrornode/hedera-mirror-grpc:${target_tag})"
 docker export --output="hedera-mirror-importer:${target_tag}.tar" "$(docker create --name ${importer_container_name} gcr.io/mirrornode/hedera-mirror-importer:${target_tag})"
 
