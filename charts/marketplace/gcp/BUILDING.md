@@ -85,3 +85,11 @@ to the staging registry:
     git checkout "tags/v${TAG}"
     cd charts/marketplace/gcp
     ./release.sh "${TAG}"
+
+## Open Source Compliance
+
+As part of submission to marketplace, a list of sources and licenses used by the distroless java images is required.
+To generate the list for the grpc and importer images:
+
+    cd charts/marketplace/gcp/open-source-compliance
+    ./generate.sh "${TAG}"
