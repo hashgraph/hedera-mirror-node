@@ -123,7 +123,7 @@ public class AccountClient extends AbstractNetworkClient {
         TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sdkClient
                 .getExpandedOperatorAccountId().getAccountId(), recipient, hbarAmount);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction, null)
+        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction)
                 .getReceipt();
 
         log.debug("Sent CryptoTransfer");

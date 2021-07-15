@@ -82,8 +82,8 @@ public class TopicClient extends AbstractNetworkClient {
         }
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction, KeyList
-                        .of(adminAccount.getPrivateKey()));
+                executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction,
+                        KeyList.of(adminAccount.getPrivateKey()));
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
         log.debug("Created new topic {}", topicId);
 
@@ -99,12 +99,11 @@ public class TopicClient extends AbstractNetworkClient {
                 .clearAdminKey()
                 .clearSubmitKey()
                 .clearTopicMemo()
-                .clearAutoRenewAccountId(sdkClient.getExpandedOperatorAccountId().getAccountId())
+                .clearAutoRenewAccountId()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction,
-                        null);
+                executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction);
 
         log.debug("Updated topic '{}'.", topicId);
         return networkTransactionResponse;
@@ -116,8 +115,7 @@ public class TopicClient extends AbstractNetworkClient {
                 .setTopicId(topicId);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction,
-                        null);
+                executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
 
         log.debug("Deleted topic : '{}'.", topicId);
 
