@@ -20,7 +20,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import javax.inject.Named;
 import lombok.SneakyThrows;
@@ -29,8 +31,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
-import org.threeten.bp.Duration;
-import org.threeten.bp.temporal.ChronoUnit;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -275,7 +275,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setAdminKey(publicKey)
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
                 .setAutoRenewPeriod(Duration.ofSeconds(8_000_001L))
-                .setExpirationTime(org.threeten.bp.Instant.now().plus(120, ChronoUnit.DAYS))
+                .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
                 .setTokenName(newSymbol + "_name")
                 .setSupplyKey(publicKey)
                 .setTokenSymbol(newSymbol)
