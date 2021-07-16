@@ -29,12 +29,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.CompositeHealthContributor;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.parser.ParserProperties;
 
-@Configuration
+// @Configuration, disable it now as it causes health check issue in k8s
 @RequiredArgsConstructor
 public class HealthCheckConfiguration {
     private final MirrorProperties mirrorProperties;
