@@ -61,6 +61,23 @@ const getUrl = (server, path, query = undefined) => {
 };
 
 /**
+ * Gets the backoff in millis from the retry after, the x-retry-in response header, and the configured min backoff
+ *
+ * @param {string|number} retryAfter value of the retry-after header, in unit of seconds
+ * @param {string} xRetryIn value of the x-retry-in header, in string format of "55ms"
+ */
+const getBackoff = (retryAfter, xRetryIn) => {
+  const backoffSeconds = Number(retryAfter);
+  let backoffMillis = isNaN(backoffSeconds) ? 0 : backoffSeconds * 1000;
+  if (backoffMillis === 0) {
+    backoffMillis = parseDuration(xRetryIn || '0ms');
+    backoffMillis = math.ceil(backoffMillis);
+  }
+
+  return math.max(config.retry.minBackoff, backoffMillis);
+};
+
+/**
  * Fetch the url with opts and retry on 429 with the retry max and minMillisToWait from config file.
  *
  * @param url
@@ -71,20 +88,13 @@ const fetchWithRetry = async (url, opts = {}) => {
   for (let i = 0; ; i++) {
     const response = await fetch(url, opts);
 
-    if (response.status !== 429 || i === config.retry.max) {
+    if (response.status !== 429 || i === config.retry.maxAttempts) {
       return response;
     }
 
-    const secondsToWait = Number(response.headers.get('retry-after'));
-    let millisToWait = isNaN(secondsToWait) ? 0 : secondsToWait * 1000;
-    if (millisToWait === 0) {
-      millisToWait = parseDuration(response.headers.get('x-retry-in') || '0ms');
-      millisToWait = math.ceil(millisToWait);
-    }
-    millisToWait = math.max(config.retry.minMillisToWait, millisToWait);
-
-    logger.warn(`url: ${url}, response status: 429, retry in ${millisToWait}ms`);
-    await new Promise((resolve) => setTimeout(resolve, millisToWait));
+    const backoffMillis = getBackoff(response.headers.get('retry-after'), response.headers.get('x-retry-in'));
+    logger.warn(`url: ${url}, response status: 429, retry in ${backoffMillis}ms`);
+    await new Promise((resolve) => setTimeout(resolve, backoffMillis));
   }
 };
 

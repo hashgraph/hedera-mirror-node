@@ -8,8 +8,8 @@
   ],
   "interval": 60,
   "retry": {
-    "max": 10,
-    "minMillisToWait": 50
+    "maxAttempts": 10,
+    "minBackoff": 50
   },
   "shard": 0,
   "account": {
