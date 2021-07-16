@@ -1,6 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Major enhancement
-    url: https://github.com/hashgraph/hedera-improvement-proposal
-    about: Propose a major feature using our Hedera Improvement Proposal (HIP) process
-
