@@ -37,8 +37,11 @@ import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
+import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
@@ -130,9 +133,22 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 MirrorTransactionsResponse.class, transactionId);
     }
 
+    public MirrorNftTransactionsResponse getNftTransactions(TokenId tokenId, Long serialNumber) {
+        log.debug("Get list of transactions for token '{}' and serial number '{}' from Mirror Node", tokenId,
+                serialNumber);
+        return callRestEndpoint("/tokens/{transactionId}/nfts/{serialNumber}/transactions",
+                MirrorNftTransactionsResponse.class, tokenId, serialNumber);
+    }
+
     public MirrorTokenResponse getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
         return callRestEndpoint("/tokens/{tokenId}", MirrorTokenResponse.class, tokenId);
+    }
+
+    public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {
+        log.debug("Verify nft '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
+        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}", MirrorNftResponse.class, tokenId,
+                serialNumber);
     }
 
     public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
