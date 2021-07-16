@@ -25,11 +25,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
-
-import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
 
 @TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
@@ -37,7 +34,7 @@ import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
-@Import(MeterRegistryConfiguration.class)
+//@Import(MeterRegistryConfiguration.class)
 public abstract class IntegrationTest {
 
     protected final Logger log = LogManager.getLogger(getClass());
