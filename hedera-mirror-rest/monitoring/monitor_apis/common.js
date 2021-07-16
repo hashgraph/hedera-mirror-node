@@ -124,18 +124,17 @@ const getStatusByName = (name) => {
  * @return {Number} PID of the test process running for the given server
  */
 const getProcess = (server) => {
-  const key = `${server.ip}_${server.port}`;
-  return pids[key];
+  return pids[server.baseUrl];
 };
 
 /**
  * Stores the process pid for a given server
  * @param {Object} server the server for which the pid needs to be stored
- * @return {} None
+ * @param {number} count
+ * @return None
  */
 const saveProcess = (server, count) => {
-  const key = `${server.ip}_${server.port}`;
-  pids[key] = {
+  pids[server.baseUrl] = {
     id: server.name,
     encountered: count,
   };
@@ -144,11 +143,10 @@ const saveProcess = (server, count) => {
 /**
  * Deletes the process pid for a given server (when the test process returns)
  * @param {Object} server the server for which the pid needs to be deleted
- * @return {} None
+ * @return None
  */
 const deleteProcess = (server) => {
-  const key = `${server.ip}_${server.port}`;
-  delete pids[key];
+  delete pids[server.baseUrl];
 };
 
 module.exports = {
