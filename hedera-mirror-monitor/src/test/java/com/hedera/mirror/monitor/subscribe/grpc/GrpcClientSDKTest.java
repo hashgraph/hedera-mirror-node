@@ -238,7 +238,8 @@ class GrpcClientSDKTest {
                                    StreamObserver<ConsensusTopicResponse> streamObserver) {
             log.debug("subscribeTopic: {}", consensusTopicQuery);
             assertThat(consensusTopicQuery).isEqualTo(request.build());
-            responses.doOnComplete(streamObserver::onCompleted)
+            responses.delayElements(Duration.ofMillis(200L))
+                    .doOnComplete(streamObserver::onCompleted)
                     .doOnError(streamObserver::onError)
                     .doOnNext(streamObserver::onNext)
                     .doOnNext(t -> log.trace("Next: {}", t))
