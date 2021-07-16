@@ -77,7 +77,7 @@ import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class Downloader<T extends StreamFile> {
-    public static final String STREAM_CLOSE_LATENCY_METRIC_NAME = "hedera.mirror.stream.close.latency";
+    public static final String STREAM_CLOSE_INTERVAL_METRIC_NAME = "hedera.mirror.stream.close.interval";
 
     protected final Logger log = LogManager.getLogger(getClass());
     private final S3AsyncClient s3Client;
@@ -99,7 +99,8 @@ public abstract class Downloader<T extends StreamFile> {
     private final MeterRegistry meterRegistry;
     private final Timer cloudStorageLatencyMetric;
     private final Timer downloadLatencyMetric;
-    private final Timer streamCloseMetric;
+    private final Timer streamCloseIntervalMetric;
+    private final Timer streamCloseLatencyMetric;
     private final Timer.Builder streamVerificationMetric;
 
     protected Downloader(S3AsyncClient s3Client,
@@ -137,7 +138,12 @@ public abstract class Downloader<T extends StreamFile> {
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
 
-        streamCloseMetric = Timer.builder(STREAM_CLOSE_LATENCY_METRIC_NAME)
+        streamCloseIntervalMetric = Timer.builder(STREAM_CLOSE_INTERVAL_METRIC_NAME)
+                .description("The interval between stream files")
+                .tag("type", streamType.toString())
+                .register(meterRegistry);
+
+        streamCloseLatencyMetric = Timer.builder("hedera.mirror.stream.close.latency")
                 .description("The difference between the consensus time of the last and first transaction in the " +
                         "stream file")
                 .tag("type", streamType.toString())
@@ -471,17 +477,24 @@ public abstract class Downloader<T extends StreamFile> {
             InterruptedException {
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);
-        lastStreamFile.set(Optional.of(streamFile));
 
-        long streamClose = streamFile.getConsensusEnd() - streamFile.getConsensusStart();
-        if (streamClose > 0) {
-            streamCloseMetric.record(streamClose, TimeUnit.NANOSECONDS);
+        lastStreamFile.get()
+                .ifPresent(last -> {
+                    long interval = streamFile.getConsensusStart() - last.getConsensusStart();
+                    streamCloseIntervalMetric.record(interval, TimeUnit.NANOSECONDS);
+                });
+
+        long latency = streamFile.getConsensusEnd() - streamFile.getConsensusStart();
+        if (latency > 0) {
+            streamCloseLatencyMetric.record(latency, TimeUnit.NANOSECONDS);
         }
 
         Instant cloudStorageTime = pendingDownload.getObjectResponse().lastModified();
         Instant consensusEnd = Instant.ofEpochSecond(0, streamFile.getConsensusEnd());
         cloudStorageLatencyMetric.record(Duration.between(consensusEnd, cloudStorageTime));
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
+
+        lastStreamFile.set(Optional.of(streamFile));
     }
 
     /**

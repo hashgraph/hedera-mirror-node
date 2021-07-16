@@ -45,9 +45,10 @@ management:
     health:
       group:
         liveness:
-          include: ping, streamFile
+          include: ping, streamFileActivity
         readiness:
-          include: db, diskSpace, ping, redis, streamFile
+          include: db, diskSpace, ping, redis, streamFileActivity
+      show-details: always
 server:
   shutdown: graceful
 spring:

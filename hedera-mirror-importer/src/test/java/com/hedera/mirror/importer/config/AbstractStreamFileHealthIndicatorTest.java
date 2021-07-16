@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_LATENCY_METRIC_NAME;
+import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_INTERVAL_METRIC_NAME;
 import static com.hedera.mirror.importer.parser.AbstractStreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +58,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     private Search streamParseDurationSearch;
 
     @Mock(lenient = true)
-    private Search streamCloseLatencySearch;
+    private Search streamCloseIntervalSearch;
 
     @Mock(lenient = true)
     private MeterRegistry meterRegistry;
@@ -77,13 +77,13 @@ abstract class AbstractStreamFileHealthIndicatorTest {
         doReturn(0.0).when(streamCloseLatencyDurationTimer).mean(any());
         doReturn(0L).when(streamFileParseDurationTimer).count();
 
-        doReturn(streamCloseLatencyDurationTimer).when(streamCloseLatencySearch).timer();
+        doReturn(streamCloseLatencyDurationTimer).when(streamCloseIntervalSearch).timer();
         doReturn(streamFileParseDurationTimer).when(streamParseDurationSearch).timer();
 
-        doReturn(streamCloseLatencySearch).when(streamCloseLatencySearch).tags(anyIterable());
+        doReturn(streamCloseIntervalSearch).when(streamCloseIntervalSearch).tags(anyIterable());
         doReturn(streamParseDurationSearch).when(streamParseDurationSearch).tags(anyIterable());
 
-        doReturn(streamCloseLatencySearch).when(meterRegistry).find(STREAM_CLOSE_LATENCY_METRIC_NAME);
+        doReturn(streamCloseIntervalSearch).when(meterRegistry).find(STREAM_CLOSE_INTERVAL_METRIC_NAME);
         doReturn(streamParseDurationSearch).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
 
         mirrorProperties = new MirrorProperties();
@@ -125,7 +125,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void missingStreamCloseLatencyTimer() {
-        doReturn(null).when(streamCloseLatencySearch).timer();
+        doReturn(null).when(streamCloseIntervalSearch).timer();
         streamFileHealthIndicator = new StreamFileHealthIndicator(
                 parserProperties,
                 meterRegistry,
@@ -134,7 +134,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
         assertThat((String) health.getDetails().get(REASON_KEY))
-                .contains(STREAM_CLOSE_LATENCY_METRIC_NAME + " timer is missing");
+                .contains(STREAM_CLOSE_INTERVAL_METRIC_NAME + " timer is missing");
     }
 
     @Test
