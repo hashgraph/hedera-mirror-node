@@ -48,7 +48,7 @@ class GrpcSubscription extends AbstractSubscription<GrpcSubscriberProperties, To
 
         TopicMessageQuery topicMessageQuery = new TopicMessageQuery();
         topicMessageQuery.setEndTime(properties.getEndTime());
-        topicMessageQuery.setLimit(limit > 0 ? limit - count.get() : 0);
+        topicMessageQuery.setLimit(limit > 0 ? limit - counter.get() : 0);
         topicMessageQuery.setStartTime(startTime);
         topicMessageQuery.setTopicId(TopicId.fromString(properties.getTopicId()));
         return topicMessageQuery;
