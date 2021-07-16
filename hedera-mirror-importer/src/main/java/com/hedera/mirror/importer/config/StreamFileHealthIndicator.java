@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_INTERVAL_METRIC_NAME;
+import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_LATENCY_METRIC_NAME;
 import static com.hedera.mirror.importer.parser.AbstractStreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -51,7 +51,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
     private static final Health missingParseDurationTimerHealth =
             getHealthWithReason(Status.UNKNOWN, STREAM_PARSE_DURATION_METRIC_NAME + MISSING_TIMER_REASON);
     private static final Health missingStreamCloseIntervalTimerHealth =
-            getHealthWithReason(Status.UNKNOWN, STREAM_CLOSE_INTERVAL_METRIC_NAME + MISSING_TIMER_REASON);
+            getHealthWithReason(Status.UNKNOWN, STREAM_CLOSE_LATENCY_METRIC_NAME + MISSING_TIMER_REASON);
     private static final Health endDateInPastHealth =
             getHealthWithReason(Status.UP, "EndDate has passed, stream files are no longer expected");
     private final AtomicReference<Health> lastHealthStatus = new AtomicReference<>(Health
@@ -116,15 +116,15 @@ public class StreamFileHealthIndicator implements HealthIndicator {
     }
 
     private Health getResolvedHealthWhenNoStreamFilesParsed(Instant currentInstant, Instant lastCheck) {
-        Timer streamCloseIntervalTimer = meterRegistry
-                .find(STREAM_CLOSE_INTERVAL_METRIC_NAME)
+        Timer streamCloseLatencyDurationTimer = meterRegistry
+                .find(STREAM_CLOSE_LATENCY_METRIC_NAME)
                 .tags(Tags.of("type", parserProperty.getStreamType().toString()))
                 .timer();
-        if (streamCloseIntervalTimer == null) {
+        if (streamCloseLatencyDurationTimer == null) {
             return missingStreamCloseIntervalTimerHealth;
         }
 
-        long mean = (long) streamCloseIntervalTimer.mean(TimeUnit.MILLISECONDS);
+        long mean = (long) streamCloseLatencyDurationTimer.mean(TimeUnit.MILLISECONDS);
         if (mean == 0 && currentInstant.isBefore(getStartTime()
                 .plus(parserProperty.getStreamType().getFileCloseInterval()))) {
             // return cached value on start up before end of first expected file close interval

@@ -48,7 +48,6 @@ management:
           include: ping, streamFileActivity
         readiness:
           include: db, diskSpace, ping, redis, streamFileActivity
-      show-details: always
 server:
   shutdown: graceful
 spring:
