@@ -74,7 +74,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Cucumber
 public class ScheduleFeature {
     private final static int DEFAULT_TINY_HBAR = 1_000;
-    private final static int DEFAULT_MAX = 10_000;
 
     @Autowired
     private AccountClient accountClient;
@@ -251,16 +250,12 @@ public class ScheduleFeature {
         networkTransactionResponse = tokenClient.associate(receiver, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
 
-        Hbar hbarAmount = Hbar.fromTinybars(DEFAULT_TINY_HBAR);
         scheduledTransaction = tokenClient
                 .getTokenTransferTransaction(
                         tokenId,
                         tokenTreasuryAccount.getAccountId(),
                         receiver.getAccountId(),
-                        0, Arrays.asList(serialNumber))
-                // add Hbar transfer logic
-                .addHbarTransfer(receiver.getAccountId(), hbarAmount)
-                .addHbarTransfer(tokenTreasuryAccount.getAccountId(), hbarAmount.negated());
+                        0, Arrays.asList(serialNumber));
 
         createNewSchedule(scheduledTransaction, null);
     }

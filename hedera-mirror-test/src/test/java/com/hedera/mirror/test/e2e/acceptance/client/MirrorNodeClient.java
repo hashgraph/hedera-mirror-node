@@ -146,7 +146,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     }
 
     public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {
-        log.debug("Verify nft '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
+        log.debug("Verify serial number '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
         return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}", MirrorNftResponse.class, tokenId,
                 serialNumber);
     }

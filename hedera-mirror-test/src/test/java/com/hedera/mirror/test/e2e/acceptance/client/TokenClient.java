@@ -73,6 +73,15 @@ public class TokenClient extends AbstractNetworkClient {
                                                   int kycStatus, ExpandedAccountId treasuryAccount,
                                                   int initialSupply, TokenType tokenType,
                                                   List<CustomFee> customFees) {
+        return createToken(expandedAccountId, symbol, freezeStatus, kycStatus, treasuryAccount, initialSupply,
+                tokenType, TokenSupplyType.INFINITE, 0, customFees);
+    }
+
+    public NetworkTransactionResponse createToken(ExpandedAccountId expandedAccountId, String symbol, int freezeStatus,
+                                                  int kycStatus, ExpandedAccountId treasuryAccount,
+                                                  int initialSupply, TokenType tokenType,
+                                                  TokenSupplyType tokenSupplyType, long maxSupply,
+                                                  List<CustomFee> customFees) {
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
         String memo = String.format("Create token %s_%s", symbol, refInstant);
@@ -82,14 +91,20 @@ public class TokenClient extends AbstractNetworkClient {
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
-                .setSupplyType(TokenSupplyType.INFINITE)
+                .setSupplyType(tokenSupplyType)
                 .setTokenSymbol(symbol)
                 .setTokenType(tokenType)
                 .setTreasuryAccountId(treasuryAccount.getAccountId())
                 .setTransactionMemo(memo);
 
         if (tokenType == TokenType.FUNGIBLE_COMMON) {
-            tokenCreateTransaction.setDecimals(10).setInitialSupply(initialSupply);
+            tokenCreateTransaction
+                    .setDecimals(10)
+                    .setInitialSupply(initialSupply);
+        }
+
+        if (tokenSupplyType == TokenSupplyType.FINITE) {
+            tokenCreateTransaction.setMaxSupply(maxSupply);
         }
 
         if (adminKey != null) {
@@ -319,16 +334,17 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateTokenTreasury(TokenId tokenId, ExpandedAccountId newTreasuryId) {
+        AccountId treasuryAccountId = newTreasuryId.getAccountId();
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setTokenId(tokenId)
-                .setTreasuryAccountId(newTreasuryId.getAccountId());
+                .setTreasuryAccountId(treasuryAccountId);
 
         KeyList keyList = new KeyList();
         keyList.add(newTreasuryId.getPrivateKey());
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, keyList);
 
-        log.debug("Updated token {}.", tokenId);
+        log.debug("Updated token {} treasury account {}.", tokenId, treasuryAccountId);
 
         return networkTransactionResponse;
     }

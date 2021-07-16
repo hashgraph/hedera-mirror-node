@@ -51,6 +51,7 @@ import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
@@ -79,6 +80,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Cucumber
 public class TokenFeature {
     private static final int INITIAL_SUPPLY = 1_000_000;
+    private static final int MAX_SUPPLY = 10_000_000;
 
     @Autowired
     private TokenClient tokenClient;
@@ -112,6 +114,7 @@ public class TokenFeature {
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
                 TokenType.FUNGIBLE_COMMON,
+                TokenSupplyType.INFINITE,
                 customFees
         );
     }
@@ -124,7 +127,17 @@ public class TokenFeature {
     @Given("I successfully create a new nft")
     public void createNewNft() {
         createNewNft(RandomStringUtils.randomAlphabetic(4)
-                .toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
+                        .toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                TokenSupplyType.INFINITE);
+    }
+
+    @Given("I successfully create a new nft with supplyType {string}")
+    public void createNewNft(String tokenSupplyType) {
+        createNewNft(RandomStringUtils.randomAlphabetic(4)
+                        .toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                TokenSupplyType.valueOf(tokenSupplyType));
     }
 
     @Given("^I associate a(?:n)? (?:existing|new) sender account(?: (.*))? with token(?: (.*))?$")
@@ -439,7 +452,7 @@ public class TokenFeature {
     }
 
     private TokenId createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
-                                   List<CustomFee> customFees) {
+                                   TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
                 admin,
@@ -449,6 +462,8 @@ public class TokenFeature {
                 admin,
                 INITIAL_SUPPLY,
                 tokenType,
+                tokenSupplyType,
+                MAX_SUPPLY,
                 customFees);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -461,15 +476,17 @@ public class TokenFeature {
     }
 
     private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, Collections.emptyList());
+        createNewToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
+                .emptyList());
     }
 
-    private void createNewNft(String symbol, int freezeStatus, int kycStatus) {
+    private void createNewNft(String symbol, int freezeStatus, int kycStatus, TokenSupplyType tokenSupplyType) {
         TokenId tokenId = createNewToken(
                 symbol,
                 freezeStatus,
                 kycStatus,
                 TokenType.NON_FUNGIBLE_UNIQUE,
+                tokenSupplyType,
                 Collections.emptyList());
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }

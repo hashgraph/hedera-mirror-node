@@ -57,7 +57,7 @@ Feature: HTS Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @acceptance @nft
+    @critical @release @acceptance @nft
     Scenario Outline: Validate Base NFT Flow - Create, Associate, Mint, Transfer
         Given I successfully create a new nft
         Then the mirror node REST API should return status <httpStatusCode>
@@ -71,9 +71,9 @@ Feature: HTS Base Coverage Feature
             | httpStatusCode |
             | 200            |
 
-    @acceptance @nft
+    @acceptance @nft @exhaustive
     Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Delete
-        Given I successfully create a new nft
+        Given I successfully create a new nft with supplyType <supplyType>
         Then the mirror node REST API should return status <httpStatusCode>
         When I associate a new recipient account with token
         And the mirror node REST API should return status <httpStatusCode>
@@ -92,8 +92,9 @@ Feature: HTS Base Coverage Feature
         Then I delete the token
         And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 2 fund flow
         Examples:
-            | httpStatusCode |
-            | 200            |
+            | httpStatusCode | supplyType |
+            | 200            | "INFINITE" |
+            | 200            | "FINITE"   |
 
     @acceptance @nft
     Scenario Outline: Validate Update Treasury NFT Flow - Create, Associate, Mint, Update Treasury
