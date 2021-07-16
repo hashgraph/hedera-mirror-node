@@ -50,7 +50,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
     private static final Health parsingDisabledHealth = getHealthWithReason(Status.UNKNOWN, "Parsing is disabled");
     private static final Health missingParseDurationTimerHealth =
             getHealthWithReason(Status.UNKNOWN, STREAM_PARSE_DURATION_METRIC_NAME + MISSING_TIMER_REASON);
-    private static final Health missingStreamCloseIntervalTimerHealth =
+    private static final Health missingStreamCloseTimerHealth =
             getHealthWithReason(Status.UNKNOWN, STREAM_CLOSE_LATENCY_METRIC_NAME + MISSING_TIMER_REASON);
     private static final Health endDateInPastHealth =
             getHealthWithReason(Status.UP, "EndDate has passed, stream files are no longer expected");
@@ -121,7 +121,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
                 .tags(Tags.of("type", parserProperty.getStreamType().toString()))
                 .timer();
         if (streamCloseLatencyDurationTimer == null) {
-            return missingStreamCloseIntervalTimerHealth;
+            return missingStreamCloseTimerHealth;
         }
 
         long mean = (long) streamCloseLatencyDurationTimer.mean(TimeUnit.MILLISECONDS);

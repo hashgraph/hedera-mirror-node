@@ -99,7 +99,7 @@ public abstract class Downloader<T extends StreamFile> {
     private final MeterRegistry meterRegistry;
     private final Timer cloudStorageLatencyMetric;
     private final Timer downloadLatencyMetric;
-    private final Timer streamCloseLatencyMetric;
+    private final Timer streamCloseMetric;
     private final Timer.Builder streamVerificationMetric;
 
     protected Downloader(S3AsyncClient s3Client,
@@ -137,7 +137,7 @@ public abstract class Downloader<T extends StreamFile> {
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
 
-        streamCloseLatencyMetric = Timer.builder(STREAM_CLOSE_LATENCY_METRIC_NAME)
+        streamCloseMetric = Timer.builder(STREAM_CLOSE_LATENCY_METRIC_NAME)
                 .description("The difference between the consensus start of the current and the last stream file")
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
@@ -474,7 +474,7 @@ public abstract class Downloader<T extends StreamFile> {
         lastStreamFile.get()
                 .ifPresent(last -> {
                     long latency = streamFile.getConsensusStart() - last.getConsensusStart();
-                    streamCloseLatencyMetric.record(latency, TimeUnit.NANOSECONDS);
+                    streamCloseMetric.record(latency, TimeUnit.NANOSECONDS);
                 });
         Instant cloudStorageTime = pendingDownload.getObjectResponse().lastModified();
         Instant consensusEnd = Instant.ofEpochSecond(0, streamFile.getConsensusEnd());
