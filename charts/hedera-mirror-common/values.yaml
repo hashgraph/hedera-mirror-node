@@ -219,6 +219,7 @@ prometheus:
       requests:
         cpu: 5m
         memory: 16Mi
+  # We disable these exporters because they either don't work in GKE or produce too many time series
   kubeApiServer:
     enabled: false
   kubeControllerManager:
