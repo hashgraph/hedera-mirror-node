@@ -30,6 +30,7 @@ import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ import junit.framework.AssertionFailedError;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.retry.annotation.Backoff;
@@ -50,6 +52,7 @@ import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleInfo;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
@@ -71,6 +74,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Cucumber
 public class ScheduleFeature {
     private final static int DEFAULT_TINY_HBAR = 1_000;
+    private final static int DEFAULT_MAX = 10_000;
 
     @Autowired
     private AccountClient accountClient;
@@ -93,6 +97,7 @@ public class ScheduleFeature {
     private final int signatoryCountOffset = 1; // Schedule map includes payer account which may not be a required
     // signatory
     private TokenId tokenId;
+    private long serialNumber;
     private ExpandedAccountId tokenTreasuryAccount;
 
     @Given("I successfully schedule a treasury HBAR disbursement to {string}")
@@ -184,6 +189,7 @@ public class ScheduleFeature {
                 TokenKycStatus.KycNotApplicable_VALUE,
                 tokenTreasuryAccount,
                 DEFAULT_TINY_HBAR,
+                TokenType.FUNGIBLE_COMMON,
                 Collections.emptyList()
         );
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -202,7 +208,56 @@ public class ScheduleFeature {
                         tokenId,
                         tokenTreasuryAccount.getAccountId(),
                         receiver.getAccountId(),
-                        10)
+                        10, null)
+                // add Hbar transfer logic
+                .addHbarTransfer(receiver.getAccountId(), hbarAmount)
+                .addHbarTransfer(tokenTreasuryAccount.getAccountId(), hbarAmount.negated());
+
+        createNewSchedule(scheduledTransaction, null);
+    }
+
+    //TODO clean up dupe code
+    @Given("I successfully schedule an nft transfer from {string} to {string}")
+    public void createNewNftTransferSchedule(String senderName, String receiverName) {
+        expectedSignersCount = 2;
+        currentSignersCount = 0 + signatoryCountOffset;
+        tokenTreasuryAccount = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
+        ExpandedAccountId receiver = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(receiverName));
+
+        // create token
+        PrivateKey tokenKey = PrivateKey.generate();
+        PublicKey tokenPublicKey = tokenKey.getPublicKey();
+        log.trace("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
+
+        networkTransactionResponse = tokenClient.createToken(
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+                TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                tokenTreasuryAccount,
+                0, TokenType.NON_FUNGIBLE_UNIQUE, Collections.emptyList());
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        tokenId = networkTransactionResponse.getReceipt().tokenId;
+        assertNotNull(tokenId);
+
+        networkTransactionResponse = tokenClient.mint(tokenId, 0, RandomUtils.nextBytes(4));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        serialNumber = networkTransactionResponse.getReceipt().serials.get(0);
+
+        // associate new account, sender as treasury is auto associated
+        log.debug("Associate receiver: {} with token: {}", receiverName, tokenId);
+        networkTransactionResponse = tokenClient.associate(receiver, tokenId);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+
+        Hbar hbarAmount = Hbar.fromTinybars(DEFAULT_TINY_HBAR);
+        scheduledTransaction = tokenClient
+                .getTokenTransferTransaction(
+                        tokenId,
+                        tokenTreasuryAccount.getAccountId(),
+                        receiver.getAccountId(),
+                        0, Arrays.asList(serialNumber))
                 // add Hbar transfer logic
                 .addHbarTransfer(receiver.getAccountId(), hbarAmount)
                 .addHbarTransfer(tokenTreasuryAccount.getAccountId(), hbarAmount.negated());

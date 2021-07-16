@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.test.e2e.acceptance.response;
 
 /*-
  * ‌
@@ -20,31 +20,15 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Data;
 
 @Data
-public class MirrorTransaction {
+public class MirrorNftResponse {
+    private String createdTimestamp;
 
-    private List<MirrorAssessedCustomFee> assessedCustomFees = new ArrayList<>();
+    private String modifiedTimestamp;
 
-    private String consensusTimestamp;
+    private String tokenId;
 
-    private String name;
-
-    private String result;
-
-    private boolean scheduled;
-
-    private List<MirrorTokenTransfer> tokenTransfers;
-
-    List<MirrorNftTransfer> nftTransfers;
-
-    private String transactionId;
-
-    private List<MirrorTransfer> transfers;
-
-    private String validStartTimestamp;
-
+    private long serialNumber;
 }

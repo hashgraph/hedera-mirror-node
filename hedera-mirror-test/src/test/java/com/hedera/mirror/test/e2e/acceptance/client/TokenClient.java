@@ -36,6 +36,7 @@ import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
 import com.hedera.hashgraph.sdk.TokenBurnTransaction;
@@ -48,6 +49,8 @@ import com.hedera.hashgraph.sdk.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
 import com.hedera.hashgraph.sdk.TokenRevokeKycTransaction;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TokenUnfreezeTransaction;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
@@ -68,23 +71,26 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse createToken(ExpandedAccountId expandedAccountId, String symbol, int freezeStatus,
                                                   int kycStatus, ExpandedAccountId treasuryAccount,
-                                                  int initialSupply, List<CustomFee> customFees) {
+                                                  int initialSupply, TokenType tokenType,
+                                                  List<CustomFee> customFees) {
         log.debug("Create new token {}", symbol);
         Instant refInstant = Instant.now();
         String memo = String.format("Create token %s_%s", symbol, refInstant);
         PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
-                .setAutoRenewPeriod(Duration.ofSeconds(6_999_999L))
-                .setDecimals(10)
-                .setFreezeDefault(false)
-                .setInitialSupply(initialSupply)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
+                .setSupplyType(TokenSupplyType.INFINITE)
                 .setTokenSymbol(symbol)
+                .setTokenType(tokenType)
                 .setTreasuryAccountId(treasuryAccount.getAccountId())
                 .setTransactionMemo(memo);
+
+        if (tokenType == TokenType.FUNGIBLE_COMMON) {
+            tokenCreateTransaction.setDecimals(10).setInitialSupply(initialSupply);
+        }
 
         if (adminKey != null) {
             tokenCreateTransaction
@@ -137,13 +143,27 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse mint(TokenId tokenId, long amount) {
+        return mint(tokenId, amount, null);
+    }
+
+    public NetworkTransactionResponse mint(TokenId tokenId, byte[] metadata) {
+        return mint(tokenId, 0, metadata);
+    }
+
+    public NetworkTransactionResponse mint(TokenId tokenId, long amount, byte[] metadata) {
+
         log.debug("Mint {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
         TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
                 .setTokenId(tokenId)
-                .setAmount(amount)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Mint token_" + refInstant);
+
+        if (metadata != null) {
+            tokenMintTransaction.addMetadata(metadata);
+        } else {
+            tokenMintTransaction.setAmount(amount);
+        }
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenMintTransaction);
@@ -222,25 +242,54 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public TransferTransaction getTokenTransferTransaction(TokenId tokenId, AccountId sender, AccountId recipient,
-                                                           long amount) {
+                                                           long amount, List<Long> serialNumbers) {
         Instant refInstant = Instant.now();
-        return new TransferTransaction()
-                .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
-                .addTokenTransfer(tokenId, recipient, amount)
+        TransferTransaction transaction = new TransferTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Transfer token_" + refInstant);
+        if (serialNumbers != null) {
+            for (Long serialNumber : serialNumbers) {
+                transaction.addNftTransfer(new NftId(tokenId, serialNumber), sender, recipient);
+            }
+        } else {
+            transaction
+                    .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
+                    .addTokenTransfer(tokenId, recipient, amount);
+        }
+        return transaction;
     }
 
     public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
                                                     long amount) {
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
-        TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender.getAccountId(),
-                recipient, amount);
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender);
+        NetworkTransactionResponse response = transferToken(tokenId, sender, recipient, amount, null);
 
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender, recipient);
+
+        return response;
+    }
+
+    public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
+                                                    List<Long> serialNumbers) {
+
+        log.debug("Transfer serial numbers {} of token {} from {} to {}", serialNumbers, tokenId, sender, recipient);
+
+        NetworkTransactionResponse response = transferToken(tokenId, sender, recipient, 0, serialNumbers);
+
+        log.debug("Transferred serial numbers {} of token {} from {} to {}", serialNumbers, tokenId, sender, recipient);
+
+        return response;
+    }
+
+    public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
+                                                    long amount, List<Long> serialNumbers) {
+
+        TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender.getAccountId(),
+                recipient, amount, serialNumbers);
+
+        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender);
 
         return response;
     }
@@ -269,15 +318,39 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    public NetworkTransactionResponse updateTokenTreasury(TokenId tokenId, ExpandedAccountId newTreasuryId) {
+        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
+                .setTokenId(tokenId)
+                .setTreasuryAccountId(newTreasuryId.getAccountId());
+
+        KeyList keyList = new KeyList();
+        keyList.add(newTreasuryId.getPrivateKey());
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, keyList);
+
+        log.debug("Updated token {}.", tokenId);
+
+        return networkTransactionResponse;
+    }
+
     public NetworkTransactionResponse burn(TokenId tokenId, long amount) {
+        return burn(tokenId, amount, 0);
+    }
+
+    public NetworkTransactionResponse burn(TokenId tokenId, long amount, long serialNumber) {
 
         log.debug("Burn {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
         TokenBurnTransaction tokenBurnTransaction = new TokenBurnTransaction()
                 .setTokenId(tokenId)
-                .setAmount(amount)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Burn token_" + refInstant);
+
+        if (serialNumber != 0) {
+            tokenBurnTransaction.addSerial(serialNumber);
+        } else {
+            tokenBurnTransaction.setAmount(amount);
+        }
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
@@ -288,15 +361,25 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse wipe(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) {
+        return wipe(tokenId, amount, expandedAccountId, 0);
+    }
+
+    public NetworkTransactionResponse wipe(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId,
+                                           long serialNumber) {
 
         log.debug("Wipe {} tokens from {}", amount, tokenId);
         Instant refInstant = Instant.now();
         TokenWipeTransaction tokenWipeAccountTransaction = new TokenWipeTransaction()
                 .setAccountId(expandedAccountId.getAccountId())
                 .setTokenId(tokenId)
-                .setAmount(amount)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo("Wipe token_" + refInstant);
+
+        if (serialNumber != 0) {
+            tokenWipeAccountTransaction.addSerial(serialNumber);
+        } else {
+            tokenWipeAccountTransaction.setAmount(amount);
+        }
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenWipeAccountTransaction);
