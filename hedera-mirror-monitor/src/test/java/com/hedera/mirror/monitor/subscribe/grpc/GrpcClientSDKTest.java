@@ -88,12 +88,6 @@ class GrpcClientSDKTest {
         }
     }
 
-    // Shouldn't be necessary, but the SDK doesn't like being called multiple times in CI
-    private void restartClient() {
-        grpcClientSDK.close();
-        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
-    }
-
     @Test
     void subscribe() {
         consensusServiceStub.setResponses(Flux.just(response(1L), response(2L)));
@@ -113,16 +107,11 @@ class GrpcClientSDKTest {
     @Test
     void multipleSubscriptions() {
         consensusServiceStub.setResponses(Flux.just(response(1L), response(2L)));
-        grpcClientSDK.subscribe(subscription)
+        StepVerifier stepVerifier = grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2L));
-        assertThat(subscription)
-                .returns(2L, GrpcSubscription::getCount)
-                .returns(Map.of(), GrpcSubscription::getErrors);
-
-        restartClient();
+                .verifyLater();
 
         GrpcSubscription subscription2 = new GrpcSubscription(2, properties);
         grpcClientSDK.subscribe(subscription2)
@@ -131,6 +120,12 @@ class GrpcClientSDKTest {
                 .expectNextCount(2L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(5L));
+
+        stepVerifier.verify(Duration.ofSeconds(2L));
+
+        assertThat(subscription)
+                .returns(2L, GrpcSubscription::getCount)
+                .returns(Map.of(), GrpcSubscription::getErrors);
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(Map.of(), GrpcSubscription::getErrors);
@@ -147,8 +142,6 @@ class GrpcClientSDKTest {
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(2L));
-
-        restartClient();
 
         Timestamp consensusTimestamp = response1.getConsensusTimestamp();
         consensusServiceStub.getRequest()
