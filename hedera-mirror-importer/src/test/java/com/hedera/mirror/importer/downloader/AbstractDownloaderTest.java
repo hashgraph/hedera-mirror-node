@@ -95,6 +95,7 @@ import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
+import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 @Log4j2
@@ -664,6 +665,7 @@ public abstract class AbstractDownloaderTest {
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
+        streamFile.setConsensusStart(Utility.convertToNanosMax(instant));
         streamFile.setHash(hash);
         streamFile.setIndex(index);
 

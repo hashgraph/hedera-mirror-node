@@ -138,8 +138,7 @@ public abstract class Downloader<T extends StreamFile> {
                 .register(meterRegistry);
 
         streamCloseMetric = Timer.builder(STREAM_CLOSE_LATENCY_METRIC_NAME)
-                .description("The difference between the consensus time of the last and first transaction in the " +
-                        "stream file")
+                .description("The difference between the consensus start of the current and the last stream file")
                 .tag("type", streamType.toString())
                 .register(meterRegistry);
 
@@ -471,17 +470,18 @@ public abstract class Downloader<T extends StreamFile> {
             InterruptedException {
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);
-        lastStreamFile.set(Optional.of(streamFile));
 
-        long streamClose = streamFile.getConsensusEnd() - streamFile.getConsensusStart();
-        if (streamClose > 0) {
-            streamCloseMetric.record(streamClose, TimeUnit.NANOSECONDS);
-        }
-
+        lastStreamFile.get()
+                .ifPresent(last -> {
+                    long latency = streamFile.getConsensusStart() - last.getConsensusStart();
+                    streamCloseMetric.record(latency, TimeUnit.NANOSECONDS);
+                });
         Instant cloudStorageTime = pendingDownload.getObjectResponse().lastModified();
         Instant consensusEnd = Instant.ofEpochSecond(0, streamFile.getConsensusEnd());
         cloudStorageLatencyMetric.record(Duration.between(consensusEnd, cloudStorageTime));
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
+
+        lastStreamFile.set(Optional.of(streamFile));
     }
 
     /**
