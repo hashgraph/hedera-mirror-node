@@ -55,6 +55,9 @@ spec:
                 - action: keep
                   regex: .*(flux|grpc|importer|monitor|rest|traefik)$
                   sourceLabels: [job]
+                - action: drop
+                  regex: executor.*
+                  sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
       prometheusOperator:
         namespaces:
