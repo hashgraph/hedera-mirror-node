@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe;
+package com.hedera.mirror.monitor;
 
 /*-
  * ‌
@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.subscribe;
  */
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
 import io.micrometer.core.instrument.Clock;
@@ -38,11 +39,13 @@ import org.apache.commons.math3.util.Precision;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.hedera.mirror.monitor.subscribe.Scenario;
+
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public abstract class AbstractSubscription<P extends AbstractSubscriberProperties, T> implements Subscription {
+public abstract class AbstractScenario<P extends ScenarioProperties, T> implements Scenario<P, T> {
 
-    private static final long UPDATE_INTERVAL = 10_000L; // 10s
+    private static final long UPDATE_INTERVAL = 20_000L; // 20s measured in milliseconds
 
     @EqualsAndHashCode.Include
     protected final int id;
@@ -85,27 +88,36 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
     }
 
     @Override
-    public SubscriptionStatus getStatus() {
-        if (!stopwatch.isRunning()) {
-            return SubscriptionStatus.COMPLETED;
+    public ScenarioStatus getStatus() {
+        if (!isRunning()) {
+            return ScenarioStatus.COMPLETED;
         } else if (getRate() <= 0.0) {
-            return SubscriptionStatus.IDLE;
+            return ScenarioStatus.IDLE;
         } else {
-            return SubscriptionStatus.RUNNING;
+            return ScenarioStatus.RUNNING;
         }
     }
 
+    @Override
+    public boolean isRunning() {
+        return stopwatch.isRunning();
+    }
+
+    @Override
     public void onComplete() {
-        if (stopwatch.isRunning()) {
+        if (isRunning()) {
             stopwatch.stop();
-            log.info("Stopping '{}' subscription", this);
+            log.info("Stopping '{}' scenario", this);
         }
     }
 
-    public void onError(Throwable t) {
-        errors.add(t.getClass().getSimpleName());
+    @Override
+    public void onError(Throwable throwable) {
+        Throwable rootCause = Throwables.getRootCause(throwable);
+        errors.add(rootCause.getClass().getSimpleName());
     }
 
+    @Override
     public void onNext(T response) {
         counter.incrementAndGet();
         intervalCounter.getCurrent().increment();
@@ -115,7 +127,6 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
 
     @Override
     public String toString() {
-        String name = getName();
-        return getProperties().getSubscribers() <= 1 ? name : name + " #" + getId();
+        return getName();
     }
 }

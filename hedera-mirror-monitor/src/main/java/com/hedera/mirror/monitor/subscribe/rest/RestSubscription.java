@@ -25,13 +25,13 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks;
 
+import com.hedera.mirror.monitor.AbstractScenario;
+import com.hedera.mirror.monitor.ScenarioProtocol;
 import com.hedera.mirror.monitor.publish.PublishResponse;
-import com.hedera.mirror.monitor.subscribe.AbstractSubscription;
-import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
 import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
 
 @Getter
-class RestSubscription extends AbstractSubscription<RestSubscriberProperties, MirrorTransaction> {
+class RestSubscription extends AbstractScenario<RestSubscriberProperties, MirrorTransaction> {
 
     private final Sinks.Many<PublishResponse> sink;
 
@@ -41,8 +41,8 @@ class RestSubscription extends AbstractSubscription<RestSubscriberProperties, Mi
     }
 
     @Override
-    public SubscriberProtocol getProtocol() {
-        return SubscriberProtocol.REST;
+    public ScenarioProtocol getProtocol() {
+        return ScenarioProtocol.REST;
     }
 
     @Override
@@ -60,5 +60,11 @@ class RestSubscription extends AbstractSubscription<RestSubscriberProperties, Mi
         }
 
         errors.add(error);
+    }
+
+    @Override
+    public String toString() {
+        String name = getName();
+        return getProperties().getSubscribers() <= 1 ? name : name + " #" + getId();
     }
 }

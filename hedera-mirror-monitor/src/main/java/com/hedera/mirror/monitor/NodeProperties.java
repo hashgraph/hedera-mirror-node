@@ -46,6 +46,9 @@ public class NodeProperties {
     private int port = 50211;
 
     public String getEndpoint() {
+        if (host.startsWith("in-process:")) {
+            return host;
+        }
         return host + ":" + port;
     }
 }

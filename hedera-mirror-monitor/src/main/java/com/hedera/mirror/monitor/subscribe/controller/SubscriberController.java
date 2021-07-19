@@ -36,10 +36,10 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.monitor.ScenarioProtocol;
+import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
-import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
-import com.hedera.mirror.monitor.subscribe.Subscription;
-import com.hedera.mirror.monitor.subscribe.SubscriptionStatus;
+import com.hedera.mirror.monitor.subscribe.Scenario;
 
 @Log4j2
 @RequestMapping("/api/v1/subscriber")
@@ -50,8 +50,8 @@ class SubscriberController {
     private final MirrorSubscriber mirrorSubscriber;
 
     @GetMapping
-    public Flux<Subscription> subscriptions(@RequestParam Optional<SubscriberProtocol> protocol,
-                                            @RequestParam Optional<List<SubscriptionStatus>> status) {
+    public Flux<Scenario> subscriptions(@RequestParam Optional<ScenarioProtocol> protocol,
+                                        @RequestParam Optional<List<ScenarioStatus>> status) {
         return mirrorSubscriber.getSubscriptions()
                 .filter(s -> !protocol.isPresent() || protocol.get() == s.getProtocol())
                 .filter(s -> !status.isPresent() || status.get().contains(s.getStatus()))
@@ -59,15 +59,15 @@ class SubscriberController {
     }
 
     @GetMapping("/{name}")
-    public Flux<Subscription> subscriptions(@PathVariable String name,
-                                            @RequestParam Optional<List<SubscriptionStatus>> status) {
+    public Flux<Scenario> subscriptions(@PathVariable String name,
+                                        @RequestParam Optional<List<ScenarioStatus>> status) {
         return subscriptions(Optional.empty(), status)
                 .filter(subscription -> subscription.getName().equals(name))
                 .switchIfEmpty(Mono.error(new NoSuchElementException()));
     }
 
     @GetMapping("/{name}/{id}")
-    public Mono<Subscription> subscription(@PathVariable String name, @PathVariable int id) {
+    public Mono<Scenario> subscription(@PathVariable String name, @PathVariable int id) {
         return subscriptions(name, Optional.empty())
                 .filter(s -> s.getId() == id)
                 .last();

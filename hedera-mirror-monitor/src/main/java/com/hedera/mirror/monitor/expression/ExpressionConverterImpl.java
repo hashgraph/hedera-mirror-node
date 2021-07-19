@@ -49,6 +49,8 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
 
 @Log4j2
@@ -112,14 +114,16 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                         .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
             }
 
+            PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
+            publishScenarioProperties.setName(expression.toString());
+            publishScenarioProperties.setTimeout(Duration.ofSeconds(30L));
+            publishScenarioProperties.setType(type.getTransactionType());
+            PublishScenario scenario = new PublishScenario(publishScenarioProperties);
             PublishRequest request = PublishRequest.builder()
-                    .logResponse(true)
                     .receipt(true)
-                    .scenarioName(expression.toString())
-                    .timeout(Duration.ofSeconds(30L))
+                    .scenario(scenario)
                     .timestamp(Instant.now())
                     .transaction(transactionSupplier.get())
-                    .type(type.getTransactionType())
                     .build();
 
             PublishResponse publishResponse = Mono.defer(() -> transactionPublisher.publish(request))

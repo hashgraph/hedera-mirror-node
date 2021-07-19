@@ -30,5 +30,5 @@ public class SubscribeResponse {
     private final Instant consensusTimestamp;
     private final Instant publishedTimestamp;
     private final Instant receivedTimestamp;
-    private final Subscription subscription;
+    private final Scenario scenario;
 }

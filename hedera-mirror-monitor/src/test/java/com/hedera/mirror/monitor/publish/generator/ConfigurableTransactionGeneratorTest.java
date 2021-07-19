@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.publish.generator;
 
 /*-
  * ‌
@@ -42,18 +42,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 
 class ConfigurableTransactionGeneratorTest {
 
     private static final int SAMPLE_SIZE = 10_000;
     private static final String TOPIC_ID = "0.0.1000";
 
-    private ScenarioProperties properties;
+    private PublishScenarioProperties properties;
     private Supplier<ConfigurableTransactionGenerator> generator;
 
     @BeforeEach
     void init() {
-        properties = new ScenarioProperties();
+        properties = new PublishScenarioProperties();
         properties.setReceiptPercent(1);
         properties.setRecordPercent(1);
         properties.setName("test");
@@ -88,12 +89,6 @@ class ConfigurableTransactionGeneratorTest {
         assertThatThrownBy(() -> generator.get().next())
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish limit");
-    }
-
-    @Test
-    void logResponse() {
-        properties.setLogResponse(true);
-        assertRequests(generator.get().next());
     }
 
     @Test
@@ -202,10 +197,8 @@ class ConfigurableTransactionGeneratorTest {
         assertThat(publishRequests).hasSize(size).allSatisfy(publishRequest -> assertThat(publishRequest)
                 .isNotNull()
                 .hasNoNullFieldsOrProperties()
-                .hasFieldOrPropertyWithValue("logResponse", properties.isLogResponse())
                 .hasFieldOrPropertyWithValue("receipt", true)
                 .hasFieldOrPropertyWithValue("record", true)
-                .hasFieldOrPropertyWithValue("type", properties.getType())
                 .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
         );
     }

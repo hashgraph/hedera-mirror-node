@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe;
+package com.hedera.mirror.monitor.publish.generator;
 
 /*-
  * ‌
@@ -20,8 +20,19 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-public enum SubscriptionStatus {
-    COMPLETED, // The scenario has completed normally due to reaching the configured duration or limit
-    IDLE,      // The scenario has not completed but is not currently receiving any responses
-    RUNNING,   // The scenario is still actively receiving responses
+import lombok.Getter;
+
+import com.hedera.mirror.monitor.subscribe.Scenario;
+
+public class ScenarioException extends RuntimeException {
+
+    private static final long serialVersionUID = 1690349494197296387L;
+
+    @Getter
+    private final transient Scenario<?, ?> scenario;
+
+    public ScenarioException(Scenario<?, ?> scenario, String message) {
+        super(message);
+        this.scenario = scenario;
+    }
 }

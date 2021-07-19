@@ -20,27 +20,19 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ConcurrentHashMultiset;
-import com.google.common.collect.Multiset;
 import io.grpc.StatusRuntimeException;
-import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.step.StepLong;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.math3.util.Precision;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
@@ -59,28 +51,21 @@ public class PublishMetrics {
     static final String METRIC_SUBMIT = "hedera.mirror.monitor.publish.submit";
     static final String SUCCESS = "SUCCESS";
     static final String UNKNOWN = "unknown";
-    private static final long UPDATE_INTERVAL = 10_000L; // 10s
 
-    private final PublishProperties publishProperties;
-    private final AtomicLong counter = new AtomicLong(0L);
-    private final Multiset<String> errors = ConcurrentHashMultiset.create();
-    private final StepLong intervalCounter = new StepLong(Clock.SYSTEM, UPDATE_INTERVAL);
-    private final Stopwatch stopwatch = Stopwatch.createStarted();
+    private final Map<Tags, TimeGauge> durationGauges = new ConcurrentHashMap<>();
     private final Map<Tags, Timer> handleTimers = new ConcurrentHashMap<>();
     private final Map<Tags, Timer> submitTimers = new ConcurrentHashMap<>();
-    private final Map<Tags, TimeGauge> durationGauges = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
+    private final PublishProperties publishProperties;
 
     public void onSuccess(PublishResponse response) {
-        counter.incrementAndGet();
-        intervalCounter.getCurrent().increment();
         recordMetric(response.getRequest(), response, SUCCESS);
     }
 
     public void onError(PublishException publishException) {
         PublishRequest request = publishException.getPublishRequest();
         String status;
-        TransactionType type = request.getType();
+        TransactionType type = request.getScenario().getProperties().getType();
         Throwable throwable = Throwables.getRootCause(publishException);
 
         if (throwable instanceof PrecheckStatusException) {
@@ -101,7 +86,6 @@ public class PublishMetrics {
             log.debug("{} submitting {} transaction: {}", status, type, throwable.getMessage());
         }
 
-        errors.add(status);
         recordMetric(request, null, status);
     }
 
@@ -112,13 +96,12 @@ public class PublishMetrics {
                 .map(AccountId::toString)
                 .orElse(UNKNOWN);
         long startTime = request.getTimestamp().toEpochMilli();
-        String scenarioName = request.getScenarioName();
-        TransactionType type = request.getType();
-
         long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
-        Tags tags = new Tags(node, scenarioName, status, type);
+        Tags tags = new Tags(node, request.getScenario(), status);
+
         Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
         submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
+
         durationGauges.computeIfAbsent(tags, this::newDurationMetric);
 
         if (response != null && response.getReceipt() != null) {
@@ -130,11 +113,11 @@ public class PublishMetrics {
 
     private TimeGauge newDurationMetric(Tags tags) {
         TimeUnit unit = TimeUnit.NANOSECONDS;
-        return TimeGauge.builder(METRIC_DURATION, stopwatch, unit, s -> s.elapsed(unit))
+        return TimeGauge.builder(METRIC_DURATION, tags.getScenario(), unit, s -> s.getElapsed().toNanos())
                 .description("The amount of time this scenario has been publishing transactions")
                 .tag(Tags.TAG_NODE, tags.getNode())
-                .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
-                .tag(Tags.TAG_TYPE, tags.getType().toString())
+                .tag(Tags.TAG_SCENARIO, tags.getScenario().getName())
+                .tag(Tags.TAG_TYPE, tags.getType())
                 .register(meterRegistry);
     }
 
@@ -142,9 +125,9 @@ public class PublishMetrics {
         return Timer.builder(METRIC_HANDLE)
                 .description("The time it takes from submit to being handled by the main nodes")
                 .tag(Tags.TAG_NODE, tags.getNode())
-                .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
+                .tag(Tags.TAG_SCENARIO, tags.getScenario().getName())
                 .tag(Tags.TAG_STATUS, tags.getStatus())
-                .tag(Tags.TAG_TYPE, tags.getType().toString())
+                .tag(Tags.TAG_TYPE, tags.getType())
                 .register(meterRegistry);
     }
 
@@ -152,25 +135,25 @@ public class PublishMetrics {
         return Timer.builder(METRIC_SUBMIT)
                 .description("The time it takes to submit a transaction")
                 .tag(Tags.TAG_NODE, tags.getNode())
-                .tag(Tags.TAG_SCENARIO, tags.getScenarioName())
+                .tag(Tags.TAG_SCENARIO, tags.getScenario().getName())
                 .tag(Tags.TAG_STATUS, tags.getStatus())
-                .tag(Tags.TAG_TYPE, tags.getType().toString())
+                .tag(Tags.TAG_TYPE, tags.getType())
                 .register(meterRegistry);
     }
 
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.publish.statusFrequency:10000}")
     public void status() {
-        if (!publishProperties.isEnabled()) {
-            return;
+        if (publishProperties.isEnabled()) {
+            durationGauges.keySet().stream().map(Tags::getScenario).distinct().forEach(this::status);
         }
+    }
 
-        long count = counter.get();
-        long intervalCount = intervalCounter.poll();
-        double rate = Precision.round((intervalCount * 1000.0) / UPDATE_INTERVAL, 1);
-        Map<String, Integer> errorCounts = new HashMap<>();
-        errors.forEachEntry((k, v) -> errorCounts.put(k, v));
-        String elapsedStr = DurationToStringSerializer.convert(stopwatch.elapsed());
-        log.info("Published {} transactions in {} at {}/s. Errors: {}", count, elapsedStr, rate, errorCounts);
+    private void status(PublishScenario scenario) {
+        if (scenario.isRunning()) {
+            String elapsed = DurationToStringSerializer.convert(scenario.getElapsed());
+            log.info("{}: {} transactions in {} at {}/s. Errors: {}",
+                    scenario, scenario.getCount(), elapsed, scenario.getRate(), scenario.getErrors());
+        }
     }
 
     @Value
@@ -181,8 +164,11 @@ public class PublishMetrics {
         static final String TAG_TYPE = "type";
 
         private final String node;
-        private final String scenarioName;
+        private final PublishScenario scenario;
         private final String status;
-        private final TransactionType type;
+
+        private String getType() {
+            return scenario.getProperties().getType().toString();
+        }
     }
 }

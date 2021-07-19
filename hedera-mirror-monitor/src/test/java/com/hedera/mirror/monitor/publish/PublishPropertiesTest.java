@@ -28,36 +28,34 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.hedera.mirror.monitor.generator.ScenarioProperties;
-
 class PublishPropertiesTest {
 
-    private ScenarioProperties scenarioProperties;
+    private PublishScenarioProperties publishScenarioProperties;
     private PublishProperties publishProperties;
 
     @BeforeEach
     void setup() {
-        scenarioProperties = new ScenarioProperties();
+        publishScenarioProperties = new PublishScenarioProperties();
         publishProperties = new PublishProperties();
-        publishProperties.getScenarios().put("test1", scenarioProperties);
+        publishProperties.getScenarios().put("test1", publishScenarioProperties);
     }
 
     @Test
     void validate() {
         publishProperties.validate();
-        assertThat(scenarioProperties.getName()).isEqualTo("test1");
+        assertThat(publishScenarioProperties.getName()).isEqualTo("test1");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", " "})
     void emptyName(String name) {
-        publishProperties.getScenarios().put(name, scenarioProperties);
+        publishProperties.getScenarios().put(name, publishScenarioProperties);
         assertThrows(IllegalArgumentException.class, publishProperties::validate);
     }
 
     @Test
     void nullName() {
-        publishProperties.getScenarios().put(null, scenarioProperties);
+        publishProperties.getScenarios().put(null, publishScenarioProperties);
         assertThrows(IllegalArgumentException.class, publishProperties::validate);
     }
 

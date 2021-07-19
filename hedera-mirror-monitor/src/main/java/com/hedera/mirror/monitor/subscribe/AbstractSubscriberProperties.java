@@ -20,51 +20,20 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
+
+import com.hedera.mirror.monitor.ScenarioProperties;
 
 @Data
 @Validated
-public abstract class AbstractSubscriberProperties {
-
-    @NotNull
-    @DurationMin(seconds = 30)
-    protected Duration duration = Duration.ofNanos(Long.MAX_VALUE);
-
-    protected boolean enabled = true;
-
-    @Min(0)
-    protected long limit = 0; // 0 for unlimited
-
-    protected String name;
-
-    @NotNull
-    protected RetryProperties retry = new RetryProperties();
+public abstract class AbstractSubscriberProperties extends ScenarioProperties {
 
     @Min(1)
     @Max(1024)
     protected int subscribers = 1;
-
-    @Data
-    @Validated
-    public static class RetryProperties {
-
-        @Min(0)
-        private long maxAttempts = 16L;
-
-        @NotNull
-        @DurationMin(millis = 500L)
-        private Duration maxBackoff = Duration.ofSeconds(8L);
-
-        @NotNull
-        @DurationMin(millis = 100L)
-        private Duration minBackoff = Duration.ofMillis(250L);
-    }
 }
 
 

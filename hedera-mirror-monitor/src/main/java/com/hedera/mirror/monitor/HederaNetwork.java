@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum HederaNetwork {
 
-    MAINNET(mainnet(), mirrorNode("mainnet")),
+    MAINNET(mainnet(), mirrorNode("mainnet-public")),
     PREVIEWNET(previewnet(), mirrorNode("previewnet")),
     TESTNET(testnet(), mirrorNode("testnet")),
     OTHER(Collections.emptySet(), null);
@@ -42,6 +42,10 @@ public enum HederaNetwork {
         MirrorNodeProperties mirrorNodeProperties = new MirrorNodeProperties();
         mirrorNodeProperties.getGrpc().setHost("hcs." + host);
         mirrorNodeProperties.getRest().setHost(host);
+        if ("mainnet-public".equals(environment)) {
+            mirrorNodeProperties.getGrpc().setHost(host);
+            mirrorNodeProperties.getGrpc().setPort(443);
+        }
         return mirrorNodeProperties;
     }
 
@@ -76,7 +80,8 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.3", "0.previewnet.hedera.com"),
                 new NodeProperties("0.0.4", "1.previewnet.hedera.com"),
                 new NodeProperties("0.0.5", "2.previewnet.hedera.com"),
-                new NodeProperties("0.0.6", "3.previewnet.hedera.com")
+                new NodeProperties("0.0.6", "3.previewnet.hedera.com"),
+                new NodeProperties("0.0.7", "4.previewnet.hedera.com")
         );
     }
 

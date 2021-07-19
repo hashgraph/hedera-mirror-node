@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.publish.generator;
 
 /*-
  * ‌
@@ -42,35 +42,38 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
+import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 
 class CompositeTransactionGeneratorTest {
 
-    private ScenarioProperties scenarioProperties1;
-    private ScenarioProperties scenarioProperties2;
+    private PublishScenarioProperties publishScenarioProperties1;
+    private PublishScenarioProperties publishScenarioProperties2;
     private PublishProperties properties;
     private Supplier<CompositeTransactionGenerator> supplier;
     private double totalTps;
 
     @BeforeEach
     void init() {
-        scenarioProperties1 = new ScenarioProperties();
-        scenarioProperties1.setName("test1");
-        scenarioProperties1.setProperties(Map.of("topicId", "0.0.1000"));
-        scenarioProperties1.setTps(750);
-        scenarioProperties1.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        totalTps = scenarioProperties1.getTps();
+        publishScenarioProperties1 = new PublishScenarioProperties();
+        publishScenarioProperties1.setName("test1");
+        publishScenarioProperties1.setProperties(Map.of("topicId", "0.0.1000"));
+        publishScenarioProperties1.setTps(750);
+        publishScenarioProperties1.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
+        totalTps = publishScenarioProperties1.getTps();
 
-        scenarioProperties2 = new ScenarioProperties();
-        scenarioProperties2.setName("test2");
-        scenarioProperties2.setTps(250);
-        scenarioProperties2.setType(TransactionType.ACCOUNT_CREATE);
-        totalTps += scenarioProperties2.getTps();
+        publishScenarioProperties2 = new PublishScenarioProperties();
+        publishScenarioProperties2.setName("test2");
+        publishScenarioProperties2.setTps(250);
+        publishScenarioProperties2.setType(TransactionType.ACCOUNT_CREATE);
+        totalTps += publishScenarioProperties2.getTps();
 
         properties = new PublishProperties();
-        properties.getScenarios().put(scenarioProperties1.getName(), scenarioProperties1);
-        properties.getScenarios().put(scenarioProperties2.getName(), scenarioProperties2);
+        properties.getScenarios().put(publishScenarioProperties1.getName(), publishScenarioProperties1);
+        properties.getScenarios().put(publishScenarioProperties2.getName(), publishScenarioProperties2);
         supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(p -> p,
                 p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
                 properties));
@@ -117,21 +120,21 @@ class CompositeTransactionGeneratorTest {
         double seconds = 5;
         for (int i = 0; i < totalTps * seconds; ) {
             List<PublishRequest> requests = generator.next();
-            requests.stream().map(PublishRequest::getType).forEach(types::add);
+            requests.stream().map(r -> r.getScenario().getProperties().getType()).forEach(types::add);
             i += requests.size();
         }
 
-        for (ScenarioProperties scenarioProperties : properties.getScenarios().values()) {
-            assertThat(types.count(scenarioProperties.getType()))
+        for (PublishScenarioProperties publishScenarioProperties : properties.getScenarios().values()) {
+            assertThat(types.count(publishScenarioProperties.getType()))
                     .isNotNegative()
                     .isNotZero()
-                    .isCloseTo((int) (scenarioProperties.getTps() * seconds), withinPercentage(10));
+                    .isCloseTo((int) (publishScenarioProperties.getTps() * seconds), withinPercentage(10));
         }
     }
 
     @Test
     void disabledScenario() {
-        scenarioProperties1.setEnabled(false);
+        publishScenarioProperties1.setEnabled(false);
         CompositeTransactionGenerator generator = supplier.get();
         assertThat(generator.distribution.get().getPmf())
                 .hasSize(1)
@@ -167,15 +170,18 @@ class CompositeTransactionGeneratorTest {
 
     @Test
     void scenariosComplete() {
-        properties.getScenarios().remove(scenarioProperties2.getName());
-        scenarioProperties1.setLimit(1L);
+        properties.getScenarios().remove(publishScenarioProperties2.getName());
+        publishScenarioProperties1.setLimit(1L);
         CompositeTransactionGenerator generator = supplier.get();
+        List<PublishScenario> scenarios = generator.scenarios().collectList().block();
         assertThat(generator.next()).hasSize(1);
         assertThat(generator.next()).isEmpty();
         assertInactive();
         assertThat(properties.getScenarios().values())
-                .extracting(ScenarioProperties::isEnabled)
+                .extracting(PublishScenarioProperties::isEnabled)
                 .containsExactly(false);
+        assertThat(scenarios).extracting(PublishScenario::getStatus).containsOnly(ScenarioStatus.COMPLETED);
+        assertThat(generator.scenarios().count().block()).isZero();
     }
 
     @Test
@@ -211,8 +217,8 @@ class CompositeTransactionGeneratorTest {
     @Test
     @Timeout(10)
     void scenariosDurationAfterFirstFinish() {
-        scenarioProperties1.setDuration(Duration.ofSeconds(3));
-        scenarioProperties2.setDuration(Duration.ofSeconds(5));
+        publishScenarioProperties1.setDuration(Duration.ofSeconds(3));
+        publishScenarioProperties2.setDuration(Duration.ofSeconds(5));
         properties.setWarmupPeriod(Duration.ZERO);
         CompositeTransactionGenerator generator = supplier.get();
 
@@ -224,14 +230,14 @@ class CompositeTransactionGeneratorTest {
         assertThat(generator.transactionGenerators)
                 .hasSize(1)
                 .first()
-                .returns(scenarioProperties2, from(ConfigurableTransactionGenerator::getProperties));
+                .returns(publishScenarioProperties2, from(ConfigurableTransactionGenerator::getProperties));
     }
 
     @Test
     @Timeout(10)
     void scenariosDurationAfterBothFinish() {
-        scenarioProperties1.setDuration(Duration.ofSeconds(3));
-        scenarioProperties2.setDuration(Duration.ofSeconds(5));
+        publishScenarioProperties1.setDuration(Duration.ofSeconds(3));
+        publishScenarioProperties2.setDuration(Duration.ofSeconds(5));
         properties.setWarmupPeriod(Duration.ZERO);
         CompositeTransactionGenerator generator = supplier.get();
 

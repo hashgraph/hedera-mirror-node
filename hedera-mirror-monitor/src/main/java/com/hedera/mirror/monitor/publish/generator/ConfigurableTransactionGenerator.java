@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.publish.generator;
 
 /*-
  * ‌
@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
 import java.security.SecureRandom;
@@ -37,11 +38,14 @@ import javax.validation.Validator;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+import reactor.core.publisher.Flux;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.properties.ScenarioPropertiesAggregator;
 import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 
 @Log4j2
 public class ConfigurableTransactionGenerator implements TransactionGenerator {
@@ -51,26 +55,24 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private final ExpressionConverter expressionConverter;
     private final ScenarioPropertiesAggregator scenarioPropertiesAggregator;
     @Getter
-    private final ScenarioProperties properties;
+    private final PublishScenarioProperties properties;
     private final Supplier<TransactionSupplier<?>> transactionSupplier;
     private final AtomicLong remaining;
     private final long stopTime;
     private final PublishRequest.PublishRequestBuilder builder;
+    private final PublishScenario scenario;
 
     public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter,
                                             ScenarioPropertiesAggregator scenarioPropertiesAggregator,
-                                            ScenarioProperties properties) {
+                                            PublishScenarioProperties properties) {
         this.expressionConverter = expressionConverter;
         this.scenarioPropertiesAggregator = scenarioPropertiesAggregator;
         this.properties = properties;
         transactionSupplier = Suppliers.memoize(this::convert);
         remaining = new AtomicLong(properties.getLimit());
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
-        builder = PublishRequest.builder()
-                .logResponse(properties.isLogResponse())
-                .scenarioName(properties.getName())
-                .timeout(properties.getTimeout())
-                .type(properties.getType());
+        scenario = new PublishScenario(properties);
+        builder = PublishRequest.builder().scenario(scenario);
     }
 
     @Override
@@ -82,11 +84,11 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         long left = remaining.getAndAdd(-count);
         long actual = Math.min(left, count);
         if (actual <= 0) {
-            throw new ScenarioException(properties, "Reached publish limit of " + properties.getLimit());
+            throw new ScenarioException(scenario, "Reached publish limit");
         }
 
         if (stopTime - System.nanoTime() <= 0) {
-            throw new ScenarioException(properties, "Reached publish duration of " + properties.getDuration());
+            throw new ScenarioException(scenario, "Reached publish duration");
         }
 
         List<PublishRequest> publishRequests = new ArrayList<>();
@@ -94,7 +96,8 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
             PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceiptPercent()))
                     .record(shouldGenerate(properties.getRecordPercent()))
                     .timestamp(Instant.now())
-                    .transaction(transactionSupplier.get().get().setMaxAttempts(properties.getMaxAttempts()))
+                    .transaction(transactionSupplier.get().get()
+                            .setMaxAttempts((int) properties.getRetry().getMaxAttempts()))
                     .build();
             publishRequests.add(publishRequest);
         }
@@ -102,10 +105,16 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         return publishRequests;
     }
 
+    @Override
+    public Flux<PublishScenario> scenarios() {
+        return Flux.just(scenario);
+    }
+
     private TransactionSupplier<?> convert() {
         Map<String, String> convertedProperties = expressionConverter.convert(properties.getProperties());
         Map<String, Object> correctedProperties = scenarioPropertiesAggregator.aggregateProperties(convertedProperties);
         TransactionSupplier<?> supplier = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .convertValue(correctedProperties, properties.getType().getSupplier());
 
         validateSupplier(supplier);

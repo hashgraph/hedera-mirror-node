@@ -32,8 +32,6 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.monitor.generator.ScenarioProperties;
-
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.monitor.publish")
@@ -48,7 +46,7 @@ public class PublishProperties {
     private boolean enabled = true;
 
     @NotNull
-    private Map<String, ScenarioProperties> scenarios = new LinkedHashMap<>();
+    private Map<String, PublishScenarioProperties> scenarios = new LinkedHashMap<>();
 
     @DurationMin(seconds = 1L)
     @NotNull

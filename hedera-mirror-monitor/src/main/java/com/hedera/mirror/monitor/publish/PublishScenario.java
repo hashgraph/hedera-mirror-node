@@ -20,18 +20,27 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import java.time.Instant;
-import lombok.Builder;
-import lombok.Value;
+import java.util.Objects;
 
-import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.mirror.monitor.AbstractScenario;
+import com.hedera.mirror.monitor.ScenarioProtocol;
 
-@Builder
-@Value
-public class PublishRequest {
-    private final boolean receipt;
-    private final boolean record;
-    private final PublishScenario scenario;
-    private final Instant timestamp;
-    private final Transaction<?> transaction;
+public class PublishScenario extends AbstractScenario<PublishScenarioProperties, PublishResponse> {
+
+    private final String memo;
+
+    public PublishScenario(PublishScenarioProperties properties) {
+        super(1, properties);
+        String hostname = Objects.requireNonNullElse(System.getenv("HOSTNAME"), "unknown");
+        this.memo = String.format("Monitor %s on %s", properties.getName(), hostname);
+    }
+
+    public String getMemo() {
+        return memo;
+    }
+
+    @Override
+    public ScenarioProtocol getProtocol() {
+        return ScenarioProtocol.GRPC;
+    }
 }
