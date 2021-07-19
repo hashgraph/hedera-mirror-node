@@ -36,6 +36,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.ParserProperties;
 
 @RequiredArgsConstructor
@@ -54,6 +55,8 @@ public class StreamFileHealthIndicator implements HealthIndicator {
             getHealthWithReason(Status.UNKNOWN, STREAM_CLOSE_LATENCY_METRIC_NAME + MISSING_TIMER_REASON);
     private static final Health endDateInPastHealth =
             getHealthWithReason(Status.UP, "EndDate has passed, stream files are no longer expected");
+    private static final Health notLeaderHealth = Health.unknown().withDetail(REASON_KEY, "Not currently leader")
+            .build();
     private final AtomicReference<Health> lastHealthStatus = new AtomicReference<>(Health
             .unknown()
             .withDetail(COUNT_KEY, 0L)
@@ -61,9 +64,10 @@ public class StreamFileHealthIndicator implements HealthIndicator {
             .withDetail(REASON_KEY, "Starting up, no files parsed yet")
             .build()); // unknown until at least 1 stream file is parsed
 
-    private final ParserProperties parserProperty;
+    private final LeaderService leaderService;
     private final MeterRegistry meterRegistry;
     private final MirrorProperties mirrorProperties;
+    private final ParserProperties parserProperty;
 
     @Override
     public Health health() {
@@ -77,6 +81,10 @@ public class StreamFileHealthIndicator implements HealthIndicator {
         // consider case where endTime has been passed
         if (mirrorProperties.getEndDate().isBefore(currentInstant)) {
             return endDateInPastHealth;
+        }
+
+        if (!leaderService.isLeader()) {
+            return notLeaderHealth;
         }
 
         Timer streamParseDurationTimer = meterRegistry
