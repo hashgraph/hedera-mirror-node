@@ -80,7 +80,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Cucumber
 public class TokenFeature {
     private static final int INITIAL_SUPPLY = 1_000_000;
-    private static final int MAX_SUPPLY = 10_000_000;
+    private static final int MAX_SUPPLY = 1;
 
     @Autowired
     private TokenClient tokenClient;
@@ -184,17 +184,17 @@ public class TokenFeature {
     }
 
     @Then("^I transfer (.*) tokens (?:(.*) )?to sender(?: (.*))?$")
-    public void transferTokensToSender(int amount, Integer tokenIndex, Integer recipientIndex) {
+    public void transferTokensToSender(int amount, Integer tokenIndex, Integer senderIndex) {
         ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         transferTokens(tokenIds.get(getIndexOrDefault(tokenIndex)), amount, payer,
-                senders.get(getIndexOrDefault(recipientIndex)).getAccountId());
+                senders.get(getIndexOrDefault(senderIndex)).getAccountId());
     }
 
     @Then("^I transfer serial number (?:(.*) )?of token (?:(.*) )?to recipient(?: (.*))?$")
     public void transferNftsToRecipient(Integer serialNumberIndex, Integer tokenIndex, Integer recipientIndex) {
         ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
-        transferNfts(tokenIds.get(getIndexOrDefault(tokenIndex)), tokenSerialNumbers.get(tokenId)
+        transferNfts(tokenId, tokenSerialNumbers.get(tokenId)
                 .get(getIndexOrDefault(serialNumberIndex)), payer, recipients
                 .get(getIndexOrDefault(recipientIndex)).getAccountId());
     }
@@ -256,8 +256,10 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);
-        assertNotNull(receipt.serials.get(0));
-        tokenSerialNumbers.get(tokenId).add(receipt.serials.get(0));
+        assertThat(receipt.serials.size()).isEqualTo(1);
+        long serialNumber = receipt.serials.get(0);
+        assertThat(serialNumber).isGreaterThan(0);
+        tokenSerialNumbers.get(tokenId).add(serialNumber);
     }
 
     @Given("I wipe {int} from the token")
@@ -311,15 +313,15 @@ public class TokenFeature {
         publishBackgroundMessages();
     }
 
-    @Then("^the mirror node nft transactions REST APIs should return status (.*) for nft (:?(.*) )?serial number " +
-            "(:?(.*) )?fund flow$")
+    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number " +
+            "(:?(.*) )?transaction flow$")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorNftTransactionsAPIResponses(int status, Integer tokenIndex, Integer serialNumberIndex) {
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
-        verifyTransactions(status, Collections.emptyList());
+        verifyTransactions(status);
         verifyNftTransactions(tokenId, serialNumber);
         publishBackgroundMessages();
     }
@@ -343,16 +345,17 @@ public class TokenFeature {
         verifyTransactions(status, assessedCustomFees);
         verifyToken(tokenId);
         verifyTokenTransfers(tokenId);
+        publishBackgroundMessages();
     }
 
-    @Then("^the mirror node REST API should return status (.*) for nft (:?(.*) )?serial number (:?(.*) )?fund flow$")
+    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number (:?(.*) )?full flow$")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorNftFundFlow(int status, Integer tokenIndex, Integer serialNumberIndex) {
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
-        verifyTransactions(status, Collections.emptyList());
+        verifyTransactions(status);
         verifyToken(tokenId);
         verifyNft(tokenId, serialNumber);
         verifyNftTransfers(tokenId, serialNumber);
@@ -426,6 +429,7 @@ public class TokenFeature {
         senders.clear();
         tokenCustomFees.clear();
         tokenIds.clear();
+        tokenSerialNumbers.clear();
     }
 
     public AccountId getRecipientAccountId(int index) {
@@ -523,24 +527,26 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
+
+        log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, receiver);
         networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
+        log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender, receiver);
+
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + amount);
     }
 
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     private void transferNfts(TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountId receiver) {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
+
+        log.debug("Transfer serial numbers {} of token {} from {} to {}", serialNumber, tokenId, sender, receiver);
         networkTransactionResponse = tokenClient
                 .transferToken(tokenId, sender, receiver, Arrays.asList(serialNumber));
+        log.debug("Transferred serial numbers {} of token {} from {} to {}", serialNumber, tokenId, sender, receiver);
+
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + 1);
@@ -642,19 +648,10 @@ public class TokenFeature {
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
 
-        boolean serialNumberFound = false;
-
-        String tokenIdString = tokenId.toString();
-        String serialNumberString = String.valueOf(serialNumber);
-        for (MirrorNftTransfer nftTransfer : mirrorTransaction.getNftTransfers()) {
-            if (nftTransfer.getTokenId().equalsIgnoreCase(tokenIdString) && nftTransfer.getSerialNumber()
-                    .equals(serialNumberString)) {
-                serialNumberFound = true;
-                break;
-            }
-        }
-
-        assertTrue(serialNumberFound);
+        assertThat(mirrorTransaction.getNftTransfers())
+                .filteredOn(transfer -> tokenId.toString().equals(transfer.getTokenId()))
+                .map(MirrorNftTransfer::getSerialNumber)
+                .containsExactly(serialNumber);
     }
 
     private void verifyTokenUpdate(TokenId tokenId) {

@@ -48,7 +48,6 @@ import org.springframework.retry.annotation.Retryable;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleInfo;
 import com.hedera.hashgraph.sdk.TokenId;
@@ -176,30 +175,7 @@ public class ScheduleFeature {
         tokenTreasuryAccount = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
         ExpandedAccountId receiver = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(receiverName));
 
-        // create token
-        PrivateKey tokenKey = PrivateKey.generate();
-        PublicKey tokenPublicKey = tokenKey.getPublicKey();
-        log.trace("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
-
-        networkTransactionResponse = tokenClient.createToken(
-                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                tokenTreasuryAccount,
-                DEFAULT_TINY_HBAR,
-                TokenType.FUNGIBLE_COMMON,
-                Collections.emptyList()
-        );
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        tokenId = networkTransactionResponse.getReceipt().tokenId;
-        assertNotNull(tokenId);
-
-        // associate new account, sender as treasury is auto associated
-        log.debug("Associate receiver: {} with token: {}", receiverName, tokenId);
-        networkTransactionResponse = tokenClient.associate(receiver, tokenId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
+        createAndAssociateToken(TokenType.FUNGIBLE_COMMON, DEFAULT_TINY_HBAR, receiverName, receiver);
 
         Hbar hbarAmount = Hbar.fromTinybars(DEFAULT_TINY_HBAR);
         scheduledTransaction = tokenClient
@@ -215,7 +191,6 @@ public class ScheduleFeature {
         createNewSchedule(scheduledTransaction, null);
     }
 
-    //TODO clean up dupe code
     @Given("I successfully schedule an nft transfer from {string} to {string}")
     public void createNewNftTransferSchedule(String senderName, String receiverName) {
         expectedSignersCount = 2;
@@ -223,32 +198,12 @@ public class ScheduleFeature {
         tokenTreasuryAccount = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderName));
         ExpandedAccountId receiver = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(receiverName));
 
-        // create token
-        PrivateKey tokenKey = PrivateKey.generate();
-        PublicKey tokenPublicKey = tokenKey.getPublicKey();
-        log.trace("Token creation PrivateKey : {}, PublicKey : {}", tokenKey, tokenPublicKey);
-
-        networkTransactionResponse = tokenClient.createToken(
-                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                tokenTreasuryAccount,
-                0, TokenType.NON_FUNGIBLE_UNIQUE, Collections.emptyList());
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        tokenId = networkTransactionResponse.getReceipt().tokenId;
-        assertNotNull(tokenId);
+        createAndAssociateToken(TokenType.NON_FUNGIBLE_UNIQUE, 0, receiverName, receiver);
 
         networkTransactionResponse = tokenClient.mint(tokenId, 0, RandomUtils.nextBytes(4));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         serialNumber = networkTransactionResponse.getReceipt().serials.get(0);
-
-        // associate new account, sender as treasury is auto associated
-        log.debug("Associate receiver: {} with token: {}", receiverName, tokenId);
-        networkTransactionResponse = tokenClient.associate(receiver, tokenId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
 
         scheduledTransaction = tokenClient
                 .getTokenTransferTransaction(
@@ -515,6 +470,28 @@ public class ScheduleFeature {
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
 
         return mirrorTransaction;
+    }
+
+    private NetworkTransactionResponse createAndAssociateToken(TokenType tokenType, int initialSupply,
+                                                               String receiverName, ExpandedAccountId receiver) {
+        networkTransactionResponse = tokenClient.createToken(
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+                TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                tokenTreasuryAccount,
+                initialSupply, tokenType, Collections.emptyList());
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        tokenId = networkTransactionResponse.getReceipt().tokenId;
+        assertNotNull(tokenId);
+
+        // associate new account, sender as treasury is auto associated
+        log.debug("Associate receiver: {} with token: {}", receiverName, tokenId);
+        networkTransactionResponse = tokenClient.associate(receiver, tokenId);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+
+        return networkTransactionResponse;
     }
 
     @RequiredArgsConstructor

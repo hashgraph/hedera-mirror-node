@@ -27,5 +27,5 @@ public class MirrorNftTransfer {
     private String senderAccountId;
     private String receiverAccountId;
     private String tokenId;
-    private String serialNumber;
+    private long serialNumber;
 }

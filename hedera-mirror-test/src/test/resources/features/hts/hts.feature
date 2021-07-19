@@ -64,9 +64,9 @@ Feature: HTS Base Coverage Feature
         When I associate a new recipient account with token 0
         And the mirror node REST API should return status <httpStatusCode>
         Then I mint a serial number from the token
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 0 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 0 full flow
         Then I transfer serial number of token to recipient
-        And the mirror node REST API should return status <httpStatusCode> for nft 0 serial number 0 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 0 transaction flow
         Examples:
             | httpStatusCode |
             | 200            |
@@ -78,19 +78,19 @@ Feature: HTS Base Coverage Feature
         When I associate a new recipient account with token
         And the mirror node REST API should return status <httpStatusCode>
         Then I mint a serial number from the token
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 0 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 0 transaction flow
         Then I transfer serial number of token to recipient
-        And the mirror node REST API should return status <httpStatusCode> for nft 0 serial number 0 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 0 full flow
         Then I wipe serial number 0 from token 0
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 0 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 0 transaction flow
         Then I mint a serial number from the token
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 1 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 1 transaction flow
         Then I burn serial number 1 from token 0
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 1 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 1 transaction flow
         Then I mint a serial number from the token
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 2 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 2 transaction flow
         Then I delete the token
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 2 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 2 transaction flow
         Examples:
             | httpStatusCode | supplyType |
             | 200            | "INFINITE" |
@@ -103,7 +103,7 @@ Feature: HTS Base Coverage Feature
         When I associate a new recipient account with token
         And the mirror node REST API should return status <httpStatusCode>
         Then I mint a serial number from the token
-        And the mirror node nft transactions REST APIs should return status <httpStatusCode> for nft 0 serial number 0 fund flow
+        And the mirror node REST API should return status <httpStatusCode> for token 0 serial number 0 full flow
         #TODO This test should be updated when services enables the ability to change NFT treasury accounts.
         Then I update the treasury of token 0 to recipient 0
         Examples:

@@ -276,26 +276,13 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
                                                     long amount) {
-
-        log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, recipient);
-
-        NetworkTransactionResponse response = transferToken(tokenId, sender, recipient, amount, null);
-
-        log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender, recipient);
-
-        return response;
+        return transferToken(tokenId, sender, recipient, amount, null);
     }
 
     public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
                                                     List<Long> serialNumbers) {
 
-        log.debug("Transfer serial numbers {} of token {} from {} to {}", serialNumbers, tokenId, sender, recipient);
-
-        NetworkTransactionResponse response = transferToken(tokenId, sender, recipient, 0, serialNumbers);
-
-        log.debug("Transferred serial numbers {} of token {} from {} to {}", serialNumbers, tokenId, sender, recipient);
-
-        return response;
+        return transferToken(tokenId, sender, recipient, 0, serialNumbers);
     }
 
     public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
@@ -304,9 +291,7 @@ public class TokenClient extends AbstractNetworkClient {
         TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender.getAccountId(),
                 recipient, amount, serialNumbers);
 
-        NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender);
-
-        return response;
+        return executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender);
     }
 
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
@@ -339,8 +324,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenId(tokenId)
                 .setTreasuryAccountId(treasuryAccountId);
 
-        KeyList keyList = new KeyList();
-        keyList.add(newTreasuryId.getPrivateKey());
+        KeyList keyList = KeyList.of(newTreasuryId.getPrivateKey());
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, keyList);
 
