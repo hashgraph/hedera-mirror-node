@@ -37,9 +37,9 @@ import com.hedera.mirror.importer.parser.AbstractParserProperties;
 public class BalanceParserProperties extends AbstractParserProperties {
 
     public BalanceParserProperties() {
+        db.setTransactionTimeout(Duration.ofSeconds(300));
         queueCapacity = 0;
         retry.setMaxAttempts(3);
-        transactionTimeout = Duration.ofSeconds(300);
     }
 
     @Min(1)
