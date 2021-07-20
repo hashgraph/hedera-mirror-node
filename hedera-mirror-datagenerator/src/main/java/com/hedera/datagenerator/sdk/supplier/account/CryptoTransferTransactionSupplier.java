@@ -49,6 +49,8 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @Min(1)
     private long maxTransactionFee = 10_000_000L;
 
+    private String nftTokenId;
+
     @NotBlank
     private String recipientAccountId;
 
@@ -58,8 +60,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
 
     private String tokenId;
-
-    private String nftTokenId;
 
     @NotNull
     private EnumSet<TransferType> transferTypes = EnumSet.of(CRYPTO);
