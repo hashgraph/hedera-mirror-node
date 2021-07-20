@@ -95,6 +95,26 @@ hedera:
             type: CONSENSUS_SUBMIT_MESSAGE
 ```
 
+Some properties, such as `transferTypes` in
+the [CryptoTransferTransactionSupplier](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/account/CryptoTransferTransactionSupplier.java)
+, are Collections, which requires the YAML list syntax:
+
+```yaml
+hedera:
+  mirror:
+    monitor:
+      publish:
+        scenarios:
+          transfer: # Scenario name
+            properties:
+              transferTypes:
+                - CRYPTO
+                - TOKEN
+            recordPercent: 1.0
+            tps: 0.1
+            type: CRYPTO_TRANSFER
+```
+
 #### Scheduled Transactions
 
 Scheduled transactions require unique configuration as they encompass two transactions during the entity creation. One (
@@ -125,6 +145,32 @@ hedera:
             type: SCHEDULE_CREATE
 ```
 
+#### NFTs
+
+NFT (Non-Fungible Token) transactions use the same `TransactionSuppliers` as Fungible Token transactions, but they
+require that the serial number(s) to be operated upon be specified, as opposed to Fungible tokens where one simply sets
+an amount to be operated on. Because most operations can only occur once for a given serial number (a serial number can
+only be burned/wiped once, and it can only be transferred from Alice to Bob once without transferring it back), the
+monitor requires a sufficient amount of serial numbers be minted prior to running any `CRYPTO_TRANSFER`
+, `TOKEN_BURN`, or `TOKEN_WIPE` scenario involving the NFT. A `TOKEN_MINT` scenario can be set up to accomplish this. If
+you are reusing an existing NFT, be sure to set the `serialNumber` property where applicable, as by default
+the `TransactionSupplier`will start with serial number 1, which may have already been deleted or transferred elsewhere.
+
+```yaml
+hedera:
+  mirror:
+    monitor:
+      publish:
+        scenarios:
+          nftMint:
+            properties:
+              tokenType: NON_FUNGIBLE_UNIQUE
+              tokenId: ${nft.1}
+              amount: 10
+            type: TOKEN_MINT
+
+```
+
 ### Expression Syntax
 
 The monitor can automatically create account, token, and topic entities on application startup using a special
@@ -139,7 +185,7 @@ default values. The name label allows the same entity to be referenced in multip
 The following example uses the expression syntax to create the sender and recipient accounts as well as a token. These
 same entities are created once and reused in both the token associate and the token transfer transaction.
 
-```yaml
+  ```yaml
 hedera:
   mirror:
     monitor:
