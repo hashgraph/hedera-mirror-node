@@ -531,7 +531,7 @@ public class TokenFeature {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, receiver);
-        networkTransactionResponse = tokenClient.transferToken(tokenId, sender, receiver, amount);
+        networkTransactionResponse = tokenClient.transferFungibleToken(tokenId, sender, receiver, amount);
         log.debug("Transferred {} tokens of {} from {} to {}", amount, tokenId, sender, receiver);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -544,7 +544,7 @@ public class TokenFeature {
 
         log.debug("Transfer serial numbers {} of token {} from {} to {}", serialNumber, tokenId, sender, receiver);
         networkTransactionResponse = tokenClient
-                .transferToken(tokenId, sender, receiver, Arrays.asList(serialNumber));
+                .transferNonFungibleToken(tokenId, sender, receiver, Arrays.asList(serialNumber));
         log.debug("Transferred serial numbers {} of token {} from {} to {}", serialNumber, tokenId, sender, receiver);
 
         assertNotNull(networkTransactionResponse.getTransactionId());

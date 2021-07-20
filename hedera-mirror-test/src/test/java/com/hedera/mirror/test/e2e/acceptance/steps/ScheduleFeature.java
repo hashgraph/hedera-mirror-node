@@ -179,11 +179,11 @@ public class ScheduleFeature {
 
         Hbar hbarAmount = Hbar.fromTinybars(DEFAULT_TINY_HBAR);
         scheduledTransaction = tokenClient
-                .getTokenTransferTransaction(
+                .getFungibleTokenTransferTransaction(
                         tokenId,
                         tokenTreasuryAccount.getAccountId(),
                         receiver.getAccountId(),
-                        10, null)
+                        10)
                 // add Hbar transfer logic
                 .addHbarTransfer(receiver.getAccountId(), hbarAmount)
                 .addHbarTransfer(tokenTreasuryAccount.getAccountId(), hbarAmount.negated());
@@ -206,11 +206,11 @@ public class ScheduleFeature {
         serialNumber = networkTransactionResponse.getReceipt().serials.get(0);
 
         scheduledTransaction = tokenClient
-                .getTokenTransferTransaction(
+                .getNonFungibleTokenTransferTransaction(
                         tokenId,
                         tokenTreasuryAccount.getAccountId(),
                         receiver.getAccountId(),
-                        0, Arrays.asList(serialNumber));
+                        Arrays.asList(serialNumber));
 
         createNewSchedule(scheduledTransaction, null);
     }

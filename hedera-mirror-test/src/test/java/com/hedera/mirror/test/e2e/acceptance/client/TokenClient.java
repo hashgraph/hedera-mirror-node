@@ -88,6 +88,7 @@ public class TokenClient extends AbstractNetworkClient {
         PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction tokenCreateTransaction = new TokenCreateTransaction()
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
+                .setAutoRenewPeriod(Duration.ofSeconds(6_999_999L))
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
@@ -256,42 +257,43 @@ public class TokenClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public TransferTransaction getTokenTransferTransaction(TokenId tokenId, AccountId sender, AccountId recipient,
-                                                           long amount, List<Long> serialNumbers) {
-        Instant refInstant = Instant.now();
-        TransferTransaction transaction = new TransferTransaction()
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Transfer token_" + refInstant);
-        if (serialNumbers != null) {
-            for (Long serialNumber : serialNumbers) {
-                transaction.addNftTransfer(new NftId(tokenId, serialNumber), sender, recipient);
-            }
-        } else {
-            transaction
-                    .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
-                    .addTokenTransfer(tokenId, recipient, amount);
+    public TransferTransaction getFungibleTokenTransferTransaction(TokenId tokenId, AccountId sender,
+                                                                   AccountId recipient, long amount) {
+        return getTransferTransaction()
+                .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
+                .addTokenTransfer(tokenId, recipient, amount);
+    }
+
+    public TransferTransaction getNonFungibleTokenTransferTransaction(TokenId tokenId, AccountId sender,
+                                                                      AccountId recipient, List<Long> serialNumbers) {
+        TransferTransaction transaction = getTransferTransaction();
+        for (Long serialNumber : serialNumbers) {
+            transaction.addNftTransfer(new NftId(tokenId, serialNumber), sender, recipient);
         }
         return transaction;
     }
 
-    public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
-                                                    long amount) {
-        return transferToken(tokenId, sender, recipient, amount, null);
+    public TransferTransaction getTransferTransaction() {
+        Instant refInstant = Instant.now();
+        return new TransferTransaction()
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
+                .setTransactionMemo("Transfer token_" + refInstant);
     }
 
-    public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
-                                                    List<Long> serialNumbers) {
-
-        return transferToken(tokenId, sender, recipient, 0, serialNumbers);
+    public NetworkTransactionResponse transferFungibleToken(TokenId tokenId, ExpandedAccountId sender,
+                                                            AccountId recipient, long amount) {
+        TransferTransaction transaction = getFungibleTokenTransferTransaction(tokenId, sender
+                .getAccountId(), recipient, amount);
+        return executeTransactionAndRetrieveReceipt(transaction, sender);
     }
 
-    public NetworkTransactionResponse transferToken(TokenId tokenId, ExpandedAccountId sender, AccountId recipient,
-                                                    long amount, List<Long> serialNumbers) {
+    public NetworkTransactionResponse transferNonFungibleToken(TokenId tokenId, ExpandedAccountId sender,
+                                                               AccountId recipient,
+                                                               List<Long> serialNumbers) {
 
-        TransferTransaction tokenTransferTransaction = getTokenTransferTransaction(tokenId, sender.getAccountId(),
-                recipient, amount, serialNumbers);
-
-        return executeTransactionAndRetrieveReceipt(tokenTransferTransaction, sender);
+        TransferTransaction transaction = getNonFungibleTokenTransferTransaction(tokenId, sender
+                .getAccountId(), recipient, serialNumbers);
+        return executeTransactionAndRetrieveReceipt(transaction, sender);
     }
 
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
