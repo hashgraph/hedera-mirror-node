@@ -25,6 +25,7 @@ import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransa
 import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
 
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -62,7 +63,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private String tokenId;
 
     @NotNull
-    private EnumSet<TransferType> transferTypes = EnumSet.of(CRYPTO);
+    private Set<TransferType> transferTypes = EnumSet.of(CRYPTO);
 
     @Getter(lazy = true)
     private final AccountId recipientId = AccountId.fromString(recipientAccountId);
