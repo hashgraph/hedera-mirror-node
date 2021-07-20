@@ -329,6 +329,9 @@ Optional Filters
       setting `decimals` and `initialSupply`.
   - Update the `token` expression logic to set the new fields (`tokenType`, `tokenSupplyType`, and `maxSupply`).
 
+- Add logic to support list properties for scenarios. Currently a YAML list is read in as separate properties,
+  e.g., `transferTypes.0`, `transferTypes.1`.
+
 - Update the `TransactionSuppliers`
   - `TokenCreateTransactionSupplier` will need an enum `type` attribute (with values `FUNGIBLE_COMMON` and
     `NON_FUNGIBLE_UNIQUE`), an enum `supplyType` (with values `INFINITE` and `FINITE`), and a long `maxSupply`
@@ -342,8 +345,9 @@ Optional Filters
     a `serialNumber` AtomicLong field that the supplier will start at and increment as serial numbers are wiped/burned.
 
 - Add support for transferring NFTs in `CryptoTransferTransactionSupplier`.
-  - Add a new `transferType` `NFT` that will allow for transferring NFTs. Change the name of `BOTH`
-    to `CRYTPO_AND_TOKEN`.
+  - Add a new `transferType` `NFT` that will allow for transferring NFTs, and remove `BOTH`.
+  - Change the `transferTypes`property to be an `EnumSet` that will allow for any combination of transfers.
+  - Add a `nftTokenId` field so that a `TOKEN` and `NFT` scenario can occur with two different tokens.
   - Add a `serialNumber` AtomicLong field, and write logic to increment the value every time a transfer is added.
 
 ### Acceptance Tests
