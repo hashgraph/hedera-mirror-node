@@ -123,6 +123,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     }
 
     public enum TransferType {
-        CRYPTO, TOKEN, NFT
+        CRYPTO, NFT, TOKEN
     }
 }
