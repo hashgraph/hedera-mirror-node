@@ -23,12 +23,13 @@ package com.hedera.mirror.monitor.subscribe;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Multiset;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.step.StepLong;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -40,7 +41,7 @@ import org.apache.logging.log4j.Logger;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public abstract class AbstractSubscription<P extends AbstractSubscriberProperties, T> implements Subscription {
 
-    private static final long UPDATE_INTERVAL = 30L * 1000000L; // 30s in microseconds
+    private static final long UPDATE_INTERVAL = 10_000L; // 10s
 
     @EqualsAndHashCode.Include
     protected final int id;
@@ -48,17 +49,16 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
     @EqualsAndHashCode.Include
     protected final P properties;
 
-    protected final AtomicLong count = new AtomicLong(0L);
+    protected final AtomicLong counter = new AtomicLong(0L);
     protected final Multiset<String> errors = ConcurrentHashMultiset.create();
-    protected final AtomicLong lastCount = new AtomicLong(0L);
-    protected final AtomicLong lastElapsed = new AtomicLong(0L);
+    protected final StepLong intervalCounter = new StepLong(Clock.SYSTEM, UPDATE_INTERVAL);
     protected final Logger log = LogManager.getLogger(getClass());
     protected final Stopwatch stopwatch = Stopwatch.createStarted();
     protected volatile Optional<T> last = Optional.empty();
 
     @Override
     public long getCount() {
-        return count.get();
+        return counter.get();
     }
 
     @Override
@@ -75,22 +75,8 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
 
     @Override
     public double getRate() {
-        long previousCount = getCount();
-        long elapsed = stopwatch.elapsed(TimeUnit.MICROSECONDS);
-        long instantCount = previousCount - lastCount.get();
-        long instantElapsed = elapsed - lastElapsed.get();
-
-        // Since multiple threads are calling this, only update the statistics periodically
-        if (instantElapsed >= UPDATE_INTERVAL) {
-            lastCount.set(previousCount);
-            lastElapsed.set(elapsed);
-        }
-
-        return getRate(instantCount, instantElapsed);
-    }
-
-    private double getRate(long count, long elapsedMicros) {
-        return Precision.round(elapsedMicros > 0 ? (count * 1000000.0) / elapsedMicros : 0.0, 1);
+        long intervalCount = intervalCounter.poll();
+        return Precision.round((intervalCount * 1000.0) / UPDATE_INTERVAL, 1);
     }
 
     @Override
@@ -116,7 +102,8 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
     }
 
     public void onNext(T response) {
-        count.incrementAndGet();
+        counter.incrementAndGet();
+        intervalCounter.getCurrent().increment();
         log.trace("{}: Received response {}", this, response);
         last = Optional.of(response);
     }

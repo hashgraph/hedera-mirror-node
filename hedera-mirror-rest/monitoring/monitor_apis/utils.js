@@ -25,6 +25,8 @@ const httpErrors = require('http-errors');
 const _ = require('lodash');
 const log4js = require('log4js');
 const fetch = require('node-fetch');
+const math = require('mathjs');
+const parseDuration = require('parse-duration');
 const prettyMilliseconds = require('pretty-ms');
 const querystring = require('querystring');
 const config = require('./config');
@@ -59,6 +61,44 @@ const getUrl = (server, path, query = undefined) => {
 };
 
 /**
+ * Gets the backoff in millis from the retry after, the x-retry-in response header, and the configured min backoff
+ *
+ * @param {string|number} retryAfter value of the retry-after header, in unit of seconds
+ * @param {string} xRetryIn value of the x-retry-in header, in string format of "55ms"
+ */
+const getBackoff = (retryAfter, xRetryIn) => {
+  const backoffSeconds = Number(retryAfter);
+  let backoffMillis = isNaN(backoffSeconds) ? 0 : backoffSeconds * 1000;
+  if (backoffMillis === 0) {
+    backoffMillis = parseDuration(xRetryIn || '0ms');
+    backoffMillis = math.ceil(backoffMillis);
+  }
+
+  return math.max(config.retry.minBackoff, backoffMillis);
+};
+
+/**
+ * Fetch the url with opts and retry on 429 with the retry max and minMillisToWait from config file.
+ *
+ * @param url
+ * @param opts
+ * @returns {Promise<Response>}
+ */
+const fetchWithRetry = async (url, opts = {}) => {
+  for (let i = 0; ; i++) {
+    const response = await fetch(url, opts);
+
+    if (response.status !== 429 || i === config.retry.maxAttempts) {
+      return response;
+    }
+
+    const backoffMillis = getBackoff(response.headers.get('retry-after'), response.headers.get('x-retry-in'));
+    logger.warn(`url: ${url}, response status: 429, retry in ${backoffMillis}ms`);
+    await new Promise((resolve) => setTimeout(resolve, backoffMillis));
+  }
+};
+
+/**
  * Make an http request to mirror-node api
  * Host info is prepended to if only path is provided
  * @param {*} url rest-api endpoint
@@ -75,7 +115,7 @@ const getAPIResponse = async (url, key = undefined) => {
   );
 
   try {
-    const response = await fetch(url, {signal: controller.signal});
+    const response = await fetchWithRetry(url, {signal: controller.signal});
     if (!response.ok) {
       const message = `GET ${url} failed with ${response.statusText} (${response.status})`;
       return httpErrors(message);
@@ -129,7 +169,7 @@ class ServerTestResult {
 const testRunner = (server, testClassResult, resource) => {
   return async (testFunc) => {
     const start = Date.now();
-    const result = await testFunc(`http://${server.ip}:${server.port}`);
+    const result = await testFunc(server.baseUrl);
     if (result.skipped) {
       return;
     }

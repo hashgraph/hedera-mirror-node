@@ -81,7 +81,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         }
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleCreateTransaction, null);
+                executeTransactionAndRetrieveReceipt(scheduleCreateTransaction);
         ScheduleId scheduleId = networkTransactionResponse.getReceipt().scheduleId;
         log.debug("Created new schedule {}", scheduleId);
 
@@ -97,7 +97,8 @@ public class ScheduleClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 scheduleSignTransaction,
-                KeyList.of(expandedAccountId.getPrivateKey()));
+                KeyList.of(expandedAccountId.getPrivateKey())
+        );
         log.debug("Signed schedule {}", scheduleId);
 
         return networkTransactionResponse;
@@ -111,7 +112,7 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setScheduleId(scheduleId);
 
         NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction, null);
+                executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);
         log.debug("Deleted schedule {}", scheduleId);
 
         return networkTransactionResponse;

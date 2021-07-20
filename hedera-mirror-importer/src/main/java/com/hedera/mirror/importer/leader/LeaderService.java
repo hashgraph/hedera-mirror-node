@@ -1,3 +1,5 @@
+package com.hedera.mirror.importer.leader;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,24 +20,6 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('../utils');
-const EntityId = require('../entityId');
-
-/**
- * NFT view model
- */
-class NftViewModel {
-  constructor(nftModel) {
-    this.account_id = EntityId.fromEncodedId(nftModel.accountId, true).toString();
-    this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
-    this.deleted = nftModel.deleted;
-    this.metadata = utils.encodeBase64(nftModel.metadata);
-    this.modified_timestamp = utils.nsToSecNs(nftModel.modifiedTimestamp);
-    this.serial_number = Number(nftModel.serialNumber);
-    this.token_id = EntityId.fromEncodedId(nftModel.tokenId).toString();
-  }
+public interface LeaderService {
+    boolean isLeader();
 }
-
-module.exports = NftViewModel;

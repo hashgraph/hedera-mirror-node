@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.search.Search;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,11 +43,16 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
 @ExtendWith(MockitoExtension.class)
 abstract class AbstractStreamFileHealthIndicatorTest {
+
     private static final String REASON_KEY = "reason";
+
+    @Mock(lenient = true)
+    private LeaderService leaderService;
 
     @Mock(lenient = true)
     private Timer streamFileParseDurationTimer;
@@ -72,8 +78,8 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     abstract AbstractParserProperties getParserProperties();
 
     @BeforeEach
-    void setUp() {
-
+    void setup() {
+        doReturn(true).when(leaderService).isLeader();
         doReturn(0.0).when(streamCloseLatencyDurationTimer).mean(any());
         doReturn(0L).when(streamFileParseDurationTimer).count();
 
@@ -90,19 +96,13 @@ abstract class AbstractStreamFileHealthIndicatorTest {
         mirrorProperties.setEndDate(Instant.MAX);
         parserProperties = getParserProperties();
 
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                getParserProperties(),
-                meterRegistry,
-                mirrorProperties);
+        streamFileHealthIndicator = new StreamFileHealthIndicator(leaderService, meterRegistry, mirrorProperties,
+                parserProperties);
     }
 
     @Test
-    void startUpParsingDisabled() {
+    void startupParsingDisabled() {
         parserProperties.setEnabled(false);
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -110,12 +110,18 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     }
 
     @Test
+    void notLeader() {
+        doReturn(false).when(leaderService).isLeader();
+
+        Health health = streamFileHealthIndicator.health();
+        assertThat(health).isNotNull()
+                .returns(Status.UNKNOWN, Health::getStatus)
+                .returns(Map.of(REASON_KEY, "Not currently leader"), Health::getDetails);
+    }
+
+    @Test
     void missingParserDurationTimer() {
         doReturn(null).when(streamParseDurationSearch).timer();
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -126,10 +132,6 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     @Test
     void missingStreamCloseLatencyTimer() {
         doReturn(null).when(streamCloseLatencySearch).timer();
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -138,7 +140,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     }
 
     @Test
-    void startUpNoStreamFilesBeforeWindow() {
+    void startupNoStreamFilesBeforeWindow() {
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
         assertThat((String) health.getDetails().get(REASON_KEY)).contains("Starting up, no files parsed yet");
@@ -146,14 +148,10 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     }
 
     @Test
-    void startUpNoStreamFilesAfterWindowBeforeFirstFileClose() {
+    void startupNoStreamFilesAfterWindowBeforeFirstFileClose() {
         // set window time to smaller value
         parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
         mirrorProperties.setStartDate(Instant.now().plus(1, ChronoUnit.DAYS));
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties, // force end of timeout to before now
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -163,14 +161,10 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     }
 
     @Test
-    void startUpNoNewDownloadedStreamFilesAfterWindowBeforeFileClose() {
+    void startupNoNewDownloadedStreamFilesAfterWindowBeforeFileClose() {
         // file close mean metric will be zero and default fileCLose duration will be used
         // set window time to smaller value
         parserProperties.setProcessingTimeout(Duration.ofMillis(1L));
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties, // force end of timeout to before now
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -180,14 +174,10 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     }
 
     @Test
-    void startUpNoStreamFilesAfterFirstFileClose() {
+    void startupNoStreamFilesAfterFirstFileClose() {
         // set window time to smaller value
         parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
         mirrorProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties, // force end of timeout to before now
-                meterRegistry,
-                mirrorProperties);
 
         // update fileClose mean otherwise larger default value is used
         doReturn(1.0).when(streamCloseLatencyDurationTimer).mean(any());
@@ -233,10 +223,6 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     void noNewStreamFilesAfterWindow() {
 //        parserProperties.setProcessingTimeout(Duration.ofMinutes(-10L)); // force end of timeout to before now
         mirrorProperties.setStartDate(Instant.EPOCH);
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -262,10 +248,6 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     void noNewStreamFilesAfterWindowAndEndTime() {
         mirrorProperties.setEndDate(Instant.now().minusSeconds(60));  // force endDate to before now
         parserProperties = getParserProperties();
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UP); // cache should not be returned
@@ -275,10 +257,6 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     @Test
     void recoverWhenNewStreamFiles() {
         mirrorProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
-        streamFileHealthIndicator = new StreamFileHealthIndicator(
-                parserProperties,
-                meterRegistry,
-                mirrorProperties);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);

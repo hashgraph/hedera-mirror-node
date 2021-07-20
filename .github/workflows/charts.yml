@@ -24,6 +24,8 @@ jobs:
 
   install:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ci-${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -31,17 +33,21 @@ jobs:
           fetch-depth: 0
 
       - name: Build images
-        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=main
+        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=${IMAGE_TAG}
 
       - name: Create k3d cluster
         run: |
           set -ex
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           k3d cluster create mirror --agents 1 --timeout 5m
-          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:main" "gcr.io/mirrornode/hedera-mirror-importer:main" "gcr.io/mirrornode/hedera-mirror-rest:main"
+          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:${IMAGE_TAG}"
+          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-importer:${IMAGE_TAG}"
+          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-rest:${IMAGE_TAG}"
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.0.1
 
       - name: Install chart
-        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror
+        run: |
+          echo -e "global:\n  image:\n    tag: ${IMAGE_TAG}" | tee -a charts/hedera-mirror/ci/*
+          ct install --config .github/ct.yaml --charts=charts/hedera-mirror

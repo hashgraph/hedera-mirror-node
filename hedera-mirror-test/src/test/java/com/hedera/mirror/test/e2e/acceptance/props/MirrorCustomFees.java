@@ -1,3 +1,5 @@
+package com.hedera.mirror.test.e2e.acceptance.props;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,24 +20,16 @@
  * ‍
  */
 
-'use strict';
+import java.util.ArrayList;
+import java.util.List;
+import lombok.Data;
 
-const utils = require('../utils');
-const EntityId = require('../entityId');
+@Data
+public class MirrorCustomFees {
 
-/**
- * NFT view model
- */
-class NftViewModel {
-  constructor(nftModel) {
-    this.account_id = EntityId.fromEncodedId(nftModel.accountId, true).toString();
-    this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
-    this.deleted = nftModel.deleted;
-    this.metadata = utils.encodeBase64(nftModel.metadata);
-    this.modified_timestamp = utils.nsToSecNs(nftModel.modifiedTimestamp);
-    this.serial_number = Number(nftModel.serialNumber);
-    this.token_id = EntityId.fromEncodedId(nftModel.tokenId).toString();
-  }
+    String createdTimestamp;
+
+    private List<MirrorFixedFee> fixedFees = new ArrayList<>();
+
+    private List<MirrorFractionalFee> fractionalFees = new ArrayList<>();
 }
-
-module.exports = NftViewModel;

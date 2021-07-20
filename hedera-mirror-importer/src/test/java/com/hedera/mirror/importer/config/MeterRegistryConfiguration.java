@@ -1,3 +1,5 @@
+package com.hedera.mirror.importer.config;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,24 +20,16 @@
  * ‍
  */
 
-'use strict';
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 
-const utils = require('../utils');
-const EntityId = require('../entityId');
+@TestConfiguration
+public class MeterRegistryConfiguration {
 
-/**
- * NFT view model
- */
-class NftViewModel {
-  constructor(nftModel) {
-    this.account_id = EntityId.fromEncodedId(nftModel.accountId, true).toString();
-    this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
-    this.deleted = nftModel.deleted;
-    this.metadata = utils.encodeBase64(nftModel.metadata);
-    this.modified_timestamp = utils.nsToSecNs(nftModel.modifiedTimestamp);
-    this.serial_number = Number(nftModel.serialNumber);
-    this.token_id = EntityId.fromEncodedId(nftModel.tokenId).toString();
-  }
+    @Bean
+    public MeterRegistry prometheusMeterRegistry() {
+        return new SimpleMeterRegistry();
+    }
 }
-
-module.exports = NftViewModel;

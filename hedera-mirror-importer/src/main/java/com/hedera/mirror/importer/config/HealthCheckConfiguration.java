@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.CompositeHealthContributor;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -31,19 +32,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.ParserProperties;
 
 @Configuration
 @RequiredArgsConstructor
 public class HealthCheckConfiguration {
+
+    private final LeaderService leaderService;
     private final MirrorProperties mirrorProperties;
+    private final Collection<ParserProperties> parserProperties;
 
     @Bean
-    CompositeHealthContributor streamFileActivity(MeterRegistry meterRegistry,
-                                                  Collection<ParserProperties> parserProperties) {
+    CompositeHealthContributor streamFileActivity(@Named("prometheusMeterRegistry") MeterRegistry meterRegistry) {
         Map<String, HealthIndicator> healthIndicators = parserProperties.stream().collect(Collectors.toMap(
                 k -> k.getStreamType().toString(),
-                v -> new StreamFileHealthIndicator(v, meterRegistry, mirrorProperties)));
+                v -> new StreamFileHealthIndicator(leaderService, meterRegistry, mirrorProperties, v)));
 
         return CompositeHealthContributor.fromMap(healthIndicators);
     }

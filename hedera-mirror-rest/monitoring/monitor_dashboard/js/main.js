@@ -110,7 +110,7 @@ const makeCard = (data, server) => {
         <div class="card my-card">
           <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
             <div class="card-title">${server}</div>
-            <div class="ip-addr"> (${data.ip}:${data.port})</div>
+            <div class="base-url"> (${data.baseUrl})</div>
             <div class="card-text">
                <div class="results">
                  <span class="dot" style="background-color: ${dotcolor}"></span>

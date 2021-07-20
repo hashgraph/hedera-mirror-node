@@ -1,4 +1,5 @@
 package com.hedera.mirror.importer.leader;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -37,12 +38,17 @@ import org.springframework.integration.leader.event.OnRevokedEvent;
 @Aspect
 @Log4j2
 @Order(1)
-public class LeaderAspect {
+public class LeaderAspect implements LeaderService {
 
     private final AtomicBoolean leader = new AtomicBoolean(false);
 
     public LeaderAspect() {
         log.info("Starting as follower");
+    }
+
+    @Override
+    public boolean isLeader() {
+        return leader.get();
     }
 
     @Around("execution(@com.hedera.mirror.importer.leader.Leader * *(..)) && @annotation(leaderAnnotation)")

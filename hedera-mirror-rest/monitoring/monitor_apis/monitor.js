@@ -29,17 +29,15 @@ const retryCountMax = 3; // # of times a single process can retry
 /**
  * Main function to run the tests and save results
  * @param {Array} servers array of servers to test
- * @return {} None
+ * @return None
  */
 const runEverything = async (servers) => {
   try {
-    const restservers = undefined === servers ? common.getServerList().servers : servers;
-
-    if (restservers.length === 0) {
+    if (servers.length === 0) {
       return;
     }
 
-    for (const server of restservers) {
+    for (const server of servers) {
       const processObj = common.getProcess(server);
 
       if (processObj === undefined) {

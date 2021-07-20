@@ -35,6 +35,7 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.hashgraph.sdk.TransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
@@ -50,25 +51,38 @@ public abstract class AbstractNetworkClient {
         this.retryTemplate = retryTemplate;
     }
 
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
+    public TransactionId executeTransaction(Transaction transaction, KeyList keyList, ExpandedAccountId payer) {
+        int numSignatures = 0;
 
         // set max retries on sdk
         transaction.setMaxAttempts(sdkClient.getAcceptanceTestProperties().getSdkProperties().getMaxAttempts());
 
+        if (payer != null) {
+            transaction.setTransactionId(TransactionId.generate(payer.getAccountId()));
+
+            transaction.freezeWith(client);
+            transaction.sign(payer.getPrivateKey());
+            numSignatures++;
+        }
+
         if (keyList != null) {
             transaction.freezeWith(client); // Signing requires transaction to be frozen
             for (Key k : keyList) {
-                transaction = transaction.sign((PrivateKey) k);
+                transaction.sign((PrivateKey) k);
             }
             log.debug("{} additional signatures added to transaction", keyList.size());
+            numSignatures += keyList.size();
         }
 
-        Transaction finalTransaction = transaction;
-        TransactionResponse transactionResponse = retryTemplate.execute(x -> executeTransaction(finalTransaction));
+        TransactionResponse transactionResponse = retryTemplate.execute(x -> executeTransaction(transaction));
         TransactionId transactionId = transactionResponse.transactionId;
-        log.debug("Executed transaction {} with {} signatures.", transactionId, keyList == null ? 0 : keyList.size());
+        log.debug("Executed transaction {} with {} signatures.", transactionId, numSignatures);
 
         return transactionId;
+    }
+
+    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
+        return executeTransaction(transaction, keyList, null);
     }
 
     @SneakyThrows
@@ -76,13 +90,26 @@ public abstract class AbstractNetworkClient {
         return (TransactionResponse) transaction.execute(client);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
-                                                                           KeyList keyList) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
+                                                                           ExpandedAccountId payer) {
         long startBalance = getBalance();
-        TransactionId transactionId = executeTransaction(transaction, keyList);
+        TransactionId transactionId = executeTransaction(transaction, keyList, payer);
         TransactionReceipt transactionReceipt = getTransactionReceipt(transactionId);
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
+    }
+
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList) {
+        return executeTransactionAndRetrieveReceipt(transaction, keyList, null);
+    }
+
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
+                                                                           ExpandedAccountId payer) {
+        return executeTransactionAndRetrieveReceipt(transaction, null, payer);
+    }
+
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction) {
+        return executeTransactionAndRetrieveReceipt(transaction, null, null);
     }
 
     @SneakyThrows

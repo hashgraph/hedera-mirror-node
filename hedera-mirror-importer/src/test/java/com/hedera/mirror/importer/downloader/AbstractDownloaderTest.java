@@ -70,7 +70,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.ResourceUtils;
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.FileCopier;
@@ -78,9 +77,9 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
+import com.hedera.mirror.importer.config.CloudStorageConfiguration;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.config.MirrorImporterConfiguration;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -95,6 +94,7 @@ import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
+import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 @Log4j2
@@ -197,10 +197,9 @@ public abstract class AbstractDownloaderTest {
 
     protected void beforeEach() throws Exception {
         initProperties();
-        s3AsyncClient = new MirrorImporterConfiguration(
-                mirrorProperties, commonDownloaderProperties, new MetricsExecutionInterceptor(meterRegistry),
-                AnonymousCredentialsProvider.create())
-                .s3CloudStorageClient();
+        commonDownloaderProperties.setAllowAnonymousAccess(true);
+        s3AsyncClient = new CloudStorageConfiguration(commonDownloaderProperties,
+                new MetricsExecutionInterceptor(meterRegistry)).s3CloudStorageClient();
 
         signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
                 new SignatureFileReaderV5());
@@ -664,6 +663,7 @@ public abstract class AbstractDownloaderTest {
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
+        streamFile.setConsensusStart(Utility.convertToNanosMax(instant));
         streamFile.setHash(hash);
         streamFile.setIndex(index);
 

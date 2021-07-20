@@ -15,7 +15,7 @@ Feature: HTS Base Coverage Feature
 
     @release @acceptance
     Scenario Outline: Validate Freeze and KYC Flow - Create, Unfreeze, GrantKyc
-        Given I successfully create a new token account with freeze status <initialFreezeStatus> and kyc status <initialKycStatus>
+        Given I successfully create a new token with freeze status <initialFreezeStatus> and kyc status <initialKycStatus>
         When I associate a new recipient account with token
         And I set new account freeze status to <newFreezeStatus>
         Then the mirror node REST API should return status <httpStatusCode>

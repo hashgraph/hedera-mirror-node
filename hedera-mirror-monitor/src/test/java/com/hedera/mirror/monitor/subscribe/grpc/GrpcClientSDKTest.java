@@ -24,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.time.Instant;
@@ -69,11 +69,11 @@ class GrpcClientSDKTest {
         properties.setTopicId("0.0.1000");
         subscription = new GrpcSubscription(1, properties);
         monitorProperties = new MonitorProperties();
-        monitorProperties.getMirrorNode().getGrpc().setHost("127.0.0.1");
+        monitorProperties.getMirrorNode().getGrpc().setHost("in-process:test");
         grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
 
         consensusServiceStub = new ConsensusServiceStub();
-        server = ServerBuilder.forPort(5600)
+        server = InProcessServerBuilder.forName("test")
                 .addService(consensusServiceStub)
                 .build()
                 .start();
@@ -86,12 +86,6 @@ class GrpcClientSDKTest {
             server.shutdown();
             server.awaitTermination();
         }
-    }
-
-    // Shouldn't be necessary, but the SDK doesn't like being called multiple times in CI
-    private void restartClient() {
-        grpcClientSDK.close();
-        grpcClientSDK = new GrpcClientSDK(monitorProperties, new SubscribeProperties());
     }
 
     @Test
@@ -113,16 +107,11 @@ class GrpcClientSDKTest {
     @Test
     void multipleSubscriptions() {
         consensusServiceStub.setResponses(Flux.just(response(1L), response(2L)));
-        grpcClientSDK.subscribe(subscription)
+        StepVerifier stepVerifier = grpcClientSDK.subscribe(subscription)
                 .as(StepVerifier::create)
                 .expectNextCount(2L)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2L));
-        assertThat(subscription)
-                .returns(2L, GrpcSubscription::getCount)
-                .returns(Map.of(), GrpcSubscription::getErrors);
-
-        restartClient();
+                .verifyLater();
 
         GrpcSubscription subscription2 = new GrpcSubscription(2, properties);
         grpcClientSDK.subscribe(subscription2)
@@ -131,6 +120,12 @@ class GrpcClientSDKTest {
                 .expectNextCount(2L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(5L));
+
+        stepVerifier.verify(Duration.ofSeconds(2L));
+
+        assertThat(subscription)
+                .returns(2L, GrpcSubscription::getCount)
+                .returns(Map.of(), GrpcSubscription::getErrors);
         assertThat(subscription2)
                 .returns(2L, GrpcSubscription::getCount)
                 .returns(Map.of(), GrpcSubscription::getErrors);
@@ -147,8 +142,6 @@ class GrpcClientSDKTest {
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(2L));
-
-        restartClient();
 
         Timestamp consensusTimestamp = response1.getConsensusTimestamp();
         consensusServiceStub.getRequest()
@@ -245,7 +238,8 @@ class GrpcClientSDKTest {
                                    StreamObserver<ConsensusTopicResponse> streamObserver) {
             log.debug("subscribeTopic: {}", consensusTopicQuery);
             assertThat(consensusTopicQuery).isEqualTo(request.build());
-            responses.doOnComplete(streamObserver::onCompleted)
+            responses.delayElements(Duration.ofMillis(200L))
+                    .doOnComplete(streamObserver::onCompleted)
                     .doOnError(streamObserver::onError)
                     .doOnNext(streamObserver::onNext)
                     .doOnNext(t -> log.trace("Next: {}", t))

@@ -51,6 +51,9 @@ public class MirrorNodeProperties {
         private int port = 5600;
 
         public String getEndpoint() {
+            if (host.startsWith("in-process:")) {
+                return host;
+            }
             return host + ":" + port;
         }
     }
