@@ -185,7 +185,7 @@ default values. The name label allows the same entity to be referenced in multip
 The following example uses the expression syntax to create the sender and recipient accounts as well as a token. These
 same entities are created once and reused in both the token associate and the token transfer transaction.
 
-  ```yaml
+```yaml
 hedera:
   mirror:
     monitor:
