@@ -273,7 +273,7 @@ public class TokenClient extends AbstractNetworkClient {
         return transaction;
     }
 
-    public TransferTransaction getTransferTransaction() {
+    private TransferTransaction getTransferTransaction() {
         Instant refInstant = Instant.now();
         return new TransferTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
