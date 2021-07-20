@@ -20,6 +20,13 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
+import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.CRYPTO;
+import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.NFT;
+import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -54,8 +61,10 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
 
     private String tokenId;
 
+    private String nftTokenId;
+
     @NotNull
-    private TransferType transferType = TransferType.CRYPTO;
+    private Set<TransferType> transferTypes = new HashSet<>(Arrays.asList(CRYPTO));
 
     @Getter(lazy = true)
     private final AccountId recipientId = AccountId.fromString(recipientAccountId);
@@ -66,32 +75,30 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @Getter(lazy = true)
     private final TokenId transferTokenId = TokenId.fromString(tokenId);
 
+    @Getter(lazy = true)
+    private final TokenId transferNftTokenId = TokenId.fromString(nftTokenId);
+
     @Override
     public TransferTransaction get() {
 
         TransferTransaction transferTransaction = new TransferTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee));
 
-        switch (transferType) {
-            case CRYPTO:
-                addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
-                transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
-                break;
-            case TOKEN:
-                addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
-                transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test token transfer"));
-                break;
-            case NFT:
-                addNftTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
-                transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test nft transfer"));
-                break;
-            case CRYPTO_AND_TOKEN:
-                addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
-                addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
-                transferTransaction
-                        .setTransactionMemo(Utility.getMemo("Mirror node created test crypto and token transfer"));
-                break;
+        if (transferTypes.contains(CRYPTO)) {
+            addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
         }
+
+        if (transferTypes.contains(TOKEN)) {
+            addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
+        }
+
+        if (transferTypes.contains(NFT)) {
+            addNftTransfers(transferTransaction, getTransferNftTokenId(), getRecipientId(), getSenderId());
+        }
+
+        transferTransaction
+                .setTransactionMemo(Utility.getMemo("Mirror node created test transfer: " + transferTypes));
+
         return transferTransaction;
     }
 
@@ -118,6 +125,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     }
 
     public enum TransferType {
-        CRYPTO, TOKEN, NFT, CRYPTO_AND_TOKEN
+        CRYPTO, TOKEN, NFT
     }
 }

@@ -40,6 +40,7 @@ import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
+import com.hedera.mirror.monitor.properties.PropertiesCorrector;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
@@ -48,6 +49,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ExpressionConverter expressionConverter;
+    private final PropertiesCorrector propertiesCorrector;
     @Getter
     private final ScenarioProperties properties;
     private final Supplier<TransactionSupplier<?>> transactionSupplier;
@@ -55,8 +57,10 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private final long stopTime;
     private final PublishRequest.PublishRequestBuilder builder;
 
-    public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter, ScenarioProperties properties) {
+    public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter,
+                                            PropertiesCorrector propertiesCorrector, ScenarioProperties properties) {
         this.expressionConverter = expressionConverter;
+        this.propertiesCorrector = propertiesCorrector;
         this.properties = properties;
         transactionSupplier = Suppliers.memoize(this::convert);
         remaining = new AtomicLong(properties.getLimit());
@@ -99,8 +103,9 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     private TransactionSupplier<?> convert() {
         Map<String, String> convertedProperties = expressionConverter.convert(properties.getProperties());
+        Map<String, Object> correctedProperties = propertiesCorrector.correctProperties(convertedProperties);
         TransactionSupplier<?> supplier = new ObjectMapper()
-                .convertValue(convertedProperties, properties.getType().getSupplier());
+                .convertValue(correctedProperties, properties.getType().getSupplier());
 
         validateSupplier(supplier);
 
