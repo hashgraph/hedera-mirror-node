@@ -24,9 +24,7 @@ import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransa
 import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.NFT;
 import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -64,7 +62,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     private String nftTokenId;
 
     @NotNull
-    private Set<TransferType> transferTypes = new HashSet<>(Arrays.asList(CRYPTO));
+    private EnumSet<TransferType> transferTypes = EnumSet.of(CRYPTO);
 
     @Getter(lazy = true)
     private final AccountId recipientId = AccountId.fromString(recipientAccountId);
