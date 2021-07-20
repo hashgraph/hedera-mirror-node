@@ -228,7 +228,7 @@ public class TokenFeature {
 
     @Given("I burn {int} from the token")
     public void burnToken(int amount) {
-        networkTransactionResponse = tokenClient.burn(tokenIds.get(0), amount);
+        networkTransactionResponse = tokenClient.burnFungible(tokenIds.get(0), amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -237,7 +237,7 @@ public class TokenFeature {
     public void burnNft(int serialNumberIndex, int tokenIndex) {
         TokenId tokenId = tokenIds.get(tokenIndex);
         networkTransactionResponse = tokenClient
-                .burn(tokenId, 0, tokenSerialNumbers.get(tokenId).get(serialNumberIndex));
+                .burnNonFungible(tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -264,7 +264,7 @@ public class TokenFeature {
 
     @Given("I wipe {int} from the token")
     public void wipeToken(int amount) {
-        networkTransactionResponse = tokenClient.wipe(tokenIds.get(0), amount, recipients.get(0));
+        networkTransactionResponse = tokenClient.wipeFungible(tokenIds.get(0), amount, recipients.get(0));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -273,7 +273,7 @@ public class TokenFeature {
     public void wipeNft(int serialNumberIndex, int tokenIndex) {
         TokenId tokenId = tokenIds.get(tokenIndex);
         networkTransactionResponse = tokenClient
-                .wipe(tokenId, 0, recipients.get(0), tokenSerialNumbers.get(tokenId).get(serialNumberIndex));
+                .wipeNonFungible(tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex), recipients.get(0));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -465,9 +465,9 @@ public class TokenFeature {
                 kycStatus,
                 admin,
                 INITIAL_SUPPLY,
-                tokenType,
                 tokenSupplyType,
                 MAX_SUPPLY,
+                tokenType,
                 customFees);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
