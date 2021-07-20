@@ -338,7 +338,7 @@ Optional Filters
   - `TokenMintTransactionSupplier` will need an enum `type` attribute, as well as a `metadata` string and
     a `metadataSize` int (to generate metadata if not set, similar to how `ConsensusSubmitMessageTransactionSupplier`
     works). The supplier should only set `amount` for fungible tokens, and only `metadata` for NFTs.
-  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need an enum `type` attribute, and it will
+  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need an enum `type` attribute, and
     a `serialNumber` AtomicLong field that the supplier will start at and increment as serial numbers are wiped/burned.
 
 - Add support for transferring NFTs in `CryptoTransferTransactionSupplier`.
