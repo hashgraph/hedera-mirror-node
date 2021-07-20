@@ -154,7 +154,7 @@ only be burned/wiped once, and it can only be transferred from Alice to Bob once
 monitor requires a sufficient amount of serial numbers be minted prior to running any `CRYPTO_TRANSFER`
 , `TOKEN_BURN`, or `TOKEN_WIPE` scenario involving the NFT. A `TOKEN_MINT` scenario can be set up to accomplish this. If
 you are reusing an existing NFT, be sure to set the `serialNumber` property where applicable, as by default
-the `TransactionSupplier`will start with serial number 1, which may have already been deleted or transferred elsewhere.
+the `TransactionSupplier` will start with serial number 1, which may have already been deleted or transferred elsewhere.
 
 ```yaml
 hedera:
