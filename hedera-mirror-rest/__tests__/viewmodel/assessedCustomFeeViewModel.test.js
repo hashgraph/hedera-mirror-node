@@ -24,8 +24,6 @@ const AssessedCustomFee = require('../../model/assessedCustomFee');
 const AssessedCustomFeeViewModel = require('../../viewmodel/assessedCustomFeeViewModel');
 
 describe('AssessedCustomFeeViewModel', () => {
-  const payer = '0.0.8702';
-
   test('fee charged in hbar', () => {
     const model = new AssessedCustomFee({
       amount: 13,
@@ -35,11 +33,10 @@ describe('AssessedCustomFeeViewModel', () => {
     const expected = {
       amount: 13,
       collector_account_id: '0.0.8901',
-      payer_account_id: payer,
       token_id: null,
     };
 
-    expect(new AssessedCustomFeeViewModel(model, payer)).toEqual(expected);
+    expect(new AssessedCustomFeeViewModel(model)).toEqual(expected);
   });
 
   test('fee charged in token', () => {
@@ -52,10 +49,9 @@ describe('AssessedCustomFeeViewModel', () => {
     const expected = {
       amount: 13,
       collector_account_id: '0.0.8901',
-      payer_account_id: payer,
       token_id: '0.0.10013',
     };
 
-    expect(new AssessedCustomFeeViewModel(model, payer)).toEqual(expected);
+    expect(new AssessedCustomFeeViewModel(model)).toEqual(expected);
   });
 });

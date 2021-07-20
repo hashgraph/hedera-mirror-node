@@ -135,7 +135,7 @@ Both new domain objects are insert-only.
         "memo_base64": null,
         "result": "SUCCESS",
         "transaction_hash": "aGFzaA==",
-        "name": "TOKENTRANSFER",
+        "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "transaction_id": "0.0.10-1234567890-000000000",
         "valid_duration_seconds": "11",
@@ -184,13 +184,11 @@ Both new domain objects are insert-only.
           {
             "amount": 150,
             "collector_account_id": "0.0.87501",
-            "payer_account_id": "0.0.10",
             "token_id": null
           },
           {
             "amount": 10,
             "collector_account_id": "0.0.87502",
-            "payer_account_id": "0.0.10",
             "token_id": "0.0.90000"
           }
         ]

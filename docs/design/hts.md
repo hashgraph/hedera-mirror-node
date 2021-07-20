@@ -422,7 +422,7 @@ To achieve the goals and for easy integration with existing users the REST API s
           "memo_base64": null,
           "result": "SUCCESS",
           "transaction_hash": "aGFzaA==",
-          "name": "TOKENTRANSFER",
+          "name": "CRYPTOTRANSFER",
           "node": "0.0.3",
           "transaction_id": "0.0.10-1234567890-000000000",
           "valid_duration_seconds": "11",
