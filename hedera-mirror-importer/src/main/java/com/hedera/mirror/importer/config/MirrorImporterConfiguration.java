@@ -64,7 +64,7 @@ public class MirrorImporterConfiguration {
 
     @Bean
     @Profile("kubernetes")
-    LeaderService leaderAspect() {
+    LeaderAspect leaderAspect() {
         return new LeaderAspect();
     }
 
