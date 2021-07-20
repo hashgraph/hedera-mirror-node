@@ -347,7 +347,7 @@ Optional Filters
 - Add support for transferring NFTs in `CryptoTransferTransactionSupplier`.
   - Add a new `transferType` `NFT` that will allow for transferring NFTs, and remove `BOTH`.
   - Change the `transferTypes`property to be an `EnumSet` that will allow for any combination of transfers.
-  - Add a `nftTokenId` field so that a `TOKEN` and `NFT` scenario can occur with two different tokens.
+  - Add a `transferNftTokenId` field so that a `TOKEN` and `NFT` scenario can occur with two different tokens.
   - Add a `serialNumber` AtomicLong field, and write logic to increment the value every time a transfer is added.
 
 ### Acceptance Tests
