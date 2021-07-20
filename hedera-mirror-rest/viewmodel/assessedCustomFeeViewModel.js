@@ -30,12 +30,10 @@ class AssessedCustomFeeViewModel {
    * Constructs the assessed custom fee view model
    *
    * @param {AssessedCustomFee} assessedCustomFee
-   * @param {String} payerAccountId
    */
-  constructor(assessedCustomFee, payerAccountId) {
+  constructor(assessedCustomFee) {
     this.amount = assessedCustomFee.amount;
     this.collector_account_id = EntityId.fromEncodedId(assessedCustomFee.collectorAccountId).toString();
-    this.payer_account_id = payerAccountId;
     this.token_id = EntityId.fromEncodedId(assessedCustomFee.tokenId, true).toString();
   }
 }

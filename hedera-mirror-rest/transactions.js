@@ -106,17 +106,16 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
  * Creates an assessed custom fee list from aggregated array of JSON objects in the query result
  *
  * @param assessedCustomFees assessed custom fees
- * @param {string} payerAccountId the transaction payer account id
  * @return {undefined|{amount: Number, collector_account_id: string, payer_account_id: string, token_id: string}[]}
  */
-const createAssessedCustomFeeList = (assessedCustomFees, payerAccountId) => {
+const createAssessedCustomFeeList = (assessedCustomFees) => {
   if (!assessedCustomFees) {
     return undefined;
   }
 
   return assessedCustomFees.map((assessedCustomFee) => {
     const model = new AssessedCustomFee(assessedCustomFee);
-    return new AssessedCustomFeeViewModel(model, payerAccountId);
+    return new AssessedCustomFeeViewModel(model);
   });
 };
 
@@ -207,7 +206,7 @@ const createTransferLists = (rows) => {
       transfers: createCryptoTransferList(row.crypto_transfer_list),
       valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
       valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
-      assessed_custom_fees: createAssessedCustomFeeList(row.assessed_custom_fees, payerAccountId),
+      assessed_custom_fees: createAssessedCustomFeeList(row.assessed_custom_fees),
     };
   });
 

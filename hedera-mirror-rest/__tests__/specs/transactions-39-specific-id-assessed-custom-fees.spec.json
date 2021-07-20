@@ -121,19 +121,16 @@
           {
             "amount": 11,
             "collector_account_id": "0.0.8901",
-            "payer_account_id": "0.0.300",
             "token_id": null
           },
           {
             "amount": 13,
             "collector_account_id": "0.0.8902",
-            "payer_account_id": "0.0.300",
             "token_id": "0.0.10015"
           },
           {
             "amount": 17,
             "collector_account_id": "0.0.8903",
-            "payer_account_id": "0.0.300",
             "token_id": "0.0.90000"
           }
         ]
