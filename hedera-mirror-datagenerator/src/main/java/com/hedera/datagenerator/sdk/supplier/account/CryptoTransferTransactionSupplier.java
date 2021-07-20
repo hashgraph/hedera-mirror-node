@@ -86,12 +86,12 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
             addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
         }
 
-        if (transferTypes.contains(TOKEN)) {
-            addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
-        }
-
         if (transferTypes.contains(NFT)) {
             addNftTransfers(transferTransaction, getTransferNftTokenId(), getRecipientId(), getSenderId());
+        }
+
+        if (transferTypes.contains(TOKEN)) {
+            addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
         }
 
         transferTransaction
@@ -108,18 +108,18 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
                 .addHbarTransfer(senderId, hbarAmount.negated());
     }
 
-    private void addTokenTransfers(TransferTransaction transferTransaction, TokenId token, AccountId recipientId,
-                                   AccountId senderId) {
-        transferTransaction
-                .addTokenTransfer(token, recipientId, amount)
-                .addTokenTransfer(token, senderId, Math.negateExact(amount));
-    }
-
     private void addNftTransfers(TransferTransaction transferTransaction, TokenId token, AccountId recipientId,
                                  AccountId senderId) {
         for (int i = 0; i < amount; i++) {
             transferTransaction.addNftTransfer(new NftId(token, serialNumber.getAndIncrement()), senderId, recipientId);
         }
+    }
+
+    private void addTokenTransfers(TransferTransaction transferTransaction, TokenId token, AccountId recipientId,
+                                   AccountId senderId) {
+        transferTransaction
+                .addTokenTransfer(token, recipientId, amount)
+                .addTokenTransfer(token, senderId, Math.negateExact(amount));
     }
 
     public enum TransferType {
