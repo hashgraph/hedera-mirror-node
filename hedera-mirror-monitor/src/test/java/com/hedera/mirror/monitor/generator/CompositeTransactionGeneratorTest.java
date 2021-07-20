@@ -71,9 +71,9 @@ class CompositeTransactionGeneratorTest {
         properties = new PublishProperties();
         properties.getScenarios().put(scenarioProperties1.getName(), scenarioProperties1);
         properties.getScenarios().put(scenarioProperties2.getName(), scenarioProperties2);
-        supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(p -> p, p -> p.entrySet().stream()
-                .collect(Collectors
-                        .toMap(Map.Entry::getKey, e -> e.getValue())), properties));
+        supplier = Suppliers.memoize(() -> new CompositeTransactionGenerator(p -> p,
+                p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                properties));
 
         prepare();
     }
@@ -255,9 +255,9 @@ class CompositeTransactionGeneratorTest {
     private void prepare() {
         // warmup so in tests the timing will be accurate
         TransactionGenerator generator = Suppliers
-                .synchronizedSupplier(() -> new CompositeTransactionGenerator(p -> p, p -> p.entrySet().stream()
-                        .collect(Collectors
-                                .toMap(Map.Entry::getKey, e -> e.getValue())), properties)).get();
+                .synchronizedSupplier(() -> new CompositeTransactionGenerator(p -> p,
+                        p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                        properties)).get();
         generator.next(0);
     }
 }
