@@ -95,6 +95,10 @@ hedera:
             type: CONSENSUS_SUBMIT_MESSAGE
 ```
 
+Some properties, such as `transferTypes` in
+the [CryptoTransferTransactionSupplier](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/account/CryptoTransferTransactionSupplier.java)
+, are Collections, which requires the YAML list syntax.
+
 #### Scheduled Transactions
 
 Scheduled transactions require unique configuration as they encompass two transactions during the entity creation. One (
@@ -123,6 +127,42 @@ hedera:
               signatoryCount: 4
               totalSignatoryCount: 5
             type: SCHEDULE_CREATE
+```
+
+#### NFTs
+
+NFT (Non-Fungible Token) transactions use the same `TransactionSuppliers` as Fungible Token transactions, but they
+require that the serial number(s) to be operated upon be specified, as opposed to Fungible tokens where one simply sets
+an amount to be operated on. Because most operations can only occur once for a given serial number (a serial number can
+only be burned/wiped once, and it can only be transferred from Alice to Bob once without transferring it back), the
+monitor requires a sufficient amount of serial numbers be minted prior to running any `CRYPTO_TRANSFER`
+, `TOKEN_BURN`, or `TOKEN_WIPE` scenario involving the NFT. A `TOKEN_MINT` scenario can be set up to accomplish this. If
+you are reusing an existing NFT, be sure to set the `serialNumber` property where applicable, as by default
+the `TransactionSupplier` will start with serial number 1, which may have already been deleted or transferred elsewhere.
+
+```yaml
+hedera:
+  mirror:
+    monitor:
+      publish:
+        scenarios:
+          nftMint:
+            properties:
+              tokenType: NON_FUNGIBLE_UNIQUE
+              tokenId: ${nft.1}
+              amount: 1
+            type: TOKEN_MINT
+            tps: 105
+          nftTransfer:
+            properties:
+              recipientAccountId: ${account.1}
+              senderAccountId: ${account.2}
+              transferTypes:
+                - NFT
+              amount: 1
+              nftTokenId: ${nft.1}
+            tps: 100
+            type: CRYPTO_TRANSFER
 ```
 
 ### Expression Syntax

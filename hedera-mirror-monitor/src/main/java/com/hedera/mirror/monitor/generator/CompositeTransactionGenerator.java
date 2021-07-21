@@ -34,6 +34,7 @@ import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
+import com.hedera.mirror.monitor.properties.ScenarioPropertiesAggregator;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
@@ -55,14 +56,16 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
     final List<ConfigurableTransactionGenerator> transactionGenerators;
     final AtomicInteger batchSize = new AtomicInteger(1);
 
-    public CompositeTransactionGenerator(ExpressionConverter expressionConverter, PublishProperties properties) {
+    public CompositeTransactionGenerator(ExpressionConverter expressionConverter,
+                                         ScenarioPropertiesAggregator scenarioPropertiesAggregator,
+                                         PublishProperties properties) {
         this.properties = properties;
         this.transactionGenerators = properties.getScenarios()
                 .values()
                 .stream()
                 .filter(ScenarioProperties::isEnabled)
                 .map(scenarioProperties -> new ConfigurableTransactionGenerator(expressionConverter,
-                        scenarioProperties))
+                        scenarioPropertiesAggregator, scenarioProperties))
                 .collect(Collectors.toList());
         rebuild();
     }

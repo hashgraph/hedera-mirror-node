@@ -325,46 +325,30 @@ Optional Filters
 
 - Make changes to the `ExpressionConverter`
   - Add a new `nft` expression
-    - Creating an NFT requires the `tokenType` field to be set to `NON_FUNGIBLE_UNIQUE`. `TokenCreate` for an NFT also
-      cannot create serial numbers as part of the initial supply, so a `TokenMint` should follow to have serial numbers
-      created for the transaction suppliers.
-    - Serial numbers are auto-incremented per token, so minting a hardcoded or configured (one universal value) number
-      of serial numbers per NFT should give the transaction suppliers a guaranteed set of serial numbers to use without
-      having to save the actual serial numbers anywhere. The drawback to this is the NFT scenarios will be less
-      customizable.
-      - Only one NFT can be minted per transaction, so to reduce startup time this number should be low, possibly just
-        one.
-  - Update the `token` expression logic to set the new fields (`tokenType` and `maxSupply`).
+    - Creating an NFT requires the `tokenType` field to be set to `NON_FUNGIBLE_UNIQUE`, as well as not
+      setting `decimals` and `initialSupply`.
+  - Update the `token` expression logic to set the new fields (`tokenType`, `tokenSupplyType`, and `maxSupply`).
+
+- Add logic to support list properties for scenarios. Currently a YAML list is read in as separate properties,
+  e.g., `transferTypes.0`, `transferTypes.1`.
 
 - Update the `TransactionSuppliers`
-  - `TokenCreateTransactionSupplier` will need an enum `tokenType` attribute (with values `FUNGIBLE_COMMON` and
-    `NON_FUNGIBLE_UNIQUE`), an enum `tokenSupplyType` (with values `INFINITE` and `FINITE`), and a long `maxSupply`
+  - `TokenCreateTransactionSupplier` will need an enum `type` attribute (with values `FUNGIBLE_COMMON` and
+    `NON_FUNGIBLE_UNIQUE`), an enum `supplyType` (with values `INFINITE` and `FINITE`), and a long `maxSupply`
     attribute.
     - Some fields will now have stricter requirements now, such as for NFTs `decimals` has to be 0, as
-      does `initialSupply`. We could simply abide by the user config values, regardless of if they are valid, but most
-      likely we should have logic to enforce those requirements based on the `tokenType`.
-  - `TokenMintTransactionSupplier` will need an enum `tokenType` attribute, as well as a List<String> `metadata`
-    attribute. The supplier should only set `amount` for fungible tokens, and only `metadata` for NFTs
-    - Alternatively, the `tokenType` can be removed, and the supplier just sets whichever of `metadata` or `amount` is
-      set, but this relies on users configuring things correctly.
-  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need an enum `tokenType` attribute, and it
-    will need to set the `serialNumbers` list for NFTs (hardcoded based on the `initialSupply` value used in
-    the `ExpressionConverter`).
+      does `initialSupply`. Add logic to enforce these based on the `type` and `supplyType` enums.
+  - `TokenMintTransactionSupplier` will need an enum `type` attribute, as well as a `metadata` string and
+    a `metadataSize` int (to generate metadata if not set, similar to how `ConsensusSubmitMessageTransactionSupplier`
+    works). The supplier should only set `amount` for fungible tokens, and only `metadata` for NFTs.
+  - `TokenBurnTransactionSupplier` and `TokenWipeTransactionSupplier` will need an enum `type` attribute, and
+    a `serialNumber` AtomicLong field that the supplier will start at and increment as serial numbers are wiped/burned.
 
 - Add support for transferring NFTs in `CryptoTransferTransactionSupplier`.
-  - Add a new `tokenType` enum attribute to be used when doing a TOKEN or BOTH transfer, that determines whether to use
-    the `amount` attribute or the `serial numbers` list.
-  - Because a serial number can only be transferred once out of a given account (unless it is transferred back), custom
-    logic will be needed for performant NFT transfers.
-    - One approach would be to have the supplier swap the sender and receiver each time to transfer the NFT back and
-      forth. This could be done only on the NFT transfer or on the entire transfer. This would likely limit performance
-      as the swap has to be synchronized (or we just let the transactions fail when double-transfers occur).
-      - This would also require different signatures on the transaction, which would require reworking how we handle the
-        transaction signing.
-    - Alernatively, the `ExpressionConverter` could just generate a large amount of serial numbers, and
-      the `CryptoTransferTransactionSupplier` could just transfer one at a time via a counter until it runs out. This
-      would be a much simpler approach, but it would cap the number of transactions possible in a scenario, and it would
-      require a longer startup time to generate all the serial nunmbers.
+  - Add a new `transferType` `NFT` that will allow for transferring NFTs, and remove `BOTH`.
+  - Change the `transferTypes`property to be an `EnumSet` that will allow for any combination of transfers.
+  - Add a `transferNftTokenId` field so that a `TOKEN` and `NFT` scenario can occur with two different tokens.
+  - Add a `serialNumber` AtomicLong field, and write logic to increment the value every time a transfer is added.
 
 ### Acceptance Tests
 
