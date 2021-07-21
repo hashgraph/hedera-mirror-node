@@ -258,7 +258,7 @@ public class TokenFeature {
         assertNotNull(receipt);
         assertThat(receipt.serials.size()).isEqualTo(1);
         long serialNumber = receipt.serials.get(0);
-        assertThat(serialNumber).isGreaterThan(0);
+        assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);
     }
 
