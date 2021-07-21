@@ -29,7 +29,5 @@ public class MirrorAssessedCustomFee {
 
     String collectorAccountId;
 
-    String payerAccountId;
-
     String tokenId;
 }

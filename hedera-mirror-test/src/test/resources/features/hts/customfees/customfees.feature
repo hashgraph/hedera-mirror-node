@@ -37,12 +37,12 @@ Feature: HTS Custom Fees Base Coverage Feature
           |        | 1         | 10          | 2         |         |         |       |
         And the mirror node REST API should return status <httpStatusCode>
         # make a transfer from sender 0 to the last recipient and verify the assessed custom fees
-        When Sender 0 transfers 200 tokens 1 to recipient 3
+        When Sender 0 transfers 200 tokens 1 to recipient 3 with fractional fee 20
         Then the mirror node REST API should return status <httpStatusCode> for token 1 fund flow with assessed custom fees
-          | amount | collector | payer | token |
-          | 100    | 0         | 0     |       |
-          | 10     | 1         | 0     | 0     |
-          | 20     | 2         | 0     | 1     |
+          | amount | collector | token |
+          | 100    | 0         |       |
+          | 10     | 1         | 0     |
+          | 20     | 2         | 1     |
 
         Examples:
             | fundAmount | httpStatusCode |

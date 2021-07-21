@@ -46,7 +46,6 @@ public class CustomFeesConverter {
         assessedCustomFee.setAmount(Long.parseLong(entry.get("amount")));
         assessedCustomFee.setCollectorAccountId(tokenFeature
                 .getRecipientAccountId(Integer.parseInt(entry.get("collector"))).toString());
-        assessedCustomFee.setPayerAccountId(tokenFeature.getSender(Integer.parseInt(entry.get("payer"))));
         assessedCustomFee.setTokenId(getToken(entry.get("token")));
 
         return assessedCustomFee;
