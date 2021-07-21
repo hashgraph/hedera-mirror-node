@@ -30,9 +30,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
-class PropertiesCorrectorImplTest {
+class ScenarioPropertiesAggregatorImplTest {
 
-    private final PropertiesCorrector propertiesCorrector = new PropertiesCorrectorImpl();
+    private final ScenarioPropertiesAggregator scenarioPropertiesAggregator = new ScenarioPropertiesAggregatorImpl();
 
     @Test
     void propertiesWithLists() {
@@ -43,7 +43,7 @@ class PropertiesCorrectorImplTest {
         properties.put("otherProperty.0", "TEST");
         properties.put("otherProperty.1", "TEST2");
 
-        Map<String, Object> correctedProperties = propertiesCorrector.correctProperties(properties);
+        Map<String, Object> correctedProperties = scenarioPropertiesAggregator.aggregateProperties(properties);
         assertThat(correctedProperties.keySet())
                 .containsExactlyInAnyOrder("senderAccountId", "transferTypes", "otherProperty");
 

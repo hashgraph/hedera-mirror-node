@@ -40,7 +40,7 @@ import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
-import com.hedera.mirror.monitor.properties.PropertiesCorrector;
+import com.hedera.mirror.monitor.properties.ScenarioPropertiesAggregator;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 
 @Log4j2
@@ -49,7 +49,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ExpressionConverter expressionConverter;
-    private final PropertiesCorrector propertiesCorrector;
+    private final ScenarioPropertiesAggregator scenarioPropertiesAggregator;
     @Getter
     private final ScenarioProperties properties;
     private final Supplier<TransactionSupplier<?>> transactionSupplier;
@@ -58,9 +58,10 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
     private final PublishRequest.PublishRequestBuilder builder;
 
     public ConfigurableTransactionGenerator(ExpressionConverter expressionConverter,
-                                            PropertiesCorrector propertiesCorrector, ScenarioProperties properties) {
+                                            ScenarioPropertiesAggregator scenarioPropertiesAggregator,
+                                            ScenarioProperties properties) {
         this.expressionConverter = expressionConverter;
-        this.propertiesCorrector = propertiesCorrector;
+        this.scenarioPropertiesAggregator = scenarioPropertiesAggregator;
         this.properties = properties;
         transactionSupplier = Suppliers.memoize(this::convert);
         remaining = new AtomicLong(properties.getLimit());
@@ -103,7 +104,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     private TransactionSupplier<?> convert() {
         Map<String, String> convertedProperties = expressionConverter.convert(properties.getProperties());
-        Map<String, Object> correctedProperties = propertiesCorrector.correctProperties(convertedProperties);
+        Map<String, Object> correctedProperties = scenarioPropertiesAggregator.aggregateProperties(convertedProperties);
         TransactionSupplier<?> supplier = new ObjectMapper()
                 .convertValue(correctedProperties, properties.getType().getSupplier());
 

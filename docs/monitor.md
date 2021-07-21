@@ -97,23 +97,7 @@ hedera:
 
 Some properties, such as `transferTypes` in
 the [CryptoTransferTransactionSupplier](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/account/CryptoTransferTransactionSupplier.java)
-, are Collections, which requires the YAML list syntax:
-
-```yaml
-hedera:
-  mirror:
-    monitor:
-      publish:
-        scenarios:
-          transfer: # Scenario name
-            properties:
-              transferTypes:
-                - CRYPTO
-                - TOKEN
-            recordPercent: 1.0
-            tps: 0.1
-            type: CRYPTO_TRANSFER
-```
+, are Collections, which requires the YAML list syntax.
 
 #### Scheduled Transactions
 
@@ -166,9 +150,20 @@ hedera:
             properties:
               tokenType: NON_FUNGIBLE_UNIQUE
               tokenId: ${nft.1}
-              amount: 10
+              amount: 1
             type: TOKEN_MINT
-
+            tps: 105
+          nftTransfer:
+            properties:
+              recipientAccountId: ${account.1}
+              senderAccountId: ${account.2}
+              transferTypes:
+                - NFT
+              amount: 1
+              nftTokenId: ${nft.1}
+            receiptPercent: 1.0
+            tps: 100
+            type: CRYPTO_TRANSFER
 ```
 
 ### Expression Syntax

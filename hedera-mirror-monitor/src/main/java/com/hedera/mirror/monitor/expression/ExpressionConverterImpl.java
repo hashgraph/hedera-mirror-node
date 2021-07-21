@@ -85,7 +85,6 @@ public class ExpressionConverterImpl implements ExpressionConverter {
         try {
             log.debug("Processing expression {}", expression);
             ExpressionType type = expression.getType();
-            boolean isNft = type == ExpressionType.NFT;
             Class<? extends TransactionSupplier<?>> supplierClass = type.getTransactionType().getSupplier();
             TransactionSupplier<?> transactionSupplier = supplierClass.getConstructor().newInstance();
 

@@ -20,6 +20,6 @@ package com.hedera.mirror.monitor.properties;/*
 
 import java.util.Map;
 
-public interface PropertiesCorrector {
-    Map<String, Object> correctProperties(Map<String, String> properties);
+public interface ScenarioPropertiesAggregator {
+    Map<String, Object> aggregateProperties(Map<String, String> properties);
 }

@@ -29,13 +29,13 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 @Named
-public class PropertiesCorrectorImpl implements PropertiesCorrector {
+public class ScenarioPropertiesAggregatorImpl implements ScenarioPropertiesAggregator {
 
     private static final Pattern LIST_PATTERN_END = Pattern
             .compile("([A-Za-z0-9_]+)\\.[0-9]+");
 
     @Override
-    public Map<String, Object> correctProperties(Map<String, String> properties) {
+    public Map<String, Object> aggregateProperties(Map<String, String> properties) {
         //List properties are loaded in as property.0, property.1, etc.  This puts them into a list for deserialization.
         Map<String, Object> correctedProperties = new HashMap<>();
 
