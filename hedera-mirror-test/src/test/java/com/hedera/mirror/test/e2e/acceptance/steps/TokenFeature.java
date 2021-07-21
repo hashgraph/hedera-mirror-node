@@ -199,11 +199,11 @@ public class TokenFeature {
                 .get(getIndexOrDefault(recipientIndex)).getAccountId());
     }
 
-    @Then("^Sender(?: (.*))? transfers (.*) tokens (?:(.*) )?to recipient(?: (.*))?$")
-    public void transferTokensFromSenderToRecipient(Integer senderIndex, int amount, Integer tokenIndex,
-                                                    Integer recipientIndex) {
-        transferTokens(tokenIds.get(getIndexOrDefault(tokenIndex)), amount, senders.get(getIndexOrDefault(senderIndex)),
-                recipients.get(getIndexOrDefault(recipientIndex)).getAccountId());
+    @Then("Sender {int} transfers {int} tokens {int} to recipient {int} with fractional fee {int}")
+    public void transferTokensFromSenderToRecipient(int senderIndex, int amount, int tokenIndex, int recipientIndex,
+                                                    int fractionalFee) {
+        transferTokens(tokenIds.get(tokenIndex), amount, senders.get(senderIndex),
+                recipients.get(recipientIndex).getAccountId(), fractionalFee);
     }
 
     @Given("^I update the token(?: (.*))?$")
@@ -258,7 +258,7 @@ public class TokenFeature {
         assertNotNull(receipt);
         assertThat(receipt.serials.size()).isEqualTo(1);
         long serialNumber = receipt.serials.get(0);
-        assertThat(serialNumber).isGreaterThan(0);
+        assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);
     }
 
@@ -436,10 +436,6 @@ public class TokenFeature {
         return recipients.get(index).getAccountId();
     }
 
-    public String getSender(int index) {
-        return senders.get(index).getAccountId().toString();
-    }
-
     public TokenId getTokenId(int index) {
         return tokenIds.get(index);
     }
@@ -528,7 +524,13 @@ public class TokenFeature {
     }
 
     private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) {
+        transferTokens(tokenId, amount, sender, receiver, 0);
+    }
+
+    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver,
+                                int fractionalFee) {
         long startingBalance = tokenClient.getTokenBalance(receiver, tokenId);
+        long expectedBalance = startingBalance + amount - fractionalFee;
 
         log.debug("Transfer {} of token {} from {} to {}", amount, tokenId, sender, receiver);
         networkTransactionResponse = tokenClient.transferFungibleToken(tokenId, sender, receiver, amount);
@@ -536,7 +538,7 @@ public class TokenFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + amount);
+        assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(expectedBalance);
     }
 
     private void transferNfts(TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountId receiver) {
