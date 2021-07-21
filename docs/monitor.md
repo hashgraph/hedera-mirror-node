@@ -161,7 +161,6 @@ hedera:
                 - NFT
               amount: 1
               nftTokenId: ${nft.1}
-            receiptPercent: 1.0
             tps: 100
             type: CRYPTO_TRANSFER
 ```
