@@ -24,7 +24,7 @@
 
 // external libraries
 const log4js = require('log4js');
-const {proto} = require('@hashgraph/proto/lib/proto');
+const proto = require('@hashgraph/proto');
 
 const logger = log4js.getLogger();
 
@@ -38,7 +38,7 @@ class AddressBook {
   }
 
   parseAddressBookBuffer(addressBookBuffer) {
-    const addressBook = proto.AddressBook.decode(addressBookBuffer);
+    const addressBook = proto.NodeAddressBook.decode(addressBookBuffer);
     logger.info(`${addressBook.nodeAddress.length} node(s) found in address book`);
     this.nodeList = addressBook.nodeAddress;
   }
