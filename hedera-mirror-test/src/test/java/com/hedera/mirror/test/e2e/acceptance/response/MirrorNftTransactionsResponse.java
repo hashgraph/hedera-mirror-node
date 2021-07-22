@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.test.e2e.acceptance.response;
 
 /*-
  * ‌
@@ -20,14 +20,13 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransaction;
+
 import lombok.Data;
 
+import java.util.List;
+
 @Data
-public class MirrorAssessedCustomFee {
-
-    long amount;
-
-    String collectorAccountId;
-
-    String tokenId;
+public class MirrorNftTransactionsResponse {
+    List<MirrorNftTransaction> transactions;
 }

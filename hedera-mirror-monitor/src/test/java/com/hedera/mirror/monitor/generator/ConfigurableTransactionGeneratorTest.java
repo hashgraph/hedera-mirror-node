@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,9 @@ class ConfigurableTransactionGeneratorTest {
         properties.setProperties(Map.of("topicId", TOPIC_ID));
         properties.setTps(100_000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(p -> p, properties));
+        generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(p -> p,
+                p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                properties));
     }
 
     @Test

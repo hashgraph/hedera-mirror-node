@@ -39,6 +39,8 @@ public class MirrorTransaction {
 
     private List<MirrorTokenTransfer> tokenTransfers;
 
+    List<MirrorNftTransfer> nftTransfers;
+
     private String transactionId;
 
     private List<MirrorTransfer> transfers;

@@ -144,6 +144,16 @@ class ExpressionConverterImplTest {
     }
 
     @Test
+    void nft() throws InvalidProtocolBufferException {
+        TransactionType type = TransactionType.TOKEN_CREATE;
+        when(transactionPublisher.publish(any())).thenReturn(response(type, 101));
+        assertThat(expressionConverter.convert("${nft.foo}")).isEqualTo("0.0.101");
+
+        verify(transactionPublisher).publish(request.capture());
+        assertThat(request.getValue().getType()).isEqualTo(type);
+    }
+
+    @Test
     void topic() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));

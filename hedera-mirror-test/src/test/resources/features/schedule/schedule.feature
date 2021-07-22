@@ -64,6 +64,24 @@ Feature: Schedule Base Coverage Feature
             | sender  | receiver | httpStatusCode |
             | "ALICE" | "DAVE"   | 200            |
 
+    @acceptance @nft
+    Scenario Outline: Validate scheduled nft transfer - ScheduleCreate of TokenTransfer and multi ScheduleSign
+        Given I successfully schedule an nft transfer from <sender> to <receiver>
+        And the network confirms schedule presence
+        Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the non executed schedule entity
+        When the scheduled transaction is signed by <sender>
+        And the network confirms some signers have provided their signatures
+        Then the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the non executed schedule entity
+        When the scheduled transaction is signed by <receiver>
+        And the mirror node REST API should return status <httpStatusCode> for the schedule transaction
+        And the mirror node REST API should verify the executed schedule entity
+        When the network confirms the schedule is executed
+        Examples:
+            | sender  | receiver | httpStatusCode |
+            | "ALICE" | "DAVE"   | 200            |
+
     @acceptance
     Scenario Outline: Validate scheduled HCS message - ScheduleCreate of TopicMessageSubmit and ScheduleSign
         Given I successfully schedule a topic message submit with <accountName>'s submit key

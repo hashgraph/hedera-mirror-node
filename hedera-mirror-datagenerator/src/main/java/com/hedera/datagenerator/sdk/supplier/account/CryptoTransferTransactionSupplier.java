@@ -20,6 +20,13 @@ package com.hedera.datagenerator.sdk.supplier.account;
  * ‍
  */
 
+import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.CRYPTO;
+import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.NFT;
+import static com.hedera.datagenerator.sdk.supplier.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
+
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -30,6 +37,7 @@ import com.hedera.datagenerator.common.Utility;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 
@@ -42,16 +50,20 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @Min(1)
     private long maxTransactionFee = 10_000_000L;
 
+    private String nftTokenId;
+
     @NotBlank
     private String recipientAccountId;
 
     @NotBlank
     private String senderAccountId;
 
+    private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+
     private String tokenId;
 
     @NotNull
-    private TransferType transferType = TransferType.CRYPTO;
+    private Set<TransferType> transferTypes = EnumSet.of(CRYPTO);
 
     @Getter(lazy = true)
     private final AccountId recipientId = AccountId.fromString(recipientAccountId);
@@ -62,28 +74,30 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @Getter(lazy = true)
     private final TokenId transferTokenId = TokenId.fromString(tokenId);
 
+    @Getter(lazy = true)
+    private final TokenId transferNftTokenId = TokenId.fromString(nftTokenId);
+
     @Override
     public TransferTransaction get() {
 
         TransferTransaction transferTransaction = new TransferTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee));
 
-        switch (transferType) {
-            case CRYPTO:
-                addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
-                transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test crypto transfer"));
-                break;
-            case TOKEN:
-                addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
-                transferTransaction.setTransactionMemo(Utility.getMemo("Mirror node created test token transfer"));
-                break;
-            case BOTH:
-                addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
-                addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
-                transferTransaction
-                        .setTransactionMemo(Utility.getMemo("Mirror node created test crypto and token transfer"));
-                break;
+        if (transferTypes.contains(CRYPTO)) {
+            addCryptoTransfers(transferTransaction, getRecipientId(), getSenderId());
         }
+
+        if (transferTypes.contains(NFT)) {
+            addNftTransfers(transferTransaction, getTransferNftTokenId(), getRecipientId(), getSenderId());
+        }
+
+        if (transferTypes.contains(TOKEN)) {
+            addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
+        }
+
+        transferTransaction
+                .setTransactionMemo(Utility.getMemo("Mirror node created test transfer: " + transferTypes));
+
         return transferTransaction;
     }
 
@@ -95,6 +109,13 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
                 .addHbarTransfer(senderId, hbarAmount.negated());
     }
 
+    private void addNftTransfers(TransferTransaction transferTransaction, TokenId token, AccountId recipientId,
+                                 AccountId senderId) {
+        for (int i = 0; i < amount; i++) {
+            transferTransaction.addNftTransfer(new NftId(token, serialNumber.getAndIncrement()), senderId, recipientId);
+        }
+    }
+
     private void addTokenTransfers(TransferTransaction transferTransaction, TokenId token, AccountId recipientId,
                                    AccountId senderId) {
         transferTransaction
@@ -103,6 +124,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     }
 
     public enum TransferType {
-        CRYPTO, TOKEN, BOTH
+        CRYPTO, NFT, TOKEN
     }
 }

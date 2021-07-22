@@ -1,10 +1,8 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
-
-/*-
+package com.hedera.mirror.monitor.properties;/*
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +18,8 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import lombok.Data;
+import java.util.Map;
 
-@Data
-public class MirrorAssessedCustomFee {
-
-    long amount;
-
-    String collectorAccountId;
-
-    String tokenId;
+public interface ScenarioPropertiesAggregator {
+    Map<String, Object> aggregateProperties(Map<String, String> properties);
 }

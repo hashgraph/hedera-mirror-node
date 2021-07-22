@@ -23,11 +23,10 @@ package com.hedera.mirror.test.e2e.acceptance.props;
 import lombok.Data;
 
 @Data
-public class MirrorAssessedCustomFee {
-
-    long amount;
-
-    String collectorAccountId;
-
-    String tokenId;
+public class MirrorNftTransaction {
+    private String transactionId;
+    private String consensusTimestamp;
+    private String receiverAccountId;
+    private String senderAccountId;
+    private String type;
 }

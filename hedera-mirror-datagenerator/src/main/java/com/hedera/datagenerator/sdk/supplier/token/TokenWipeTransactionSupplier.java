@@ -20,8 +20,10 @@ package com.hedera.datagenerator.sdk.supplier.token;
  * ‍
  */
 
+import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 import com.hedera.datagenerator.common.Utility;
@@ -29,6 +31,7 @@ import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 
 @Data
@@ -43,17 +46,33 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
+    private AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+
     @NotBlank
     private String tokenId;
+
+    @NotNull
+    private TokenType type = TokenType.FUNGIBLE_COMMON;
 
     @Override
     public TokenWipeTransaction get() {
 
-        return new TokenWipeTransaction()
+        TokenWipeTransaction transaction = new TokenWipeTransaction()
                 .setAccountId(AccountId.fromString(accountId))
-                .setAmount(amount)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node wiped test token"));
+
+        switch (type) {
+            case FUNGIBLE_COMMON:
+                transaction.setAmount(amount);
+                break;
+            case NON_FUNGIBLE_UNIQUE:
+                for (int i = 0; i < amount; i++) {
+                    transaction.addSerial(serialNumber.getAndIncrement());
+                }
+        }
+
+        return transaction;
     }
 }
