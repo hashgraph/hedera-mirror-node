@@ -10,7 +10,9 @@
 
 \copy address_book (start_consensus_timestamp, end_consensus_timestamp, file_id, node_count, file_data) from address_book.csv csv;
 
-\copy address_book_entry (id, consensus_timestamp, ip, port, memo, public_key, node_id, node_account_id, node_cert_hash) from address_book_entry.csv csv;
+\copy address_book_entry (consensus_timestamp, memo, public_key, node_id, node_account_id, node_cert_hash, description, stake) from address_book_entry.csv csv;
+
+\copy address_book_service_endpoint (consensus_timestamp, ip_address_v4, node_id, port) from address_book_service_endpoint.csv csv;
 
 \copy contract_result (function_parameters, gas_supplied, call_result, gas_used, consensus_timestamp) from contract_result.csv csv;
 
