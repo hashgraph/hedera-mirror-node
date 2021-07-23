@@ -17,18 +17,11 @@ select create_hypertable('account_balance', 'consensus_timestamp', chunk_time_in
 select create_hypertable('account_balance_file', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
--- address_book
-select create_hypertable('address_book', 'start_consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
-                         create_default_indexes => false, if_not_exists => true);
+-- address_book hyper table creation skipped as small tables won't benefit from timescaledb scalability
 
--- address_book_entry
-select create_hypertable('address_book_entry', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
-                         create_default_indexes => false, if_not_exists => true);
+-- address_book_entry hyper table creation skipped as small tables won't benefit from timescaledb scalability
 
--- address_book_service_endpoint
-select create_hypertable('address_book_service_endpoint', 'consensus_timestamp',
-                         chunk_time_interval => ${chunkTimeInterval},
-                         create_default_indexes => false, if_not_exists => true);
+-- address_book_service_endpoint hyper table creation skipped as small tables won't benefit from timescaledb scalability
 
 -- contract_result
 select create_hypertable('contract_result', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},

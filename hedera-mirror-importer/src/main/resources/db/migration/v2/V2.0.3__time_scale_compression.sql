@@ -24,8 +24,6 @@ $$ language plpgsql;
 select set_integer_now_func('assessed_custom_fee', 'latest_consensus_timestamp');
 select set_integer_now_func('account_balance', 'latest_consensus_timestamp');
 select set_integer_now_func('account_balance_file', 'latest_consensus_timestamp');
-select set_integer_now_func('address_book_entry', 'latest_consensus_timestamp');
-select set_integer_now_func('address_book_service_endpoint', 'latest_consensus_timestamp');
 select set_integer_now_func('contract_result', 'latest_consensus_timestamp');
 select set_integer_now_func('crypto_transfer', 'latest_consensus_timestamp');
 select set_integer_now_func('custom_fee', 'latest_consensus_timestamp');
@@ -51,13 +49,11 @@ alter table account_balance
 alter table account_balance_file
     set (timescaledb.compress, timescaledb.compress_segmentby = 'node_account_id');
 
--- address_book skipped as update (end_consensus_timestamp) on compressed chunk is not allowed
+-- address_book skipped as not a hyper table
 
-alter table address_book_entry
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_id');
+-- address_book_entry skipped as not a hyper table
 
-alter table address_book_service_endpoint
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'consensus_timestamp, node_id, ip_address_v4, port');
+-- address_book_service_endpoint skipped as not a hyper table
 
 alter table contract_result
     set (timescaledb.compress);
@@ -121,7 +117,6 @@ alter table transaction_signature
 select add_compression_policy('assessed_custom_fee', bigint '${compressionAge}');
 select add_compression_policy('account_balance', bigint '${compressionAge}');
 select add_compression_policy('account_balance_file', bigint '${compressionAge}');
-select add_compression_policy('address_book_entry', bigint '${compressionAge}');
 select add_compression_policy('contract_result', bigint '${compressionAge}');
 select add_compression_policy('crypto_transfer', bigint '${compressionAge}');
 select add_compression_policy('custom_fee', bigint '${compressionAge}');
