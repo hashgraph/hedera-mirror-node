@@ -20,12 +20,13 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import org.junit.jupiter.api.Tag;
+import com.hedera.mirror.importer.EnabledIfV2;
 
-@Tag("v2")
+@EnabledIfV2
+@SuppressWarnings("java:S2187")
 class TokenUpsertQueryGeneratorV2Test extends TokenUpsertQueryGeneratorTest {
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into token (created_timestamp, decimals, fee_schedule_key, fee_schedule_key_ed25519_hex, " +
                 "freeze_default, freeze_key, freeze_key_ed25519_hex, " +
                 "initial_supply, kyc_key, kyc_key_ed25519_hex, max_supply, modified_timestamp, name, supply_key, " +

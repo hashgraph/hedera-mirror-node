@@ -23,21 +23,22 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-@Tag("v1")
+import com.hedera.mirror.importer.EnabledIfV1;
+
+@EnabledIfV1
 class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Resource
     private NftUpsertQueryGenerator nftUpsertQueryGenerator;
 
     @Override
-    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
+    protected UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
         return nftUpsertQueryGenerator;
     }
 
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into nft (account_id, created_timestamp, deleted, metadata, modified_timestamp, serial_number," +
                 " token_id) select nft_temp.account_id, nft_temp.created_timestamp, nft_temp.deleted, " +
                 "nft_temp.metadata, nft_temp.modified_timestamp, nft_temp.serial_number, nft_temp.token_id " +
@@ -48,7 +49,7 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     }
 
     @Override
-    public String getUpdateQuery() {
+    protected String getUpdateQuery() {
         return "update nft set account_id = case when nft_temp.deleted = true then null " +
                 "else coalesce(nft_temp.account_id, nft.account_id) end, " +
                 "deleted = coalesce(nft_temp.deleted, nft.deleted), " +

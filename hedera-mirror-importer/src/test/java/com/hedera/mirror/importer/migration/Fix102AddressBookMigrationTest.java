@@ -31,14 +31,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 
+import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 
+@EnabledIfV1
 @Tag("migration")
-@Tag("v1")
 class Fix102AddressBookMigrationTest extends IntegrationTest {
 
     @Resource

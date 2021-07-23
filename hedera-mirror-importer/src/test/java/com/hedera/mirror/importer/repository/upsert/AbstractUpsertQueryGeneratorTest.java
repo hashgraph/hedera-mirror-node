@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
 
-public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
+abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
     @Resource
     private DataSource dataSource;
 
@@ -51,7 +51,7 @@ public abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositor
     }
 
     @Test
-    protected void insertContainsAllFields() {
+    void insertContainsAllFields() {
         // verify all fields in a domain are captured to ensure we don't miss schema updates
         String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery()
                 .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");

@@ -23,21 +23,22 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-@Tag("v1")
-class TokenAccounUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
+import com.hedera.mirror.importer.EnabledIfV1;
+
+@EnabledIfV1
+class TokenAccountUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Resource
     private TokenAccountUpsertQueryGenerator tokenAccountRepositoryCustom;
 
     @Override
-    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
+    protected UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
         return tokenAccountRepositoryCustom;
     }
 
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, " +
                 "modified_timestamp, token_id) select token_account_temp.account_id, token_account_temp.associated, " +
                 "token_account_temp.created_timestamp, case when token_account_temp.freeze_status is not null then " +
@@ -51,7 +52,7 @@ class TokenAccounUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTe
     }
 
     @Override
-    public String getUpdateQuery() {
+    protected String getUpdateQuery() {
         return "update token_account set associated = coalesce(token_account_temp.associated, token_account" +
                 ".associated), freeze_status = coalesce(token_account_temp.freeze_status, token_account" +
                 ".freeze_status), kyc_status = coalesce(token_account_temp.kyc_status, token_account.kyc_status), " +

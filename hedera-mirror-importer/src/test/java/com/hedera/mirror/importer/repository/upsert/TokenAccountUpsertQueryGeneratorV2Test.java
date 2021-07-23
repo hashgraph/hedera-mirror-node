@@ -20,12 +20,13 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import org.junit.jupiter.api.Tag;
+import com.hedera.mirror.importer.EnabledIfV2;
 
-@Tag("v2")
-class TokenAccounUpsertQueryGeneratorV2Test extends TokenAccounUpsertQueryGeneratorTest {
+@EnabledIfV2
+@SuppressWarnings("java:S2187")
+class TokenAccountUpsertQueryGeneratorV2Test extends TokenAccountUpsertQueryGeneratorTest {
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, " +
                 "modified_timestamp, token_id) select token_account_temp.account_id, token_account_temp.associated, " +
                 "token_account_temp.created_timestamp, case when token_account_temp.freeze_status is not null then " +
