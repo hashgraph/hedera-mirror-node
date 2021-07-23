@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.repository.upsert;
 import com.hedera.mirror.importer.EnabledIfV2;
 
 @EnabledIfV2
+@SuppressWarnings("java:S2187")
 class NftUpsertQueryGeneratorV2Test extends NftUpsertQueryGeneratorTest {
     @Override
     protected String getInsertQuery() {

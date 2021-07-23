@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
 import lombok.Data;
@@ -75,7 +76,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
         Flux<TopicMessage> flux = topicMessageRetriever.retrieve(filter, true)
                 .concatWith(Flux.defer(() -> incomingMessages(topicContext))) // Defer creation until query complete
-                .filter(t -> t.compareTo(topicContext.getLastTopicMessage()) > 0); // Ignore duplicates
+                .filter(t -> t.compareTo(topicContext.getLast()) > 0); // Ignore duplicates
 
         if (filter.getEndTime() != null) {
             flux = flux.takeWhile(t -> t.getConsensusTimestampInstant().isBefore(filter.getEndTime()));
@@ -106,7 +107,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         TopicMessageFilter filter = topicContext.getFilter();
-        TopicMessage last = topicContext.getLastTopicMessage();
+        TopicMessage last = topicContext.getLast();
         long limit = filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
         Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
 
@@ -139,7 +140,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             return Flux.just(current);
         }
 
-        TopicMessage last = topicContext.getLastTopicMessage();
+        TopicMessage last = topicContext.getLast();
         long numMissingMessages = current.getSequenceNumber() - last.getSequenceNumber() - 1;
 
         // fail fast on out of order messages
@@ -173,19 +174,24 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     @Data
     private class TopicContext {
 
-        private final TopicMessageFilter filter;
-        private final String topicId;
-        private final Stopwatch stopwatch;
         private final AtomicLong count;
+        private final TopicMessageFilter filter;
+        private final AtomicReference<TopicMessage> last;
         private final Instant startTime;
-        private volatile TopicMessage lastTopicMessage;
+        private final Stopwatch stopwatch;
+        private final String topicId;
 
-        public TopicContext(TopicMessageFilter filter) {
+        private TopicContext(TopicMessageFilter filter) {
+            this.count = new AtomicLong(0L);
             this.filter = filter;
-            topicId = grpcProperties.getShard() + "." + filter.getRealmNum() + "." + filter.getTopicNum();
-            stopwatch = Stopwatch.createStarted();
-            count = new AtomicLong(0L);
-            startTime = Instant.now();
+            this.last = new AtomicReference<>();
+            this.startTime = Instant.now();
+            this.stopwatch = Stopwatch.createStarted();
+            this.topicId = grpcProperties.getShard() + "." + filter.getRealmNum() + "." + filter.getTopicNum();
+        }
+
+        private TopicMessage getLast() {
+            return last.get();
         }
 
         boolean isComplete() {
@@ -201,8 +207,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         boolean isNext(TopicMessage topicMessage) {
-            return lastTopicMessage == null || topicMessage.getSequenceNumber() == lastTopicMessage
-                    .getSequenceNumber() + 1;
+            return getLast() == null || topicMessage.getSequenceNumber() == getLast().getSequenceNumber() + 1;
         }
 
         private int rate() {
@@ -218,11 +223,10 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         void onNext(TopicMessage topicMessage) {
             if (!isNext(topicMessage)) {
                 throw new IllegalStateException(String
-                        .format("Encountered out of order messages, last: %s, current: %s", lastTopicMessage,
-                                topicMessage));
+                        .format("Encountered out of order messages, last: %s, current: %s", last, topicMessage));
             }
 
-            lastTopicMessage = topicMessage;
+            last.set(topicMessage);
             count.incrementAndGet();
             if (log.isTraceEnabled()) {
                 log.trace("[{}] Topic {} received message #{}: {}", filter.getSubscriberId(), topicId, count,

@@ -43,7 +43,7 @@ class GrpcSubscription extends AbstractSubscription<GrpcSubscriberProperties, To
 
     TopicMessageQuery getTopicMessageQuery() {
         long limit = properties.getLimit();
-        Instant startTime = last.map(t -> t.consensusTimestamp.plusNanos(1))
+        Instant startTime = getLast().map(t -> t.consensusTimestamp.plusNanos(1))
                 .orElseGet(properties::getStartTime);
 
         TopicMessageQuery topicMessageQuery = new TopicMessageQuery();
@@ -59,7 +59,7 @@ class GrpcSubscription extends AbstractSubscription<GrpcSubscriberProperties, To
         log.trace("{}: Received message #{} with timestamp {}", this, topicResponse.sequenceNumber,
                 topicResponse.consensusTimestamp);
 
-        last.ifPresent(topicMessage -> {
+        getLast().ifPresent(topicMessage -> {
             long expected = topicMessage.sequenceNumber + 1;
             if (topicResponse.sequenceNumber != expected) {
                 log.warn("{}: Expected sequence number {} but received {}", this, expected,

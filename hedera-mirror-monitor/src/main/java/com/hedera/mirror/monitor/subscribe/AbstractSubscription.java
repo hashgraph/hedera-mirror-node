@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Precision;
@@ -52,9 +53,9 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
     protected final AtomicLong counter = new AtomicLong(0L);
     protected final Multiset<String> errors = ConcurrentHashMultiset.create();
     protected final StepLong intervalCounter = new StepLong(Clock.SYSTEM, UPDATE_INTERVAL);
+    protected final AtomicReference<T> last = new AtomicReference<>();
     protected final Logger log = LogManager.getLogger(getClass());
     protected final Stopwatch stopwatch = Stopwatch.createStarted();
-    protected volatile Optional<T> last = Optional.empty();
 
     @Override
     public long getCount() {
@@ -71,6 +72,10 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
         Map<String, Integer> errorCounts = new TreeMap<>();
         errors.forEachEntry(errorCounts::put);
         return Collections.unmodifiableMap(errorCounts);
+    }
+
+    public Optional<T> getLast() {
+        return Optional.ofNullable(last.get());
     }
 
     @Override
@@ -105,7 +110,7 @@ public abstract class AbstractSubscription<P extends AbstractSubscriberPropertie
         counter.incrementAndGet();
         intervalCounter.getCurrent().increment();
         log.trace("{}: Received response {}", this, response);
-        last = Optional.of(response);
+        last.set(response);
     }
 
     @Override

@@ -23,6 +23,7 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -86,11 +87,15 @@ public class PollingTopicListener implements TopicListener {
 
         private final TopicMessageFilter filter;
         private final AtomicLong count = new AtomicLong(0L);
-        private volatile TopicMessage last;
+        private final AtomicReference<TopicMessage> last = new AtomicReference<>();
 
         void onNext(TopicMessage topicMessage) {
-            last = topicMessage;
+            last.set(topicMessage);
             count.incrementAndGet();
+        }
+
+        private TopicMessage getLast() {
+            return last.get();
         }
     }
 }

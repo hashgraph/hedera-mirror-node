@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -101,14 +102,14 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         private final TopicMessageFilter filter;
         private final boolean throttled;
         private final Duration frequency;
+        private final AtomicReference<TopicMessage> last = new AtomicReference<>();
         private final int maxPageSize;
         private final long numRepeats;
         private final AtomicLong pageSize = new AtomicLong(0L);
         private final Stopwatch stopwatch = Stopwatch.createStarted();
         private final AtomicLong total = new AtomicLong(0L);
-        private volatile TopicMessage last;
 
-        public PollingContext(TopicMessageFilter filter, boolean throttled) {
+        private PollingContext(TopicMessageFilter filter, boolean throttled) {
             this.filter = filter;
             this.throttled = throttled;
 
@@ -122,6 +123,10 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 frequency = unthrottled.getPollingFrequency();
                 maxPageSize = unthrottled.getMaxPageSize();
             }
+        }
+
+        private TopicMessage getLast() {
+            return last.get();
         }
 
         /**
@@ -142,7 +147,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
         }
 
         void onNext(TopicMessage topicMessage) {
-            last = topicMessage;
+            last.set(topicMessage);
             total.incrementAndGet();
             pageSize.incrementAndGet();
         }

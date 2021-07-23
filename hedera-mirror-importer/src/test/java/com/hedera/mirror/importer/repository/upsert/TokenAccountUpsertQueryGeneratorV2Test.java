@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.repository.upsert;
 import com.hedera.mirror.importer.EnabledIfV2;
 
 @EnabledIfV2
+@SuppressWarnings("java:S2187")
 class TokenAccountUpsertQueryGeneratorV2Test extends TokenAccountUpsertQueryGeneratorTest {
     @Override
     protected String getInsertQuery() {
