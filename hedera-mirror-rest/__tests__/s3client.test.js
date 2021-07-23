@@ -128,7 +128,7 @@ describe('createS3Client with valid config', () => {
     },
     {
       name: 'valid config with endpointOverride',
-      override: {endpointOverride: 'http://universal-storage-service-provider.mars.universe'},
+      override: {endpointOverride: 'https://universal-storage-service-provider.mars.universe'},
     },
     {
       name: 'valid config with null region',

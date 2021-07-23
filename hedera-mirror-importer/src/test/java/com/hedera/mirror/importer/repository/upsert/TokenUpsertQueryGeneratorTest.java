@@ -23,21 +23,22 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-@Tag("v1")
+import com.hedera.mirror.importer.EnabledIfV1;
+
+@EnabledIfV1
 class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Resource
     private TokenUpsertQueryGenerator tokenRepositoryCustom;
 
     @Override
-    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
+    protected UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
         return tokenRepositoryCustom;
     }
 
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into token (created_timestamp, decimals, fee_schedule_key, fee_schedule_key_ed25519_hex, " +
                 "freeze_default, freeze_key, freeze_key_ed25519_hex, " +
                 "initial_supply, kyc_key, kyc_key_ed25519_hex, max_supply, modified_timestamp, name, supply_key, " +
@@ -61,10 +62,11 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     }
 
     @Override
-    public String getUpdateQuery() {
+    protected String getUpdateQuery() {
         return "update token set " +
                 "fee_schedule_key = coalesce(token_temp.fee_schedule_key, token.fee_schedule_key), " +
-                "fee_schedule_key_ed25519_hex = case when token_temp.fee_schedule_key_ed25519_hex = '<uuid>' then '' else " +
+                "fee_schedule_key_ed25519_hex = case when token_temp.fee_schedule_key_ed25519_hex = '<uuid>' then '' " +
+                "else " +
                 "coalesce(token_temp.fee_schedule_key_ed25519_hex, token.fee_schedule_key_ed25519_hex) end, " +
                 "freeze_key = coalesce(token_temp.freeze_key, token.freeze_key), " +
                 "freeze_key_ed25519_hex = case when token_temp.freeze_key_ed25519_hex = '<uuid>' then '' else " +
@@ -97,10 +99,5 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     void tempTableName() {
         String upsertQuery = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
         assertThat(upsertQuery).isEqualTo("token_temp");
-    }
-
-    @Override
-    @Test
-    protected void insertContainsAllFields() {
     }
 }

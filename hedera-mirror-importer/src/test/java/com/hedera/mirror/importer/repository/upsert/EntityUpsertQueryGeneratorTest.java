@@ -30,12 +30,12 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     private EntityUpsertQueryGenerator entityRepositoryCustom;
 
     @Override
-    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
+    protected UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
         return entityRepositoryCustom;
     }
 
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, " +
                 "expiration_timestamp, id, key, memo, modified_timestamp, num, proxy_account_id, public_key, realm, " +
                 "shard, submit_key, type) select entity_temp.auto_renew_account_id, entity_temp.auto_renew_period, " +
@@ -50,7 +50,7 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     }
 
     @Override
-    public String getUpdateQuery() {
+    protected String getUpdateQuery() {
         return "update entity set " +
                 "auto_renew_account_id = coalesce(entity_temp.auto_renew_account_id, entity.auto_renew_account_id), " +
                 "auto_renew_period = coalesce(entity_temp.auto_renew_period, entity.auto_renew_period), " +

@@ -68,6 +68,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
                 .getFileHashSignature());
     }
 
+    @SuppressWarnings("java:S2699")
     @TestFactory
     Iterable<DynamicTest> testReadCorruptSignatureFileV2() {
         SignatureFileSection hashDelimiter = new SignatureFileSection(

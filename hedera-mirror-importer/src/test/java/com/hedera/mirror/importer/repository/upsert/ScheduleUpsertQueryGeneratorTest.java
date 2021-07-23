@@ -23,21 +23,22 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-@Tag("v1")
+import com.hedera.mirror.importer.EnabledIfV1;
+
+@EnabledIfV1
 class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Resource
     private ScheduleUpsertQueryGenerator scheduleRepositoryCustom;
 
     @Override
-    public UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
+    protected UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
         return scheduleRepositoryCustom;
     }
 
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, " +
                 "schedule_id, transaction_body) select schedule_temp.consensus_timestamp, schedule_temp" +
                 ".creator_account_id, schedule_temp.executed_timestamp, schedule_temp.payer_account_id, schedule_temp" +
@@ -46,7 +47,7 @@ class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
     }
 
     @Override
-    public String getUpdateQuery() {
+    protected String getUpdateQuery() {
         return "update schedule set executed_timestamp = coalesce(schedule_temp.executed_timestamp, schedule" +
                 ".executed_timestamp) from schedule_temp where schedule.schedule_id = schedule_temp.schedule_id and " +
                 "schedule_temp.executed_timestamp is not null";

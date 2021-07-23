@@ -20,18 +20,18 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import org.junit.jupiter.api.Tag;
+import com.hedera.mirror.importer.EnabledIfV2;
 
-@Tag("v2")
+@EnabledIfV2
 class NftUpsertQueryGeneratorV2Test extends NftUpsertQueryGeneratorTest {
     @Override
-    public String getInsertQuery() {
+    protected String getInsertQuery() {
         return "insert into nft (account_id, created_timestamp, deleted, metadata, modified_timestamp, serial_number," +
                 " token_id) select nft_temp.account_id, nft_temp.created_timestamp, nft_temp.deleted, " +
                 "nft_temp.metadata, nft_temp.modified_timestamp, nft_temp.serial_number, nft_temp.token_id " +
                 "from nft_temp " +
                 "join token on nft_temp.token_id = token.token_id " +
                 "where nft_temp.created_timestamp is not null " +
-                "on conflict (created_timestamp, token_id, serial_number) do nothing";
+                "on conflict (token_id, serial_number, created_timestamp) do nothing";
     }
 }

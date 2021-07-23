@@ -38,6 +38,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
+import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.domain.AddressBook;
@@ -49,8 +50,8 @@ import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
 
+@EnabledIfV1
 @Tag("migration")
-@Tag("v1")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {"truncate table address_book restart " +
         "identity cascade;"})
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = {"truncate table address_book restart " +

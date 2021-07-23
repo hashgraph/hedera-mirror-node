@@ -89,6 +89,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 .getMetadataHashSignature());
     }
 
+    @SuppressWarnings("java:S2699")
     @TestFactory
     Iterable<DynamicTest> testReadCorruptSignatureFileV5() {
 

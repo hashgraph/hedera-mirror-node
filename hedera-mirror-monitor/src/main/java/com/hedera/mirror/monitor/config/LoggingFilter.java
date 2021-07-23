@@ -21,9 +21,11 @@ package com.hedera.mirror.monitor.config;
  */
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.reactivestreams.Publisher;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.CollectionUtils;
@@ -36,6 +38,7 @@ import reactor.core.publisher.Mono;
 @Named
 public class LoggingFilter implements WebFilter {
 
+    private static final String ACTUATOR_PATH = "/actuator/";
     private static final String LOCALHOST = "127.0.0.1";
     private static final String X_FORWARDED_FOR = "X-Forwarded-For";
 
@@ -53,7 +56,9 @@ public class LoggingFilter implements WebFilter {
     private void onSuccess(ServerWebExchange exchange, long startTime) {
         long elapsed = System.currentTimeMillis() - startTime;
         ServerHttpRequest request = exchange.getRequest();
-        log.info("{} {} {} in {} ms: {}", getClient(request), request.getMethod(), request.getURI(), elapsed,
+        URI uri = request.getURI();
+        Level level = StringUtils.startsWith(uri.getPath(), ACTUATOR_PATH) ? Level.DEBUG : Level.INFO;
+        log.log(level, "{} {} {} in {} ms: {}", getClient(request), request.getMethod(), uri, elapsed,
                 exchange.getResponse().getStatusCode());
     }
 

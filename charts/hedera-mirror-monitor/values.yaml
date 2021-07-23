@@ -204,10 +204,10 @@ prometheusRules:
 
   MonitorPublishPlatformNotActive:
     annotations:
-      description: "Averaging {{ $value | humanizePercentage }} PLATFORM_NOT_ACTIVE error rate while attempting to publish in {{ $labels.namespace }}"
+      description: "Averaging {{ $value | humanizePercentage }} PLATFORM_NOT_ACTIVE or UNAVAILABLE errors while attempting to publish in {{ $labels.namespace }}"
       summary: "Platform is not active"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor",status="PLATFORM_NOT_ACTIVE"}[2m])) by (namespace) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace) > 0
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor",status=~"(PLATFORM_NOT_ACTIVE|UNAVAILABLE)"}[2m])) by (namespace) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace) > 0
     for: 1m
     labels:
       application: hedera-mirror-monitor
