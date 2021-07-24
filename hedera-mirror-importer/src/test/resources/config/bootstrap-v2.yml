@@ -1,3 +1,3 @@
 embedded:
   postgresql:
-    docker-image: timescale/timescaledb-ha:pg13.3-ts2.3.0-p0
+    docker-image: timescale/timescaledb-ha:pg13.3-ts2.3.1-p1

@@ -54,7 +54,7 @@ const v1SchemaConfigs = {
 const v2SchemaConfigs = {
   docker: {
     imageName: 'timescale/timescaledb-ha',
-    tagName: 'pg13.3-ts2.3.0-p0',
+    tagName: 'pg13.3-ts2.3.1-p1',
   },
   flyway: {
     baselineVersion: '1.999.999',
