@@ -107,9 +107,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Resource
     private CacheManager cacheManager;
 
-    @Resource
-    protected EntityProperties entityProperties;
-
     private static byte[] initialAddressBookBytes;
 
     private static NodeAddressBook addressBook(int size, int endPointSize) {
@@ -147,7 +144,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         return new FileData(consensusTimeStamp, contents, entityId, transactionTypeEnum.getProtoId());
     }
 
-    private FileData store(byte[] contents, long consensusTimeStamp, boolean is102) {
+    private FileData store(byte[] contents, long consensusTimeStamp, boolean is102, TransactionTypeEnum transactionTypeEnum) {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEUPDATE);
         return fileDataRepository.save(fileData);
     }
@@ -162,6 +159,8 @@ class AddressBookServiceImplTest extends IntegrationTest {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEAPPEND);
         fileDataRepository.save(fileData);
         addressBookService.update(fileData);
+//        FileData fileData = store(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEAPPEND);
+//        addressBookService.update(fileData);
     }
 
     @BeforeAll
@@ -177,7 +176,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate, entityProperties);
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
         assertThrows(IllegalStateException.class, () -> {
             customAddressBookService.getCurrent();
         });
@@ -198,7 +197,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate, entityProperties);
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
         AddressBook addressBook = customAddressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(1L);
         assertEquals(1, addressBookRepository.count());
@@ -592,16 +591,16 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void verifyAddressBookMigrationInitiatedByDownloader() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
-        store(addressBookBytes1, 2L, false);
+        store(addressBookBytes1, 2L, false, TransactionTypeEnum.FILEUPDATE);
 
         byte[] addressBookBytes2 = UPDATED.toByteArray();
-        store(addressBookBytes2, 3L, true);
+        store(addressBookBytes2, 3L, true, TransactionTypeEnum.FILEUPDATE);
 
         byte[] addressBookBytes3 = FINAL.toByteArray();
-        store(addressBookBytes3, 4L, false);
+        store(addressBookBytes3, 4L, false, TransactionTypeEnum.FILEUPDATE);
 
         byte[] addressBookBytes4 = FINAL.toByteArray();
-        store(addressBookBytes4, 5L, true);
+        store(addressBookBytes4, 5L, true, TransactionTypeEnum.FILEUPDATE);
 
         // migration
         AddressBook addressBook = addressBookService.getCurrent();
@@ -617,16 +616,16 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void verifyAddressBookMigrationInitiatedByParser() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
-        store(addressBookBytes1, 2L, false);
+        store(addressBookBytes1, 2L, false, TransactionTypeEnum.FILEUPDATE);
 
         byte[] addressBookBytes2 = UPDATED.toByteArray();
-        store(addressBookBytes2, 3L, true);
+        store(addressBookBytes2, 3L, true, TransactionTypeEnum.FILEUPDATE);
 
         byte[] addressBookBytes3 = FINAL.toByteArray();
-        store(addressBookBytes3, 4L, false);
+        store(addressBookBytes3, 4L, false, TransactionTypeEnum.FILEUPDATE);
 
         byte[] addressBookBytes4 = FINAL.toByteArray();
-        store(addressBookBytes4, 5L, true);
+        store(addressBookBytes4, 5L, true, TransactionTypeEnum.FILEUPDATE);
 
         // migration
         int addressBook5NodeCount = 20;
@@ -874,10 +873,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
-        store(addressBookBytes1, 2L, false);
+        store(addressBookBytes1, 2L, false, TransactionTypeEnum.FILEUPDATE);
 
         byte[] addressBookBytes2 = UPDATED.toByteArray();
-        store(addressBookBytes2, 3L, true);
+        store(addressBookBytes2, 3L, true, TransactionTypeEnum.FILEUPDATE);
 
         // initial migration
         AddressBook addressBook = addressBookService.getCurrent();
@@ -885,25 +884,21 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertAddressBook(addressBook, UPDATED);
 
         // valid file data added but no address book produced
-        entityProperties.getPersist().setAddressBooks(false);
-
         // file 101 update contents to be split over 1 update and 1 append operation
         byte[] addressBook101Bytes = FINAL.toByteArray();
         int index101 = addressBook101Bytes.length / 2;
         byte[] addressBook101Bytes1 = Arrays.copyOfRange(addressBook101Bytes, 0, index101);
         byte[] addressBook101Bytes2 = Arrays.copyOfRange(addressBook101Bytes, index101, addressBook101Bytes.length);
-        update(addressBook101Bytes1, 4L, false);
-        append(addressBook101Bytes2, 5L, false);
+        fileDataRepository.save(createFileData(addressBook101Bytes1, 4L, false, TransactionTypeEnum.FILEUPDATE));
+        fileDataRepository.save(createFileData(addressBook101Bytes2, 5L, false, TransactionTypeEnum.FILEAPPEND));
 
         // file 102 update contents to be split over 1 update and 1 append operation
         byte[] addressBook102Bytes = FINAL.toByteArray();
         int index = addressBook102Bytes.length / 2;
         byte[] addressBook102Bytes1 = Arrays.copyOfRange(addressBook102Bytes, 0, index);
         byte[] addressBook102Bytes2 = Arrays.copyOfRange(addressBook102Bytes, index, addressBook102Bytes.length);
-        update(addressBook102Bytes1, 6L, true);
-        append(addressBook102Bytes2, 7L, true);
-
-        entityProperties.getPersist().setAddressBooks(true);
+        fileDataRepository.save(createFileData(addressBook102Bytes1, 6L, true, TransactionTypeEnum.FILEUPDATE));
+        fileDataRepository.save(createFileData(addressBook102Bytes2, 7L, true, TransactionTypeEnum.FILEAPPEND));
 
         // migration on startup
         AddressBook newAddressBook = addressBookService.migrate();

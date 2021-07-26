@@ -65,11 +65,6 @@ public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        if (!entityProperties.getPersist().isAddressBooks()) {
-            log.info("Skipping migration since importing historical account information is disabled");
-            return;
-        }
-
         log.info("Parsing address book file data rows");
         Stopwatch stopwatch = Stopwatch.createStarted();
         AddressBook addressBook = addressBookService.migrate();

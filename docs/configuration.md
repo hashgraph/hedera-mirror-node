@@ -111,7 +111,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
 | `hedera.mirror.importer.parser.record.entity.notify.enabled`                | false                   | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                    |
 | `hedera.mirror.importer.parser.record.entity.notify.maxJsonPayloadSize`     | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
-| `hedera.mirror.importer.parser.record.entity.persist.addressBooks`          | true                    | Persist addressBook data to the database                                                             |
 | `hedera.mirror.importer.parser.record.entity.persist.claims`                | false                   | Persist claim data to the database                                                             |
 | `hedera.mirror.importer.parser.record.entity.persist.contracts`             | true                    | Persist contract data to the database                                                          |
 | `hedera.mirror.importer.parser.record.entity.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |

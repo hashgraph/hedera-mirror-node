@@ -81,16 +81,13 @@ public class AddressBookServiceImpl implements AddressBookService {
     private final FileDataRepository fileDataRepository;
     private final MirrorProperties mirrorProperties;
     private final TransactionTemplate transactionTemplate;
-    private final EntityProperties entityProperties;
 
     public AddressBookServiceImpl(AddressBookRepository addressBookRepository, FileDataRepository fileDataRepository,
-                                  MirrorProperties mirrorProperties, TransactionTemplate transactionTemplate,
-                                  EntityProperties entityProperties) {
+                                  MirrorProperties mirrorProperties, TransactionTemplate transactionTemplate) {
         this.addressBookRepository = addressBookRepository;
         this.fileDataRepository = fileDataRepository;
         this.mirrorProperties = mirrorProperties;
         this.transactionTemplate = transactionTemplate;
-        this.entityProperties = entityProperties;
     }
 
     /**
@@ -242,7 +239,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         var addressBook = buildAddressBook(new FileData(fileData
                 .getConsensusTimestamp(), addressBookBytes, fileData.getEntityId(), fileData.getTransactionType()));
-        if (addressBook != null && entityProperties.getPersist().isAddressBooks()) {
+        if (addressBook != null) {
             addressBook = addressBookRepository.save(addressBook);
             log.info("Saved new address book to db: {}", addressBook);
 
