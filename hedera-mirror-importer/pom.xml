@@ -20,7 +20,7 @@
         <commons-compress.version>1.21</commons-compress.version>
         <commons-io.version>2.11.0</commons-io.version>
         <s3proxy.version>1.8.0</s3proxy.version>
-        <testcontainers.version>1.15.3</testcontainers.version>
+        <testcontainers.version>1.16.0</testcontainers.version>
     </properties>
 
     <dependencyManagement>
