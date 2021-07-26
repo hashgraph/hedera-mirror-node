@@ -42,6 +42,8 @@ public class EntityProperties {
     @Data
     public class PersistProperties {
 
+        private boolean addressBooks = true;
+
         private boolean claims = false;
 
         private boolean contracts = true;

@@ -64,6 +64,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -106,6 +107,9 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Resource
     private CacheManager cacheManager;
 
+    @Resource
+    protected EntityProperties entityProperties;
+
     private static byte[] initialAddressBookBytes;
 
     private static NodeAddressBook addressBook(int size, int endPointSize) {
@@ -137,29 +141,25 @@ class AddressBookServiceImplTest extends IntegrationTest {
         return builder.build();
     }
 
-    private FileData createFileData(byte[] contents, long consensusTimeStamp, boolean is102) {
+    private FileData createFileData(byte[] contents, long consensusTimeStamp, boolean is102, TransactionTypeEnum transactionTypeEnum) {
         EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
                 AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID;
-        return new FileData(consensusTimeStamp, contents, entityId, TransactionTypeEnum.FILEUPDATE
-                .getProtoId());
+        return new FileData(consensusTimeStamp, contents, entityId, transactionTypeEnum.getProtoId());
     }
 
     private FileData store(byte[] contents, long consensusTimeStamp, boolean is102) {
-        FileData fileData = createFileData(contents, consensusTimeStamp, is102);
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEUPDATE);
         return fileDataRepository.save(fileData);
     }
 
     private void update(byte[] contents, long consensusTimeStamp, boolean is102) {
-        FileData fileData = createFileData(contents, consensusTimeStamp, is102);
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEUPDATE);
         addressBookService.update(fileData);
         fileDataRepository.save(fileData);
     }
 
     private void append(byte[] contents, long consensusTimeStamp, boolean is102) {
-        EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
-                AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID;
-        FileData fileData = new FileData(consensusTimeStamp, contents, entityId, TransactionTypeEnum.FILEAPPEND
-                .getProtoId());
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEAPPEND);
         fileDataRepository.save(fileData);
         addressBookService.update(fileData);
     }
@@ -177,7 +177,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate, entityProperties);
         assertThrows(IllegalStateException.class, () -> {
             customAddressBookService.getCurrent();
         });
@@ -198,7 +198,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
         otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate);
+                fileDataRepository, otherNetworkMirrorProperties, transactionTemplate, entityProperties);
         AddressBook addressBook = customAddressBookService.getCurrent();
         assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(1L);
         assertEquals(1, addressBookRepository.count());
@@ -631,7 +631,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         // migration
         int addressBook5NodeCount = 20;
         byte[] addressBookBytes5 = addressBook(addressBook5NodeCount, 0).toByteArray();
-        addressBookService.update(createFileData(addressBookBytes5, 6L, true));
+        addressBookService.update(createFileData(addressBookBytes5, 6L, true, TransactionTypeEnum.FILEUPDATE));
 
         assertEquals(4, fileDataRepository.count());
         assertEquals(6, addressBookRepository.count()); // initial plus 5 files
@@ -869,6 +869,51 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 addressBookEntryRepository.count());
         assertEquals(addressBookEntries * numEndpointsPerNode,
                 addressBookServiceEndpointRepository.count());
+    }
+
+    @Test
+    void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
+        byte[] addressBookBytes1 = UPDATED.toByteArray();
+        store(addressBookBytes1, 2L, false);
+
+        byte[] addressBookBytes2 = UPDATED.toByteArray();
+        store(addressBookBytes2, 3L, true);
+
+        // initial migration
+        AddressBook addressBook = addressBookService.getCurrent();
+        assertThat(addressBook.getStartConsensusTimestamp()).isEqualTo(4L);
+        assertAddressBook(addressBook, UPDATED);
+
+        // valid file data added but no address book produced
+        entityProperties.getPersist().setAddressBooks(false);
+
+        // file 101 update contents to be split over 1 update and 1 append operation
+        byte[] addressBook101Bytes = FINAL.toByteArray();
+        int index101 = addressBook101Bytes.length / 2;
+        byte[] addressBook101Bytes1 = Arrays.copyOfRange(addressBook101Bytes, 0, index101);
+        byte[] addressBook101Bytes2 = Arrays.copyOfRange(addressBook101Bytes, index101, addressBook101Bytes.length);
+        update(addressBook101Bytes1, 4L, false);
+        append(addressBook101Bytes2, 5L, false);
+
+        // file 102 update contents to be split over 1 update and 1 append operation
+        byte[] addressBook102Bytes = FINAL.toByteArray();
+        int index = addressBook102Bytes.length / 2;
+        byte[] addressBook102Bytes1 = Arrays.copyOfRange(addressBook102Bytes, 0, index);
+        byte[] addressBook102Bytes2 = Arrays.copyOfRange(addressBook102Bytes, index, addressBook102Bytes.length);
+        update(addressBook102Bytes1, 6L, true);
+        append(addressBook102Bytes2, 7L, true);
+
+        entityProperties.getPersist().setAddressBooks(true);
+
+        // migration on startup
+        AddressBook newAddressBook = addressBookService.migrate();
+        assertThat(newAddressBook.getStartConsensusTimestamp()).isEqualTo(8L);
+        assertAddressBook(newAddressBook, FINAL);
+
+        assertEquals(6, fileDataRepository.count());
+        assertEquals(5, addressBookRepository.count()); // initial plus 4 files
+        assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2) +
+                (FINAL.getNodeAddressCount() * 2), addressBookEntryRepository.count());
     }
 
     private ServiceEndpoint getServiceEndpoint(String ip, int port) throws UnknownHostException {

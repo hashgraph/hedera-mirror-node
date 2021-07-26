@@ -24,11 +24,15 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 
+import java.time.Instant;
+
 public interface AddressBookService {
+
+    AddressBook getCurrent();
 
     boolean isAddressBook(EntityId entityId);
 
-    void update(FileData fileData);
+    AddressBook migrate();
 
-    AddressBook getCurrent();
+    void update(FileData fileData);
 }

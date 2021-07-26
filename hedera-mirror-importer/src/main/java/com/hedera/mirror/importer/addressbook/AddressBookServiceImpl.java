@@ -62,6 +62,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -80,13 +81,16 @@ public class AddressBookServiceImpl implements AddressBookService {
     private final FileDataRepository fileDataRepository;
     private final MirrorProperties mirrorProperties;
     private final TransactionTemplate transactionTemplate;
+    private final EntityProperties entityProperties;
 
     public AddressBookServiceImpl(AddressBookRepository addressBookRepository, FileDataRepository fileDataRepository,
-                                  MirrorProperties mirrorProperties, TransactionTemplate transactionTemplate) {
+                                  MirrorProperties mirrorProperties, TransactionTemplate transactionTemplate,
+                                  EntityProperties entityProperties) {
         this.addressBookRepository = addressBookRepository;
         this.fileDataRepository = fileDataRepository;
         this.mirrorProperties = mirrorProperties;
         this.transactionTemplate = transactionTemplate;
+        this.entityProperties = entityProperties;
     }
 
     /**
@@ -181,26 +185,36 @@ public class AddressBookServiceImpl implements AddressBookService {
      *
      * @return Latest AddressBook from historical files
      */
-    private synchronized AddressBook migrate() {
+    @Override
+    public synchronized AddressBook migrate() {
         long consensusTimestamp = Utility.convertToNanosMax(Instant.now());
         var currentAddressBook = addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
                 .orElse(null);
 
         if (currentAddressBook != null) {
-            if (log.isTraceEnabled()) {
-                log.trace("Valid address books exist in db, skipping migration");
+            // verify no file_data 102 entries exists after current addressBook
+            List<FileData> fileDataList = fileDataRepository
+                    .findAddressBooksAfter(currentAddressBook.getStartConsensusTimestamp(), 1);
+            if (CollectionUtils.isEmpty(fileDataList)) {
+                if (log.isTraceEnabled()) {
+                    log.trace("All valid address books exist in db, skipping migration");
+                }
+                return currentAddressBook;
             }
-            return currentAddressBook;
+
+            log.warn("Valid address book file data entries exist in db after current address book");
         }
 
-        log.info("No address book found in db, proceeding with migration");
+        log.info("Empty or incomplete list of address books found in db, proceeding with migration");
         return transactionTemplate.execute(status -> {
             log.info("Searching for address book on file system");
-            var initialAddressBook = parse(getInitialAddressBookFileData());
+            var initialAddressBook = currentAddressBook == null ? parse(getInitialAddressBookFileData()) :
+                    currentAddressBook;
 
             // Parse all applicable addressBook file_data entries are processed
-            AddressBook latestAddressBook = parseHistoricAddressBooks();
+            AddressBook latestAddressBook = parseHistoricAddressBooks(initialAddressBook
+                    .getStartConsensusTimestamp() - 1);
 
             // set latestAddressBook as newest addressBook from file_data entries or initial addressBook from filesystem
             latestAddressBook = latestAddressBook == null ? initialAddressBook : latestAddressBook;
@@ -228,7 +242,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         var addressBook = buildAddressBook(new FileData(fileData
                 .getConsensusTimestamp(), addressBookBytes, fileData.getEntityId(), fileData.getTransactionType()));
-        if (addressBook != null) {
+        if (addressBook != null && entityProperties.getPersist().isAddressBooks()) {
             addressBook = addressBookRepository.save(addressBook);
             log.info("Saved new address book to db: {}", addressBook);
 
@@ -457,9 +471,9 @@ public class AddressBookServiceImpl implements AddressBookService {
      * Batch parse all 101 and 102 addressBook fileData objects and update the address_book table. Uses page size and
      * timestamp counters to batch query file data entries
      */
-    private AddressBook parseHistoricAddressBooks() {
+    private AddressBook parseHistoricAddressBooks(long startTimestamp) {
         var fileDataEntries = 0;
-        long currentConsensusTimestamp = 0;
+        long currentConsensusTimestamp = startTimestamp;
         AddressBook lastAddressBook = null;
 
         // starting from consensusTimeStamp = 0 retrieve pages of fileData entries for historic address books
