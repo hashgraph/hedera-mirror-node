@@ -144,7 +144,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         return new FileData(consensusTimeStamp, contents, entityId, transactionTypeEnum.getProtoId());
     }
 
-    private FileData store(byte[] contents, long consensusTimeStamp, boolean is102, TransactionTypeEnum transactionTypeEnum) {
+    private FileData store(byte[] contents, long consensusTimeStamp, boolean is102) {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEUPDATE);
         return fileDataRepository.save(fileData);
     }
@@ -159,8 +159,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEAPPEND);
         fileDataRepository.save(fileData);
         addressBookService.update(fileData);
-//        FileData fileData = store(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEAPPEND);
-//        addressBookService.update(fileData);
     }
 
     @BeforeAll
@@ -591,16 +589,16 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void verifyAddressBookMigrationInitiatedByDownloader() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
-        store(addressBookBytes1, 2L, false, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes1, 2L, false);
 
         byte[] addressBookBytes2 = UPDATED.toByteArray();
-        store(addressBookBytes2, 3L, true, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes2, 3L, true);
 
         byte[] addressBookBytes3 = FINAL.toByteArray();
-        store(addressBookBytes3, 4L, false, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes3, 4L, false);
 
         byte[] addressBookBytes4 = FINAL.toByteArray();
-        store(addressBookBytes4, 5L, true, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes4, 5L, true);
 
         // migration
         AddressBook addressBook = addressBookService.getCurrent();
@@ -616,16 +614,16 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void verifyAddressBookMigrationInitiatedByParser() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
-        store(addressBookBytes1, 2L, false, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes1, 2L, false);
 
         byte[] addressBookBytes2 = UPDATED.toByteArray();
-        store(addressBookBytes2, 3L, true, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes2, 3L, true);
 
         byte[] addressBookBytes3 = FINAL.toByteArray();
-        store(addressBookBytes3, 4L, false, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes3, 4L, false);
 
         byte[] addressBookBytes4 = FINAL.toByteArray();
-        store(addressBookBytes4, 5L, true, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes4, 5L, true);
 
         // migration
         int addressBook5NodeCount = 20;
@@ -873,10 +871,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
         byte[] addressBookBytes1 = UPDATED.toByteArray();
-        store(addressBookBytes1, 2L, false, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes1, 2L, false);
 
         byte[] addressBookBytes2 = UPDATED.toByteArray();
-        store(addressBookBytes2, 3L, true, TransactionTypeEnum.FILEUPDATE);
+        store(addressBookBytes2, 3L, true);
 
         // initial migration
         AddressBook addressBook = addressBookService.getCurrent();
