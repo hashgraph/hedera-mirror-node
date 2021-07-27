@@ -60,6 +60,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -70,12 +71,13 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
 class MissingAddressBooksMigrationTest extends IntegrationTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10, 0);
     private static final NodeAddressBook FINAL = addressBook(15, 0);
-    private final EntityId addressBookEntityId101 = EntityId.of("0.0.101", EntityTypeEnum.FILE);
-    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
 
     @Resource
     private MissingAddressBooksMigration missingAddressBooksMigration;
@@ -92,10 +94,10 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     @Test
     void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
         // store initial address books
-        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId101), 1, 4));
-        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId102), 2, 4));
-        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId101), 11, 8));
-        addressBookRepository.save(addressBook(ab -> ab.fileId(addressBookEntityId102), 12, 8));
+        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 1, 4));
+        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 2, 4));
+        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 11, 8));
+        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 12, 8));
         assertEquals(4, addressBookRepository.count());
 
         // un-parsed file_data
@@ -119,16 +121,24 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         // migration on startup
         missingAddressBooksMigration.doMigrate();
         assertEquals(6, addressBookRepository.count());
-        AddressBook newAddressBook = addressBookRepository.findLatestAddressBook(205, addressBookEntityId102.getId()).get();
+        AddressBook newAddressBook = addressBookRepository.findLatestAddressBook(205, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()).get();
         assertThat(newAddressBook.getStartConsensusTimestamp()).isEqualTo(203L);
         assertAddressBook(newAddressBook, FINAL);
     }
 
-    @Test
-    void skipMigrationPreAddressBookService() {
-        assertTrue(missingAddressBooksMigration.skipMigration(getConfiguration("1.37.0", "1.999.0")));
-        assertFalse(missingAddressBooksMigration.skipMigration(getConfiguration("1.37.1", "1.999.0")));
-        assertFalse(missingAddressBooksMigration.skipMigration(getConfiguration("1.37.2", "1.999.0")));
+    @DisplayName("Verify skipMigration")
+    @ParameterizedTest(name = "with baseline {0} and target {1}")
+    @CsvSource({
+            "1.37.0, 1.999.0, true",
+            "1.37.1, 1.999.0, false",
+            "1.37.2, 1.999.0, false",
+            "2.0.0, 2.999.999, false",
+            "2.0.1, 2.999.999, false",
+            "0, 2, true",
+            ", 2, true"
+    })
+    void skipMigrationPreAddressBookService(String baseline, String target, boolean result) {
+        assertThat(missingAddressBooksMigration.skipMigration(getConfiguration(baseline, target))).isEqualTo(result);
     }
 
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer,
@@ -148,7 +158,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
                 .startConsensusTimestamp(startConsensusTimestamp)
                 .fileData("address book memo".getBytes())
                 .nodeCount(nodeCount)
-                .fileId(addressBookEntityId102)
+                .fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID)
                 .entries(addressBookEntryList);
 
         if (addressBookCustomizer != null) {

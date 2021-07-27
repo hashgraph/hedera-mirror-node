@@ -24,8 +24,6 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 
-import java.time.Instant;
-
 public interface AddressBookService {
 
     AddressBook getCurrent();

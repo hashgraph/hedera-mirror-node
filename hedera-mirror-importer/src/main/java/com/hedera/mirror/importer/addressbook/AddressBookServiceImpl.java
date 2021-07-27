@@ -62,7 +62,6 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -194,9 +193,7 @@ public class AddressBookServiceImpl implements AddressBookService {
             List<FileData> fileDataList = fileDataRepository
                     .findAddressBooksAfter(currentAddressBook.getStartConsensusTimestamp(), 1);
             if (CollectionUtils.isEmpty(fileDataList)) {
-                if (log.isTraceEnabled()) {
-                    log.trace("All valid address books exist in db, skipping migration");
-                }
+                log.trace("All valid address books exist in db, skipping migration");
                 return currentAddressBook;
             }
 

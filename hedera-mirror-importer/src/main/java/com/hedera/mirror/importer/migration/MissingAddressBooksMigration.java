@@ -30,6 +30,7 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.postgresql.util.PSQLException;
 import org.springframework.context.annotation.Lazy;
 
 @Named
@@ -65,10 +66,6 @@ public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        log.info("Parsing address book file data rows");
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        AddressBook addressBook = addressBookService.migrate();
-
-        log.info("Successfully migrated address book file data in {}. Latest addressBook is {}", stopwatch, addressBook);
+        addressBookService.migrate();
     }
 }
