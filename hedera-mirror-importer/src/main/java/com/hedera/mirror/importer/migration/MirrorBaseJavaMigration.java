@@ -45,7 +45,7 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         doMigrate();
-        log.info("Successfully ran migration {} in {}.", getDescription(), stopwatch);
+        log.info("Ran migration {} in {}.", getDescription(), stopwatch);
     }
 
     protected abstract void doMigrate() throws IOException;

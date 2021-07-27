@@ -37,12 +37,11 @@ import org.springframework.context.annotation.Lazy;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
 
-    private final EntityProperties entityProperties;
     private final AddressBookService addressBookService;
 
     @Override
     public Integer getChecksum() {
-        return 1; // Change this if this migration should be rerun
+        return 1;
     }
 
     @Override
@@ -52,7 +51,7 @@ public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
 
     @Override
     public MigrationVersion getVersion() {
-        return null; // Repeatable migration
+        return null;
     }
 
     @Override
