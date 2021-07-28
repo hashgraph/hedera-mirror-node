@@ -20,24 +20,21 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import com.google.common.base.Stopwatch;
-
-import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
-import org.postgresql.util.PSQLException;
 import org.springframework.context.annotation.Lazy;
+
+import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
 
     private final AddressBookService addressBookService;
+    private final AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
 
     @Override
     public Integer getChecksum() {
@@ -56,11 +53,16 @@ public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected boolean skipMigration(Configuration configuration) {
-        MigrationVersion baselineVersion = configuration.getBaselineVersion();
-        // skip for mirror node versions prior to v0.33 when migration 1.37.1 was added
-        MigrationVersion addressBookServiceEndpointsMigration =  MigrationVersion.fromVersion("1.37.1");
-
-        return addressBookServiceEndpointsMigration.isNewerThan(baselineVersion.getVersion());
+        // skip when no address books with service endpoint exist. Allow normal flow migration to do initial population
+        long serviceEndpointCount = 0;
+        try {
+            serviceEndpointCount = addressBookServiceEndpointRepository.count();
+        } catch (Exception ex) {
+            // catch ERROR: relation "address_book_service_endpoint" does not exist
+            // this will occur in migration version before v1.37.1 where service endpoints were not supported by proto
+            log.error("Error checking service endpoints: {}", ex);
+        }
+        return serviceEndpointCount < 1;
     }
 
     @Override

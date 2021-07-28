@@ -21,58 +21,39 @@ package com.hedera.mirror.importer.migration;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
-import com.hedera.mirror.importer.domain.AddressBook;
-
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-
-import com.hedera.mirror.importer.repository.AddressBookRepository;
-
-import com.hedera.mirror.importer.repository.FileDataRepository;
-
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import java.sql.Connection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
-import lombok.AllArgsConstructor;
 import org.assertj.core.api.ListAssert;
 import org.flywaydb.core.api.configuration.ClassicConfiguration;
-import org.flywaydb.core.api.configuration.Configuration;
-import org.flywaydb.core.api.migration.Context;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.util.Utility;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
+import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.repository.AddressBookRepository;
+import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 
 class MissingAddressBooksMigrationTest extends IntegrationTest {
 
@@ -89,15 +70,22 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     private FileDataRepository fileDataRepository;
 
     @Resource
+    private AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
+
+    @Resource
     private EntityProperties entityProperties;
 
     @Test
     void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
         // store initial address books
-        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 1, 4));
-        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 2, 4));
-        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 11, 8));
-        addressBookRepository.save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 12, 8));
+        addressBookRepository
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 1, 4));
+        addressBookRepository
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 2, 4));
+        addressBookRepository
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 11, 8));
+        addressBookRepository
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 12, 8));
         assertEquals(4, addressBookRepository.count());
 
         // un-parsed file_data
@@ -121,7 +109,8 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         // migration on startup
         missingAddressBooksMigration.doMigrate();
         assertEquals(6, addressBookRepository.count());
-        AddressBook newAddressBook = addressBookRepository.findLatestAddressBook(205, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()).get();
+        AddressBook newAddressBook = addressBookRepository
+                .findLatestAddressBook(205, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()).get();
         assertThat(newAddressBook.getStartConsensusTimestamp()).isEqualTo(203L);
         assertAddressBook(newAddressBook, FINAL);
     }
@@ -129,16 +118,18 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     @DisplayName("Verify skipMigration")
     @ParameterizedTest(name = "with baseline {0} and target {1}")
     @CsvSource({
-            "1.37.0, 1.999.0, true",
-            "1.37.1, 1.999.0, false",
-            "1.37.2, 1.999.0, false",
-            "2.0.0, 2.999.999, false",
-            "2.0.1, 2.999.999, false",
-            "0, 2, true",
-            ", 2, true"
+            "0, true",
+            "1, false"
     })
-    void skipMigrationPreAddressBookService(String baseline, String target, boolean result) {
-        assertThat(missingAddressBooksMigration.skipMigration(getConfiguration(baseline, target))).isEqualTo(result);
+    void skipMigrationPreAddressBookService(int serviceEndpointCount, boolean result) {
+        for (int j = 1; j <= serviceEndpointCount; ++j) {
+            addressBookServiceEndpointRepository.save(new AddressBookServiceEndpoint(
+                    j,
+                    "127.0.0.1",
+                    443,
+                    EntityId.of(0, 0, 100, EntityTypeEnum.ACCOUNT)));
+        }
+        assertThat(missingAddressBooksMigration.skipMigration(getConfiguration())).isEqualTo(result);
     }
 
     private AddressBook addressBook(Consumer<AddressBook.AddressBookBuilder> addressBookCustomizer,
@@ -146,7 +137,6 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         long startConsensusTimestamp = consensusTimestamp + 1;
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
         for (int i = 0; i < nodeCount; i++) {
-            long id = i;
             long nodeId = 3 + i;
             addressBookEntryList
                     .add(addressBookEntry(a -> a.id(new AddressBookEntry.Id(startConsensusTimestamp, nodeId))
@@ -214,10 +204,11 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         return builder.build();
     }
 
-    private FileData createAndStoreFileData(byte[] contents, long consensusTimeStamp, boolean is102, TransactionTypeEnum transactionTypeEnum) {
+    private FileData createAndStoreFileData(byte[] contents, long consensusTimeStamp, boolean is102,
+                                            TransactionTypeEnum transactionTypeEnum) {
         EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
                 AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID;
-        FileData fileData =  new FileData(consensusTimeStamp, contents, entityId, transactionTypeEnum.getProtoId());
+        FileData fileData = new FileData(consensusTimeStamp, contents, entityId, transactionTypeEnum.getProtoId());
         return fileDataRepository.save(fileData);
     }
 
@@ -236,10 +227,9 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         }
     }
 
-    private ClassicConfiguration getConfiguration(String baseLine, String target) {
+    private ClassicConfiguration getConfiguration() {
         ClassicConfiguration configuration = new ClassicConfiguration();
-        configuration.setBaselineVersionAsString(baseLine);
-        configuration.setTargetAsString(target);
+        configuration.setTargetAsString("latest");
         return configuration;
     }
 }
