@@ -88,7 +88,7 @@
     "prettier": "^2.3.2",
     "pretty-quick": "^3.1.1",
     "rewire": "^5.0.0",
-    "sinon": "^11.1.1",
+    "sinon": "^11.1.2",
     "supertest": "^6.1.4",
     "testcontainers": "^7.14.0"
   },
