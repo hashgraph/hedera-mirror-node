@@ -89,7 +89,7 @@
     "pretty-quick": "^3.1.1",
     "rewire": "^5.0.0",
     "sinon": "^11.1.1",
-    "supertest": "^6.1.3",
+    "supertest": "^6.1.4",
     "testcontainers": "^7.14.0"
   },
   "jest": {
