@@ -181,7 +181,8 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     /**
      * Migrates address book data by searching file_data table for applicable 101 and 102 files. These files are
-     * converted to AddressBook objects and used to populate address_book and address_book_entry tables
+     * converted to AddressBook objects and used to populate address_book and address_book_entry tables. Migrate flow
+     * will populate initial addressBook where applicable and consider all file_data present
      *
      * @return Latest AddressBook from historical files
      */
@@ -195,7 +196,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         if (currentAddressBook != null) {
             // verify no file_data 102 entries exists after current addressBook
             List<FileData> fileDataList = fileDataRepository
-                    .findAddressBooksAfter(currentAddressBook.getStartConsensusTimestamp(), 1);
+                    .findAddressBooksBetween(currentAddressBook.getStartConsensusTimestamp(), Long.MAX_VALUE, 1);
             if (CollectionUtils.isEmpty(fileDataList)) {
                 log.trace("All valid address books exist in db, skipping migration");
                 return currentAddressBook;
@@ -223,8 +224,9 @@ public class AddressBookServiceImpl implements AddressBookService {
     }
 
     /**
-     * Ensure all addressBook file_data entries prior to this and after the current address book have been parsed. If
-     * not parse them and populate the address_book tables to complete the list
+     * Ensure all addressBook file_data entries prior to this fileData and after the current address book have been
+     * parsed. If not parse them and populate the address_book tables to complete the list. This does not handle initial
+     * startup and only ensure any unprocessed address book files are processed.
      *
      * @param fileData
      */
@@ -242,12 +244,12 @@ public class AddressBookServiceImpl implements AddressBookService {
             return;
         }
 
-        transactionTemplate.executeWithoutResult(status -> {
-            // Parse all applicable addressBook file_data entries are processed
-            parseHistoricAddressBooks(
-                    startConsensusTimestamp,
-                    fileData.getConsensusTimestamp());
-        });
+        transactionTemplate.executeWithoutResult(status ->
+                // Parse all applicable addressBook file_data entries are processed
+                parseHistoricAddressBooks(
+                        startConsensusTimestamp,
+                        fileData.getConsensusTimestamp())
+        );
     }
 
     /**

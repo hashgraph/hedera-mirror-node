@@ -37,10 +37,6 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
     Optional<FileData> findLatestMatchingFile(long consensusTimestamp, long encodedEntityId,
                                               List<Integer> transactionTypes);
 
-    @Query(value = "select * from file_data where consensus_timestamp > ?1 and entity_id in (101, 102) order by " +
-            "consensus_timestamp asc limit ?2", nativeQuery = true)
-    List<FileData> findAddressBooksAfter(long consensusTimestamp, long limit);
-
     @Query(value = "select * from file_data where consensus_timestamp > ?1 and consensus_timestamp < ?2 and " +
             "entity_id in (101, 102) order by consensus_timestamp asc limit ?3", nativeQuery = true)
     List<FileData> findAddressBooksBetween(long startConsensusTimestamp, long endConsensusTimestamp, long limit);
