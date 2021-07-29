@@ -234,18 +234,8 @@ public class AddressBookServiceImpl implements AddressBookService {
         AddressBook currentAddressBook = getCurrent();
         long startConsensusTimestamp = currentAddressBook == null ? 0 : currentAddressBook.getStartConsensusTimestamp();
 
-        FileData latestCreateFileData = fileDataRepository.findLatestMatchingFile(
-                fileData.getConsensusTimestamp(),
-                fileData.getEntityId().getId(),
-                List.of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId())
-        ).orElse(null);
-
-        if (latestCreateFileData == null) {
-            return;
-        }
-
         transactionTemplate.executeWithoutResult(status ->
-                // Parse all applicable addressBook file_data entries are processed
+                // Parse all applicable missed addressBook file_data entries in range
                 parseHistoricAddressBooks(
                         startConsensusTimestamp,
                         fileData.getConsensusTimestamp())
