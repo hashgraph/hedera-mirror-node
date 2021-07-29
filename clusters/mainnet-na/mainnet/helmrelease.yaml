@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.23.0'
+      version: '0.24.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -38,24 +38,6 @@ spec:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
-      config:
-        hedera:
-          mirror:
-            monitor:
-              publish:
-                scenarios:
-                  - name: HCS Pinger
-                    enabled: true
-                    properties:
-                      topicId: 0.0.259933
-                    recordPercent: 1.0
-                    tps: 0.1
-                    type: CONSENSUS_SUBMIT_MESSAGE
-              subscribe:
-                grpc:
-                  - name: HCS Subscribe
-                    enabled: true
-                    topicId: 0.0.259933
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
     postgresql:
