@@ -60,7 +60,7 @@ public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
         } catch (Exception ex) {
             // catch ERROR: relation "address_book_service_endpoint" does not exist
             // this will occur in migration version before v1.37.1 where service endpoints were not supported by proto
-            log.info("Error checking service endpoints", ex);
+            log.info("Error checking service endpoints: {}", ex.getMessage());
         }
         return serviceEndpointCount < 1;
     }
