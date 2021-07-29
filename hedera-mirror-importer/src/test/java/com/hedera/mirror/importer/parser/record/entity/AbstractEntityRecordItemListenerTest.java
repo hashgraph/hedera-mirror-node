@@ -428,7 +428,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(UUID.randomUUID().toString())
                 .hash(UUID.randomUUID().toString())
-                .index(nextIndex++)
+                .idx(nextIndex++)
                 .loadEnd(Instant.now().getEpochSecond())
                 .loadStart(Instant.now().getEpochSecond())
                 .name(filename)

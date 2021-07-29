@@ -33,10 +33,12 @@ import org.springframework.jdbc.support.JdbcUtils;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
+@EnabledIfV1
 class NotifyingEntityListenerTest extends BatchEntityListenerTest {
 
     private final DataSource dataSource;

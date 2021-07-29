@@ -22,14 +22,15 @@ create table if not exists account_balance
 (
     consensus_timestamp bigint not null,
     balance             bigint not null,
-    account_id          bigint not null
+    account_id          bigint not null,
+    primary key (consensus_timestamp, account_id)
 );
 comment on table account_balance is 'Account balances (historical) in tinybars at different consensus timestamps';
 
 create table if not exists account_balance_file
 (
     bytes               bytea        null,
-    consensus_timestamp bigint       not null,
+    consensus_timestamp bigint       not null primary key,
     count               bigint       not null,
     file_hash           varchar(96)  null,
     load_start          bigint       not null,
@@ -42,7 +43,7 @@ comment on table account_balance_file is 'Account balances stream files';
 -- address_book
 create table if not exists address_book
 (
-    start_consensus_timestamp bigint not null,
+    start_consensus_timestamp bigint not null primary key,
     end_consensus_timestamp   bigint null,
     file_id                   bigint not null,
     node_count                int    null,
@@ -60,7 +61,8 @@ create table if not exists address_book_entry
     node_id             bigint        not null,
     node_account_id     bigint        not null,
     node_cert_hash      bytea         null,
-    stake               bigint        null
+    stake               bigint        null,
+    primary key (consensus_timestamp, node_id)
 );
 comment on table address_book_entry is 'Network address book node entries';
 
@@ -70,7 +72,8 @@ create table if not exists address_book_service_endpoint
     consensus_timestamp bigint             not null,
     ip_address_v4       varchar(15)        not null,
     node_id             bigint             not null,
-    port                integer default -1 not null
+    port                integer default -1 not null,
+    primary key (consensus_timestamp, node_id, ip_address_v4, port)
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
@@ -81,7 +84,7 @@ create table if not exists contract_result
     gas_supplied        bigint null,
     call_result         bytea  null,
     gas_used            bigint null,
-    consensus_timestamp bigint not null
+    consensus_timestamp bigint not null primary key
 );
 comment on table contract_result is 'Crypto contract execution results';
 
@@ -90,21 +93,23 @@ create table if not exists crypto_transfer
 (
     entity_id           bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    primary key (consensus_timestamp, entity_id, amount)
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
-
+ALTER TABLE crypto_transfer EXPERIMENTAL_AUDIT SET READ WRITE;
 -- custom_fee
 create table if not exists custom_fee
 (
-    amount                bigint,
-    amount_denominator    bigint,
-    collector_account_id  bigint,
+    amount                bigint          default 0,
+    amount_denominator    bigint          default 0,
+    collector_account_id  bigint          default 0,
     created_timestamp     bigint not null,
-    denominating_token_id bigint,
+    denominating_token_id bigint          default 0,
     maximum_amount        bigint,
     minimum_amount        bigint not null default 0,
-    token_id              bigint not null
+    token_id              bigint not null,
+    primary key (created_timestamp, token_id, amount, amount_denominator, collector_account_id, denominating_token_id)
 );
 comment on table custom_fee is 'HTS Custom fees';
 
@@ -116,7 +121,7 @@ create table if not exists entity
     created_timestamp     bigint,
     deleted               boolean,
     expiration_timestamp  bigint,
-    id                    bigint          not null,
+    id                    bigint          not null primary key,
     key                   bytea,
     memo                  text default '' not null,
     modified_timestamp    bigint,
@@ -135,7 +140,7 @@ create table if not exists event_file
 (
     bytes            bytea                  null,
     consensus_start  bigint                 not null,
-    consensus_end    bigint                 not null,
+    consensus_end    bigint                 not null primary key,
     count            bigint                 not null,
     digest_algorithm int                    not null,
     file_hash        character varying(96)  not null,
@@ -152,7 +157,7 @@ create table if not exists event_file
 create table if not exists file_data
 (
     file_data           bytea    null,
-    consensus_timestamp bigint   not null,
+    consensus_timestamp bigint   not null primary key,
     entity_id           bigint   not null,
     transaction_type    smallint not null
 );
@@ -162,19 +167,20 @@ comment on table file_data is 'File data entity entries';
 create table if not exists live_hash
 (
     livehash            bytea,
-    consensus_timestamp bigint not null
+    consensus_timestamp bigint not null primary key
 );
 
 -- nft
 create table if not exists nft
 (
     account_id         bigint,
-    created_timestamp  bigint,
+    created_timestamp  bigint not null,
     deleted            boolean,
     modified_timestamp bigint not null,
     metadata           bytea,
     serial_number      bigint not null,
-    token_id           bigint not null
+    token_id           bigint not null,
+    primary key (created_timestamp, token_id, serial_number)
 );
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
@@ -185,7 +191,8 @@ create table if not exists nft_transfer
     receiver_account_id bigint,
     sender_account_id   bigint,
     serial_number       bigint not null,
-    token_id            bigint not null
+    token_id            bigint not null,
+    primary key (consensus_timestamp, token_id, serial_number)
 );
 comment on table nft_transfer is 'Crypto account nft transfers';
 
@@ -203,7 +210,7 @@ create table if not exists record_file
 (
     bytes              bytea                  null,
     consensus_start    bigint                 not null,
-    consensus_end      bigint                 not null,
+    consensus_end      bigint                 not null primary key,
     count              bigint                 not null,
     digest_algorithm   int                    not null,
     file_hash          character varying(96)  not null,
@@ -211,7 +218,7 @@ create table if not exists record_file
     hapi_version_minor int,
     hapi_version_patch int,
     hash               character varying(96)  not null,
-    index              bigint                 not null,
+    idx                bigint                 not null,
     load_start         bigint                 not null,
     load_end           bigint                 not null,
     name               character varying(250) not null,
@@ -233,20 +240,10 @@ create table if not exists schedule
 );
 comment on table schedule is 'Schedule entity entries';
 
--- transaction_signature
-create table if not exists transaction_signature
-(
-    consensus_timestamp bigint not null,
-    public_key_prefix   bytea  not null,
-    entity_id           bigint null,
-    signature           bytea  not null
-);
-comment on table transaction_signature is 'Transaction signatories';
-
 -- t_entity_types
 create table if not exists t_entity_types
 (
-    id   integer not null,
+    id   integer not null primary key,
     name character varying(8)
 );
 comment on table t_entity_types is 'Network entity types';
@@ -254,7 +251,7 @@ comment on table t_entity_types is 'Network entity types';
 -- t_transaction_results
 create table if not exists t_transaction_results
 (
-    proto_id integer not null,
+    proto_id integer not null primary key,
     result   character varying(100)
 );
 comment on table t_transaction_results is 'Transaction result types';
@@ -262,7 +259,7 @@ comment on table t_transaction_results is 'Transaction result types';
 -- t_transaction_types
 create table if not exists t_transaction_types
 (
-    proto_id    integer not null,
+    proto_id    integer not null primary key,
     name        character varying(30),
     entity_type integer null
 );
@@ -272,7 +269,7 @@ comment on table t_transaction_types is 'Transaction types';
 create table if not exists token
 (
     token_id                     bigint,
-    created_timestamp            bigint                 not null,
+    created_timestamp            bigint                 not null primary key,
     decimals                     bigint                 not null,
     fee_schedule_key             bytea,
     fee_schedule_key_ed25519_hex varchar                null,
@@ -306,7 +303,8 @@ create table if not exists token_account
     freeze_status      smallint not null default 0,
     kyc_status         smallint not null default 0,
     modified_timestamp bigint   not null,
-    token_id           bigint   not null
+    token_id           bigint   not null,
+    primary key (created_timestamp, token_id)
 );
 comment on table token is 'Token account entity';
 
@@ -316,7 +314,8 @@ create table if not exists token_balance
     consensus_timestamp bigint not null,
     account_id          bigint not null,
     balance             bigint not null,
-    token_id            bigint not null
+    token_id            bigint not null,
+    primary key (consensus_timestamp, account_id, token_id)
 );
 comment on table token_balance is 'Crypto account token balances';
 
@@ -326,14 +325,15 @@ create table if not exists token_transfer
     token_id            bigint not null,
     account_id          bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    primary key (consensus_timestamp, token_id, account_id)
 );
 comment on table token_transfer is 'Crypto account token transfers';
 
 -- topic_message
 create table if not exists topic_message
 (
-    consensus_timestamp   bigint   not null,
+    consensus_timestamp   bigint   not null primary key,
     realm_num             smallint not null,
     topic_num             integer  not null,
     message               bytea    not null,
@@ -350,7 +350,7 @@ comment on table topic_message is 'Topic entity sequenced messages';
 -- transaction
 create table if not exists transaction
 (
-    consensus_ns           bigint   not null,
+    consensus_ns           bigint   not null primary key,
     type                   smallint not null,
     result                 smallint not null,
     payer_account_id       bigint   not null,
@@ -367,3 +367,14 @@ create table if not exists transaction
     transaction_bytes      bytea
 );
 comment on table transaction is 'Submitted network transactions';
+
+-- transaction_signature
+create table if not exists transaction_signature
+(
+    consensus_timestamp bigint not null,
+    public_key_prefix   bytea  not null,
+    entity_id           bigint null,
+    signature           bytea  not null,
+    primary key (consensus_timestamp, public_key_prefix)
+);
+comment on table transaction_signature is 'Transaction signatories';

@@ -56,7 +56,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         super(entityClass, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
         truncateSql = String
-                .format("truncate table %s restart identity cascade", upsertQueryGenerator.getTemporaryTableName());
+                .format("truncate table %s cascade", upsertQueryGenerator.getTemporaryTableName());
         finalTableName = upsertQueryGenerator.getFinalTableName();
         insertSql = upsertQueryGenerator.getInsertQuery();
         updateSql = upsertQueryGenerator.getUpdateQuery();
@@ -75,15 +75,21 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     }
 
     @Override
+    public void init(Connection connection) {
+        try {
+            createTempTable(connection);
+        } catch (Exception e) {
+            throw new ParserException(String.format("Error initializing table %s", tableName), e);
+        }
+    }
+
+    @Override
     protected void persistItems(Collection<T> items, Connection connection) {
         if (CollectionUtils.isEmpty(items)) {
             return;
         }
 
         try {
-            // create temp table to copy into
-            createTempTable(connection);
-
             // copy items to temp table
             copyItems(items, connection);
 
@@ -117,6 +123,11 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     }
 
     private void createTempTable(Connection connection) throws SQLException {
+        try (PreparedStatement preparedStatement = connection
+                .prepareStatement("SET experimental_enable_temp_tables = 'on'")) {
+            preparedStatement.execute();
+        }
+
         // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
         try (PreparedStatement preparedStatement = connection.prepareStatement(createTempTableSql)) {
             preparedStatement.executeUpdate();

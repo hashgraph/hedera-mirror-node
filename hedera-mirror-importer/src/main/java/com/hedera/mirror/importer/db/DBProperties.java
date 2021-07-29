@@ -42,10 +42,8 @@ public class DBProperties {
     @NotBlank
     private String owner = "";
 
-    @NotBlank
     private String ownerPassword = "";
 
-    @NotBlank
     private String password = "";
 
     @Min(0)

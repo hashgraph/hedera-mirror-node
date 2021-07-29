@@ -193,6 +193,17 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     @Override
     public void onStart() {
         cleanup();
+        Connection connection = null;
+        try {
+            connection = DataSourceUtils.getConnection(dataSource);
+            entityPgCopy.init(connection);
+            nftPgCopy.init(connection);
+            schedulePgCopy.init(connection);
+            tokenAccountPgCopy.init(connection);
+            tokenPgCopy.init(connection);
+        } finally {
+            DataSourceUtils.releaseConnection(connection, dataSource);
+        }
     }
 
     @Override

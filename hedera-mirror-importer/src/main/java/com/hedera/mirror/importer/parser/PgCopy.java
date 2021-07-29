@@ -88,6 +88,10 @@ public class PgCopy<T> {
                 .register(meterRegistry);
     }
 
+    public void init(Connection connection) {
+
+    }
+
     public void copy(Collection<T> items, Connection connection) {
         if (items == null || items.isEmpty()) {
             return;

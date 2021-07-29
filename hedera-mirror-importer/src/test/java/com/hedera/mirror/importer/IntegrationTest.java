@@ -26,11 +26,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
+import org.testcontainers.containers.CockroachContainer;
 
 import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
 
+@ActiveProfiles("v2")
 @TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 // Same database is used for all tests, so clean it up before each test.
@@ -40,10 +45,33 @@ import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
 @Import(MeterRegistryConfiguration.class)
 public abstract class IntegrationTest {
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected static final Logger log = LogManager.getLogger(IntegrationTest.class);
+
+    private static final CockroachContainer COCKROACH = new CockroachContainer("cockroachdb/cockroach:v21.1.6")
+            .withLogConsumer(o -> log.info("{}", o.getUtf8String().replace("\n", "")));
+
+    static {
+        COCKROACH.start();
+    }
 
     @BeforeEach
     void logTest(TestInfo testInfo) {
         log.info("Executing: {}", testInfo.getDisplayName());
+    }
+
+    @SuppressWarnings("unused")
+    @DynamicPropertySource
+    static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.password", COCKROACH::getPassword);
+        registry.add("spring.datasource.username", COCKROACH::getUsername);
+        registry.add("spring.datasource.url", COCKROACH::getJdbcUrl);
+        registry.add("spring.flyway.password", COCKROACH::getPassword);
+        registry.add("spring.flyway.username", COCKROACH::getUsername);
+        registry.add("spring.flyway.url", COCKROACH::getJdbcUrl);
+        registry.add("embedded.postgresql.port", () -> COCKROACH.getMappedPort(26257));
+        registry.add("embedded.postgresql.host", COCKROACH::getContainerIpAddress);
+        registry.add("embedded.postgresql.schema", COCKROACH::getDatabaseName);
+        registry.add("embedded.postgresql.user", COCKROACH::getUsername);
+        registry.add("embedded.postgresql.password", COCKROACH::getPassword);
     }
 }
