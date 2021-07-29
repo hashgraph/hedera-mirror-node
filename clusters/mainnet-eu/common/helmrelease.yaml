@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.23.0'
+      version: '0.24.1'
   install:
     crds: CreateReplace
   interval: 1m
@@ -53,7 +53,7 @@ spec:
               url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
               writeRelabelConfigs:
                 - action: keep
-                  regex: .*(flux|grpc|importer|monitor|rest|traefik)$
+                  regex: .*(grpc|importer|monitor|rest|traefik)$
                   sourceLabels: [job]
                 - action: drop
                   regex: executor.*
