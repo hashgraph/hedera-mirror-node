@@ -94,9 +94,8 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void unknownField() {
         properties.setProperties(Map.of("foo", "bar", "topicId", TOPIC_ID));
-        assertThatThrownBy(() -> generator.get().next())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unrecognized field");
+        List<PublishRequest> publishRequests = generator.get().next();
+        assertThat(publishRequests).hasSize(1); // No error
     }
 
     @Test

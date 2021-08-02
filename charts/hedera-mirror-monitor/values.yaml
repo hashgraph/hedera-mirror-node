@@ -183,7 +183,7 @@ prometheusRules:
       description: "Averaging {{ $value | humanizePercentage }} error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Publish error rate exceeds 15%"
     enabled: true
-    expr: expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 0.33
+    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor",status!="SUCCESS"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 0.33
     for: 3m
     labels:
       severity: critical
