@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -351,6 +352,60 @@ public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemLi
                 , () -> assertEquals(13 + TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count())
                 , () -> assertEquals(2, addressBookRepository.count())
                 , () -> assertEquals(2, fileDataRepository.count()) // update and append
+        );
+    }
+
+    @Test
+    void fileAppendToAddressBookInSingleRecordFile() throws IOException {
+        entityProperties.getPersist().setFiles(true);
+        entityProperties.getPersist().setSystemFiles(true);
+        byte[] addressBookCreate = Arrays.copyOf(FileUtils.readFileToByteArray(addressBookSmall), 6144);
+
+        // Initial address book create
+        Transaction transactionCreate = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBookCreate);
+        TransactionBody transactionBodyCreate = getTransactionBody(transactionCreate);
+        TransactionRecord recordCreate = transactionRecord(transactionBodyCreate, ADDRESS_BOOK_FILEID);
+        parseRecordItemAndCommit(new RecordItem(transactionCreate, recordCreate));
+
+        assertAll(
+                () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT,
+                        addressBookEntryRepository
+                                .count()),
+                () -> assertEquals(1, addressBookRepository.count()),
+                () -> assertEquals(1, fileDataRepository.count()) // update and append
+        );
+
+        byte[] addressBook = FileUtils.readFileToByteArray(addressBookLarge);
+        byte[] addressBookUpdate = Arrays.copyOf(addressBook, 6144);
+        byte[] addressBookAppend = Arrays.copyOfRange(addressBook, 6144, addressBook.length);
+
+        // Initial address book update
+        Transaction transactionUpdate = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBookUpdate);
+        TransactionBody transactionBodyUpdate = getTransactionBody(transactionUpdate);
+        TransactionRecord recordUpdate = transactionRecord(transactionBodyUpdate, ADDRESS_BOOK_FILEID);
+
+        // Address book append
+        Transaction transactionAppend = fileAppendTransaction(ADDRESS_BOOK_FILEID, addressBookAppend);
+        TransactionBody transactionBodyAppend = getTransactionBody(transactionAppend);
+        TransactionRecord recordAppend = transactionRecord(transactionBodyAppend, ADDRESS_BOOK_FILEID);
+
+        parseRecordItemsAndCommit(List.of(
+                new RecordItem(transactionUpdate, recordUpdate),
+                new RecordItem(transactionAppend, recordAppend)));
+
+        // verify current address book is updated
+        AddressBook newAddressBook = addressBookService.getCurrent();
+        assertAll(
+                () -> assertThat(newAddressBook.getStartConsensusTimestamp())
+                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp()) + 1),
+                () -> assertThat(newAddressBook.getEntries())
+                        .describedAs("Should overwrite address book with new update")
+                        .hasSize(13),
+                () -> assertArrayEquals(addressBook, newAddressBook.getFileData()),
+                () -> assertAddressBookData(addressBook, recordAppend.getConsensusTimestamp()),
+                () -> assertEquals(13 + TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count()),
+                () -> assertEquals(2, addressBookRepository.count()),
+                () -> assertEquals(3, fileDataRepository.count()) // update and append
         );
     }
 

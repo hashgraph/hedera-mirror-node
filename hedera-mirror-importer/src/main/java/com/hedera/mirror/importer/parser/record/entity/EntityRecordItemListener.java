@@ -94,6 +94,7 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -106,17 +107,20 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityListener entityListener;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final Predicate<TransactionFilterFields> transactionFilter;
+    private final FileDataRepository fileDataRepository;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
-                                    TransactionHandlerFactory transactionHandlerFactory) {
+                                    TransactionHandlerFactory transactionHandlerFactory,
+                                    FileDataRepository fileDataRepository) {
         this.entityProperties = entityProperties;
         this.addressBookService = addressBookService;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
         this.transactionHandlerFactory = transactionHandlerFactory;
+        this.fileDataRepository = fileDataRepository;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -349,16 +353,14 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeEnum) {
         EntityId entityId = EntityId.of(fileID);
         FileData fileData = new FileData(consensusTimestamp, contents, entityId, transactionTypeEnum);
-        boolean addressBook = addressBookService.isAddressBook(entityId);
 
         // We always store file data for address books since they're used by the address book service
-        if (addressBook || entityProperties.getPersist().isFiles() ||
+        if (addressBookService.isAddressBook(entityId)) {
+            fileDataRepository.save(fileData);
+            addressBookService.update(fileData);
+        } else if (entityProperties.getPersist().isFiles() ||
                 (entityProperties.getPersist().isSystemFiles() && entityId.getEntityNum() < 1000)) {
             entityListener.onFileData(fileData);
-        }
-
-        if (addressBook) {
-            addressBookService.update(fileData);
         }
     }
 
