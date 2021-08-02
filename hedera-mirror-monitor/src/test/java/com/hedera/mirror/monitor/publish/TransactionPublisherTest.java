@@ -296,6 +296,11 @@ class TransactionPublisherTest {
     void closeWhenDisabled() {
         publishProperties.setEnabled(false);
         transactionPublisher.close();
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(0L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
     }
 
     private PublishRequest.PublishRequestBuilder request() {

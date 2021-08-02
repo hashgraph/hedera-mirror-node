@@ -71,6 +71,10 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     public Mono<PublishResponse> publish(PublishRequest request) {
+        if (!publishProperties.isEnabled()) {
+            return Mono.empty();
+        }
+
         log.trace("Publishing: {}", request);
         int clientIndex = secureRandom.nextInt(publishProperties.getClients());
         PublishScenario scenario = request.getScenario();

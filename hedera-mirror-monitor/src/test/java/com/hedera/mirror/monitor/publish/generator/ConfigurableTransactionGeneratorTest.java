@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,8 +61,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setTps(100_000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(p -> p,
-                p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                properties));
+                p -> Collections.unmodifiableMap(p), properties));
     }
 
     @Test
@@ -85,8 +83,9 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void nextCountMoreThanLimit() {
         properties.setLimit(4);
+        ConfigurableTransactionGenerator transactionGenerator = generator.get();
         assertRequests(generator.get().next(5), 4);
-        assertThatThrownBy(() -> generator.get().next())
+        assertThatThrownBy(transactionGenerator::next)
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish limit");
     }
@@ -103,7 +102,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setLimit(1);
         TransactionGenerator transactionGenerator = generator.get();
         assertRequests(transactionGenerator.next());
-        assertThatThrownBy(() -> transactionGenerator.next())
+        assertThatThrownBy(transactionGenerator::next)
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish limit");
     }
@@ -111,7 +110,8 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void reachedDuration() {
         properties.setDuration(Duration.ofSeconds(-5L));
-        assertThatThrownBy(() -> generator.get().next())
+        ConfigurableTransactionGenerator transactionGenerator = generator.get();
+        assertThatThrownBy(transactionGenerator::next)
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish duration");
     }
@@ -189,7 +189,8 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void missingRequiredField() {
         properties.setProperties(Collections.emptyMap());
-        assertThatThrownBy(() -> generator.get().next()).isInstanceOf(ConstraintViolationException.class);
+        ConfigurableTransactionGenerator transactionGenerator = generator.get();
+        assertThatThrownBy(transactionGenerator::next).isInstanceOf(ConstraintViolationException.class);
     }
 
     private void assertRequests(List<PublishRequest> publishRequests, int size) {

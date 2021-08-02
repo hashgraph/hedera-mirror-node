@@ -50,8 +50,8 @@ class SubscriberController {
     private final MirrorSubscriber mirrorSubscriber;
 
     @GetMapping
-    public Flux<Scenario> subscriptions(@RequestParam Optional<ScenarioProtocol> protocol,
-                                        @RequestParam Optional<List<ScenarioStatus>> status) {
+    public Flux<Scenario<?, ?>> subscriptions(@RequestParam Optional<ScenarioProtocol> protocol,
+                                              @RequestParam Optional<List<ScenarioStatus>> status) {
         return mirrorSubscriber.getSubscriptions()
                 .filter(s -> !protocol.isPresent() || protocol.get() == s.getProtocol())
                 .filter(s -> !status.isPresent() || status.get().contains(s.getStatus()))
@@ -59,15 +59,15 @@ class SubscriberController {
     }
 
     @GetMapping("/{name}")
-    public Flux<Scenario> subscriptions(@PathVariable String name,
-                                        @RequestParam Optional<List<ScenarioStatus>> status) {
+    public Flux<Scenario<?, ?>> subscriptions(@PathVariable String name,
+                                              @RequestParam Optional<List<ScenarioStatus>> status) {
         return subscriptions(Optional.empty(), status)
                 .filter(subscription -> subscription.getName().equals(name))
                 .switchIfEmpty(Mono.error(new NoSuchElementException()));
     }
 
     @GetMapping("/{name}/{id}")
-    public Mono<Scenario> subscription(@PathVariable String name, @PathVariable int id) {
+    public Mono<Scenario<?, ?>> subscription(@PathVariable String name, @PathVariable int id) {
         return subscriptions(name, Optional.empty())
                 .filter(s -> s.getId() == id)
                 .last();

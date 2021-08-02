@@ -46,14 +46,14 @@ public class SubscribeMetrics {
     static final String TAG_SCENARIO = "scenario";
     static final String TAG_SUBSCRIBER = "subscriber";
 
-    private final Map<Scenario, TimeGauge> durationMetrics = new ConcurrentHashMap<>();
-    private final Map<Scenario, Timer> latencyMetrics = new ConcurrentHashMap<>();
+    private final Map<Scenario<?, ?>, TimeGauge> durationMetrics = new ConcurrentHashMap<>();
+    private final Map<Scenario<?, ?>, Timer> latencyMetrics = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
     private final SubscribeProperties subscribeProperties;
 
     public void onNext(SubscribeResponse response) {
         log.trace("Response: {}", response);
-        Scenario scenario = response.getScenario();
+        Scenario<?, ?> scenario = response.getScenario();
         Instant publishedTimestamp = response.getPublishedTimestamp();
         durationMetrics.computeIfAbsent(scenario, this::newDurationGauge);
 
@@ -63,7 +63,7 @@ public class SubscribeMetrics {
         }
     }
 
-    private TimeGauge newDurationGauge(Scenario scenario) {
+    private TimeGauge newDurationGauge(Scenario<?, ?> scenario) {
         return TimeGauge.builder(METRIC_DURATION, scenario, TimeUnit.NANOSECONDS, s -> s.getElapsed().toNanos())
                 .description("How long the subscriber has been running")
                 .tag(TAG_PROTOCOL, scenario.getProtocol().toString())
@@ -72,7 +72,7 @@ public class SubscribeMetrics {
                 .register(meterRegistry);
     }
 
-    private final Timer newLatencyTimer(Scenario scenario) {
+    private final Timer newLatencyTimer(Scenario<?, ?> scenario) {
         return Timer.builder(METRIC_E2E)
                 .description("The end to end transaction latency starting from publish and ending at receive")
                 .tag(TAG_PROTOCOL, scenario.getProtocol().toString())
@@ -88,7 +88,7 @@ public class SubscribeMetrics {
         }
     }
 
-    private void status(Scenario s) {
+    private void status(Scenario<?, ?> s) {
         if (s.isRunning()) {
             String elapsed = DurationToStringSerializer.convert(s.getElapsed());
             log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
