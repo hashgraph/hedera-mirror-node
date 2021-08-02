@@ -22,4 +22,4 @@ hedera:
       port: 5700
       realm: 0
       shard: 0
-      version: 0.38.0-beta1
+      version: 0.38.0-rc1
