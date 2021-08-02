@@ -26,9 +26,11 @@ import com.hedera.mirror.importer.domain.FileData;
 
 public interface AddressBookService {
 
+    AddressBook getCurrent();
+
     boolean isAddressBook(EntityId entityId);
 
-    void update(FileData fileData);
+    AddressBook migrate();
 
-    AddressBook getCurrent();
+    void update(FileData fileData);
 }

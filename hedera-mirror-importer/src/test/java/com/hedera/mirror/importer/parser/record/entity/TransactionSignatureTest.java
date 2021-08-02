@@ -70,6 +70,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -93,6 +94,9 @@ class TransactionSignatureTest {
     @Mock
     private TransactionHandlerFactory transactionHandlerFactory;
 
+    @Mock
+    private FileDataRepository fileDataRepository;
+
     private SignatureMap.Builder defaultSignatureMap;
 
     private List<TransactionSignature> defaultTransactionSignatures;
@@ -106,7 +110,8 @@ class TransactionSignatureTest {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
         EntityProperties entityProperties = new EntityProperties();
         entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
-                addressBookService, nonFeeTransferExtractionStrategy, entityListener, transactionHandlerFactory);
+                addressBookService, nonFeeTransferExtractionStrategy, entityListener, transactionHandlerFactory,
+                fileDataRepository);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()

@@ -12,6 +12,8 @@
 
 \copy address_book_entry to address_book_entry.csv delimiter ',' csv;
 
+\copy address_book_service_endpoint to address_book_service_endpoint.csv delimiter ',' csv;
+
 \copy contract_result to contract_result.csv delimiter ',' csv;
 
 \copy crypto_transfer to crypto_transfer.csv delimiter ',' csv;
