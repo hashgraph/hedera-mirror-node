@@ -96,8 +96,30 @@ public class FileDataRepositoryTest extends AbstractRepositoryTest {
         fileDataRepository.saveAll(fileDataList);
 
         Assertions.assertThat(fileDataRepository
-                .findAddressBooksAfter(
-                        2, 5))
+                .findAddressBooksBetween(
+                        2, 5, 10))
+                .isNotNull()
+                .hasSize(2)
+                .extracting(FileData::getConsensusTimestamp)
+                .containsSequence(3L, 4L);
+    }
+
+    @Test
+    void findAddressBookFilesWithLimit() {
+        List<FileData> fileDataList = new ArrayList<>();
+        fileDataList.add(fileData(1, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(2, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(3, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(4, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(6, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(7, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataRepository.saveAll(fileDataList);
+
+        Assertions.assertThat(fileDataRepository
+                .findAddressBooksBetween(
+                        2, 10, 5))
                 .isNotNull()
                 .hasSize(5)
                 .extracting(FileData::getConsensusTimestamp)

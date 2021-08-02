@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,7 +43,9 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
             return;
         }
 
+        Stopwatch stopwatch = Stopwatch.createStarted();
         doMigrate();
+        log.info("Ran migration {} in {}.", getDescription(), stopwatch);
     }
 
     protected abstract void doMigrate() throws IOException;
