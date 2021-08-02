@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <commons-csv.version>1.8</commons-csv.version>
+        <commons-csv.version>1.9.0</commons-csv.version>
     </properties>
 
     <dependencies>
