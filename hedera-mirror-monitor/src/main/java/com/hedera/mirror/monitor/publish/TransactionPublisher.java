@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -39,6 +41,7 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.HbarUnit;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
@@ -54,6 +57,7 @@ public class TransactionPublisher implements AutoCloseable {
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
+    private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
@@ -81,9 +85,7 @@ public class TransactionPublisher implements AutoCloseable {
         PublishScenarioProperties properties = scenario.getProperties();
 
         return clients.elementAt(clientIndex)
-                .flatMap(client -> Mono.fromFuture(request.getTransaction()
-                                .setTransactionMemo(scenario.getMemo())
-                                .executeAsync(client))
+                .flatMap(client -> getTransactionResponse(request, client)
                         .flatMap(r -> processTransactionResponse(client, request, r))
                         .map(PublishResponse.PublishResponseBuilder::build)
                         .doOnNext(response -> {
@@ -95,6 +97,20 @@ public class TransactionPublisher implements AutoCloseable {
                         .doOnNext(scenario::onNext)
                         .doOnError(scenario::onError)
                         .onErrorMap(t -> new PublishException(request, t)));
+    }
+
+    private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
+        Transaction<?> transaction = request.getTransaction();
+        transaction.setTransactionMemo(request.getScenario().getMemo());
+
+        // set transaction node where applicable
+        if (transaction.getNodeAccountIds() == null) {
+            int nodeIndex = secureRandom.nextInt(nodeAccountIds.size());
+            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get(nodeIndex));
+            transaction.setNodeAccountIds(nodeAccountId);
+        }
+
+        return Mono.fromFuture(transaction.executeAsync(client));
     }
 
     private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
@@ -127,9 +143,13 @@ public class TransactionPublisher implements AutoCloseable {
             throw new IllegalArgumentException("No valid nodes found");
         }
 
+        validNodes.forEach(n -> nodeAccountIds.add(AccountId.fromString(n.getAccountId())));
+        Map<String, AccountId> nodeMap = validNodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), validNodes.size());
+
         return Flux.range(0, publishProperties.getClients())
-                .map(i -> i % validNodes.size())
-                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(validNodes.get(i)))));
+                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodeMap))));
     }
 
     private List<NodeProperties> validateNodes() {
@@ -142,7 +162,9 @@ public class TransactionPublisher implements AutoCloseable {
         List<NodeProperties> validNodes = new ArrayList<>();
 
         for (NodeProperties node : nodes) {
-            try (Client client = toClient(node)) {
+            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
+
+            try (Client client = toClient(Map.of(node.getEndpoint(), nodeAccountId))) {
                 if (validateNode(client, node)) {
                     validNodes.add(node);
                 }
@@ -177,12 +199,11 @@ public class TransactionPublisher implements AutoCloseable {
         return valid;
     }
 
-    private Client toClient(NodeProperties nodeProperties) {
-        AccountId nodeAccount = AccountId.fromString(nodeProperties.getAccountId());
+    private Client toClient(Map<String, AccountId> nodes) {
         AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
         PrivateKey operatorPrivateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
 
-        Client client = Client.forNetwork(Map.of(nodeProperties.getEndpoint(), nodeAccount));
+        Client client = Client.forNetwork(nodes);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
     }
