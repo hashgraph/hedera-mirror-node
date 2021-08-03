@@ -35,8 +35,7 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.RetryBackoffSpec;
-import reactor.util.retry.RetrySpec;
+import reactor.util.retry.Retry;
 
 import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -127,7 +126,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .transaction(transactionSupplier.get())
                     .build();
 
-            RetryBackoffSpec retrySpec = RetrySpec.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
+            Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
                     .maxBackoff(Duration.ofSeconds(8L))
                     .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
                             r.totalRetries() + 1, r.failure().getMessage()));
