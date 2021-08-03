@@ -1203,14 +1203,20 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
         fixedFee2.setId(id);
 
+        CustomFee fixedFee3 = new CustomFee();
+        fixedFee3.setAmount(13L);
+        fixedFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fixedFee3.setDenominatingTokenId(tokenId);
+        fixedFee3.setId(id);
+
         CustomFee fractionalFee = new CustomFee();
-        fractionalFee.setAmount(13L);
+        fractionalFee.setAmount(14L);
         fractionalFee.setAmountDenominator(31L);
         fractionalFee.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
         fractionalFee.setMaximumAmount(100L);
         fractionalFee.setId(id);
 
-        return List.of(fixedFee1, fixedFee2, fractionalFee);
+        return List.of(fixedFee1, fixedFee2, fixedFee3, fractionalFee);
     }
 
     private static Stream<Arguments> provideCustomFees() {
@@ -1265,8 +1271,13 @@ public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemL
         if (customFee.getAmountDenominator() == null) {
             // fixed fee
             var fixedFee = FixedFee.newBuilder().setAmount(customFee.getAmount());
-            if (customFee.getDenominatingTokenId() != null) {
-                fixedFee.setDenominatingTokenId(convertTokenId(customFee.getDenominatingTokenId()));
+            EntityId denominatingTokenId = customFee.getDenominatingTokenId();
+            if (denominatingTokenId != null) {
+                if (denominatingTokenId.equals(customFee.getId().getTokenId())) {
+                    fixedFee.setDenominatingTokenId(TokenID.getDefaultInstance());
+                } else {
+                    fixedFee.setDenominatingTokenId(convertTokenId(denominatingTokenId));
+                }
             }
 
             protoCustomFee.setFixedFee(fixedFee).build();
