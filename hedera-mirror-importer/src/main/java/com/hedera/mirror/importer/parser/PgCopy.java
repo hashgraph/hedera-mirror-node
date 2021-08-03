@@ -112,6 +112,9 @@ public class PgCopy<T> {
 
         try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
             writer.writeValue(pgCopyOutputStream, items);
+        } catch (Exception ex) {
+            log.error(ex);
+            throw ex;
         } finally {
             if (copyIn.isActive()) {
                 copyIn.cancelCopy();
