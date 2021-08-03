@@ -38,6 +38,7 @@ import javax.validation.Validator;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -73,6 +74,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
         stopTime = System.nanoTime() + properties.getDuration().toNanos();
         scenario = new PublishScenario(properties);
         builder = PublishRequest.builder().scenario(scenario);
+        Assert.state(properties.getRetry().getMaxAttempts() > 0, "maxAttempts must be positive");
     }
 
     @Override

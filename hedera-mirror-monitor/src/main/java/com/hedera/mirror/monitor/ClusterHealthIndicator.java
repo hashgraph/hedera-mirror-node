@@ -56,6 +56,7 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
         return publishing().switchIfEmpty(subscribing());
     }
 
+    // Returns unknown if all publish scenarios aggregated rate has dropped to zero, otherwise returns an empty flux
     private Mono<Health> publishing() {
         return transactionGenerator.scenarios()
                 .map(Scenario::getRate)
@@ -64,6 +65,7 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
                 .flatMap(n -> UNKNOWN);
     }
 
+    // Returns up if any subscription is running and its rate is above zero, otherwise returns down
     private Mono<Health> subscribing() {
         return mirrorSubscriber.getSubscriptions()
                 .map(Scenario::getRate)

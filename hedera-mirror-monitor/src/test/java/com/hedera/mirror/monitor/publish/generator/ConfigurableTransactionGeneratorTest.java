@@ -91,6 +91,14 @@ class ConfigurableTransactionGeneratorTest {
     }
 
     @Test
+    void invalidMaxAttempts() {
+        properties.getRetry().setMaxAttempts(0L);
+        assertThatThrownBy(generator::get)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("maxAttempts must be positive");
+    }
+
+    @Test
     void unknownField() {
         properties.setProperties(Map.of("foo", "bar", "topicId", TOPIC_ID));
         List<PublishRequest> publishRequests = generator.get().next();

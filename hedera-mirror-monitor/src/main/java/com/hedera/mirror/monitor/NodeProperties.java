@@ -46,6 +46,7 @@ public class NodeProperties {
     private int port = 50211;
 
     public String getEndpoint() {
+        // Allow for in-process testing of gRPC stubs
         if (host.startsWith("in-process:")) {
             return host;
         }

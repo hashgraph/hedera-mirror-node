@@ -84,15 +84,16 @@ public class SubscribeMetrics {
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.subscribe.statusFrequency:10000}")
     public void status() {
         if (subscribeProperties.isEnabled()) {
-            durationMetrics.keySet().forEach(this::status);
+            durationMetrics.keySet()
+                    .stream()
+                    .filter(Scenario::isRunning)
+                    .forEach(this::status);
         }
     }
 
     private void status(Scenario<?, ?> s) {
-        if (s.isRunning()) {
-            String elapsed = DurationToStringSerializer.convert(s.getElapsed());
-            log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
-                    s.getProtocol(), s, s.getCount(), elapsed, s.getRate(), s.getErrors());
-        }
+        String elapsed = DurationToStringSerializer.convert(s.getElapsed());
+        log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
+                s.getProtocol(), s, s.getCount(), elapsed, s.getRate(), s.getErrors());
     }
 }

@@ -144,16 +144,19 @@ public class PublishMetrics {
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.publish.statusFrequency:10000}")
     public void status() {
         if (publishProperties.isEnabled()) {
-            durationGauges.keySet().stream().map(Tags::getScenario).distinct().forEach(this::status);
+            durationGauges.keySet()
+                    .stream()
+                    .map(Tags::getScenario)
+                    .distinct()
+                    .filter(PublishScenario::isRunning)
+                    .forEach(this::status);
         }
     }
 
     private void status(PublishScenario scenario) {
-        if (scenario.isRunning()) {
-            String elapsed = DurationToStringSerializer.convert(scenario.getElapsed());
-            log.info("{}: {} transactions in {} at {}/s. Errors: {}",
-                    scenario, scenario.getCount(), elapsed, scenario.getRate(), scenario.getErrors());
-        }
+        String elapsed = DurationToStringSerializer.convert(scenario.getElapsed());
+        log.info("{}: {} transactions in {} at {}/s. Errors: {}",
+                scenario, scenario.getCount(), elapsed, scenario.getRate(), scenario.getErrors());
     }
 
     @Value
