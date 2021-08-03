@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor;
 
 /*-
  * ‌
@@ -20,17 +20,8 @@ package com.hedera.mirror.monitor.generator;
  * ‍
  */
 
-import lombok.Getter;
-
-public class ScenarioException extends RuntimeException {
-
-    private static final long serialVersionUID = 1690349494197296387L;
-
-    @Getter
-    private final transient ScenarioProperties properties;
-
-    public ScenarioException(ScenarioProperties properties, String message) {
-        super(message);
-        this.properties = properties;
-    }
+public enum ScenarioStatus {
+    COMPLETED, // The scenario has completed normally due to reaching the configured duration or limit
+    IDLE,      // The scenario has not completed but is not currently receiving any responses
+    RUNNING,   // The scenario is still actively receiving responses
 }

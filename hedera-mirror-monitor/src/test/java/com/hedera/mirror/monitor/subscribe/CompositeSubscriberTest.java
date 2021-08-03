@@ -73,8 +73,8 @@ class CompositeSubscriberTest {
 
     @Test
     void subscriptions() {
-        TestSubscription subscription1 = new TestSubscription();
-        TestSubscription subscription2 = new TestSubscription();
+        TestScenario subscription1 = new TestScenario();
+        TestScenario subscription2 = new TestScenario();
         when(mirrorSubscriber1.getSubscriptions()).thenReturn(Flux.just(subscription1));
         when(mirrorSubscriber2.getSubscriptions()).thenReturn(Flux.just(subscription2));
 

@@ -44,6 +44,8 @@ management:
   endpoint:
     health:
       group:
+        cluster:
+          include: cluster
         liveness:
           include: ping
         readiness:

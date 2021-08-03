@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.publish.generator;
 
 /*-
  * ‌
@@ -32,11 +32,14 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.properties.ScenarioPropertiesAggregator;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 
 @Log4j2
 @Named
@@ -63,7 +66,7 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         this.transactionGenerators = properties.getScenarios()
                 .values()
                 .stream()
-                .filter(ScenarioProperties::isEnabled)
+                .filter(PublishScenarioProperties::isEnabled)
                 .map(scenarioProperties -> new ConfigurableTransactionGenerator(expressionConverter,
                         scenarioPropertiesAggregator, scenarioProperties))
                 .collect(Collectors.toList());
@@ -84,7 +87,8 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
                 i++;
             } catch (ScenarioException e) {
                 log.warn(e.getMessage());
-                e.getProperties().setEnabled(false);
+                e.getScenario().getProperties().setEnabled(false);
+                e.getScenario().onComplete();
                 rebuild();
                 if (rateLimiter.get().equals(INACTIVE_RATE_LIMITER)) {
                     break;
@@ -98,15 +102,20 @@ public class CompositeTransactionGenerator implements TransactionGenerator {
         return publishRequests;
     }
 
+    @Override
+    public Flux<PublishScenario> scenarios() {
+        return Flux.fromIterable(transactionGenerators).flatMap(TransactionGenerator::scenarios);
+    }
+
     private synchronized void rebuild() {
         double total = 0.0;
         List<Pair<TransactionGenerator, Double>> pairs = new ArrayList<>();
         for (Iterator<ConfigurableTransactionGenerator> iter = transactionGenerators.iterator(); iter.hasNext(); ) {
             ConfigurableTransactionGenerator transactionGenerator = iter.next();
-            ScenarioProperties scenarioProperties = transactionGenerator.getProperties();
-            if (scenarioProperties.isEnabled()) {
-                total += scenarioProperties.getTps();
-                pairs.add(Pair.create(transactionGenerator, scenarioProperties.getTps()));
+            PublishScenarioProperties publishScenarioProperties = transactionGenerator.getProperties();
+            if (publishScenarioProperties.isEnabled()) {
+                total += publishScenarioProperties.getTps();
+                pairs.add(Pair.create(transactionGenerator, publishScenarioProperties.getTps()));
             } else {
                 iter.remove();
             }

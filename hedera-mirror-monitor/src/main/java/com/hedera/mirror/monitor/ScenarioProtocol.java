@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe;
+package com.hedera.mirror.monitor;
 
 /*-
  * ‌
@@ -20,7 +20,7 @@ package com.hedera.mirror.monitor.subscribe;
  * ‍
  */
 
-public enum SubscriberProtocol {
+public enum ScenarioProtocol {
     GRPC,
     REST
 }

@@ -54,6 +54,7 @@ class PublishMetricsTest {
     private MeterRegistry meterRegistry;
     private PublishMetrics publishMetrics;
     private PublishProperties publishProperties;
+    private PublishScenario publishScenario;
     private StringWriter logOutput;
     private WriterAppender writerAppender;
 
@@ -61,7 +62,12 @@ class PublishMetricsTest {
     void setup() {
         meterRegistry = new SimpleMeterRegistry();
         publishProperties = new PublishProperties();
-        publishMetrics = new PublishMetrics(publishProperties, meterRegistry);
+        publishMetrics = new PublishMetrics(meterRegistry, publishProperties);
+
+        PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
+        publishScenarioProperties.setName(SCENARIO_NAME);
+        publishScenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
+        publishScenario = new PublishScenario(publishScenarioProperties);
 
         logOutput = new StringWriter();
         writerAppender = WriterAppender.newBuilder()
@@ -133,23 +139,26 @@ class PublishMetricsTest {
     @Test
     void statusError() {
         PublishException publishException = new PublishException(request(), new TimeoutException());
+        publishScenario.onError(publishException);
         publishMetrics.onError(publishException);
         publishMetrics.status();
         assertThat(logOutput)
                 .asString()
                 .hasLineCount(1)
-                .contains("Published 0 transactions in")
+                .contains(SCENARIO_NAME + ": 0 transactions in")
                 .contains("Errors: {TimeoutException=1}");
     }
 
     @Test
     void statusSuccess() throws Exception {
-        publishMetrics.onSuccess(response());
+        PublishResponse response = response();
+        publishScenario.onNext(response);
+        publishMetrics.onSuccess(response);
         publishMetrics.status();
         assertThat(logOutput)
                 .asString()
                 .hasLineCount(1)
-                .contains("Published 1 transactions in")
+                .contains(SCENARIO_NAME + ": 1 transactions in")
                 .contains("Errors: {}");
     }
 
@@ -176,10 +185,9 @@ class PublishMetricsTest {
     private PublishRequest request() {
         List<AccountId> nodeAccountIds = List.of(AccountId.fromString(NODE_ACCOUNT_ID));
         return PublishRequest.builder()
-                .scenarioName(SCENARIO_NAME)
+                .scenario(publishScenario)
                 .timestamp(Instant.now().minusSeconds(5L))
                 .transaction(new TopicMessageSubmitTransaction().setNodeAccountIds(nodeAccountIds))
-                .type(TransactionType.CONSENSUS_SUBMIT_MESSAGE)
                 .build();
     }
 

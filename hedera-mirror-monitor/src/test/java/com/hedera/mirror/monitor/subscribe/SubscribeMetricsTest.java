@@ -39,6 +39,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 
 class SubscribeMetricsTest {
@@ -77,7 +78,7 @@ class SubscribeMetricsTest {
 
     @Test
     void recordDuration() {
-        TestSubscription subscription = new TestSubscription();
+        TestScenario subscription = new TestScenario();
         SubscribeResponse response1 = response(subscription);
         SubscribeResponse response2 = response(subscription);
         subscribeMetrics.onNext(response1);
@@ -94,7 +95,7 @@ class SubscribeMetricsTest {
 
     @Test
     void recordE2E() {
-        TestSubscription subscription = new TestSubscription();
+        TestScenario subscription = new TestScenario();
         SubscribeResponse response1 = response(subscription);
         subscribeMetrics.onNext(response1);
 
@@ -125,8 +126,8 @@ class SubscribeMetricsTest {
 
     @Test
     void status() {
-        TestSubscription testSubscription1 = new TestSubscription();
-        TestSubscription testSubscription2 = new TestSubscription();
+        TestScenario testSubscription1 = new TestScenario();
+        TestScenario testSubscription2 = new TestScenario();
         testSubscription2.setName("Test2");
 
         subscribeMetrics.onNext(response(testSubscription1));
@@ -143,7 +144,7 @@ class SubscribeMetricsTest {
     void statusDisabled() {
         subscribeProperties.setEnabled(false);
 
-        subscribeMetrics.onNext(response(new TestSubscription()));
+        subscribeMetrics.onNext(response(new TestScenario()));
         subscribeMetrics.status();
 
         assertThat(logOutput).asString().isEmpty();
@@ -151,8 +152,8 @@ class SubscribeMetricsTest {
 
     @Test
     void statusNotRunning() {
-        TestSubscription testSubscription = new TestSubscription();
-        testSubscription.setStatus(SubscriptionStatus.COMPLETED);
+        TestScenario testSubscription = new TestScenario();
+        testSubscription.setStatus(ScenarioStatus.COMPLETED);
 
         subscribeMetrics.onNext(response(testSubscription));
         subscribeMetrics.status();
@@ -160,13 +161,13 @@ class SubscribeMetricsTest {
         assertThat(logOutput).asString().isEmpty();
     }
 
-    private SubscribeResponse response(Subscription subscription) {
+    private SubscribeResponse response(Scenario scenario) {
         Instant timestamp = Instant.now().minusSeconds(5L);
         return SubscribeResponse.builder()
                 .publishedTimestamp(timestamp)
-                .consensusTimestamp(timestamp.plusSeconds(1L * subscription.getCount()))
-                .receivedTimestamp(timestamp.plusSeconds(2L * subscription.getCount()))
-                .subscription(subscription)
+                .consensusTimestamp(timestamp.plusSeconds(1L * scenario.getCount()))
+                .receivedTimestamp(timestamp.plusSeconds(2L * scenario.getCount()))
+                .scenario(scenario)
                 .build();
     }
 }

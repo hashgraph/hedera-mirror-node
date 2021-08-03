@@ -37,12 +37,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.monitor.ScenarioProtocol;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.subscribe.Scenario;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
-import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
-import com.hedera.mirror.monitor.subscribe.Subscription;
 
 @ExtendWith(MockitoExtension.class)
 class GrpcSubscriberTest {
@@ -80,7 +80,7 @@ class GrpcSubscriberTest {
                 .verify(Duration.ofMillis(500L));
         assertThat(grpcSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
-                .returns(SubscriberProtocol.GRPC, Subscription::getProtocol);
+                .returns(ScenarioProtocol.GRPC, Scenario::getProtocol);
     }
 
     @Test
@@ -95,9 +95,9 @@ class GrpcSubscriberTest {
                 .hasSize(2)
                 .doesNotHaveDuplicates()
                 .allSatisfy(s -> assertThat(s).isNotNull()
-                        .returns(grpcSubscriberProperties, Subscription::getProperties)
-                        .returns(SubscriberProtocol.GRPC, Subscription::getProtocol))
-                .extracting(Subscription::getId)
+                        .returns(grpcSubscriberProperties, Scenario::getProperties)
+                        .returns(ScenarioProtocol.GRPC, Scenario::getProtocol))
+                .extracting(Scenario::getId)
                 .containsExactly(1, 2);
     }
 
@@ -117,8 +117,8 @@ class GrpcSubscriberTest {
                 .hasSize(2)
                 .doesNotHaveDuplicates()
                 .allSatisfy(s -> assertThat(s).isNotNull()
-                        .returns(SubscriberProtocol.GRPC, Subscription::getProtocol))
-                .extracting(Subscription::getName)
+                        .returns(ScenarioProtocol.GRPC, Scenario::getProtocol))
+                .extracting(Scenario::getName)
                 .doesNotHaveDuplicates();
     }
 

@@ -46,7 +46,7 @@ public class CompositeSubscriber implements MirrorSubscriber {
     }
 
     @Override
-    public Flux<Subscription> getSubscriptions() {
+    public Flux<Scenario> getSubscriptions() {
         return Flux.fromIterable(subscribers).flatMap(MirrorSubscriber::getSubscriptions);
     }
 }

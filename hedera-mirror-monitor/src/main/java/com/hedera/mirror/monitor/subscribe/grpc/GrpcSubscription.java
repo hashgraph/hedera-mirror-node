@@ -27,18 +27,18 @@ import java.time.Instant;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessage;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
-import com.hedera.mirror.monitor.subscribe.AbstractSubscription;
-import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
+import com.hedera.mirror.monitor.AbstractScenario;
+import com.hedera.mirror.monitor.ScenarioProtocol;
 
-class GrpcSubscription extends AbstractSubscription<GrpcSubscriberProperties, TopicMessage> {
+class GrpcSubscription extends AbstractScenario<GrpcSubscriberProperties, TopicMessage> {
 
     GrpcSubscription(int id, GrpcSubscriberProperties properties) {
         super(id, properties);
     }
 
     @Override
-    public SubscriberProtocol getProtocol() {
-        return SubscriberProtocol.GRPC;
+    public ScenarioProtocol getProtocol() {
+        return ScenarioProtocol.GRPC;
     }
 
     TopicMessageQuery getTopicMessageQuery() {
@@ -77,5 +77,11 @@ class GrpcSubscription extends AbstractSubscription<GrpcSubscriberProperties, To
             statusCode = ((StatusRuntimeException) t).getStatus().getCode();
         }
         errors.add(statusCode.name());
+    }
+
+    @Override
+    public String toString() {
+        String name = getName();
+        return getProperties().getSubscribers() <= 1 ? name : name + " #" + getId();
     }
 }

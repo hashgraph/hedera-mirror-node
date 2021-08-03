@@ -26,11 +26,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.time.Duration;
 import java.util.Map;
 
+import com.hedera.mirror.monitor.ScenarioProperties;
+import com.hedera.mirror.monitor.ScenarioProtocol;
+import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 import com.hedera.mirror.monitor.converter.StringToDurationDeserializer;
 
-@JsonSerialize(as = Subscription.class)
-public interface Subscription {
+@JsonSerialize(as = Scenario.class)
+public interface Scenario<P extends ScenarioProperties, T> {
 
     long getCount();
 
@@ -47,11 +50,19 @@ public interface Subscription {
     }
 
     @JsonIgnore
-    <T extends AbstractSubscriberProperties> T getProperties();
+    P getProperties();
 
-    SubscriberProtocol getProtocol();
+    ScenarioProtocol getProtocol();
 
     double getRate();
 
-    SubscriptionStatus getStatus();
+    ScenarioStatus getStatus();
+
+    boolean isRunning();
+
+    void onComplete();
+
+    void onError(Throwable t);
+
+    void onNext(T response);
 }
