@@ -899,12 +899,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         customFee.setAmount(fixedFee.getAmount());
 
         if (fixedFee.hasDenominatingTokenId()) {
-            TokenID denominatingTokenId = fixedFee.getDenominatingTokenId();
-            if (denominatingTokenId.equals(TokenID.getDefaultInstance())) {
-                customFee.setDenominatingTokenId(tokenId);
-            } else {
-                customFee.setDenominatingTokenId(EntityId.of(denominatingTokenId));
-            }
+            EntityId denominatingTokenId = EntityId.of(fixedFee.getDenominatingTokenId());
+            customFee.setDenominatingTokenId(denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId);
         }
     }
 
