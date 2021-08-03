@@ -871,7 +871,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             var feeCase = protoCustomFee.getFeeCase();
             switch (feeCase) {
                 case FIXED_FEE:
-                    parseFixedFee(customFee, protoCustomFee.getFixedFee());
+                    parseFixedFee(customFee, protoCustomFee.getFixedFee(), tokenId);
                     break;
                 case FRACTIONAL_FEE:
                     parseFractionalFee(customFee, protoCustomFee.getFractionalFee());
@@ -893,9 +893,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void parseFixedFee(CustomFee customFee, FixedFee fixedFee) {
+    private void parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {
         customFee.setAmount(fixedFee.getAmount());
-        customFee.setDenominatingTokenId(EntityId.of(fixedFee.getDenominatingTokenId()));
+
+        if (fixedFee.hasDenominatingTokenId()) {
+            EntityId denominatingTokenId = EntityId.of(fixedFee.getDenominatingTokenId());
+            customFee.setDenominatingTokenId(denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId);
+        }
     }
 
     private void parseFractionalFee(CustomFee customFee, FractionalFee fractionalFee) {
