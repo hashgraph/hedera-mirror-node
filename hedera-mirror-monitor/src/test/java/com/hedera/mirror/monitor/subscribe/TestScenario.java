@@ -25,8 +25,11 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.Data;
 
+import com.hedera.mirror.monitor.ScenarioProtocol;
+import com.hedera.mirror.monitor.ScenarioStatus;
+
 @Data
-public class TestSubscription implements Subscription {
+public class TestScenario implements Scenario {
 
     private long count = 1;
     private Duration elapsed = Duration.ofSeconds(1L);
@@ -34,12 +37,32 @@ public class TestSubscription implements Subscription {
     private int id = 1;
     private String name = "Test";
     private AbstractSubscriberProperties properties;
-    private SubscriberProtocol protocol = SubscriberProtocol.GRPC;
+    private ScenarioProtocol protocol = ScenarioProtocol.GRPC;
     private double rate = 1.0;
-    private SubscriptionStatus status = SubscriptionStatus.RUNNING;
+    private ScenarioStatus status = ScenarioStatus.RUNNING;
+
+    @Override
+    public boolean isRunning() {
+        return status == ScenarioStatus.RUNNING;
+    }
 
     @Override
     public String toString() {
         return name;
+    }
+
+    @Override
+    public void onComplete() {
+        // Ignore
+    }
+
+    @Override
+    public void onError(Throwable t) {
+        // Ignore
+    }
+
+    @Override
+    public void onNext(Object response) {
+        // Ignore
     }
 }

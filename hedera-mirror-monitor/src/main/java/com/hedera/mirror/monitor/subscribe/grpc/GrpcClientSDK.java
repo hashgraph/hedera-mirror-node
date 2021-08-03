@@ -64,7 +64,7 @@ class GrpcClientSDK implements GrpcClient {
     @Override
     public Flux<SubscribeResponse> subscribe(GrpcSubscription subscription) {
         int clientIndex = secureRandom.nextInt(subscribeProperties.getClients());
-        log.info("Starting '{}' subscription to client {}", subscription, clientIndex);
+        log.info("Starting '{}' scenario to client {}", subscription, clientIndex);
         return clients.elementAt(clientIndex)
                 .flatMapMany(client -> subscribeToClient(client, subscription));
     }
@@ -100,7 +100,7 @@ class GrpcClientSDK implements GrpcClient {
                 .consensusTimestamp(topicMessage.consensusTimestamp)
                 .publishedTimestamp(publishedTimestamp)
                 .receivedTimestamp(receivedTimestamp)
-                .subscription(subscription)
+                .scenario(subscription)
                 .build();
     }
 

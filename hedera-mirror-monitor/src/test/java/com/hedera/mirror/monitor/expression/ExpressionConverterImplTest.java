@@ -130,7 +130,7 @@ class ExpressionConverterImplTest {
         assertThat(expressionConverter.convert("${account.foo}")).isEqualTo("0.0.100");
 
         verify(transactionPublisher).publish(request.capture());
-        assertThat(request.getValue().getType()).isEqualTo(type);
+        assertThat(request.getValue().getScenario().getProperties().getType()).isEqualTo(type);
     }
 
     @Test
@@ -140,7 +140,7 @@ class ExpressionConverterImplTest {
         assertThat(expressionConverter.convert("${token.foo}")).isEqualTo("0.0.101");
 
         verify(transactionPublisher).publish(request.capture());
-        assertThat(request.getValue().getType()).isEqualTo(type);
+        assertThat(request.getValue().getScenario().getProperties().getType()).isEqualTo(type);
     }
 
     @Test
@@ -150,7 +150,7 @@ class ExpressionConverterImplTest {
         assertThat(expressionConverter.convert("${nft.foo}")).isEqualTo("0.0.101");
 
         verify(transactionPublisher).publish(request.capture());
-        assertThat(request.getValue().getType()).isEqualTo(type);
+        assertThat(request.getValue().getScenario().getProperties().getType()).isEqualTo(type);
     }
 
     @Test
@@ -160,7 +160,7 @@ class ExpressionConverterImplTest {
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
 
         verify(transactionPublisher).publish(request.capture());
-        assertThat(request.getValue().getType()).isEqualTo(type);
+        assertThat(request.getValue().getScenario().getProperties().getType()).isEqualTo(type);
     }
 
     @Test
@@ -171,7 +171,7 @@ class ExpressionConverterImplTest {
         assertThat(expressionConverter.convert("${schedule.foo}")).isEqualTo("0.0.100");
 
         verify(transactionPublisher).publish(request.capture());
-        assertThat(request.getValue().getType()).isEqualTo(type);
+        assertThat(request.getValue().getScenario().getProperties().getType()).isEqualTo(type);
     }
 
     @Test
@@ -184,7 +184,7 @@ class ExpressionConverterImplTest {
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
 
         verify(transactionPublisher).publish(request.capture());
-        assertThat(request.getValue().getType()).isEqualTo(type);
+        assertThat(request.getValue().getScenario().getProperties().getType()).isEqualTo(type);
     }
 
     @Test
@@ -199,7 +199,7 @@ class ExpressionConverterImplTest {
                 .containsEntry("topicId", "0.0.101");
 
         verify(transactionPublisher).publish(request.capture());
-        assertThat(request.getValue().getType()).isEqualTo(type);
+        assertThat(request.getValue().getScenario().getProperties().getType()).isEqualTo(type);
     }
 
     private Mono<PublishResponse> response(TransactionType type, long id) throws InvalidProtocolBufferException {

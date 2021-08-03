@@ -20,32 +20,32 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import com.google.common.base.Suppliers;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.HbarUnit;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
+import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 
@@ -56,51 +56,57 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final Supplier<List<Client>> clients = Suppliers.memoize(this::getClients);
-    private final Supplier<List<AccountId>> nodeAccountIds = Suppliers.memoize(this::getNodeAccountIds);
-    private final AtomicInteger counter = new AtomicInteger(0);
+    private final Flux<Client> clients = Flux.defer(this::getClients).cache();
+    private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
     private final SecureRandom secureRandom = new SecureRandom();
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     @Override
     public void close() {
-        if (initialized.get()) {
-            log.info("Closing {} clients", clients.get().size());
-
-            for (Client client : clients.get()) {
+        if (publishProperties.isEnabled()) {
+            log.warn("Closing {} clients", publishProperties.getClients());
+            clients.subscribe(client -> {
                 try {
                     client.close();
                 } catch (Exception e) {
                     // Ignore
                 }
-            }
+            });
         }
     }
 
     public Mono<PublishResponse> publish(PublishRequest request) {
-        log.trace("Publishing: {}", request);
-        int clientIndex = counter.getAndUpdate(n -> (n + 1 < clients.get().size()) ? n + 1 : 0);
-        Client client = clients.get().get(clientIndex);
+        if (!publishProperties.isEnabled()) {
+            return Mono.empty();
+        }
 
-        return getTransactionResponse(request, client)
-                .flatMap(transactionResponse -> processTransactionResponse(client, request, transactionResponse))
-                .map(PublishResponse.PublishResponseBuilder::build)
-                .doOnNext(response -> {
-                    if (log.isTraceEnabled() || request.isLogResponse()) {
-                        log.info("Received response : {}", response);
-                    }
-                })
-                .timeout(request.getTimeout())
-                .onErrorMap(t -> new PublishException(request, t));
+        log.trace("Publishing: {}", request);
+        int clientIndex = secureRandom.nextInt(publishProperties.getClients());
+        PublishScenario scenario = request.getScenario();
+        PublishScenarioProperties properties = scenario.getProperties();
+
+        return clients.elementAt(clientIndex)
+                .flatMap(client -> getTransactionResponse(request, client)
+                        .flatMap(r -> processTransactionResponse(client, request, r))
+                        .map(PublishResponse.PublishResponseBuilder::build)
+                        .doOnNext(response -> {
+                            if (log.isTraceEnabled() || properties.isLogResponse()) {
+                                log.info("Received response : {}", response);
+                            }
+                        })
+                        .timeout(properties.getTimeout())
+                        .doOnNext(scenario::onNext)
+                        .doOnError(scenario::onError)
+                        .onErrorMap(t -> new PublishException(request, t)));
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
         Transaction<?> transaction = request.getTransaction();
+        transaction.setTransactionMemo(request.getScenario().getMemo());
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
-            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get().get(nodeIndex));
+            int nodeIndex = secureRandom.nextInt(nodeAccountIds.size());
+            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get(nodeIndex));
             transaction.setNodeAccountIds(nodeAccountId);
         }
 
@@ -117,55 +123,54 @@ public class TransactionPublisher implements AutoCloseable {
                 .transactionId(transactionId);
 
         if (request.isRecord()) {
-            return Mono.fromFuture(transactionId.getRecordAsync(client))
+            // TransactionId.getRecordAsync() is inefficient doing a get receipt, a cost query, then the get record
+            TransactionRecordQuery transactionRecordQuery = new TransactionRecordQuery()
+                    .setQueryPayment(Hbar.from(1, HbarUnit.HBAR))
+                    .setTransactionId(transactionId);
+            return Mono.fromFuture(transactionRecordQuery.executeAsync(client))
                     .map(r -> builder.record(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
-            // TODO: Implement a faster retry for get receipt for more accurate metrics
-            return Mono.fromFuture(transactionId.getReceiptAsync(client))
-                    .map(builder::receipt);
+            return Mono.fromFuture(transactionId.getReceiptAsync(client)).map(builder::receipt);
         }
 
         return Mono.just(builder);
     }
 
-    private List<Client> getClients() {
-        Collection<NodeProperties> validNodes = validateNodes();
+    private Flux<Client> getClients() {
+        List<NodeProperties> validNodes = validateNodes();
 
         if (validNodes.isEmpty()) {
             throw new IllegalArgumentException("No valid nodes found");
         }
 
-        List<Client> validatedClients = new ArrayList<>();
-        Map<String, AccountId> network = toNetwork(validNodes);
-        for (int i = 0; i < publishProperties.getClients(); ++i) {
-            Client client = toClient(network);
-            validatedClients.add(client);
-        }
+        validNodes.forEach(n -> nodeAccountIds.add(AccountId.fromString(n.getAccountId())));
+        Map<String, AccountId> nodeMap = validNodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), validNodes.size());
 
-        initialized.set(true);
-        return validatedClients;
+        return Flux.range(0, publishProperties.getClients())
+                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodeMap))));
     }
 
-    private List<AccountId> getNodeAccountIds() {
-        return new ArrayList<>(clients.get().get(0).getNetwork().values());
-    }
-
-    private Collection<NodeProperties> validateNodes() {
+    private List<NodeProperties> validateNodes() {
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
         if (!monitorProperties.isValidateNodes()) {
-            return nodes;
+            return new ArrayList<>(nodes);
         }
 
         List<NodeProperties> validNodes = new ArrayList<>();
-        try (Client client = toClient(toNetwork(nodes))) {
-            for (NodeProperties node : nodes) {
+
+        for (NodeProperties node : nodes) {
+            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
+
+            try (Client client = toClient(Map.of(node.getEndpoint(), nodeAccountId))) {
                 if (validateNode(client, node)) {
                     validNodes.add(node);
                 }
+            } catch (Exception e) {
+                log.warn("Error validating nodes: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            log.warn("Error validating nodes: {}", e.getMessage());
         }
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
@@ -174,12 +179,15 @@ public class TransactionPublisher implements AutoCloseable {
 
     private boolean validateNode(Client client, NodeProperties node) {
         boolean valid = false;
+
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
-            new AccountBalanceQuery()
-                    .setAccountId(nodeAccountId)
-                    .setNodeAccountIds(List.of(nodeAccountId))
-                    .execute(client, Duration.ofSeconds(10L));
+            Hbar hbar = Hbar.fromTinybars(1L);
+            new TransferTransaction()
+                    .addHbarTransfer(nodeAccountId, hbar)
+                    .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
+                    .execute(client, Duration.ofSeconds(10L))
+                    .getReceipt(client, Duration.ofSeconds(10L));
             log.info("Validated node: {}", node);
             valid = true;
         } catch (TimeoutException e) {
@@ -191,16 +199,12 @@ public class TransactionPublisher implements AutoCloseable {
         return valid;
     }
 
-    private Client toClient(Map<String, AccountId> network) {
+    private Client toClient(Map<String, AccountId> nodes) {
         AccountId operatorId = AccountId.fromString(monitorProperties.getOperator().getAccountId());
         PrivateKey operatorPrivateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
-        Client client = Client.forNetwork(network);
+
+        Client client = Client.forNetwork(nodes);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
-    }
-
-    private Map<String, AccountId> toNetwork(Collection<NodeProperties> nodes) {
-        return nodes.stream()
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor;
 
 /*-
  * ‌
@@ -21,61 +21,42 @@ package com.hedera.mirror.monitor.generator;
  */
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
-
 @Data
-@Validated
-public class ScenarioProperties {
+public abstract class ScenarioProperties {
 
     @NotNull
     @DurationMin(seconds = 30)
-    private Duration duration = Duration.ofNanos(Long.MAX_VALUE);
+    protected Duration duration = Duration.ofNanos(Long.MAX_VALUE);
 
-    private boolean enabled = true;
+    protected boolean enabled = true;
 
     @Min(0)
-    private long limit = 0;
+    protected long limit = 0; // 0 for unlimited
 
-    private boolean logResponse = false;
-
-    @Min(1)
-    private int maxAttempts = 1;
-
-    private String name;
+    protected String name;
 
     @NotNull
-    private Map<String, String> properties = new LinkedHashMap<>();
+    protected RetryProperties retry = new RetryProperties();
 
-    @Min(0)
-    @Max(1)
-    private double receiptPercent = 0.0;
+    @Data
+    @Validated
+    public static class RetryProperties {
 
-    @Min(0)
-    @Max(1)
-    private double recordPercent = 0.0;
+        @Min(0)
+        private long maxAttempts = 16L;
 
-    @NotNull
-    @DurationMin(seconds = 1)
-    private Duration timeout = Duration.ofSeconds(13);
+        @NotNull
+        @DurationMin(millis = 500L)
+        private Duration maxBackoff = Duration.ofSeconds(8L);
 
-    @Min(0)
-    private double tps = 1.0;
-
-    @NotNull
-    private TransactionType type;
-
-    public long getLimit() {
-        return limit > 0 ? limit : Long.MAX_VALUE;
+        @NotNull
+        @DurationMin(millis = 100L)
+        private Duration minBackoff = Duration.ofMillis(250L);
     }
 }
-
-

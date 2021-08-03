@@ -46,53 +46,54 @@ public class SubscribeMetrics {
     static final String TAG_SCENARIO = "scenario";
     static final String TAG_SUBSCRIBER = "subscriber";
 
-    private final Map<Subscription, TimeGauge> durationMetrics = new ConcurrentHashMap<>();
-    private final Map<Subscription, Timer> latencyMetrics = new ConcurrentHashMap<>();
+    private final Map<Scenario<?, ?>, TimeGauge> durationMetrics = new ConcurrentHashMap<>();
+    private final Map<Scenario<?, ?>, Timer> latencyMetrics = new ConcurrentHashMap<>();
     private final MeterRegistry meterRegistry;
     private final SubscribeProperties subscribeProperties;
 
     public void onNext(SubscribeResponse response) {
         log.trace("Response: {}", response);
-        Subscription subscription = response.getSubscription();
+        Scenario<?, ?> scenario = response.getScenario();
         Instant publishedTimestamp = response.getPublishedTimestamp();
-        durationMetrics.computeIfAbsent(subscription, this::newDurationGauge);
+        durationMetrics.computeIfAbsent(scenario, this::newDurationGauge);
 
         if (publishedTimestamp != null) {
             Duration latency = Duration.between(publishedTimestamp, response.getReceivedTimestamp());
-            latencyMetrics.computeIfAbsent(subscription, this::newLatencyTimer).record(latency);
+            latencyMetrics.computeIfAbsent(scenario, this::newLatencyTimer).record(latency);
         }
     }
 
-    private TimeGauge newDurationGauge(Subscription subscription) {
-        return TimeGauge.builder(METRIC_DURATION, subscription, TimeUnit.NANOSECONDS, s -> s.getElapsed().toNanos())
+    private TimeGauge newDurationGauge(Scenario<?, ?> scenario) {
+        return TimeGauge.builder(METRIC_DURATION, scenario, TimeUnit.NANOSECONDS, s -> s.getElapsed().toNanos())
                 .description("How long the subscriber has been running")
-                .tag(TAG_PROTOCOL, subscription.getProtocol().toString())
-                .tag(TAG_SCENARIO, subscription.getName())
-                .tag(TAG_SUBSCRIBER, String.valueOf(subscription.getId()))
+                .tag(TAG_PROTOCOL, scenario.getProtocol().toString())
+                .tag(TAG_SCENARIO, scenario.getName())
+                .tag(TAG_SUBSCRIBER, String.valueOf(scenario.getId()))
                 .register(meterRegistry);
     }
 
-    private final Timer newLatencyTimer(Subscription subscription) {
+    private final Timer newLatencyTimer(Scenario<?, ?> scenario) {
         return Timer.builder(METRIC_E2E)
                 .description("The end to end transaction latency starting from publish and ending at receive")
-                .tag(TAG_PROTOCOL, subscription.getProtocol().toString())
-                .tag(TAG_SCENARIO, subscription.getName())
-                .tag(TAG_SUBSCRIBER, String.valueOf(subscription.getId()))
+                .tag(TAG_PROTOCOL, scenario.getProtocol().toString())
+                .tag(TAG_SCENARIO, scenario.getName())
+                .tag(TAG_SUBSCRIBER, String.valueOf(scenario.getId()))
                 .register(meterRegistry);
     }
 
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.subscribe.statusFrequency:10000}")
     public void status() {
         if (subscribeProperties.isEnabled()) {
-            durationMetrics.keySet().forEach(this::status);
+            durationMetrics.keySet()
+                    .stream()
+                    .filter(Scenario::isRunning)
+                    .forEach(this::status);
         }
     }
 
-    private void status(Subscription s) {
-        if (s.getStatus() == SubscriptionStatus.RUNNING) {
-            String elapsed = DurationToStringSerializer.convert(s.getElapsed());
-            log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
-                    s.getProtocol(), s, s.getCount(), elapsed, s.getRate(), s.getErrors());
-        }
+    private void status(Scenario<?, ?> s) {
+        String elapsed = DurationToStringSerializer.convert(s.getElapsed());
+        log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
+                s.getProtocol(), s, s.getCount(), elapsed, s.getRate(), s.getErrors());
     }
 }

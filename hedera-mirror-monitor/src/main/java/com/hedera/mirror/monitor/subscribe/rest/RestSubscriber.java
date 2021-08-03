@@ -43,7 +43,6 @@ import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
-import com.hedera.mirror.monitor.subscribe.SubscriptionStatus;
 import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
 
 @Log4j2
@@ -75,14 +74,14 @@ class RestSubscriber implements MirrorSubscriber {
     }
 
     private boolean shouldSample(RestSubscription subscription, PublishResponse response) {
-        if (subscription.getStatus() == SubscriptionStatus.COMPLETED) {
+        if (!subscription.isRunning()) {
             return false;
         }
 
         RestSubscriberProperties properties = subscription.getProperties();
         Set<String> publishers = properties.getPublishers();
 
-        if (!publishers.isEmpty() && !publishers.contains(response.getRequest().getScenarioName())) {
+        if (!publishers.isEmpty() && !publishers.contains(response.getRequest().getScenario().getName())) {
             return false;
         }
 
@@ -151,7 +150,7 @@ class RestSubscriber implements MirrorSubscriber {
                 .consensusTimestamp(transaction.getConsensusTimestamp())
                 .publishedTimestamp(publishResponse.getRequest().getTimestamp())
                 .receivedTimestamp(receivedTimestamp)
-                .subscription(subscription)
+                .scenario(subscription)
                 .build();
     }
 

@@ -31,12 +31,12 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
-import com.hedera.mirror.monitor.generator.TransactionGenerator;
 import com.hedera.mirror.monitor.publish.PublishException;
 import com.hedera.mirror.monitor.publish.PublishMetrics;
 import com.hedera.mirror.monitor.publish.PublishProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
+import com.hedera.mirror.monitor.publish.generator.TransactionGenerator;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 

@@ -32,11 +32,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.monitor.ScenarioProtocol;
+import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.config.LoggingFilter;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
-import com.hedera.mirror.monitor.subscribe.SubscriberProtocol;
-import com.hedera.mirror.monitor.subscribe.SubscriptionStatus;
-import com.hedera.mirror.monitor.subscribe.TestSubscription;
+import com.hedera.mirror.monitor.subscribe.TestScenario;
 
 @Log4j2
 @ExtendWith(MockitoExtension.class)
@@ -47,22 +47,22 @@ class SubscriberControllerTest {
 
     private WebTestClient webTestClient;
 
-    private TestSubscription subscription1;
-    private TestSubscription subscription2;
+    private TestScenario subscription1;
+    private TestScenario subscription2;
 
     @BeforeEach
     void setup() {
-        subscription1 = new TestSubscription();
+        subscription1 = new TestScenario();
         subscription1.setName("grpc1");
         subscription1.setId(1);
-        subscription1.setProtocol(SubscriberProtocol.GRPC);
-        subscription1.setStatus(SubscriptionStatus.COMPLETED);
+        subscription1.setProtocol(ScenarioProtocol.GRPC);
+        subscription1.setStatus(ScenarioStatus.COMPLETED);
 
-        subscription2 = new TestSubscription();
+        subscription2 = new TestScenario();
         subscription2.setName("rest1");
         subscription2.setId(1);
-        subscription2.setProtocol(SubscriberProtocol.REST);
-        subscription2.setStatus(SubscriptionStatus.RUNNING);
+        subscription2.setProtocol(ScenarioProtocol.REST);
+        subscription2.setStatus(ScenarioStatus.RUNNING);
 
         SubscriberController subscriberController = new SubscriberController(mirrorSubscriber);
         webTestClient = WebTestClient.bindToController(subscriberController).webFilter(new LoggingFilter()).build();
@@ -76,7 +76,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription1, subscription2));
     }
 
@@ -87,7 +87,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription2));
     }
 
@@ -98,7 +98,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription1));
     }
 
@@ -109,7 +109,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription1, subscription2));
     }
 
@@ -120,7 +120,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription1, subscription2));
     }
 
@@ -143,7 +143,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription1, subscription2));
     }
 
@@ -156,7 +156,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription1));
     }
 
@@ -178,7 +178,7 @@ class SubscriberControllerTest {
                 .exchange()
                 .expectStatus()
                 .is2xxSuccessful()
-                .expectBodyList(TestSubscription.class)
+                .expectBodyList(TestScenario.class)
                 .isEqualTo(Arrays.asList(subscription2));
     }
 

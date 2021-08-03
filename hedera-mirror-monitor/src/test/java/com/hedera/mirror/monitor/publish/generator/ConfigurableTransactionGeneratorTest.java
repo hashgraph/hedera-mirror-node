@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.generator;
+package com.hedera.mirror.monitor.publish.generator;
 
 /*-
  * ‌
@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,18 +41,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.mirror.monitor.publish.PublishRequest;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 
 class ConfigurableTransactionGeneratorTest {
 
     private static final int SAMPLE_SIZE = 10_000;
     private static final String TOPIC_ID = "0.0.1000";
 
-    private ScenarioProperties properties;
+    private PublishScenarioProperties properties;
     private Supplier<ConfigurableTransactionGenerator> generator;
 
     @BeforeEach
     void init() {
-        properties = new ScenarioProperties();
+        properties = new PublishScenarioProperties();
         properties.setReceiptPercent(1);
         properties.setRecordPercent(1);
         properties.setName("test");
@@ -61,8 +61,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setTps(100_000);
         properties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         generator = Suppliers.memoize(() -> new ConfigurableTransactionGenerator(p -> p,
-                p -> p.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                properties));
+                p -> Collections.unmodifiableMap(p), properties));
     }
 
     @Test
@@ -84,24 +83,26 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void nextCountMoreThanLimit() {
         properties.setLimit(4);
+        ConfigurableTransactionGenerator transactionGenerator = generator.get();
         assertRequests(generator.get().next(5), 4);
-        assertThatThrownBy(() -> generator.get().next())
+        assertThatThrownBy(transactionGenerator::next)
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish limit");
     }
 
     @Test
-    void logResponse() {
-        properties.setLogResponse(true);
-        assertRequests(generator.get().next());
+    void invalidMaxAttempts() {
+        properties.getRetry().setMaxAttempts(0L);
+        assertThatThrownBy(generator::get)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("maxAttempts must be positive");
     }
 
     @Test
     void unknownField() {
         properties.setProperties(Map.of("foo", "bar", "topicId", TOPIC_ID));
-        assertThatThrownBy(() -> generator.get().next())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unrecognized field");
+        List<PublishRequest> publishRequests = generator.get().next();
+        assertThat(publishRequests).hasSize(1); // No error
     }
 
     @Test
@@ -109,7 +110,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setLimit(1);
         TransactionGenerator transactionGenerator = generator.get();
         assertRequests(transactionGenerator.next());
-        assertThatThrownBy(() -> transactionGenerator.next())
+        assertThatThrownBy(transactionGenerator::next)
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish limit");
     }
@@ -117,7 +118,8 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void reachedDuration() {
         properties.setDuration(Duration.ofSeconds(-5L));
-        assertThatThrownBy(() -> generator.get().next())
+        ConfigurableTransactionGenerator transactionGenerator = generator.get();
+        assertThatThrownBy(transactionGenerator::next)
                 .isInstanceOf(ScenarioException.class)
                 .hasMessageContaining("Reached publish duration");
     }
@@ -195,17 +197,16 @@ class ConfigurableTransactionGeneratorTest {
     @Test
     void missingRequiredField() {
         properties.setProperties(Collections.emptyMap());
-        assertThatThrownBy(() -> generator.get().next()).isInstanceOf(ConstraintViolationException.class);
+        ConfigurableTransactionGenerator transactionGenerator = generator.get();
+        assertThatThrownBy(transactionGenerator::next).isInstanceOf(ConstraintViolationException.class);
     }
 
     private void assertRequests(List<PublishRequest> publishRequests, int size) {
         assertThat(publishRequests).hasSize(size).allSatisfy(publishRequest -> assertThat(publishRequest)
                 .isNotNull()
                 .hasNoNullFieldsOrProperties()
-                .hasFieldOrPropertyWithValue("logResponse", properties.isLogResponse())
                 .hasFieldOrPropertyWithValue("receipt", true)
                 .hasFieldOrPropertyWithValue("record", true)
-                .hasFieldOrPropertyWithValue("type", properties.getType())
                 .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
         );
     }

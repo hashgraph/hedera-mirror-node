@@ -35,7 +35,7 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.RetrySpec;
+import reactor.util.retry.Retry;
 
 import com.hedera.datagenerator.sdk.supplier.AdminKeyable;
 import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
@@ -49,6 +49,8 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
+import com.hedera.mirror.monitor.publish.PublishScenario;
+import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
 
 @Log4j2
@@ -112,21 +114,29 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                         .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
             }
 
+            PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
+            publishScenarioProperties.setName(expression.toString());
+            publishScenarioProperties.setTimeout(Duration.ofSeconds(30L));
+            publishScenarioProperties.setType(type.getTransactionType());
+            PublishScenario scenario = new PublishScenario(publishScenarioProperties);
             PublishRequest request = PublishRequest.builder()
-                    .logResponse(true)
                     .receipt(true)
-                    .scenarioName(expression.toString())
-                    .timeout(Duration.ofSeconds(30L))
+                    .scenario(scenario)
                     .timestamp(Instant.now())
                     .transaction(transactionSupplier.get())
-                    .type(type.getTransactionType())
                     .build();
 
-            PublishResponse publishResponse = Mono.defer(() -> transactionPublisher.publish(request))
-                    .retryWhen(RetrySpec.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
-                            .maxBackoff(Duration.ofSeconds(8L)))
-                    .toFuture().join();
-            String createdId = type.getIdExtractor().apply(publishResponse.getReceipt());
+            Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
+                    .maxBackoff(Duration.ofSeconds(8L))
+                    .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
+                            r.totalRetries() + 1, r.failure().getMessage()));
+
+            String createdId = Mono.defer(() -> transactionPublisher.publish(request))
+                    .retryWhen(retrySpec)
+                    .map(PublishResponse::getReceipt)
+                    .map(type.getIdExtractor()::apply)
+                    .toFuture()
+                    .join();
             log.info("Created {} entity {}", type, createdId);
             return createdId;
         } catch (Exception e) {
