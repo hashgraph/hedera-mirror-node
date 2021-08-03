@@ -24,9 +24,14 @@ import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcess
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -51,6 +56,7 @@ import com.hedera.mirror.importer.repository.StreamFileRepository;
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
     private final DataSource dataSource;
+    private final ScheduledExecutorService executor;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final PgCopy<AccountBalance> pgCopyAccountBalance;
     private final PgCopy<TokenBalance> pgCopyTokenBalance;
@@ -61,9 +67,12 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(meterRegistry, parserProperties, accountBalanceFileRepository);
         this.dataSource = dataSource;
+        this.executor = Executors.newSingleThreadScheduledExecutor();
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
         pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this.executor::shutdown));
     }
 
     /**
@@ -88,12 +97,14 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         Connection connection = DataSourceUtils.getConnection(dataSource);
         int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
 
+        Future<Void> abortFuture = null;
         long count = 0L;
         List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
         List<TokenBalance> tokenBalances = new ArrayList<>(batchSize);
 
         try {
             if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
+                abortFuture = scheduleConnectionAbort(connection);
                 count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
                     accountBalances.add(accountBalance);
                     tokenBalances.addAll(accountBalance.getTokenBalances());
@@ -118,7 +129,20 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
             streamFileRepository.save(accountBalanceFile);
         } finally {
+            if (abortFuture != null) {
+                abortFuture.cancel(true);
+            }
+
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
+    }
+
+    private Future<Void> scheduleConnectionAbort(Connection connection) {
+        Duration timeout = parserProperties.getDb().getConnectionNetworkTimeout();
+        return executor.schedule(() -> {
+            log.warn("Attempt to abort the db connection upon timeout in {}", timeout);
+            connection.abort(executor);
+            return null;
+        }, timeout.toMillis(), TimeUnit.MILLISECONDS);
     }
 }

@@ -23,10 +23,15 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -58,6 +63,7 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.ParserProperties;
 import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
@@ -80,9 +86,11 @@ import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 public class SqlEntityListener extends AbstractEntityListener implements RecordStreamFileListener {
 
     private final DataSource dataSource;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ScheduledExecutorService executor;
+    private final ParserProperties parserProperties;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
-    private final ApplicationEventPublisher eventPublisher;
 
     // init schemas, writers, etc once per process
     private final PgCopy<AssessedCustomFee> assessedCustomFeePgCopy;
@@ -135,9 +143,13 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
                              TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator,
                              NftUpsertQueryGenerator nftUpsertQueryGenerator) {
         this.dataSource = dataSource;
+        this.eventPublisher = eventPublisher;
+        this.executor = Executors.newSingleThreadScheduledExecutor();
+        this.parserProperties = recordParserProperties;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-        this.eventPublisher = eventPublisher;
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this.executor::shutdown));
 
         // insert only tables
         assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, recordParserProperties);
@@ -233,12 +245,14 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
 
     private void executeBatches() {
         Connection connection = null;
+        Future<Void> abortFuture = null;
 
         try {
             // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
 
             connection = DataSourceUtils.getConnection(dataSource);
+            abortFuture = scheduleConnectionAbort(connection);
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // insert only operations
@@ -270,6 +284,10 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
         } catch (Exception e) {
             throw new ParserException(e);
         } finally {
+            if (abortFuture != null) {
+                abortFuture.cancel(true);
+            }
+
             cleanup();
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
@@ -370,5 +388,14 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     @Override
     public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
         transactionSignatures.add(transactionSignature);
+    }
+
+    private Future<Void> scheduleConnectionAbort(Connection connection) {
+        Duration timeout = parserProperties.getDb().getConnectionNetworkTimeout();
+        return executor.schedule(() -> {
+            log.warn("Attempt to abort the db connection upon timeout in {}", timeout);
+            connection.abort(executor);
+            return null;
+        }, timeout.toMillis(), TimeUnit.MILLISECONDS);
     }
 }
