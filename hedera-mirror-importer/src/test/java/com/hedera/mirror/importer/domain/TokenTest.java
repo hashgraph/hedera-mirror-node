@@ -31,11 +31,11 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
-public class TokenTest {
+class TokenTest {
 
-    private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
-    String key = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-    private final EntityId treasuryAccount = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private static final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
+    private static final String KEY = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
+    private static final EntityId TREASURY = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
 
     @Test
     void createValidToken() throws DecoderException {
@@ -88,7 +88,7 @@ public class TokenTest {
     }
 
     private Token token(long consensusTimestamp) throws DecoderException {
-        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(key))).build().toByteArray();
+        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
         Token token = new Token();
         token.setCreatedTimestamp(consensusTimestamp);
         token.setDecimals(1000);
@@ -102,7 +102,7 @@ public class TokenTest {
         token.setSupplyKey(hexKey);
         token.setSymbol("FOOTOK");
         token.setTokenId(new TokenId(FOO_COIN_ID));
-        token.setTreasuryAccountId(treasuryAccount);
+        token.setTreasuryAccountId(TREASURY);
         token.setWipeKey(hexKey);
         return token;
     }

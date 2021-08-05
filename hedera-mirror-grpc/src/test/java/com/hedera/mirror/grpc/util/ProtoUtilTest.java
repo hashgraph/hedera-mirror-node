@@ -28,7 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class ProtoUtilTest {
+class ProtoUtilTest {
 
     @DisplayName("Convert Timestamp to Instant")
     @ParameterizedTest(name = "with {0}s and {1}ns")

@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-public class TokenAccountTest {
+class TokenAccountTest {
 
     private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
     private final EntityId ACCOUNT_ID = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);

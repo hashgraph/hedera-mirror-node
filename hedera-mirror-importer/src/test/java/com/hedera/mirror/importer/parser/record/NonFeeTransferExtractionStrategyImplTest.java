@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TransactionID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -35,18 +33,17 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.junit.jupiter.api.Test;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.Test;
 
-public class NonFeeTransferExtractionStrategyImplTest {
-    NonFeeTransferExtractionStrategyImpl extractionStrategy = new NonFeeTransferExtractionStrategyImpl();
-
-    private static long payerAccountNum = 999L;
+class NonFeeTransferExtractionStrategyImplTest {
+    private static final long payerAccountNum = 999L;
     private static final AccountID payerAccountId = AccountID.newBuilder().setAccountNum(payerAccountNum).build();
     private static final AccountID testAccount1 = AccountID.newBuilder().setAccountNum(1234L).build();
     private static final AccountID testAccount2 = AccountID.newBuilder().setAccountNum(5555L).build();
@@ -54,13 +51,15 @@ public class NonFeeTransferExtractionStrategyImplTest {
     private static final long newEntityNum = 987654L;
     private static final AccountID newAccountId = AccountID.newBuilder().setAccountNum(newEntityNum).build();
 
+    private final NonFeeTransferExtractionStrategyImpl extractionStrategy = new NonFeeTransferExtractionStrategyImpl();
+
     @Test
     void extractNonFeeTransfersCryptoTransfer() {
         var transactionBody = getCryptoTransferTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getSimpleTransactionRecord());
         assertAll(
-                () -> assertEquals(3, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList(), result)
+                () -> assertEquals(3, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList(), result)
         );
     }
 
@@ -69,8 +68,8 @@ public class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getCryptoCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewAccountTransactionRecord());
         assertAll(
-                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(createAccountAmounts( payerAccountNum, 0 - initialBalance,
+                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance,
                         newEntityNum, initialBalance), result)
         );
     }
@@ -80,8 +79,8 @@ public class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getCryptoCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
-                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
+                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
         );
     }
 
@@ -90,8 +89,8 @@ public class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getContractCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewContractTransactionRecord());
         assertAll(
-                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance,
+                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance,
                         newEntityNum, initialBalance), result)
         );
     }
@@ -101,8 +100,8 @@ public class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getContractCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
-                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
+                () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
         );
     }
 
@@ -113,8 +112,8 @@ public class NonFeeTransferExtractionStrategyImplTest {
         var transactionBody = getContractCallTransactionBody(contractNum, amount);
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getSimpleTransactionRecord());
         assertAll(
-                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count())
-                , () -> assertResult(createAccountAmounts(contractNum, amount,
+                () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
+                () -> assertResult(createAccountAmounts(contractNum, amount,
                         payerAccountNum, 0 - amount), result)
         );
     }
@@ -123,24 +122,23 @@ public class NonFeeTransferExtractionStrategyImplTest {
     void extractNonFeeTransfersFileCreateNone() {
         var transactionBody = getFileCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewFileTransactionRecord());
-        assertAll(
-                () -> assertEquals(0, StreamSupport.stream(result.spliterator(), false).count())
-        );
+        assertEquals(0, StreamSupport.stream(result.spliterator(), false).count());
     }
 
     /**
      * Quick create account amounts list.
+     *
      * @param accountNumThenAmount account num, amount, account num, amount, ...
      * @return
      */
-    private List<AccountAmount> createAccountAmounts(long ... accountNumThenAmount) {
+    private List<AccountAmount> createAccountAmounts(long... accountNumThenAmount) {
         var result = new LinkedList<AccountAmount>();
         for (int i = 0; i < accountNumThenAmount.length; i += 2) {
             result.add(
                     AccountAmount.newBuilder()
                             .setAccountID(AccountID.newBuilder().setAccountNum(accountNumThenAmount[i]).build())
-                    .setAmount(accountNumThenAmount[i + 1])
-                    .build());
+                            .setAmount(accountNumThenAmount[i + 1])
+                            .build());
         }
         return result;
     }
@@ -200,7 +198,8 @@ public class NonFeeTransferExtractionStrategyImplTest {
     }
 
     private TransactionRecord getNewAccountTransactionRecord() {
-        var receipt = TransactionReceipt.newBuilder().setAccountID(newAccountId).setStatus(ResponseCodeEnum.SUCCESS).build();
+        var receipt = TransactionReceipt.newBuilder().setAccountID(newAccountId).setStatus(ResponseCodeEnum.SUCCESS)
+                .build();
         return TransactionRecord.newBuilder().setReceipt(receipt).build();
     }
 

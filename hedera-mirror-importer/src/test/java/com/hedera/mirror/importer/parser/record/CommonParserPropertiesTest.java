@@ -38,7 +38,7 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.CommonParserProperties.TransactionFilter;
 
 @ExtendWith(MockitoExtension.class)
-public class CommonParserPropertiesTest {
+class CommonParserPropertiesTest {
 
     private final CommonParserProperties commonParserProperties = new CommonParserProperties();
 
