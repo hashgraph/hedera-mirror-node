@@ -30,8 +30,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.grpc.domain.Entity;
 import com.hedera.mirror.grpc.domain.EntityType;
 
-public class EncodedIdToEntityConverterTest {
-    private final EncodedIdToEntityConverter converter = new EncodedIdToEntityConverter();
+class EncodedIdToEntityConverterTest {
 
     @DisplayName("Convert Instant to Long")
     @ParameterizedTest(name = "with input {0} and output {1}")
@@ -42,7 +41,7 @@ public class EncodedIdToEntityConverterTest {
             "1001, 0, 0, 1001"
     })
     void convert(Long encodedInput, Long shardOutput, Long realmOutput, Long numOutput) {
-        Entity result = converter.convert(encodedInput);
+        Entity result = EncodedIdToEntityConverter.INSTANCE.convert(encodedInput);
         Entity expected = Entity.builder()
                 .id(encodedInput)
                 .shard(shardOutput)
@@ -55,7 +54,7 @@ public class EncodedIdToEntityConverterTest {
 
     @Test
     void convertNull() {
-        Entity result = converter.convert(null);
+        Entity result = EncodedIdToEntityConverter.INSTANCE.convert(null);
         assertNull(result);
     }
 }

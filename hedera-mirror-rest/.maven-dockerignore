@@ -6,7 +6,6 @@
 check-state-proof/**
 coverage/**
 Dockerfile
-__performancetests__/**
 __tests__/**
 /application.yml
 monitoring/**
