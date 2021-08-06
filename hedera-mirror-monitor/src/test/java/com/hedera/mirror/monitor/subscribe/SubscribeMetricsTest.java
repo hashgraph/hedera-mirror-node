@@ -136,8 +136,8 @@ class SubscribeMetricsTest {
 
         assertThat(logOutput).asString()
                 .hasLineCount(2)
-                .contains("GRPC Test: 1 transactions in 1s at 1.0/s. Errors: {}")
-                .contains("GRPC Test2: 1 transactions in 1s at 1.0/s. Errors: {}");
+                .contains("GRPC scenario Test received 1 responses in 1s at 1.0/s. Errors: {}")
+                .contains("GRPC scenario Test received 1 responses in 1s at 1.0/s. Errors: {}");
     }
 
     @Test

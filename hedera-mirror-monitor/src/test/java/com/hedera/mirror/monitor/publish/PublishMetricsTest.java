@@ -145,7 +145,7 @@ class PublishMetricsTest {
         assertThat(logOutput)
                 .asString()
                 .hasLineCount(1)
-                .contains(SCENARIO_NAME + ": 0 transactions in")
+                .contains("Scenario " + SCENARIO_NAME + " published 0 transactions in")
                 .contains("Errors: {TimeoutException=1}");
     }
 
@@ -158,7 +158,7 @@ class PublishMetricsTest {
         assertThat(logOutput)
                 .asString()
                 .hasLineCount(1)
-                .contains(SCENARIO_NAME + ": 1 transactions in")
+                .contains("Scenario " + SCENARIO_NAME + " published 1 transactions in")
                 .contains("Errors: {}");
     }
 
