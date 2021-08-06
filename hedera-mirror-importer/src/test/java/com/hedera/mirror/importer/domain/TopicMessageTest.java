@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import org.junit.jupiter.api.Test;
 
-public class TopicMessageTest {
+class TopicMessageTest {
 
     // Test serialization to JSON to verify contract with PostgreSQL listen/notify
     @Test

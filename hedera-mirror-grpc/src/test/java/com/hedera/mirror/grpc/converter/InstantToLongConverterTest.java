@@ -28,9 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class InstantToLongConverterTest {
-
-    private final InstantToLongConverter converter = new InstantToLongConverter();
+class InstantToLongConverterTest {
 
     @DisplayName("Convert Instant to Long")
     @ParameterizedTest(name = "with input {0} and output {1}")
@@ -44,25 +42,25 @@ public class InstantToLongConverterTest {
             "1677-09-21T00:12:43.545224193Z, 0"
     })
     void convert(Instant input, Long expected) {
-        Long result = converter.convert(input);
+        Long result = InstantToLongConverter.INSTANCE.convert(input);
         assertEquals(expected, result);
     }
 
     @Test
     void convertNull() {
-        Long result = converter.convert(null);
+        Long result = InstantToLongConverter.INSTANCE.convert(null);
         assertNull(result);
     }
 
     @Test
     void convertLongMin() {
-        Long result = converter.convert(Instant.MIN);
+        Long result = InstantToLongConverter.INSTANCE.convert(Instant.MIN);
         assertEquals(0, result);
     }
 
     @Test
     void convertLongMax() {
-        Long result = converter.convert(Instant.MAX);
+        Long result = InstantToLongConverter.INSTANCE.convert(Instant.MAX);
         assertEquals(Long.MAX_VALUE, result);
     }
 }
