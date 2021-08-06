@@ -18,7 +18,20 @@ metadata:
   name: flux-system
   namespace: flux-system
 spec:
-  interval: 10m0s
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: mirror
+      namespace: common
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: mirror
+      namespace: integration
+    - apiVersion: helm.toolkit.fluxcd.io/v2beta1
+      kind: HelmRelease
+      name: mirror
+      namespace: performance
+  interval: 1m0s
   path: ./clusters/preprod
   prune: true
   sourceRef:
