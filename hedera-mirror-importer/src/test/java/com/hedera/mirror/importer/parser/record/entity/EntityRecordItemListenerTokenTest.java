@@ -85,7 +85,7 @@ import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
-public class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
 
     private static final long ASSOCIATE_TIMESTAMP = 5L;
     private static final long AUTO_RENEW_PERIOD = 30L;

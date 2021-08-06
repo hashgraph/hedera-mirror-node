@@ -33,7 +33,7 @@ import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-public class TopicMessageRepositoryTest extends GrpcIntegrationTest {
+class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Resource
     private TopicMessageRepository topicMessageRepository;

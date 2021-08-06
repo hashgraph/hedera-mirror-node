@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ScheduleSignTransactionHandler();

@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new TokenGrantKycTransactionHandler();

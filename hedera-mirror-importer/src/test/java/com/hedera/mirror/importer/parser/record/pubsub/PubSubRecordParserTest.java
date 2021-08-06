@@ -41,7 +41,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 
-public class PubSubRecordParserTest extends PubSubIntegrationTest {
+class PubSubRecordParserTest extends PubSubIntegrationTest {
 
     private static final int NUM_TXNS = 34; // number of transactions in test record files
 

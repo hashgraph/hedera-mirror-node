@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 
-public class TokenRepositoryTest extends AbstractRepositoryTest {
+class TokenRepositoryTest extends AbstractRepositoryTest {
     @Resource
     protected TokenRepository tokenRepository;
 

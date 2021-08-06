@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
-public class FileDataRepositoryTest extends AbstractRepositoryTest {
+class FileDataRepositoryTest extends AbstractRepositoryTest {
 
     private static final EntityId ADDRESS_BOOK_101 = EntityId.of("0.0.101", EntityTypeEnum.FILE);
     private static final EntityId ADDRESS_BOOK_102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);

@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenAssociateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class TokenAssociateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new TokenAssociateTransactionHandler();

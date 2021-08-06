@@ -53,7 +53,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
 
     private static final ContractID CONTRACT_ID =
             ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1001).build();
