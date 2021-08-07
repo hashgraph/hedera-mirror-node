@@ -65,7 +65,7 @@ import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-public class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
     private static final FileID ADDRESS_BOOK_FILEID = FileID.newBuilder().setShardNum(0).setRealmNum(0)
             .setFileNum(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getEntityNum()).build();
     private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();

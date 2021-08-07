@@ -33,7 +33,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Tag("largedbperf")
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
+class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
 
     @Container
     private GenericContainer customContainer;

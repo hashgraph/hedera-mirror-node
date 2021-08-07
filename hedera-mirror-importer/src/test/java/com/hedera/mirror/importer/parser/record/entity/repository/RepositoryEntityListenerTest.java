@@ -77,7 +77,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class RepositoryEntityListenerTest extends IntegrationTest {
+class RepositoryEntityListenerTest extends IntegrationTest {
 
     private static final EntityId ENTITY_ID = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
     private static final EntityId TOKEN_ID = EntityId.of("0.0.7", EntityTypeEnum.TOKEN);

@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-public class RecordFileReaderImplV2Test extends AbstractRecordFileReaderTest {
+class RecordFileReaderImplV2Test extends AbstractRecordFileReaderTest {
 
     @Override
     protected RecordFileReader getRecordFileReader() {

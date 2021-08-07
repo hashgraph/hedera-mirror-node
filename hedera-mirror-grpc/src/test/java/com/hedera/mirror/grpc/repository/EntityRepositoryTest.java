@@ -29,7 +29,7 @@ import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.Entity;
 
-public class EntityRepositoryTest extends GrpcIntegrationTest {
+class EntityRepositoryTest extends GrpcIntegrationTest {
 
     @Resource
     private EntityRepository entityRepository;

@@ -20,7 +20,7 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
-public class SharedPollingTopicListenerTest extends AbstractSharedTopicListenerTest {
+class SharedPollingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Override
     protected ListenerProperties.ListenerType getType() {

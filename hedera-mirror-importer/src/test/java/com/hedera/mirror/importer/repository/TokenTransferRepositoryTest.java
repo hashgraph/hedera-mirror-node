@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 
-public class TokenTransferRepositoryTest extends AbstractRepositoryTest {
+class TokenTransferRepositoryTest extends AbstractRepositoryTest {
     @Resource
     protected TokenTransferRepository tokenTransferRepository;
 

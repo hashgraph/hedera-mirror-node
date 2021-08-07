@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
 
-public class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
+class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private CryptoTransferRepository cryptoTransferRepository;

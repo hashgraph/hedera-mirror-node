@@ -58,7 +58,7 @@ import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
             .build();

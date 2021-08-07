@@ -48,7 +48,7 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.listener.ListenerProperties;
 
 @Log4j2
-public class ConsensusControllerTest extends GrpcIntegrationTest {
+class ConsensusControllerTest extends GrpcIntegrationTest {
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
 

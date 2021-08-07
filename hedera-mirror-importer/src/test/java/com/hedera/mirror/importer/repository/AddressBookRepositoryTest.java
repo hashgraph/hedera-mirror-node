@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class AddressBookRepositoryTest extends AbstractRepositoryTest {
+class AddressBookRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     protected AddressBookRepository addressBookRepository;

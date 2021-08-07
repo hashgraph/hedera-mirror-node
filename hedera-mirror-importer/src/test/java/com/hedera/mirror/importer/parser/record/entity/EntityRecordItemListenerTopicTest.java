@@ -61,7 +61,7 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
-public class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListenerTest {
 
     static final TopicID TOPIC_ID = TopicID.newBuilder().setTopicNum(200L).build();
     static final String TRANSACTION_MEMO = "transaction memo";
