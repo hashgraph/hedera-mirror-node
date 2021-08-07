@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.TransactionResult;
 
-public class TransactionResultRepositoryTest extends AbstractRepositoryTest {
+class TransactionResultRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private TransactionResultRepository transactionResultRepository;

@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.LiveHash;
 
-public class LiveHashRepositoryTest extends AbstractRepositoryTest {
+class LiveHashRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private LiveHashRepository liveHashRepository;

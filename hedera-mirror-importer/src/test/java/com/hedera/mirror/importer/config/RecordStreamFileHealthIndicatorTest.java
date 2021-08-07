@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.config;
 import com.hedera.mirror.importer.parser.AbstractParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
-public class RecordStreamFileHealthIndicatorTest extends AbstractStreamFileHealthIndicatorTest {
+class RecordStreamFileHealthIndicatorTest extends AbstractStreamFileHealthIndicatorTest {
     @Override
     public AbstractParserProperties getParserProperties() {
         return new RecordParserProperties();

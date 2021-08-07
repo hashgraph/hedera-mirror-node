@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.ContractResult;
 
-public class ContractResultRepositoryTest extends AbstractRepositoryTest {
+class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private ContractResultRepository contractResultRepository;

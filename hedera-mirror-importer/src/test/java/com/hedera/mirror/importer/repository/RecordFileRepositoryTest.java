@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 
-public class RecordFileRepositoryTest extends AbstractRepositoryTest {
+class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private RecordFileRepository recordFileRepository;

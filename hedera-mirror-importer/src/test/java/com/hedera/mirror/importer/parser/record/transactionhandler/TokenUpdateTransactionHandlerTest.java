@@ -42,7 +42,7 @@ import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
-public class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Mock
     private NftRepository nftRepository;

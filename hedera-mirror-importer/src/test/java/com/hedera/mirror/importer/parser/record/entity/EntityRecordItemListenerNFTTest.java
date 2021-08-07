@@ -55,7 +55,7 @@ import com.hedera.mirror.importer.util.Utility;
 /**
  * Integration tests relating to RecordItemParser and non_fee_transfer.
  */
-public class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemListenerTest {
 
     private static final long PAYER_ACCOUNT_NUM = 1111;
     private static final AccountID PAYER_ACCOUNT_ID = AccountID.newBuilder().setAccountNum(PAYER_ACCOUNT_NUM).build();

@@ -32,7 +32,7 @@ import reactor.test.StepVerifier;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-public class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
+class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Resource
     private NotifyingTopicListener topicListener;

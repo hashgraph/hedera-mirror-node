@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
-public class TokenDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
+class TokenDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {

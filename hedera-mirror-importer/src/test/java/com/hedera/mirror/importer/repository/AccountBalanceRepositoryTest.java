@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TokenBalance;
 
-public class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
+class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private AccountBalanceRepository accountBalanceRepository;
