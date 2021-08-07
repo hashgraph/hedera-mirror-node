@@ -34,10 +34,6 @@ data:
       has_data "accounts"
     }
 
-    @test "Has balances" {
-      has_data "balances"
-    }
-
     @test "Has transactions" {
       has_data "transactions"
     }
@@ -53,3 +49,4 @@ data:
     }
     {{- end }}
 {{- end -}}
+
