@@ -93,7 +93,7 @@ public class SubscribeMetrics {
 
     private void status(Scenario<?, ?> s) {
         String elapsed = DurationToStringSerializer.convert(s.getElapsed());
-        log.info("{} {}: {} transactions in {} at {}/s. Errors: {}",
+        log.info("{} scenario {} received {} responses in {} at {}/s. Errors: {}",
                 s.getProtocol(), s, s.getCount(), elapsed, s.getRate(), s.getErrors());
     }
 }
