@@ -50,7 +50,7 @@ public class AcceptanceTestProperties {
     private int maxRetries = 2;
 
     @NotNull
-    private Long maxTinyBarTransactionFee = 1_000_000_000L;
+    private Long maxTinyBarTransactionFee = 2_000_000_000L;
 
     @NotNull
     private Duration messageTimeout = Duration.ofSeconds(60);
