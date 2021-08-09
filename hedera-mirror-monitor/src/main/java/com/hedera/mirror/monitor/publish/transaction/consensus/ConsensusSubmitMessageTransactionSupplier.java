@@ -29,10 +29,10 @@ import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
+import com.hedera.mirror.monitor.Utility;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 @Data
@@ -44,7 +44,7 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @NotNull
     private String message = StringUtils.EMPTY;
 
-    @Min(8)
+    @Min(14)
     @Max(6144)
     private int messageSize = 256;
 

@@ -24,18 +24,17 @@ import java.security.SecureRandom;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
-import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import lombok.Data;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenCreateTransaction;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.mirror.monitor.Utility;
+import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 @Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction>, AdminKeyable {
@@ -89,7 +88,12 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);
-            tokenCreateTransaction.setAdminKey(key).setFreezeKey(key).setKycKey(key).setSupplyKey(key).setWipeKey(key);
+            tokenCreateTransaction
+                    .setAdminKey(key)
+                    .setFreezeKey(key)
+                    .setKycKey(key)
+                    .setSupplyKey(key)
+                    .setWipeKey(key);
         }
 
         if (type == TokenType.FUNGIBLE_COMMON) {

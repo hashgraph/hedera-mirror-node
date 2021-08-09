@@ -21,10 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  */
 
 import javax.validation.constraints.Min;
-
-import com.hedera.mirror.monitor.Utility;
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 
@@ -32,7 +28,8 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
-import com.hedera.hashgraph.sdk.Transaction;
+import com.hedera.mirror.monitor.Utility;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 @Data
 @Log4j2
@@ -51,7 +48,7 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
     private String publicKey;
 
     @Override
-    public Transaction get() {
+    public AccountCreateTransaction get() {
         String memo = Utility.getMemo("Mirror node created test account");
         return new AccountCreateTransaction()
                 .setAccountMemo(memo)

@@ -21,24 +21,20 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
  */
 
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import javax.validation.constraints.Future;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
-import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
+import com.hedera.mirror.monitor.Utility;
+import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 @Data
 public class ConsensusUpdateTopicTransactionSupplier implements TransactionSupplier<TopicUpdateTransaction>,
@@ -52,10 +48,6 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     @DurationMin(seconds = 1)
     private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
-    @NotNull
-    @Future
-    private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
-
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
 
@@ -66,6 +58,7 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
     public TopicUpdateTransaction get() {
         String memo = Utility.getMemo("Mirror node updated test topic");
         TopicUpdateTransaction topicUpdateTransaction = new TopicUpdateTransaction()
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTopicId(TopicId.fromString(topicId))
                 .setTopicMemo(memo)
                 .setTransactionMemo(memo);
@@ -75,7 +68,8 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
             topicUpdateTransaction.setAdminKey(key).setSubmitKey(key);
         }
         if (autoRenewAccountId != null) {
-            topicUpdateTransaction.setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId))
+            topicUpdateTransaction
+                    .setAutoRenewAccountId(AccountId.fromString(autoRenewAccountId))
                     .setAutoRenewPeriod(autoRenewPeriod);
         }
         return topicUpdateTransaction;

@@ -20,34 +20,26 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  * ‍
  */
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import javax.validation.constraints.Future;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.mirror.monitor.Utility;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 @Data
 public class AccountUpdateTransactionSupplier implements TransactionSupplier<AccountUpdateTransaction> {
 
     @NotBlank
     private String accountId;
-
-    @NotNull
-    @DurationMin(seconds = 1)
-    private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
     @NotNull
     @Future

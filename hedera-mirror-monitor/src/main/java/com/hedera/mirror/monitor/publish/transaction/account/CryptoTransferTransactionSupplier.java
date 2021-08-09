@@ -20,28 +20,26 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  * ‍
  */
 
+import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.CRYPTO;
+import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.NFT;
+import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
+
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-
 import lombok.Data;
 import lombok.Getter;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransferTransaction;
-
-import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.CRYPTO;
-import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.NFT;
-import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
+import com.hedera.mirror.monitor.Utility;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 @Data
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<TransferTransaction> {
@@ -60,7 +58,7 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
     @NotBlank
     private String senderAccountId;
 
-    private final AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
+    private AtomicLong serialNumber = new AtomicLong(1); // The serial number to transfer.  Increments over time.
 
     private String tokenId;
 

@@ -24,16 +24,15 @@ import java.nio.charset.StandardCharsets;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
 import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.mirror.monitor.Utility;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
 @Data
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {
@@ -47,7 +46,7 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
     @NotNull
     private String metadata = StringUtils.EMPTY;
 
-    @Min(1)
+    @Min(14)
     private int metadataSize = 16;
 
     @NotBlank
