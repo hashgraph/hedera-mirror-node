@@ -29,12 +29,12 @@ const {NotFoundError} = require('./errors/notFoundError');
 const scheduleSelectFields = [
   'e.key',
   's.consensus_timestamp',
-  'creator_account_id',
-  'executed_timestamp',
+  's.creator_account_id',
+  's.executed_timestamp',
   'e.memo',
-  'payer_account_id',
+  's.payer_account_id',
   's.schedule_id',
-  'transaction_body',
+  's.transaction_body',
   `json_agg(
     json_build_object(
       'consensus_timestamp', ts.consensus_timestamp::text,
@@ -60,7 +60,7 @@ const entityIdJoinQuery = 'join entity e on e.id = s.schedule_id';
 const groupByQuery = 'group by e.key, e.memo, s.consensus_timestamp, s.schedule_id';
 const scheduleIdMatchQuery = 'where s.schedule_id = $1';
 const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
-const scheduleOrderQuery = (order) => `order by s.consensus_timestamp ${order}`;
+const scheduleOrderQuery = (order) => `order by s.schedule_id ${order}`;
 const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
 const signatureJoinQuery = 'left join transaction_signature ts on ts.entity_id = s.schedule_id';
 

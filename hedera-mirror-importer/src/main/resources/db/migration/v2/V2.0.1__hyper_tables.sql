@@ -35,6 +35,10 @@ select create_hypertable('crypto_transfer', 'consensus_timestamp', chunk_time_in
 select create_hypertable('custom_fee', 'created_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
+-- entity
+select create_hypertable('entity', 'id', chunk_time_interval => ${chunkIdInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
 -- event_file
 select create_hypertable('event_file', 'consensus_end', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
@@ -64,11 +68,7 @@ select create_hypertable('record_file', 'consensus_end', chunk_time_interval => 
                          create_default_indexes => false, if_not_exists => true);
 
 -- schedule
-select create_hypertable('schedule', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
-                         create_default_indexes => false, if_not_exists => true);
-
--- entity
-select create_hypertable('entity', 'id', chunk_time_interval => ${chunkIdInterval},
+select create_hypertable('schedule', 'schedule_id', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
 -- t_entity_types hyper table creation skipped as it serves only as a reference table and rarely gets updated

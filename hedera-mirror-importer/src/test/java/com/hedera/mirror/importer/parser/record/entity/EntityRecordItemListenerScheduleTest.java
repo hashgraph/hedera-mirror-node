@@ -83,6 +83,14 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
     private List<TransactionSignature> defaultSignatureList;
 
+    private static Stream<Arguments> provideScheduleCreatePayer() {
+        return Stream.of(
+                Arguments.of(null, PAYER, "no payer expect same as creator"),
+                Arguments.of(PAYER, PAYER, "payer set to creator"),
+                Arguments.of(PAYER2, PAYER2, "payer different than creator")
+        );
+    }
+
     @BeforeEach
     void before() {
         entityProperties.getPersist().setSchedules(true);
@@ -242,14 +250,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertTransactionInRepository(EXECUTE_TIMESTAMP, true, responseCodeEnum);
     }
 
-    private static Stream<Arguments> provideScheduleCreatePayer() {
-        return Stream.of(
-                Arguments.of(null, PAYER, "no payer expect same as creator"),
-                Arguments.of(PAYER, PAYER, "payer set to creator"),
-                Arguments.of(PAYER2, PAYER2, "payer different than creator")
-        );
-    }
-
     private Transaction scheduleCreateTransaction(AccountID payer) {
         return buildTransaction(builder -> {
             ScheduleCreateTransactionBody.Builder scheduleCreateBuilder = builder.getScheduleCreateBuilder();
@@ -347,10 +347,11 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
     private void assertScheduleInRepository(ScheduleID scheduleID, long createdTimestamp, AccountID payer,
                                             Long executedTimestamp) {
-        assertThat(scheduleRepository.findById(createdTimestamp)).get()
+        Long scheduleEntityId = EntityId.of(scheduleID).getId();
+        assertThat(scheduleRepository.findById(scheduleEntityId)).get()
                 .returns(createdTimestamp, from(Schedule::getConsensusTimestamp))
                 .returns(executedTimestamp, from(Schedule::getExecutedTimestamp))
-                .returns(EntityId.of(scheduleID), from(Schedule::getScheduleId))
+                .returns(scheduleEntityId, from(Schedule::getScheduleId))
                 .returns(EntityId.of(PAYER), from(Schedule::getCreatorAccountId))
                 .returns(EntityId.of(payer), from(Schedule::getPayerAccountId))
                 .returns(SCHEDULED_TRANSACTION_BODY.toByteArray(), from(Schedule::getTransactionBody));

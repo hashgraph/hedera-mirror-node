@@ -116,13 +116,15 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
     private final TransactionTemplate transactionTemplate;
-
+    private final String fileName = "2019-08-30T18_10_00.419072Z.rcd";
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
     @Resource
     private CacheManager cacheManager;
-
-    private final String fileName = "2019-08-30T18_10_00.419072Z.rcd";
     private RecordFile recordFile;
+
+    private static Key keyFromString(String key) {
+        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
+    }
 
     @BeforeEach
     final void beforeEach() {
@@ -733,8 +735,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(2, scheduleRepository.count());
-        assertExistsAndEquals(scheduleRepository, schedule1, 1L);
-        assertExistsAndEquals(scheduleRepository, schedule2, 2L);
+        assertExistsAndEquals(scheduleRepository, schedule1, entityId1.getId());
+        assertExistsAndEquals(scheduleRepository, schedule2, entityId2.getId());
     }
 
     @Test
@@ -791,7 +793,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         scheduleMerged.setExecutedTimestamp(5L);
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, scheduleRepository.count());
-        assertExistsAndEquals(scheduleRepository, scheduleMerged, 1L);
+        assertExistsAndEquals(scheduleRepository, scheduleMerged, entityId.getId());
     }
 
     private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
@@ -836,10 +838,6 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {
         return getEntity(id, createdTimestamp, modifiedTimestamp, memo, null, null, null, null, null, null);
-    }
-
-    private static Key keyFromString(String key) {
-        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
