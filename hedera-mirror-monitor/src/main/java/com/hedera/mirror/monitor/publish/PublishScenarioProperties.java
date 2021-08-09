@@ -26,11 +26,13 @@ import java.util.Map;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.ScenarioProperties;
 
 @Data

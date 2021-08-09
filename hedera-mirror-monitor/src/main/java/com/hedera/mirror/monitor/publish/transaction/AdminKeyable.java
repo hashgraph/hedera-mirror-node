@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe.rest.response;
+package com.hedera.mirror.monitor.publish.transaction;
 
 /*-
  * ‌
@@ -20,27 +20,9 @@ package com.hedera.mirror.monitor.subscribe.rest.response;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.time.Instant;
+public interface AdminKeyable {
 
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+    String getAdminKey();
 
-import lombok.Data;
-
-import com.hedera.mirror.monitor.converter.StringToInstantDeserializer;
-
-@Data
-public class MirrorTransaction {
-
-    @JsonDeserialize(using = StringToInstantDeserializer.class)
-    private Instant consensusTimestamp;
-
-    private TransactionType name;
-
-    private String result;
-
-    private boolean scheduled;
-
-    @JsonDeserialize(using = StringToInstantDeserializer.class)
-    private Instant validStartTimestamp;
+    void setAdminKey(String adminKey);
 }

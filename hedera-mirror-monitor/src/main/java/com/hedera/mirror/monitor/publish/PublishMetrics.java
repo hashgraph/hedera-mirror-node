@@ -21,6 +21,9 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import com.google.common.base.Throwables;
+
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
@@ -35,7 +38,6 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;

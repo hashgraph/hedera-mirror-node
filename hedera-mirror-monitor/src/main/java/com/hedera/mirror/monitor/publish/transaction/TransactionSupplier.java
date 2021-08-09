@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor.subscribe.rest.response;
+package com.hedera.mirror.monitor.publish.transaction;
 
 /*-
  * ‌
@@ -20,27 +20,9 @@ package com.hedera.mirror.monitor.subscribe.rest.response;
  * ‍
  */
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.time.Instant;
+import java.util.function.Supplier;
 
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import com.hedera.hashgraph.sdk.Transaction;
 
-import lombok.Data;
-
-import com.hedera.mirror.monitor.converter.StringToInstantDeserializer;
-
-@Data
-public class MirrorTransaction {
-
-    @JsonDeserialize(using = StringToInstantDeserializer.class)
-    private Instant consensusTimestamp;
-
-    private TransactionType name;
-
-    private String result;
-
-    private boolean scheduled;
-
-    @JsonDeserialize(using = StringToInstantDeserializer.class)
-    private Instant validStartTimestamp;
+public interface TransactionSupplier<T extends Transaction<T>> extends Supplier<Transaction<T>> {
 }
