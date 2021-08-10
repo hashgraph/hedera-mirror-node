@@ -38,7 +38,7 @@ import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
-public class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
+class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     @Resource
     private DomainBuilder domainBuilder;

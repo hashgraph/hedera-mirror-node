@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 
 @ExtendWith(MockitoExtension.class)
-public class CompositeBalanceFileReaderTest {
+class CompositeBalanceFileReaderTest {
 
     private static final String BALANCE_FILENAME_PREFIX = "2021-03-15T14_30_00Z_Balances";
 
@@ -50,8 +50,6 @@ public class CompositeBalanceFileReaderTest {
 
     @InjectMocks
     private CompositeBalanceFileReader compositeBalanceFileReader;
-
-    private final AccountBalanceFile accountBalanceFile = AccountBalanceFile.builder().count(1L).build();
 
     @Test
     void defaultsToVersion1Reader() {
@@ -95,7 +93,7 @@ public class CompositeBalanceFileReaderTest {
     private void configMockReader(BalanceFileReader reader, StreamFileData streamFileData, boolean supports) {
         if (supports) {
             when(reader.supports(streamFileData)).thenReturn(true);
-            when(reader.read(streamFileData)).thenReturn(accountBalanceFile);
+            when(reader.read(streamFileData)).thenReturn(AccountBalanceFile.builder().count(1L).build());
         } else {
             when(reader.supports(streamFileData)).thenReturn(false);
         }

@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
-public class TransactionRepositoryTest extends AbstractRepositoryTest {
+class TransactionRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private TransactionRepository transactionRepository;

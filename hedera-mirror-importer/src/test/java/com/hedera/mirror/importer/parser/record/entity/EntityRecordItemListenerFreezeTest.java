@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
-public class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListenerTest {
 
     @BeforeEach
     void before() {

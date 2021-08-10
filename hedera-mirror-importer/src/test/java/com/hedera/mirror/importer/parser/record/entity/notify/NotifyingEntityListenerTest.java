@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 
-public class NotifyingEntityListenerTest extends BatchEntityListenerTest {
+class NotifyingEntityListenerTest extends BatchEntityListenerTest {
 
     private final DataSource dataSource;
 

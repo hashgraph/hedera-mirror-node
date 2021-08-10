@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
-public class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
+class TransactionTypeRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private TransactionTypeRepository transactionTypeRepository;

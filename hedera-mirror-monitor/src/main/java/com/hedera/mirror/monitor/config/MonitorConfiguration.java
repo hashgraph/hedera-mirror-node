@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.config;
  */
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import javax.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
@@ -29,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 
 import com.hedera.mirror.monitor.publish.PublishException;
@@ -43,6 +45,15 @@ import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 @Log4j2
 @Configuration
 class MonitorConfiguration {
+
+    static {
+        // Avoid logging a stack trace when the SDK thread throws an exception right after the flux timeout
+        Hooks.onErrorDropped(t -> {
+            if (!(t instanceof CompletionException)) {
+                log.warn("onErrorDropped: {}", t.getMessage());
+            }
+        });
+    }
 
     @Resource
     private MirrorSubscriber mirrorSubscriber;
@@ -97,8 +108,8 @@ class MonitorConfiguration {
      * @return the subscribing flow's Disposable
      */
     @Bean(destroyMethod = "dispose")
-    @ConditionalOnProperty(value = "hedera.mirror.monitor.subscribe.enabled", havingValue = "true",
-            matchIfMissing = true)
+    @ConditionalOnProperty(value = "hedera.mirror.monitor.subscribe.enabled", havingValue = "true", matchIfMissing =
+            true)
     Disposable subscribe(SubscribeMetrics subscribeMetrics) {
         return mirrorSubscriber.subscribe()
                 .name("subscribe")

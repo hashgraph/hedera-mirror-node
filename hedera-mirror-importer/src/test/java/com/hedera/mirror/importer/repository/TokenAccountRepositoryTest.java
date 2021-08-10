@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 
-public class TokenAccountRepositoryTest extends AbstractRepositoryTest {
+class TokenAccountRepositoryTest extends AbstractRepositoryTest {
     @Resource
     protected TokenAccountRepository tokenAccountRepository;
 

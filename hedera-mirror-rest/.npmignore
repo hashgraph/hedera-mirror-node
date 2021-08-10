@@ -2,7 +2,6 @@
 *.log
 *.tgz
 .*
-__performancetests__/
 __tests__/
 /application.yml
 check-state-proof/

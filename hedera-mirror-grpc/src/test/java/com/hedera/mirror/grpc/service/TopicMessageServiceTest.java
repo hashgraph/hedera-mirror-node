@@ -51,7 +51,7 @@ import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.retriever.RetrieverProperties;
 import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
 
-public class TopicMessageServiceTest extends GrpcIntegrationTest {
+class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     private final Instant now = Instant.now();
     private final Instant future = now.plusSeconds(30L);

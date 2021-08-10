@@ -244,7 +244,6 @@ To manually verify the Rosetta API endpoints follow the [Operations](docs/operat
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
 - [Operations](docs/operations.md)
-- [Testing](docs/testing.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Releasing

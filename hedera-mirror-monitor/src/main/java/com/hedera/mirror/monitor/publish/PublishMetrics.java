@@ -157,7 +157,7 @@ public class PublishMetrics {
 
     private void status(PublishScenario scenario) {
         String elapsed = DurationToStringSerializer.convert(scenario.getElapsed());
-        log.info("{}: {} transactions in {} at {}/s. Errors: {}",
+        log.info("Scenario {} published {} transactions in {} at {}/s. Errors: {}",
                 scenario, scenario.getCount(), elapsed, scenario.getRate(), scenario.getErrors());
     }
 
