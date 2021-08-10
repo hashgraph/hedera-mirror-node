@@ -43,13 +43,13 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
     @Test
     void createWithMinimumData() {
         CryptoTransferTransactionSupplier cryptoTransferTransactionSupplier = new CryptoTransferTransactionSupplier();
-        cryptoTransferTransactionSupplier.setRecipientAccountId(RECIPIENT_ACCOUNT_ID.toString());
+        cryptoTransferTransactionSupplier.setRecipientAccountId(ACCOUNT_ID_2.toString());
         cryptoTransferTransactionSupplier.setSenderAccountId(ACCOUNT_ID.toString());
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
         Hbar transferAmount = ONE_TINYBAR;
         TransferTransaction expected = new TransferTransaction()
-                .addHbarTransfer(RECIPIENT_ACCOUNT_ID, transferAmount)
+                .addHbarTransfer(ACCOUNT_ID_2, transferAmount)
                 .addHbarTransfer(ACCOUNT_ID, transferAmount.negated())
                 .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
@@ -65,14 +65,14 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         CryptoTransferTransactionSupplier cryptoTransferTransactionSupplier = new CryptoTransferTransactionSupplier();
         cryptoTransferTransactionSupplier.setAmount(10);
         cryptoTransferTransactionSupplier.setMaxTransactionFee(1);
-        cryptoTransferTransactionSupplier.setRecipientAccountId(RECIPIENT_ACCOUNT_ID.toString());
+        cryptoTransferTransactionSupplier.setRecipientAccountId(ACCOUNT_ID_2.toString());
         cryptoTransferTransactionSupplier.setSenderAccountId(ACCOUNT_ID.toString());
         cryptoTransferTransactionSupplier.setTransferTypes(Set.of(CRYPTO));
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
         Hbar transferAmount = Hbar.fromTinybars(10);
         TransferTransaction expected = new TransferTransaction()
-                .addHbarTransfer(RECIPIENT_ACCOUNT_ID, transferAmount)
+                .addHbarTransfer(ACCOUNT_ID_2, transferAmount)
                 .addHbarTransfer(ACCOUNT_ID, transferAmount.negated())
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
@@ -88,7 +88,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         CryptoTransferTransactionSupplier cryptoTransferTransactionSupplier = new CryptoTransferTransactionSupplier();
         cryptoTransferTransactionSupplier.setAmount(10);
         cryptoTransferTransactionSupplier.setMaxTransactionFee(1);
-        cryptoTransferTransactionSupplier.setRecipientAccountId(RECIPIENT_ACCOUNT_ID.toString());
+        cryptoTransferTransactionSupplier.setRecipientAccountId(ACCOUNT_ID_2.toString());
         cryptoTransferTransactionSupplier.setSenderAccountId(ACCOUNT_ID.toString());
         cryptoTransferTransactionSupplier.setTokenId(TOKEN_ID.toString());
         cryptoTransferTransactionSupplier.setTransferTypes(Set.of(TOKEN));
@@ -96,7 +96,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
         TransferTransaction expected = new TransferTransaction()
-                .addTokenTransfer(TOKEN_ID, RECIPIENT_ACCOUNT_ID, 10)
+                .addTokenTransfer(TOKEN_ID, ACCOUNT_ID_2, 10)
                 .addTokenTransfer(TOKEN_ID, ACCOUNT_ID, -10)
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
@@ -113,7 +113,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         cryptoTransferTransactionSupplier.setAmount(2);
         cryptoTransferTransactionSupplier.setMaxTransactionFee(1);
         cryptoTransferTransactionSupplier.setNftTokenId(TOKEN_ID.toString());
-        cryptoTransferTransactionSupplier.setRecipientAccountId(RECIPIENT_ACCOUNT_ID.toString());
+        cryptoTransferTransactionSupplier.setRecipientAccountId(ACCOUNT_ID_2.toString());
         cryptoTransferTransactionSupplier.setSenderAccountId(ACCOUNT_ID.toString());
         cryptoTransferTransactionSupplier.setSerialNumber(new AtomicLong(10));
         cryptoTransferTransactionSupplier.setTransferTypes(Set.of(NFT));
@@ -121,8 +121,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
         TransferTransaction expected = new TransferTransaction()
-                .addNftTransfer(new NftId(TOKEN_ID, 10), ACCOUNT_ID, RECIPIENT_ACCOUNT_ID)
-                .addNftTransfer(new NftId(TOKEN_ID, 11), ACCOUNT_ID, RECIPIENT_ACCOUNT_ID)
+                .addNftTransfer(new NftId(TOKEN_ID, 10), ACCOUNT_ID, ACCOUNT_ID_2)
+                .addNftTransfer(new NftId(TOKEN_ID, 11), ACCOUNT_ID, ACCOUNT_ID_2)
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
 
@@ -140,7 +140,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         cryptoTransferTransactionSupplier.setAmount(2);
         cryptoTransferTransactionSupplier.setMaxTransactionFee(1);
         cryptoTransferTransactionSupplier.setNftTokenId(nftTokenId.toString());
-        cryptoTransferTransactionSupplier.setRecipientAccountId(RECIPIENT_ACCOUNT_ID.toString());
+        cryptoTransferTransactionSupplier.setRecipientAccountId(ACCOUNT_ID_2.toString());
         cryptoTransferTransactionSupplier.setSenderAccountId(ACCOUNT_ID.toString());
         cryptoTransferTransactionSupplier.setSerialNumber(new AtomicLong(10));
         cryptoTransferTransactionSupplier.setTokenId(TOKEN_ID.toString());
@@ -150,11 +150,11 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
 
         Hbar transferAmount = Hbar.fromTinybars(2);
         TransferTransaction expected = new TransferTransaction()
-                .addHbarTransfer(RECIPIENT_ACCOUNT_ID, transferAmount)
+                .addHbarTransfer(ACCOUNT_ID_2, transferAmount)
                 .addHbarTransfer(ACCOUNT_ID, transferAmount.negated())
-                .addNftTransfer(new NftId(nftTokenId, 10), ACCOUNT_ID, RECIPIENT_ACCOUNT_ID)
-                .addNftTransfer(new NftId(nftTokenId, 11), ACCOUNT_ID, RECIPIENT_ACCOUNT_ID)
-                .addTokenTransfer(TOKEN_ID, RECIPIENT_ACCOUNT_ID, 2)
+                .addNftTransfer(new NftId(nftTokenId, 10), ACCOUNT_ID, ACCOUNT_ID_2)
+                .addNftTransfer(new NftId(nftTokenId, 11), ACCOUNT_ID, ACCOUNT_ID_2)
+                .addTokenTransfer(TOKEN_ID, ACCOUNT_ID_2, 2)
                 .addTokenTransfer(TOKEN_ID, ACCOUNT_ID, -2)
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());

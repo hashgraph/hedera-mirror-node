@@ -29,7 +29,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -39,6 +38,7 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ScheduleCreateTransaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.mirror.monitor.Utility;
 import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 
@@ -82,7 +82,7 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
     @Getter(lazy = true)
     private final List<PrivateKey> signingKeys = createSigningKeys();
 
-    private boolean receiverSignatureRequired = false;
+    private boolean receiverSignatureRequired = true;
 
     @Min(0)
     private int signatoryCount = 1;
@@ -99,7 +99,7 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
                 .setKey(getPublicKeys())
                 .setAccountMemo(accountMemo)
                 .setMaxTransactionFee(maxTransactionFeeInHbar)
-                .setReceiverSignatureRequired(true)
+                .setReceiverSignatureRequired(receiverSignatureRequired)
                 .setTransactionMemo(accountMemo);
 
         // set nodeAccountId and freeze inner transaction

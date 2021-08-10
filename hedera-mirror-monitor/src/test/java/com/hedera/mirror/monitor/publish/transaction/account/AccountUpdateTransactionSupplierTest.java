@@ -65,7 +65,7 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
         accountUpdateTransactionSupplier.setAccountId(ACCOUNT_ID.toString());
         accountUpdateTransactionSupplier.setExpirationTime(expirationTime);
         accountUpdateTransactionSupplier.setMaxTransactionFee(1);
-        accountUpdateTransactionSupplier.setProxyAccountId(RECIPIENT_ACCOUNT_ID.toString());
+        accountUpdateTransactionSupplier.setProxyAccountId(ACCOUNT_ID_2.toString());
         accountUpdateTransactionSupplier.setPublicKey(key.toString());
         accountUpdateTransactionSupplier.setReceiverSignatureRequired(true);
         AccountUpdateTransaction actual = accountUpdateTransactionSupplier.get();
@@ -75,7 +75,7 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .setAccountMemo(actual.getAccountMemo())
                 .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(ONE_TINYBAR)
-                .setProxyAccountId(RECIPIENT_ACCOUNT_ID)
+                .setProxyAccountId(ACCOUNT_ID_2)
                 .setKey(key)
                 .setReceiverSignatureRequired(true)
                 .setTransactionMemo(actual.getTransactionMemo());

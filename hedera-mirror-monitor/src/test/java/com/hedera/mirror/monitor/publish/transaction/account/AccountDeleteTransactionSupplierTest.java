@@ -20,7 +20,7 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
         AccountDeleteTransaction expected = new AccountDeleteTransaction()
                 .setAccountId(ACCOUNT_ID)
                 .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTransferAccountId(RECIPIENT_ACCOUNT_ID)
+                .setTransferAccountId(ACCOUNT_ID_2)
                 .setTransactionMemo(actual.getTransactionMemo());
 
         assertAll(
@@ -33,13 +33,13 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
     void createWithCustomData() {
         AccountDeleteTransactionSupplier accountDeleteTransactionSupplier = new AccountDeleteTransactionSupplier();
         accountDeleteTransactionSupplier.setAccountId(ACCOUNT_ID.toString());
-        accountDeleteTransactionSupplier.setTransferAccountId(RECIPIENT_ACCOUNT_ID.toString());
+        accountDeleteTransactionSupplier.setTransferAccountId(ACCOUNT_ID_2.toString());
         AccountDeleteTransaction actual = accountDeleteTransactionSupplier.get();
 
         AccountDeleteTransaction expected = new AccountDeleteTransaction()
                 .setAccountId(ACCOUNT_ID)
                 .setMaxTransactionFee(Hbar.fromTinybars(1_000_000_000))
-                .setTransferAccountId(RECIPIENT_ACCOUNT_ID)
+                .setTransferAccountId(ACCOUNT_ID_2)
                 .setTransactionMemo(actual.getTransactionMemo());
 
         assertAll(
