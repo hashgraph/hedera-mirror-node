@@ -334,7 +334,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
         // schedules could experience multiple updates in a single record file, handle updates in memory for this case
-        schedules.merge(schedule.getScheduleId().getId(), schedule, this::mergeSchedule);
+        schedules.merge(schedule.getScheduleId(), schedule, this::mergeSchedule);
     }
 
     @Override

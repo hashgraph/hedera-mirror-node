@@ -37,7 +37,7 @@ class ScheduleRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         Schedule schedule = scheduleRepository.save(schedule(1));
-        assertThat(scheduleRepository.findById(schedule.getConsensusTimestamp()))
+        assertThat(scheduleRepository.findById(schedule.getScheduleId()))
                 .get().isEqualTo(schedule);
     }
 
@@ -46,7 +46,7 @@ class ScheduleRepositoryTest extends AbstractRepositoryTest {
         Schedule schedule = scheduleRepository.save(schedule(1));
         long newExecutedTimestamp = 1000L;
         scheduleRepository.updateExecutedTimestamp(schedule.getScheduleId(), newExecutedTimestamp);
-        assertThat(scheduleRepository.findById(schedule.getConsensusTimestamp())).get()
+        assertThat(scheduleRepository.findById(schedule.getScheduleId())).get()
                 .returns(newExecutedTimestamp, from(Schedule::getExecutedTimestamp));
     }
 

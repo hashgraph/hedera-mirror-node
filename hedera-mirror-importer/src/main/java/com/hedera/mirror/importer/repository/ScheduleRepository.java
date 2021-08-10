@@ -26,12 +26,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Schedule;
 
 public interface ScheduleRepository extends CrudRepository<Schedule, Long> {
     @Modifying
     @Transactional
     @Query("update Schedule set executedTimestamp = :timestamp where scheduleId = :schedule")
-    void updateExecutedTimestamp(@Param("schedule") EntityId scheduleId, @Param("timestamp") long executedTimestamp);
+    void updateExecutedTimestamp(@Param("schedule") Long scheduleId, @Param("timestamp") long executedTimestamp);
 }
