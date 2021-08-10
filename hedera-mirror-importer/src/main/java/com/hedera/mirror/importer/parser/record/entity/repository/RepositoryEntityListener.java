@@ -43,8 +43,8 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.record.entity.AbstractEntityListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -68,9 +68,8 @@ import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 @Named
 @Order(1)
 @RequiredArgsConstructor
-public class RepositoryEntityListener implements EntityListener {
+public class RepositoryEntityListener extends AbstractEntityListener {
 
-    private final RepositoryProperties repositoryProperties;
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
     private final ContractResultRepository contractResultRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
@@ -81,12 +80,13 @@ public class RepositoryEntityListener implements EntityListener {
     private final NftRepository nftRepository;
     private final NftTransferRepository nftTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
-    private final TokenRepository tokenRepository;
+    private final RepositoryProperties repositoryProperties;
+    private final ScheduleRepository scheduleRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenRepository tokenRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
-    private final ScheduleRepository scheduleRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
 
     @Override
@@ -116,7 +116,13 @@ public class RepositoryEntityListener implements EntityListener {
 
     @Override
     public void onEntity(Entity entity) throws ImporterException {
-        entityRepository.save(entity);
+        Entity merged = entityRepository.findById(entity.getId())
+                .map(existing -> mergeEntity(existing, entity))
+                .orElse(entity);
+        if (merged.getMemo() == null) {
+            merged.setMemo("");
+        }
+        entityRepository.save(merged);
     }
 
     @Override
@@ -131,7 +137,8 @@ public class RepositoryEntityListener implements EntityListener {
 
     @Override
     public void onNft(Nft nft) throws ImporterException {
-        nftRepository.save(nft);
+        Nft merged = nftRepository.findById(nft.getId()).map(existing -> mergeNft(existing, nft)).orElse(nft);
+        nftRepository.save(merged);
     }
 
     @Override
@@ -146,22 +153,25 @@ public class RepositoryEntityListener implements EntityListener {
 
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
-        scheduleRepository.save(schedule);
-    }
-
-    @Override
-    public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
-        transactionSignatureRepository.save(transactionSignature);
+        Schedule merged = scheduleRepository.findById(schedule.getConsensusTimestamp())
+                .map(existing -> mergeSchedule(existing, schedule))
+                .orElse(schedule);
+        scheduleRepository.save(merged);
     }
 
     @Override
     public void onToken(Token token) throws ImporterException {
-        tokenRepository.save(token);
+        Token merged = tokenRepository.findById(token.getTokenId()).map(existing -> mergeToken(existing, token))
+                .orElse(token);
+        tokenRepository.save(merged);
     }
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        tokenAccountRepository.save(tokenAccount);
+        TokenAccount merged = tokenAccountRepository.findById(tokenAccount.getId())
+                .map(existing -> mergeTokenAccount(existing, tokenAccount))
+                .orElse(tokenAccount);
+        tokenAccountRepository.save(merged);
     }
 
     @Override
@@ -177,5 +187,10 @@ public class RepositoryEntityListener implements EntityListener {
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactionRepository.save(transaction);
+    }
+
+    @Override
+    public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
+        transactionSignatureRepository.save(transactionSignature);
     }
 }

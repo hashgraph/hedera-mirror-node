@@ -38,6 +38,7 @@ import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.CustomFeeWrapper;
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
@@ -82,25 +83,24 @@ class RepositoryEntityListenerTest extends IntegrationTest {
     private static final EntityId ENTITY_ID = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
     private static final EntityId TOKEN_ID = EntityId.of("0.0.7", EntityTypeEnum.TOKEN);
 
-    private final RepositoryProperties repositoryProperties;
     private final ContractResultRepository contractResultRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
     private final FileDataRepository fileDataRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
     private final NftTransferRepository nftTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
-    private final TokenRepository tokenRepository;
+    private final RepositoryEntityListener repositoryEntityListener;
+    private final RepositoryProperties repositoryProperties;
+    private final ScheduleRepository scheduleRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenRepository tokenRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
-    private final RepositoryEntityListener repositoryEntityListener;
-    private final ScheduleRepository scheduleRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
-
-    private final JdbcTemplate jdbcTemplate;
 
     @Test
     void isEnabled() {
@@ -137,14 +137,14 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(1L);
         repositoryEntityListener.onContractResult(contractResult);
-        assertThat(contractResultRepository.findAll()).contains(contractResult);
+        assertThat(contractResultRepository.findAll()).containsExactly(contractResult);
     }
 
     @Test
     void onCryptoTransfer() {
         CryptoTransfer cryptoTransfer = new CryptoTransfer(1L, 100L, ENTITY_ID);
         repositoryEntityListener.onCryptoTransfer(cryptoTransfer);
-        assertThat(cryptoTransferRepository.findAll()).contains(cryptoTransfer);
+        assertThat(cryptoTransferRepository.findAll()).containsExactly(cryptoTransfer);
     }
 
     @Test
@@ -174,6 +174,53 @@ class RepositoryEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onEntity() {
+        Entity entity = ENTITY_ID.toEntity();
+        entity.setAutoRenewAccountId(EntityId.of("0.0.100", EntityTypeEnum.ACCOUNT));
+        entity.setAutoRenewPeriod(90L);
+        entity.setCreatedTimestamp(1L);
+        entity.setDeleted(false);
+        entity.setExpirationTimestamp(2L);
+        entity.setKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("abc")).build().toByteArray());
+        entity.setMemo("test");
+        entity.setModifiedTimestamp(1L);
+        entity.setProxyAccountId(EntityId.of("0.0.101", EntityTypeEnum.ACCOUNT));
+        entity.setSubmitKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("abc")).build().toByteArray());
+        repositoryEntityListener.onEntity(entity);
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+
+        Entity entityNotUpdated = ENTITY_ID.toEntity();
+        repositoryEntityListener.onEntity(entityNotUpdated);
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+
+        Entity entityUpdated = ENTITY_ID.toEntity();
+        entityUpdated.setAutoRenewAccountId(EntityId.of("0.0.200", EntityTypeEnum.ACCOUNT));
+        entityUpdated.setAutoRenewPeriod(180L);
+        entityUpdated.setDeleted(true);
+        entityUpdated.setExpirationTimestamp(2L);
+        entityUpdated.setKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("xyz")).build().toByteArray());
+        entityUpdated.setMemo("test2");
+        entityUpdated.setModifiedTimestamp(2L);
+        entityUpdated.setProxyAccountId(EntityId.of("0.0.201", EntityTypeEnum.ACCOUNT));
+        entityUpdated.setSubmitKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("xyz")).build().toByteArray());
+        repositoryEntityListener.onEntity(entityUpdated);
+        assertThat(entityRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(entity.getCreatedTimestamp(), Entity::getCreatedTimestamp)
+                .usingRecursiveComparison()
+                .ignoringFields("createdTimestamp")
+                .isEqualTo(entityUpdated);
+    }
+
+    @Test
+    void onEntityNullMemo() {
+        Entity entity = ENTITY_ID.toEntity();
+        repositoryEntityListener.onEntity(entity);
+        assertThat(entityRepository.findAll()).first().extracting(Entity::getMemo).isEqualTo("");
+    }
+
+    @Test
     void onFileData() {
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(1L);
@@ -181,7 +228,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         fileData.setFileData(new byte[] {'a'});
         fileData.setTransactionType(1);
         repositoryEntityListener.onFileData(fileData);
-        assertThat(fileDataRepository.findAll()).contains(fileData);
+        assertThat(fileDataRepository.findAll()).containsExactly(fileData);
     }
 
     @Test
@@ -189,7 +236,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         LiveHash liveHash = new LiveHash();
         liveHash.setConsensusTimestamp(1L);
         repositoryEntityListener.onLiveHash(liveHash);
-        assertThat(liveHashRepository.findAll()).contains(liveHash);
+        assertThat(liveHashRepository.findAll()).containsExactly(liveHash);
     }
 
     @Test
@@ -198,7 +245,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         nonFeeTransfer.setAmount(100L);
         nonFeeTransfer.setId(new NonFeeTransfer.Id(1L, ENTITY_ID));
         repositoryEntityListener.onNonFeeTransfer(nonFeeTransfer);
-        assertThat(nonFeeTransferRepository.findAll()).contains(nonFeeTransfer);
+        assertThat(nonFeeTransferRepository.findAll()).containsExactly(nonFeeTransfer);
     }
 
     @Test
@@ -210,7 +257,30 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         nft.setModifiedTimestamp(2L);
         nft.setId(new NftId(3L, EntityId.of("0.0.456", EntityTypeEnum.TOKEN)));
         repositoryEntityListener.onNft(nft);
-        assertThat(nftRepository.findAll()).contains(nft);
+        assertThat(nftRepository.findAll()).containsExactly(nft);
+
+        Nft nftMinimallyUpdated = new Nft();
+        nftMinimallyUpdated.setId(nft.getId());
+        repositoryEntityListener.onNft(nftMinimallyUpdated);
+        assertThat(nftRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(nftMinimallyUpdated.getModifiedTimestamp(), Nft::getModifiedTimestamp)
+                .usingRecursiveComparison()
+                .ignoringFields("modifiedTimestamp");
+
+        Nft nftUpdated = new Nft();
+        nftUpdated.setAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
+        nftUpdated.setDeleted(true);
+        nftUpdated.setId(nft.getId());
+        nftUpdated.setMetadata(null);
+        nftUpdated.setModifiedTimestamp(2L);
+        repositoryEntityListener.onNft(nftUpdated);
+        assertThat(nftRepository.findAll())
+                .hasSize(1)
+                .first()
+                .usingRecursiveComparison()
+                .ignoringFields("createdTimestamp");
     }
 
     @Test
@@ -220,7 +290,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         nftTransfer.setReceiverAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
         nftTransfer.setSenderAccountId(EntityId.of("0.0.789", EntityTypeEnum.ACCOUNT));
         repositoryEntityListener.onNftTransfer(nftTransfer);
-        assertThat(nftTransferRepository.findAll()).contains(nftTransfer);
+        assertThat(nftTransferRepository.findAll()).containsExactly(nftTransfer);
     }
 
     @Test
@@ -232,7 +302,24 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         schedule.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
         schedule.setTransactionBody("transaction body".getBytes());
         repositoryEntityListener.onSchedule(schedule);
-        assertThat(scheduleRepository.findAll()).contains(schedule);
+        assertThat(scheduleRepository.findAll()).containsExactly(schedule);
+
+        Schedule scheduleNotUpdated = new Schedule();
+        scheduleNotUpdated.setConsensusTimestamp(schedule.getConsensusTimestamp());
+        repositoryEntityListener.onSchedule(scheduleNotUpdated);
+        assertThat(scheduleRepository.findAll()).containsExactly(schedule);
+
+        Schedule scheduleUpdated = new Schedule();
+        scheduleUpdated.setConsensusTimestamp(schedule.getConsensusTimestamp());
+        scheduleUpdated.setExecutedTimestamp(2L);
+        repositoryEntityListener.onSchedule(scheduleUpdated);
+        assertThat(scheduleRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(scheduleUpdated.getExecutedTimestamp(), Schedule::getExecutedTimestamp)
+                .usingRecursiveComparison()
+                .ignoringFields("executedTimestamp")
+                .isEqualTo(schedule);
     }
 
     @Test
@@ -244,7 +331,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         transactionSignature.setEntityId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
         transactionSignature.setSignature("scheduled transaction signature".getBytes());
         repositoryEntityListener.onTransactionSignature(transactionSignature);
-        assertThat(transactionSignatureRepository.findAll()).contains(transactionSignature);
+        assertThat(transactionSignatureRepository.findAll()).containsExactly(transactionSignature);
     }
 
     @Test
@@ -259,29 +346,84 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         token.setInitialSupply(1_000_000_000L);
         token.setKycKey(input.toByteArray());
         token.setMaxSupply(1_000_000_000L);
-        token.setModifiedTimestamp(3L);
+        token.setModifiedTimestamp(1L);
         token.setName("FOO COIN TOKEN");
         token.setSupplyKey(input.toByteArray());
         token.setSupplyType(TokenSupplyTypeEnum.FINITE);
         token.setSymbol("FOOTOK");
         token.setTokenId(new TokenId(TOKEN_ID));
+        token.setTotalSupply(1L);
         token.setTreasuryAccountId(ENTITY_ID);
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(input.toByteArray());
         repositoryEntityListener.onToken(token);
-        assertThat(tokenRepository.findAll()).contains(token);
+        assertThat(tokenRepository.findAll()).containsExactly(token);
+
+        Token tokenMinimallyUpdated = new Token();
+        tokenMinimallyUpdated.setTokenId(token.getTokenId());
+        repositoryEntityListener.onToken(tokenMinimallyUpdated);
+        assertThat(tokenRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(tokenMinimallyUpdated.getModifiedTimestamp(), Token::getModifiedTimestamp)
+                .usingRecursiveComparison()
+                .ignoringFields("modifiedTimestamp");
+
+        Token tokenUpdated = new Token();
+        tokenUpdated.setFreezeKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("abc")).build().toByteArray());
+        tokenUpdated.setKycKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("def")).build().toByteArray());
+        tokenUpdated.setModifiedTimestamp(2L);
+        tokenUpdated.setName("test");
+        tokenUpdated.setSupplyKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("ghi")).build().toByteArray());
+        tokenUpdated.setSymbol("test");
+        tokenUpdated.setTotalSupply(2L);
+        tokenUpdated.setTreasuryAccountId(EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT));
+        tokenUpdated.setWipeKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("jkl")).build().toByteArray());
+        tokenUpdated.setTokenId(token.getTokenId());
+        repositoryEntityListener.onToken(tokenUpdated);
+        assertThat(tokenRepository.findAll())
+                .hasSize(1)
+                .first()
+                .usingRecursiveComparison()
+                .ignoringFields("createdTimestamp", "decimals", "freezeDefault", "initialSupply", "maxSupply",
+                        "supplyType", "type")
+                .isEqualTo(tokenUpdated);
     }
 
     @Test
     void onTokenAccount() throws ImporterException {
         TokenAccount tokenAccount = new TokenAccount(TOKEN_ID, ENTITY_ID);
-        tokenAccount.setAssociated(true);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setAssociated(false);
         tokenAccount.setCreatedTimestamp(1L);
-        tokenAccount.setModifiedTimestamp(2L);
+        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setModifiedTimestamp(1L);
         repositoryEntityListener.onTokenAccount(tokenAccount);
-        assertThat(tokenAccountRepository.findAll()).contains(tokenAccount);
+        assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
+
+        TokenAccount tokenAccountMinimallyUpdated = new TokenAccount();
+        tokenAccountMinimallyUpdated.setId(tokenAccount.getId());
+        repositoryEntityListener.onTokenAccount(tokenAccountMinimallyUpdated);
+        assertThat(tokenAccountRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(tokenAccountMinimallyUpdated.getModifiedTimestamp(), TokenAccount::getModifiedTimestamp)
+                .usingRecursiveComparison()
+                .ignoringFields("modifiedTimestamp");
+
+        TokenAccount tokenAccountUpdated = new TokenAccount();
+        tokenAccountUpdated.setAssociated(true);
+        tokenAccountUpdated.setId(tokenAccount.getId());
+        tokenAccountUpdated.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
+        tokenAccountUpdated.setKycStatus(TokenKycStatusEnum.GRANTED);
+        tokenAccountUpdated.setModifiedTimestamp(2L);
+        repositoryEntityListener.onTokenAccount(tokenAccountUpdated);
+        assertThat(tokenAccountRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(tokenAccount.getCreatedTimestamp(), TokenAccount::getCreatedTimestamp)
+                .usingRecursiveComparison()
+                .ignoringFields("createdTimestamp");
     }
 
     @Test
@@ -290,7 +432,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         tokenTransfer.setAmount(1000);
         tokenTransfer.setId(new TokenTransfer.Id(2L, TOKEN_ID, ENTITY_ID));
         repositoryEntityListener.onTokenTransfer(tokenTransfer);
-        assertThat(tokenTransferRepository.findAll()).contains(tokenTransfer);
+        assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer);
     }
 
     @Test
@@ -304,7 +446,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         topicMessage.setSequenceNumber(1);
         topicMessage.setTopicNum(1);
         repositoryEntityListener.onTopicMessage(topicMessage);
-        assertThat(topicMessageRepository.findAll()).contains(topicMessage);
+        assertThat(topicMessageRepository.findAll()).containsExactly(topicMessage);
     }
 
     @Test
@@ -317,6 +459,6 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         transaction.setType(1);
         transaction.setValidStartNs(1L);
         repositoryEntityListener.onTransaction(transaction);
-        assertThat(transactionRepository.findAll()).contains(transaction);
+        assertThat(transactionRepository.findAll()).containsExactly(transaction);
     }
 }
