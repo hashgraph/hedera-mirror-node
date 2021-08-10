@@ -137,7 +137,9 @@ public class RepositoryEntityListener extends AbstractEntityListener {
 
     @Override
     public void onNft(Nft nft) throws ImporterException {
-        Nft merged = nftRepository.findById(nft.getId()).map(existing -> mergeNft(existing, nft)).orElse(nft);
+        Nft merged = nftRepository.findById(nft.getId())
+                .map(existing -> mergeNft(existing, nft))
+                .orElse(nft);
         nftRepository.save(merged);
     }
 
@@ -161,7 +163,8 @@ public class RepositoryEntityListener extends AbstractEntityListener {
 
     @Override
     public void onToken(Token token) throws ImporterException {
-        Token merged = tokenRepository.findById(token.getTokenId()).map(existing -> mergeToken(existing, token))
+        Token merged = tokenRepository.findById(token.getTokenId())
+                .map(existing -> mergeToken(existing, token))
                 .orElse(token);
         tokenRepository.save(merged);
     }
