@@ -1,4 +1,6 @@
-package com.hedera.mirror.monitor.properties;/*
+package com.hedera.mirror.monitor.properties;
+
+/*-
  * ‌
  * Hedera Mirror Node
  * ​
