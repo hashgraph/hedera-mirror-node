@@ -34,7 +34,7 @@ class ConsensusDeleteTopicTransactionSupplierTest extends AbstractTransactionSup
     void createWithMinimumData() {
         ConsensusDeleteTopicTransactionSupplier consensusDeleteTopicTransactionSupplier =
                 new ConsensusDeleteTopicTransactionSupplier();
-        consensusDeleteTopicTransactionSupplier.setTopicId(ACCOUNT_ID.toString());
+        consensusDeleteTopicTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicDeleteTransaction actual = consensusDeleteTopicTransactionSupplier.get();
 
         TopicDeleteTransaction expected = new TopicDeleteTransaction()

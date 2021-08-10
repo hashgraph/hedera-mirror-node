@@ -45,9 +45,9 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicId;
 
 public abstract class AbstractTransactionSupplierTest {
-    protected static final AccountId ACCOUNT_ID = AccountId.fromString("0.0.2");
+    protected static final AccountId ACCOUNT_ID = AccountId.fromString("0.0.3");
 
-    protected static final AccountId ACCOUNT_ID_2 = AccountId.fromString("0.0.3");
+    protected static final AccountId ACCOUNT_ID_2 = AccountId.fromString("0.0.4");
 
     protected static final Hbar MAX_TRANSACTION_FEE_HBAR = Hbar.fromTinybars(1_000_000_000);
 

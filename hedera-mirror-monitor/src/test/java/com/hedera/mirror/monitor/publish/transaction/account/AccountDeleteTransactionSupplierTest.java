@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
 
@@ -20,7 +21,7 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
         AccountDeleteTransaction expected = new AccountDeleteTransaction()
                 .setAccountId(ACCOUNT_ID)
                 .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTransferAccountId(ACCOUNT_ID_2)
+                .setTransferAccountId(AccountId.fromString("0.0.2"))
                 .setTransactionMemo(actual.getTransactionMemo());
 
         assertAll(
