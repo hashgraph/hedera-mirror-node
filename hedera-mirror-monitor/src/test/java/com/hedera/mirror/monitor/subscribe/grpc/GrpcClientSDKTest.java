@@ -40,7 +40,6 @@ import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.proto.Timestamp;
 import com.hedera.hashgraph.sdk.proto.TopicID;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusServiceGrpc;
@@ -48,6 +47,7 @@ import com.hedera.hashgraph.sdk.proto.mirror.ConsensusTopicQuery;
 import com.hedera.hashgraph.sdk.proto.mirror.ConsensusTopicResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Log4j2
 class GrpcClientSDKTest {

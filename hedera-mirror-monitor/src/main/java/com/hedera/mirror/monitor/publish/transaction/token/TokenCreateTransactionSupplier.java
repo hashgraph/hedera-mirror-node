@@ -32,9 +32,9 @@ import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenCreateTransaction;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenCreateTransactionSupplier implements TransactionSupplier<TokenCreateTransaction>, AdminKeyable {

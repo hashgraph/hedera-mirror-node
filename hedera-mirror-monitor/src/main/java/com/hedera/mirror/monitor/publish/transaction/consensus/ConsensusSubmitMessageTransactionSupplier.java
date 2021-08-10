@@ -32,8 +32,8 @@ import org.apache.commons.lang3.StringUtils;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class ConsensusSubmitMessageTransactionSupplier implements TransactionSupplier<TopicMessageSubmitTransaction> {

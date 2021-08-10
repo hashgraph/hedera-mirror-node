@@ -1,10 +1,10 @@
-package com.hedera.mirror.monitor;
+package com.hedera.mirror.monitor.util;
 
-/*-
+/*
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2020 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ package com.hedera.mirror.monitor;
  * ‍
  */
 
-import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
+import lombok.experimental.UtilityClass;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Log4j2
 @UtilityClass

@@ -23,13 +23,13 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
 import javax.validation.constraints.Min;
 import lombok.Data;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class ConsensusCreateTopicTransactionSupplier implements TransactionSupplier<TopicCreateTransaction>,

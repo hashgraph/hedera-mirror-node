@@ -31,8 +31,8 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
 import com.hedera.hashgraph.sdk.TokenType;
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMintTransaction> {

@@ -24,17 +24,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-
 import lombok.Data;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {

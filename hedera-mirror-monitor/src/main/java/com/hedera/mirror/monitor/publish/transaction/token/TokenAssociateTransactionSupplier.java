@@ -3,16 +3,14 @@ package com.hedera.mirror.monitor.publish.transaction.token;
 import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-
 import lombok.Data;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.util.Utility;
 
 /*-
  * ‌

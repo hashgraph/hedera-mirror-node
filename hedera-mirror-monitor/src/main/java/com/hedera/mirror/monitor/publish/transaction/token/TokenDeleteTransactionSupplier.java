@@ -22,14 +22,13 @@ package com.hedera.mirror.monitor.publish.transaction.token;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import lombok.Data;
 
-import com.hedera.mirror.monitor.Utility;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenDeleteTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
