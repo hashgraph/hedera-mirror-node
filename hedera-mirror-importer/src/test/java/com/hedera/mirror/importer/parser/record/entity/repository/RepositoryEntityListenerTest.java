@@ -306,11 +306,12 @@ class RepositoryEntityListenerTest extends IntegrationTest {
 
         Schedule scheduleNotUpdated = new Schedule();
         scheduleNotUpdated.setConsensusTimestamp(schedule.getConsensusTimestamp());
+        scheduleNotUpdated.setScheduleId(schedule.getScheduleId());
         repositoryEntityListener.onSchedule(scheduleNotUpdated);
         assertThat(scheduleRepository.findAll()).containsExactly(schedule);
 
         Schedule scheduleUpdated = new Schedule();
-        scheduleUpdated.setConsensusTimestamp(schedule.getConsensusTimestamp());
+        scheduleUpdated.setScheduleId(schedule.getScheduleId());
         scheduleUpdated.setExecutedTimestamp(2L);
         repositoryEntityListener.onSchedule(scheduleUpdated);
         assertThat(scheduleRepository.findAll())

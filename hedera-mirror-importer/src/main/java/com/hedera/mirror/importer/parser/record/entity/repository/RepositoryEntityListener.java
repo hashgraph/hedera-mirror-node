@@ -155,7 +155,7 @@ public class RepositoryEntityListener extends AbstractEntityListener {
 
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
-        Schedule merged = scheduleRepository.findById(schedule.getConsensusTimestamp())
+        Schedule merged = scheduleRepository.findById(schedule.getScheduleId())
                 .map(existing -> mergeSchedule(existing, schedule))
                 .orElse(schedule);
         scheduleRepository.save(merged);

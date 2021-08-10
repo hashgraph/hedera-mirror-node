@@ -52,4 +52,8 @@ public class Schedule {
     public void setScheduleId(EntityId scheduleId) {
         this.scheduleId = scheduleId != null ? scheduleId.getId() : null;
     }
+
+    public void setScheduleId(Long scheduleId) {
+        this.scheduleId = scheduleId;
+    }
 }
