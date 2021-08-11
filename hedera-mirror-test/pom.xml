@@ -93,7 +93,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>de.monochromata.cucumber</groupId>
+            <groupId>me.jvt.cucumber</groupId>
             <artifactId>reporting-plugin</artifactId>
             <version>${cucumber-reporting.version}</version>
             <scope>test</scope>
