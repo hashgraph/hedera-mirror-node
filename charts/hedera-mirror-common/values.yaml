@@ -228,6 +228,17 @@ prometheus:
     enabled: false
   kubeEtcd:
     enabled: false
+  kubelet:
+    # Disable these high cardinality metrics
+    serviceMonitor:
+      cAdvisorMetricRelabelings:
+        - action: drop
+          regex: container_(memory_failures_total|tasks_state)
+          sourceLabels: [__name__]
+      metricRelabelings:
+        - action: drop
+          regex: .*_bucket
+          sourceLabels: [__name__]
   kubeProxy:
     enabled: false
   kubeScheduler:
