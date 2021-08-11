@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.25.1-rc2'
+      version: '0.25.1-rc3'
   install:
     crds: CreateReplace
   interval: 1m
@@ -24,16 +24,6 @@ spec:
       name: mirror
   values:
     prometheus:
-      kubelet:
-        serviceMonitor:
-          cAdvisorMetricRelabelings:
-            - action: drop
-              regex: container_(memory_failures_total|tasks_state)
-              sourceLabels: [__name__]
-          metricRelabelings:
-            - action: drop
-              regex: .*_bucket
-              sourceLabels: [__name__]
       prometheus:
         prometheusSpec:
           externalLabels:
