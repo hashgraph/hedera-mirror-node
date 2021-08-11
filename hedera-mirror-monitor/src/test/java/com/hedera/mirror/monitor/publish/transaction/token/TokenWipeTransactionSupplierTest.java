@@ -47,10 +47,9 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .setTokenId(TOKEN_ID)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node wiped test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -94,9 +93,8 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .setTokenId(TOKEN_ID)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node wiped test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }

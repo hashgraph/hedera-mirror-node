@@ -44,10 +44,9 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .setTokenId(TOKEN_ID)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node minted test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -65,10 +64,9 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .setTokenId(TOKEN_ID)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node minted test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -87,13 +85,12 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .setTokenId(TOKEN_ID)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node minted test token"),
-                () -> assertThat(actual.getMetadata().size()).isEqualTo(2),
-                () -> assertThat(actual.getMetadata().get(0).length).isEqualTo(14),
-                () -> assertThat(actual.getMetadata().get(1).length).isEqualTo(14),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
+                .satisfies(a -> assertThat(a.getMetadata().size()).isEqualTo(2))
+                .satisfies(a -> assertThat(a.getMetadata().get(0).length).isEqualTo(14))
+                .satisfies(a -> assertThat(a.getMetadata().get(1).length).isEqualTo(14))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -113,6 +110,13 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .setMetadata(actual.getMetadata())
                 .setTokenId(TOKEN_ID)
                 .setTransactionMemo(actual.getTransactionMemo());
+
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
+                .satisfies(a -> assertThat(a.getMetadata().size()).isEqualTo(2))
+                .satisfies(a -> assertThat(a.getMetadata().get(0)).isEqualTo(metadata.getBytes(StandardCharsets.UTF_8)))
+                .satisfies(a -> assertThat(a.getMetadata().get(1)).isEqualTo(metadata.getBytes(StandardCharsets.UTF_8)))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
 
         assertAll(
                 () -> assertThat(actual.getTransactionMemo()).contains("Mirror node minted test token"),

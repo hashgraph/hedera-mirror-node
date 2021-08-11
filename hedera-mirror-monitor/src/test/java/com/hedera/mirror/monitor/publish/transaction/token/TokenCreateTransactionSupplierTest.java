@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -54,13 +53,12 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .setTransactionMemo(actual.getTransactionMemo())
                 .setTreasuryAccountId(ACCOUNT_ID);
 
-        assertAll(
-                () -> assertThat(actual.getTokenMemo()).contains("Mirror node created test token"),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test token"),
-                () -> assertThat(actual.getTokenSymbol().length()).isEqualTo(5),
-                () -> assertThat(actual.getTokenName()).contains("_name"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a.getTokenSymbol().length()).isEqualTo(5))
+                .satisfies(a -> assertThat(a.getTokenName()).contains("_name"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -100,11 +98,10 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .setTreasuryAccountId(ACCOUNT_ID)
                 .setWipeKey(key);
 
-        assertAll(
-                () -> assertThat(actual.getTokenMemo()).contains("Mirror node created test token"),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -128,10 +125,9 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .setTransactionMemo(actual.getTransactionMemo())
                 .setTreasuryAccountId(ACCOUNT_ID);
 
-        assertAll(
-                () -> assertThat(actual.getTokenMemo()).contains("Mirror node created test token"),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }

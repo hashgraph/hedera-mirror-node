@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -46,11 +45,10 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
                 .setMessage(actual.getMessage())
                 .setTopicId(TOPIC_ID);
 
-        assertAll(
-                () -> assertThat(actual.getMessage()).isNotNull(),
-                () -> assertThat(actual.getMessage().size()).isEqualTo(256),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getMessage()).isNotNull())
+                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(256))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -67,11 +65,10 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
                 .setMessage(actual.getMessage())
                 .setTopicId(TOPIC_ID);
 
-        assertAll(
-                () -> assertThat(actual.getMessage()).isNotNull(),
-                () -> assertThat(actual.getMessage().size()).isEqualTo(14),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getMessage()).isNotNull())
+                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(14))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -89,8 +86,6 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
                 .setMessage(message.getBytes(StandardCharsets.UTF_8))
                 .setTopicId(TOPIC_ID);
 
-        assertAll(
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
     }
 }

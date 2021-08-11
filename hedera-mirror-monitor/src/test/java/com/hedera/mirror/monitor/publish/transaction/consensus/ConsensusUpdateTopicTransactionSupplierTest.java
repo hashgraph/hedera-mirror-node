@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -47,11 +46,10 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .setTopicMemo(actual.getTopicMemo())
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTopicMemo()).contains("Mirror node updated test topic"),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node updated test topic"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -78,10 +76,9 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .setTopicMemo(actual.getTopicMemo())
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTopicMemo()).contains("Mirror node updated test topic"),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node updated test topic"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }

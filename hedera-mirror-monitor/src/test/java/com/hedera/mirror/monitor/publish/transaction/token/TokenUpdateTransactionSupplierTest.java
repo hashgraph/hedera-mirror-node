@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -51,13 +50,12 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .setTokenId(TOKEN_ID)
                 .setTransactionMemo(actual.getTokenMemo());
 
-        assertAll(
-                () -> assertThat(actual.getAutoRenewPeriod()).isNotNull(),
-                () -> assertThat(actual.getExpirationTime()).isNotNull(),
-                () -> assertThat(actual.getTokenMemo()).contains("Mirror node updated test token"),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node updated test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getAutoRenewPeriod()).isNotNull())
+                .satisfies(a -> assertThat(a.getExpirationTime()).isNotNull())
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -95,10 +93,9 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .setTreasuryAccountId(ACCOUNT_ID)
                 .setWipeKey(key);
 
-        assertAll(
-                () -> assertThat(actual.getTokenMemo()).contains("Mirror node updated test token"),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node updated test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }
