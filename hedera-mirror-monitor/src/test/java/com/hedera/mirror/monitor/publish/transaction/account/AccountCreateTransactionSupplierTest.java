@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,12 +43,12 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
                 .setReceiverSignatureRequired(false)
                 .setTransactionMemo(actual.getTransactionMemo());
-        assertAll(
-                () -> assertThat(actual.getAccountMemo()).contains("Mirror node created test account"),
-                () -> assertThat(actual.getKey()).isNotNull(),
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test account"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"))
+                .satisfies(a -> assertThat(a.getKey()).isNotNull())
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test account"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -71,10 +70,9 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .setReceiverSignatureRequired(true)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test account"),
-                () -> assertThat(actual.getAccountMemo()).contains("Mirror node created test account"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test account"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }

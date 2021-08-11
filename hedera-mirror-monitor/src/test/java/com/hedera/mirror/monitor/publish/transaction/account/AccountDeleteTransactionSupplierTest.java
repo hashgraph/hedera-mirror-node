@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -44,10 +43,9 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .setTransferAccountId(AccountId.fromString("0.0.2"))
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node deleted test account"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -63,9 +61,8 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .setTransferAccountId(ACCOUNT_ID_2)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node deleted test account"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }

@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -49,11 +48,10 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .setReceiverSignatureRequired(false)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node updated test account"),
-                () -> assertThat(actual.getExpirationTime()).isNotNull(),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test account"))
+                .satisfies(a -> assertThat(a.getExpirationTime()).isNotNull())
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -80,9 +78,8 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .setReceiverSignatureRequired(true)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node updated test account"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test account"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }

@@ -77,10 +77,9 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test transfer"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -101,10 +100,9 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test transfer"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -126,10 +124,9 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test transfer"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 
     @Test
@@ -159,9 +156,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .setMaxTransactionFee(ONE_TINYBAR)
                 .setTransactionMemo(actual.getTransactionMemo());
 
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test transfer"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
     }
 }
