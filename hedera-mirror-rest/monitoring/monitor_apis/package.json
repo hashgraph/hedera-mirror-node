@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-monitor",
-  "version": "0.38.1-rc2",
+  "version": "0.38.1-rc3",
   "description": "Hedera Mirror Node Monitor",
   "main": "server.js",
   "private": true,
