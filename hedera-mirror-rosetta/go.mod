@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/caarlos0/env/v6 v6.6.2
 	github.com/coinbase/rosetta-sdk-go v0.6.10
-	github.com/go-playground/validator/v10 v10.8.0
+	github.com/go-playground/validator/v10 v10.9.0
 	github.com/hashgraph/hedera-sdk-go/v2 v2.1.12
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lib/pq v1.10.2
