@@ -115,10 +115,11 @@ ingress:
 labels: {}
 
 livenessProbe:
+  failureThreshold: 5
   httpGet:
     path: /actuator/health/liveness
     port: http
-  initialDelaySeconds: 150
+  initialDelaySeconds: 60
   periodSeconds: 10
   timeoutSeconds: 2
 
@@ -266,10 +267,11 @@ rbac:
   enabled: true
 
 readinessProbe:
+  failureThreshold: 5
   httpGet:
     path: /actuator/health/readiness
     port: http
-  initialDelaySeconds: 100
+  initialDelaySeconds: 60
   timeoutSeconds: 2
 
 replicas: 1
