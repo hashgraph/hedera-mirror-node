@@ -457,14 +457,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenAssociateTransactionBody tokenAssociateTransactionBody = recordItem.getTransactionBody()
                     .getTokenAssociate();
-            AccountID accountID = tokenAssociateTransactionBody.getAccount();
+            EntityId accountId = EntityId.of(tokenAssociateTransactionBody.getAccount());
 
             tokenAssociateTransactionBody.getTokensList().forEach(token -> {
                 EntityId tokenId = EntityId.of(token);
                 entityListener.onEntity(tokenId.toEntity());
 
                 long consensusTimestamp = recordItem.getConsensusTimestamp();
-                TokenAccount tokenAccount = new TokenAccount(tokenId, EntityId.of(accountID));
+                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
                 tokenAccount.setCreatedTimestamp(consensusTimestamp);
                 // freeze and kyc status will be set during db upsert flow
                 tokenAccount.setAssociated(true);
@@ -531,6 +531,26 @@ public class EntityRecordItemListener implements RecordItemListener {
                 EntityId treasuryEntityId = EntityId.of(tokenCreateTransactionBody.getTreasury());
                 entityListener.onEntity(treasuryEntityId.toEntity());
                 token.setTreasuryAccountId(treasuryEntityId);
+
+                // treasury token association is implicit
+                TokenAccount tokenAccount = new TokenAccount(tokenId, treasuryEntityId);
+                tokenAccount.setCreatedTimestamp(consensusTimestamp);
+                tokenAccount.setAssociated(true);
+                tokenAccount.setModifiedTimestamp(consensusTimestamp);
+
+                if (tokenCreateTransactionBody.hasFreezeKey()) {
+                    tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
+                } else {
+                    tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+                }
+
+                if (tokenCreateTransactionBody.hasKycKey()) {
+                    tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
+                } else {
+                    tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+                }
+
+                entityListener.onTokenAccount(tokenAccount);
             }
 
             if (tokenCreateTransactionBody.hasWipeKey()) {
