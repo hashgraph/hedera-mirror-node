@@ -42,7 +42,7 @@ spec:
                   regex: .*(grpc|importer|monitor|rest|traefik)$
                   sourceLabels: [job]
                 - action: drop
-                  regex: (api_request_duration_milliseconds_bucket|executor.*)
+                  regex: (api_request_size_bytes_bucket|executor.*)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     traefik:
