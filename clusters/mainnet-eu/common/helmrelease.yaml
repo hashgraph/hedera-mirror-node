@@ -56,7 +56,7 @@ spec:
                   regex: .*(grpc|importer|monitor|rest|traefik)$
                   sourceLabels: [job]
                 - action: drop
-                  regex: executor.*
+                  regex: (api_request_duration_milliseconds_bucket|executor.*)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
       prometheusOperator:
