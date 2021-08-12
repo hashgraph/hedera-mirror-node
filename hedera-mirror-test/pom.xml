@@ -17,7 +17,7 @@
 
     <properties>
         <cucumber.version>6.11.0</cucumber.version>
-        <cucumber-reporting.version>4.0.103</cucumber-reporting.version>
+        <cucumber-reporting.version>5.0.0</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -93,7 +93,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>de.monochromata.cucumber</groupId>
+            <groupId>me.jvt.cucumber</groupId>
             <artifactId>reporting-plugin</artifactId>
             <version>${cucumber-reporting.version}</version>
             <scope>test</scope>
