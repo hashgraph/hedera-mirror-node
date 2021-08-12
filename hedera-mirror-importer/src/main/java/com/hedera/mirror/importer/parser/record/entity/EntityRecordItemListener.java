@@ -497,6 +497,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             EntityId tokenId = EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
+            EntityId treasuryEntityId = EntityId.of(tokenCreateTransactionBody.getTreasury());
             Token token = new Token();
             token.setCreatedTimestamp(consensusTimestamp);
             token.setDecimals(tokenCreateTransactionBody.getDecimals());
@@ -509,7 +510,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
             token.setTokenId(new TokenId(tokenId));
             token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
+            token.setTreasuryAccountId(treasuryEntityId);
             token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenTypeValue()));
+
+            // treasury token association is implicit
+            TokenAccount tokenAccount = new TokenAccount(tokenId, treasuryEntityId);
+            tokenAccount.setCreatedTimestamp(consensusTimestamp);
+            tokenAccount.setAssociated(true);
+            tokenAccount.setModifiedTimestamp(consensusTimestamp);
 
             if (tokenCreateTransactionBody.hasFeeScheduleKey()) {
                 token.setFeeScheduleKey(tokenCreateTransactionBody.getFeeScheduleKey().toByteArray());
@@ -517,40 +525,20 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             if (tokenCreateTransactionBody.hasFreezeKey()) {
                 token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
+                tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
+            } else {
+                tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
             }
 
             if (tokenCreateTransactionBody.hasKycKey()) {
                 token.setKycKey(tokenCreateTransactionBody.getKycKey().toByteArray());
+                tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
+            } else {
+                tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
             }
 
             if (tokenCreateTransactionBody.hasSupplyKey()) {
                 token.setSupplyKey(tokenCreateTransactionBody.getSupplyKey().toByteArray());
-            }
-
-            if (tokenCreateTransactionBody.hasTreasury()) {
-                EntityId treasuryEntityId = EntityId.of(tokenCreateTransactionBody.getTreasury());
-                entityListener.onEntity(treasuryEntityId.toEntity());
-                token.setTreasuryAccountId(treasuryEntityId);
-
-                // treasury token association is implicit
-                TokenAccount tokenAccount = new TokenAccount(tokenId, treasuryEntityId);
-                tokenAccount.setCreatedTimestamp(consensusTimestamp);
-                tokenAccount.setAssociated(true);
-                tokenAccount.setModifiedTimestamp(consensusTimestamp);
-
-                if (tokenCreateTransactionBody.hasFreezeKey()) {
-                    tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
-                } else {
-                    tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
-                }
-
-                if (tokenCreateTransactionBody.hasKycKey()) {
-                    tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
-                } else {
-                    tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
-                }
-
-                entityListener.onTokenAccount(tokenAccount);
             }
 
             if (tokenCreateTransactionBody.hasWipeKey()) {
@@ -559,6 +547,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             insertCustomFees(tokenCreateTransactionBody.getCustomFeesList(), consensusTimestamp, tokenId);
 
+            entityListener.onEntity(treasuryEntityId.toEntity());
+            entityListener.onTokenAccount(tokenAccount);
             entityListener.onToken(token);
         }
     }
