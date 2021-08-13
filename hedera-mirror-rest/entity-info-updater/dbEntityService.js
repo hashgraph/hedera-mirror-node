@@ -186,7 +186,7 @@ const restoreDbEntityCache = () => {
 restoreDbEntityCache();
 if (config.db.useCache && !_.isEmpty(dbEntityCache)) {
   logger.info(
-    "SDK network calls will pull from local cache as 'hedera.mirror.entityUpdate.db.useCache' is set to true and valid cache exists"
+    "Db calls will pull from local cache as 'hedera.mirror.entityUpdate.db.useCache' is set to true and valid cache exists"
   );
 }
 

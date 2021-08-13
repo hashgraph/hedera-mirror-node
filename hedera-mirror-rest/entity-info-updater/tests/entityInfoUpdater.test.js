@@ -49,6 +49,8 @@ const custom = {
           nodeId: '0.0.3',
           operatorId: '0.0.2',
           operatorKey: 'fakeKey',
+          retryCount: 10,
+          retryMsDelay: 1000,
           useCache: true,
         },
       },
