@@ -78,7 +78,20 @@
         "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.8-1565779444-711927000",
-        "transfers": [],
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 2
+          },
+          {
+            "account": "0.0.8",
+            "amount": -3
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
         "valid_duration_seconds": "11",
         "valid_start_timestamp": "1565779444.711927000"
       },
