@@ -57,7 +57,7 @@ import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 
 @EnabledIfV1
-class AddCustomFeeCollectorTokenAccountTest extends IntegrationTest  {
+class AddTokenCustomFeeCollectorAssociationTest extends IntegrationTest  {
 
     private static final EntityId COLLECTOR_1 = EntityId.of(0, 0, 2001, EntityTypeEnum.ACCOUNT);
     private static final EntityId COLLECTOR_2 = EntityId.of(0, 0, 2002, EntityTypeEnum.ACCOUNT);
@@ -81,7 +81,7 @@ class AddCustomFeeCollectorTokenAccountTest extends IntegrationTest  {
     @Resource
     MeterRegistry meterRegistry;
 
-    @Value("classpath:db/scripts/addCustomFeeCollectorTokenAccount.sql")
+    @Value("classpath:db/scripts/addTokenCustomFeeCollectorAssociation.sql")
     private File migrationSql;
 
     @Resource

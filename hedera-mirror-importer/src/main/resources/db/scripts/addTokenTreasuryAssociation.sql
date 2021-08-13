@@ -1,5 +1,5 @@
 -------------------
--- Fix the missing token treasury association
+-- Add the missing token treasury association
 -------------------
 
 -- If an account owns a token without an association, the account must be the treasury when the token is created

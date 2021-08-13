@@ -52,7 +52,7 @@ import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 
 @EnabledIfV1
-class FixTokenTreasuryAssociationTest extends IntegrationTest {
+class AddTokenTreasuryAssociationTest extends IntegrationTest {
 
     private static final long CREATE_TIMESTAMP = 10001;
     private static final long TOKEN_OWNER_ASSOCIATION_TIMESTAMP = CREATE_TIMESTAMP + 10;
@@ -62,7 +62,7 @@ class FixTokenTreasuryAssociationTest extends IntegrationTest {
     private static final EntityId TREASURY = EntityId.of(0 ,0, 2001, EntityTypeEnum.ACCOUNT);
     private static final EntityId TOKEN_OWNER = EntityId.of(0 ,0, 2002, EntityTypeEnum.ACCOUNT);
 
-    @Value("classpath:db/scripts/fixTokenTreasuryAssociation.sql")
+    @Value("classpath:db/scripts/addTokenTreasuryAssociation.sql")
     private File sqlScript;
 
     @Resource
@@ -78,15 +78,15 @@ class FixTokenTreasuryAssociationTest extends IntegrationTest {
     private TokenRepository tokenRepository;
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("provideMissingTokenTreasuryAssociationArguments")
-    void missingTokenTreasuryAssociation(String name, Token token, TokenBalance tokenBalance,
-                                         TokenAccount expectedTokenAccount) throws IOException {
+    @MethodSource("provideArguments")
+    void verify(String name, Token token, TokenBalance tokenBalance,
+                TokenAccount expectedTokenAccount) throws IOException {
         // given
         tokenRepository.save(token);
         tokenBalanceRepository.save(tokenBalance);
 
         // TOKEN_OWNER associates himself with TOKEN at TOKEN_OWNER_ASSOCIATION_TIMESTAMP
-        var tokenAccount = createTokenAccount(TOKEN_OWNER, TOKEN_OWNER_ASSOCIATION_TIMESTAMP,
+        TokenAccount tokenAccount = tokenAccount(TOKEN_OWNER, TOKEN_OWNER_ASSOCIATION_TIMESTAMP,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, TOKEN);
         tokenAccountRepository.save(tokenAccount);
 
@@ -102,43 +102,43 @@ class FixTokenTreasuryAssociationTest extends IntegrationTest {
         return jdbcTemplate.update(FileUtils.readFileToString(sqlScript, "UTF-8"));
     }
 
-    private static Stream<Arguments> provideMissingTokenTreasuryAssociationArguments() {
+    private static Stream<Arguments> provideArguments() {
         var tokenBalance = new TokenBalance(100, new TokenBalance.Id(TOKEN_BALANCE_TIMESTAMP, TREASURY, TOKEN));
         return Stream.of(
                 Arguments.of(
                         "freezeDefault false, no freezeKey, no kycKey",
-                        createToken(CREATE_TIMESTAMP, false, false, false, TOKEN, TREASURY),
+                        token(CREATE_TIMESTAMP, false, false, false, TOKEN, TREASURY),
                         tokenBalance,
-                        createTokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.NOT_APPLICABLE,
+                        tokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.NOT_APPLICABLE,
                                 TokenKycStatusEnum.NOT_APPLICABLE, TOKEN)
                 ),
                 Arguments.of(
                         "freezeDefault false, has freezeKey, no kycKey",
-                        createToken(CREATE_TIMESTAMP, false, true, false, TOKEN, TREASURY),
+                        token(CREATE_TIMESTAMP, false, true, false, TOKEN, TREASURY),
                         tokenBalance,
-                        createTokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.UNFROZEN,
+                        tokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.UNFROZEN,
                                 TokenKycStatusEnum.NOT_APPLICABLE, TOKEN)
                 ),
                 Arguments.of(
                         "freezeDefault true, has freezeKey, no kycKey",
-                        createToken(CREATE_TIMESTAMP, true, true, false, TOKEN, TREASURY),
+                        token(CREATE_TIMESTAMP, true, true, false, TOKEN, TREASURY),
                         tokenBalance,
-                        createTokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.UNFROZEN,
+                        tokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.UNFROZEN,
                                 TokenKycStatusEnum.NOT_APPLICABLE, TOKEN)
                 ),
                 Arguments.of(
                         "freezeDefault true, has freezeKey, has kycKey",
-                        createToken(CREATE_TIMESTAMP, true, true, true, TOKEN, TREASURY),
+                        token(CREATE_TIMESTAMP, true, true, true, TOKEN, TREASURY),
                         tokenBalance,
-                        createTokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.UNFROZEN,
+                        tokenAccount(TREASURY, CREATE_TIMESTAMP, TokenFreezeStatusEnum.UNFROZEN,
                                 TokenKycStatusEnum.GRANTED, TOKEN)
                 )
         );
     }
 
-    private static Token createToken(long createdTimestamp, boolean freezeDefault, boolean freezeKey, boolean kycKey,
-            EntityId tokenId, EntityId treasury) {
-        var token = new Token();
+    private static Token token(long createdTimestamp, boolean freezeDefault, boolean freezeKey, boolean kycKey,
+                               EntityId tokenId, EntityId treasury) {
+        Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(10);
         token.setFreezeDefault(freezeDefault);
@@ -163,10 +163,10 @@ class FixTokenTreasuryAssociationTest extends IntegrationTest {
         return token;
     }
 
-    private static TokenAccount createTokenAccount(EntityId accountId, long createdTimestamp,
-                                                   TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
-                                                   EntityId tokenId) {
-        var tokenAccount = new TokenAccount(tokenId, accountId);
+    private static TokenAccount tokenAccount(EntityId accountId, long createdTimestamp,
+                                             TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
+                                             EntityId tokenId) {
+        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
         tokenAccount.setAssociated(true);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
         tokenAccount.setFreezeStatus(freezeStatus);
