@@ -306,7 +306,7 @@ const addTransaction = async (transaction) => {
     transaction.valid_start_timestamp = transaction.consensus_timestamp.minus(1);
   }
   const payerAccount = EntityId.fromString(transaction.payerAccountId).getEncodedId();
-  const nodeAccount = EntityId.fromString(transaction.nodeAccountId, 'nodeAccountId', true);
+  const nodeAccount = EntityId.fromString(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId();
   const entityId = EntityId.fromString(transaction.entity_id, 'entity_id', true);
   await sqlConnection.query(
     `INSERT INTO transaction (consensus_ns, valid_start_ns, payer_account_id, node_account_id, result, type,
@@ -317,7 +317,7 @@ const addTransaction = async (transaction) => {
       transaction.consensus_timestamp.toString(),
       transaction.valid_start_timestamp.toString(),
       payerAccount,
-      nodeAccount.getEncodedId(),
+      nodeAccount,
       transaction.result,
       transaction.type,
       transaction.valid_duration_seconds,
@@ -329,19 +329,33 @@ const addTransaction = async (transaction) => {
       transaction.transaction_bytes,
     ]
   );
-  await insertTransfers('crypto_transfer', transaction.consensus_timestamp, transaction.transfers, payerAccount);
+  await insertTransfers(
+    'crypto_transfer',
+    transaction.consensus_timestamp,
+    transaction.transfers,
+    transaction.charged_tx_fee > 0,
+    payerAccount,
+    nodeAccount
+  );
   await insertTransfers('non_fee_transfer', transaction.consensus_timestamp, transaction.non_fee_transfers);
   await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfer_list);
   await insertNftTransfers(transaction.consensus_timestamp, transaction.nft_transfer_list);
 };
 
-const insertTransfers = async (tableName, consensusTimestamp, transfers, payerAccountId) => {
-  if (transfers.length === 0 && payerAccountId) {
+const insertTransfers = async (
+  tableName,
+  consensusTimestamp,
+  transfers,
+  hasChargedTransactionFee,
+  payerAccountId,
+  nodeAccount
+) => {
+  if (transfers.length === 0 && hasChargedTransactionFee && payerAccountId) {
     // insert default crypto transfers to node and treasury
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id)
        VALUES ($1, $2, $3);`,
-      [consensusTimestamp.toString(), NODE_FEE, DEFAULT_NODE_ID]
+      [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID]
     );
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id)

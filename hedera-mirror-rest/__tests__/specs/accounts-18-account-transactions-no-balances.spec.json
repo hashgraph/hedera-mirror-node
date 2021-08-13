@@ -66,7 +66,6 @@
     ],
     "transactions": [
       {
-        "charged_tx_fee": 0,
         "payerAccountId": "0.0.8",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000031",
@@ -114,7 +113,7 @@
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
-        "charged_tx_fee": 0,
+        "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000031",
         "entity_id": "0.0.9",
         "max_fee": "33",
