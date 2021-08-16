@@ -2,7 +2,12 @@
 -- Add the missing token treasury association
 -------------------
 
--- If an account owns a token without an association, the account must be the treasury when the token is created
+-- Importer has missed the following auto token-account associations:
+--   1. A token's treasury at the time of token creation
+--   2. A token's custom fee collector of either a fixed custom fee charged in the newly created token or a fractional
+--      fee, at the time of token creation
+-- Once the importer is patched, we can add associations for the token-account pairs in the account balance file but
+-- not in the token_account table
 insert into
     token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id)
 select

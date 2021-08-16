@@ -55,13 +55,13 @@ class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
 
     @Test
     void tableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getFinalTableName();
-        assertThat(upsertQuery).isEqualTo("schedule");
+        String tableName = getUpdatableDomainRepositoryCustom().getFinalTableName();
+        assertThat(tableName).isEqualTo("schedule");
     }
 
     @Test
     void tempTableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
-        assertThat(upsertQuery).isEqualTo("schedule_temp");
+        String tempTableName = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
+        assertThat(tempTableName).isEqualTo("schedule_temp");
     }
 }

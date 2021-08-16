@@ -96,6 +96,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
     private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityIdEndec.decode(1199, EntityTypeEnum.ACCOUNT);
     private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityIdEndec.decode(1200, EntityTypeEnum.ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityIdEndec.decode(1201, EntityTypeEnum.ACCOUNT);
     private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityIdEndec.decode(9800, EntityTypeEnum.TOKEN);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final String METADATA = "METADATA";
@@ -142,23 +143,25 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideTokenCreateArguments")
     void tokenCreate(String name, List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey, boolean kycKey,
-            TokenFreezeStatusEnum expectedTokenFreezeStatus, TokenKycStatusEnum expectedTokenKycStatus) {
+                     List<TokenAccount> expectedTokenAccounts) {
         // given
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+        // node, token, autorenew, and the number of accounts associated with the token (including the treasury)
+        long expectedEntityCount = 3 + expectedTokenAccounts.size();
 
         // when
         createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
                 kycKey, customFees);
 
         // then
-        assertEquals(4, entityRepository.count()); // Node, payer, token and autorenew
+        assertEquals(expectedEntityCount, entityRepository.count()); // Node, payer, token and autorenew
         assertEntity(expected);
 
         // verify token
+
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
-        assertTokenAccountInRepository(TOKEN_ID, PAYER, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, true,
-                expectedTokenFreezeStatus, expectedTokenKycStatus);
+        assertTokenAccountsInRepository(expectedTokenAccounts);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertCustomFeesInDb(customFees);
         assertThat(tokenTransferRepository.count()).isEqualTo(1L);
@@ -1082,6 +1085,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         }
     }
 
+    private void assertTokenAccountsInRepository(List<TokenAccount> tokenAccounts) {
+        // clear cache for PgCopy scenarios which don't utilize it
+        cacheManager.getCache("tokenaccounts").clear();
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
+    }
+
     private void assertTokenTransferInRepository(TokenID tokenID, AccountID accountID, long consensusTimestamp,
                                                  long amount) {
         com.hedera.mirror.importer.domain.TokenTransfer tokenTransfer = tokenTransferRepository
@@ -1216,50 +1225,73 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         fixedFee3.setDenominatingTokenId(tokenId);
         fixedFee3.setId(id);
 
-        CustomFee fractionalFee = new CustomFee();
-        fractionalFee.setAmount(14L);
-        fractionalFee.setAmountDenominator(31L);
-        fractionalFee.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
-        fractionalFee.setMaximumAmount(100L);
-        fractionalFee.setId(id);
+        CustomFee fractionalFee1 = new CustomFee();
+        fractionalFee1.setAmount(14L);
+        fractionalFee1.setAmountDenominator(31L);
+        fractionalFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
+        fractionalFee1.setMaximumAmount(100L);
+        fractionalFee1.setId(id);
 
-        return List.of(fixedFee1, fixedFee2, fixedFee3, fractionalFee);
+        CustomFee fractionalFee2 = new CustomFee();
+        fractionalFee2.setAmount(15L);
+        fractionalFee2.setAmountDenominator(32L);
+        fractionalFee2.setCollectorAccountId(EntityId.of(PAYER)); // the treasury
+        fractionalFee2.setMaximumAmount(110L);
+        fractionalFee2.setId(id);
+
+        return List.of(fixedFee1, fixedFee2, fixedFee3, fractionalFee1, fractionalFee2);
     }
 
     private static Stream<Arguments> provideTokenCreateArguments() {
-        List<CustomFee> emptyCustomFees = deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
+        List<CustomFee> nonEmptyCustomFees = nonEmptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
+        EntityId treasury = EntityId.of(PAYER);
 
         return Stream.of(
                 TokenCreateArguments.builder()
-                        .customFees(emptyCustomFees)
+                        .accounts(List.of(treasury))
+                        .createdTimestamp(CREATE_TIMESTAMP)
+                        .customFees(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
                         .customFeesDescription("empty custom fees")
+                        .tokenId(DOMAIN_TOKEN_ID)
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .customFees(emptyCustomFees)
+                        .accounts(List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3))
+                        .createdTimestamp(CREATE_TIMESTAMP)
+                        .customFees(nonEmptyCustomFees)
                         .customFeesDescription("empty custom fees")
                         .freezeKey(true)
-                        .expectedTokenFreezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .tokenId(DOMAIN_TOKEN_ID)
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .customFees(emptyCustomFees)
+                        .accounts(List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3))
+                        .createdTimestamp(CREATE_TIMESTAMP)
+                        .customFees(nonEmptyCustomFees)
                         .customFeesDescription("empty custom fees")
                         .freezeDefault(true)
                         .freezeKey(true)
-                        .expectedTokenFreezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
+                        .tokenId(DOMAIN_TOKEN_ID)
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .customFees(emptyCustomFees)
+                        .accounts(List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3))
+                        .createdTimestamp(CREATE_TIMESTAMP)
+                        .customFees(nonEmptyCustomFees)
                         .customFeesDescription("empty custom fees")
                         .kycKey(true)
-                        .expectedTokenKycStatus(TokenKycStatusEnum.GRANTED)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .tokenId(DOMAIN_TOKEN_ID)
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .customFees(nonEmptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
+                        .accounts(List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3))
+                        .createdTimestamp(CREATE_TIMESTAMP)
+                        .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
+                        .tokenId(DOMAIN_TOKEN_ID)
                         .build()
                         .toArguments()
         );
@@ -1362,15 +1394,18 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Builder
     static class TokenCreateArguments {
+        List<EntityId> accounts;
+        long createdTimestamp;
         List<CustomFee> customFees;
         String customFeesDescription;
         boolean freezeDefault;
         boolean freezeKey;
+        @Builder.Default
+        TokenFreezeStatusEnum freezeStatus = TokenFreezeStatusEnum.NOT_APPLICABLE;
         boolean kycKey;
         @Builder.Default
-        TokenFreezeStatusEnum expectedTokenFreezeStatus = TokenFreezeStatusEnum.NOT_APPLICABLE;
-        @Builder.Default
-        TokenKycStatusEnum expectedTokenKycStatus = TokenKycStatusEnum.NOT_APPLICABLE;
+        TokenKycStatusEnum kycStatus = TokenKycStatusEnum.NOT_APPLICABLE;
+        EntityId tokenId;
 
         public Arguments toArguments() {
             String description = StringUtils.join(
@@ -1380,8 +1415,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     freezeKey ? "has freezeKey" : "no freezeKey",
                     kycKey ? "has kycKey" : "no kycKey"
             );
-            return Arguments.of(description, customFees, freezeDefault, freezeKey, kycKey, expectedTokenFreezeStatus,
-                    expectedTokenKycStatus);
+            List<TokenAccount> tokenAccounts = accounts.stream()
+                    .map(account -> {
+                        TokenAccount tokenAccount = new TokenAccount(tokenId, account);
+                        tokenAccount.setAssociated(true);
+                        tokenAccount.setCreatedTimestamp(createdTimestamp);
+                        tokenAccount.setFreezeStatus(freezeStatus);
+                        tokenAccount.setKycStatus(kycStatus);
+                        tokenAccount.setModifiedTimestamp(createdTimestamp);
+                        return tokenAccount;
+                    })
+                    .collect(Collectors.toList());
+
+            return Arguments.of(description, customFees, freezeDefault, freezeKey, kycKey, tokenAccounts);
         }
     }
 }
