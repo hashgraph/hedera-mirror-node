@@ -1,5 +1,5 @@
 -------------------
--- Add the missing token treasury association
+-- Add the missing token account association
 -------------------
 
 -- Importer has missed the following auto token-account associations:

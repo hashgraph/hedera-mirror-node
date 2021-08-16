@@ -146,7 +146,6 @@ class AddMissingTokenAccountAssociationTest extends IntegrationTest {
                 new TokenBalance(100, new TokenBalance.Id(LATEST_TOKEN_BALANCE_TIMESTAMP, TREASURY, NEW_TOKEN))
         ));
         List<TokenAccount> tokenAccountList = Lists.newArrayList(
-                tokenAccount(TREASURY, true, EXISTING_TOKEN_CREATE_TIMESTAMP, EXISTING_TOKEN),
                 tokenAccount(COLLECTOR_1, true, EXISTING_TOKEN_CREATE_TIMESTAMP + 1, EXISTING_TOKEN)
         );
         tokenAccountRepository.saveAll(tokenAccountList);
@@ -155,7 +154,8 @@ class AddMissingTokenAccountAssociationTest extends IntegrationTest {
         int count = runScript();
 
         // then
-        assertThat(count).isEqualTo(3);
+        assertThat(count).isEqualTo(4);
+        tokenAccountList.add(tokenAccount(TREASURY, true, EXISTING_TOKEN_CREATE_TIMESTAMP, EXISTING_TOKEN));
         tokenAccountList.add(tokenAccount(COLLECTOR_2, true, NEW_TOKEN_CREATE_TIMESTAMP,
                 expectedFreezeStatus, expectedKycStatus, NEW_TOKEN));
         tokenAccountList.add(tokenAccount(COLLECTOR_3, true, NEW_TOKEN_CREATE_TIMESTAMP,
