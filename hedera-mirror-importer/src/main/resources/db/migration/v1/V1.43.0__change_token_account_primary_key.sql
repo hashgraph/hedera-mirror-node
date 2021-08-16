@@ -1,5 +1,5 @@
 -------------------
--- Drop token_account primary key
+-- Change token_account primary key
 -------------------
 
 -- Token create transaction can auto associate multiple fee collectors with the new token, so
