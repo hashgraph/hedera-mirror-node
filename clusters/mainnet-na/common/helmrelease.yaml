@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.24.2'
+      version: '0.25.0'
   install:
     crds: CreateReplace
   interval: 1m
@@ -24,10 +24,6 @@ spec:
       name: mirror
   values:
     prometheus:
-      kubeApiServer:
-        enabled: false
-      kubeDns:
-        enabled: false
       kubelet:
         serviceMonitor:
           cAdvisorMetricRelabelings:
@@ -59,9 +55,6 @@ spec:
                   regex: (api_request_size_bytes_bucket|executor.*)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
-      prometheusOperator:
-        namespaces:
-          releaseNamespace: false
     traefik:
       service:
         annotations:
