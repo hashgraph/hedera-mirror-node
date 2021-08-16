@@ -39,6 +39,13 @@ spec:
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
+      prometheusRules:
+        MonitorPublishErrors:
+          enabled: false
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
+          enabled: false
     postgresql:
       enabled: false
 
