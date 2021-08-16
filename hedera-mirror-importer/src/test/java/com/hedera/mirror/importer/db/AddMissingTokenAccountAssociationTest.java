@@ -29,14 +29,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Stream;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -85,7 +83,7 @@ class AddMissingTokenAccountAssociationTest extends IntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Resource
-    MeterRegistry meterRegistry;
+    private MeterRegistry meterRegistry;
 
     @Resource
     private RecordParserProperties parserProperties;
@@ -108,7 +106,12 @@ class AddMissingTokenAccountAssociationTest extends IntegrationTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("provideArguments")
+    @CsvSource({
+            "'freezeDefault false, no freezeKey, no kycKey', false, false, false, NOT_APPLICABLE, NOT_APPLICABLE",
+            "'freezeDefault false, has freezeKey, no kycKey', false, true, false, UNFROZEN, NOT_APPLICABLE",
+            "'freezeDefault true, has freezeKey, no kycKey', true, true, false, UNFROZEN, NOT_APPLICABLE",
+            "'freezeDefault true, has freezeKey, has kycKey', true, true, true, UNFROZEN, GRANTED"
+    })
     void verify(String name, boolean freezeDefault, boolean freezeKey, boolean kycKey,
                 TokenFreezeStatusEnum expectedFreezeStatus, TokenKycStatusEnum expectedKycStatus) throws IOException {
         // given
@@ -167,19 +170,6 @@ class AddMissingTokenAccountAssociationTest extends IntegrationTest {
 
     private int runScript() throws IOException {
         return jdbcTemplate.update(FileUtils.readFileToString(sqlScript, "UTF-8"));
-    }
-
-    private static Stream<Arguments> provideArguments() {
-        return Stream.of(
-                Arguments.of("freezeDefault false, no freezeKey, no kycKey", false, false, false,
-                        TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE),
-                Arguments.of("freezeDefault false, has freezeKey, no kycKey", false, true, false,
-                        TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.NOT_APPLICABLE),
-                Arguments.of("freezeDefault true, has freezeKey, no kycKey", true, true, false,
-                        TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.NOT_APPLICABLE),
-                Arguments.of("freezeDefault true, has freezeKey, has kycKey", true, true, true,
-                        TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED)
-        );
     }
 
     private Token token(long createdTimestamp, boolean freezeDefault, boolean freezeKey, boolean kycKey,

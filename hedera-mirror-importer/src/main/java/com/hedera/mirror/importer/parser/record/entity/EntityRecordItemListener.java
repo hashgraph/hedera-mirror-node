@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -42,7 +41,6 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
@@ -264,8 +262,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
         var nodeAccount = EntityId.of(body.getNodeAccountID());
 
-        entityListener.onEntity(nodeAccount.toEntity());
-        entityListener.onEntity(payerAccount.toEntity());
+        entityListener.onEntityId(nodeAccount);
+        entityListener.onEntityId(payerAccount);
 
         // build transaction
         Transaction tx = new Transaction();
@@ -401,7 +399,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            entityListener.onEntity(account.toEntity());
+            entityListener.onEntityId(account);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
         }
     }
@@ -417,7 +415,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            entityListener.onEntity(account.toEntity());
+            entityListener.onEntityId(account);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
 
             // Don't manually add an initial balance transfer if the transfer list contains it already
@@ -428,8 +426,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         if (addInitialBalance) {
             var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
-            entityListener.onEntity(payerAccount.toEntity());
-            entityListener.onEntity(createdAccount.toEntity());
+            entityListener.onEntityId(payerAccount);
+            entityListener.onEntityId(createdAccount);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
@@ -462,8 +460,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             transactionBody.getTokensList().forEach(token -> {
                 EntityId tokenId = EntityId.of(token);
-                entityListener.onEntity(tokenId.toEntity());
-
+                entityListener.onEntityId(tokenId);
 
                 TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
                 // freeze and kyc status will be set during db upsert flow
@@ -549,7 +546,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 tokenAccount.setKycStatus(kycStatus);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
 
-                entityListener.onEntity(tokenAccount.getId().getAccountId().toEntity());
+                entityListener.onEntityId(account);
                 entityListener.onTokenAccount(tokenAccount);
             });
 
@@ -566,7 +563,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             tokenDissociateTransactionBody.getTokensList().forEach(token -> {
                 EntityId tokenId = EntityId.of(token);
-                entityListener.onEntity(tokenId.toEntity());
+                entityListener.onEntityId(tokenId);
 
                 TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
                 tokenAccount.setAssociated(false);
@@ -580,7 +577,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenFreezeAccountTransactionBody transactionBody = recordItem.getTransactionBody().getTokenFreeze();
             EntityId tokenId = EntityId.of(transactionBody.getToken());
-            entityListener.onEntity(tokenId.toEntity());
+            entityListener.onEntityId(tokenId);
 
             EntityId accountId = EntityId.of(transactionBody.getAccount());
             TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
@@ -594,7 +591,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenGrantKycTransactionBody transactionBody = recordItem.getTransactionBody().getTokenGrantKyc();
             EntityId tokenId = EntityId.of(transactionBody.getToken());
-            entityListener.onEntity(tokenId.toEntity());
+            entityListener.onEntityId(tokenId);
 
             EntityId accountId = EntityId.of(transactionBody.getAccount());
             TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
@@ -632,7 +629,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenRevokeKycTransactionBody tokenRevokeKycTransactionBody = recordItem.getTransactionBody()
                     .getTokenRevokeKyc();
             EntityId tokenId = EntityId.of(tokenRevokeKycTransactionBody.getToken());
-            entityListener.onEntity(tokenId.toEntity());
+            entityListener.onEntityId(tokenId);
 
             EntityId accountId = EntityId.of(tokenRevokeKycTransactionBody.getAccount());
             TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
@@ -646,12 +643,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
                 EntityId tokenId = EntityId.of(tokenTransferList.getToken());
-                entityListener.onEntity(tokenId.toEntity());
+                entityListener.onEntityId(tokenId);
 
                 long consensusTimestamp = recordItem.getConsensusTimestamp();
                 tokenTransferList.getTransfersList().forEach(accountAmount -> {
                     EntityId accountId = EntityId.of(accountAmount.getAccountID());
-                    entityListener.onEntity(accountId.toEntity());
+                    entityListener.onEntityId(accountId);
 
                     entityListener.onTokenTransfer(new TokenTransfer(consensusTimestamp, accountAmount
                             .getAmount(), tokenId, accountId));
@@ -659,10 +656,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                 tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
                     EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
-                    entityListener.onEntity(receiverId.toEntity());
+                    entityListener.onEntityId(receiverId);
 
                     EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
-                    entityListener.onEntity(senderId.toEntity());
+                    entityListener.onEntityId(senderId);
 
                     long serialNumber = nftTransfer.getSerialNumber();
                     NftTransfer nftTransferDomain = new NftTransfer();
@@ -712,7 +709,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             if (tokenUpdateTransactionBody.hasTreasury()) {
                 EntityId treasuryEntityId = EntityId.of(tokenUpdateTransactionBody.getTreasury());
-                entityListener.onEntity(treasuryEntityId.toEntity());
+                entityListener.onEntityId(treasuryEntityId);
                 token.setTreasuryAccountId(treasuryEntityId);
             }
 
@@ -736,12 +733,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenUnfreezeAccountTransactionBody tokenUnfreezeAccountTransactionBody = recordItem.getTransactionBody()
                     .getTokenUnfreeze();
-            TokenID tokenID = tokenUnfreezeAccountTransactionBody.getToken();
-            AccountID accountID = tokenUnfreezeAccountTransactionBody.getAccount();
-            entityListener.onEntity(EntityId.of(tokenID).toEntity());
+            EntityId tokenId = EntityId.of(tokenUnfreezeAccountTransactionBody.getToken());
+            EntityId accountId = EntityId.of(tokenUnfreezeAccountTransactionBody.getAccount());
+            entityListener.onEntityId(tokenId);
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenID), EntityId.of(accountID));
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
             tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
             tokenAccount.setModifiedTimestamp(consensusTimestamp);
             entityListener.onTokenAccount(tokenAccount);
@@ -804,7 +801,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             var payerAccount = creatorAccount;
             if (scheduleCreateTransactionBody.hasPayerAccountID()) {
                 payerAccount = EntityId.of(scheduleCreateTransactionBody.getPayerAccountID());
-                entityListener.onEntity(payerAccount.toEntity());
+                entityListener.onEntityId(payerAccount);
             }
 
             Schedule schedule = new Schedule();
@@ -897,6 +894,9 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             if (isTokenCreate &&
                 (customFee.getAmountDenominator() != null || tokenId.equals(customFee.getDenominatingTokenId()))) {
+                // if it's from a token create transaction, and it's either a fixed fee charged in the newly create
+                // token or a fractional fee (always charged in the newly created token), services will auto associate
+                // the token and the collector
                 autoAssociatedAccounts.add(collector);
             }
 
