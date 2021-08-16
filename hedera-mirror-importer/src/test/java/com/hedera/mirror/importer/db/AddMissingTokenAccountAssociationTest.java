@@ -62,7 +62,7 @@ import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 
 @EnabledIfV1
-class AddMissingTokenAccountAssociation extends IntegrationTest {
+class AddMissingTokenAccountAssociationTest extends IntegrationTest {
 
     private static final EntityId COLLECTOR_1 = EntityId.of(0, 0, 2001, EntityTypeEnum.ACCOUNT);
     private static final EntityId COLLECTOR_2 = EntityId.of(0, 0, 2002, EntityTypeEnum.ACCOUNT);

@@ -537,14 +537,16 @@ public class EntityRecordItemListener implements RecordItemListener {
             Set<EntityId> autoAssociatedAccounts = insertCustomFees(tokenCreateTransactionBody.getCustomFeesList(),
                     consensusTimestamp, true, tokenId);
             autoAssociatedAccounts.add(treasury);
+            TokenFreezeStatusEnum freezeStatus = token.getFreezeKey() != null ? TokenFreezeStatusEnum.UNFROZEN :
+                    TokenFreezeStatusEnum.NOT_APPLICABLE;
+            TokenKycStatusEnum kycStatus = token.getKycKey() != null ? TokenKycStatusEnum.GRANTED :
+                    TokenKycStatusEnum.NOT_APPLICABLE;
             autoAssociatedAccounts.forEach(account -> {
                 TokenAccount tokenAccount = new TokenAccount(tokenId, account);
                 tokenAccount.setAssociated(true);
                 tokenAccount.setCreatedTimestamp(consensusTimestamp);
-                tokenAccount.setFreezeStatus(token.getFreezeKey() != null ? TokenFreezeStatusEnum.UNFROZEN :
-                        TokenFreezeStatusEnum.NOT_APPLICABLE);
-                tokenAccount.setKycStatus(token.getKycKey() != null ? TokenKycStatusEnum.GRANTED :
-                        TokenKycStatusEnum.NOT_APPLICABLE);
+                tokenAccount.setFreezeStatus(freezeStatus);
+                tokenAccount.setKycStatus(kycStatus);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
 
                 entityListener.onEntity(tokenAccount.getId().getAccountId().toEntity());
