@@ -5,6 +5,10 @@ metadata:
   name: flux-system
   namespace: flux-system
 spec:
+  ignore: |
+    /*
+    !/clusters/base
+    !/clusters/mainnet-eu
   interval: 1m0s
   ref:
     branch: deploy
