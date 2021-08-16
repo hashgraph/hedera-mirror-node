@@ -894,7 +894,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             if (isTokenCreate &&
                 (customFee.getAmountDenominator() != null || tokenId.equals(customFee.getDenominatingTokenId()))) {
-                // if it's from a token create transaction, and it's either a fixed fee charged in the newly create
+                // if it's from a token create transaction, and it's either a fixed fee charged in the newly created
                 // token or a fractional fee (always charged in the newly created token), services will auto associate
                 // the token and the collector
                 autoAssociatedAccounts.add(collector);
