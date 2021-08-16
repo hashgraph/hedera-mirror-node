@@ -27,7 +27,6 @@
     "balances": [],
     "transactions": [
       {
-        "charged_tx_fee": 7,
         "payerAccountId": "0.0.10",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000002",

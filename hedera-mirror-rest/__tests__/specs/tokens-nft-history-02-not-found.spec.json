@@ -61,7 +61,6 @@
       {
         "name": "CRYPTOTRANSFER",
         "type": "14",
-        "charged_tx_fee": 7,
         "valid_start_timestamp": "1234567890000000000",
         "consensus_timestamp": "1234567890000000005",
         "payerAccountId": "0.0.8",
