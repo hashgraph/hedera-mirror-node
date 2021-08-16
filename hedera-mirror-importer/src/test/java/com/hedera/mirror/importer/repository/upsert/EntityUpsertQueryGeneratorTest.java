@@ -69,13 +69,13 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Test
     void tableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getFinalTableName();
-        assertThat(upsertQuery).isEqualTo("entity");
+        String tableName = getUpdatableDomainRepositoryCustom().getFinalTableName();
+        assertThat(tableName).isEqualTo("entity");
     }
 
     @Test
     void tempTableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
-        assertThat(upsertQuery).isEqualTo("entity_temp");
+        String tempTableName = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
+        assertThat(tempTableName).isEqualTo("entity_temp");
     }
 }
