@@ -566,6 +566,11 @@ const addToken = async (token) => {
     ...token,
   };
 
+  if (token.type === 'NON_FUNGIBLE_UNIQUE') {
+    token.decimals = 0;
+    token.initial_supply = 0;
+  }
+
   if (!token.modified_timestamp) {
     token.modified_timestamp = token.created_timestamp;
   }
