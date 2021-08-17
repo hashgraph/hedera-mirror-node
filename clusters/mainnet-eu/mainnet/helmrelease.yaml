@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.25.0'
+      version: '0.25.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -40,6 +40,8 @@ spec:
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
+        HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.368908"
+        HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.368908"
     postgresql:
       enabled: false
     redis:
