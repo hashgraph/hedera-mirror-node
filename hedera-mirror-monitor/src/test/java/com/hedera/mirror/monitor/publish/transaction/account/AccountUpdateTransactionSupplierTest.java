@@ -42,10 +42,11 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
         assertThat(actual)
                 .returns(ACCOUNT_ID, AccountUpdateTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, AccountUpdateTransaction::getMaxTransactionFee)
+                .returns(null, AccountUpdateTransaction::getProxyAccountId)
+                .returns(null, AccountUpdateTransaction::getKey)
                 .returns(false, AccountUpdateTransaction::getReceiverSignatureRequired)
                 .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node updated test account"))
                 .satisfies(a -> assertThat(a.getExpirationTime()).isNotNull())
-                .satisfies(a -> assertThat(a.getKey()).isNotNull())
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test account"))
         ;
     }

@@ -45,9 +45,10 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test schedule"))
                 .satisfies(a -> assertThat(a.getScheduleMemo()).contains("Mirror node created test schedule"))
+                .returns(null, a -> a.getAdminKey())
+                .returns(null, a -> a.getPayerAccountId())
                 .returns(1, a -> a.getSignatures().get(NODE_ACCOUNT_ID).size())
                 .returns(true, a -> a.getTransactionId().getScheduled())
-
                 .returns(1, a -> a.getNodeAccountIds().size())
                 .returns(NODE_ACCOUNT_ID, a -> a.getNodeAccountIds().get(0))
                 .returns(null, a -> a.getPayerAccountId())

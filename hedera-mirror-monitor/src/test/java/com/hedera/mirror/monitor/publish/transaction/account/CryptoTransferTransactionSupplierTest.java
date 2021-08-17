@@ -25,6 +25,7 @@ import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransf
 import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +50,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
 
         assertThat(actual)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TransferTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
                 .satisfies(a -> assertThat(a.getHbarTransfers())
                         .returns(ONE_TINYBAR.negated(), map -> map.get(ACCOUNT_ID))
                         .returns(ONE_TINYBAR, map -> map.get(ACCOUNT_ID_2)))
@@ -68,6 +71,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         Hbar transferAmount = Hbar.fromTinybars(10);
         assertThat(actual)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
                 .satisfies(a -> assertThat(a.getHbarTransfers())
                         .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
                         .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)))
@@ -87,6 +92,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
 
         assertThat(actual)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyMap(), TransferTransaction::getHbarTransfers)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
                 .extracting(TransferTransaction::getTokenTransfers)
                 .returns(1, Map::size)
@@ -110,6 +117,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
 
         assertThat(actual)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyMap(), TransferTransaction::getHbarTransfers)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
                 .extracting(TransferTransaction::getTokenNftTransfers)
                 .returns(1, Map::size)

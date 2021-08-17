@@ -43,6 +43,9 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .setTransactionMemo(actual.getTransactionMemo());
 
         assertThat(actual)
+                .returns(null, TopicCreateTransaction::getAdminKey)
+                .returns(null, TopicCreateTransaction::getSubmitKey)
+                .returns(null, TopicCreateTransaction::getAutoRenewAccountId)
                 .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test topic"))
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicCreateTransaction::getMaxTransactionFee);

@@ -49,7 +49,11 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"))
+                .returns(null, TopicUpdateTransaction::getAdminKey)
+                .returns(null, TopicUpdateTransaction::getAutoRenewAccountId)
+                .returns(null, TopicUpdateTransaction::getAutoRenewPeriod)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicUpdateTransaction::getMaxTransactionFee)
+                .returns(null, TopicUpdateTransaction::getSubmitKey)
                 .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId);
     }
 
