@@ -61,7 +61,6 @@
     ],
     "transactions": [
       {
-        "charged_tx_fee": 0,
         "payerAccountId": "0.0.8",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000006",
@@ -95,7 +94,7 @@
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
-        "charged_tx_fee": 0,
+        "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000006",
         "entity_id": "0.0.9",
         "max_fee": "33",
@@ -106,7 +105,20 @@
         "scheduled": false,
         "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.8-1234567890-000000005",
-        "transfers": [],
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 2
+          },
+          {
+            "account": "0.0.8",
+            "amount": -3
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
         "valid_duration_seconds": "11",
         "valid_start_timestamp": "1234567890.000000005"
       },

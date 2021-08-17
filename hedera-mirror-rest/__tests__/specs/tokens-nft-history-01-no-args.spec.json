@@ -42,7 +42,6 @@
       {
         "name": "TOKENMINT",
         "type": "37",
-        "charged_tx_fee": 7,
         "valid_start_timestamp": "1234567890000000005",
         "consensus_timestamp": "1234567890000000005",
         "payerAccountId": "0.0.8",
@@ -62,7 +61,6 @@
       {
         "name": "CRYPTOTRANSFER",
         "type": "14",
-        "charged_tx_fee": 7,
         "valid_start_timestamp": "1234567890000000006",
         "consensus_timestamp": "1234567890000000006",
         "payerAccountId": "0.0.8",
@@ -81,7 +79,6 @@
       {
         "name": "CRYPTOTRANSFER",
         "type": "14",
-        "charged_tx_fee": 7,
         "valid_start_timestamp": "1234567890000000007",
         "consensus_timestamp": "1234567890000000007",
         "payerAccountId": "0.0.8",
@@ -100,7 +97,6 @@
       {
         "name": "CRYPTOTRANSFER",
         "type": "14",
-        "charged_tx_fee": 7,
         "valid_start_timestamp": "1234567890000000008",
         "consensus_timestamp": "1234567890000000008",
         "payerAccountId": "0.0.8",
@@ -119,7 +115,6 @@
       {
         "name": "TOKENWIPE",
         "type": "39",
-        "charged_tx_fee": 7,
         "valid_start_timestamp": "1234567890000000009",
         "consensus_timestamp": "1234567890000000009",
         "payerAccountId": "0.0.8",
@@ -139,7 +134,6 @@
       {
         "name": "TOKENDELETION",
         "type": "35",
-        "charged_tx_fee": 7,
         "valid_start_timestamp": "1234567890000000010",
         "consensus_timestamp": "1234567890000000010",
         "payerAccountId": "0.0.98",
