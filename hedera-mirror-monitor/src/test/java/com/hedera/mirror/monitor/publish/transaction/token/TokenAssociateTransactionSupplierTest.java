@@ -37,15 +37,11 @@ class TokenAssociateTransactionSupplierTest extends AbstractTransactionSupplierT
         tokenAssociateTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenAssociateTransaction actual = tokenAssociateTransactionSupplier.get();
 
-        TokenAssociateTransaction expected = new TokenAssociateTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenIds(List.of(TOKEN_ID))
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node associated test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenAssociateTransaction::getAccountId)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenAssociateTransaction::getMaxTransactionFee)
+                .returns(List.of(TOKEN_ID), TokenAssociateTransaction::getTokenIds);
     }
 
     @Test
@@ -56,14 +52,10 @@ class TokenAssociateTransactionSupplierTest extends AbstractTransactionSupplierT
         tokenAssociateTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenAssociateTransaction actual = tokenAssociateTransactionSupplier.get();
 
-        TokenAssociateTransaction expected = new TokenAssociateTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenIds(List.of(TOKEN_ID))
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node associated test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenAssociateTransaction::getAccountId)
+                .returns(ONE_TINYBAR, TokenAssociateTransaction::getMaxTransactionFee)
+                .returns(List.of(TOKEN_ID), TokenAssociateTransaction::getTokenIds);
     }
 }

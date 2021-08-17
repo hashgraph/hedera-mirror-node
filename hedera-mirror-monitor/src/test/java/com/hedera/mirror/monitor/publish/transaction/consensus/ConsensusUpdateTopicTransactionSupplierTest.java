@@ -49,7 +49,8 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(MAX_TRANSACTION_FEE_HBAR, TopicUpdateTransaction::getMaxTransactionFee)
+                .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId);
     }
 
     @Test
@@ -79,6 +80,11 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(key, TopicUpdateTransaction::getAdminKey)
+                .returns(AccountId.fromString("0.0.2"), TopicUpdateTransaction::getAutoRenewAccountId)
+                .returns(autoRenewPeriod, TopicUpdateTransaction::getAutoRenewPeriod)
+                .returns(ONE_TINYBAR, TopicUpdateTransaction::getMaxTransactionFee)
+                .returns(key, TopicUpdateTransaction::getSubmitKey)
+                .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId);
     }
 }

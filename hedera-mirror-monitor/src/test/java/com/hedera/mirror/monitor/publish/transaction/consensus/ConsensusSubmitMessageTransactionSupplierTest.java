@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.Hbar;
@@ -48,7 +49,8 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getMessage()).isNotNull())
                 .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(256))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(MAX_TRANSACTION_FEE_HBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
+                .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
     }
 
     @Test
@@ -68,7 +70,8 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getMessage()).isNotNull())
                 .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(14))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
+                .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
     }
 
     @Test
@@ -86,6 +89,10 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
                 .setMessage(message.getBytes(StandardCharsets.UTF_8))
                 .setTopicId(TOPIC_ID);
 
-        assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        assertThat(actual)
+                .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
+                .returns(true, a -> Arrays.equals(message.getBytes(StandardCharsets.UTF_8), actual.getMessage()
+                        .toByteArray()))
+                .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
     }
 }

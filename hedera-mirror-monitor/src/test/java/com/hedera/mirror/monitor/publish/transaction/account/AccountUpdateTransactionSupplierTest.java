@@ -27,7 +27,6 @@ import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
@@ -40,18 +39,15 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
         accountUpdateTransactionSupplier.setAccountId(ACCOUNT_ID.toString());
         AccountUpdateTransaction actual = accountUpdateTransactionSupplier.get();
 
-        AccountUpdateTransaction expected = new AccountUpdateTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setAccountMemo(actual.getAccountMemo())
-                .setExpirationTime(actual.getExpirationTime())
-                .setMaxTransactionFee(Hbar.fromTinybars(1_000_000_000))
-                .setReceiverSignatureRequired(false)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test account"))
+                .returns(ACCOUNT_ID, AccountUpdateTransaction::getAccountId)
+                .returns(MAX_TRANSACTION_FEE_HBAR, AccountUpdateTransaction::getMaxTransactionFee)
+                .returns(false, AccountUpdateTransaction::getReceiverSignatureRequired)
+                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node updated test account"))
                 .satisfies(a -> assertThat(a.getExpirationTime()).isNotNull())
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .satisfies(a -> assertThat(a.getKey()).isNotNull())
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test account"))
+        ;
     }
 
     @Test
@@ -68,18 +64,14 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
         accountUpdateTransactionSupplier.setReceiverSignatureRequired(true);
         AccountUpdateTransaction actual = accountUpdateTransactionSupplier.get();
 
-        AccountUpdateTransaction expected = new AccountUpdateTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setAccountMemo(actual.getAccountMemo())
-                .setExpirationTime(expirationTime)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setProxyAccountId(ACCOUNT_ID_2)
-                .setKey(key)
-                .setReceiverSignatureRequired(true)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test account"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, AccountUpdateTransaction::getAccountId)
+                .returns(expirationTime, AccountUpdateTransaction::getExpirationTime)
+                .returns(key, AccountUpdateTransaction::getKey)
+                .returns(ONE_TINYBAR, AccountUpdateTransaction::getMaxTransactionFee)
+                .returns(ACCOUNT_ID_2, AccountUpdateTransaction::getProxyAccountId)
+                .returns(true, AccountUpdateTransaction::getReceiverSignatureRequired)
+                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node updated test account"))
+                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node updated test account"));
     }
 }

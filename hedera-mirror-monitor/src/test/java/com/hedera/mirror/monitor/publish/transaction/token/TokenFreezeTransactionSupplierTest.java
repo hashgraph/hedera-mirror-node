@@ -36,15 +36,11 @@ class TokenFreezeTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenFreezeTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenFreezeTransaction actual = tokenFreezeTransactionSupplier.get();
 
-        TokenFreezeTransaction expected = new TokenFreezeTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node froze test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenFreezeTransaction::getAccountId)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenFreezeTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenFreezeTransaction::getTokenId);
     }
 
     @Test
@@ -55,14 +51,10 @@ class TokenFreezeTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenFreezeTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenFreezeTransaction actual = tokenFreezeTransactionSupplier.get();
 
-        TokenFreezeTransaction expected = new TokenFreezeTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node froze test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenFreezeTransaction::getAccountId)
+                .returns(ONE_TINYBAR, TokenFreezeTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenFreezeTransaction::getTokenId);
     }
 }

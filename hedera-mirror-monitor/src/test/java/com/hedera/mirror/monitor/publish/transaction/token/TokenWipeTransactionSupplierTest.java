@@ -21,8 +21,8 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
@@ -49,7 +49,11 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenWipeTransaction::getAccountId)
+                .returns(1L, TokenWipeTransaction::getAmount)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenWipeTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyList(), TokenWipeTransaction::getSerials)
+                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId);
     }
 
     @Test
@@ -62,17 +66,13 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenWipeTransactionSupplier.setType(TokenType.FUNGIBLE_COMMON);
         TokenWipeTransaction actual = tokenWipeTransactionSupplier.get();
 
-        TokenWipeTransaction expected = new TokenWipeTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setAmount(2)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node wiped test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"))
+                .returns(ACCOUNT_ID, TokenWipeTransaction::getAccountId)
+                .returns(2L, TokenWipeTransaction::getAmount)
+                .returns(ONE_TINYBAR, TokenWipeTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyList(), TokenWipeTransaction::getSerials)
+                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId);
     }
 
     @Test
@@ -95,6 +95,10 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenWipeTransaction::getAccountId)
+                .returns(0L, TokenWipeTransaction::getAmount)
+                .returns(ONE_TINYBAR, TokenWipeTransaction::getMaxTransactionFee)
+                .returns(List.of(10L, 11L), TokenWipeTransaction::getSerials)
+                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId);
     }
 }

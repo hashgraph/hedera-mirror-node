@@ -36,15 +36,11 @@ class TokenUnfreezeTransactionSupplierTest extends AbstractTransactionSupplierTe
         tokenUnfreezeTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenUnfreezeTransaction actual = tokenUnfreezeTransactionSupplier.get();
 
-        TokenUnfreezeTransaction expected = new TokenUnfreezeTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node unfroze test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenUnfreezeTransaction::getAccountId)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenUnfreezeTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenUnfreezeTransaction::getTokenId);
     }
 
     @Test
@@ -55,14 +51,10 @@ class TokenUnfreezeTransactionSupplierTest extends AbstractTransactionSupplierTe
         tokenUnfreezeTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenUnfreezeTransaction actual = tokenUnfreezeTransactionSupplier.get();
 
-        TokenUnfreezeTransaction expected = new TokenUnfreezeTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node unfroze test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenUnfreezeTransaction::getAccountId)
+                .returns(ONE_TINYBAR, TokenUnfreezeTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenUnfreezeTransaction::getTokenId);
     }
 }

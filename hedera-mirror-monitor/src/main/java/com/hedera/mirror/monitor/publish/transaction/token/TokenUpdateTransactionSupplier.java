@@ -22,7 +22,6 @@ package com.hedera.mirror.monitor.publish.transaction.token;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import javax.validation.constraints.Future;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -48,9 +47,8 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     @DurationMin(seconds = 1)
     private Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
-    @NotNull
     @Future
-    private Instant expirationTime = Instant.now().plus(120, ChronoUnit.DAYS);
+    private Instant expirationTime;
 
     @Min(1)
     private long maxTransactionFee = 1_000_000_000;
@@ -67,8 +65,6 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
     public TokenUpdateTransaction get() {
         String memo = Utility.getMemo("Mirror node updated test token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
-                .setAutoRenewPeriod(autoRenewPeriod)
-                .setExpirationTime(expirationTime)
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
@@ -80,6 +76,7 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
             PublicKey key = PublicKey.fromString(adminKey);
             tokenUpdateTransaction
                     .setAdminKey(key)
+                    .setFeeScheduleKey(key)
                     .setFreezeKey(key)
                     .setKycKey(key)
                     .setSupplyKey(key)
@@ -91,6 +88,13 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
                     .setAutoRenewAccountId(treastury)
                     .setTreasuryAccountId(treastury);
         }
+
+        if (expirationTime != null) {
+            tokenUpdateTransaction.setExpirationTime(expirationTime);
+        } else {
+            tokenUpdateTransaction.setAutoRenewPeriod(autoRenewPeriod);
+        }
+
         return tokenUpdateTransaction;
     }
 }

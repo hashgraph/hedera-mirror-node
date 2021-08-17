@@ -24,14 +24,14 @@ import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransf
 import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.NFT;
 import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
@@ -47,17 +47,12 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         cryptoTransferTransactionSupplier.setSenderAccountId(ACCOUNT_ID.toString());
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
-        Hbar transferAmount = ONE_TINYBAR;
-        TransferTransaction expected = new TransferTransaction()
-                .addHbarTransfer(ACCOUNT_ID_2, transferAmount)
-                .addHbarTransfer(ACCOUNT_ID, transferAmount.negated())
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTransactionMemo(actual.getTransactionMemo());
-
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test transfer"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TransferTransaction::getMaxTransactionFee)
+                .satisfies(a -> assertThat(a.getHbarTransfers())
+                        .returns(ONE_TINYBAR.negated(), map -> map.get(ACCOUNT_ID))
+                        .returns(ONE_TINYBAR, map -> map.get(ACCOUNT_ID_2)))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"));
     }
 
     @Test
@@ -71,15 +66,12 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
         Hbar transferAmount = Hbar.fromTinybars(10);
-        TransferTransaction expected = new TransferTransaction()
-                .addHbarTransfer(ACCOUNT_ID_2, transferAmount)
-                .addHbarTransfer(ACCOUNT_ID, transferAmount.negated())
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
+                .satisfies(a -> assertThat(a.getHbarTransfers())
+                        .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
+                        .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"));
     }
 
     @Test
@@ -91,18 +83,16 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         cryptoTransferTransactionSupplier.setSenderAccountId(ACCOUNT_ID.toString());
         cryptoTransferTransactionSupplier.setTokenId(TOKEN_ID.toString());
         cryptoTransferTransactionSupplier.setTransferTypes(Set.of(TOKEN));
-
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
-        TransferTransaction expected = new TransferTransaction()
-                .addTokenTransfer(TOKEN_ID, ACCOUNT_ID_2, 10)
-                .addTokenTransfer(TOKEN_ID, ACCOUNT_ID, -10)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
+                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .extracting(TransferTransaction::getTokenTransfers)
+                .returns(1, Map::size)
+                .satisfies(transfers -> assertThat(transfers.get(TOKEN_ID))
+                        .returns(-10L, map -> map.get(ACCOUNT_ID))
+                        .returns(10L, map -> map.get(ACCOUNT_ID_2)));
     }
 
     @Test
@@ -118,20 +108,30 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
 
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
-        TransferTransaction expected = new TransferTransaction()
-                .addNftTransfer(new NftId(TOKEN_ID, 10), ACCOUNT_ID, ACCOUNT_ID_2)
-                .addNftTransfer(new NftId(TOKEN_ID, 11), ACCOUNT_ID, ACCOUNT_ID_2)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
+                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .extracting(TransferTransaction::getTokenNftTransfers)
+                .returns(1, Map::size)
+                .extracting(transfers -> transfers.get(TOKEN_ID))
+                .returns(2, List::size)
+                .satisfies(transferList -> assertThat(transferList.get(0))
+                        //TODO Swap these with getters
+                        .returns(10L, transfer -> transfer.serial)
+                        .returns(ACCOUNT_ID, transfer -> transfer.sender)
+                        .returns(ACCOUNT_ID_2, transfer -> transfer.receiver))
+                .satisfies(transferList -> assertThat(transferList.get(1))
+                        .returns(11L, transfer -> transfer.serial)
+                        .returns(ACCOUNT_ID, transfer -> transfer.sender)
+                        .returns(ACCOUNT_ID_2, transfer -> transfer.receiver));
+
+//
     }
 
     @Test
     void createWithCustomAllTransfer() {
         TokenId nftTokenId = TokenId.fromString("0.0.21");
+        Hbar transferAmount = Hbar.fromTinybars(2);
 
         CryptoTransferTransactionSupplier cryptoTransferTransactionSupplier = new CryptoTransferTransactionSupplier();
         cryptoTransferTransactionSupplier.setAmount(2);
@@ -145,19 +145,28 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
 
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
-        Hbar transferAmount = Hbar.fromTinybars(2);
-        TransferTransaction expected = new TransferTransaction()
-                .addHbarTransfer(ACCOUNT_ID_2, transferAmount)
-                .addHbarTransfer(ACCOUNT_ID, transferAmount.negated())
-                .addNftTransfer(new NftId(nftTokenId, 10), ACCOUNT_ID, ACCOUNT_ID_2)
-                .addNftTransfer(new NftId(nftTokenId, 11), ACCOUNT_ID, ACCOUNT_ID_2)
-                .addTokenTransfer(TOKEN_ID, ACCOUNT_ID_2, 2)
-                .addTokenTransfer(TOKEN_ID, ACCOUNT_ID, -2)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
+                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .satisfies(a -> assertThat(a)
+                        .extracting(TransferTransaction::getTokenNftTransfers)
+                        .returns(1, Map::size)
+                        .extracting(transfers -> transfers.get(nftTokenId))
+                        .returns(2, List::size)
+                        .satisfies(transferList -> assertThat(transferList.get(0))
+                                //TODO Swap these with getters
+                                .returns(10L, transfer -> transfer.serial)
+                                .returns(ACCOUNT_ID, transfer -> transfer.sender)
+                                .returns(ACCOUNT_ID_2, transfer -> transfer.receiver))
+                        .satisfies(transferList -> assertThat(transferList.get(1))
+                                .returns(11L, transfer -> transfer.serial)
+                                .returns(ACCOUNT_ID, transfer -> transfer.sender)
+                                .returns(ACCOUNT_ID_2, transfer -> transfer.receiver)))
+                .satisfies(a -> assertThat(a.getTokenTransfers().get(TOKEN_ID))
+                        .returns(-2L, map -> map.get(ACCOUNT_ID))
+                        .returns(2L, map -> map.get(ACCOUNT_ID_2)))
+                .satisfies(a -> assertThat(a.getHbarTransfers())
+                        .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
+                        .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)));
     }
 }

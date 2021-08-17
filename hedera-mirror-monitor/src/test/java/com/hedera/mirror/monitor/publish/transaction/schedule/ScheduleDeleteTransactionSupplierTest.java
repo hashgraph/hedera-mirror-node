@@ -21,7 +21,6 @@ package com.hedera.mirror.monitor.publish.transaction.schedule;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -36,15 +35,10 @@ class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierT
         scheduleDeleteTransactionSupplier.setScheduleId(SCHEDULE_ID.toString());
         ScheduleDeleteTransaction actual = scheduleDeleteTransactionSupplier.get();
 
-        ScheduleDeleteTransaction expected = new ScheduleDeleteTransaction()
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setScheduleId(SCHEDULE_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node deleted test schedule"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test schedule"))
+                .returns(MAX_TRANSACTION_FEE_HBAR, ScheduleDeleteTransaction::getMaxTransactionFee)
+                .returns(SCHEDULE_ID, ScheduleDeleteTransaction::getScheduleId);
     }
 
     @Test
@@ -54,13 +48,9 @@ class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierT
         scheduleDeleteTransactionSupplier.setScheduleId(SCHEDULE_ID.toString());
         ScheduleDeleteTransaction actual = scheduleDeleteTransactionSupplier.get();
 
-        ScheduleDeleteTransaction expected = new ScheduleDeleteTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setScheduleId(SCHEDULE_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test schedule"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ONE_TINYBAR, ScheduleDeleteTransaction::getMaxTransactionFee)
+                .returns(SCHEDULE_ID, ScheduleDeleteTransaction::getScheduleId);
     }
 }

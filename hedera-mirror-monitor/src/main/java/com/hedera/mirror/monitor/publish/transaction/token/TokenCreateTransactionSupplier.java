@@ -90,6 +90,7 @@ public class TokenCreateTransactionSupplier implements TransactionSupplier<Token
             PublicKey key = PublicKey.fromString(adminKey);
             tokenCreateTransaction
                     .setAdminKey(key)
+                    .setFeeScheduleKey(key)
                     .setFreezeKey(key)
                     .setKycKey(key)
                     .setSupplyKey(key)

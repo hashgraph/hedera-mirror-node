@@ -35,14 +35,10 @@ class ScheduleSignTransactionSupplierTest extends AbstractTransactionSupplierTes
         scheduleSignTransactionSupplier.setScheduleId(SCHEDULE_ID.toString());
         ScheduleSignTransaction actual = scheduleSignTransactionSupplier.get();
 
-        ScheduleSignTransaction expected = new ScheduleSignTransaction()
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setScheduleId(SCHEDULE_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node signed test schedule"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(MAX_TRANSACTION_FEE_HBAR, ScheduleSignTransaction::getMaxTransactionFee)
+                .returns(SCHEDULE_ID, ScheduleSignTransaction::getScheduleId);
     }
 
     @Test
@@ -52,13 +48,9 @@ class ScheduleSignTransactionSupplierTest extends AbstractTransactionSupplierTes
         scheduleSignTransactionSupplier.setScheduleId(SCHEDULE_ID.toString());
         ScheduleSignTransaction actual = scheduleSignTransactionSupplier.get();
 
-        ScheduleSignTransaction expected = new ScheduleSignTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setScheduleId(SCHEDULE_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node signed test schedule"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ONE_TINYBAR, ScheduleSignTransaction::getMaxTransactionFee)
+                .returns(SCHEDULE_ID, ScheduleSignTransaction::getScheduleId);
     }
 }

@@ -43,7 +43,8 @@ class ConsensusDeleteTopicTransactionSupplierTest extends AbstractTransactionSup
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test topic"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(MAX_TRANSACTION_FEE_HBAR, TopicDeleteTransaction::getMaxTransactionFee)
+                .returns(TOPIC_ID, TopicDeleteTransaction::getTopicId);
     }
 
     @Test
@@ -61,6 +62,7 @@ class ConsensusDeleteTopicTransactionSupplierTest extends AbstractTransactionSup
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test topic"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ONE_TINYBAR, TopicDeleteTransaction::getMaxTransactionFee)
+                .returns(TOPIC_ID, TopicDeleteTransaction::getTopicId);
     }
 }

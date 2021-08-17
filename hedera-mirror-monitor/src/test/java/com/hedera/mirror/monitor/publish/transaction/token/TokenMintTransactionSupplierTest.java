@@ -21,9 +21,10 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
@@ -38,15 +39,12 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenMintTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenMintTransaction actual = tokenMintTransactionSupplier.get();
 
-        TokenMintTransaction expected = new TokenMintTransaction()
-                .setAmount(1)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(1L, TokenMintTransaction::getAmount)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenMintTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyList(), TokenMintTransaction::getMetadata)
+                .returns(TOKEN_ID, TokenMintTransaction::getTokenId);
     }
 
     @Test
@@ -58,15 +56,12 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenMintTransactionSupplier.setType(TokenType.FUNGIBLE_COMMON);
         TokenMintTransaction actual = tokenMintTransactionSupplier.get();
 
-        TokenMintTransaction expected = new TokenMintTransaction()
-                .setAmount(2)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(2L, TokenMintTransaction::getAmount)
+                .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyList(), TokenMintTransaction::getMetadata)
+                .returns(TOKEN_ID, TokenMintTransaction::getTokenId);
     }
 
     @Test
@@ -79,18 +74,15 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenMintTransactionSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         TokenMintTransaction actual = tokenMintTransactionSupplier.get();
 
-        TokenMintTransaction expected = new TokenMintTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setMetadata(actual.getMetadata())
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
-                .satisfies(a -> assertThat(a.getMetadata().size()).isEqualTo(2))
-                .satisfies(a -> assertThat(a.getMetadata().get(0).length).isEqualTo(14))
-                .satisfies(a -> assertThat(a.getMetadata().get(1).length).isEqualTo(14))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(0L, TokenMintTransaction::getAmount)
+                .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenMintTransaction::getTokenId)
+                .extracting(TokenMintTransaction::getMetadata)
+                .returns(2, List::size)
+                .returns(14, metadataList -> metadataList.get(0).length)
+                .returns(14, metadataList -> metadataList.get(1).length);
     }
 
     @Test
@@ -105,25 +97,14 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenMintTransactionSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         TokenMintTransaction actual = tokenMintTransactionSupplier.get();
 
-        TokenMintTransaction expected = new TokenMintTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setMetadata(actual.getMetadata())
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
-                .satisfies(a -> assertThat(a.getMetadata().size()).isEqualTo(2))
-                .satisfies(a -> assertThat(a.getMetadata().get(0)).isEqualTo(metadata.getBytes(StandardCharsets.UTF_8)))
-                .satisfies(a -> assertThat(a.getMetadata().get(1)).isEqualTo(metadata.getBytes(StandardCharsets.UTF_8)))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
-
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node minted test token"),
-                () -> assertThat(actual.getMetadata().size()).isEqualTo(2),
-                () -> assertThat(actual.getMetadata().get(0)).isEqualTo(metadata.getBytes(StandardCharsets.UTF_8)),
-                () -> assertThat(actual.getMetadata().get(1)).isEqualTo(metadata.getBytes(StandardCharsets.UTF_8)),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+                .returns(0L, TokenMintTransaction::getAmount)
+                .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenMintTransaction::getTokenId)
+                .extracting(TokenMintTransaction::getMetadata)
+                .returns(2, List::size)
+                .returns(metadata.getBytes(StandardCharsets.UTF_8), metadataList -> metadataList.get(0))
+                .returns(metadata.getBytes(StandardCharsets.UTF_8), metadataList -> metadataList.get(1));
     }
 }

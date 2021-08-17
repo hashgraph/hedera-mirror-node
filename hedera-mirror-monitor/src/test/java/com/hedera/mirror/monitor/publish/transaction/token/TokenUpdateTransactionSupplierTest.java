@@ -40,22 +40,15 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenUpdateTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenUpdateTransaction actual = tokenUpdateTransactionSupplier.get();
 
-        TokenUpdateTransaction expected = new TokenUpdateTransaction()
-                .setAutoRenewPeriod(actual.getAutoRenewPeriod())
-                .setExpirationTime(actual.getExpirationTime())
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenMemo(actual.getTokenMemo())
-                .setTokenName("HMNT_name")
-                .setTokenSymbol("HMNT")
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTokenMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getAutoRenewPeriod()).isNotNull())
-                .satisfies(a -> assertThat(a.getExpirationTime()).isNotNull())
                 .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(Duration.ofSeconds(8000000), TokenUpdateTransaction::getAutoRenewPeriod)
+                .returns(null, TokenUpdateTransaction::getExpirationTime)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenUpdateTransaction::getMaxTransactionFee)
+                .returns("HMNT_name", TokenUpdateTransaction::getTokenName)
+                .returns("HMNT", TokenUpdateTransaction::getTokenSymbol)
+                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId);
     }
 
     @Test
@@ -67,7 +60,6 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
         TokenUpdateTransactionSupplier tokenUpdateTransactionSupplier = new TokenUpdateTransactionSupplier();
         tokenUpdateTransactionSupplier.setAdminKey(key.toString());
         tokenUpdateTransactionSupplier.setAutoRenewPeriod(autoRenewPeriod);
-        tokenUpdateTransactionSupplier.setExpirationTime(expirationTime);
         tokenUpdateTransactionSupplier.setMaxTransactionFee(1);
         tokenUpdateTransactionSupplier.setSymbol("TEST");
         tokenUpdateTransactionSupplier.setTokenId(TOKEN_ID.toString());
@@ -75,27 +67,39 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
         tokenUpdateTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenUpdateTransaction actual = tokenUpdateTransactionSupplier.get();
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
+                .returns(key, TokenUpdateTransaction::getAdminKey)
+                .returns(ACCOUNT_ID, TokenUpdateTransaction::getAutoRenewAccountId)
+                .returns(autoRenewPeriod, TokenUpdateTransaction::getAutoRenewPeriod)
+                .returns(null, TokenUpdateTransaction::getExpirationTime)
+                .returns(key, TokenUpdateTransaction::getFreezeKey)
+                .returns(key, TokenUpdateTransaction::getKycKey)
+                .returns(ONE_TINYBAR, TokenUpdateTransaction::getMaxTransactionFee)
+                .returns(key, TokenUpdateTransaction::getSupplyKey)
+                .returns("TEST_name", TokenUpdateTransaction::getTokenName)
+                .returns("TEST", TokenUpdateTransaction::getTokenSymbol)
+                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId)
+                .returns(ACCOUNT_ID, TokenUpdateTransaction::getTreasuryAccountId)
+                .returns(key, TokenUpdateTransaction::getWipeKey);
+    }
 
-        TokenUpdateTransaction expected = new TokenUpdateTransaction()
-                .setAdminKey(key)
-                .setAutoRenewAccountId(ACCOUNT_ID)
-                .setAutoRenewPeriod(autoRenewPeriod)
-                .setExpirationTime(expirationTime)
-                .setFreezeKey(key)
-                .setKycKey(key)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setSupplyKey(key)
-                .setTokenMemo(actual.getTokenMemo())
-                .setTokenName("TEST_name")
-                .setTokenSymbol("TEST")
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTokenMemo())
-                .setTreasuryAccountId(ACCOUNT_ID)
-                .setWipeKey(key);
+    @Test
+    void createWithExpiration() {
+        TokenUpdateTransactionSupplier tokenUpdateTransactionSupplier = new TokenUpdateTransactionSupplier();
+        tokenUpdateTransactionSupplier.setTokenId(TOKEN_ID.toString());
+        tokenUpdateTransactionSupplier.setExpirationTime(Instant.MAX);
+        TokenUpdateTransaction actual = tokenUpdateTransactionSupplier.get();
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(null, TokenUpdateTransaction::getAutoRenewPeriod)
+                .returns(Instant.MAX, TokenUpdateTransaction::getExpirationTime)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenUpdateTransaction::getMaxTransactionFee)
+                .returns("HMNT_name", TokenUpdateTransaction::getTokenName)
+                .returns("HMNT", TokenUpdateTransaction::getTokenSymbol)
+                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId);
     }
 }

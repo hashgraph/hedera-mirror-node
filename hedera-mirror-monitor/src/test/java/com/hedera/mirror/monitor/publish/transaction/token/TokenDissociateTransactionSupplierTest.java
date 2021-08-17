@@ -38,15 +38,11 @@ class TokenDissociateTransactionSupplierTest extends AbstractTransactionSupplier
         tokenDissociateTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenDissociateTransaction actual = tokenDissociateTransactionSupplier.get();
 
-        TokenDissociateTransaction expected = new TokenDissociateTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenIds(List.of(TOKEN_ID))
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node dissociated test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenDissociateTransaction::getAccountId)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenDissociateTransaction::getMaxTransactionFee)
+                .returns(List.of(TOKEN_ID), TokenDissociateTransaction::getTokenIds);
     }
 
     @Test
@@ -66,6 +62,8 @@ class TokenDissociateTransactionSupplierTest extends AbstractTransactionSupplier
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node dissociated test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, TokenDissociateTransaction::getAccountId)
+                .returns(ONE_TINYBAR, TokenDissociateTransaction::getMaxTransactionFee)
+                .returns(List.of(TOKEN_ID), TokenDissociateTransaction::getTokenIds);
     }
 }

@@ -21,9 +21,9 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
@@ -39,16 +39,12 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenBurnTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenBurnTransaction actual = tokenBurnTransactionSupplier.get();
 
-        TokenBurnTransaction expected = new TokenBurnTransaction()
-                .setAmount(1)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
-        assertAll(
-                () -> assertThat(actual.getTransactionMemo()).contains("Mirror node burned test token"),
-                () -> assertThat(actual).usingRecursiveComparison().isEqualTo(expected)
-        );
+        assertThat(actual)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"))
+                .returns(1L, TokenBurnTransaction::getAmount)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TokenBurnTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyList(), TokenBurnTransaction::getSerials)
+                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId);
     }
 
     @Test
@@ -60,15 +56,12 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenBurnTransactionSupplier.setType(TokenType.FUNGIBLE_COMMON);
         TokenBurnTransaction actual = tokenBurnTransactionSupplier.get();
 
-        TokenBurnTransaction expected = new TokenBurnTransaction()
-                .setAmount(2)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(2L, TokenBurnTransaction::getAmount)
+                .returns(ONE_TINYBAR, TokenBurnTransaction::getMaxTransactionFee)
+                .returns(Collections.emptyList(), TokenBurnTransaction::getSerials)
+                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId);
     }
 
     @Test
@@ -81,14 +74,11 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenBurnTransactionSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         TokenBurnTransaction actual = tokenBurnTransactionSupplier.get();
 
-        TokenBurnTransaction expected = new TokenBurnTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setSerials(List.of(10L, 11L))
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(0L, TokenBurnTransaction::getAmount)
+                .returns(ONE_TINYBAR, TokenBurnTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
+                .returns(Arrays.asList(10L, 11L), TokenBurnTransaction::getSerials);
     }
 }

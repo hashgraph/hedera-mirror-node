@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.monitor.publish.transaction.AbstractTransactionSupplierTest;
 
 class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest {
@@ -37,15 +36,11 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
         accountDeleteTransactionSupplier.setAccountId(ACCOUNT_ID.toString());
         AccountDeleteTransaction actual = accountDeleteTransactionSupplier.get();
 
-        AccountDeleteTransaction expected = new AccountDeleteTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTransferAccountId(AccountId.fromString("0.0.2"))
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, AccountDeleteTransaction::getAccountId)
+                .returns(MAX_TRANSACTION_FEE_HBAR, AccountDeleteTransaction::getMaxTransactionFee)
+                .returns(AccountId.fromString("0.0.2"), AccountDeleteTransaction::getTransferAccountId);
     }
 
     @Test
@@ -53,16 +48,13 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
         AccountDeleteTransactionSupplier accountDeleteTransactionSupplier = new AccountDeleteTransactionSupplier();
         accountDeleteTransactionSupplier.setAccountId(ACCOUNT_ID.toString());
         accountDeleteTransactionSupplier.setTransferAccountId(ACCOUNT_ID_2.toString());
+        accountDeleteTransactionSupplier.setMaxTransactionFee(1);
         AccountDeleteTransaction actual = accountDeleteTransactionSupplier.get();
-
-        AccountDeleteTransaction expected = new AccountDeleteTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(Hbar.fromTinybars(1_000_000_000))
-                .setTransferAccountId(ACCOUNT_ID_2)
-                .setTransactionMemo(actual.getTransactionMemo());
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .returns(ACCOUNT_ID, AccountDeleteTransaction::getAccountId)
+                .returns(ONE_TINYBAR, AccountDeleteTransaction::getMaxTransactionFee)
+                .returns(ACCOUNT_ID_2, AccountDeleteTransaction::getTransferAccountId);
     }
 }

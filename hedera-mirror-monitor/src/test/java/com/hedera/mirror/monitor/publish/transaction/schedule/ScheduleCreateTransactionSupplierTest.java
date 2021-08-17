@@ -45,16 +45,17 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test schedule"))
                 .satisfies(a -> assertThat(a.getScheduleMemo()).contains("Mirror node created test schedule"))
-                .satisfies(a -> assertThat(a.getSignatures().get(NODE_ACCOUNT_ID).size()).isEqualTo(1))
-                .satisfies(a -> assertThat(a.getTransactionId().getScheduled()).isEqualTo(true))
+                .returns(1, a -> a.getSignatures().get(NODE_ACCOUNT_ID).size())
+                .returns(true, a -> a.getTransactionId().getScheduled())
+
+                .returns(1, a -> a.getNodeAccountIds().size())
+                .returns(NODE_ACCOUNT_ID, a -> a.getNodeAccountIds().get(0))
+                .returns(null, a -> a.getPayerAccountId())
+                .returns(MAX_TRANSACTION_FEE_HBAR, a -> a.getMaxTransactionFee())
+                .returns(1, a -> a.getTransactionHashPerNode().size())
                 .satisfies(a -> assertThat(a.getTransactionId().toString()).contains(ACCOUNT_ID.toString()))
-                .satisfies(a -> assertThat(a.getNodeAccountIds().size()).isEqualTo(1))
-                .satisfies(a -> assertThat(a.getNodeAccountIds().get(0)).isEqualTo(NODE_ACCOUNT_ID))
-                .satisfies(a -> assertThat(a.getPayerAccountId()).isNull())
-                .satisfies(a -> assertThat(a.getMaxTransactionFee()).isEqualTo(MAX_TRANSACTION_FEE_HBAR))
                 .satisfies(a -> assertThat(a.getTransactionHash()).isNotNull())
-                .satisfies(a -> assertThat(a.getTransactionHashPerNode().get(NODE_ACCOUNT_ID)).isNotNull())
-                .satisfies(a -> assertThat(a.getTransactionHashPerNode().size()).isEqualTo(1));
+                .satisfies(a -> assertThat(a.getTransactionHashPerNode().get(NODE_ACCOUNT_ID)).isNotNull());
     }
 
     @Test
@@ -76,16 +77,16 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test schedule"))
                 .satisfies(a -> assertThat(a.getScheduleMemo()).contains("Mirror node created test schedule"))
-                .satisfies(a -> assertThat(a.getSignatures().get(NODE_ACCOUNT_ID).size()).isEqualTo(2))
-                .satisfies(a -> assertThat(a.getTransactionId().getScheduled()).isEqualTo(true))
-                .satisfies(a -> assertThat(a.getAdminKey()).isEqualTo(adminKey))
-                .satisfies(a -> assertThat(a.getPayerAccountId()).isEqualTo(ACCOUNT_ID_2))
-                .satisfies(a -> assertThat(a.getTransactionId().toString()).contains(ACCOUNT_ID.toString()))
-                .satisfies(a -> assertThat(a.getNodeAccountIds().size()).isEqualTo(1))
-                .satisfies(a -> assertThat(a.getNodeAccountIds().get(0)).isEqualTo(NODE_ACCOUNT_ID))
-                .satisfies(a -> assertThat(a.getMaxTransactionFee()).isEqualTo(ONE_TINYBAR))
+                .returns(2, a -> a.getSignatures().get(NODE_ACCOUNT_ID).size())
+                .returns(true, a -> a.getTransactionId().getScheduled())
+                .returns(adminKey, a -> a.getAdminKey())
+                .returns(ACCOUNT_ID_2, a -> a.getPayerAccountId())
+                .returns(1, a -> a.getNodeAccountIds().size())
+                .returns(NODE_ACCOUNT_ID, a -> a.getNodeAccountIds().get(0))
+                .returns(ONE_TINYBAR, a -> a.getMaxTransactionFee())
+                .returns(1, a -> a.getTransactionHashPerNode().size())
                 .satisfies(a -> assertThat(a.getTransactionHash()).isNotNull())
                 .satisfies(a -> assertThat(a.getTransactionHashPerNode().get(NODE_ACCOUNT_ID)).isNotNull())
-                .satisfies(a -> assertThat(a.getTransactionHashPerNode().size()).isEqualTo(1));
+                .satisfies(a -> assertThat(a.getTransactionId().toString()).contains(ACCOUNT_ID.toString()));
     }
 }

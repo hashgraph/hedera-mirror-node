@@ -36,19 +36,14 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
     void createWithMinimumData() {
         AccountCreateTransactionSupplier accountCreateTransactionSupplier = new AccountCreateTransactionSupplier();
         AccountCreateTransaction actual = accountCreateTransactionSupplier.get();
-        AccountCreateTransaction expected = new AccountCreateTransaction()
-                .setAccountMemo(actual.getAccountMemo())
-                .setInitialBalance(Hbar.fromTinybars(10_000_000))
-                .setKey(actual.getKey())
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setReceiverSignatureRequired(false)
-                .setTransactionMemo(actual.getTransactionMemo());
 
         assertThat(actual)
+                .returns(Hbar.fromTinybars(10_000_000), AccountCreateTransaction::getInitialBalance)
+                .returns(MAX_TRANSACTION_FEE_HBAR, AccountCreateTransaction::getMaxTransactionFee)
+                .returns(false, AccountCreateTransaction::getReceiverSignatureRequired)
                 .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"))
                 .satisfies(a -> assertThat(a.getKey()).isNotNull())
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test account"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .satisfies(a -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test account"));
     }
 
     @Test
@@ -62,17 +57,12 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
         accountCreateTransactionSupplier.setPublicKey(key.toString());
         AccountCreateTransaction actual = accountCreateTransactionSupplier.get();
 
-        AccountCreateTransaction expected = new AccountCreateTransaction()
-                .setAccountMemo(actual.getAccountMemo())
-                .setInitialBalance(ONE_TINYBAR)
-                .setKey(key)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setReceiverSignatureRequired(true)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
+                .returns(ONE_TINYBAR, AccountCreateTransaction::getInitialBalance)
+                .returns(key, AccountCreateTransaction::getKey)
+                .returns(ONE_TINYBAR, AccountCreateTransaction::getMaxTransactionFee)
+                .returns(true, AccountCreateTransaction::getReceiverSignatureRequired)
                 .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test account"))
-                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(expected));
+                .satisfies(a -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test account"));
     }
 }
