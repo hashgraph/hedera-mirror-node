@@ -42,7 +42,7 @@ create table if not exists custom_fee
     denominating_token_id     bigint,
     maximum_amount            bigint,
     minimum_amount            bigint not null default 0,
-    net_of_transfer           boolean default false,
+    net_of_transfers          boolean,
     royalty_denominator       bigint,
     royalty_numerator         bigint,
     token_id                  bigint not null
