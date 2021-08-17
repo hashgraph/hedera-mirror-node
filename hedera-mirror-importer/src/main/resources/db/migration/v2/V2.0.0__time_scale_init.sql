@@ -10,10 +10,11 @@ CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 -- assessed_custom_fee
 create table if not exists assessed_custom_fee
 (
-    amount               bigint not null,
-    collector_account_id bigint not null,
-    consensus_timestamp  bigint not null,
-    token_id             bigint
+    amount                     bigint not null,
+    collector_account_id       bigint not null,
+    consensus_timestamp        bigint not null,
+    effective_payer_account_id bigint,
+    token_id                   bigint
 );
 comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
 
@@ -104,6 +105,9 @@ create table if not exists custom_fee
     denominating_token_id bigint,
     maximum_amount        bigint,
     minimum_amount        bigint not null default 0,
+    net_of_transfers      boolean,
+    royalty_denominator   bigint,
+    royalty_numerator     bigint,
     token_id              bigint not null
 );
 comment on table custom_fee is 'HTS Custom fees';

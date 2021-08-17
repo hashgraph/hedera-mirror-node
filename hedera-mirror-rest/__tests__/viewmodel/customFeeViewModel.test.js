@@ -77,6 +77,7 @@ describe('CustomFeeViewModel', () => {
       created_timestamp: '10',
       maximum_amount: 101,
       minimum_amount: 37,
+      net_of_transfers: false,
       token_id: 10015,
     });
     const expected = {
@@ -88,6 +89,7 @@ describe('CustomFeeViewModel', () => {
       denominating_token_id: '0.0.10015',
       maximum: 101,
       minimum: 37,
+      net_of_transfers: false,
     };
 
     const actual = new CustomFeeViewModel(input);
@@ -106,6 +108,7 @@ describe('CustomFeeViewModel', () => {
       collector_account_id: 8901,
       created_timestamp: '10',
       minimum_amount: 37,
+      net_of_transfers: true,
       token_id: 10015,
     });
     const expected = {
@@ -116,6 +119,7 @@ describe('CustomFeeViewModel', () => {
       collector_account_id: '0.0.8901',
       denominating_token_id: '0.0.10015',
       minimum: 37,
+      net_of_transfers: true,
     };
 
     const actual = new CustomFeeViewModel(input);

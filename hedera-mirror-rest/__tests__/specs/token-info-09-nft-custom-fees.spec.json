@@ -1,5 +1,5 @@
 {
-  "description": "Token info api call for a given token with custom fees",
+  "description": "Token info api call for a given non-fungible token with custom fees",
   "extendedDescription": [
     "The token has 3 custom fees schedules: an empty schedule at creation, a single custom fee schedule at",
     "1234567899999999001, and a 4 custom fees schedule at 1234567899999999007. Without the timestamp filter, the query",
@@ -31,26 +31,26 @@
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000001",
-        "type": "FUNGIBLE_COMMON"
+        "type": "NON_FUNGIBLE_UNIQUE"
       },
       {
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
         "fee_schedule_key": [1, 2, 3],
-        "type": "FUNGIBLE_COMMON"
+        "type": "NON_FUNGIBLE_UNIQUE"
       },
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
-        "type": "FUNGIBLE_COMMON"
+        "type": "NON_FUNGIBLE_UNIQUE"
       },
       {
         "token_id": "0.23.45678",
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
-        "type": "FUNGIBLE_COMMON"
+        "type": "NON_FUNGIBLE_UNIQUE"
       }
     ],
     "customfees": [
@@ -64,29 +64,27 @@
         "token_id": "0.0.1135"
       },
       {
-        "amount": "11",
-        "amount_denominator": "17",
         "collector_account_id": "0.0.8901",
         "created_timestamp": "1234567899999999007",
-        "maximum_amount": "987",
-        "minimum_amount": "79",
+        "royalty_denominator": "17",
+        "royalty_numerator": "11",
         "token_id": "0.0.1135"
       },
       {
-        "amount": "9",
-        "amount_denominator": "13",
+        "amount": "1300",
         "collector_account_id": "0.0.8902",
         "created_timestamp": "1234567899999999007",
-        "minimum_amount": "1",
+        "denominating_token_id": "0.0.1137",
+        "royalty_denominator": "13",
+        "royalty_numerator": "9",
         "token_id": "0.0.1135"
       },
       {
-        "amount": "41",
-        "amount_denominator": "131",
+        "amount": "8",
         "collector_account_id": "0.0.8904",
         "created_timestamp": "1234567899999999007",
-        "minimum_amount": "0",
-        "net_of_transfers": true,
+        "royalty_denominator": "131",
+        "royalty_numerator": "41",
         "token_id": "0.0.1135"
       },
       {
@@ -130,7 +128,7 @@
     "supply_type": "INFINITE",
     "total_supply": "1000000",
     "treasury_account_id": "0.0.98",
-    "type": "FUNGIBLE_COMMON",
+    "type": "NON_FUNGIBLE_UNIQUE",
     "wipe_key": null,
     "custom_fees": {
       "created_timestamp": "1234567899.999999007",
@@ -146,37 +144,35 @@
           "denominating_token_id": null
         }
       ],
-      "fractional_fees": [
-        {
-          "amount": {
-            "denominator": 13,
-            "numerator": 9
-          },
-          "collector_account_id": "0.0.8902",
-          "denominating_token_id": "0.0.1135",
-          "minimum": 1,
-          "net_of_transfers": false
-        },
-        {
-          "amount": {
-            "denominator": 17,
-            "numerator": 11
-          },
-          "collector_account_id": "0.0.8901",
-          "denominating_token_id": "0.0.1135",
-          "maximum": 987,
-          "minimum": 79,
-          "net_of_transfers": false
-        },
+      "royalty_fees": [
         {
           "amount": {
             "denominator": 131,
             "numerator": 41
           },
           "collector_account_id": "0.0.8904",
-          "denominating_token_id": "0.0.1135",
-          "minimum": 0,
-          "net_of_transfers": true
+          "fallback_fee": {
+            "amount": 8,
+            "denominating_token_id": null
+          }
+        },
+        {
+          "amount": {
+            "denominator": 13,
+            "numerator": 9
+          },
+          "collector_account_id": "0.0.8902",
+          "fallback_fee": {
+            "amount": 1300,
+            "denominating_token_id": "0.0.1137"
+          }
+        },
+        {
+          "amount": {
+            "denominator": 17,
+            "numerator": 11
+          },
+          "collector_account_id": "0.0.8901"
         }
       ]
     }

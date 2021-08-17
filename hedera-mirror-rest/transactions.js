@@ -80,6 +80,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
       from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
       where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
       group by ${AssessedCustomFee.AMOUNT}, ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.TOKEN_ID}
+      order by ${AssessedCustomFee.AMOUNT}, ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.TOKEN_ID}
     ) aggregated
   `;
   const fields = [

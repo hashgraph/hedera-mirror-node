@@ -1334,6 +1334,9 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                      'denominating_token_id', denominating_token_id::text,
                      'maximum_amount', maximum_amount,
                      'minimum_amount', minimum_amount,
+                     'net_of_transfers', net_of_transfers,
+                     'royalty_denominator', royalty_denominator,
+                     'royalty_numerator', royalty_numerator,
                      'token_id', token_id::text
                     ) order by amount, collector_account_id, denominating_token_id)
                     from custom_fee cf

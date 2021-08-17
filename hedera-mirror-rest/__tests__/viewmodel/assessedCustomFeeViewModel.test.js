@@ -31,6 +31,11 @@ describe('AssessedCustomFeeViewModel', () => {
       expectedPayers: [],
     },
     {
+      name: 'null empty effective payers',
+      payersModel: [null],
+      expectedPayers: [],
+    },
+    {
       name: 'non-empty effective payers',
       payersModel: [9000, 9001, 9002],
       expectedPayers: ['0.0.9000', '0.0.9001', '0.0.9002'],
