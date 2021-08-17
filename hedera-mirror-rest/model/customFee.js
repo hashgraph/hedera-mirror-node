@@ -34,6 +34,9 @@ class CustomFee {
     this.denominatingTokenId = customFee.denominating_token_id;
     this.maximumAmount = customFee.maximum_amount;
     this.minimumAmount = customFee.minimum_amount;
+    this.netOfTransfers = customFee.net_of_transfers;
+    this.royaltyDenominator = customFee.royalty_denominator;
+    this.royaltyNumerator = customFee.royalty_numerator;
     this.tokenId = customFee.token_id;
   }
 
@@ -54,6 +57,12 @@ class CustomFee {
   static MAXIMUM_AMOUNT_FULL_NAME = this._getFullName(this.MAXIMUM_AMOUNT);
   static MINIMUM_AMOUNT = `minimum_amount`;
   static MINIMUM_AMOUNT_FULL_NAME = this._getFullName(this.MINIMUM_AMOUNT);
+  static NET_OF_TRANSFERS = `net_of_transfers`;
+  static NET_OF_TRANSFERS_FULL_NAME = this._getFullName(this.NET_OF_TRANSFERS);
+  static ROYALTY_DENOMINATOR = `royalty_denominator`;
+  static ROYALTY_DENOMINATOR_FULL_NAME = this._getFullName(this.ROYALTY_DENOMINATOR);
+  static ROYALTY_NUMERATOR = `royalty_numerator`;
+  static ROYALTY_NUMERATOR_FULL_NAME = this._getFullName(this.ROYALTY_NUMERATOR);
   static TOKEN_ID = `token_id`;
   static TOKEN_ID_FULL_NAME = this._getFullName(this.TOKEN_ID);
 

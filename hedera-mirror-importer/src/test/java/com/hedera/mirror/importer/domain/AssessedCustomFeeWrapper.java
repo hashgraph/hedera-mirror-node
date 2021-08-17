@@ -36,11 +36,17 @@ public class AssessedCustomFeeWrapper {
 
     private final AssessedCustomFee assessedCustomFee;
 
-    public AssessedCustomFeeWrapper(long amount, long collectorAccountId, Long tokenId, long consensusTimestamp) {
+    public AssessedCustomFeeWrapper(long amount, long collectorAccountId, Long effectivePayerAccountId, Long tokenId,
+                                    long consensusTimestamp) {
         assessedCustomFee = new AssessedCustomFee();
         assessedCustomFee.setAmount(amount);
         assessedCustomFee.setId(new AssessedCustomFee.Id(
                 EntityIdEndec.decode(collectorAccountId, EntityTypeEnum.ACCOUNT), consensusTimestamp));
+
+        if (effectivePayerAccountId != null) {
+            assessedCustomFee.setEffectivePayerAccountId(EntityIdEndec.decode(effectivePayerAccountId,
+                    EntityTypeEnum.ACCOUNT));
+        }
 
         if (tokenId != null) {
             assessedCustomFee.setTokenId(EntityIdEndec.decode(tokenId, EntityTypeEnum.TOKEN));

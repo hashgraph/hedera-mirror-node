@@ -42,6 +42,9 @@ create table if not exists custom_fee
     denominating_token_id     bigint,
     maximum_amount            bigint,
     minimum_amount            bigint not null default 0,
+    net_of_transfer           boolean default false,
+    royalty_denominator       bigint,
+    royalty_numerator         bigint,
     token_id                  bigint not null
 );
 create index if not exists
@@ -52,10 +55,11 @@ create index if not exists
 
 ```sql
 create table if not exists assessed_custom_fee (
-    amount               bigint not null,
-    collector_account_id bigint not null,
-    consensus_timestamp  bigint not null,
-    token_id             bigint
+    amount                     bigint not null,
+    collector_account_id       bigint not null,
+    consensus_timestamp        bigint not null,
+    effective_payer_account_id bigint,
+    token_id                   bigint
 );
 create index if not exists assessed_custom_fee__consensus_timestamp
     on assessed_custom_fee (consensus_timestamp);
@@ -122,8 +126,10 @@ Both new domain objects are insert-only.
 
 ### Transactions Endpoint
 
-- Update `/api/v1/transactions/{id}` response to add assessed custom fees. Note if an assessed custom fee have a `null`
-  `token_id`, it's charged in HBAR; otherwise it's charged in the `token_id`
+- Update `/api/v1/transactions/{id}` response to add assessed custom fees. Note:
+  - if an assessed custom fee have a `null` `token_id`, it's charged in HBAR; otherwise it's charged in the `token_id`
+  - prior to Hedera Service 0.17.1, there is no `effective_payer_account_id`, so the `effective_payer_account_ids` will
+    be an empty array for those transactions with assessed custom fees
 
 ```json
   {
@@ -184,11 +190,17 @@ Both new domain objects are insert-only.
           {
             "amount": 150,
             "collector_account_id": "0.0.87501",
+            "effective_payer_account_ids": [
+              "0.0.87501"
+            ],
             "token_id": null
           },
           {
             "amount": 10,
             "collector_account_id": "0.0.87502",
+            "effective_payer_account_ids": [
+              "0.0.10"
+            ],
             "token_id": "0.0.90000"
           }
         ]
@@ -200,6 +212,8 @@ Both new domain objects are insert-only.
 ### Token Info
 
 Add `fee_schedule_key` and `custom_fees` to the response json object of `/api/v1/tokens/:id`
+
+For fungible tokens, the `custom_fees` object includes `fixed_fees` and `fractional_fees`.
 
 ```json
   {
@@ -251,7 +265,8 @@ Add `fee_schedule_key` and `custom_fees` to the response json object of `/api/v1
         "collector_account_id": "0.0.99820",
         "denominating_token_id": "0.0.1135",
         "maximum": 200,
-        "minimum": 0
+        "minimum": 0,
+        "net_of_transfers": false
       },
       {
         "amount": {
@@ -260,7 +275,86 @@ Add `fee_schedule_key` and `custom_fees` to the response json object of `/api/v1
         },
         "collector_account_id": "0.0.99821",
         "denominating_token_id": "0.0.1135",
-        "minimum": 10
+        "minimum": 10,
+        "net_of_transfers": true
+      }
+    ]
+  }
+}
+```
+
+For non-fungible tokens, the `custom_fees` object includes `fixed_fees` and `royalty_fees`.
+
+```json
+  {
+  "token_id": "0.0.1135",
+  "symbol": "ORIGINALRDKSE",
+  "admin_key": null,
+  "auto_renew_account": null,
+  "auto_renew_period": null,
+  "created_timestamp": "1234567890.000000002",
+  "decimals": "1000",
+  "expiry_timestamp": null,
+  "freeze_default": false,
+  "freeze_key": null,
+  "initial_supply": "1000000",
+  "kyc_key": null,
+  "max_supply": "9223372036854775807",
+  "modified_timestamp": "1234567899.000000002",
+  "name": "Token name",
+  "supply_key": null,
+  "supply_type": "FINITE",
+  "total_supply": "1000000",
+  "treasury_account_id": "0.0.98",
+  "type": "NON_FUNGIBLE_UNIQUE",
+  "wipe_key": null,
+  "fee_schedule_key": {
+    "_type": "ProtobufEncoded",
+    "key": "7b2231222c2231222c2231227d"
+  },
+  "custom_fees": {
+    "created_timestamp": "1234567896.000000001",
+    "fixed_fees": [
+      {
+        "amount": 10,
+        "collector_account_id": "0.0.99812",
+        "denominating_token_id": null
+      },
+      {
+        "amount": 10,
+        "collector_account_id": "0.0.99813",
+        "denominating_token_id": "0.0.10020"
+      }
+    ],
+    "royalty_fees": [
+      {
+        "amount": {
+          "numerator": 1,
+          "denominator": 10
+        },
+        "collector_account_id": "0.0.99820"
+      },
+      {
+        "amount": {
+          "numerator": 3,
+          "denominator": 20
+        },
+        "collector_account_id": "0.0.99821",
+        "fallback_fee": {
+          "amount": 10,
+          "denominating_token_id": "0.0.10020"
+        },
+      },
+      {
+        "amount": {
+          "numerator": 1,
+          "denominator": 20
+        },
+        "collector_account_id": "0.0.99821",
+        "fallback_fee": {
+          "amount": 9000,
+          "denominating_token_id": null
+        }
       }
     ]
   }

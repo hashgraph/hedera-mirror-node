@@ -46,6 +46,9 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
     private long amount;
 
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId effectivePayerAccountId;
+
     @Convert(converter = TokenIdConverter.class)
     private EntityId tokenId;
 

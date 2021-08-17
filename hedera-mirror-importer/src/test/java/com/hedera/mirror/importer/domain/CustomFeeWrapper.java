@@ -35,7 +35,8 @@ public class CustomFeeWrapper {
     private final CustomFee customFee;
 
     public CustomFeeWrapper(Long amount, Long amountDenominator, Long collectorAccountId, long createdTimestamp,
-                            Long denominatingTokenId, Long maximumAmount, long minimumAmount, long tokenId) {
+                            Long denominatingTokenId, Long maximumAmount, long minimumAmount,
+                            Boolean netOfTransfers, Long royaltyDenominator, Long royaltyNumerator, long tokenId) {
         customFee = new CustomFee();
         customFee.setAmount(amount);
         customFee.setAmountDenominator(amountDenominator);
@@ -50,6 +51,9 @@ public class CustomFeeWrapper {
 
         customFee.setMaximumAmount(maximumAmount);
         customFee.setMinimumAmount(minimumAmount);
+        customFee.setNetOfTransfers(netOfTransfers);
+        customFee.setRoyaltyDenominator(royaltyDenominator);
+        customFee.setRoyaltyNumerator(royaltyNumerator);
         customFee.setId(new CustomFee.Id(createdTimestamp, EntityIdEndec.decode(tokenId, EntityTypeEnum.TOKEN)));
     }
 }

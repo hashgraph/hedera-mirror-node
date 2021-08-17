@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -32,6 +33,7 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -857,19 +859,33 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
+                AssessedCustomFee.Id id = new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp);
                 EntityId tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
 
-                AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
-                assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
-                assessedCustomFee.setId(new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp));
-                assessedCustomFee.setTokenId(tokenId);
-                entityListener.onAssessedCustomFee(assessedCustomFee);
+                List<AccountID> effectivePayerAccountIdList = protoAssessedCustomFee.getEffectivePayerAccountIdList();
+                if (effectivePayerAccountIdList.size() > 0) {
+                    // services 0.17.1 added effective payer accounts
+                    for (final AccountID effectivePayerAccountId : effectivePayerAccountIdList) {
+                        AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
+                        assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
+                        assessedCustomFee.setEffectivePayerAccountId(EntityId.of(effectivePayerAccountId));
+                        assessedCustomFee.setId(id);
+                        assessedCustomFee.setTokenId(tokenId);
+                        entityListener.onAssessedCustomFee(assessedCustomFee);
+                    }
+                } else {
+                    AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
+                    assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
+                    assessedCustomFee.setId(id);
+                    assessedCustomFee.setTokenId(tokenId);
+                    entityListener.onAssessedCustomFee(assessedCustomFee);
+                }
             }
         }
     }
 
     private Set<EntityId> insertCustomFees(List<com.hederahashgraph.api.proto.java.CustomFee> customFeeList,
-                                            long consensusTimestamp, boolean isTokenCreate, EntityId tokenId) {
+                                           long consensusTimestamp, boolean isTokenCreate, EntityId tokenId) {
         Set<EntityId> autoAssociatedAccounts = new HashSet<>();
         CustomFee.Id id = new CustomFee.Id(consensusTimestamp, tokenId);
 
@@ -880,23 +896,30 @@ public class EntityRecordItemListener implements RecordItemListener {
             customFee.setCollectorAccountId(collector);
 
             var feeCase = protoCustomFee.getFeeCase();
+            boolean chargedInAttachedToken;
             switch (feeCase) {
                 case FIXED_FEE:
-                    parseFixedFee(customFee, protoCustomFee.getFixedFee(), tokenId);
+                    chargedInAttachedToken = parseFixedFee(customFee, protoCustomFee.getFixedFee(), tokenId);
                     break;
                 case FRACTIONAL_FEE:
+                    // only FT can have fractional fee
                     parseFractionalFee(customFee, protoCustomFee.getFractionalFee());
+                    chargedInAttachedToken = true;
+                    break;
+                case ROYALTY_FEE:
+                    // only NFT can have royalty fee, and fee can't be paid in NFT. Thus though royalty fee has a
+                    // fixed fee fallback, the denominating token of the fixed fee can't be the NFT itself
+                    parseRoyaltyFee(customFee, protoCustomFee.getRoyaltyFee(), tokenId);
+                    chargedInAttachedToken = false;
                     break;
                 default:
                     log.error("Invalid CustomFee FeeCase {}", feeCase);
                     throw new InvalidDatasetException(String.format("Invalid CustomFee FeeCase %s", feeCase));
             }
 
-            if (isTokenCreate &&
-                (customFee.getAmountDenominator() != null || tokenId.equals(customFee.getDenominatingTokenId()))) {
-                // if it's from a token create transaction, and it's either a fixed fee charged in the newly created
-                // token or a fractional fee (always charged in the newly created token), services will auto associate
-                // the token and the collector
+            if (isTokenCreate && chargedInAttachedToken) {
+                // if it's from a token create transaction, and the fee is charged in the attached token, the attached
+                // token and the collector should have been auto associated
                 autoAssociatedAccounts.add(collector);
             }
 
@@ -914,13 +937,25 @@ public class EntityRecordItemListener implements RecordItemListener {
         return autoAssociatedAccounts;
     }
 
-    private void parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {
+    /**
+     * Parse protobuf FixedFee object to domain CustomFee object.
+     *
+     * @param customFee the domain CustomFee object
+     * @param fixedFee the protobuf FixedFee object
+     * @param tokenId the attached token id
+     * @return whether the fee is paid in the attached token
+     */
+    private boolean parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {
         customFee.setAmount(fixedFee.getAmount());
 
         if (fixedFee.hasDenominatingTokenId()) {
             EntityId denominatingTokenId = EntityId.of(fixedFee.getDenominatingTokenId());
-            customFee.setDenominatingTokenId(denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId);
+            denominatingTokenId = denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId;
+            customFee.setDenominatingTokenId(denominatingTokenId);
+            return denominatingTokenId.equals(tokenId);
         }
+
+        return false;
     }
 
     private void parseFractionalFee(CustomFee customFee, FractionalFee fractionalFee) {
@@ -933,5 +968,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         customFee.setMinimumAmount(fractionalFee.getMinimumAmount());
+        customFee.setNetOfTransfers(fractionalFee.getNetOfTransfers());
+    }
+
+
+    private void parseRoyaltyFee(CustomFee customFee, RoyaltyFee royaltyFee, EntityId tokenId) {
+        customFee.setRoyaltyNumerator(royaltyFee.getExchangeValueFraction().getNumerator());
+        customFee.setRoyaltyDenominator(royaltyFee.getExchangeValueFraction().getDenominator());
+
+        if (royaltyFee.hasFallbackFee()) {
+            parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
+        }
     }
 }

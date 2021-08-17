@@ -32,7 +32,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // models
-const {CustomFee, Nft, NftTransfer, Transaction} = require('./model');
+const {CustomFee, Nft, NftTransfer, Token, Transaction} = require('./model');
 
 // middleware
 const {httpStatusCodes} = require('./constants');
@@ -180,17 +180,19 @@ const formatTokenRow = (row) => {
  * Creates custom fees object from an array of aggregated json objects
  *
  * @param customFees
+ * @param tokenType
  * @return {{}|*}
  */
-const createCustomFeesObject = (customFees) => {
+const createCustomFeesObject = (customFees, tokenType) => {
   if (!customFees) {
     return null;
   }
 
+  const nonFixedFeesField = tokenType === Token.TYPE.FUNGIBLE_COMMON ? 'fractional_fees' : 'royalty_fees';
   const result = {
     created_timestamp: utils.nsToSecNs(customFees[0].created_timestamp),
     fixed_fees: [],
-    fractional_fees: [],
+    [nonFixedFeesField]: [],
   };
 
   return customFees.reduce((customFeesObject, customFee) => {
@@ -198,7 +200,7 @@ const createCustomFeesObject = (customFees) => {
     const viewModel = new CustomFeeViewModel(model);
 
     if (viewModel.hasFee()) {
-      const fees = viewModel.isFractionalFee() ? customFeesObject.fractional_fees : customFeesObject.fixed_fees;
+      const fees = viewModel.isFixedFee() ? customFeesObject.fixed_fees : customFeesObject[nonFixedFeesField];
       fees.push(viewModel);
     }
 
@@ -212,7 +214,7 @@ const formatTokenInfoRow = (row) => {
     auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
-    custom_fees: createCustomFeesObject(row.custom_fees),
+    custom_fees: createCustomFeesObject(row.custom_fees, row.type),
     decimals: row.decimals,
     expiry_timestamp: row.expiration_timestamp,
     fee_schedule_key: utils.encodeKey(row.fee_schedule_key),

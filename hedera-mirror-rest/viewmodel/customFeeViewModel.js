@@ -32,7 +32,7 @@ class CustomFeeViewModel {
    * @param {CustomFee} customFee
    */
   constructor(customFee) {
-    if (!customFee.amount) {
+    if (!customFee.amount && !customFee.royaltyDenominator) {
       return;
     }
 
@@ -43,15 +43,23 @@ class CustomFeeViewModel {
         denominator: customFee.amountDenominator,
       };
 
-      this.denominating_token_id = EntityId.fromEncodedId(
-        customFee.denominatingTokenId || customFee.tokenId
-      ).toString();
+      this.denominating_token_id = EntityId.fromEncodedId(customFee.tokenId).toString();
       this.maximum = customFee.maximumAmount || undefined;
       this.minimum = customFee.minimumAmount;
+      this.net_of_transfers = customFee.netOfTransfers;
+    } else if (customFee.royaltyDenominator) {
+      // royalty fee
+      this.amount = {
+        numerator: customFee.royaltyNumerator,
+        denominator: customFee.royaltyDenominator,
+      };
+
+      if (customFee.amount) {
+        this.fallback_fee = this._parseFixedFee(customFee);
+      }
     } else {
       // fixed fee
-      this.amount = customFee.amount;
-      this.denominating_token_id = EntityId.fromEncodedId(customFee.denominatingTokenId, true).toString();
+      Object.assign(this, this._parseFixedFee(customFee));
     }
 
     this.collector_account_id = EntityId.fromEncodedId(customFee.collectorAccountId, true).toString();
@@ -61,8 +69,23 @@ class CustomFeeViewModel {
     return !!this.amount;
   }
 
+  isFixedFee() {
+    return this.amount.denominator === undefined;
+  }
+
   isFractionalFee() {
-    return !!this.amount.numerator;
+    return this.amount.denominator !== undefined && this.minimum !== undefined;
+  }
+
+  isRoyaltyFee() {
+    return this.amount.denominator !== undefined && this.minimum === undefined;
+  }
+
+  _parseFixedFee(customFee) {
+    return {
+      amount: customFee.amount,
+      denominating_token_id: EntityId.fromEncodedId(customFee.denominatingTokenId, true).toString(),
+    };
   }
 }
 

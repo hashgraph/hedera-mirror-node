@@ -61,7 +61,7 @@
     "custom_fees": {
       "created_timestamp": "1234567890.000000002",
       "fixed_fees": [],
-      "fractional_fees": []
+      "royalty_fees": []
     }
   }
 }

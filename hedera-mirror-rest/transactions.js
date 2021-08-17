@@ -66,12 +66,21 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
   `;
   const aggregateAssessedCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
-        'amount', ${AssessedCustomFee.AMOUNT},
-        'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
-        'token_id', ${AssessedCustomFee.TOKEN_ID}
+      'amount', ${AssessedCustomFee.AMOUNT},
+      'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+      'effective_payer_account_ids', effective_payer_account_ids,
+      'token_id', ${AssessedCustomFee.TOKEN_ID}
       ))
-    from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
-    where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
+    from (
+      select
+        ${AssessedCustomFee.AMOUNT},
+        ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+        ${AssessedCustomFee.TOKEN_ID},
+        jsonb_agg(${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_ID}) effective_payer_account_ids
+      from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
+      where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
+      group by ${AssessedCustomFee.AMOUNT}, ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.TOKEN_ID}
+    ) aggregated
   `;
   const fields = [
     't.payer_account_id',

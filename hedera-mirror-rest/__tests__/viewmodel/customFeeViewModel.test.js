@@ -41,7 +41,9 @@ describe('CustomFeeViewModel', () => {
 
     expect(actual).toEqual(expected);
     expect(actual.hasFee()).toBeTruthy();
+    expect(actual.isFixedFee()).toBeTruthy();
     expect(actual.isFractionalFee()).toBeFalsy();
+    expect(actual.isRoyaltyFee()).toBeFalsy();
   });
 
   test('fixed fee in token', () => {
@@ -62,7 +64,9 @@ describe('CustomFeeViewModel', () => {
 
     expect(actual).toEqual(expected);
     expect(actual.hasFee()).toBeTruthy();
+    expect(actual.isFixedFee()).toBeTruthy();
     expect(actual.isFractionalFee()).toBeFalsy();
+    expect(actual.isRoyaltyFee()).toBeFalsy();
   });
 
   test('fractional fee', () => {
@@ -90,7 +94,9 @@ describe('CustomFeeViewModel', () => {
 
     expect(actual).toEqual(expected);
     expect(actual.hasFee()).toBeTruthy();
+    expect(actual.isFixedFee()).toBeFalsy();
     expect(actual.isFractionalFee()).toBeTruthy();
+    expect(actual.isRoyaltyFee()).toBeFalsy();
   });
 
   test('fractional fee no maximum', () => {
@@ -116,7 +122,92 @@ describe('CustomFeeViewModel', () => {
 
     expect(actual).toEqual(expected);
     expect(actual.hasFee()).toBeTruthy();
+    expect(actual.isFixedFee()).toBeFalsy();
     expect(actual.isFractionalFee()).toBeTruthy();
+    expect(actual.isRoyaltyFee()).toBeFalsy();
+  });
+
+  test('royalty fee without fallback', () => {
+    const input = new CustomFee({
+      collector_account_id: 8901,
+      created_timestamp: '10',
+      royalty_denominator: 31,
+      royalty_numerator: 15,
+    });
+    const expected = {
+      amount: {
+        numerator: 15,
+        denominator: 31,
+      },
+      collector_account_id: '0.0.8901',
+    };
+
+    const actual = new CustomFeeViewModel(input);
+
+    expect(actual).toEqual(expected);
+    expect(actual.hasFee()).toBeTruthy();
+    expect(actual.isFixedFee()).toBeFalsy();
+    expect(actual.isFractionalFee()).toBeFalsy();
+    expect(actual.isRoyaltyFee()).toBeTruthy();
+  });
+
+  test('royalty fee with fallback in HBAR', () => {
+    const input = new CustomFee({
+      amount: 11,
+      collector_account_id: 8901,
+      created_timestamp: '10',
+      royalty_denominator: 31,
+      royalty_numerator: 15,
+    });
+    const expected = {
+      amount: {
+        numerator: 15,
+        denominator: 31,
+      },
+      collector_account_id: '0.0.8901',
+      fallback_fee: {
+        amount: 11,
+        denominating_token_id: null,
+      },
+    };
+
+    const actual = new CustomFeeViewModel(input);
+
+    expect(actual).toEqual(expected);
+    expect(actual.hasFee()).toBeTruthy();
+    expect(actual.isFixedFee()).toBeFalsy();
+    expect(actual.isFractionalFee()).toBeFalsy();
+    expect(actual.isRoyaltyFee()).toBeTruthy();
+  });
+
+  test('royalty fee with fallback in token', () => {
+    const input = new CustomFee({
+      amount: 11,
+      collector_account_id: 8901,
+      created_timestamp: '10',
+      denominating_token_id: 10012,
+      royalty_denominator: 31,
+      royalty_numerator: 15,
+    });
+    const expected = {
+      amount: {
+        numerator: 15,
+        denominator: 31,
+      },
+      collector_account_id: '0.0.8901',
+      fallback_fee: {
+        amount: 11,
+        denominating_token_id: '0.0.10012',
+      },
+    };
+
+    const actual = new CustomFeeViewModel(input);
+
+    expect(actual).toEqual(expected);
+    expect(actual.hasFee()).toBeTruthy();
+    expect(actual.isFixedFee()).toBeFalsy();
+    expect(actual.isFractionalFee()).toBeFalsy();
+    expect(actual.isRoyaltyFee()).toBeTruthy();
   });
 
   test('empty fee', () => {
