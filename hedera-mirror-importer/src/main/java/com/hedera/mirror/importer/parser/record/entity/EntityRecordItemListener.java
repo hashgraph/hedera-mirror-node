@@ -863,7 +863,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 EntityId tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
 
                 List<AccountID> effectivePayerAccountIdList = protoAssessedCustomFee.getEffectivePayerAccountIdList();
-                if (effectivePayerAccountIdList.size() > 0) {
+                if (!effectivePayerAccountIdList.isEmpty()) {
                     // services 0.17.1 added effective payer accounts
                     for (final AccountID effectivePayerAccountId : effectivePayerAccountIdList) {
                         AssessedCustomFee assessedCustomFee = new AssessedCustomFee();

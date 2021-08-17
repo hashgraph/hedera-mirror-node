@@ -922,7 +922,6 @@ const getNftTransferHistoryRequest = async (req, res) => {
     },
   };
 
-  // const token = await NftTransferService.getTransfer(tokenId, serialNumber);
   if (_.isEmpty(rows)) {
     if (_.isEmpty(filters)) {
       throw new NotFoundError(); // 404 if no transactions are present
