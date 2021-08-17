@@ -1,6 +1,6 @@
 {
   "name": "hedera-mirror-rest",
-  "version": "0.38.0-SNAPSHOT",
+  "version": "0.39.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "main": "server.js",
   "private": true,
@@ -19,9 +19,9 @@
   "dependencies": {
     "@awaitjs/express": "^0.8.0",
     "@godaddy/terminus": "^4.9.0",
-    "@hashgraph/proto": "^1.1.7",
+    "@hashgraph/proto": "^1.1.8",
     "asn1js": "^2.1.1",
-    "aws-sdk": "^2.958.0",
+    "aws-sdk": "^2.968.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -35,7 +35,7 @@
     "mathjs": "^9.4.4",
     "node-fetch": "^2.6.1",
     "pg": "~8.7.1",
-    "prom-client": "^13.1.0",
+    "prom-client": "^13.2.0",
     "qs": "^6.10.1",
     "swagger-stats": "^0.99.2",
     "swagger-ui-express": "^4.1.6"
@@ -71,7 +71,7 @@
     "codecov": "^3.8.3",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^6.15.0",
-    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-import": "^2.24.0",
     "eslint-plugin-jest": "^24.4.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.0",
@@ -88,8 +88,8 @@
     "pretty-quick": "^3.1.1",
     "rewire": "^5.0.0",
     "sinon": "^11.1.2",
-    "supertest": "^6.1.4",
-    "testcontainers": "^7.18.1"
+    "supertest": "^6.1.5",
+    "testcontainers": "^7.19.1"
   },
   "jest": {
     "collectCoverage": true,

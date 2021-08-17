@@ -98,9 +98,8 @@ create index if not exists record_file__prev_hash
     on record_file (prev_hash);
 
 -- schedule
-create unique index if not exists schedule__schedule_id
-    on schedule (schedule_id desc, consensus_timestamp desc);
-
+alter table if exists schedule
+    add primary key (schedule_id);
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
@@ -128,9 +127,7 @@ create unique index if not exists token__id_timestamp
 
 -- token_account
 alter table token_account
-    add primary key (created_timestamp, token_id);
-create unique index if not exists token_account__token_account_timestamp
-    on token_account (token_id, account_id, created_timestamp);
+    add primary key (token_id, account_id, created_timestamp);
 
 -- token_balance
 alter table token_balance

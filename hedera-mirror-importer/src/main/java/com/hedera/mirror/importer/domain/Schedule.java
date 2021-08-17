@@ -28,13 +28,11 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.ScheduleIdConverter;
 
 @Data
 @Entity
 @NoArgsConstructor
 public class Schedule {
-    @Id
     private Long consensusTimestamp;
 
     @Convert(converter = AccountIdConverter.class)
@@ -45,9 +43,17 @@ public class Schedule {
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    @Convert(converter = ScheduleIdConverter.class)
-    private EntityId scheduleId;
+    @Id
+    private Long scheduleId;
 
     @ToString.Exclude
     private byte[] transactionBody;
+
+    public void setScheduleId(EntityId scheduleId) {
+        this.scheduleId = scheduleId != null ? scheduleId.getId() : null;
+    }
+
+    public void setScheduleId(Long scheduleId) {
+        this.scheduleId = scheduleId;
+    }
 }

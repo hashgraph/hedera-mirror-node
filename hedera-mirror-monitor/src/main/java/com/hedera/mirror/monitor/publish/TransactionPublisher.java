@@ -56,8 +56,8 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
+    private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
@@ -186,8 +186,8 @@ public class TransactionPublisher implements AutoCloseable {
             new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
-                    .execute(client, Duration.ofSeconds(10L))
-                    .getReceipt(client, Duration.ofSeconds(10L));
+                    .execute(client, Duration.ofSeconds(30L))
+                    .getReceipt(client, Duration.ofSeconds(30L));
             log.info("Validated node: {}", node);
             valid = true;
         } catch (TimeoutException e) {

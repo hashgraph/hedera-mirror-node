@@ -62,10 +62,10 @@ import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.AbstractEntityListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.NftUpsertQueryGenerator;
@@ -77,7 +77,7 @@ import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 @Named
 @Order(0)
 @ConditionOnEntityRecordParser
-public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
+public class SqlEntityListener extends AbstractEntityListener implements RecordStreamFileListener {
 
     private final DataSource dataSource;
     private final RecordFileRepository recordFileRepository;
@@ -334,7 +334,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
         // schedules could experience multiple updates in a single record file, handle updates in memory for this case
-        schedules.merge(schedule.getScheduleId().getId(), schedule, this::mergeSchedule);
+        schedules.merge(schedule.getScheduleId(), schedule, this::mergeSchedule);
     }
 
     @Override
@@ -370,126 +370,5 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
         transactionSignatures.add(transactionSignature);
-    }
-
-    private Entity mergeEntity(Entity cachedEntity, Entity newEntity) {
-        if (newEntity.getAutoRenewAccountId() != null) {
-            cachedEntity.setAutoRenewAccountId(newEntity.getAutoRenewAccountId());
-        }
-
-        if (newEntity.getAutoRenewPeriod() != null) {
-            cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
-        }
-
-        if (newEntity.getDeleted() != null) {
-            cachedEntity.setDeleted(newEntity.getDeleted());
-        }
-
-        if (newEntity.getExpirationTimestamp() != null) {
-            cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
-        }
-
-        if (newEntity.getKey() != null) {
-            cachedEntity.setKey(newEntity.getKey());
-            cachedEntity.setPublicKey(newEntity.getPublicKey());
-        }
-
-        if (newEntity.getMemo() != null) {
-            cachedEntity.setMemo(newEntity.getMemo());
-        }
-
-        if (newEntity.getModifiedTimestamp() != null) {
-            cachedEntity.setModifiedTimestamp(newEntity.getModifiedTimestamp());
-        }
-
-        if (newEntity.getProxyAccountId() != null) {
-            cachedEntity.setProxyAccountId(newEntity.getProxyAccountId());
-        }
-
-        if (newEntity.getSubmitKey() != null) {
-            cachedEntity.setSubmitKey(newEntity.getSubmitKey());
-        }
-
-        return cachedEntity;
-    }
-
-    private Schedule mergeSchedule(Schedule cachedSchedule, Schedule schedule) {
-        cachedSchedule.setExecutedTimestamp(schedule.getExecutedTimestamp());
-        return cachedSchedule;
-    }
-
-    private Token mergeToken(Token cachedToken, Token newToken) {
-        if (newToken.getFreezeKey() != null) {
-            cachedToken.setFreezeKey(newToken.getFreezeKey());
-        }
-
-        if (newToken.getKycKey() != null) {
-            cachedToken.setKycKey(newToken.getKycKey());
-        }
-
-        if (newToken.getName() != null) {
-            cachedToken.setName(newToken.getName());
-        }
-
-        if (newToken.getSymbol() != null) {
-            cachedToken.setSymbol(newToken.getSymbol());
-        }
-
-        if (newToken.getTotalSupply() != null) {
-            cachedToken.setTotalSupply(newToken.getTotalSupply());
-        }
-
-        if (newToken.getTreasuryAccountId() != null) {
-            cachedToken.setTreasuryAccountId(newToken.getTreasuryAccountId());
-        }
-
-        if (newToken.getSupplyKey() != null) {
-            cachedToken.setSupplyKey(newToken.getSupplyKey());
-        }
-
-        if (newToken.getWipeKey() != null) {
-            cachedToken.setWipeKey(newToken.getWipeKey());
-        }
-
-        cachedToken.setModifiedTimestamp(newToken.getModifiedTimestamp());
-        return cachedToken;
-    }
-
-    private Nft mergeNft(Nft cachedNft, Nft newNft) {
-        if (cachedNft.getCreatedTimestamp() == null && newNft.getCreatedTimestamp() != null) {
-            cachedNft.setCreatedTimestamp(newNft.getCreatedTimestamp());
-        }
-
-        if (newNft.getMetadata() == null) { // only domains generated by NftTransfers should set account
-            cachedNft.setAccountId(newNft.getAccountId() == null ? EntityId.EMPTY : newNft.getAccountId());
-        }
-
-        if (newNft.getDeleted() != null) {
-            cachedNft.setDeleted(newNft.getDeleted());
-        }
-
-        if (newNft.getMetadata() != null) {
-            cachedNft.setMetadata(newNft.getMetadata());
-        }
-
-        cachedNft.setModifiedTimestamp(newNft.getModifiedTimestamp());
-        return cachedNft;
-    }
-
-    private TokenAccount mergeTokenAccount(TokenAccount cachedTokenAccount, TokenAccount newTokenAccount) {
-        if (newTokenAccount.getAssociated() != null) {
-            cachedTokenAccount.setAssociated(newTokenAccount.getAssociated());
-        }
-
-        if (newTokenAccount.getFreezeStatus() != null) {
-            cachedTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
-        }
-
-        if (newTokenAccount.getKycStatus() != null) {
-            cachedTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
-        }
-
-        cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());
-        return cachedTokenAccount;
     }
 }

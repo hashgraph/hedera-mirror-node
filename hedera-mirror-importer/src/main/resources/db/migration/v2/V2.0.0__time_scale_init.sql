@@ -8,11 +8,12 @@ CREATE TYPE token_supply_type AS ENUM ('INFINITE', 'FINITE');
 CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 
 -- assessed_custom_fee
-create table if not exists assessed_custom_fee (
-   amount               bigint not null,
-   collector_account_id bigint not null,
-   consensus_timestamp  bigint not null,
-   token_id             bigint
+create table if not exists assessed_custom_fee
+(
+    amount               bigint not null,
+    collector_account_id bigint not null,
+    consensus_timestamp  bigint not null,
+    token_id             bigint
 );
 comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
 
@@ -66,10 +67,10 @@ comment on table address_book_entry is 'Network address book node entries';
 -- address_book_service_endpoint
 create table if not exists address_book_service_endpoint
 (
-    consensus_timestamp bigint      not null,
-    ip_address_v4       varchar(15) not null,
-    node_id             bigint      not null,
-    port                integer     default -1 not null
+    consensus_timestamp bigint             not null,
+    ip_address_v4       varchar(15)        not null,
+    node_id             bigint             not null,
+    port                integer default -1 not null
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
@@ -115,17 +116,17 @@ create table if not exists entity
     created_timestamp     bigint,
     deleted               boolean,
     expiration_timestamp  bigint,
-    id                    bigint                not null,
+    id                    bigint          not null,
     key                   bytea,
-    memo                  text    default ''    not null,
+    memo                  text default '' not null,
     modified_timestamp    bigint,
-    num                   bigint                not null,
+    num                   bigint          not null,
     proxy_account_id      bigint,
     public_key            character varying,
-    realm                 bigint                not null,
-    shard                 bigint                not null,
+    realm                 bigint          not null,
+    shard                 bigint          not null,
     submit_key            bytea,
-    type                  integer               not null
+    type                  integer         not null
 );
 comment on table entity is 'Network entity with state';
 
@@ -167,24 +168,24 @@ create table if not exists live_hash
 -- nft
 create table if not exists nft
 (
-  account_id            bigint,
-  created_timestamp     bigint,
-  deleted               boolean,
-  modified_timestamp    bigint                  not null,
-  metadata              bytea,
-  serial_number         bigint                  not null,
-  token_id              bigint                  not null
+    account_id         bigint,
+    created_timestamp  bigint,
+    deleted            boolean,
+    modified_timestamp bigint not null,
+    metadata           bytea,
+    serial_number      bigint not null,
+    token_id           bigint not null
 );
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
 -- nft_transfer
 create table if not exists nft_transfer
 (
-  consensus_timestamp   bigint  not null,
-  receiver_account_id   bigint,
-  sender_account_id     bigint,
-  serial_number         bigint  not null,
-  token_id              bigint  not null
+    consensus_timestamp bigint not null,
+    receiver_account_id bigint,
+    sender_account_id   bigint,
+    serial_number       bigint not null,
+    token_id            bigint not null
 );
 comment on table nft_transfer is 'Crypto account nft transfers';
 
@@ -223,12 +224,12 @@ comment on table record_file is 'Network record file stream entries';
 -- schedule
 create table if not exists schedule
 (
-    consensus_timestamp bigint primary key not null,
-    creator_account_id  bigint             not null,
-    executed_timestamp  bigint             null,
-    payer_account_id    bigint             not null,
-    schedule_id         bigint             not null,
-    transaction_body    bytea              not null
+    consensus_timestamp bigint not null,
+    creator_account_id  bigint not null,
+    executed_timestamp  bigint null,
+    payer_account_id    bigint not null,
+    schedule_id         bigint not null,
+    transaction_body    bytea  not null
 );
 comment on table schedule is 'Schedule entity entries';
 
