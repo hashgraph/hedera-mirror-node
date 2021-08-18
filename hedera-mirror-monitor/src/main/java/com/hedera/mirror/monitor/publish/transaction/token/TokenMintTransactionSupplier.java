@@ -62,16 +62,16 @@ public class TokenMintTransactionSupplier implements TransactionSupplier<TokenMi
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node minted test token"));
-        switch (type) {
-            case FUNGIBLE_COMMON:
-                transaction.setAmount(amount);
-                break;
-            case NON_FUNGIBLE_UNIQUE:
-                for (int i = 0; i < amount; i++) {
-                    transaction.addMetadata(!metadata.isEmpty() ? metadata.getBytes(StandardCharsets.UTF_8) : Utility
-                            .generateMessage(metadataSize));
-                }
+
+        if (type == TokenType.NON_FUNGIBLE_UNIQUE) {
+            for (int i = 0; i < amount; i++) {
+                transaction.addMetadata(!metadata.isEmpty() ? metadata.getBytes(StandardCharsets.UTF_8) : Utility
+                        .generateMessage(metadataSize));
+            }
+        } else {
+            transaction.setAmount(amount);
         }
+
         return transaction;
     }
 }

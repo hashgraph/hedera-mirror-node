@@ -42,7 +42,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"))
-                .satisfies(a -> assertThat(a.getTokenSymbol().length()).isEqualTo(5))
+                .satisfies(a -> assertThat(a.getTokenSymbol()).hasSize(5))
                 .satisfies(a -> assertThat(a.getTokenName()).contains("_name"))
                 .returns(null, TokenCreateTransaction::getAdminKey)
                 .returns(null, TokenCreateTransaction::getFeeScheduleKey)

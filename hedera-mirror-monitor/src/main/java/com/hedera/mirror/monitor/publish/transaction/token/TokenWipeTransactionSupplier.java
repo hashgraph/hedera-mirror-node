@@ -63,14 +63,12 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
                 .setTokenId(TokenId.fromString(tokenId))
                 .setTransactionMemo(Utility.getMemo("Mirror node wiped test token"));
 
-        switch (type) {
-            case FUNGIBLE_COMMON:
-                transaction.setAmount(amount);
-                break;
-            case NON_FUNGIBLE_UNIQUE:
-                for (int i = 0; i < amount; i++) {
-                    transaction.addSerial(serialNumber.getAndIncrement());
-                }
+        if (type == TokenType.NON_FUNGIBLE_UNIQUE) {
+            for (int i = 0; i < amount; i++) {
+                transaction.addSerial(serialNumber.getAndIncrement());
+            }
+        } else {
+            transaction.setAmount(amount);
         }
 
         return transaction;
