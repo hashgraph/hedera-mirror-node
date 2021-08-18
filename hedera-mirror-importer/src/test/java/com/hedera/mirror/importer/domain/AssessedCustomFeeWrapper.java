@@ -20,7 +20,10 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.sql.SQLException;
+import java.util.Arrays;
 import lombok.Data;
+import org.postgresql.jdbc.PgArray;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -36,16 +39,16 @@ public class AssessedCustomFeeWrapper {
 
     private final AssessedCustomFee assessedCustomFee;
 
-    public AssessedCustomFeeWrapper(long amount, long collectorAccountId, Long effectivePayerAccountId, Long tokenId,
-                                    long consensusTimestamp) {
+    public AssessedCustomFeeWrapper(long amount, long collectorAccountId, PgArray effectivePayerAccountIds,
+                                    Long tokenId, long consensusTimestamp) throws SQLException {
         assessedCustomFee = new AssessedCustomFee();
         assessedCustomFee.setAmount(amount);
         assessedCustomFee.setId(new AssessedCustomFee.Id(
                 EntityIdEndec.decode(collectorAccountId, EntityTypeEnum.ACCOUNT), consensusTimestamp));
 
-        if (effectivePayerAccountId != null) {
-            assessedCustomFee.setEffectivePayerAccountId(EntityIdEndec.decode(effectivePayerAccountId,
-                    EntityTypeEnum.ACCOUNT));
+        if (effectivePayerAccountIds != null) {
+            Long[] payers = (Long[]) effectivePayerAccountIds.getArray();
+            assessedCustomFee.setEffectivePayerAccountIds(Arrays.asList(payers));
         }
 
         if (tokenId != null) {

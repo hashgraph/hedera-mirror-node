@@ -227,25 +227,28 @@ const addAccount = async (account) => {
 
 const addAssessedCustomFee = async (assessedCustomFee) => {
   assessedCustomFee = {
-    effective_payer_account_ids: [null],
+    effective_payer_account_ids: [],
     ...assessedCustomFee,
   };
   const {amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id} = assessedCustomFee;
+  const effectivePayerAccountIds = [
+    '{',
+    effective_payer_account_ids.map((payer) => EntityId.fromString(payer).getEncodedId()).join(','),
+    '}',
+  ].join('');
 
-  for (const payer of effective_payer_account_ids) {
-    await sqlConnection.query(
-      `insert into
-         assessed_custom_fee (amount, collector_account_id, consensus_timestamp, effective_payer_account_id, token_id)
+  await sqlConnection.query(
+    `insert into
+         assessed_custom_fee (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id)
          values ($1, $2, $3, $4, $5);`,
-      [
-        amount,
-        EntityId.fromString(collector_account_id).getEncodedId(),
-        consensus_timestamp.toString(),
-        EntityId.fromString(payer, 'effectivePayerAccountId', true).getEncodedId(),
-        EntityId.fromString(token_id, 'tokenId', true).getEncodedId(),
-      ]
-    );
-  }
+    [
+      amount,
+      EntityId.fromString(collector_account_id).getEncodedId(),
+      consensus_timestamp.toString(),
+      effectivePayerAccountIds,
+      EntityId.fromString(token_id, 'tokenId', true).getEncodedId(),
+    ]
+  );
 };
 
 const addCustomFee = async (customFee) => {

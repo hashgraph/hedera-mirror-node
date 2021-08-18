@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -56,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
@@ -859,27 +859,15 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
-                AssessedCustomFee.Id id = new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp);
-                EntityId tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
-
-                List<AccountID> effectivePayerAccountIdList = protoAssessedCustomFee.getEffectivePayerAccountIdList();
-                if (!effectivePayerAccountIdList.isEmpty()) {
-                    // services 0.17.1 added effective payer accounts
-                    for (final AccountID effectivePayerAccountId : effectivePayerAccountIdList) {
-                        AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
-                        assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
-                        assessedCustomFee.setEffectivePayerAccountId(EntityId.of(effectivePayerAccountId));
-                        assessedCustomFee.setId(id);
-                        assessedCustomFee.setTokenId(tokenId);
-                        entityListener.onAssessedCustomFee(assessedCustomFee);
-                    }
-                } else {
-                    AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
-                    assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
-                    assessedCustomFee.setId(id);
-                    assessedCustomFee.setTokenId(tokenId);
-                    entityListener.onAssessedCustomFee(assessedCustomFee);
-                }
+                List<EntityId> payerEntityIds = protoAssessedCustomFee.getEffectivePayerAccountIdList().stream()
+                        .map(EntityId::of)
+                        .collect(Collectors.toList());
+                AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
+                assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
+                assessedCustomFee.setEffectivePayerEntityIds(payerEntityIds);
+                assessedCustomFee.setId(new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp));
+                assessedCustomFee.setTokenId(EntityId.of(protoAssessedCustomFee.getTokenId()));
+                entityListener.onAssessedCustomFee(assessedCustomFee);
             }
         }
     }
@@ -970,7 +958,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         customFee.setMinimumAmount(fractionalFee.getMinimumAmount());
         customFee.setNetOfTransfers(fractionalFee.getNetOfTransfers());
     }
-
 
     private void parseRoyaltyFee(CustomFee customFee, RoyaltyFee royaltyFee, EntityId tokenId) {
         customFee.setRoyaltyNumerator(royaltyFee.getExchangeValueFraction().getNumerator());

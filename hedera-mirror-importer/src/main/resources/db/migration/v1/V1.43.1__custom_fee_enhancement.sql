@@ -23,4 +23,7 @@ where amount_denominator is not null;
 
 -- effective payer account id of assessed custom fee
 alter table if exists assessed_custom_fee
-    add effective_payer_account_id bigint;
+    add effective_payer_account_ids bigint[] not null default '{}';
+
+alter table if exists assessed_custom_fee
+    alter column effective_payer_account_ids drop default;

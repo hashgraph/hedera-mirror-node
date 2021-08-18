@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -120,6 +121,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
 
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
         assessedCustomFee2.setAmount(11L);
+        assessedCustomFee2.setEffectivePayerAccountIds(List.of(1002L, 1003L));
         assessedCustomFee2.setId(new AssessedCustomFee.Id(ENTITY_ID, 1031L));
         assessedCustomFee2.setTokenId(TOKEN_ID);
 

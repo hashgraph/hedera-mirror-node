@@ -22,7 +22,11 @@ package com.hedera.mirror.importer.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
@@ -30,9 +34,11 @@ import javax.persistence.Entity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
+import com.hedera.mirror.importer.converter.LongListToStringSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 
 @Data
@@ -40,14 +46,17 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
+    private static final AccountIdConverter CONVERTER = new AccountIdConverter();
+
     @EmbeddedId
     @JsonUnwrapped
     private Id id;
 
     private long amount;
 
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId effectivePayerAccountId;
+    @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
+    @JsonSerialize(using = LongListToStringSerializer.class)
+    private List<Long> effectivePayerAccountIds = Collections.emptyList();
 
     @Convert(converter = TokenIdConverter.class)
     private EntityId tokenId;
@@ -70,5 +79,11 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
         private EntityId collectorAccountId;
 
         private long consensusTimestamp;
+    }
+
+    public void setEffectivePayerEntityIds(List<EntityId> effectivePayerEntityIds) {
+        effectivePayerAccountIds = effectivePayerEntityIds.stream()
+                .map(CONVERTER::convertToDatabaseColumn)
+                .collect(Collectors.toList());
     }
 }

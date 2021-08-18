@@ -553,7 +553,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideAssessedCustomFees")
     void tokenTransfer(String name, List<AssessedCustomFee> assessedCustomFees,
-            List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
+                       List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
         createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
         TokenID tokenID2 = TokenID.newBuilder().setTokenNum(7).build();
@@ -1364,11 +1364,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
         assessedCustomFee1.setAmount(12505L);
+        assessedCustomFee1.setEffectivePayerAccountIds(Collections.emptyList());
         assessedCustomFee1.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
 
         // paid in FEE_DOMAIN_TOKEN_ID
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
         assessedCustomFee2.setAmount(8750L);
+        assessedCustomFee2.setEffectivePayerAccountIds(Collections.emptyList());
         assessedCustomFee2.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
         assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
         List<AssessedCustomFee> assessedCustomFees = List.of(assessedCustomFee1, assessedCustomFee2);
@@ -1389,23 +1391,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR, one effective payer
         AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
         assessedCustomFee3.setAmount(12300L);
-        assessedCustomFee3.setEffectivePayerAccountId(FEE_PAYER_1);
+        assessedCustomFee3.setEffectivePayerEntityIds(List.of(FEE_PAYER_1));
         assessedCustomFee3.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
 
         // paid in FEE_DOMAIN_TOKEN_ID, two effective payers
         AssessedCustomFee assessedCustomFee4 = new AssessedCustomFee();
         assessedCustomFee4.setAmount(8790L);
         assessedCustomFee4.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
-        assessedCustomFee4.setEffectivePayerAccountId(FEE_PAYER_1);
+        assessedCustomFee4.setEffectivePayerEntityIds(List.of(FEE_PAYER_1, FEE_PAYER_2));
         assessedCustomFee4.setTokenId(FEE_DOMAIN_TOKEN_ID);
-
-        AssessedCustomFee assessedCustomFee5 = new AssessedCustomFee();
-        assessedCustomFee5.setAmount(8790L);
-        assessedCustomFee5.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
-        assessedCustomFee5.setEffectivePayerAccountId(FEE_PAYER_2);
-        assessedCustomFee5.setTokenId(FEE_DOMAIN_TOKEN_ID);
-        List<AssessedCustomFee> assessedCustomFeesWithPayers = List.of(assessedCustomFee3, assessedCustomFee4,
-                assessedCustomFee5);
+        List<AssessedCustomFee> assessedCustomFeesWithPayers = List.of(assessedCustomFee3, assessedCustomFee4);
 
         // build the corresponding protobuf assessed custom fee list, with effective payer account ids
         var protoAssessedCustomFee3 = com.hederahashgraph.api.proto.java.AssessedCustomFee.newBuilder()
