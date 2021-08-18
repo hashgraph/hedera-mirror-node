@@ -28,7 +28,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenDeleteTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenDeleteTransactionSupplier implements TransactionSupplier<TokenDeleteTransaction> {
@@ -44,7 +43,6 @@ public class TokenDeleteTransactionSupplier implements TransactionSupplier<Token
 
         return new TokenDeleteTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getMemo("Mirror node deleted test token"));
+                .setTokenId(TokenId.fromString(tokenId));
     }
 }

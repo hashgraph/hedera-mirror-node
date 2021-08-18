@@ -28,7 +28,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TopicDeleteTransaction;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class ConsensusDeleteTopicTransactionSupplier implements TransactionSupplier<TopicDeleteTransaction> {
@@ -44,7 +43,6 @@ public class ConsensusDeleteTopicTransactionSupplier implements TransactionSuppl
 
         return new TopicDeleteTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTopicId(TopicId.fromString(topicId))
-                .setTransactionMemo(Utility.getMemo("Mirror node deleted test topic"));
+                .setTopicId(TopicId.fromString(topicId));
     }
 }

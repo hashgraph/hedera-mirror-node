@@ -49,14 +49,12 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountCreateTransaction get() {
-        String memo = Utility.getMemo("Mirror node created test account");
         return new AccountCreateTransaction()
-                .setAccountMemo(memo)
+                .setAccountMemo(Utility.getMemo("Mirror node created test account"))
                 .setInitialBalance(Hbar.fromTinybars(initialBalance))
                 .setKey(publicKey != null ? PublicKey.fromString(publicKey) : generateKeys())
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setReceiverSignatureRequired(receiverSignatureRequired)
-                .setTransactionMemo(memo);
+                .setReceiverSignatureRequired(receiverSignatureRequired);
     }
 
     private PublicKey generateKeys() {

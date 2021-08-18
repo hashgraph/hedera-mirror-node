@@ -44,11 +44,9 @@ public class ConsensusCreateTopicTransactionSupplier implements TransactionSuppl
 
     @Override
     public TopicCreateTransaction get() {
-        String memo = Utility.getMemo("Mirror node created test topic");
         TopicCreateTransaction topicCreateTransaction = new TopicCreateTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTopicMemo(memo)
-                .setTransactionMemo(memo);
+                .setTopicMemo(Utility.getMemo("Mirror node created test topic"));
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);

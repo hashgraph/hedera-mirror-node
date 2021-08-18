@@ -28,7 +28,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.ScheduleDeleteTransaction;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class ScheduleDeleteTransactionSupplier implements TransactionSupplier<ScheduleDeleteTransaction> {
@@ -42,7 +41,6 @@ public class ScheduleDeleteTransactionSupplier implements TransactionSupplier<Sc
     public ScheduleDeleteTransaction get() {
         return new ScheduleDeleteTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setScheduleId(ScheduleId.fromString(scheduleId))
-                .setTransactionMemo(Utility.getMemo("Mirror node deleted test schedule"));
+                .setScheduleId(ScheduleId.fromString(scheduleId));
     }
 }

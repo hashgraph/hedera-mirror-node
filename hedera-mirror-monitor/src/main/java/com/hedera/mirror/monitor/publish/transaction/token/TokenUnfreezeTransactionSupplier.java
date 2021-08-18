@@ -29,7 +29,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUnfreezeTransaction;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<TokenUnfreezeTransaction> {
@@ -49,7 +48,6 @@ public class TokenUnfreezeTransactionSupplier implements TransactionSupplier<Tok
         return new TokenUnfreezeTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getMemo("Mirror node unfroze test token"));
+                .setTokenId(TokenId.fromString(tokenId));
     }
 }

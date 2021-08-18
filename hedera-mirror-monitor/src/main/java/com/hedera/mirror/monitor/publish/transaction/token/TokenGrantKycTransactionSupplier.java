@@ -29,7 +29,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenGrantKycTransactionSupplier implements TransactionSupplier<TokenGrantKycTransaction> {
@@ -49,7 +48,6 @@ public class TokenGrantKycTransactionSupplier implements TransactionSupplier<Tok
         return new TokenGrantKycTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getMemo("Mirror node granted kyc to test token"));
+                .setTokenId(TokenId.fromString(tokenId));
     }
 }

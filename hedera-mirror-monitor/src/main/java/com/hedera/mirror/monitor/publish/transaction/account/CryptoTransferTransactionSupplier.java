@@ -39,7 +39,6 @@ import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class CryptoTransferTransactionSupplier implements TransactionSupplier<TransferTransaction> {
@@ -94,9 +93,6 @@ public class CryptoTransferTransactionSupplier implements TransactionSupplier<Tr
         if (transferTypes.contains(TOKEN)) {
             addTokenTransfers(transferTransaction, getTransferTokenId(), getRecipientId(), getSenderId());
         }
-
-        transferTransaction
-                .setTransactionMemo(Utility.getMemo("Mirror node created test transfer: " + transferTypes));
 
         return transferTransaction;
     }

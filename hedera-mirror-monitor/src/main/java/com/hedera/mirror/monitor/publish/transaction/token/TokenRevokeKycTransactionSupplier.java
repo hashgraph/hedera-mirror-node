@@ -29,7 +29,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenRevokeKycTransaction;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenRevokeKycTransactionSupplier implements TransactionSupplier<TokenRevokeKycTransaction> {
@@ -49,7 +48,6 @@ public class TokenRevokeKycTransactionSupplier implements TransactionSupplier<To
         return new TokenRevokeKycTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getMemo("Mirror node revoked kyc for test token"));
+                .setTokenId(TokenId.fromString(tokenId));
     }
 }

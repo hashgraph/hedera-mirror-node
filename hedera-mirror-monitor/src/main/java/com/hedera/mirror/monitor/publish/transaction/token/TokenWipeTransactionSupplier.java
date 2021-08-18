@@ -32,7 +32,6 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWipeTransaction> {
@@ -60,8 +59,7 @@ public class TokenWipeTransactionSupplier implements TransactionSupplier<TokenWi
         TokenWipeTransaction transaction = new TokenWipeTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getMemo("Mirror node wiped test token"));
+                .setTokenId(TokenId.fromString(tokenId));
 
         if (type == TokenType.NON_FUNGIBLE_UNIQUE) {
             for (int i = 0; i < amount; i++) {

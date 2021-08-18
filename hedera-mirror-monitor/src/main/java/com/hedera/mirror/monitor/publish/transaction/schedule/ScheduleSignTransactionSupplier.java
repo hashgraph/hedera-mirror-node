@@ -28,7 +28,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.ScheduleSignTransaction;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class ScheduleSignTransactionSupplier implements TransactionSupplier<ScheduleSignTransaction> {
@@ -42,7 +41,6 @@ public class ScheduleSignTransactionSupplier implements TransactionSupplier<Sche
     public ScheduleSignTransaction get() {
         return new ScheduleSignTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setScheduleId(ScheduleId.fromString(scheduleId))
-                .setTransactionMemo(Utility.getMemo("Mirror node signed test schedule"));
+                .setScheduleId(ScheduleId.fromString(scheduleId));
     }
 }
