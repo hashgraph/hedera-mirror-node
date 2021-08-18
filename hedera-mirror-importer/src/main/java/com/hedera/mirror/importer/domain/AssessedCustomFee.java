@@ -46,8 +46,6 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
-    private static final AccountIdConverter CONVERTER = new AccountIdConverter();
-
     @EmbeddedId
     @JsonUnwrapped
     private Id id;
@@ -83,7 +81,7 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
     public void setEffectivePayerEntityIds(List<EntityId> effectivePayerEntityIds) {
         effectivePayerAccountIds = effectivePayerEntityIds.stream()
-                .map(CONVERTER::convertToDatabaseColumn)
+                .map(AccountIdConverter.INSTANCE::convertToDatabaseColumn)
                 .collect(Collectors.toList());
     }
 }

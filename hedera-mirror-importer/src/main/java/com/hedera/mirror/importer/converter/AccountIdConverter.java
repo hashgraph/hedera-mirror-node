@@ -31,6 +31,8 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 @ConfigurationPropertiesBinding
 public class AccountIdConverter extends AbstractEntityIdConverter {
 
+    public static final AccountIdConverter INSTANCE = new AccountIdConverter();
+
     public AccountIdConverter() {
         super(EntityTypeEnum.ACCOUNT);
     }

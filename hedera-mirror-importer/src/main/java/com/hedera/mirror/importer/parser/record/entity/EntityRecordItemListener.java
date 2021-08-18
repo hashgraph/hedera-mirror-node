@@ -859,6 +859,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
+                // the effective payers must also appear in the *transfer lists of this transaction and the
+                // corresponding EntityIds should have been added to EntityListener, so skip it here.
                 List<EntityId> payerEntityIds = protoAssessedCustomFee.getEffectivePayerAccountIdList().stream()
                         .map(EntityId::of)
                         .collect(Collectors.toList());
