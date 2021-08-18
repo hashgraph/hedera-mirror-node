@@ -475,6 +475,102 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenInfo'
+              examples:
+                FungibleToken:
+                  value:
+                    admin_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    auto_renew_account: 0.1.2
+                    auto_renew_period:
+                    created_timestamp: '1234567890.000000001'
+                    decimals: 1000
+                    expiry_timestamp:
+                    freeze_default: false
+                    freeze_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    initial_supply: 1000000
+                    kyc_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    max_supply: 9223372036854776000
+                    modified_timestamp: '1234567890.000000001'
+                    name: Token name
+                    supply_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    supply_type: INFINITE
+                    symbol: ORIGINALRDKSE
+                    token_id: 0.10.1
+                    total_supply: 1000000
+                    treasury_account_id: 0.1.2
+                    type: FUNGIBLE_COMMON
+                    wipe_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    custom_fees:
+                      created_timestamp: '1234567890.000000001'
+                      fixed_fees:
+                        - amount: 100
+                          collector_account_id: 0.1.5
+                          denominating_token_id: 0.10.8
+                      fractional_fees:
+                        - amount:
+                            numerator: 12
+                            denominator: 29
+                          collector_account_id: 0.1.6
+                          denominating_token_id: 0.10.9
+                          maximum: 120
+                          minimum: 30
+                          net_of_transfers: true
+                NonFungibleToken:
+                  value:
+                    admin_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    auto_renew_account: 0.1.2
+                    auto_renew_period:
+                    created_timestamp: '1234567890.000000001'
+                    decimals: 0
+                    expiry_timestamp:
+                    freeze_default: false
+                    freeze_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    initial_supply: 0
+                    kyc_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    max_supply: 9223372036854776000
+                    modified_timestamp: '1234567890.000000001'
+                    name: Token name
+                    supply_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    supply_type: INFINITE
+                    symbol: ORIGINALRDKSE
+                    token_id: 0.10.1
+                    total_supply: 1000000
+                    treasury_account_id: 0.1.2
+                    type: NON_FUNGIBLE_UNIQUE
+                    wipe_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    custom_fees:
+                      created_timestamp: '1234567890.000000001'
+                      fixed_fees:
+                        - amount: 100
+                          collector_account_id: 0.1.5
+                          denominating_token_id: 0.10.6
+                      royalty_fees:
+                        - amount:
+                            numerator: 15
+                            denominator: 37
+                          collector_account_id: 0.1.6
+                          fallback_fee:
+                            amount: 100
+                            denominating_token_id: 0.10.7
         400:
           description: Bad Request
           content:
@@ -799,6 +895,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FractionalFee'
+        royalty_fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoyaltyFee'
     EntityId:
       type: string
       description: "Network entity ID in the format of `shard.realm.num`"
@@ -850,6 +950,31 @@ components:
         minimum:
           type: number
           example: 30
+        net_of_transfers:
+          type: boolean
+          example: true
+    RoyaltyFee:
+      type: object
+      properties:
+        amount:
+          type: object
+          properties:
+            numerator:
+              type: number
+              example: 15
+            denominator:
+              type: number
+              example: 37
+        collector_account_id:
+          $ref: '#/components/schemas/EntityId'
+        fallback_fee:
+          type: object
+          properties:
+            amount:
+              type: number
+              example: 100
+            denominating_token_id:
+              $ref: '#/components/schemas/EntityId'
     Key:
       type: object
       nullable: true
@@ -1285,8 +1410,10 @@ components:
                 type: number
               collector_account_id:
                 $ref: '#/components/schemas/EntityId'
-              payer_account_id:
-                $ref: '#/components/schemas/EntityId'
+              effective_payer_account_ids:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EntityId'
               token_id:
                 $ref: '#/components/schemas/EntityId'
       example:
@@ -1328,7 +1455,9 @@ components:
         assessed_custom_fees:
           - amount: 100
             collector_account_id: 0.0.10
-            payer_account_id: 0.0.8
+            effective_payer_account_ids:
+             - 0.0.8
+             - 0.0.72
             token_id: 0.0.90001
     Transactions:
       type: array

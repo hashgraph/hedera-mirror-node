@@ -54,6 +54,11 @@ class Token {
   static tableName = this.tableAlias;
 
   static TOKEN_ID = `token_id`;
+
+  static TYPE = {
+    FUNGIBLE_COMMON: 'FUNGIBLE_COMMON',
+    NON_FUNGIBLE_UNIQUE: 'NON_FUNGIBLE_UNIQUE',
+  };
 }
 
 module.exports = Token;

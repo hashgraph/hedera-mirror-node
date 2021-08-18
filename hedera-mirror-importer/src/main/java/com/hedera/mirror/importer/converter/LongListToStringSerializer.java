@@ -20,20 +20,19 @@ package com.hedera.mirror.importer.converter;
  * ‍
  */
 
-import javax.inject.Named;
-import javax.persistence.Converter;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import java.io.IOException;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+public class LongListToStringSerializer extends JsonSerializer<List<Long>> {
 
-@Named
-@Converter
-@ConfigurationPropertiesBinding
-public class AccountIdConverter extends AbstractEntityIdConverter {
-
-    public static final AccountIdConverter INSTANCE = new AccountIdConverter();
-
-    public AccountIdConverter() {
-        super(EntityTypeEnum.ACCOUNT);
+    @Override
+    public void serialize(List<Long> longs, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        if (longs != null) {
+            gen.writeString("{" + StringUtils.join(longs, ",") + "}");
+        }
     }
 }
