@@ -92,9 +92,7 @@ public class MirrorDateRangePropertiesProcessor {
         }
 
         if (startDate != null) {
-            if (lastFileInstant == null || lastFileInstant != null && startDate.isAfter(lastFileInstant)) {
-                filterStartDate = startDate;
-            }
+            filterStartDate = max(startDate, lastFileInstant);
         } else {
             if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.DEMO && lastFileInstant == null) {
                 filterStartDate = STARTUP_TIME;
