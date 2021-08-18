@@ -40,11 +40,11 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
         TokenBurnTransaction actual = tokenBurnTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"))
                 .returns(1L, TokenBurnTransaction::getAmount)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenBurnTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenBurnTransaction::getSerials)
-                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"));
     }
 
     @Test
@@ -57,11 +57,11 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
         TokenBurnTransaction actual = tokenBurnTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"))
                 .returns(2L, TokenBurnTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenBurnTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenBurnTransaction::getSerials)
-                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"));
     }
 
     @Test
@@ -75,10 +75,10 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
         TokenBurnTransaction actual = tokenBurnTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"))
                 .returns(0L, TokenBurnTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenBurnTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
-                .returns(Arrays.asList(10L, 11L), TokenBurnTransaction::getSerials);
+                .returns(Arrays.asList(10L, 11L), TokenBurnTransaction::getSerials)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"));
     }
 }

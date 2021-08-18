@@ -37,10 +37,10 @@ class TokenFreezeTransactionSupplierTest extends AbstractTransactionSupplierTest
         TokenFreezeTransaction actual = tokenFreezeTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node froze test token"))
                 .returns(ACCOUNT_ID, TokenFreezeTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenFreezeTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenFreezeTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenFreezeTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node froze test token"));
     }
 
     @Test
@@ -52,9 +52,9 @@ class TokenFreezeTransactionSupplierTest extends AbstractTransactionSupplierTest
         TokenFreezeTransaction actual = tokenFreezeTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node froze test token"))
                 .returns(ACCOUNT_ID, TokenFreezeTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenFreezeTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenFreezeTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenFreezeTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node froze test token"));
     }
 }

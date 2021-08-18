@@ -36,9 +36,9 @@ class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierT
         ScheduleDeleteTransaction actual = scheduleDeleteTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test schedule"))
                 .returns(MAX_TRANSACTION_FEE_HBAR, ScheduleDeleteTransaction::getMaxTransactionFee)
-                .returns(SCHEDULE_ID, ScheduleDeleteTransaction::getScheduleId);
+                .returns(SCHEDULE_ID, ScheduleDeleteTransaction::getScheduleId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test schedule"));
     }
 
     @Test
@@ -49,8 +49,8 @@ class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierT
         ScheduleDeleteTransaction actual = scheduleDeleteTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test schedule"))
                 .returns(ONE_TINYBAR, ScheduleDeleteTransaction::getMaxTransactionFee)
-                .returns(SCHEDULE_ID, ScheduleDeleteTransaction::getScheduleId);
+                .returns(SCHEDULE_ID, ScheduleDeleteTransaction::getScheduleId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test schedule"));
     }
 }

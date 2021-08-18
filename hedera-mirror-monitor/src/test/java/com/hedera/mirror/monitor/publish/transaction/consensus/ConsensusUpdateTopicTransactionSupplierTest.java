@@ -40,21 +40,15 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
         consensusUpdateTopicTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicUpdateTransaction actual = consensusUpdateTopicTransactionSupplier.get();
 
-        TopicUpdateTransaction expected = new TopicUpdateTransaction()
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTopicId(TOPIC_ID)
-                .setTopicMemo(actual.getTopicMemo())
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"))
                 .returns(null, TopicUpdateTransaction::getAdminKey)
                 .returns(null, TopicUpdateTransaction::getAutoRenewAccountId)
                 .returns(null, TopicUpdateTransaction::getAutoRenewPeriod)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicUpdateTransaction::getMaxTransactionFee)
                 .returns(null, TopicUpdateTransaction::getSubmitKey)
-                .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId);
+                .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId)
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"));
     }
 
     @Test
@@ -71,24 +65,14 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
         consensusUpdateTopicTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicUpdateTransaction actual = consensusUpdateTopicTransactionSupplier.get();
 
-        TopicUpdateTransaction expected = new TopicUpdateTransaction()
-                .setAdminKey(key)
-                .setAutoRenewAccountId(AccountId.fromString("0.0.2"))
-                .setAutoRenewPeriod(autoRenewPeriod)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setSubmitKey(key)
-                .setTopicId(TOPIC_ID)
-                .setTopicMemo(actual.getTopicMemo())
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"))
                 .returns(key, TopicUpdateTransaction::getAdminKey)
                 .returns(AccountId.fromString("0.0.2"), TopicUpdateTransaction::getAutoRenewAccountId)
                 .returns(autoRenewPeriod, TopicUpdateTransaction::getAutoRenewPeriod)
                 .returns(ONE_TINYBAR, TopicUpdateTransaction::getMaxTransactionFee)
                 .returns(key, TopicUpdateTransaction::getSubmitKey)
-                .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId);
+                .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId)
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"));
     }
 }

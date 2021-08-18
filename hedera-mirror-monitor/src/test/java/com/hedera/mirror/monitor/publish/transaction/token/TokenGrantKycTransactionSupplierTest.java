@@ -36,17 +36,11 @@ class TokenGrantKycTransactionSupplierTest extends AbstractTransactionSupplierTe
         tokenGrantKycTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenGrantKycTransaction actual = tokenGrantKycTransactionSupplier.get();
 
-        TokenGrantKycTransaction expected = new TokenGrantKycTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node granted kyc to test token"))
                 .returns(ACCOUNT_ID, TokenGrantKycTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenGrantKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node granted kyc to test token"));
     }
 
     @Test
@@ -57,16 +51,10 @@ class TokenGrantKycTransactionSupplierTest extends AbstractTransactionSupplierTe
         tokenGrantKycTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenGrantKycTransaction actual = tokenGrantKycTransactionSupplier.get();
 
-        TokenGrantKycTransaction expected = new TokenGrantKycTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node granted kyc to test token"))
                 .returns(ACCOUNT_ID, TokenGrantKycTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenGrantKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node granted kyc to test token"));
     }
 }

@@ -41,16 +41,11 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
         consensusSubmitMessageTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicMessageSubmitTransaction actual = consensusSubmitMessageTransactionSupplier.get();
 
-        TopicMessageSubmitTransaction expected = new TopicMessageSubmitTransaction()
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setMessage(actual.getMessage())
-                .setTopicId(TOPIC_ID);
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getMessage()).isNotNull())
-                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(256))
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
-                .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
+                .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId)
+                .satisfies(a -> assertThat(a.getMessage()).isNotNull())
+                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(256));
     }
 
     @Test
@@ -62,16 +57,11 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
         consensusSubmitMessageTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicMessageSubmitTransaction actual = consensusSubmitMessageTransactionSupplier.get();
 
-        TopicMessageSubmitTransaction expected = new TopicMessageSubmitTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setMessage(actual.getMessage())
-                .setTopicId(TOPIC_ID);
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getMessage()).isNotNull())
-                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(14))
                 .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
-                .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
+                .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId)
+                .satisfies(a -> assertThat(a.getMessage()).isNotNull())
+                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(14));
     }
 
     @Test
@@ -84,15 +74,10 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
         consensusSubmitMessageTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicMessageSubmitTransaction actual = consensusSubmitMessageTransactionSupplier.get();
 
-        TopicMessageSubmitTransaction expected = new TopicMessageSubmitTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setMessage(message.getBytes(StandardCharsets.UTF_8))
-                .setTopicId(TOPIC_ID);
-
         assertThat(actual)
-                .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
                 .returns(true, a -> Arrays.equals(message.getBytes(StandardCharsets.UTF_8), actual.getMessage()
                         .toByteArray()))
+                .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
                 .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
     }
 }

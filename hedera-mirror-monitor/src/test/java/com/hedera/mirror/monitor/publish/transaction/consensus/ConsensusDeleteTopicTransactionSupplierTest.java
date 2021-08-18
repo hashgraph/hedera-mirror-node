@@ -36,15 +36,10 @@ class ConsensusDeleteTopicTransactionSupplierTest extends AbstractTransactionSup
         consensusDeleteTopicTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicDeleteTransaction actual = consensusDeleteTopicTransactionSupplier.get();
 
-        TopicDeleteTransaction expected = new TopicDeleteTransaction()
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTopicId(TOPIC_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test topic"))
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicDeleteTransaction::getMaxTransactionFee)
-                .returns(TOPIC_ID, TopicDeleteTransaction::getTopicId);
+                .returns(TOPIC_ID, TopicDeleteTransaction::getTopicId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test topic"));
     }
 
     @Test
@@ -55,14 +50,9 @@ class ConsensusDeleteTopicTransactionSupplierTest extends AbstractTransactionSup
         consensusDeleteTopicTransactionSupplier.setTopicId(TOPIC_ID.toString());
         TopicDeleteTransaction actual = consensusDeleteTopicTransactionSupplier.get();
 
-        TopicDeleteTransaction expected = new TopicDeleteTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTopicId(TOPIC_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test topic"))
                 .returns(ONE_TINYBAR, TopicDeleteTransaction::getMaxTransactionFee)
-                .returns(TOPIC_ID, TopicDeleteTransaction::getTopicId);
+                .returns(TOPIC_ID, TopicDeleteTransaction::getTopicId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test topic"));
     }
 }

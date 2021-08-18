@@ -50,8 +50,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
 
         assertThat(actual)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TransferTransaction::getMaxTransactionFee)
-                .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
                 .satisfies(a -> assertThat(a.getHbarTransfers())
                         .returns(ONE_TINYBAR.negated(), map -> map.get(ACCOUNT_ID))
                         .returns(ONE_TINYBAR, map -> map.get(ACCOUNT_ID_2)))
@@ -71,8 +71,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         Hbar transferAmount = Hbar.fromTinybars(10);
         assertThat(actual)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
-                .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
+                .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
                 .satisfies(a -> assertThat(a.getHbarTransfers())
                         .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
                         .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)))
@@ -91,8 +91,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
         assertThat(actual)
-                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getHbarTransfers)
+                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
                 .extracting(TransferTransaction::getTokenTransfers)
@@ -116,8 +116,8 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         TransferTransaction actual = cryptoTransferTransactionSupplier.get();
 
         assertThat(actual)
-                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getHbarTransfers)
+                .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
                 .extracting(TransferTransaction::getTokenNftTransfers)
@@ -157,6 +157,9 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test transfer"))
+                .satisfies(a -> assertThat(a.getHbarTransfers())
+                        .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
+                        .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)))
                 .satisfies(a -> assertThat(a)
                         .extracting(TransferTransaction::getTokenNftTransfers)
                         .returns(1, Map::size)
@@ -173,9 +176,6 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                                 .returns(ACCOUNT_ID_2, transfer -> transfer.receiver)))
                 .satisfies(a -> assertThat(a.getTokenTransfers().get(TOKEN_ID))
                         .returns(-2L, map -> map.get(ACCOUNT_ID))
-                        .returns(2L, map -> map.get(ACCOUNT_ID_2)))
-                .satisfies(a -> assertThat(a.getHbarTransfers())
-                        .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
-                        .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)));
+                        .returns(2L, map -> map.get(ACCOUNT_ID_2)));
     }
 }

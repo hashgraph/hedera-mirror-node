@@ -36,17 +36,11 @@ class TokenRevokeKycTransactionSupplierTest extends AbstractTransactionSupplierT
         tokenRevokeKycTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenRevokeKycTransaction actual = tokenRevokeKycTransactionSupplier.get();
 
-        TokenRevokeKycTransaction expected = new TokenRevokeKycTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node revoked kyc for test token"))
                 .returns(ACCOUNT_ID, TokenRevokeKycTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenRevokeKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node revoked kyc for test token"));
     }
 
     @Test
@@ -57,16 +51,10 @@ class TokenRevokeKycTransactionSupplierTest extends AbstractTransactionSupplierT
         tokenRevokeKycTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenRevokeKycTransaction actual = tokenRevokeKycTransactionSupplier.get();
 
-        TokenRevokeKycTransaction expected = new TokenRevokeKycTransaction()
-                .setAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node revoked kyc for test token"))
                 .returns(ACCOUNT_ID, TokenRevokeKycTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenRevokeKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node revoked kyc for test token"));
     }
 }

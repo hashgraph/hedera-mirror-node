@@ -37,10 +37,11 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
         AccountDeleteTransaction actual = accountDeleteTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"))
+
                 .returns(ACCOUNT_ID, AccountDeleteTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, AccountDeleteTransaction::getMaxTransactionFee)
-                .returns(AccountId.fromString("0.0.2"), AccountDeleteTransaction::getTransferAccountId);
+                .returns(AccountId.fromString("0.0.2"), AccountDeleteTransaction::getTransferAccountId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"));
     }
 
     @Test
@@ -52,9 +53,9 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
         AccountDeleteTransaction actual = accountDeleteTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"))
                 .returns(ACCOUNT_ID, AccountDeleteTransaction::getAccountId)
                 .returns(ONE_TINYBAR, AccountDeleteTransaction::getMaxTransactionFee)
-                .returns(ACCOUNT_ID_2, AccountDeleteTransaction::getTransferAccountId);
+                .returns(ACCOUNT_ID_2, AccountDeleteTransaction::getTransferAccountId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test account"));
     }
 }

@@ -38,10 +38,10 @@ class TokenAssociateTransactionSupplierTest extends AbstractTransactionSupplierT
         TokenAssociateTransaction actual = tokenAssociateTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node associated test token"))
                 .returns(ACCOUNT_ID, TokenAssociateTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenAssociateTransaction::getMaxTransactionFee)
-                .returns(List.of(TOKEN_ID), TokenAssociateTransaction::getTokenIds);
+                .returns(List.of(TOKEN_ID), TokenAssociateTransaction::getTokenIds)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node associated test token"));
     }
 
     @Test
@@ -53,9 +53,9 @@ class TokenAssociateTransactionSupplierTest extends AbstractTransactionSupplierT
         TokenAssociateTransaction actual = tokenAssociateTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node associated test token"))
                 .returns(ACCOUNT_ID, TokenAssociateTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenAssociateTransaction::getMaxTransactionFee)
-                .returns(List.of(TOKEN_ID), TokenAssociateTransaction::getTokenIds);
+                .returns(List.of(TOKEN_ID), TokenAssociateTransaction::getTokenIds)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node associated test token"));
     }
 }

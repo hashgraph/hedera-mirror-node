@@ -35,15 +35,10 @@ class TokenDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenDeleteTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenDeleteTransaction actual = tokenDeleteTransactionSupplier.get();
 
-        TokenDeleteTransaction expected = new TokenDeleteTransaction()
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test token"))
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenDeleteTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test token"));
     }
 
     @Test
@@ -53,14 +48,9 @@ class TokenDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenDeleteTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenDeleteTransaction actual = tokenDeleteTransactionSupplier.get();
 
-        TokenDeleteTransaction expected = new TokenDeleteTransaction()
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setTokenId(TOKEN_ID)
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test token"))
                 .returns(ONE_TINYBAR, TokenDeleteTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId);
+                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId)
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test token"));
     }
 }

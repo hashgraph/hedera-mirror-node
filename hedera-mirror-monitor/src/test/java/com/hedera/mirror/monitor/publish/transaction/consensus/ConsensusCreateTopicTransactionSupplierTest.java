@@ -37,18 +37,13 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
                 new ConsensusCreateTopicTransactionSupplier();
         TopicCreateTransaction actual = consensusCreateTopicTransactionSupplier.get();
 
-        TopicCreateTransaction expected = new TopicCreateTransaction()
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setTopicMemo(actual.getTopicMemo())
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
                 .returns(null, TopicCreateTransaction::getAdminKey)
-                .returns(null, TopicCreateTransaction::getSubmitKey)
                 .returns(null, TopicCreateTransaction::getAutoRenewAccountId)
+                .returns(MAX_TRANSACTION_FEE_HBAR, TopicCreateTransaction::getMaxTransactionFee)
+                .returns(null, TopicCreateTransaction::getSubmitKey)
                 .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test topic"))
-                .returns(MAX_TRANSACTION_FEE_HBAR, TopicCreateTransaction::getMaxTransactionFee);
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test topic"));
     }
 
     @Test
@@ -62,20 +57,13 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
         consensusCreateTopicTransactionSupplier.setMaxTransactionFee(1);
         TopicCreateTransaction actual = consensusCreateTopicTransactionSupplier.get();
 
-        TopicCreateTransaction expected = new TopicCreateTransaction()
-                .setAdminKey(key)
-                .setAutoRenewAccountId(ACCOUNT_ID)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setSubmitKey(key)
-                .setTopicMemo(actual.getTopicMemo())
-                .setTransactionMemo(actual.getTransactionMemo());
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test topic"))
                 .returns(key, TopicCreateTransaction::getAdminKey)
                 .returns(ACCOUNT_ID, TopicCreateTransaction::getAutoRenewAccountId)
                 .returns(ONE_TINYBAR, TopicCreateTransaction::getMaxTransactionFee)
-                .returns(key, TopicCreateTransaction::getSubmitKey);
+                .returns(key, TopicCreateTransaction::getSubmitKey)
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test topic"))
+        ;
     }
 }

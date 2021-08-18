@@ -40,25 +40,25 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
         TokenCreateTransaction actual = tokenCreateTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"))
-                .satisfies(a -> assertThat(a.getTokenSymbol()).hasSize(5))
-                .satisfies(a -> assertThat(a.getTokenName()).contains("_name"))
                 .returns(null, TokenCreateTransaction::getAdminKey)
-                .returns(null, TokenCreateTransaction::getFeeScheduleKey)
-                .returns(null, TokenCreateTransaction::getFreezeKey)
-                .returns(null, TokenCreateTransaction::getKycKey)
-                .returns(null, TokenCreateTransaction::getSupplyKey)
-                .returns(null, TokenCreateTransaction::getWipeKey)
-                .returns(0L, TokenCreateTransaction::getMaxSupply)
                 .returns(ACCOUNT_ID, TokenCreateTransaction::getAutoRenewAccountId)
                 .returns(10, TokenCreateTransaction::getDecimals)
+                .returns(null, TokenCreateTransaction::getFeeScheduleKey)
                 .returns(false, TokenCreateTransaction::getFreezeDefault)
+                .returns(null, TokenCreateTransaction::getFreezeKey)
                 .returns(1000000000L, TokenCreateTransaction::getInitialSupply)
+                .returns(null, TokenCreateTransaction::getKycKey)
+                .returns(0L, TokenCreateTransaction::getMaxSupply)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenCreateTransaction::getMaxTransactionFee)
+                .returns(null, TokenCreateTransaction::getSupplyKey)
                 .returns(TokenSupplyType.INFINITE, TokenCreateTransaction::getSupplyType)
                 .returns(TokenType.FUNGIBLE_COMMON, TokenCreateTransaction::getTokenType)
-                .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId);
+                .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId)
+                .returns(null, TokenCreateTransaction::getWipeKey)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a.getTokenName()).contains("_name"))
+                .satisfies(a -> assertThat(a.getTokenSymbol()).hasSize(5))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"));
     }
 
     @Test
@@ -78,29 +78,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenCreateTransactionSupplier.setType(TokenType.FUNGIBLE_COMMON);
         TokenCreateTransaction actual = tokenCreateTransactionSupplier.get();
 
-        TokenCreateTransaction expected = new TokenCreateTransaction()
-                .setAdminKey(key)
-                .setAutoRenewAccountId(ACCOUNT_ID)
-                .setDecimals(1)
-                .setFreezeDefault(true)
-                .setFreezeKey(key)
-                .setInitialSupply(1)
-                .setKycKey(key)
-                .setMaxSupply(1)
-                .setMaxTransactionFee(ONE_TINYBAR)
-                .setSupplyKey(key)
-                .setSupplyType(TokenSupplyType.FINITE)
-                .setTokenMemo(actual.getTokenMemo())
-                .setTokenName("TEST_name")
-                .setTokenSymbol("TEST")
-                .setTokenType(TokenType.FUNGIBLE_COMMON)
-                .setTransactionMemo(actual.getTransactionMemo())
-                .setTreasuryAccountId(ACCOUNT_ID)
-                .setWipeKey(key);
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"))
                 .returns(key, TokenCreateTransaction::getAdminKey)
                 .returns(ACCOUNT_ID, TokenCreateTransaction::getAutoRenewAccountId)
                 .returns(1, TokenCreateTransaction::getDecimals)
@@ -115,7 +93,9 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns(TokenSupplyType.FINITE, TokenCreateTransaction::getSupplyType)
                 .returns(TokenType.FUNGIBLE_COMMON, TokenCreateTransaction::getTokenType)
                 .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId)
-                .returns(key, TokenCreateTransaction::getWipeKey);
+                .returns(key, TokenCreateTransaction::getWipeKey)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"));
     }
 
     @Test
@@ -127,35 +107,23 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenCreateTransactionSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         TokenCreateTransaction actual = tokenCreateTransactionSupplier.get();
 
-        TokenCreateTransaction expected = new TokenCreateTransaction()
-                .setAutoRenewAccountId(ACCOUNT_ID)
-                .setFreezeDefault(false)
-                .setMaxTransactionFee(MAX_TRANSACTION_FEE_HBAR)
-                .setSupplyType(TokenSupplyType.INFINITE)
-                .setTokenMemo(actual.getTokenMemo())
-                .setTokenName(actual.getTokenName())
-                .setTokenSymbol(actual.getTokenSymbol())
-                .setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                .setTransactionMemo(actual.getTransactionMemo())
-                .setTreasuryAccountId(ACCOUNT_ID);
-
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"))
                 .returns(null, TokenCreateTransaction::getAdminKey)
-                .returns(null, TokenCreateTransaction::getFeeScheduleKey)
-                .returns(null, TokenCreateTransaction::getFreezeKey)
-                .returns(null, TokenCreateTransaction::getKycKey)
-                .returns(null, TokenCreateTransaction::getSupplyKey)
-                .returns(null, TokenCreateTransaction::getWipeKey)
                 .returns(ACCOUNT_ID, TokenCreateTransaction::getAutoRenewAccountId)
                 .returns(0, TokenCreateTransaction::getDecimals)
-                .returns(0L, TokenCreateTransaction::getInitialSupply)
-                .returns(0L, TokenCreateTransaction::getMaxSupply)
+                .returns(null, TokenCreateTransaction::getFeeScheduleKey)
                 .returns(false, TokenCreateTransaction::getFreezeDefault)
+                .returns(null, TokenCreateTransaction::getFreezeKey)
+                .returns(0L, TokenCreateTransaction::getInitialSupply)
+                .returns(null, TokenCreateTransaction::getKycKey)
+                .returns(0L, TokenCreateTransaction::getMaxSupply)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenCreateTransaction::getMaxTransactionFee)
+                .returns(null, TokenCreateTransaction::getSupplyKey)
                 .returns(TokenSupplyType.INFINITE, TokenCreateTransaction::getSupplyType)
                 .returns(TokenType.NON_FUNGIBLE_UNIQUE, TokenCreateTransaction::getTokenType)
-                .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId);
+                .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId)
+                .returns(null, TokenCreateTransaction::getWipeKey)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test token"));
     }
 }

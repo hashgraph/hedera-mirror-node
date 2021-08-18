@@ -41,22 +41,22 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
         TokenUpdateTransaction actual = tokenUpdateTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
+                .returns(null, TokenUpdateTransaction::getAdminKey)
                 .returns(null, TokenUpdateTransaction::getAutoRenewAccountId)
                 .returns(Duration.ofSeconds(8000000), TokenUpdateTransaction::getAutoRenewPeriod)
                 .returns(null, TokenUpdateTransaction::getExpirationTime)
-                .returns(null, TokenUpdateTransaction::getAdminKey)
                 .returns(null, TokenUpdateTransaction::getFeeScheduleKey)
                 .returns(null, TokenUpdateTransaction::getFreezeKey)
                 .returns(null, TokenUpdateTransaction::getKycKey)
-                .returns(null, TokenUpdateTransaction::getSupplyKey)
-                .returns(null, TokenUpdateTransaction::getWipeKey)
-                .returns(null, TokenUpdateTransaction::getTreasuryAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenUpdateTransaction::getMaxTransactionFee)
+                .returns(null, TokenUpdateTransaction::getSupplyKey)
+                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId)
                 .returns("HMNT_name", TokenUpdateTransaction::getTokenName)
                 .returns("HMNT", TokenUpdateTransaction::getTokenSymbol)
-                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId);
+                .returns(null, TokenUpdateTransaction::getTreasuryAccountId)
+                .returns(null, TokenUpdateTransaction::getWipeKey)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"));
     }
 
     @Test
@@ -76,8 +76,6 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
         tokenUpdateTransactionSupplier.setTokenId(TOKEN_ID.toString());
         TokenUpdateTransaction actual = tokenUpdateTransactionSupplier.get();
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
                 .returns(key, TokenUpdateTransaction::getAdminKey)
                 .returns(ACCOUNT_ID, TokenUpdateTransaction::getAutoRenewAccountId)
                 .returns(autoRenewPeriod, TokenUpdateTransaction::getAutoRenewPeriod)
@@ -87,11 +85,13 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns(key, TokenUpdateTransaction::getKycKey)
                 .returns(ONE_TINYBAR, TokenUpdateTransaction::getMaxTransactionFee)
                 .returns(key, TokenUpdateTransaction::getSupplyKey)
+                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId)
                 .returns("TEST_name", TokenUpdateTransaction::getTokenName)
                 .returns("TEST", TokenUpdateTransaction::getTokenSymbol)
-                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId)
                 .returns(ACCOUNT_ID, TokenUpdateTransaction::getTreasuryAccountId)
-                .returns(key, TokenUpdateTransaction::getWipeKey);
+                .returns(key, TokenUpdateTransaction::getWipeKey)
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
+                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"));
     }
 
     @Test
@@ -105,18 +105,18 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
                 .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
                 .returns(null, TokenUpdateTransaction::getAdminKey)
+                .returns(null, TokenUpdateTransaction::getAutoRenewAccountId)
+                .returns(null, TokenUpdateTransaction::getAutoRenewPeriod)
+                .returns(Instant.MAX, TokenUpdateTransaction::getExpirationTime)
                 .returns(null, TokenUpdateTransaction::getFeeScheduleKey)
                 .returns(null, TokenUpdateTransaction::getFreezeKey)
                 .returns(null, TokenUpdateTransaction::getKycKey)
-                .returns(null, TokenUpdateTransaction::getSupplyKey)
-                .returns(null, TokenUpdateTransaction::getWipeKey)
-                .returns(null, TokenUpdateTransaction::getAutoRenewAccountId)
-                .returns(null, TokenUpdateTransaction::getAutoRenewPeriod)
-                .returns(null, TokenUpdateTransaction::getTreasuryAccountId)
-                .returns(Instant.MAX, TokenUpdateTransaction::getExpirationTime)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenUpdateTransaction::getMaxTransactionFee)
+                .returns(null, TokenUpdateTransaction::getSupplyKey)
+                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId)
                 .returns("HMNT_name", TokenUpdateTransaction::getTokenName)
                 .returns("HMNT", TokenUpdateTransaction::getTokenSymbol)
-                .returns(TOKEN_ID, TokenUpdateTransaction::getTokenId);
+                .returns(null, TokenUpdateTransaction::getTreasuryAccountId)
+                .returns(null, TokenUpdateTransaction::getWipeKey);
     }
 }
