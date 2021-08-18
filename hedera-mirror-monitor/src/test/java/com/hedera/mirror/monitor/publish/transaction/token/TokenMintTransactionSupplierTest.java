@@ -43,8 +43,7 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(1L, TokenMintTransaction::getAmount)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenMintTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenMintTransaction::getMetadata)
-                .returns(TOKEN_ID, TokenMintTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"));
+                .returns(TOKEN_ID, TokenMintTransaction::getTokenId);
     }
 
     @Test
@@ -60,8 +59,7 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(2L, TokenMintTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenMintTransaction::getMetadata)
-                .returns(TOKEN_ID, TokenMintTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"));
+                .returns(TOKEN_ID, TokenMintTransaction::getTokenId);
     }
 
     @Test
@@ -78,7 +76,6 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(0L, TokenMintTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenMintTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
                 .extracting(TokenMintTransaction::getMetadata)
                 .returns(2, List::size)
                 .returns(14, metadataList -> metadataList.get(0).length)
@@ -101,7 +98,6 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(0L, TokenMintTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenMintTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node minted test token"))
                 .extracting(TokenMintTransaction::getMetadata)
                 .returns(2, List::size)
                 .returns(metadata.getBytes(StandardCharsets.UTF_8), metadataList -> metadataList.get(0))

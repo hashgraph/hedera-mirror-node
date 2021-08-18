@@ -42,8 +42,7 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(MAX_TRANSACTION_FEE_HBAR, AccountCreateTransaction::getMaxTransactionFee)
                 .returns(false, AccountCreateTransaction::getReceiverSignatureRequired)
                 .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"))
-                .satisfies(a -> assertThat(a.getKey()).isNotNull())
-                .satisfies(a -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test account"));
+                .satisfies(a -> assertThat(a.getKey()).isNotNull());
     }
 
     @Test
@@ -62,7 +61,6 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(key, AccountCreateTransaction::getKey)
                 .returns(ONE_TINYBAR, AccountCreateTransaction::getMaxTransactionFee)
                 .returns(true, AccountCreateTransaction::getReceiverSignatureRequired)
-                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"))
-                .satisfies(a -> assertThat(actual.getTransactionMemo()).contains("Mirror node created test account"));
+                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"));
     }
 }

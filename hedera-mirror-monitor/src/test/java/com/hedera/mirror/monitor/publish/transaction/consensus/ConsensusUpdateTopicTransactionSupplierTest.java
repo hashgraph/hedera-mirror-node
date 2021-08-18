@@ -47,8 +47,7 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicUpdateTransaction::getMaxTransactionFee)
                 .returns(null, TopicUpdateTransaction::getSubmitKey)
                 .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"));
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"));
     }
 
     @Test
@@ -72,7 +71,6 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .returns(ONE_TINYBAR, TopicUpdateTransaction::getMaxTransactionFee)
                 .returns(key, TopicUpdateTransaction::getSubmitKey)
                 .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test topic"));
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"));
     }
 }

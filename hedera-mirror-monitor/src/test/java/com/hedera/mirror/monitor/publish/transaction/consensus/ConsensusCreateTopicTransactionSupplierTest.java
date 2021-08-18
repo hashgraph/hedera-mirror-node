@@ -42,8 +42,7 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .returns(null, TopicCreateTransaction::getAutoRenewAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicCreateTransaction::getMaxTransactionFee)
                 .returns(null, TopicCreateTransaction::getSubmitKey)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test topic"));
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"));
     }
 
     @Test
@@ -62,8 +61,6 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .returns(ACCOUNT_ID, TopicCreateTransaction::getAutoRenewAccountId)
                 .returns(ONE_TINYBAR, TopicCreateTransaction::getMaxTransactionFee)
                 .returns(key, TopicCreateTransaction::getSubmitKey)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node created test topic"))
-        ;
+                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node created test topic"));
     }
 }

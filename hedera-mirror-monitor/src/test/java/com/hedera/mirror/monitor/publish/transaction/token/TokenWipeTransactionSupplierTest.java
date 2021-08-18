@@ -45,8 +45,7 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(1L, TokenWipeTransaction::getAmount)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenWipeTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenWipeTransaction::getSerials)
-                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"));
+                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId);
     }
 
     @Test
@@ -64,8 +63,7 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(2L, TokenWipeTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenWipeTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenWipeTransaction::getSerials)
-                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"));
+                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId);
     }
 
     @Test
@@ -84,7 +82,6 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(0L, TokenWipeTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenWipeTransaction::getMaxTransactionFee)
                 .returns(List.of(10L, 11L), TokenWipeTransaction::getSerials)
-                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node wiped test token"));
+                .returns(TOKEN_ID, TokenWipeTransaction::getTokenId);
     }
 }

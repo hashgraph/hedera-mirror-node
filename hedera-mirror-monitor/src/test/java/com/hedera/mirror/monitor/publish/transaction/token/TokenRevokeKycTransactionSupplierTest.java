@@ -39,8 +39,7 @@ class TokenRevokeKycTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenRevokeKycTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenRevokeKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node revoked kyc for test token"));
+                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId);
     }
 
     @Test
@@ -54,7 +53,6 @@ class TokenRevokeKycTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenRevokeKycTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenRevokeKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node revoked kyc for test token"));
+                .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId);
     }
 }

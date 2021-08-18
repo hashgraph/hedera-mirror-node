@@ -43,8 +43,7 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(1L, TokenBurnTransaction::getAmount)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenBurnTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenBurnTransaction::getSerials)
-                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"));
+                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId);
     }
 
     @Test
@@ -60,8 +59,7 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(2L, TokenBurnTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenBurnTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyList(), TokenBurnTransaction::getSerials)
-                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"));
+                .returns(TOKEN_ID, TokenBurnTransaction::getTokenId);
     }
 
     @Test
@@ -78,7 +76,6 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(0L, TokenBurnTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenBurnTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
-                .returns(Arrays.asList(10L, 11L), TokenBurnTransaction::getSerials)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node burned test token"));
+                .returns(Arrays.asList(10L, 11L), TokenBurnTransaction::getSerials);
     }
 }

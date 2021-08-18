@@ -39,8 +39,7 @@ class TokenUnfreezeTransactionSupplierTest extends AbstractTransactionSupplierTe
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenUnfreezeTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenUnfreezeTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenUnfreezeTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node unfroze test token"));
+                .returns(TOKEN_ID, TokenUnfreezeTransaction::getTokenId);
     }
 
     @Test
@@ -54,7 +53,6 @@ class TokenUnfreezeTransactionSupplierTest extends AbstractTransactionSupplierTe
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenUnfreezeTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenUnfreezeTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenUnfreezeTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node unfroze test token"));
+                .returns(TOKEN_ID, TokenUnfreezeTransaction::getTokenId);
     }
 }

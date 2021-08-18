@@ -37,8 +37,7 @@ class TokenDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest
 
         assertThat(actual)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenDeleteTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test token"));
+                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId);
     }
 
     @Test
@@ -50,7 +49,6 @@ class TokenDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest
 
         assertThat(actual)
                 .returns(ONE_TINYBAR, TokenDeleteTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node deleted test token"));
+                .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId);
     }
 }

@@ -39,8 +39,7 @@ class TokenGrantKycTransactionSupplierTest extends AbstractTransactionSupplierTe
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenGrantKycTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenGrantKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node granted kyc to test token"));
+                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId);
     }
 
     @Test
@@ -54,7 +53,6 @@ class TokenGrantKycTransactionSupplierTest extends AbstractTransactionSupplierTe
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenGrantKycTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenGrantKycTransaction::getMaxTransactionFee)
-                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node granted kyc to test token"));
+                .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId);
     }
 }

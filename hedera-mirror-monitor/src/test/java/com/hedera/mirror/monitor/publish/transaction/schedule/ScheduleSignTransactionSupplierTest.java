@@ -37,8 +37,7 @@ class ScheduleSignTransactionSupplierTest extends AbstractTransactionSupplierTes
 
         assertThat(actual)
                 .returns(MAX_TRANSACTION_FEE_HBAR, ScheduleSignTransaction::getMaxTransactionFee)
-                .returns(SCHEDULE_ID, ScheduleSignTransaction::getScheduleId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node signed test schedule"));
+                .returns(SCHEDULE_ID, ScheduleSignTransaction::getScheduleId);
     }
 
     @Test
@@ -50,7 +49,6 @@ class ScheduleSignTransactionSupplierTest extends AbstractTransactionSupplierTes
 
         assertThat(actual)
                 .returns(ONE_TINYBAR, ScheduleSignTransaction::getMaxTransactionFee)
-                .returns(SCHEDULE_ID, ScheduleSignTransaction::getScheduleId)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node signed test schedule"));
+                .returns(SCHEDULE_ID, ScheduleSignTransaction::getScheduleId);
     }
 }

@@ -41,8 +41,7 @@ class TokenDissociateTransactionSupplierTest extends AbstractTransactionSupplier
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenDissociateTransaction::getAccountId)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TokenDissociateTransaction::getMaxTransactionFee)
-                .returns(List.of(TOKEN_ID), TokenDissociateTransaction::getTokenIds)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node dissociated test token"));
+                .returns(List.of(TOKEN_ID), TokenDissociateTransaction::getTokenIds);
     }
 
     @Test
@@ -57,7 +56,6 @@ class TokenDissociateTransactionSupplierTest extends AbstractTransactionSupplier
         assertThat(actual)
                 .returns(ACCOUNT_ID, TokenDissociateTransaction::getAccountId)
                 .returns(ONE_TINYBAR, TokenDissociateTransaction::getMaxTransactionFee)
-                .returns(List.of(TOKEN_ID), TokenDissociateTransaction::getTokenIds)
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node dissociated test token"));
+                .returns(List.of(TOKEN_ID), TokenDissociateTransaction::getTokenIds);
     }
 }

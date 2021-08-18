@@ -55,8 +55,7 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns("HMNT", TokenUpdateTransaction::getTokenSymbol)
                 .returns(null, TokenUpdateTransaction::getTreasuryAccountId)
                 .returns(null, TokenUpdateTransaction::getWipeKey)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"));
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"));
     }
 
     @Test
@@ -90,8 +89,7 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns("TEST", TokenUpdateTransaction::getTokenSymbol)
                 .returns(ACCOUNT_ID, TokenUpdateTransaction::getTreasuryAccountId)
                 .returns(key, TokenUpdateTransaction::getWipeKey)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"));
+                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"));
     }
 
     @Test
@@ -103,7 +101,6 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
         assertThat(actual)
                 .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
-                .satisfies(a -> assertThat(a.getTransactionMemo()).contains("Mirror node updated test token"))
                 .returns(null, TokenUpdateTransaction::getAdminKey)
                 .returns(null, TokenUpdateTransaction::getAutoRenewAccountId)
                 .returns(null, TokenUpdateTransaction::getAutoRenewPeriod)
