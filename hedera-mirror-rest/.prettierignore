@@ -3,7 +3,6 @@
 charts/**
 coverage/
 docs/
-hedera-mirror-datagenerator/**
 hedera-mirror-grpc/**
 hedera-mirror-importer/**
 hedera-mirror-monitor/**

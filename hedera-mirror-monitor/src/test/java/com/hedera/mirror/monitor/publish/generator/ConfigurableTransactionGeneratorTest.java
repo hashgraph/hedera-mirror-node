@@ -33,12 +33,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.validation.ConstraintViolationException;
+
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishScenarioProperties;

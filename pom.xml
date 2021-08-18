@@ -31,7 +31,6 @@
     </licenses>
 
     <modules>
-        <module>hedera-mirror-datagenerator</module>
         <module>hedera-mirror-grpc</module>
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-monitor</module>

@@ -24,6 +24,8 @@ import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+
 import io.grpc.Server;
 import io.grpc.Status;
 import io.grpc.inprocess.InProcessServerBuilder;
@@ -45,7 +47,6 @@ import org.junit.jupiter.api.Timeout;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.CryptoServiceGrpc;
