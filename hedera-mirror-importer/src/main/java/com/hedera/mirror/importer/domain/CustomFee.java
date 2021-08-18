@@ -58,6 +58,12 @@ public class CustomFee implements Persistable<CustomFee.Id> {
 
     private long minimumAmount;
 
+    private Boolean netOfTransfers;
+
+    private Long royaltyDenominator;
+
+    private Long royaltyNumerator;
+
     @JsonIgnore
     @Override
     public boolean isNew() {

@@ -226,23 +226,53 @@ const addAccount = async (account) => {
 };
 
 const addAssessedCustomFee = async (assessedCustomFee) => {
-  const {amount, collector_account_id, consensus_timestamp, token_id} = assessedCustomFee;
+  assessedCustomFee = {
+    effective_payer_account_ids: [],
+    ...assessedCustomFee,
+  };
+  const {amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id} = assessedCustomFee;
+  const effectivePayerAccountIds = [
+    '{',
+    effective_payer_account_ids.map((payer) => EntityId.fromString(payer).getEncodedId()).join(','),
+    '}',
+  ].join('');
+
   await sqlConnection.query(
-    `insert into assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id)
-     values ($1, $2, $3, $4);`,
+    `insert into
+         assessed_custom_fee (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id)
+         values ($1, $2, $3, $4, $5);`,
     [
       amount,
       EntityId.fromString(collector_account_id).getEncodedId(),
       consensus_timestamp.toString(),
+      effectivePayerAccountIds,
       EntityId.fromString(token_id, 'tokenId', true).getEncodedId(),
     ]
   );
 };
 
 const addCustomFee = async (customFee) => {
+  let netOfTransfers = customFee.net_of_transfers;
+  if (customFee.amount_denominator && netOfTransfers == null) {
+    // set default netOfTransfers for fractional fees
+    netOfTransfers = false;
+  }
+
   await sqlConnection.query(
-    `insert into custom_fee (amount, amount_denominator, collector_account_id, created_timestamp, denominating_token_id, maximum_amount, minimum_amount, token_id)
-     values ($1, $2, $3, $4, $5, $6, $7, $8);`,
+    `insert into custom_fee (
+                        amount,
+                        amount_denominator,
+                        collector_account_id,
+                        created_timestamp,
+                        denominating_token_id,
+                        maximum_amount,
+                        minimum_amount,
+                        net_of_transfers,
+                        royalty_denominator,
+                        royalty_numerator,
+                        token_id
+                        )
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
     [
       customFee.amount || null,
       customFee.amount_denominator || null,
@@ -251,6 +281,9 @@ const addCustomFee = async (customFee) => {
       EntityId.fromString(customFee.denominating_token_id, 'denominatingTokenId', true).getEncodedId(),
       customFee.maximum_amount || null,
       customFee.minimum_amount || '0',
+      netOfTransfers != null ? netOfTransfers : null,
+      customFee.royalty_denominator || null,
+      customFee.royalty_numerator || null,
       EntityId.fromString(customFee.token_id).getEncodedId(),
     ]
   );
@@ -535,6 +568,11 @@ const addToken = async (token) => {
     wipe_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     ...token,
   };
+
+  if (token.type === 'NON_FUNGIBLE_UNIQUE') {
+    token.decimals = 0;
+    token.initial_supply = 0;
+  }
 
   if (!token.modified_timestamp) {
     token.modified_timestamp = token.created_timestamp;

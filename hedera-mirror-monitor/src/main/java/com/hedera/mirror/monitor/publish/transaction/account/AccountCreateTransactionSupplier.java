@@ -49,6 +49,7 @@ public class AccountCreateTransactionSupplier implements TransactionSupplier<Acc
 
     @Override
     public AccountCreateTransaction get() {
+        String memo = Utility.getMemo("Mirror node created test account");
         return new AccountCreateTransaction()
                 .setAccountMemo(Utility.getMemo("Mirror node created test account"))
                 .setInitialBalance(Hbar.fromTinybars(initialBalance))

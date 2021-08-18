@@ -28,6 +28,7 @@ class AssessedCustomFee {
     this.amount = assessedCustomFee.amount;
     this.collectorAccountId = assessedCustomFee.collector_account_id;
     this.consensusTimestamp = assessedCustomFee.consensus_timestamp;
+    this.effectivePayerAccountIds = assessedCustomFee.effective_payer_account_ids;
     this.tokenId = assessedCustomFee.token_id;
   }
 
@@ -40,6 +41,8 @@ class AssessedCustomFee {
   static COLLECTOR_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.COLLECTOR_ACCOUNT_ID}`;
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
   static CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_TIMESTAMP}`;
+  static EFFECTIVE_PAYER_ACCOUNT_IDS = `effective_payer_account_ids`;
+  static EFFECTIVE_PAYER_ACCOUNT_IDS_FULL_NAME = `${this.tableAlias}.${this.EFFECTIVE_PAYER_ACCOUNT_IDS}`;
   static TOKEN_ID = `token_id`;
   static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 }

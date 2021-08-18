@@ -416,16 +416,19 @@ describe('createAssessedCustomFeeList', () => {
       {
         amount: 8,
         collector_account_id: 9901,
+        effective_payer_account_ids: [],
         token_id: null,
       },
       {
         amount: 9,
         collector_account_id: 9901,
+        effective_payer_account_ids: [7000],
         token_id: 10001,
       },
       {
         amount: 29,
         collector_account_id: 9902,
+        effective_payer_account_ids: [7000, 7001],
         token_id: 10002,
       },
     ];
@@ -433,16 +436,19 @@ describe('createAssessedCustomFeeList', () => {
       {
         amount: 8,
         collector_account_id: '0.0.9901',
+        effective_payer_account_ids: [],
         token_id: null,
       },
       {
         amount: 9,
         collector_account_id: '0.0.9901',
+        effective_payer_account_ids: ['0.0.7000'],
         token_id: '0.0.10001',
       },
       {
         amount: 29,
         collector_account_id: '0.0.9902',
+        effective_payer_account_ids: ['0.0.7000', '0.0.7001'],
         token_id: '0.0.10002',
       },
     ];

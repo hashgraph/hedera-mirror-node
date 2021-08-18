@@ -32,7 +32,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // models
-const {CustomFee, Nft, NftTransfer, Transaction} = require('./model');
+const {CustomFee, Nft, NftTransfer, Token, Transaction} = require('./model');
 
 // middleware
 const {httpStatusCodes} = require('./constants');
@@ -180,17 +180,19 @@ const formatTokenRow = (row) => {
  * Creates custom fees object from an array of aggregated json objects
  *
  * @param customFees
+ * @param tokenType
  * @return {{}|*}
  */
-const createCustomFeesObject = (customFees) => {
+const createCustomFeesObject = (customFees, tokenType) => {
   if (!customFees) {
     return null;
   }
 
+  const nonFixedFeesField = tokenType === Token.TYPE.FUNGIBLE_COMMON ? 'fractional_fees' : 'royalty_fees';
   const result = {
     created_timestamp: utils.nsToSecNs(customFees[0].created_timestamp),
     fixed_fees: [],
-    fractional_fees: [],
+    [nonFixedFeesField]: [],
   };
 
   return customFees.reduce((customFeesObject, customFee) => {
@@ -198,7 +200,7 @@ const createCustomFeesObject = (customFees) => {
     const viewModel = new CustomFeeViewModel(model);
 
     if (viewModel.hasFee()) {
-      const fees = viewModel.isFractionalFee() ? customFeesObject.fractional_fees : customFeesObject.fixed_fees;
+      const fees = viewModel.isFixedFee() ? customFeesObject.fixed_fees : customFeesObject[nonFixedFeesField];
       fees.push(viewModel);
     }
 
@@ -212,7 +214,7 @@ const formatTokenInfoRow = (row) => {
     auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
-    custom_fees: createCustomFeesObject(row.custom_fees),
+    custom_fees: createCustomFeesObject(row.custom_fees, row.type),
     decimals: row.decimals,
     expiry_timestamp: row.expiration_timestamp,
     fee_schedule_key: utils.encodeKey(row.fee_schedule_key),
@@ -417,6 +419,9 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
         'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID}::text,
         'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT},
         'minimum_amount', ${CustomFee.MINIMUM_AMOUNT},
+        'net_of_transfers', ${CustomFee.NET_OF_TRANSFERS},
+        'royalty_denominator', ${CustomFee.ROYALTY_DENOMINATOR},
+        'royalty_numerator', ${CustomFee.ROYALTY_NUMERATOR},
         'token_id', ${CustomFee.TOKEN_ID}::text
     ) order by ${CustomFee.AMOUNT}, ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID})
     from ${CustomFee.tableName} ${CustomFee.tableAlias}
@@ -917,7 +922,6 @@ const getNftTransferHistoryRequest = async (req, res) => {
     },
   };
 
-  // const token = await NftTransferService.getTransfer(tokenId, serialNumber);
   if (_.isEmpty(rows)) {
     if (_.isEmpty(filters)) {
       throw new NotFoundError(); // 404 if no transactions are present

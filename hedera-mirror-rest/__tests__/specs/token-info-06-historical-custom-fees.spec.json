@@ -144,7 +144,8 @@
           "collector_account_id": "0.0.8901",
           "denominating_token_id": "0.0.1135",
           "maximum": 980,
-          "minimum": 97
+          "minimum": 97,
+          "net_of_transfers": false
         }
       ]
     }
