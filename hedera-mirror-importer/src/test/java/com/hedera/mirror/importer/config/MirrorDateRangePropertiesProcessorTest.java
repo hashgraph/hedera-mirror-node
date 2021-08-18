@@ -158,6 +158,20 @@ class MirrorDateRangePropertiesProcessorTest {
         assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
 
+    @Test
+    void startDateSetAndDatabaseEmpty() {
+        mirrorProperties.setStartDate(STARTUP_TIME);
+        DateRangeFilter expectedFilter = new DateRangeFilter(mirrorProperties.getStartDate(), null);
+        Instant expectedDate = adjustStartDate(mirrorProperties.getStartDate());
+        for (var downloaderProperties : downloaderPropertiesList) {
+            StreamType streamType = downloaderProperties.getStreamType();
+            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+                    .isEqualTo(streamFile(streamType, expectedDate));
+            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType)).isEqualTo(expectedFilter);
+        }
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(STARTUP_TIME));
+    }
+
     @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
     @ValueSource(longs = {0, 1})
     void startDateNotAfterDatabase(long nanos) {

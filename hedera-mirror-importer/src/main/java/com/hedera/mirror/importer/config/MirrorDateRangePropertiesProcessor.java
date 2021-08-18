@@ -92,7 +92,7 @@ public class MirrorDateRangePropertiesProcessor {
         }
 
         if (startDate != null) {
-            if (lastFileInstant != null && startDate.isAfter(lastFileInstant)) {
+            if (lastFileInstant == null || lastFileInstant != null && startDate.isAfter(lastFileInstant)) {
                 filterStartDate = startDate;
             }
         } else {
