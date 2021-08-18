@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish.transaction.schedule;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import org.junit.jupiter.api.Test;
 
@@ -45,17 +46,18 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
 
                 .returns(null, a -> a.getAdminKey())
-                .returns(MAX_TRANSACTION_FEE_HBAR, a -> a.getMaxTransactionFee())
+                .returns(MAX_TRANSACTION_FEE_HBAR, ScheduleCreateTransaction::getMaxTransactionFee)
                 .returns(1, a -> a.getNodeAccountIds().size())
                 .returns(NODE_ACCOUNT_ID, a -> a.getNodeAccountIds().get(0))
-                .returns(null, a -> a.getPayerAccountId())
+                .returns(null, a -> scheduleCreateTransactionSupplier.getPayerAccountId())
                 .returns(1, a -> a.getSignatures().get(NODE_ACCOUNT_ID).size())
                 .returns(1, a -> a.getTransactionHashPerNode().size())
                 .returns(true, a -> a.getTransactionId().getScheduled())
-                .satisfies(a -> assertThat(a.getScheduleMemo()).contains("Mirror node created test schedule"))
                 .satisfies(a -> assertThat(a.getTransactionHash()).isNotNull())
                 .satisfies(a -> assertThat(a.getTransactionHashPerNode().get(NODE_ACCOUNT_ID)).isNotNull())
-                .satisfies(a -> assertThat(a.getTransactionId().toString()).contains(ACCOUNT_ID.toString()));
+                .satisfies(a -> assertThat(a.getTransactionId().toString()).contains(ACCOUNT_ID.toString()))
+                .extracting(ScheduleCreateTransaction::getScheduleMemo, STRING)
+                .contains("Mirror node created test schedule");
     }
 
     @Test
@@ -77,15 +79,16 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .returns(adminKey, a -> a.getAdminKey())
                 .returns(2, a -> a.getSignatures().get(NODE_ACCOUNT_ID).size())
-                .returns(ONE_TINYBAR, a -> a.getMaxTransactionFee())
+                .returns(ONE_TINYBAR, ScheduleCreateTransaction::getMaxTransactionFee)
                 .returns(1, a -> a.getNodeAccountIds().size())
                 .returns(NODE_ACCOUNT_ID, a -> a.getNodeAccountIds().get(0))
-                .returns(ACCOUNT_ID_2, a -> a.getPayerAccountId())
+                .returns(ACCOUNT_ID_2, ScheduleCreateTransaction::getPayerAccountId)
                 .returns(1, a -> a.getTransactionHashPerNode().size())
                 .returns(true, a -> a.getTransactionId().getScheduled())
-                .satisfies(a -> assertThat(a.getScheduleMemo()).contains("Mirror node created test schedule"))
                 .satisfies(a -> assertThat(a.getTransactionHash()).isNotNull())
                 .satisfies(a -> assertThat(a.getTransactionHashPerNode().get(NODE_ACCOUNT_ID)).isNotNull())
-                .satisfies(a -> assertThat(a.getTransactionId().toString()).contains(ACCOUNT_ID.toString()));
+                .satisfies(a -> assertThat(a.getTransactionId().toString()).contains(ACCOUNT_ID.toString()))
+                .extracting(ScheduleCreateTransaction::getScheduleMemo, STRING)
+                .contains("Mirror node created test schedule");
     }
 }

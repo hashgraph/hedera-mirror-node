@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -45,9 +46,9 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(MAX_TRANSACTION_FEE_HBAR, AccountUpdateTransaction::getMaxTransactionFee)
                 .returns(null, AccountUpdateTransaction::getProxyAccountId)
                 .returns(false, AccountUpdateTransaction::getReceiverSignatureRequired)
-                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node updated test account"))
                 .satisfies(a -> assertThat(a.getExpirationTime()).isNotNull())
-        ;
+                .extracting(AccountUpdateTransaction::getAccountMemo, STRING)
+                .contains("Mirror node updated test account");
     }
 
     @Test
@@ -71,6 +72,7 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(ONE_TINYBAR, AccountUpdateTransaction::getMaxTransactionFee)
                 .returns(ACCOUNT_ID_2, AccountUpdateTransaction::getProxyAccountId)
                 .returns(true, AccountUpdateTransaction::getReceiverSignatureRequired)
-                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node updated test account"));
+                .extracting(AccountUpdateTransaction::getAccountMemo, STRING)
+                .contains("Mirror node updated test account");
     }
 }

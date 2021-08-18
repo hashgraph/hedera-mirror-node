@@ -21,9 +21,9 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import com.google.protobuf.ByteString;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.Hbar;
@@ -44,8 +44,8 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
         assertThat(actual)
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
                 .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId)
-                .satisfies(a -> assertThat(a.getMessage()).isNotNull())
-                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(256));
+                .extracting(a -> a.getMessage().toStringUtf8(), STRING)
+                .hasSize(256);
     }
 
     @Test
@@ -61,7 +61,8 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
                 .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
                 .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId)
                 .satisfies(a -> assertThat(a.getMessage()).isNotNull())
-                .satisfies(a -> assertThat(a.getMessage().size()).isEqualTo(14));
+                .extracting(a -> a.getMessage().toStringUtf8(), STRING)
+                .hasSize(14);
     }
 
     @Test
@@ -75,8 +76,7 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
         TopicMessageSubmitTransaction actual = consensusSubmitMessageTransactionSupplier.get();
 
         assertThat(actual)
-                .returns(true, a -> Arrays.equals(message.getBytes(StandardCharsets.UTF_8), actual.getMessage()
-                        .toByteArray()))
+                .returns(ByteString.copyFromUtf8(message), TopicMessageSubmitTransaction::getMessage)
                 .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
                 .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
     }

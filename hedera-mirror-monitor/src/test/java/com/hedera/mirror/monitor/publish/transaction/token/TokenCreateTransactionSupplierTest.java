@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import org.junit.jupiter.api.Test;
 
@@ -55,9 +56,10 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns(TokenType.FUNGIBLE_COMMON, TokenCreateTransaction::getTokenType)
                 .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId)
                 .returns(null, TokenCreateTransaction::getWipeKey)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"))
                 .satisfies(a -> assertThat(a.getTokenName()).contains("_name"))
-                .satisfies(a -> assertThat(a.getTokenSymbol()).hasSize(5));
+                .satisfies(a -> assertThat(a.getTokenSymbol()).hasSize(5))
+                .extracting(TokenCreateTransaction::getTokenMemo, STRING)
+                .contains("Mirror node created test token");
     }
 
     @Test
@@ -93,7 +95,8 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns(TokenType.FUNGIBLE_COMMON, TokenCreateTransaction::getTokenType)
                 .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId)
                 .returns(key, TokenCreateTransaction::getWipeKey)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"));
+                .extracting(TokenCreateTransaction::getTokenMemo, STRING)
+                .contains("Mirror node created test token");
     }
 
     @Test
@@ -121,6 +124,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns(TokenType.NON_FUNGIBLE_UNIQUE, TokenCreateTransaction::getTokenType)
                 .returns(ACCOUNT_ID, TokenCreateTransaction::getTreasuryAccountId)
                 .returns(null, TokenCreateTransaction::getWipeKey)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node created test token"));
+                .extracting(TokenCreateTransaction::getTokenMemo, STRING)
+                .contains("Mirror node created test token");
     }
 }

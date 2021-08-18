@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,8 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .returns(MAX_TRANSACTION_FEE_HBAR, TopicUpdateTransaction::getMaxTransactionFee)
                 .returns(null, TopicUpdateTransaction::getSubmitKey)
                 .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"));
+                .extracting(TopicUpdateTransaction::getTopicMemo, STRING)
+                .contains("Mirror node updated test topic");
     }
 
     @Test
@@ -71,6 +73,7 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .returns(ONE_TINYBAR, TopicUpdateTransaction::getMaxTransactionFee)
                 .returns(key, TopicUpdateTransaction::getSubmitKey)
                 .returns(TOPIC_ID, TopicUpdateTransaction::getTopicId)
-                .satisfies(a -> assertThat(a.getTopicMemo()).contains("Mirror node updated test topic"));
+                .extracting(TopicUpdateTransaction::getTopicMemo, STRING)
+                .contains("Mirror node updated test topic");
     }
 }

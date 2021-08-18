@@ -24,10 +24,11 @@ import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransf
 import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.NFT;
 import static com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier.TransferType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
+import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
@@ -52,9 +53,10 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .returns(MAX_TRANSACTION_FEE_HBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
-                .satisfies(a -> assertThat(a.getHbarTransfers())
-                        .returns(ONE_TINYBAR.negated(), map -> map.get(ACCOUNT_ID))
-                        .returns(ONE_TINYBAR, map -> map.get(ACCOUNT_ID_2)));
+                .extracting(TransferTransaction::getHbarTransfers, MAP)
+                .hasSize(2)
+                .containsEntry(ACCOUNT_ID, ONE_TINYBAR.negated())
+                .containsEntry(ACCOUNT_ID_2, ONE_TINYBAR);
     }
 
     @Test
@@ -72,9 +74,10 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
-                .satisfies(a -> assertThat(a.getHbarTransfers())
-                        .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
-                        .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)));
+                .extracting(TransferTransaction::getHbarTransfers, MAP)
+                .hasSize(2)
+                .containsEntry(ACCOUNT_ID, transferAmount.negated())
+                .containsEntry(ACCOUNT_ID_2, transferAmount);
     }
 
     @Test
@@ -92,11 +95,12 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .returns(Collections.emptyMap(), TransferTransaction::getHbarTransfers)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenNftTransfers)
-                .extracting(TransferTransaction::getTokenTransfers)
-                .returns(1, Map::size)
-                .satisfies(transfers -> assertThat(transfers.get(TOKEN_ID))
-                        .returns(-10L, map -> map.get(ACCOUNT_ID))
-                        .returns(10L, map -> map.get(ACCOUNT_ID_2)));
+                .extracting(TransferTransaction::getTokenTransfers, MAP)
+                .hasSize(1)
+                .extractingByKey(TOKEN_ID, MAP)
+                .hasSize(2)
+                .containsEntry(ACCOUNT_ID, -10L)
+                .containsEntry(ACCOUNT_ID_2, 10L);
     }
 
     @Test
@@ -116,21 +120,14 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .returns(Collections.emptyMap(), TransferTransaction::getHbarTransfers)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .returns(Collections.emptyMap(), TransferTransaction::getTokenTransfers)
-                .extracting(TransferTransaction::getTokenNftTransfers)
-                .returns(1, Map::size)
-                .extracting(transfers -> transfers.get(TOKEN_ID))
-                .returns(2, List::size)
-                .satisfies(transferList -> assertThat(transferList.get(0))
-                        //TODO Swap these with getters
-                        .returns(10L, transfer -> transfer.serial)
-                        .returns(ACCOUNT_ID, transfer -> transfer.sender)
-                        .returns(ACCOUNT_ID_2, transfer -> transfer.receiver))
-                .satisfies(transferList -> assertThat(transferList.get(1))
-                        .returns(11L, transfer -> transfer.serial)
-                        .returns(ACCOUNT_ID, transfer -> transfer.sender)
-                        .returns(ACCOUNT_ID_2, transfer -> transfer.receiver));
-
-//
+                .extracting(TransferTransaction::getTokenNftTransfers, MAP)
+                .hasSize(1)
+                .extractingByKey(TOKEN_ID, LIST)
+                .hasSize(2)
+                .extracting("serial", "sender", "receiver")
+                .containsExactlyInAnyOrder(
+                        tuple(10L, ACCOUNT_ID, ACCOUNT_ID_2),
+                        tuple(11L, ACCOUNT_ID, ACCOUNT_ID_2));
     }
 
     @Test
@@ -153,24 +150,19 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
         assertThat(actual)
                 .returns(ONE_TINYBAR, TransferTransaction::getMaxTransactionFee)
                 .satisfies(a -> assertThat(a.getHbarTransfers())
-                        .returns(transferAmount.negated(), map -> map.get(ACCOUNT_ID))
-                        .returns(transferAmount, map -> map.get(ACCOUNT_ID_2)))
+                        .containsEntry(ACCOUNT_ID, transferAmount.negated())
+                        .containsEntry(ACCOUNT_ID_2, transferAmount))
                 .satisfies(a -> assertThat(a)
-                        .extracting(TransferTransaction::getTokenNftTransfers)
-                        .returns(1, Map::size)
-                        .extracting(transfers -> transfers.get(nftTokenId))
-                        .returns(2, List::size)
-                        .satisfies(transferList -> assertThat(transferList.get(0))
-                                //TODO Swap these with getters
-                                .returns(10L, transfer -> transfer.serial)
-                                .returns(ACCOUNT_ID, transfer -> transfer.sender)
-                                .returns(ACCOUNT_ID_2, transfer -> transfer.receiver))
-                        .satisfies(transferList -> assertThat(transferList.get(1))
-                                .returns(11L, transfer -> transfer.serial)
-                                .returns(ACCOUNT_ID, transfer -> transfer.sender)
-                                .returns(ACCOUNT_ID_2, transfer -> transfer.receiver)))
-                .satisfies(a -> assertThat(a.getTokenTransfers().get(TOKEN_ID))
-                        .returns(-2L, map -> map.get(ACCOUNT_ID))
-                        .returns(2L, map -> map.get(ACCOUNT_ID_2)));
+                        .extracting(TransferTransaction::getTokenNftTransfers, MAP)
+                        .hasSize(1)
+                        .extractingByKey(nftTokenId, LIST)
+                        .extracting("serial", "sender", "receiver")
+                        .containsExactlyInAnyOrder(
+                                tuple(10L, ACCOUNT_ID, ACCOUNT_ID_2),
+                                tuple(11L, ACCOUNT_ID, ACCOUNT_ID_2)))
+                .extracting(TransferTransaction::getHbarTransfers, MAP)
+                .hasSize(2)
+                .containsEntry(ACCOUNT_ID, transferAmount.negated())
+                .containsEntry(ACCOUNT_ID_2, transferAmount);
     }
 }

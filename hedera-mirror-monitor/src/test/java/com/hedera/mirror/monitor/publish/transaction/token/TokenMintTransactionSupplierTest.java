@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -71,7 +72,6 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
         tokenMintTransactionSupplier.setTokenId(TOKEN_ID.toString());
         tokenMintTransactionSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
         TokenMintTransaction actual = tokenMintTransactionSupplier.get();
-
         assertThat(actual)
                 .returns(0L, TokenMintTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
@@ -98,9 +98,9 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(0L, TokenMintTransaction::getAmount)
                 .returns(ONE_TINYBAR, TokenMintTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenMintTransaction::getTokenId)
-                .extracting(TokenMintTransaction::getMetadata)
-                .returns(2, List::size)
-                .returns(metadata.getBytes(StandardCharsets.UTF_8), metadataList -> metadataList.get(0))
-                .returns(metadata.getBytes(StandardCharsets.UTF_8), metadataList -> metadataList.get(1));
+                .extracting(TokenMintTransaction::getMetadata, LIST)
+                .hasSize(2)
+                .containsExactlyInAnyOrder(metadata.getBytes(StandardCharsets.UTF_8),
+                        metadata.getBytes(StandardCharsets.UTF_8));
     }
 }

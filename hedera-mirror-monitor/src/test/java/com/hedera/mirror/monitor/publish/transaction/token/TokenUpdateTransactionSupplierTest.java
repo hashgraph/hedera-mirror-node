@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish.transaction.token;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -55,7 +56,8 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns("HMNT", TokenUpdateTransaction::getTokenSymbol)
                 .returns(null, TokenUpdateTransaction::getTreasuryAccountId)
                 .returns(null, TokenUpdateTransaction::getWipeKey)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"));
+                .extracting(TokenUpdateTransaction::getTokenMemo, STRING)
+                .contains("Mirror node updated test token");
     }
 
     @Test
@@ -89,7 +91,8 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns("TEST", TokenUpdateTransaction::getTokenSymbol)
                 .returns(ACCOUNT_ID, TokenUpdateTransaction::getTreasuryAccountId)
                 .returns(key, TokenUpdateTransaction::getWipeKey)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"));
+                .extracting(TokenUpdateTransaction::getTokenMemo, STRING)
+                .contains("Mirror node updated test token");
     }
 
     @Test
@@ -100,7 +103,6 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
         TokenUpdateTransaction actual = tokenUpdateTransactionSupplier.get();
 
         assertThat(actual)
-                .satisfies(a -> assertThat(a.getTokenMemo()).contains("Mirror node updated test token"))
                 .returns(null, TokenUpdateTransaction::getAdminKey)
                 .returns(null, TokenUpdateTransaction::getAutoRenewAccountId)
                 .returns(null, TokenUpdateTransaction::getAutoRenewPeriod)
@@ -114,6 +116,8 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns("HMNT_name", TokenUpdateTransaction::getTokenName)
                 .returns("HMNT", TokenUpdateTransaction::getTokenSymbol)
                 .returns(null, TokenUpdateTransaction::getTreasuryAccountId)
-                .returns(null, TokenUpdateTransaction::getWipeKey);
+                .returns(null, TokenUpdateTransaction::getWipeKey)
+                .extracting(TokenUpdateTransaction::getTokenMemo, STRING)
+                .contains("Mirror node updated test token");
     }
 }

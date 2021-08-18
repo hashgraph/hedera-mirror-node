@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish.transaction.account;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import org.junit.jupiter.api.Test;
 
@@ -41,8 +42,9 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(Hbar.fromTinybars(10_000_000), AccountCreateTransaction::getInitialBalance)
                 .returns(MAX_TRANSACTION_FEE_HBAR, AccountCreateTransaction::getMaxTransactionFee)
                 .returns(false, AccountCreateTransaction::getReceiverSignatureRequired)
-                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"))
-                .satisfies(a -> assertThat(a.getKey()).isNotNull());
+                .satisfies(a -> assertThat(a.getKey()).isNotNull())
+                .extracting(AccountCreateTransaction::getAccountMemo, STRING)
+                .contains("Mirror node created test account");
     }
 
     @Test
@@ -61,6 +63,7 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(key, AccountCreateTransaction::getKey)
                 .returns(ONE_TINYBAR, AccountCreateTransaction::getMaxTransactionFee)
                 .returns(true, AccountCreateTransaction::getReceiverSignatureRequired)
-                .satisfies(a -> assertThat(a.getAccountMemo()).contains("Mirror node created test account"));
+                .extracting(AccountCreateTransaction::getAccountMemo, STRING)
+                .contains("Mirror node created test account");
     }
 }
