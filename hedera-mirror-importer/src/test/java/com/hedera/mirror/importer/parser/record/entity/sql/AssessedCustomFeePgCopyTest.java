@@ -47,7 +47,7 @@ class AssessedCustomFeePgCopyTest extends IntegrationTest {
     private static final long FEE_PAYER_1 = 3000L;
     private static final long FEE_PAYER_2 = 3001L;
     private static final EntityId TOKEN_ID_1 = EntityId.of("0.0.5000", EntityTypeEnum.TOKEN);
-    private static final EntityId TOKEN_ID_2 = EntityId.of("0.0.5000", EntityTypeEnum.TOKEN);
+    private static final EntityId TOKEN_ID_2 = EntityId.of("0.0.5001", EntityTypeEnum.TOKEN);
 
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
