@@ -44,9 +44,8 @@ let networkEntityCache = {};
  */
 const getInfoWithRetry = async (networkCall, message) => {
   let retries = config.sdkClient.retryCount;
-  let success = false;
   let latestError = Error('Network item retrieval error');
-  while (retries-- > 0 && !success) {
+  while (retries-- > 0) {
     try {
       return await networkCall();
     } catch (e) {
