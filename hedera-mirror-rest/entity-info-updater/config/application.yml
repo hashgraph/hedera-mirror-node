@@ -20,4 +20,6 @@ hedera:
         nodeId:
         operatorId:
         operatorKey:
+        retryCount: 10
+        retryMsDelay: 1000
         useCache: false

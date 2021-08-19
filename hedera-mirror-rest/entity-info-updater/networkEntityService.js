@@ -37,6 +37,36 @@ let clientConfigured = false;
 let networkEntityCache = {};
 
 /**
+ * Retrieve entity information with retry logic
+ * @param {method} networkCall Entity specific query
+ * @param {String} message Entity identifyng message used for logging
+ * @returns
+ */
+const getInfoWithRetry = async (networkCall, message) => {
+  let retries = config.sdkClient.retryCount;
+  let latestError = Error('Network item retrieval error');
+  while (retries-- > 0) {
+    try {
+      return await networkCall();
+    } catch (e) {
+      if (e.toString().indexOf('INVALID_ACCOUNT_ID') < 0 && e.toString().indexOf('ACCOUNT_DELETED') < 0) {
+        logger.trace(`Error getting ${message} from network, error: ${e}.`);
+        throw e;
+      }
+
+      latestError = e;
+      logger.debug(
+        `Error retreiving ${message} from network, error: ${e}. Retries left ${retries}. Waiting ${config.sdkClient.retryMsDelay} ms before retrying.`
+      );
+      await new Promise((resolve) => setTimeout(resolve, config.sdkClient.retryMsDelay));
+    }
+  }
+
+  logger.debug(`Unable to retrieve ${message}, error: ${e}.`);
+  throw latestError;
+};
+
+/**
  * Get account info from network
  * @param accountId
  * @returns {Promise<AccountInfo>}
@@ -44,21 +74,13 @@ let networkEntityCache = {};
 const getAccountInfo = async (accountId) => {
   logger.trace(`Retrieve account info for ${accountId}`);
   let accountInfo;
-  try {
-    if (config.sdkClient.useCache && networkEntityCache[`${accountId}`] !== undefined) {
-      accountInfo = AccountInfo.fromBytes(Buffer.from(networkEntityCache[accountId.toString()]));
-      logger.trace(`Retrieved ${accountId} from cache`);
-    } else {
-      accountInfo = await new AccountInfoQuery().setAccountId(accountId).execute(client);
-    }
-  } catch (e) {
-    if (e.toString().indexOf('INVALID_ACCOUNT_ID') < 0 && e.toString().indexOf('ACCOUNT_DELETED') < 0) {
-      logger.trace(`Error getting accountInfo ${accountId} from network, error: ${e}.`);
-      throw e;
-    }
-
-    logger.trace(`${accountId} is not present on the network, error: ${e}`);
-    return null;
+  if (config.sdkClient.useCache && networkEntityCache[`${accountId}`] !== undefined) {
+    accountInfo = AccountInfo.fromBytes(Buffer.from(networkEntityCache[accountId.toString()]));
+    logger.trace(`Retrieved ${accountId} from cache`);
+  } else {
+    accountInfo = await getInfoWithRetry(() => {
+      return new AccountInfoQuery().setAccountId(accountId).execute(client);
+    }, `accountInfo: ${accountId}`);
   }
 
   logger.trace(`Retrieved account info from network: ${JSON.stringify(accountInfo)}`);
