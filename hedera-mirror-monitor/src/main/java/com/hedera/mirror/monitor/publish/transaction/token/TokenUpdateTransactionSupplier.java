@@ -63,14 +63,12 @@ public class TokenUpdateTransactionSupplier implements TransactionSupplier<Token
 
     @Override
     public TokenUpdateTransaction get() {
-        String memo = Utility.getMemo("Mirror node updated test token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenMemo(memo)
+                .setTokenMemo(Utility.getMemo("Mirror node updated test token"))
                 .setTokenName(symbol + "_name")
                 .setTokenSymbol(symbol)
-                .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(memo);
+                .setTokenId(TokenId.fromString(tokenId));
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);

@@ -56,12 +56,10 @@ public class ConsensusUpdateTopicTransactionSupplier implements TransactionSuppl
 
     @Override
     public TopicUpdateTransaction get() {
-        String memo = Utility.getMemo("Mirror node updated test topic");
         TopicUpdateTransaction topicUpdateTransaction = new TopicUpdateTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTopicId(TopicId.fromString(topicId))
-                .setTopicMemo(memo)
-                .setTransactionMemo(memo);
+                .setTopicMemo(Utility.getMemo("Mirror node updated test topic"));
 
         if (adminKey != null) {
             PublicKey key = PublicKey.fromString(adminKey);

@@ -28,7 +28,6 @@ import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class AccountDeleteTransactionSupplier implements TransactionSupplier<AccountDeleteTransaction> {
@@ -48,7 +47,6 @@ public class AccountDeleteTransactionSupplier implements TransactionSupplier<Acc
         return new AccountDeleteTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTransactionMemo(Utility.getMemo("Mirror node deleted test account"))
                 .setTransferAccountId(AccountId.fromString(transferAccountId));
     }
 }

@@ -10,7 +10,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 /*-
  * ‌
@@ -50,7 +49,6 @@ public class TokenAssociateTransactionSupplier implements TransactionSupplier<To
         return new TokenAssociateTransaction()
                 .setAccountId(AccountId.fromString(accountId))
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenIds(List.of(TokenId.fromString(tokenId)))
-                .setTransactionMemo(Utility.getMemo("Mirror node associated test token"));
+                .setTokenIds(List.of(TokenId.fromString(tokenId)));
     }
 }

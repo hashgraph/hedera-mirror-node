@@ -30,7 +30,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenDissociateTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenDissociateTransactionSupplier implements TransactionSupplier<TokenDissociateTransaction> {
@@ -50,7 +49,6 @@ public class TokenDissociateTransactionSupplier implements TransactionSupplier<T
         return new TokenDissociateTransaction()
                 .setTokenIds(List.of(TokenId.fromString(tokenId)))
                 .setAccountId(AccountId.fromString(accountId))
-                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTransactionMemo(Utility.getMemo("Mirror node dissociated test token"));
+                .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee));
     }
 }

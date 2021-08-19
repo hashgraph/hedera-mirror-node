@@ -106,13 +106,11 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
         TransactionId transactionId = TransactionId.generate(getOperatorId());
         innerTransaction.setTransactionId(transactionId.setScheduled(true));
 
-        String scheduleMemo = Utility.getMemo("Mirror node created test schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = innerTransaction
                 .schedule()
                 .setMaxTransactionFee(maxTransactionFeeInHbar)
-                .setScheduleMemo(scheduleMemo)
-                .setTransactionId(transactionId)
-                .setTransactionMemo(scheduleMemo);
+                .setScheduleMemo(Utility.getMemo("Mirror node created test schedule"))
+                .setTransactionId(transactionId);
 
         if (adminKey != null) {
             scheduleCreateTransaction.setAdminKey(getAdminPublicKey());

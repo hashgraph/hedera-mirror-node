@@ -31,7 +31,6 @@ import com.hedera.hashgraph.sdk.TokenBurnTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.util.Utility;
 
 @Data
 public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBurnTransaction> {
@@ -55,8 +54,7 @@ public class TokenBurnTransactionSupplier implements TransactionSupplier<TokenBu
 
         TokenBurnTransaction transaction = new TokenBurnTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setTokenId(TokenId.fromString(tokenId))
-                .setTransactionMemo(Utility.getMemo("Mirror node burned test token"));
+                .setTokenId(TokenId.fromString(tokenId));
 
         if (type == TokenType.NON_FUNGIBLE_UNIQUE) {
             for (int i = 0; i < amount; i++) {
