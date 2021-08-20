@@ -65,6 +65,10 @@ class TransactionResultService {
   }
 
   async loadTransactionResults() {
+    if (this.transactionResultToProtoMap.size > 0) {
+      return;
+    }
+
     const transactionTypes = await this.getTransactionResults();
     this.populateTransactionResultMaps(transactionTypes);
   }
@@ -79,18 +83,6 @@ class TransactionResultService {
       throw new InvalidArgumentError(`Transaction type ${transactionResultName.toUpperCase()} not found in db`);
     }
     return type.protoId;
-  }
-
-  getResult(transactionResultId) {
-    if (!_.isNumber(transactionResultId)) {
-      throw new InvalidArgumentError(`Invalid argument ${transactionResultId} is not a number`);
-    }
-
-    const type = this.transactionResultProtoToResultMap.get(transactionResultId);
-    if (type === undefined) {
-      throw new InvalidArgumentError(`Transaction type ${transactionResultId} not found in db`);
-    }
-    return type.result;
   }
 }
 
