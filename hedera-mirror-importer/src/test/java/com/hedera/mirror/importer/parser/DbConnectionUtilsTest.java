@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -47,6 +48,7 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 
 class DbConnectionUtilsTest extends IntegrationTest {
 
@@ -57,6 +59,9 @@ class DbConnectionUtilsTest extends IntegrationTest {
     private Connection connection;
 
     private PgCopy<CryptoTransfer> cryptoTransferPgCopy;
+
+    @Resource
+    private CryptoTransferRepository cryptoTransferRepository;
 
     @Resource
     private DataSource dataSource;
@@ -98,6 +103,9 @@ class DbConnectionUtilsTest extends IntegrationTest {
 
         // cleanup
         DbConnectionUtils.cancelAbortFuture(abortFuture);
+
+        // then
+        assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoTransfers);
     }
 
     @Test
