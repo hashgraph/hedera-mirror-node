@@ -31,7 +31,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 
-import com.hedera.datagenerator.common.Utility;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicMessage;
@@ -39,6 +38,7 @@ import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
+import com.hedera.mirror.monitor.util.Utility;
 
 @Log4j2
 @Named

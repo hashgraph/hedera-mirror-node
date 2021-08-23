@@ -6,7 +6,6 @@ WORKDIR /usr/etc/hedera-mirror-node
 COPY .mvn/ .mvn/
 COPY mvnw .
 COPY pom.xml .
-COPY hedera-mirror-datagenerator/pom.xml hedera-mirror-datagenerator/pom.xml
 COPY hedera-mirror-grpc/pom.xml hedera-mirror-grpc/pom.xml
 COPY hedera-mirror-importer/pom.xml hedera-mirror-importer/pom.xml
 COPY hedera-mirror-monitor/pom.xml hedera-mirror-monitor/pom.xml

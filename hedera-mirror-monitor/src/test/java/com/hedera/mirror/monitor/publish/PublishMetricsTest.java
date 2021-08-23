@@ -22,6 +22,8 @@ package com.hedera.mirror.monitor.publish;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+
 import io.grpc.Status;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -41,7 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
