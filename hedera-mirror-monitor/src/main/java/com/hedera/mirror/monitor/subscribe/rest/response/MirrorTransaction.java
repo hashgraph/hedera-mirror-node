@@ -22,9 +22,11 @@ package com.hedera.mirror.monitor.subscribe.rest.response;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.time.Instant;
+
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+
 import lombok.Data;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.converter.StringToInstantDeserializer;
 
 @Data

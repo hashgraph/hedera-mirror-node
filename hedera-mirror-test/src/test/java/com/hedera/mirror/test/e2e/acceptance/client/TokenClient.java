@@ -22,7 +22,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import javax.inject.Named;
 import lombok.SneakyThrows;
@@ -336,7 +335,6 @@ public class TokenClient extends AbstractNetworkClient {
                 .setAdminKey(publicKey)
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
                 .setAutoRenewPeriod(Duration.ofSeconds(8_000_001L))
-                .setExpirationTime(Instant.now().plus(120, ChronoUnit.DAYS))
                 .setTokenName(newSymbol + "_name")
                 .setSupplyKey(publicKey)
                 .setTokenSymbol(newSymbol)
