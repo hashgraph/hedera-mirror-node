@@ -95,14 +95,11 @@ public class PgCopy<T> {
 
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
-//            setConnectionNetworkTimeout(connection);
             persistItems(items, connection);
             insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
-//        } finally {
-//            clearConnectionNetworkTimeout(connection);
         }
     }
 
@@ -112,29 +109,11 @@ public class PgCopy<T> {
 
         try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
             writer.writeValue(pgCopyOutputStream, items);
-        } catch (Exception ex) {
-            log.error(ex);
-            throw ex;
         } finally {
             if (copyIn.isActive()) {
                 copyIn.cancelCopy();
             }
         }
     }
-
-//    private void setConnectionNetworkTimeout(Connection connection) throws SQLException {
-//        // PGConnection does not need an executor
-//        connection.setNetworkTimeout(null,
-//                (int) properties.getDb().getConnectionNetworkTimeout().toMillis());
-//    }
-
-//    private void clearConnectionNetworkTimeout(Connection connection) {
-//        try {
-//            // PGConnection does not need an executor
-//            connection.setNetworkTimeout(null, 0);
-//        } catch (SQLException e) {
-//            log.error("Error clearing JDBC connection network timeout:", e);
-//        }
-//    }
 }
 
