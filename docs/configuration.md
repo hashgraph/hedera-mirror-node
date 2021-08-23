@@ -252,13 +252,13 @@ Name                                                            | Default    | D
 `hedera.mirror.monitor.publish.scenarios.<name>.enabled`        | true       | Whether this publish scenario is enabled
 `hedera.mirror.monitor.publish.scenarios.<name>.limit`          | 0          | How many transactions to publish before halting. 0 for unlimited
 `hedera.mirror.monitor.publish.scenarios.<name>.logResponse`    | false      | Whether to log the response from HAPI
-`hedera.mirror.monitor.publish.scenarios.<name>.properties`     | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier) associated with this scenario type
+`hedera.mirror.monitor.publish.scenarios.<name>.properties`     | {}         | Key/value pairs used to configure the [`TransactionSupplier`](/hedera-mirror-monitor/src/main/java/com/hedera/mirror/monitor/publish/transaction) associated with this scenario type
 `hedera.mirror.monitor.publish.scenarios.<name>.receiptPercent` | 0.0        | The percentage of receipts to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios.<name>.recordPercent`  | 0.0        | The percentage of records to retrieve from HAPI. Accepts values between 0-1
 `hedera.mirror.monitor.publish.scenarios.<name>.retry.maxAttempts` | 1          | The maximum number of times a scenario transaction will be attempted
 `hedera.mirror.monitor.publish.scenarios.<name>.timeout`        | 12s        | How long to wait for the transaction result
 `hedera.mirror.monitor.publish.scenarios.<name>.tps`            | 1.0        | The rate at which transactions will publish
-`hedera.mirror.monitor.publish.scenarios.<name>.type`           |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-datagenerator/src/main/java/com/hedera/datagenerator/sdk/supplier/TransactionType.java) enum for a list of possible values
+`hedera.mirror.monitor.publish.scenarios.<name>.type`           |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-monitor/src/main/java/com/hedera/mirror/monitor/publish/transaction/TransactionType.java) enum for a list of possible values
 `hedera.mirror.monitor.publish.statusFrequency`                 | 10s        | How often to log publishing statistics
 `hedera.mirror.monitor.publish.warmupPeriod`                    | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
 `hedera.mirror.monitor.subscribe.clients`                       | 1          | How many SDK clients should be created to subscribe to mirror node APIs. Clients will be used in a round-robin fashion
