@@ -69,7 +69,7 @@
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
-        <jib.version>3.1.2</jib.version>
+        <jib.version>3.1.4</jib.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.0</msgpack.version>
         <protobuf.version>3.17.3</protobuf.version>
