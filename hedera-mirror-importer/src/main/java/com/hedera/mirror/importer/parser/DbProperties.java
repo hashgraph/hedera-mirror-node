@@ -32,10 +32,10 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class DbProperties {
 
-    @DurationMin(seconds = 10)
+    @DurationMin(seconds = 4)
     @DurationUnit(ChronoUnit.SECONDS)
     @NotNull
-    private Duration pgCopyTimeout = Duration.ofSeconds(10);
+    private Duration pgCopyTimeout = Duration.ofSeconds(4);
 
     @DurationMin(seconds = 30)
     @DurationUnit(ChronoUnit.SECONDS)
