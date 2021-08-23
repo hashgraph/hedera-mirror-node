@@ -19,7 +19,7 @@
   "dependencies": {
     "@awaitjs/express": "^0.8.0",
     "@godaddy/terminus": "^4.9.0",
-    "@hashgraph/proto": "^1.1.8",
+    "@hashgraph/proto": "^1.1.9",
     "asn1js": "^2.1.1",
     "aws-sdk": "^2.968.0",
     "body-parser": "^1.19.0",
@@ -88,7 +88,7 @@
     "pretty-quick": "^3.1.1",
     "rewire": "^5.0.0",
     "sinon": "^11.1.2",
-    "supertest": "^6.1.5",
+    "supertest": "^6.1.6",
     "testcontainers": "^7.19.1"
   },
   "jest": {
