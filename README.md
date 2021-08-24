@@ -59,3 +59,11 @@ Simply install sealed secrets, restore the backed up private key then install Fl
 5. `kubectl scale -n flux-system --replicas=1 deployment sealed-secrets`
 6. Install [Flux](#flux-v2)
 
+## Testing
+
+minikube start
+kubectl create ns test
+flux install
+flux create source helm hedera-mirror-node --url=https://hashgraph.github.io/hedera-mirror-node/charts -n test
+flux create helmrelease mirror -n test --source=HelmRepository/hedera-mirror-node --chart=hedera-mirror
+
