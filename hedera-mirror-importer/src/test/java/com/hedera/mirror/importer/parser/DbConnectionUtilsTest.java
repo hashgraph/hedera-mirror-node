@@ -20,25 +20,21 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.util.concurrent.testing.TestingExecutors;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -48,38 +44,22 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 
 class DbConnectionUtilsTest extends IntegrationTest {
-
-    private static final Duration TIMEOUT = Duration.ofMillis(200);
-
-    private static ScheduledExecutorService executor;
 
     private Connection connection;
 
     private PgCopy<CryptoTransfer> cryptoTransferPgCopy;
 
     @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
-
-    @Resource
     private DataSource dataSource;
+
+    private ScheduledExecutorService executor;
 
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @Resource
     private RecordParserProperties parserProperties;
-
-    @BeforeAll
-    static void beforeAll() {
-        executor = Executors.newSingleThreadScheduledExecutor();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        executor.shutdown();
-    }
 
     @BeforeEach
     void setUp() throws SQLException {
@@ -90,33 +70,18 @@ class DbConnectionUtilsTest extends IntegrationTest {
     @AfterEach
     void tearDown() {
         DataSourceUtils.releaseConnection(connection, dataSource);
+        executor.shutdown();
     }
 
     @Test
-    void success() {
+    void timeout() {
         // given
         List<CryptoTransfer> cryptoTransfers = cryptoTransfers();
-        Future<Void> abortFuture = DbConnectionUtils.scheduleAbort(connection, executor, TIMEOUT);
-
-        // when
-        cryptoTransferPgCopy.copy(cryptoTransfers, connection);
-
-        // cleanup
-        DbConnectionUtils.cancelAbortFuture(abortFuture);
-
-        // then
-        assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoTransfers);
-    }
-
-    @Test
-    void timeout() throws InterruptedException {
-        // given
-        List<CryptoTransfer> cryptoTransfers = cryptoTransfers();
-        DbConnectionUtils.scheduleAbort(connection, executor, TIMEOUT);
+        executor = TestingExecutors.sameThreadScheduledExecutor();
+        DbConnectionUtils.scheduleAbort(connection, executor, Duration.ofMillis(100));
 
         // when, then
-        Thread.sleep(TIMEOUT.toMillis());
-        assertThrows(Throwable.class, () -> cryptoTransferPgCopy.copy(cryptoTransfers, connection));
+        assertThrows(Exception.class, () -> cryptoTransferPgCopy.copy(cryptoTransfers, connection));
     }
 
     private List<CryptoTransfer> cryptoTransfers() {
