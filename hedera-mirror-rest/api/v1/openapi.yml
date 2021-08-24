@@ -17,12 +17,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  accounts:
-                    $ref: '#/components/schemas/Accounts'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/AccountsResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -72,16 +67,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  timestamp:
-                    $ref: '#/components/schemas/Timestamp'
-                  balances:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AccountBalance'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/BalancesResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -102,12 +88,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  schedules:
-                    $ref: '#/components/schemas/Schedules'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/SchedulesResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -158,12 +139,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    $ref: '#/components/schemas/Transactions'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TransactionsResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -188,10 +164,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    $ref: '#/components/schemas/Transactions'
+                $ref: '#/components/schemas/TransactionByIdResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -219,10 +192,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    $ref: '#/components/schemas/StateProofFiles'
+                $ref: '#/components/schemas/StateProofResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -257,12 +227,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  messages:
-                    $ref: '#/components/schemas/TopicMessages'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TopicMessagesResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -289,12 +254,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  messages:
-                    $ref: '#/components/schemas/TopicMessages'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TopicMessagesResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -346,12 +306,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  tokens:
-                    $ref: '#/components/schemas/Tokens'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TokensResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -493,14 +448,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  timestamp:
-                    $ref: '#/components/schemas/Timestamp'
-                  balances:
-                    $ref: '#/components/schemas/TokenDistribution'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TokenBalancesResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -602,7 +550,7 @@ tags:
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#transactions
   - name: topics
-    description: The topics object represents the information associated with a topic enitty and returns topic messages information.
+    description: The topics object represents the information associated with a topic entity and returns topic messages information.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#topic-messages
   - name: tokens
@@ -637,6 +585,73 @@ servers:
         enum: [ mainnet, previewnet, testnet ]
 components:
   schemas:
+    # API call responses.
+    AccountsResponse:
+      type: object
+      properties:
+        accounts:
+          $ref: '#/components/schemas/Accounts'
+        links:
+          $ref: '#/components/schemas/Links'
+    BalancesResponse:
+      type: object
+      properties:
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountBalance'
+        links:
+          $ref: '#/components/schemas/Links'
+    SchedulesResponse:
+      type: object
+      properties:
+        schedules:
+          $ref: '#/components/schemas/Schedules'
+        links:
+          $ref: '#/components/schemas/Links'
+    StateProofResponse:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/StateProofFiles'
+    TokenBalancesResponse:
+      type: object
+      properties:
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        balances:
+          $ref: '#/components/schemas/TokenDistribution'
+        links:
+          $ref: '#/components/schemas/Links'
+    TokensResponse:
+      type: object
+      properties:
+        tokens:
+          $ref: '#/components/schemas/Tokens'
+        links:
+          $ref: '#/components/schemas/Links'
+    TopicMessagesResponse:
+      type: object
+      properties:
+        messages:
+          $ref: '#/components/schemas/TopicMessages'
+        links:
+          $ref: '#/components/schemas/Links'
+    TransactionByIdResponse:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/Transactions'
+    TransactionsResponse:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/Transactions'
+        links:
+          $ref: '#/components/schemas/Links'
+    # API objects.
     AccountInfo:
       type: object
       required:
@@ -984,9 +999,6 @@ components:
             0.0.6:
               type: string
               format: byte
-          additionalProperties:
-            type: string
-            format: byte
       example:
         record_file: YzNkOTg3Yzg3NDI5NGViOTViMmRmOWZkMzZiMDY1NjYyMzMxNTc2OWFmMmVmMzQ0YzM1ODY4NzgwMTAyYjVjMA==
         address_books:
