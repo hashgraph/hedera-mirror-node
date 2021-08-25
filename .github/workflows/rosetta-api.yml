@@ -92,7 +92,8 @@ jobs:
         run: ./scripts/validation/get-genesis-balance.sh testnet
 
       - name: Run Rosetta CLI Validation
-        run: ./scripts/validation/run-validation.sh testnet data
+        working-directory: ./hedera-mirror-rosetta/scripts/validation
+        run: ./run-validation.sh testnet data
 
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}
