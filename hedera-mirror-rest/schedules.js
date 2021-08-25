@@ -35,12 +35,16 @@ const scheduleSelectFields = [
   's.payer_account_id',
   's.schedule_id',
   's.transaction_body',
-  `json_agg(
-    json_build_object(
-      'consensus_timestamp', ts.consensus_timestamp::text,
-      'public_key_prefix', encode(ts.public_key_prefix, 'base64'),
-      'signature', encode(ts.signature, 'base64')
-    ) order by ts.consensus_timestamp
+  `(
+    select json_agg(
+      json_build_object(
+        'consensus_timestamp', ts.consensus_timestamp::text,
+        'public_key_prefix', encode(ts.public_key_prefix, 'base64'),
+        'signature', encode(ts.signature, 'base64')
+      ) order by ts.consensus_timestamp
+    )
+    from transaction_signature ts
+    where ts.entity_id = s.schedule_id
   ) as signatures`,
 ];
 
@@ -57,20 +61,12 @@ const filterColumnMap = {
 };
 
 const entityIdJoinQuery = 'join entity e on e.id = s.schedule_id';
-const groupByQuery = 'group by e.key, e.memo, s.consensus_timestamp, s.schedule_id';
 const scheduleIdMatchQuery = 'where s.schedule_id = $1';
 const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
 const scheduleOrderQuery = (order) => `order by s.schedule_id ${order}`;
 const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
-const signatureJoinQuery = 'left join transaction_signature ts on ts.entity_id = s.schedule_id';
 
-const getScheduleByIdQuery = [
-  scheduleSelectQuery,
-  entityIdJoinQuery,
-  signatureJoinQuery,
-  scheduleIdMatchQuery,
-  groupByQuery,
-].join('\n');
+const getScheduleByIdQuery = [scheduleSelectQuery, entityIdJoinQuery, scheduleIdMatchQuery].join('\n');
 
 /**
  * Get the schedules list sql query to be used given the where clause, order and param count
@@ -83,9 +79,7 @@ const getSchedulesQuery = (whereQuery, order, count) => {
   return [
     scheduleSelectQuery,
     entityIdJoinQuery,
-    signatureJoinQuery,
     whereQuery,
-    groupByQuery,
     scheduleOrderQuery(order),
     scheduleLimitQuery(count),
   ].join('\n');
@@ -93,14 +87,14 @@ const getSchedulesQuery = (whereQuery, order, count) => {
 
 const formatScheduleRow = (row) => {
   const signatures = row.signatures
-    .filter((signature) => signature.consensus_timestamp !== null)
-    .map((signature) => {
-      return {
-        consensus_timestamp: utils.nsToSecNs(signature.consensus_timestamp),
-        public_key_prefix: signature.public_key_prefix,
-        signature: signature.signature,
-      };
-    });
+    ? row.signatures.map((signature) => {
+        return {
+          consensus_timestamp: utils.nsToSecNs(signature.consensus_timestamp),
+          public_key_prefix: signature.public_key_prefix,
+          signature: signature.signature,
+        };
+      })
+    : [];
 
   return {
     admin_key: utils.encodeKey(row.key),
