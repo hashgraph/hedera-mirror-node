@@ -93,7 +93,7 @@ jobs:
 
       - name: Run Rosetta CLI Validation
         working-directory: ./hedera-mirror-rosetta/scripts/validation
-        run: ./run-validation.sh testnet data
+        run: ./run-validation.sh demo data
 
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}
