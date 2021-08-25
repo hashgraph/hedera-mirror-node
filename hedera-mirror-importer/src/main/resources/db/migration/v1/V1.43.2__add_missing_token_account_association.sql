@@ -53,9 +53,37 @@ begin
     -- with cascade, also drop the trigger
     drop function add_missing_token_account_association() cascade;
     return null;
-end;
+end
 $$ language plpgsql;
 
 create trigger missing_token_account_trigger after insert
     on account_balance_file
     execute procedure add_missing_token_account_association();
+
+-- change access privilege for importer db user, if different than db owner, so later the importer db user
+-- can own the temp table and the trigger function
+create or replace function change_access_privilege(grant_or_revoke boolean) returns void as
+$$
+begin
+    if current_user <> '${db-user}' then
+        if grant_or_revoke then
+            grant create on schema public to ${db-user};
+            execute 'grant ${db-user} to ' || current_user;
+        else
+            revoke create on schema public from ${db-user};
+            execute 'revoke ${db-user} from ' || current_user;
+        end if;
+    end if;
+end
+$$ language plpgsql;
+
+select change_access_privilege(true);
+
+-- change owner of the temp table and the function to the importer db user so when the trigger function runs
+-- by the importer db user, it can drop the temp table, the function itself, and the trigger
+alter table if exists last_transaction owner to ${db-user};
+alter function add_missing_token_account_association() owner to ${db-user};
+
+select change_access_privilege(false);
+
+drop function if exists change_access_privilege(boolean);
