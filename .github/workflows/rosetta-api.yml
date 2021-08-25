@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, release/** ]
   push:
-    branches: [ main ]
+    branches: [ main, release/** ]
     tags: [ v* ]
 
 defaults:
@@ -92,18 +92,7 @@ jobs:
         run: ./scripts/validation/get-genesis-balance.sh testnet
 
       - name: Run Rosetta CLI Validation
-        working-directory: ./hedera-mirror-rosetta/scripts/validation
-        run: |
-          echo "Installing Rosetta CLI"
-          curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/master/scripts/install.sh | sh -s -- -b .
-
-          ./run-validation.sh testnet construction > /tmp/construction-validation.log 2>&1 &
-          pid=$!
-
-          ./run-validation.sh testnet data && code=0 || code=$?
-          [[ $code -eq 0 ]] && { wait $pid || code=$?; }
-          cat /tmp/construction-validation.log
-          exit $code
+        run: ./scripts/validation/run-validation.sh testnet data
 
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}

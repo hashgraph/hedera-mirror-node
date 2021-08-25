@@ -28,11 +28,11 @@ else
     curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/master/scripts/install.sh | sh -s -- -b .
 fi
 
-echo "Running Rosetta $api API Validation with $network Network"
+echo "Running Rosetta ${api} API Validation against ${network} Network"
 
-if (! ./rosetta-cli ${check} --configuration-file="$config"); then
-    echo "Failed to Pass API Validation"
+if (! ./rosetta-cli "${check}" --configuration-file="${config}"); then
+    echo "Failed to Pass ${api} API Validation"
     exit 1
 fi
 
-echo "Rosetta Validation Passed Successfully!"
+echo "Rosetta ${api} Validation Passed Successfully!"
