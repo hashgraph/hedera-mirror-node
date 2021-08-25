@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -150,7 +149,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     })
     void verify(Long lastTransactionConsensusTimestamp, boolean expectAdded, boolean freezeDefault,
                 boolean freezeKey, boolean kycKey, TokenFreezeStatusEnum expectedFreezeStatus,
-                TokenKycStatusEnum expectedKycStatus) throws IOException, SQLException {
+                TokenKycStatusEnum expectedKycStatus) {
         // given
         // at time of the new token creation:
         //     collector1 is a fixed fee collector who collects fee in the new token and the existing token
@@ -275,7 +274,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     }
 
     private Token token(long createdTimestamp, boolean freezeDefault, boolean freezeKey, boolean kycKey,
-            EntityId tokenId) {
+                        EntityId tokenId) {
         Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(5);
