@@ -56,4 +56,9 @@ class TokenAssociateTransactionSupplierTest extends AbstractTransactionSupplierT
                 .returns(ONE_TINYBAR, TokenAssociateTransaction::getMaxTransactionFee)
                 .returns(List.of(TOKEN_ID), TokenAssociateTransaction::getTokenIds);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenAssociateTransactionSupplier.class;
+    }
 }

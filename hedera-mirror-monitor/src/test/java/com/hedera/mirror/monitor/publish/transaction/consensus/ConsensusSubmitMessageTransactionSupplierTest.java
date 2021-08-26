@@ -80,4 +80,9 @@ class ConsensusSubmitMessageTransactionSupplierTest extends AbstractTransactionS
                 .returns(ONE_TINYBAR, TopicMessageSubmitTransaction::getMaxTransactionFee)
                 .returns(TOPIC_ID, TopicMessageSubmitTransaction::getTopicId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return ConsensusSubmitMessageTransactionSupplier.class;
+    }
 }

@@ -84,4 +84,9 @@ class TokenWipeTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(List.of(10L, 11L), TokenWipeTransaction::getSerials)
                 .returns(TOKEN_ID, TokenWipeTransaction::getTokenId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenWipeTransactionSupplier.class;
+    }
 }

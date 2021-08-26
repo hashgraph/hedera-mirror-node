@@ -103,4 +103,9 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .containsExactlyInAnyOrder(metadata.getBytes(StandardCharsets.UTF_8),
                         metadata.getBytes(StandardCharsets.UTF_8));
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenMintTransactionSupplier.class;
+    }
 }

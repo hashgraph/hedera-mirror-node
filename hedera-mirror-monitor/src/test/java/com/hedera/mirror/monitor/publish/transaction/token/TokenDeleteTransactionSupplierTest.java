@@ -51,4 +51,9 @@ class TokenDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns(ONE_TINYBAR, TokenDeleteTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenDeleteTransaction::getTokenId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenDeleteTransactionSupplier.class;
+    }
 }
