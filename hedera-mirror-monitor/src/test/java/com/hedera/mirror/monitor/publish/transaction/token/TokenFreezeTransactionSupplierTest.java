@@ -55,4 +55,9 @@ class TokenFreezeTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .returns(ONE_TINYBAR, TokenFreezeTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenFreezeTransaction::getTokenId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenFreezeTransactionSupplier.class;
+    }
 }

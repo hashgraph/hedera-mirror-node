@@ -17,6 +17,7 @@
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
         <springdoc.version>1.5.10</springdoc.version>
+        <meanbean.version>3.0.0-M</meanbean.version>
     </properties>
 
     <dependencies>
@@ -140,8 +141,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.github.meanbeanlib</groupId>
+            <artifactId>meanbean</artifactId>
+            <version>${meanbean.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>

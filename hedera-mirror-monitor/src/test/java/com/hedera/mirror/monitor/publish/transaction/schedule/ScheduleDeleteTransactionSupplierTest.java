@@ -51,4 +51,9 @@ class ScheduleDeleteTransactionSupplierTest extends AbstractTransactionSupplierT
                 .returns(ONE_TINYBAR, ScheduleDeleteTransaction::getMaxTransactionFee)
                 .returns(SCHEDULE_ID, ScheduleDeleteTransaction::getScheduleId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return ScheduleDeleteTransactionSupplier.class;
+    }
 }

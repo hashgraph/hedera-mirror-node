@@ -51,4 +51,9 @@ class ScheduleSignTransactionSupplierTest extends AbstractTransactionSupplierTes
                 .returns(ONE_TINYBAR, ScheduleSignTransaction::getMaxTransactionFee)
                 .returns(SCHEDULE_ID, ScheduleSignTransaction::getScheduleId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return ScheduleSignTransactionSupplier.class;
+    }
 }

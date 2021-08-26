@@ -20,6 +20,9 @@ package com.hedera.mirror.monitor.publish.transaction;
  * ‍
  */
 
+import org.junit.jupiter.api.Test;
+import org.meanbean.test.BeanVerifier;
+
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.ScheduleId;
@@ -34,4 +37,13 @@ public abstract class AbstractTransactionSupplierTest {
     protected static final ScheduleId SCHEDULE_ID = ScheduleId.fromString("0.0.30");
     protected static final TokenId TOKEN_ID = TokenId.fromString("0.0.10");
     protected static final TopicId TOPIC_ID = TopicId.fromString("0.0.20");
+
+    protected abstract Class getSupplierClass();
+
+    @Test
+    void meanBean() {
+        BeanVerifier
+                .forClass(getSupplierClass())
+                .verifyGettersAndSetters();
+    }
 }
