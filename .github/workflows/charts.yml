@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ main, release/** ]
   push:
+    branches: [ main, release/** ]
     tags: [ v* ]
 
 env:
@@ -17,7 +18,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.0.1
+        uses: helm/chart-testing-action@v2.1.0
 
       - name: Run lint
         run: ct lint --config .github/ct.yaml --all
@@ -39,13 +40,13 @@ jobs:
         run: |
           set -ex
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-          k3d cluster create mirror --agents 1 --timeout 5m
+          k3d cluster create mirror --agents 1 --timeout 5m --image rancher/k3s:v1.21.4-k3s1
           k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:${IMAGE_TAG}"
           k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-importer:${IMAGE_TAG}"
           k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-rest:${IMAGE_TAG}"
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.0.1
+        uses: helm/chart-testing-action@v2.1.0
 
       - name: Install chart
         run: |

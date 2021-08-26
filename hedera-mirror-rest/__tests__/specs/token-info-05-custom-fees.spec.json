@@ -86,6 +86,7 @@
         "collector_account_id": "0.0.8904",
         "created_timestamp": "1234567899999999007",
         "minimum_amount": "0",
+        "net_of_transfers": true,
         "token_id": "0.0.1135"
       },
       {
@@ -153,7 +154,8 @@
           },
           "collector_account_id": "0.0.8902",
           "denominating_token_id": "0.0.1135",
-          "minimum": 1
+          "minimum": 1,
+          "net_of_transfers": false
         },
         {
           "amount": {
@@ -163,7 +165,8 @@
           "collector_account_id": "0.0.8901",
           "denominating_token_id": "0.0.1135",
           "maximum": 987,
-          "minimum": 79
+          "minimum": 79,
+          "net_of_transfers": false
         },
         {
           "amount": {
@@ -172,7 +175,8 @@
           },
           "collector_account_id": "0.0.8904",
           "denominating_token_id": "0.0.1135",
-          "minimum": 0
+          "minimum": 0,
+          "net_of_transfers": true
         }
       ]
     }

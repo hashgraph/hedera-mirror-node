@@ -21,7 +21,6 @@ logging:
   level:
     root: warn
     #org.springframework.web.reactive.function.client: trace
-    com.hedera.datagenerator: info
     com.hedera.mirror.monitor: info
     com.hedera.hashgraph.sdk.Executable: error
 management:

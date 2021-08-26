@@ -84,7 +84,6 @@ class MonitorConfiguration {
                 .retry()
                 .name("generate")
                 .metrics()
-                .subscribeOn(Schedulers.single())
                 .parallel(publishProperties.getClients())
                 .runOn(Schedulers.newParallel("publisher", publishProperties.getClients()))
                 .map(transactionPublisher::publish)
@@ -98,6 +97,7 @@ class MonitorConfiguration {
                 .onErrorContinue((t, r) -> log.error("Unexpected error during publish flow: ", t))
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .doOnSubscribe(s -> log.info("Starting publisher flow"))
+                .subscribeOn(Schedulers.single())
                 .subscribe(publishMetrics::onSuccess);
     }
 
@@ -117,6 +117,7 @@ class MonitorConfiguration {
                 .onErrorContinue((t, r) -> log.error("Unexpected error during subscribe: ", t))
                 .doFinally(s -> log.warn("Stopped after {} signal", s))
                 .doOnSubscribe(s -> log.info("Starting subscribe flow"))
+                .subscribeOn(Schedulers.parallel())
                 .subscribe(subscribeMetrics::onNext);
     }
 }

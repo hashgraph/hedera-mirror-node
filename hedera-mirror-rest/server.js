@@ -43,7 +43,6 @@ const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
 const {getPoolClass, isTestEnv} = require('./utils');
-const {DbError} = require('./errors/dbError');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
@@ -130,6 +129,14 @@ app.use(cors());
 // logging middleware
 app.use(httpContext.middleware);
 app.useAsync(requestLogger);
+app.useAsync(async (req, res, next) => {
+  try {
+    await TransactionResultService.loadTransactionResults();
+    await TransactionTypeService.loadTransactionTypes();
+  } catch (err) {
+    logger.warn('Failed to load transaction results / types', err);
+  }
+});
 
 // metrics middleware
 if (config.metrics.enabled) {
@@ -183,33 +190,19 @@ app.useAsync(responseHandler);
 // response error handling middleware
 app.useAsync(handleError);
 
-const verifyDbConnection = async () => {
-  // initial db calls, serves as connection validation
-  await TransactionTypeService.loadTransactionTypes();
-  await TransactionResultService.loadTransactionResults();
-};
-
 if (!isTestEnv()) {
-  verifyDbConnection()
-    .catch((err) => {
-      logger.error(err);
-      process.exit(1);
-    })
-    .then(() => {
-      logger.info(`DB connection validated`);
-      const server = app.listen(port, () => {
-        logger.info(`Server running on port: ${port}`);
-      });
+  const server = app.listen(port, () => {
+    logger.info(`Server running on port: ${port}`);
+  });
 
-      // Health check endpoints
-      createTerminus(server, {
-        healthChecks: {
-          '/health/readiness': health.readinessCheck,
-          '/health/liveness': health.livenessCheck,
-        },
-        beforeShutdown: health.beforeShutdown,
-      });
-    });
+  // Health check endpoints
+  createTerminus(server, {
+    healthChecks: {
+      '/health/readiness': health.readinessCheck,
+      '/health/liveness': health.livenessCheck,
+    },
+    beforeShutdown: health.beforeShutdown,
+  });
 }
 
 module.exports = app;

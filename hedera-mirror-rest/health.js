@@ -22,7 +22,6 @@
 
 const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
-const config = require('./config.js');
 
 const readinessQuery = `select true
                         from t_entity_types
@@ -30,7 +29,8 @@ const readinessQuery = `select true
 
 /**
  * Function to determine readiness of application.
- * @return {} None.
+ *
+ * @returns {Promise<void>}
  */
 const readinessCheck = async () => {
   return pool
@@ -47,15 +47,16 @@ const readinessCheck = async () => {
 
 /**
  * Function to determine liveness of application.
- * @return {} None.
+ *
+ * @returns {Promise<void>}
  */
 const livenessCheck = async () => {};
 
 /**
  * Allows for a graceful shutdown.
- * @return {} None.
+ *
+ * @returns {Promise<*>}
  */
-
 const beforeShutdown = async () => {
   logger.info(`Closing connection pool`);
   return pool.end();

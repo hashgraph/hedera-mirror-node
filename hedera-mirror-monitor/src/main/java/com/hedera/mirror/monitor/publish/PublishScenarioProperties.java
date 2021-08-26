@@ -30,8 +30,8 @@ import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionType;
 import com.hedera.mirror.monitor.ScenarioProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 @Data
 @Validated

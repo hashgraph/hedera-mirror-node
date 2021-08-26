@@ -17,27 +17,13 @@
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
         <springdoc.version>1.5.10</springdoc.version>
+        <meanbean.version>3.0.0-M9</meanbean.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.hedera</groupId>
-            <artifactId>hedera-mirror-datagenerator</artifactId>
-            <version>${release.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.hedera</groupId>
-                    <artifactId>hedera-mirror-importer</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-data-jpa</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.hedera.hashgraph</groupId>
@@ -155,8 +141,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.github.meanbeanlib</groupId>
+            <artifactId>meanbean</artifactId>
+            <version>${meanbean.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>

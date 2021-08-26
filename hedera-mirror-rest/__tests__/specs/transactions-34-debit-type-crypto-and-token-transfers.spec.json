@@ -150,11 +150,6 @@
         ],
         "token_transfers": [
           {
-            "account": "0.0.9",
-            "amount": -1200,
-            "token_id": "0.0.90000"
-          },
-          {
             "account": "0.0.3",
             "amount": 200,
             "token_id": "0.0.90000"
@@ -162,6 +157,11 @@
           {
             "account": "0.0.8",
             "amount": 1000,
+            "token_id": "0.0.90000"
+          },
+          {
+            "account": "0.0.9",
+            "amount": -1200,
             "token_id": "0.0.90000"
           }
         ]
@@ -211,13 +211,21 @@
         "transaction_id": "0.0.8-1234567890-000000000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
-        "transfers": [],
-        "token_transfers": [
+        "transfers": [
           {
-            "account": "0.0.9",
-            "amount": -1200,
-            "token_id": "0.0.90000"
+            "account": "0.0.3",
+            "amount": 2
           },
+          {
+            "account": "0.0.8",
+            "amount": -3
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
+        "token_transfers": [
           {
             "account": "0.0.3",
             "amount": 200,
@@ -226,6 +234,11 @@
           {
             "account": "0.0.8",
             "amount": 1000,
+            "token_id": "0.0.90000"
+          },
+          {
+            "account": "0.0.9",
+            "amount": -1200,
             "token_id": "0.0.90000"
           }
         ]

@@ -35,6 +35,14 @@ class AssessedCustomFeeViewModel {
     this.amount = assessedCustomFee.amount;
     this.collector_account_id = EntityId.fromEncodedId(assessedCustomFee.collectorAccountId).toString();
     this.token_id = EntityId.fromEncodedId(assessedCustomFee.tokenId, true).toString();
+
+    if (assessedCustomFee.effectivePayerAccountIds != null) {
+      this.effective_payer_account_ids = assessedCustomFee.effectivePayerAccountIds.map((payer) =>
+        EntityId.fromEncodedId(payer).toString()
+      );
+    } else {
+      this.effective_payer_account_ids = [];
+    }
   }
 }
 

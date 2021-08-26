@@ -35,13 +35,15 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validation;
 import javax.validation.Validator;
+
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
-import com.hedera.datagenerator.sdk.supplier.TransactionSupplier;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
 import com.hedera.mirror.monitor.properties.ScenarioPropertiesAggregator;
 import com.hedera.mirror.monitor.publish.PublishRequest;

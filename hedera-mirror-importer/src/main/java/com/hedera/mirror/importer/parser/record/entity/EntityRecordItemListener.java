@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -33,6 +32,7 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
@@ -54,7 +53,9 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
@@ -263,8 +264,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
         var nodeAccount = EntityId.of(body.getNodeAccountID());
 
-        entityListener.onEntity(nodeAccount.toEntity());
-        entityListener.onEntity(payerAccount.toEntity());
+        entityListener.onEntityId(nodeAccount);
+        entityListener.onEntityId(payerAccount);
 
         // build transaction
         Transaction tx = new Transaction();
@@ -400,7 +401,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            entityListener.onEntity(account.toEntity());
+            entityListener.onEntityId(account);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
         }
     }
@@ -416,7 +417,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            entityListener.onEntity(account.toEntity());
+            entityListener.onEntityId(account);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
 
             // Don't manually add an initial balance transfer if the transfer list contains it already
@@ -427,8 +428,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         if (addInitialBalance) {
             var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
-            entityListener.onEntity(payerAccount.toEntity());
-            entityListener.onEntity(createdAccount.toEntity());
+            entityListener.onEntityId(payerAccount);
+            entityListener.onEntityId(createdAccount);
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
@@ -455,19 +456,18 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertTokenAssociate(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
-            TokenAssociateTransactionBody tokenAssociateTransactionBody = recordItem.getTransactionBody()
-                    .getTokenAssociate();
-            AccountID accountID = tokenAssociateTransactionBody.getAccount();
+            TokenAssociateTransactionBody transactionBody = recordItem.getTransactionBody().getTokenAssociate();
+            EntityId accountId = EntityId.of(transactionBody.getAccount());
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
 
-            tokenAssociateTransactionBody.getTokensList().forEach(token -> {
+            transactionBody.getTokensList().forEach(token -> {
                 EntityId tokenId = EntityId.of(token);
-                entityListener.onEntity(tokenId.toEntity());
+                entityListener.onEntityId(tokenId);
 
-                long consensusTimestamp = recordItem.getConsensusTimestamp();
-                TokenAccount tokenAccount = new TokenAccount(tokenId, EntityId.of(accountID));
-                tokenAccount.setCreatedTimestamp(consensusTimestamp);
+                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
                 // freeze and kyc status will be set during db upsert flow
                 tokenAccount.setAssociated(true);
+                tokenAccount.setCreatedTimestamp(consensusTimestamp);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onTokenAccount(tokenAccount);
             });
@@ -497,6 +497,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             EntityId tokenId = EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
+            EntityId treasury = EntityId.of(tokenCreateTransactionBody.getTreasury());
             Token token = new Token();
             token.setCreatedTimestamp(consensusTimestamp);
             token.setDecimals(tokenCreateTransactionBody.getDecimals());
@@ -509,6 +510,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setSymbol(tokenCreateTransactionBody.getSymbol());
             token.setTokenId(new TokenId(tokenId));
             token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
+            token.setTreasuryAccountId(treasury);
             token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenTypeValue()));
 
             if (tokenCreateTransactionBody.hasFeeScheduleKey()) {
@@ -527,17 +529,28 @@ public class EntityRecordItemListener implements RecordItemListener {
                 token.setSupplyKey(tokenCreateTransactionBody.getSupplyKey().toByteArray());
             }
 
-            if (tokenCreateTransactionBody.hasTreasury()) {
-                EntityId treasuryEntityId = EntityId.of(tokenCreateTransactionBody.getTreasury());
-                entityListener.onEntity(treasuryEntityId.toEntity());
-                token.setTreasuryAccountId(treasuryEntityId);
-            }
-
             if (tokenCreateTransactionBody.hasWipeKey()) {
                 token.setWipeKey(tokenCreateTransactionBody.getWipeKey().toByteArray());
             }
 
-            insertCustomFees(tokenCreateTransactionBody.getCustomFeesList(), consensusTimestamp, tokenId);
+            Set<EntityId> autoAssociatedAccounts = insertCustomFees(tokenCreateTransactionBody.getCustomFeesList(),
+                    consensusTimestamp, true, tokenId);
+            autoAssociatedAccounts.add(treasury);
+            TokenFreezeStatusEnum freezeStatus = token.getFreezeKey() != null ? TokenFreezeStatusEnum.UNFROZEN :
+                    TokenFreezeStatusEnum.NOT_APPLICABLE;
+            TokenKycStatusEnum kycStatus = token.getKycKey() != null ? TokenKycStatusEnum.GRANTED :
+                    TokenKycStatusEnum.NOT_APPLICABLE;
+            autoAssociatedAccounts.forEach(account -> {
+                TokenAccount tokenAccount = new TokenAccount(tokenId, account);
+                tokenAccount.setAssociated(true);
+                tokenAccount.setCreatedTimestamp(consensusTimestamp);
+                tokenAccount.setFreezeStatus(freezeStatus);
+                tokenAccount.setKycStatus(kycStatus);
+                tokenAccount.setModifiedTimestamp(consensusTimestamp);
+
+                entityListener.onEntityId(account);
+                entityListener.onTokenAccount(tokenAccount);
+            });
 
             entityListener.onToken(token);
         }
@@ -547,13 +560,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenDissociateTransactionBody tokenDissociateTransactionBody = recordItem.getTransactionBody()
                     .getTokenDissociate();
-            AccountID accountID = tokenDissociateTransactionBody.getAccount();
+            EntityId accountId = EntityId.of(tokenDissociateTransactionBody.getAccount());
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
 
             tokenDissociateTransactionBody.getTokensList().forEach(token -> {
-                entityListener.onEntity(EntityId.of(token).toEntity());
+                EntityId tokenId = EntityId.of(token);
+                entityListener.onEntityId(tokenId);
 
-                long consensusTimestamp = recordItem.getConsensusTimestamp();
-                TokenAccount tokenAccount = new TokenAccount(EntityId.of(token), EntityId.of(accountID));
+                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
                 tokenAccount.setAssociated(false);
                 tokenAccount.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onTokenAccount(tokenAccount);
@@ -563,32 +577,28 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertTokenAccountFreezeBody(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
-            TokenFreezeAccountTransactionBody tokenFreezeAccountTransactionBody = recordItem.getTransactionBody()
-                    .getTokenFreeze();
-            TokenID tokenID = tokenFreezeAccountTransactionBody.getToken();
-            AccountID accountID = tokenFreezeAccountTransactionBody.getAccount();
-            entityListener.onEntity(EntityId.of(tokenID).toEntity());
+            TokenFreezeAccountTransactionBody transactionBody = recordItem.getTransactionBody().getTokenFreeze();
+            EntityId tokenId = EntityId.of(transactionBody.getToken());
+            entityListener.onEntityId(tokenId);
 
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenID), EntityId.of(accountID));
+            EntityId accountId = EntityId.of(transactionBody.getAccount());
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
             tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
-            tokenAccount.setModifiedTimestamp(consensusTimestamp);
+            tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
             entityListener.onTokenAccount(tokenAccount);
         }
     }
 
     private void insertTokenAccountGrantKyc(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
-            TokenGrantKycTransactionBody tokenGrantKycTransactionBody = recordItem.getTransactionBody()
-                    .getTokenGrantKyc();
-            TokenID tokenID = tokenGrantKycTransactionBody.getToken();
-            AccountID accountID = tokenGrantKycTransactionBody.getAccount();
-            entityListener.onEntity(EntityId.of(tokenID).toEntity());
+            TokenGrantKycTransactionBody transactionBody = recordItem.getTransactionBody().getTokenGrantKyc();
+            EntityId tokenId = EntityId.of(transactionBody.getToken());
+            entityListener.onEntityId(tokenId);
 
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenID), EntityId.of(accountID));
+            EntityId accountId = EntityId.of(transactionBody.getAccount());
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
             tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
-            tokenAccount.setModifiedTimestamp(consensusTimestamp);
+            tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
             entityListener.onTokenAccount(tokenAccount);
         }
     }
@@ -620,14 +630,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenRevokeKycTransactionBody tokenRevokeKycTransactionBody = recordItem.getTransactionBody()
                     .getTokenRevokeKyc();
-            TokenID tokenID = tokenRevokeKycTransactionBody.getToken();
-            AccountID accountID = tokenRevokeKycTransactionBody.getAccount();
-            entityListener.onEntity(EntityId.of(tokenID).toEntity());
+            EntityId tokenId = EntityId.of(tokenRevokeKycTransactionBody.getToken());
+            entityListener.onEntityId(tokenId);
 
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenID), EntityId.of(accountID));
+            EntityId accountId = EntityId.of(tokenRevokeKycTransactionBody.getAccount());
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
             tokenAccount.setKycStatus(TokenKycStatusEnum.REVOKED);
-            tokenAccount.setModifiedTimestamp(consensusTimestamp);
+            tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
             entityListener.onTokenAccount(tokenAccount);
         }
     }
@@ -636,12 +645,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
                 EntityId tokenId = EntityId.of(tokenTransferList.getToken());
-                entityListener.onEntity(tokenId.toEntity());
+                entityListener.onEntityId(tokenId);
 
                 long consensusTimestamp = recordItem.getConsensusTimestamp();
                 tokenTransferList.getTransfersList().forEach(accountAmount -> {
                     EntityId accountId = EntityId.of(accountAmount.getAccountID());
-                    entityListener.onEntity(accountId.toEntity());
+                    entityListener.onEntityId(accountId);
 
                     entityListener.onTokenTransfer(new TokenTransfer(consensusTimestamp, accountAmount
                             .getAmount(), tokenId, accountId));
@@ -649,10 +658,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                 tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
                     EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
-                    entityListener.onEntity(receiverId.toEntity());
+                    entityListener.onEntityId(receiverId);
 
                     EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
-                    entityListener.onEntity(senderId.toEntity());
+                    entityListener.onEntityId(senderId);
 
                     long serialNumber = nftTransfer.getSerialNumber();
                     NftTransfer nftTransferDomain = new NftTransfer();
@@ -702,7 +711,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             if (tokenUpdateTransactionBody.hasTreasury()) {
                 EntityId treasuryEntityId = EntityId.of(tokenUpdateTransactionBody.getTreasury());
-                entityListener.onEntity(treasuryEntityId.toEntity());
+                entityListener.onEntityId(treasuryEntityId);
                 token.setTreasuryAccountId(treasuryEntityId);
             }
 
@@ -726,12 +735,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isTokens()) {
             TokenUnfreezeAccountTransactionBody tokenUnfreezeAccountTransactionBody = recordItem.getTransactionBody()
                     .getTokenUnfreeze();
-            TokenID tokenID = tokenUnfreezeAccountTransactionBody.getToken();
-            AccountID accountID = tokenUnfreezeAccountTransactionBody.getAccount();
-            entityListener.onEntity(EntityId.of(tokenID).toEntity());
+            EntityId tokenId = EntityId.of(tokenUnfreezeAccountTransactionBody.getToken());
+            EntityId accountId = EntityId.of(tokenUnfreezeAccountTransactionBody.getAccount());
+            entityListener.onEntityId(tokenId);
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenID), EntityId.of(accountID));
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
             tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
             tokenAccount.setModifiedTimestamp(consensusTimestamp);
             entityListener.onTokenAccount(tokenAccount);
@@ -762,7 +771,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             EntityId tokenId = EntityId.of(transactionBody.getTokenId());
             long consensusTimestamp = recordItem.getConsensusTimestamp();
 
-            insertCustomFees(transactionBody.getCustomFeesList(), consensusTimestamp, tokenId);
+            insertCustomFees(transactionBody.getCustomFeesList(), consensusTimestamp, false, tokenId);
         }
     }
 
@@ -794,7 +803,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             var payerAccount = creatorAccount;
             if (scheduleCreateTransactionBody.hasPayerAccountID()) {
                 payerAccount = EntityId.of(scheduleCreateTransactionBody.getPayerAccountID());
-                entityListener.onEntity(payerAccount.toEntity());
+                entityListener.onEntityId(payerAccount);
             }
 
             Schedule schedule = new Schedule();
@@ -850,37 +859,59 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
-                EntityId tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
-
+                // the effective payers must also appear in the *transfer lists of this transaction and the
+                // corresponding EntityIds should have been added to EntityListener, so skip it here.
+                List<EntityId> payerEntityIds = protoAssessedCustomFee.getEffectivePayerAccountIdList().stream()
+                        .map(EntityId::of)
+                        .collect(Collectors.toList());
                 AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
                 assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
+                assessedCustomFee.setEffectivePayerEntityIds(payerEntityIds);
                 assessedCustomFee.setId(new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp));
-                assessedCustomFee.setTokenId(tokenId);
+                assessedCustomFee.setTokenId(EntityId.of(protoAssessedCustomFee.getTokenId()));
                 entityListener.onAssessedCustomFee(assessedCustomFee);
             }
         }
     }
 
-    private void insertCustomFees(List<com.hederahashgraph.api.proto.java.CustomFee> customFeeList,
-                                  long consensusTimestamp, EntityId tokenId) {
+    private Set<EntityId> insertCustomFees(List<com.hederahashgraph.api.proto.java.CustomFee> customFeeList,
+                                           long consensusTimestamp, boolean isTokenCreate, EntityId tokenId) {
+        Set<EntityId> autoAssociatedAccounts = new HashSet<>();
 
         for (var protoCustomFee : customFeeList) {
+            EntityId collector = EntityId.of(protoCustomFee.getFeeCollectorAccountId());
             CustomFee customFee = new CustomFee();
+            customFee.setCollectorAccountId(collector);
             customFee.setCreatedTimestamp(consensusTimestamp);
-            customFee.setCollectorAccountId(EntityId.of(protoCustomFee.getFeeCollectorAccountId()));
+            customFee.setId(id);
             customFee.setTokenId(tokenId);
 
             var feeCase = protoCustomFee.getFeeCase();
+            boolean chargedInAttachedToken;
             switch (feeCase) {
                 case FIXED_FEE:
-                    parseFixedFee(customFee, protoCustomFee.getFixedFee(), tokenId);
+                    chargedInAttachedToken = parseFixedFee(customFee, protoCustomFee.getFixedFee(), tokenId);
                     break;
                 case FRACTIONAL_FEE:
+                    // only FT can have fractional fee
                     parseFractionalFee(customFee, protoCustomFee.getFractionalFee());
+                    chargedInAttachedToken = true;
+                    break;
+                case ROYALTY_FEE:
+                    // only NFT can have royalty fee, and fee can't be paid in NFT. Thus though royalty fee has a
+                    // fixed fee fallback, the denominating token of the fixed fee can't be the NFT itself
+                    parseRoyaltyFee(customFee, protoCustomFee.getRoyaltyFee(), tokenId);
+                    chargedInAttachedToken = false;
                     break;
                 default:
                     log.error("Invalid CustomFee FeeCase {}", feeCase);
                     throw new InvalidDatasetException(String.format("Invalid CustomFee FeeCase %s", feeCase));
+            }
+
+            if (isTokenCreate && chargedInAttachedToken) {
+                // if it's from a token create transaction, and the fee is charged in the attached token, the attached
+                // token and the collector should have been auto associated
+                autoAssociatedAccounts.add(collector);
             }
 
             entityListener.onCustomFee(customFee);
@@ -894,15 +925,29 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             entityListener.onCustomFee(customFee);
         }
+
+        return autoAssociatedAccounts;
     }
 
-    private void parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {
+    /**
+     * Parse protobuf FixedFee object to domain CustomFee object.
+     *
+     * @param customFee the domain CustomFee object
+     * @param fixedFee the protobuf FixedFee object
+     * @param tokenId the attached token id
+     * @return whether the fee is paid in the attached token
+     */
+    private boolean parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {
         customFee.setAmount(fixedFee.getAmount());
 
         if (fixedFee.hasDenominatingTokenId()) {
             EntityId denominatingTokenId = EntityId.of(fixedFee.getDenominatingTokenId());
-            customFee.setDenominatingTokenId(denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId);
+            denominatingTokenId = denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId;
+            customFee.setDenominatingTokenId(denominatingTokenId);
+            return denominatingTokenId.equals(tokenId);
         }
+
+        return false;
     }
 
     private void parseFractionalFee(CustomFee customFee, FractionalFee fractionalFee) {
@@ -915,5 +960,15 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         customFee.setMinimumAmount(fractionalFee.getMinimumAmount());
+        customFee.setNetOfTransfers(fractionalFee.getNetOfTransfers());
+    }
+
+    private void parseRoyaltyFee(CustomFee customFee, RoyaltyFee royaltyFee, EntityId tokenId) {
+        customFee.setRoyaltyNumerator(royaltyFee.getExchangeValueFraction().getNumerator());
+        customFee.setRoyaltyDenominator(royaltyFee.getExchangeValueFraction().getDenominator());
+
+        if (royaltyFee.hasFallbackFee()) {
+            parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
+        }
     }
 }

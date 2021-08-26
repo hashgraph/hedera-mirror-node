@@ -62,9 +62,16 @@ public class CustomFee implements Persistable<UUID> {
 
     private long minimumAmount;
 
+    private Boolean netOfTransfers;
+
+    private Long royaltyDenominator;
+
+    private Long royaltyNumerator;
+
     @Convert(converter = TokenIdConverter.class)
     private EntityId tokenId;
 
+    @JsonIgnore
     @Override
     public UUID getId() {
         return id;

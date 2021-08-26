@@ -42,12 +42,12 @@
     "auto_renew_account": null,
     "auto_renew_period": null,
     "created_timestamp": "1234567890.000000002",
-    "decimals": "1000",
+    "decimals": "0",
     "expiry_timestamp": null,
     "fee_schedule_key": null,
     "freeze_default": false,
     "freeze_key": null,
-    "initial_supply": "1000000",
+    "initial_supply": "0",
     "kyc_key": null,
     "max_supply": "9223372036854775807",
     "modified_timestamp": "1234567890.000000002",
@@ -61,7 +61,7 @@
     "custom_fees": {
       "created_timestamp": "1234567890.000000002",
       "fixed_fees": [],
-      "fractional_fees": []
+      "royalty_fees": []
     }
   }
 }

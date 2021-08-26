@@ -21,14 +21,17 @@ package com.hedera.mirror.importer.converter;
  */
 
 import javax.inject.Named;
+import javax.persistence.Converter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 @Named
-@javax.persistence.Converter
+@Converter
 @ConfigurationPropertiesBinding
 public class AccountIdConverter extends AbstractEntityIdConverter {
+
+    public static final AccountIdConverter INSTANCE = new AccountIdConverter();
 
     public AccountIdConverter() {
         super(EntityTypeEnum.ACCOUNT);

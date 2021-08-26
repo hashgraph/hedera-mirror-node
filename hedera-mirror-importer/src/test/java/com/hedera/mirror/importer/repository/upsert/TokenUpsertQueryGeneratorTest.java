@@ -91,13 +91,13 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Test
     void tableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getFinalTableName();
-        assertThat(upsertQuery).isEqualTo("token");
+        String tableName = getUpdatableDomainRepositoryCustom().getFinalTableName();
+        assertThat(tableName).isEqualTo("token");
     }
 
     @Test
     void tempTableName() {
-        String upsertQuery = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
-        assertThat(upsertQuery).isEqualTo("token_temp");
+        String tempTableName = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
+        assertThat(tempTableName).isEqualTo("token_temp");
     }
 }

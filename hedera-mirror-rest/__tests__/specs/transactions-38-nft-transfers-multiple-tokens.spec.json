@@ -84,20 +84,21 @@
         "transaction_id": "0.0.8-1234567890-000000000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
-        "transfers": [],
+        "transfers": [
+          {
+            "account": "0.0.3",
+            "amount": 2
+          },
+          {
+            "account": "0.0.8",
+            "amount": -3
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ],
         "nft_transfers": [
-          {
-            "receiver_account_id": "0.0.9",
-            "sender_account_id": null,
-            "serial_number": 1,
-            "token_id": "0.0.100000"
-          },
-          {
-            "receiver_account_id": "0.0.98",
-            "sender_account_id": "0.0.9",
-            "serial_number": 2,
-            "token_id": "0.0.100000"
-          },
           {
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
@@ -115,6 +116,18 @@
             "sender_account_id": null,
             "serial_number": 3,
             "token_id": "0.0.90000"
+          },
+          {
+            "receiver_account_id": "0.0.9",
+            "sender_account_id": null,
+            "serial_number": 1,
+            "token_id": "0.0.100000"
+          },
+          {
+            "receiver_account_id": "0.0.98",
+            "sender_account_id": "0.0.9",
+            "serial_number": 2,
+            "token_id": "0.0.100000"
           }
         ]
       }
