@@ -50,7 +50,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
         'account_id', account_id,
         'amount', amount,
         'token_id', token_id
-      ))
+      ) order by token_id, account_id
+    )
     from token_transfer
     where token_transfer.consensus_timestamp = t.consensus_ns
   `;
