@@ -323,8 +323,9 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
         CustomFee customFee = new CustomFee();
         customFee.setAmount(amount);
         customFee.setCollectorAccountId(collectorAccountId);
+        customFee.setCreatedTimestamp(createdTimestamp);
         customFee.setDenominatingTokenId(denominatingTokenId);
-        customFee.setId(new CustomFee.Id(createdTimestamp, tokenId));
+        customFee.setTokenId(tokenId);
         return customFee;
     }
 
@@ -334,9 +335,10 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
         customFee.setAmount(numerator);
         customFee.setAmountDenominator(denominator);
         customFee.setCollectorAccountId(collectorAccountId);
-        customFee.setId(new CustomFee.Id(createdTimestamp, tokenId));
+        customFee.setCreatedTimestamp(createdTimestamp);
         customFee.setMaximumAmount(maximum);
         customFee.setMinimumAmount(minimum);
+        customFee.setTokenId(tokenId);
         return customFee;
     }
 }

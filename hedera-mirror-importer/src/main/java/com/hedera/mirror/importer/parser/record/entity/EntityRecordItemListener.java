@@ -883,7 +883,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             CustomFee customFee = new CustomFee();
             customFee.setCollectorAccountId(collector);
             customFee.setCreatedTimestamp(consensusTimestamp);
-            customFee.setId(id);
             customFee.setTokenId(tokenId);
 
             var feeCase = protoCustomFee.getFeeCase();
@@ -933,8 +932,8 @@ public class EntityRecordItemListener implements RecordItemListener {
      * Parse protobuf FixedFee object to domain CustomFee object.
      *
      * @param customFee the domain CustomFee object
-     * @param fixedFee the protobuf FixedFee object
-     * @param tokenId the attached token id
+     * @param fixedFee  the protobuf FixedFee object
+     * @param tokenId   the attached token id
      * @return whether the fee is paid in the attached token
      */
     private boolean parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {

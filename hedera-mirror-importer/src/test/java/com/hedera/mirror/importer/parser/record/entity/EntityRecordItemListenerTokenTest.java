@@ -135,33 +135,36 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private static List<CustomFee> deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
         CustomFee customFee = new CustomFee();
-        customFee.setId(new CustomFee.Id(consensusTimestamp, tokenId));
+        customFee.setCreatedTimestamp(consensusTimestamp);
+        customFee.setTokenId(tokenId);
         return List.of(customFee);
     }
 
     private static List<CustomFee> nonEmptyCustomFees(long consensusTimestamp, EntityId tokenId, TokenType tokenType) {
         List<CustomFee> customFees = new ArrayList<>();
-        CustomFee.Id id = new CustomFee.Id(consensusTimestamp, tokenId);
         EntityId treasury = EntityId.of(PAYER);
 
         CustomFee fixedFee1 = new CustomFee();
         fixedFee1.setAmount(11L);
         fixedFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1);
-        fixedFee1.setId(id);
+        fixedFee1.setCreatedTimestamp(consensusTimestamp);
+        fixedFee1.setTokenId(tokenId);
         customFees.add(fixedFee1);
 
         CustomFee fixedFee2 = new CustomFee();
         fixedFee2.setAmount(12L);
         fixedFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fixedFee2.setCreatedTimestamp(consensusTimestamp);
         fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
-        fixedFee2.setId(id);
+        fixedFee2.setTokenId(tokenId);
         customFees.add(fixedFee2);
 
         CustomFee fixedFee3 = new CustomFee();
         fixedFee3.setAmount(13L);
         fixedFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fixedFee3.setCreatedTimestamp(consensusTimestamp);
         fixedFee3.setDenominatingTokenId(tokenId);
-        fixedFee3.setId(id);
+        fixedFee3.setTokenId(tokenId);
         customFees.add(fixedFee3);
 
         if (tokenType == TokenType.FUNGIBLE_COMMON) {
@@ -170,26 +173,29 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             fractionalFee1.setAmount(14L);
             fractionalFee1.setAmountDenominator(31L);
             fractionalFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
+            fractionalFee1.setCreatedTimestamp(consensusTimestamp);
             fractionalFee1.setMaximumAmount(100L);
             fractionalFee1.setNetOfTransfers(true);
-            fractionalFee1.setId(id);
+            fractionalFee1.setTokenId(tokenId);
             customFees.add(fractionalFee1);
 
             CustomFee fractionalFee2 = new CustomFee();
             fractionalFee2.setAmount(15L);
             fractionalFee2.setAmountDenominator(32L);
             fractionalFee2.setCollectorAccountId(treasury);
+            fractionalFee2.setCreatedTimestamp(consensusTimestamp);
             fractionalFee2.setMaximumAmount(110L);
             fractionalFee2.setNetOfTransfers(false);
-            fractionalFee2.setId(id);
+            fractionalFee2.setTokenId(tokenId);
             customFees.add(fractionalFee2);
         } else {
             // royalty fees only apply for non-fungible tokens
             CustomFee royaltyFee1 = new CustomFee();
+            royaltyFee1.setCreatedTimestamp(consensusTimestamp);
             royaltyFee1.setRoyaltyNumerator(14L);
             royaltyFee1.setRoyaltyDenominator(31L);
             royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
-            royaltyFee1.setId(id);
+            royaltyFee1.setTokenId(tokenId);
             customFees.add(royaltyFee1);
 
             // with fallback fee
@@ -197,10 +203,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             royaltyFee2.setRoyaltyNumerator(15L);
             royaltyFee2.setRoyaltyDenominator(32L);
             royaltyFee2.setCollectorAccountId(treasury);
+            royaltyFee2.setCreatedTimestamp(consensusTimestamp);
             // fallback fee in form of fixed fee
             royaltyFee2.setAmount(103L);
             royaltyFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
-            royaltyFee2.setId(id);
+            royaltyFee2.setTokenId(tokenId);
             customFees.add(royaltyFee2);
         }
 
@@ -1478,7 +1485,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         FixedFee.Builder fixedFee = FixedFee.newBuilder().setAmount(customFee.getAmount());
         EntityId denominatingTokenId = customFee.getDenominatingTokenId();
         if (denominatingTokenId != null) {
-            if (denominatingTokenId.equals(customFee.getId().getTokenId())) {
+            if (denominatingTokenId.equals(customFee.getTokenId())) {
                 fixedFee.setDenominatingTokenId(TokenID.getDefaultInstance());
             } else {
                 fixedFee.setDenominatingTokenId(convertTokenId(denominatingTokenId));

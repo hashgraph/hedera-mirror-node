@@ -40,9 +40,9 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class CustomFee implements Persistable<UUID> {
 
-    private long amount;
+    private Long amount;
 
-    private long amountDenominator;
+    private Long amountDenominator;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId collectorAccountId;
