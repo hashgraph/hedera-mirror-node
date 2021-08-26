@@ -153,6 +153,16 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
+    private static Builder defaultTransactionBodyBuilder() {
+        TransactionBody.Builder body = TransactionBody.newBuilder();
+        body.setTransactionFee(100L);
+        body.setMemo(TRANSACTION_MEMO);
+        body.setNodeAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build());
+        body.setTransactionID(Utility.getTransactionId(PAYER));
+        body.setTransactionValidDuration(Duration.newBuilder().setSeconds(120).build());
+        return body;
+    }
+
     protected final void assertAccount(AccountID accountId, Entity dbEntity) {
         assertThat(accountId)
                 .isNotEqualTo(AccountID.getDefaultInstance())
@@ -265,16 +275,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 // By default the raw bytes are not stored
                 , () -> assertEquals(null, dbTransaction.getTransactionBytes())
         );
-    }
-
-    private static Builder defaultTransactionBodyBuilder() {
-        TransactionBody.Builder body = TransactionBody.newBuilder();
-        body.setTransactionFee(100L);
-        body.setMemo(TRANSACTION_MEMO);
-        body.setNodeAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build());
-        body.setTransactionID(Utility.getTransactionId(PAYER));
-        body.setTransactionValidDuration(Duration.newBuilder().setSeconds(120).build());
-        return body;
     }
 
     protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder,
@@ -411,7 +411,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected void assertEntity(Entity expected) {
         Entity actual = getEntity(expected.getId());
-        assertThat(actual).isEqualTo(expected);
+        assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
     }
 
     protected Entity getEntityWithDefaultMemo(EntityId entityId) {
@@ -428,7 +428,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(UUID.randomUUID().toString())
                 .hash(UUID.randomUUID().toString())
-                .idx(nextIndex++)
+                .index(nextIndex++)
                 .loadEnd(Instant.now().getEpochSecond())
                 .loadStart(Instant.now().getEpochSecond())
                 .name(filename)

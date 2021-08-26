@@ -69,9 +69,18 @@ import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
 class UpsertPgCopyTest extends IntegrationTest {
 
-    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
     private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
-
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    @Resource
+    EntityUpsertQueryGenerator entityUpsertQueryGenerator;
+    @Resource
+    NftUpsertQueryGenerator nftUpsertQueryGenerator;
+    @Resource
+    ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
+    @Resource
+    TokenUpsertQueryGenerator tokenUpsertQueryGenerator;
+    @Resource
+    TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator;
     @Resource
     private DataSource dataSource;
     @Resource
@@ -84,17 +93,6 @@ class UpsertPgCopyTest extends IntegrationTest {
     private TokenAccountRepository tokenAccountRepository;
     @Resource
     private ScheduleRepository scheduleRepository;
-    @Resource
-    EntityUpsertQueryGenerator entityUpsertQueryGenerator;
-    @Resource
-    NftUpsertQueryGenerator nftUpsertQueryGenerator;
-    @Resource
-    ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
-    @Resource
-    TokenUpsertQueryGenerator tokenUpsertQueryGenerator;
-    @Resource
-    TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator;
-
     private UpsertPgCopy<Entity> entityPgCopy;
     private UpsertPgCopy<Nft> nftPgCopy;
     private UpsertPgCopy<Schedule> schedulePgCopy;
@@ -592,6 +590,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     private void copyWithTransactionSupport(UpsertPgCopy upsertPgCopy, Collection... items) throws SQLException {
         try (Connection connection = DataSourceUtils.getConnection(dataSource)) {
             connection.setAutoCommit(false); // for tests have to set auto commit to false or temp table gets lost
+            upsertPgCopy.init(connection);
             for (Collection batch : items) {
                 upsertPgCopy.copy(batch, connection);
             }

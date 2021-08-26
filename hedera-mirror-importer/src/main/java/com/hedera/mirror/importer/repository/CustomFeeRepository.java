@@ -20,9 +20,10 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.UUID;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.CustomFee;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, CustomFee.Id> {
+public interface CustomFeeRepository extends CrudRepository<CustomFee, UUID> {
 }

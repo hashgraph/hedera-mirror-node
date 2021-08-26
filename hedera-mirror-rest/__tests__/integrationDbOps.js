@@ -24,10 +24,10 @@ const {execSync} = require('child_process');
 const fs = require('fs');
 const log4js = require('log4js');
 const path = require('path');
-const {GenericContainer} = require('testcontainers');
+const {Wait, GenericContainer} = require('testcontainers');
 const {db: dbConfig} = require('../config');
 const {isDockerInstalled} = require('./integrationUtils');
-const {getPoolClass, randomString} = require('../utils');
+const {getPoolClass} = require('../utils');
 
 const logger = log4js.getLogger();
 
@@ -37,9 +37,9 @@ let oldPool;
 let dockerDb;
 let sqlConnection;
 
-dbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
-const dbAdminUser = process.env.POSTGRES_USER || `${dbConfig.username}_admin`;
-const dbAdminPassword = process.env.POSTGRES_PASSWORD || randomString(16);
+dbConfig.name = process.env.POSTGRES_DB || 'postgres';
+const dbAdminUser = process.env.POSTGRES_USER || `root`;
+const dbAdminPassword = process.env.POSTGRES_PASSWORD || '';
 
 const v1SchemaConfigs = {
   docker: {
@@ -53,8 +53,8 @@ const v1SchemaConfigs = {
 };
 const v2SchemaConfigs = {
   docker: {
-    imageName: 'timescale/timescaledb-ha',
-    tagName: 'pg13.3-ts2.3.1-p1',
+    imageName: 'cockroachdb/cockroach',
+    tagName: 'v21.1.6',
   },
   flyway: {
     baselineVersion: '1.999.999',
@@ -62,8 +62,7 @@ const v2SchemaConfigs = {
   },
 };
 
-// if v2 schema is set in env use it, else default to v1
-const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
+const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v1' ? v1SchemaConfigs : v2SchemaConfigs;
 
 const getConnection = () => {
   logger.info(`sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`);
@@ -97,7 +96,10 @@ const instantiateDatabase = async () => {
     .withEnv('POSTGRES_DB', dbConfig.name)
     .withEnv('POSTGRES_USER', dbAdminUser)
     .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
-    .withExposedPorts(dbConfig.port)
+    .withExposedPorts(26257, 8080)
+    .withWaitStrategy(Wait.forLogMessage('CockroachDB node starting'))
+    .withDefaultLogDriver()
+    .withCmd(['start-single-node', '--insecure'])
     .start();
   dbConfig.port = dockerDb.getMappedPort(dbConfig.port);
   dbConfig.host = dockerDb.getHost();

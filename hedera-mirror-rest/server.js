@@ -29,6 +29,7 @@ const cors = require('cors');
 const httpContext = require('express-http-context');
 const log4js = require('log4js');
 const compression = require('compression');
+const fs = require('fs');
 
 // local files
 const accounts = require('./accounts');
@@ -92,6 +93,16 @@ const pool = new Pool({
   connectionTimeoutMillis: config.db.pool.connectionTimeout,
   max: config.db.pool.maxConnections,
   statement_timeout: config.db.pool.statementTimeout,
+  // ssl: {
+  //   rejectUnauthorized: false,
+  //   ca: fs.readFileSync('/var/folders/dy/3hk8nqg93nbctw8lchz_415r0000gn/T/demo065054190/ca.crt').toString(),
+  //   key: fs
+  //     .readFileSync('/var/folders/dy/3hk8nqg93nbctw8lchz_415r0000gn/T/demo065054190/client.mirror_rest.key')
+  //     .toString(),
+  //   cert: fs
+  //     .readFileSync('/var/folders/dy/3hk8nqg93nbctw8lchz_415r0000gn/T/demo065054190/client.mirror_rest.crt')
+  //     .toString(),
+  // },
 });
 global.pool = pool;
 

@@ -1,7 +1,9 @@
 # To switch db to TimescaleDB, change TIMESCALEDB=true, SPRING_PROFILES_ACTIVE=v2 and change db image
 version: "3.7"
 services:
-  db:
+  postgresdb:
+    deploy:
+      replicas: 0
     image: postgres:13.3-alpine # Or timescale/timescaledb-ha:pg13.3-ts2.3.1-p1
     restart: unless-stopped
     stop_grace_period: 2m
@@ -25,7 +27,28 @@ services:
     ports:
       - 5432:5432
 
+  db:
+    image: cockroachdb/cockroach:v21.1.7
+    restart: unless-stopped
+    stop_grace_period: 2m
+    stop_signal: SIGTERM
+    tty: true
+    command: start-single-node --insecure
+    ports:
+      - 5432:26257
+
+  db-init:
+    depends_on:
+      - db
+    image: cockroachdb/cockroach:v21.1.7
+    restart: on-failure
+    entrypoint: /init.sh
+    volumes:
+      - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/init.sh
+
   grpc:
+    depends_on:
+      - db-init
     image: gcr.io/mirrornode/hedera-mirror-grpc:main
     pull_policy: always
     restart: unless-stopped
@@ -39,13 +62,15 @@ services:
       - 5600:5600
 
   importer:
+    depends_on:
+      - db-init
     image: gcr.io/mirrornode/hedera-mirror-importer:main
     pull_policy: always
     restart: unless-stopped
     environment:
       HEDERA_MIRROR_IMPORTER_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
-      SPRING_PROFILES_ACTIVE: "v1"
+      SPRING_PROFILES_ACTIVE: "v2"
       SPRING_REDIS_HOST: redis
     volumes:
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
@@ -71,6 +96,8 @@ services:
       - 6379:6379
 
   rest:
+    depends_on:
+      - db-init
     image: gcr.io/mirrornode/hedera-mirror-rest:main
     pull_policy: always
     environment:
@@ -81,6 +108,8 @@ services:
       - 5551:5551
 
   rosetta:
+    depends_on:
+      - db-init
     image: gcr.io/mirrornode/hedera-mirror-rosetta:main
     pull_policy: always
     environment:

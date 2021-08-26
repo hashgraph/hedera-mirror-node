@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.UUID;
 import lombok.Data;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.RowMapper;
@@ -35,10 +36,12 @@ public class CustomFeeWrapper {
     private final CustomFee customFee;
 
     public CustomFeeWrapper(Long amount, Long amountDenominator, Long collectorAccountId, long createdTimestamp,
-                            Long denominatingTokenId, Long maximumAmount, long minimumAmount, long tokenId) {
+                            Long denominatingTokenId, UUID id, Long maximumAmount, long minimumAmount, long tokenId) {
         customFee = new CustomFee();
         customFee.setAmount(amount);
         customFee.setAmountDenominator(amountDenominator);
+        customFee.setCreatedTimestamp(createdTimestamp);
+        customFee.setId(id);
 
         if (collectorAccountId != null) {
             customFee.setCollectorAccountId(EntityIdEndec.decode(collectorAccountId, EntityTypeEnum.ACCOUNT));
@@ -50,6 +53,6 @@ public class CustomFeeWrapper {
 
         customFee.setMaximumAmount(maximumAmount);
         customFee.setMinimumAmount(minimumAmount);
-        customFee.setId(new CustomFee.Id(createdTimestamp, EntityIdEndec.decode(tokenId, EntityTypeEnum.TOKEN)));
+        customFee.setTokenId(EntityIdEndec.decode(tokenId, EntityTypeEnum.TOKEN));
     }
 }

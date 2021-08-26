@@ -21,24 +21,23 @@
 'use strict';
 
 class TransactionType {
-  /**
-   * Parses transaction type columns into object
-   */
-  constructor(type) {
-    this.name = type.name;
-    this.entityType = type.entity_type;
-    this.protoId = type.proto_id;
-  }
-
   static tableAlias = 'ttt';
   static tableName = 't_transaction_types';
-
   static ENTITY_TYPE = `entity_type`;
   static ENTITY_TYPE_FULL_NAME = `${this.tableAlias}.${this.ENTITY_TYPE}`;
   static NAME = `name`;
   static NAME_FULL_NAME = `${this.tableAlias}.${this.NAME}`;
   static PROTO_ID = `proto_id`;
   static PROTO_ID_FULL_NAME = `${this.tableAlias}.${this.PROTO_ID}`;
+
+  /**
+   * Parses transaction type columns into object
+   */
+  constructor(type) {
+    this.name = type.name;
+    this.entityType = type.entity_type;
+    this.protoId = Number(type.proto_id);
+  }
 }
 
 module.exports = TransactionType;

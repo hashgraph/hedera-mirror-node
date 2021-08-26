@@ -150,18 +150,21 @@ class RepositoryEntityListenerTest extends IntegrationTest {
     @Test
     void onCustomFee() {
         CustomFee customFee1 = new CustomFee();
-        customFee1.setId(new CustomFee.Id(1010L, TOKEN_ID));
+        customFee1.setCreatedTimestamp(1010L);
+        customFee1.setTokenId(TOKEN_ID);
 
         CustomFee customFee2 = new CustomFee();
         customFee2.setAmount(33L);
         customFee2.setCollectorAccountId(ENTITY_ID);
-        customFee2.setId(new CustomFee.Id(1020L, TOKEN_ID));
+        customFee2.setCreatedTimestamp(1020L);
+        customFee2.setTokenId(TOKEN_ID);
 
         CustomFee customFee3 = new CustomFee();
         customFee3.setAmount(33L);
         customFee3.setAmountDenominator(47L);
         customFee3.setCollectorAccountId(ENTITY_ID);
-        customFee3.setId(new CustomFee.Id(1020L, TOKEN_ID));
+        customFee3.setCreatedTimestamp(1020L);
+        customFee3.setTokenId(TOKEN_ID);
 
         repositoryEntityListener.onCustomFee(customFee1);
         repositoryEntityListener.onCustomFee(customFee2);

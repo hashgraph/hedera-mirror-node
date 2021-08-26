@@ -28,12 +28,13 @@ spring:
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
-    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
+    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?sslmode=require
     username: ${hedera.mirror.grpc.db.username}
   flyway:
     baselineOnMigrate: true
     connectRetries: 10
     ignoreMissingMigrations: true
+    password: ${hedera.mirror.grpc.db.password}
     placeholders:
       api-password: mirror_api_pass
       api-user: mirror_api
@@ -47,6 +48,7 @@ spring:
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       topicRunningHashV2AddedTimestamp: 0
+    user: ${hedera.mirror.grpc.db.username}
   redis:
     host: ${embedded.redis.host}
     password: ${embedded.redis.password}

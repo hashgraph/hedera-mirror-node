@@ -36,7 +36,6 @@ public class DbProperties {
     @NotBlank
     private String name = "";
 
-    @NotBlank
     private String password = "";
 
     @Min(0)

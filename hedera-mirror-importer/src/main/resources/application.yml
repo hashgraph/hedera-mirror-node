@@ -3,12 +3,12 @@ hedera:
     importer:
       db:
         host: 127.0.0.1
-        loadBalance: true
+        loadBalance: false
         name: mirror_node
         owner: ${hedera.mirror.importer.db.username}
         ownerPassword: ${hedera.mirror.importer.db.password}
         password: mirror_node_pass
-        port: 5432
+        port: 26257
         restPassword: mirror_api_pass
         restUsername: mirror_api
         schema: public
@@ -67,7 +67,7 @@ spring:
   datasource:
     name: ${hedera.mirror.importer.db.name}
     password: ${hedera.mirror.importer.db.password}
-    url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}
+    url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}?sslmode=require
     username: ${hedera.mirror.importer.db.username}
     hikari:
       data-source-properties:
@@ -79,7 +79,6 @@ spring:
     baselineOnMigrate: true
     connectRetries: 20
     ignoreMissingMigrations: true
-    password: ${hedera.mirror.importer.db.ownerPassword}
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}
       api-user: ${hedera.mirror.importer.db.restUsername}
@@ -92,11 +91,11 @@ spring:
       compressionAge: 604800000000000
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
-    user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:
       hibernate:
         generate_statistics: true
+        globally_quoted_identifiers: true
         jdbc:
           batch_size: 250
         order_inserts: true

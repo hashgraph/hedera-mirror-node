@@ -25,6 +25,7 @@ import java.time.Instant;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.junit.jupiter.EnabledIf;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -32,6 +33,7 @@ import reactor.test.StepVerifier;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
+@EnabledIf("#{environment.acceptsProfiles('!v2')}")
 class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Resource

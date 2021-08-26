@@ -29,6 +29,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -36,8 +37,7 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyIn;
-import org.postgresql.copy.PGCopyOutputStream;
+import org.postgresql.copy.CopyManager;
 
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
@@ -52,12 +52,12 @@ import com.hedera.mirror.importer.exception.ParserException;
 @Log4j2
 public class PgCopy<T> {
 
-    private final String sql;
-    private final ObjectWriter writer;
-    private final ParserProperties properties;
     protected final MeterRegistry meterRegistry;
     protected final String tableName;
     protected final Timer insertDurationMetric;
+    private final String sql;
+    private final ObjectWriter writer;
+    private final ParserProperties properties;
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
         this(entityClass, meterRegistry, properties, entityClass.getSimpleName());
@@ -109,14 +109,11 @@ public class PgCopy<T> {
 
     protected void persistItems(Collection<T> items, Connection connection) throws SQLException, IOException {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
-        CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
+        CopyManager copyManager = pgConnection.getCopyAPI();
 
-        try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
-            writer.writeValue(pgCopyOutputStream, items);
-        } finally {
-            if (copyIn.isActive()) {
-                copyIn.cancelCopy();
-            }
+        for (var item : items) {
+            byte[] bytes = writer.writeValueAsBytes(item);
+            copyManager.copyIn(sql, new ByteArrayInputStream(bytes), bytes.length);
         }
     }
 }

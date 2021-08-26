@@ -109,28 +109,87 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final Key TOKEN_UPDATE_REF_KEY = keyFromString(KEY2);
     private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
     private static final long TRANSFER_TIMESTAMP = 15L;
-
-    @Resource
-    private JdbcTemplate jdbcTemplate;
-
     @Resource
     protected TokenRepository tokenRepository;
-
     @Resource
     protected TokenAccountRepository tokenAccountRepository;
-
     @Resource
     protected TokenTransferRepository tokenTransferRepository;
-
     @Resource
     protected NftRepository nftRepository;
-
     @Resource
     protected NftTransferRepository nftTransferRepository;
-
+    @Resource
+    private JdbcTemplate jdbcTemplate;
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
     @Resource
     private CacheManager cacheManager;
+
+    private static List<CustomFee> deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
+        CustomFee customFee = new CustomFee();
+        customFee.setCreatedTimestamp(consensusTimestamp);
+        customFee.setTokenId(tokenId);
+        return List.of(customFee);
+    }
+
+    private static List<CustomFee> nonEmptyCustomFees(long consensusTimestamp, EntityId tokenId) {
+        CustomFee fixedFee1 = new CustomFee();
+        fixedFee1.setAmount(11L);
+        fixedFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1);
+        fixedFee1.setCreatedTimestamp(consensusTimestamp);
+        fixedFee1.setTokenId(tokenId);
+
+        CustomFee fixedFee2 = new CustomFee();
+        fixedFee2.setAmount(12L);
+        fixedFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
+        fixedFee2.setCreatedTimestamp(consensusTimestamp);
+        fixedFee2.setTokenId(tokenId);
+
+        CustomFee fixedFee3 = new CustomFee();
+        fixedFee3.setAmount(13L);
+        fixedFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fixedFee3.setDenominatingTokenId(tokenId);
+        fixedFee3.setCreatedTimestamp(consensusTimestamp);
+        fixedFee3.setTokenId(tokenId);
+
+        CustomFee fractionalFee = new CustomFee();
+        fractionalFee.setAmount(14L);
+        fractionalFee.setAmountDenominator(31L);
+        fractionalFee.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
+        fractionalFee.setMaximumAmount(100L);
+        fractionalFee.setCreatedTimestamp(consensusTimestamp);
+        fractionalFee.setTokenId(tokenId);
+
+        return List.of(fixedFee1, fixedFee2, fixedFee3, fractionalFee);
+    }
+
+    private static Stream<Arguments> provideCustomFees() {
+        return Stream.of(
+                Arguments.of("empty custom fees", deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)),
+                Arguments.of("non-empty custom fees", nonEmptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
+        );
+    }
+
+    private static Stream<Arguments> provideAssessedCustomFees() {
+        // paid in HBAR
+        AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
+        assessedCustomFee1.setAmount(12505L);
+        assessedCustomFee1.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
+
+        // paid in FEE_DOMAIN_TOKEN_ID
+        AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
+        assessedCustomFee2.setAmount(8750L);
+        assessedCustomFee2.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
+        assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
+
+        List<AssessedCustomFee> assessedCustomFees = List.of(assessedCustomFee1, assessedCustomFee2);
+
+        return Stream.of(
+                Arguments.of("no assessed custom fees", Lists.emptyList()),
+                Arguments.of("has assessed custom fees", assessedCustomFees)
+        );
+    }
 
     @BeforeEach
     void before() {
@@ -1183,69 +1242,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         return builder.build();
     }
 
-    private static List<CustomFee> deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
-        CustomFee customFee = new CustomFee();
-        customFee.setId(new CustomFee.Id(consensusTimestamp, tokenId));
-        return List.of(customFee);
-    }
-
-    private static List<CustomFee> nonEmptyCustomFees(long consensusTimestamp, EntityId tokenId) {
-        CustomFee.Id id = new CustomFee.Id(consensusTimestamp, tokenId);
-
-        CustomFee fixedFee1 = new CustomFee();
-        fixedFee1.setAmount(11L);
-        fixedFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1);
-        fixedFee1.setId(id);
-
-        CustomFee fixedFee2 = new CustomFee();
-        fixedFee2.setAmount(12L);
-        fixedFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
-        fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
-        fixedFee2.setId(id);
-
-        CustomFee fixedFee3 = new CustomFee();
-        fixedFee3.setAmount(13L);
-        fixedFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
-        fixedFee3.setDenominatingTokenId(tokenId);
-        fixedFee3.setId(id);
-
-        CustomFee fractionalFee = new CustomFee();
-        fractionalFee.setAmount(14L);
-        fractionalFee.setAmountDenominator(31L);
-        fractionalFee.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
-        fractionalFee.setMaximumAmount(100L);
-        fractionalFee.setId(id);
-
-        return List.of(fixedFee1, fixedFee2, fixedFee3, fractionalFee);
-    }
-
-    private static Stream<Arguments> provideCustomFees() {
-        return Stream.of(
-                Arguments.of("empty custom fees", deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)),
-                Arguments.of("non-empty custom fees", nonEmptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
-        );
-    }
-
-    private static Stream<Arguments> provideAssessedCustomFees() {
-        // paid in HBAR
-        AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
-        assessedCustomFee1.setAmount(12505L);
-        assessedCustomFee1.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
-
-        // paid in FEE_DOMAIN_TOKEN_ID
-        AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
-        assessedCustomFee2.setAmount(8750L);
-        assessedCustomFee2.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
-        assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
-
-        List<AssessedCustomFee> assessedCustomFees = List.of(assessedCustomFee1, assessedCustomFee2);
-
-        return Stream.of(
-                Arguments.of("no assessed custom fees", Lists.emptyList()),
-                Arguments.of("has assessed custom fees", assessedCustomFees)
-        );
-    }
-
     private List<com.hederahashgraph.api.proto.java.AssessedCustomFee> convertAssessedCustomFees(
             List<AssessedCustomFee> assessedCustomFees) {
         return assessedCustomFees.stream()
@@ -1268,12 +1264,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
                 .setFeeCollectorAccountId(convertAccountId(customFee.getCollectorAccountId()));
 
-        if (customFee.getAmountDenominator() == null) {
+        if (customFee.getAmountDenominator() > 0) {
             // fixed fee
             var fixedFee = FixedFee.newBuilder().setAmount(customFee.getAmount());
             EntityId denominatingTokenId = customFee.getDenominatingTokenId();
             if (denominatingTokenId != null) {
-                if (denominatingTokenId.equals(customFee.getId().getTokenId())) {
+                if (denominatingTokenId.equals(customFee.getTokenId())) {
                     fixedFee.setDenominatingTokenId(TokenID.getDefaultInstance());
                 } else {
                     fixedFee.setDenominatingTokenId(convertTokenId(denominatingTokenId));
@@ -1300,7 +1296,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private List<com.hederahashgraph.api.proto.java.CustomFee> convertCustomFees(List<CustomFee> customFees) {
         return customFees.stream()
-                .filter(customFee -> customFee.getAmount() != null)
+                .filter(customFee -> customFee.getAmount() > 0)
                 .map(this::convertCustomFee)
                 .collect(Collectors.toList());
     }

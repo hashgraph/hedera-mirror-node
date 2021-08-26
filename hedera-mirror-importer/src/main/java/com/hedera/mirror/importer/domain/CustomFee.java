@@ -21,15 +21,15 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import java.io.Serializable;
+import java.util.UUID;
+import javax.persistence.Column;
 import javax.persistence.Convert;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import lombok.AllArgsConstructor;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
@@ -38,43 +38,41 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @Data
 @Entity
 @NoArgsConstructor
-public class CustomFee implements Persistable<CustomFee.Id> {
+public class CustomFee implements Persistable<UUID> {
 
-    @EmbeddedId
-    @JsonUnwrapped
-    private Id id;
+    private long amount;
 
-    private Long amount;
-
-    private Long amountDenominator;
+    private long amountDenominator;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId collectorAccountId;
 
+    private long createdTimestamp;
+
     @Convert(converter = TokenIdConverter.class)
     private EntityId denominatingTokenId;
+
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(updatable = false, nullable = false)
+    private UUID id = UUID.randomUUID();
 
     private Long maximumAmount;
 
     private long minimumAmount;
 
+    @Convert(converter = TokenIdConverter.class)
+    private EntityId tokenId;
+
+    @Override
+    public UUID getId() {
+        return id;
+    }
+
     @JsonIgnore
     @Override
     public boolean isNew() {
-        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
-    }
-
-    @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Id implements Serializable {
-
-        private static final long serialVersionUID = 2713612586558952011L;
-
-        private long createdTimestamp;
-
-        @Convert(converter = TokenIdConverter.class)
-        private EntityId tokenId;
+        return true;
     }
 }

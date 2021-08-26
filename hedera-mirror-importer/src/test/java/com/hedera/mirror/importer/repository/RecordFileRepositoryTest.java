@@ -56,7 +56,7 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash("fileHash" + id)
                 .hash("hash" + id)
-                .idx(id)
+                .index(id)
                 .loadEnd(id)
                 .loadStart(id)
                 .name(id + ".rcd")

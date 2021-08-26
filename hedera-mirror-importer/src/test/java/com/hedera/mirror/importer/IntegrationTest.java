@@ -54,11 +54,6 @@ public abstract class IntegrationTest {
         COCKROACH.start();
     }
 
-    @BeforeEach
-    void logTest(TestInfo testInfo) {
-        log.info("Executing: {}", testInfo.getDisplayName());
-    }
-
     @SuppressWarnings("unused")
     @DynamicPropertySource
     static void databaseProperties(DynamicPropertyRegistry registry) {
@@ -73,5 +68,10 @@ public abstract class IntegrationTest {
         registry.add("embedded.postgresql.schema", COCKROACH::getDatabaseName);
         registry.add("embedded.postgresql.user", COCKROACH::getUsername);
         registry.add("embedded.postgresql.password", COCKROACH::getPassword);
+    }
+
+    @BeforeEach
+    void logTest(TestInfo testInfo) {
+        log.info("Executing: {}", testInfo.getDisplayName());
     }
 }

@@ -863,12 +863,12 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertCustomFees(List<com.hederahashgraph.api.proto.java.CustomFee> customFeeList,
                                   long consensusTimestamp, EntityId tokenId) {
-        CustomFee.Id id = new CustomFee.Id(consensusTimestamp, tokenId);
 
         for (var protoCustomFee : customFeeList) {
             CustomFee customFee = new CustomFee();
-            customFee.setId(id);
+            customFee.setCreatedTimestamp(consensusTimestamp);
             customFee.setCollectorAccountId(EntityId.of(protoCustomFee.getFeeCollectorAccountId()));
+            customFee.setTokenId(tokenId);
 
             var feeCase = protoCustomFee.getFeeCase();
             switch (feeCase) {
@@ -889,7 +889,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (customFeeList.isEmpty()) {
             // for empty custom fees, add a single row with only the timestamp and tokenId.
             CustomFee customFee = new CustomFee();
-            customFee.setId(id);
+            customFee.setCreatedTimestamp(consensusTimestamp);
+            customFee.setTokenId(tokenId);
 
             entityListener.onCustomFee(customFee);
         }

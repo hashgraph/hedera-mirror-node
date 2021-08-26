@@ -88,6 +88,7 @@
         <sonar.issue.ignore.multicriteria.e2.ruleKey>java:S125</sonar.issue.ignore.multicriteria.e2.ruleKey>
         <sonar.issue.ignore.multicriteria.e3.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e3.resourceKey>
         <sonar.issue.ignore.multicriteria.e3.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.e3.ruleKey>
+        <testcontainers.version>1.16.0</testcontainers.version>
     </properties>
 
     <scm>

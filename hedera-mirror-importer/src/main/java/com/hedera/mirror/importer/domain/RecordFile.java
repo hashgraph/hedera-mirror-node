@@ -69,7 +69,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String hash;
 
-    private Long idx;
+    private Long index;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
@@ -98,15 +98,5 @@ public class RecordFile implements StreamFile<RecordItem> {
     @Override
     public StreamType getType() {
         return StreamType.RECORD;
-    }
-
-    @Override
-    public Long getIndex() {
-        return idx;
-    }
-
-    @Override
-    public void setIndex(Long index) {
-        this.idx = index;
     }
 }

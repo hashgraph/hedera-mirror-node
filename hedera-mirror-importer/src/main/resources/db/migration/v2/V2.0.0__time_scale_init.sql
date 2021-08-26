@@ -97,7 +97,7 @@ create table if not exists crypto_transfer
     primary key (consensus_timestamp, entity_id, amount)
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
-ALTER TABLE crypto_transfer EXPERIMENTAL_AUDIT SET READ WRITE;
+
 -- custom_fee
 create table if not exists custom_fee
 (
@@ -106,10 +106,10 @@ create table if not exists custom_fee
     collector_account_id  bigint          default 0,
     created_timestamp     bigint not null,
     denominating_token_id bigint          default 0,
+    id                    uuid            default gen_random_uuid() primary key,
     maximum_amount        bigint,
     minimum_amount        bigint not null default 0,
-    token_id              bigint not null,
-    primary key (created_timestamp, token_id, amount, amount_denominator, collector_account_id, denominating_token_id)
+    token_id              bigint not null
 );
 comment on table custom_fee is 'HTS Custom fees';
 
@@ -180,7 +180,7 @@ create table if not exists nft
     metadata           bytea,
     serial_number      bigint not null,
     token_id           bigint not null,
-    primary key (created_timestamp, token_id, serial_number)
+    primary key (token_id, serial_number)
 );
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
@@ -218,7 +218,7 @@ create table if not exists record_file
     hapi_version_minor int,
     hapi_version_patch int,
     hash               character varying(96)  not null,
-    idx                bigint                 not null,
+    "index"            bigint                 not null,
     load_start         bigint                 not null,
     load_end           bigint                 not null,
     name               character varying(250) not null,
@@ -235,7 +235,7 @@ create table if not exists schedule
     creator_account_id  bigint not null,
     executed_timestamp  bigint null,
     payer_account_id    bigint not null,
-    schedule_id         bigint not null,
+    schedule_id         bigint not null primary key,
     transaction_body    bytea  not null
 );
 comment on table schedule is 'Schedule entity entries';

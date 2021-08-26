@@ -826,7 +826,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(fileHash)
                 .hash(fileHash)
-                .idx(index)
+                .index(index)
                 .loadEnd(Instant.now().getEpochSecond())
                 .loadStart(Instant.now().getEpochSecond())
                 .name(filename)
