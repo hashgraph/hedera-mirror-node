@@ -46,6 +46,12 @@ const processRow = (row) => {
   accRecord.memo = row.memo;
   accRecord.receiver_sig_required = row.receiver_sig_required;
 
+  logger.info(`*** getAccounts processRow row.memo: ${JSON.stringify(row.memo)}`);
+  logger.info(`*** getAccounts processRow accRecord.memo: ${JSON.stringify(accRecord.memo)}`);
+  logger.info(`*** getAccounts processRow row.receiver_sig_required: ${JSON.stringify(row.receiver_sig_required)}`);
+  logger.info(
+    `*** getAccounts processRow accRecord.receiver_sig_required: ${JSON.stringify(accRecord.receiver_sig_required)}`
+  );
   return accRecord;
 };
 
@@ -94,6 +100,8 @@ const getAccountQuery = (
        e.auto_renew_period,
        e.key,
        e.deleted,
+       e.memo,
+       e.receiver_sig_required,
        (
          select json_agg(
            json_build_object(
@@ -112,7 +120,7 @@ const getAccountQuery = (
       ${limitQuery || ''}
     ) ab
     ${joinType} join (
-      select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key
+      select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key, memo, receiver_sig_required
       from entity e
       where ${entityWhereFilter}
       order by e.id ${order || ''}

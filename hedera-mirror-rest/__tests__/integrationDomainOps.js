@@ -186,7 +186,7 @@ const addEntity = async (defaults, entity) => {
     deleted: false,
     expiration_timestamp: null,
     key: null,
-    memo: '',
+    memo: 'entity memo',
     public_key: null,
     realm: 0,
     receiver_sig_required: false,

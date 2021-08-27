@@ -166,7 +166,7 @@ public abstract class AbstractTransactionHandlerTest {
                     receiverSigRequiredField.getType() == FieldDescriptor.Type.BOOL;
 
             if ((isMemoString && memoWrapperField == null) || (isReceiverSigRequiredBool && receiverSigRequiredWrapperField == null)) {
-                testSpecs = getUpdateEntityTestSpecsForCreateTransaction(memoField, receiverSigRequiredField);
+                testSpecs = getUpdateEntityTestSpecsForCreateTransaction(memoField);
             } else {
                 testSpecs = getUpdateEntityTestSpecsForUpdateTransaction(
                         memoField,
@@ -221,8 +221,7 @@ public abstract class AbstractTransactionHandlerTest {
         return entity;
     }
 
-    private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField,
-                                                                                    FieldDescriptor receiverSigRequiredField) {
+    private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
@@ -334,7 +333,7 @@ public abstract class AbstractTransactionHandlerTest {
         input = new Entity();
         input.setMemo(DEFAULT_MEMO);
         expected = getExpectedUpdatedEntity();
-        Message updatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
+        Message clearedMemoInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
 
         if (receiverSigRequiredWrapperField != null) {
             input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
@@ -346,7 +345,7 @@ public abstract class AbstractTransactionHandlerTest {
                         .description("update entity with empty StringValue memo, expect memo cleared")
                         .expected(expected)
                         .input(input)
-                        .recordItem(getRecordItem(body, updatedInnerBody))
+                        .recordItem(getRecordItem(body, clearedMemoInnerBody))
                         .build()
         );
 
@@ -355,7 +354,8 @@ public abstract class AbstractTransactionHandlerTest {
         expected.setMemo(UPDATED_MEMO);
         input = new Entity();
         input.setMemo(DEFAULT_MEMO);
-        updatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO)).build();
+        Message memoStringValueUpdatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO))
+                .build();
 
         if (receiverSigRequiredWrapperField != null) {
             input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
@@ -367,7 +367,7 @@ public abstract class AbstractTransactionHandlerTest {
                         .description("update entity with non-empty StringValue memo, expect memo updated")
                         .expected(expected)
                         .input(input)
-                        .recordItem(getRecordItem(body, updatedInnerBody))
+                        .recordItem(getRecordItem(body, memoStringValueUpdatedInnerBody))
                         .build()
         );
 

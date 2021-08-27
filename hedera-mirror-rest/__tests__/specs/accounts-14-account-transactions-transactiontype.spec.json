@@ -216,6 +216,8 @@
     "auto_renew_period": null,
     "key": null,
     "deleted": false,
+    "memo": "entity memo",
+    "receiver_sig_required": false,
     "links": {
       "next": null
     }
