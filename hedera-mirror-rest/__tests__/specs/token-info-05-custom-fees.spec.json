@@ -149,16 +149,6 @@
       "fractional_fees": [
         {
           "amount": {
-            "denominator": 13,
-            "numerator": 9
-          },
-          "collector_account_id": "0.0.8902",
-          "denominating_token_id": "0.0.1135",
-          "minimum": 1,
-          "net_of_transfers": false
-        },
-        {
-          "amount": {
             "denominator": 17,
             "numerator": 11
           },
@@ -166,6 +156,16 @@
           "denominating_token_id": "0.0.1135",
           "maximum": 987,
           "minimum": 79,
+          "net_of_transfers": false
+        },
+        {
+          "amount": {
+            "denominator": 13,
+            "numerator": 9
+          },
+          "collector_account_id": "0.0.8902",
+          "denominating_token_id": "0.0.1135",
+          "minimum": 1,
           "net_of_transfers": false
         },
         {

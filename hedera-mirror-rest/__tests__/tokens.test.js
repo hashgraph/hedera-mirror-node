@@ -1338,7 +1338,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                      'royalty_denominator', royalty_denominator,
                      'royalty_numerator', royalty_numerator,
                      'token_id', token_id::text
-                    ) order by amount, collector_account_id, denominating_token_id)
+                    ) order by collector_account_id, denominating_token_id, amount, royalty_numerator)
                     from custom_fee cf
                     where token_id = $1 ${timestampCondition && 'and ' + timestampCondition}
                     group by cf.created_timestamp
