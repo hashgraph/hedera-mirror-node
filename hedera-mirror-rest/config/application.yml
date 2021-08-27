@@ -10,7 +10,7 @@ hedera:
           connectionTimeout: 20000
           maxConnections: 10
           statementTimeout: 20000
-        port: 5432
+        port: 26257
         username: mirror_api
       includeHostInLink: false
       log:

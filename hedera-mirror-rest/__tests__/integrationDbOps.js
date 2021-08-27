@@ -96,7 +96,7 @@ const instantiateDatabase = async () => {
     .withEnv('POSTGRES_DB', dbConfig.name)
     .withEnv('POSTGRES_USER', dbAdminUser)
     .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
-    .withExposedPorts(26257, 8080)
+    .withExposedPorts(dbConfig.port, 8080)
     .withWaitStrategy(Wait.forLogMessage('CockroachDB node starting'))
     .withDefaultLogDriver()
     .withCmd(['start-single-node', '--insecure'])

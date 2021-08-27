@@ -45,7 +45,7 @@ module.exports = async (sqlConnection) => {
     'version',
     'file_hash',
     'bytes',
-    'index',
+    '"index"',
   ];
   const placeholders = fields.map((_, index) => `$${index + 1}`).join(',');
   const query = [`insert into record_file (${fields.join(',')})`, `values (${placeholders})`].join('\n');
