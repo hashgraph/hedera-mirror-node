@@ -58,6 +58,10 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
         if (txMessage.hasMemo()) {
             entity.setMemo(txMessage.getMemo().getValue());
         }
+
+        if (txMessage.hasReceiverSigRequiredWrapper()) {
+            entity.setReceiverSigRequired(txMessage.getReceiverSigRequiredWrapper().getValue());
+        }
     }
 
     @Override
