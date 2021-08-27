@@ -189,6 +189,7 @@ const addEntity = async (defaults, entity) => {
     memo: '',
     public_key: null,
     realm: 0,
+    receiver_sig_required: false,
     shard: 0,
     type: 1,
     ...defaults,
@@ -197,8 +198,8 @@ const addEntity = async (defaults, entity) => {
 
   await sqlConnection.query(
     `INSERT INTO entity (id, type, shard, realm, num, expiration_timestamp, deleted, public_key,
-                         auto_renew_period, key, memo)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+                         auto_renew_period, key, memo, receiver_sig_required)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
     [
       EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId(),
       entity.type,
@@ -211,6 +212,7 @@ const addEntity = async (defaults, entity) => {
       entity.auto_renew_period,
       entity.key,
       entity.memo,
+      entity.receiver_sig_required,
     ]
   );
 };

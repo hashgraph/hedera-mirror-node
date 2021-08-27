@@ -69,6 +69,8 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected static final String DEFAULT_MEMO = "default entity memo";
 
+    protected static final boolean DEFAULT_RECEIVER_SIG_REQUIRED = false;
+
     protected static final Key DEFAULT_SUBMIT_KEY = getKey(
             "5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
 
@@ -350,8 +352,12 @@ public abstract class AbstractTransactionHandlerTest {
                 case "keys":
                     entity.setKey(DEFAULT_KEY_LIST.toByteArray());
                     break;
+                case "receiverSigRequired":
+                    entity.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
+                    break;
                 case "submitKey":
                     entity.setSubmitKey(DEFAULT_SUBMIT_KEY.toByteArray());
+                    break;
                 default:
                     break;
             }
@@ -382,8 +388,12 @@ public abstract class AbstractTransactionHandlerTest {
                 case "keys":
                     builder.setField(field, DEFAULT_KEY_LIST);
                     break;
+                case "receiverSigRequired":
+                    builder.setField(field, DEFAULT_RECEIVER_SIG_REQUIRED);
+                    break;
                 case "submitKey":
                     builder.setField(field, DEFAULT_SUBMIT_KEY);
+                    break;
                 default:
                     break;
             }

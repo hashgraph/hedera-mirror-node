@@ -57,6 +57,7 @@ public class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactio
         }
 
         entity.setMemo(txMessage.getMemo());
+        entity.setReceiverSigRequired(txMessage.getReceiverSigRequired());
     }
 
     @Override
