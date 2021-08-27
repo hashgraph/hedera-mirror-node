@@ -53,4 +53,9 @@ class ConsensusDeleteTopicTransactionSupplierTest extends AbstractTransactionSup
                 .returns(ONE_TINYBAR, TopicDeleteTransaction::getMaxTransactionFee)
                 .returns(TOPIC_ID, TopicDeleteTransaction::getTopicId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return ConsensusDeleteTopicTransactionSupplier.class;
+    }
 }

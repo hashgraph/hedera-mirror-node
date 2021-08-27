@@ -58,4 +58,9 @@ class TokenDissociateTransactionSupplierTest extends AbstractTransactionSupplier
                 .returns(ONE_TINYBAR, TokenDissociateTransaction::getMaxTransactionFee)
                 .returns(List.of(TOKEN_ID), TokenDissociateTransaction::getTokenIds);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenDissociateTransactionSupplier.class;
+    }
 }

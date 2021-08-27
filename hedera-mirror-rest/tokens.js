@@ -423,7 +423,9 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
         'royalty_denominator', ${CustomFee.ROYALTY_DENOMINATOR},
         'royalty_numerator', ${CustomFee.ROYALTY_NUMERATOR},
         'token_id', ${CustomFee.TOKEN_ID}::text
-    ) order by ${CustomFee.AMOUNT}, ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID})
+    ) order by ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID}, ${CustomFee.AMOUNT}, ${
+    CustomFee.ROYALTY_NUMERATOR
+  })
     from ${CustomFee.tableName} ${CustomFee.tableAlias}
     where ${conditions.join(' and ')}
     group by ${CustomFee.CREATED_TIMESTAMP_FULL_NAME}

@@ -120,4 +120,9 @@ class TokenUpdateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .extracting(TokenUpdateTransaction::getTokenMemo, STRING)
                 .contains("Mirror node updated test token");
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenUpdateTransactionSupplier.class;
+    }
 }

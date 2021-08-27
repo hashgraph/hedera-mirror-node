@@ -18,6 +18,8 @@
         <sonar.exclusions>pom.xml</sonar.exclusions>
         <sonar.sources>${project.basedir}</sonar.sources>
         <sonar.javascript.lcov.reportPaths>${project.basedir}/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
+        <frontend-maven-plugin.version>1.12.0</frontend-maven-plugin.version>
+        <openapi-generator.version>5.2.1</openapi-generator.version>
     </properties>
 
     <build>
@@ -25,7 +27,7 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.12.0</version>
+                <version>${frontend-maven-plugin.version}</version>
                 <configuration>
                     <installDirectory>${project.basedir}</installDirectory>
                 </configuration>
@@ -112,6 +114,24 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
+            </plugin>
+            <!-- Attempt to create the REST API client in Java to validate our OpenAPI spec. -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/api/v1/openapi.yml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>jersey2</library>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

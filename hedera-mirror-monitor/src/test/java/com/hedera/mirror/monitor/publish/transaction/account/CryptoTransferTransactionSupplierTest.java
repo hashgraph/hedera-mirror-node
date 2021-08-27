@@ -165,4 +165,9 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
                 .containsEntry(ACCOUNT_ID, transferAmount.negated())
                 .containsEntry(ACCOUNT_ID_2, transferAmount);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return CryptoTransferTransactionSupplier.class;
+    }
 }

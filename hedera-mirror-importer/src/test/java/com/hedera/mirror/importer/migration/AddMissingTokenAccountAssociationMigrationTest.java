@@ -108,8 +108,10 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     @Resource
     private RecordParserProperties parserProperties;
 
+    private String migrationSql;
+
     @Value("classpath:db/migration/v1/V1.43.2__add_missing_token_account_association.sql")
-    private File migrationSql;
+    private File migrationSqlFile;
 
     @Resource
     private RecordFileRepository recordFileRepository;
@@ -123,14 +125,18 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     @Value("classpath:db/scripts/undo_v1.43.2.sql")
     private File undoSql;
 
+    @Value("${hedera.mirror.importer.db.username}")
+    private String username;
+
     @BeforeEach
-    void beforeEach() {
+    void beforeEach() throws IOException {
         customFeePgCopy = new PgCopy<>(CustomFee.class, meterRegistry, parserProperties);
+        migrationSql = FileUtils.readFileToString(migrationSqlFile, "UTF-8").replace("${db-user}", username);
     }
 
     @AfterEach
     void afterEach() throws IOException {
-        runScript(undoSql);
+        jdbcOperations.update(FileUtils.readFileToString(undoSql, "UTF-8"));
     }
 
     @ParameterizedTest
@@ -143,7 +149,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     })
     void verify(Long lastTransactionConsensusTimestamp, boolean expectAdded, boolean freezeDefault,
                 boolean freezeKey, boolean kycKey, TokenFreezeStatusEnum expectedFreezeStatus,
-                TokenKycStatusEnum expectedKycStatus) throws IOException {
+                TokenKycStatusEnum expectedKycStatus) {
         // given
         // at time of the new token creation:
         //     collector1 is a fixed fee collector who collects fee in the new token and the existing token
@@ -211,7 +217,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
 
         // when
         accountBalanceFileParser.parse(previousAccountBalanceFile);
-        runScript(migrationSql);
+        jdbcOperations.execute(migrationSql);
         accountBalanceFileParser.parse(latestAccountBalanceFile);
 
         // then
@@ -225,10 +231,6 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
                     expectedFreezeStatus, expectedKycStatus, NEW_TOKEN));
         }
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccountList);
-    }
-
-    private void runScript(File file) throws IOException {
-        jdbcOperations.update(FileUtils.readFileToString(file, "UTF-8"));
     }
 
     private AccountBalance accountBalance(EntityId accountId, long consensusTimestamp, EntityId... tokens) {
@@ -272,7 +274,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     }
 
     private Token token(long createdTimestamp, boolean freezeDefault, boolean freezeKey, boolean kycKey,
-            EntityId tokenId) {
+                        EntityId tokenId) {
         Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(5);

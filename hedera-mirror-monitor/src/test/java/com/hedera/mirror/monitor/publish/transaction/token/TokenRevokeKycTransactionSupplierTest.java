@@ -55,4 +55,9 @@ class TokenRevokeKycTransactionSupplierTest extends AbstractTransactionSupplierT
                 .returns(ONE_TINYBAR, TokenRevokeKycTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenRevokeKycTransaction::getTokenId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenRevokeKycTransactionSupplier.class;
+    }
 }

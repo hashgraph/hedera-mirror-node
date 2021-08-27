@@ -127,4 +127,9 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
                 .extracting(TokenCreateTransaction::getTokenMemo, STRING)
                 .contains("Mirror node created test token");
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenCreateTransactionSupplier.class;
+    }
 }

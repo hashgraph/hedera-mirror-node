@@ -17,22 +17,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  accounts:
-                    $ref: '#/components/schemas/Accounts'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/AccountsResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: account.id"
+          $ref: '#/components/responses/InvalidParameterError'
       tags:
         - accounts
   /api/v1/accounts/{accountId}:
@@ -57,15 +44,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AccountBalanceTransactions'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: account.id"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -88,26 +67,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  timestamp:
-                    $ref: '#/components/schemas/Timestamp'
-                  balances:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AccountBalance'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/BalancesResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: account.id"
+          $ref: '#/components/responses/InvalidParameterError'
       tags:
         - balances
   /api/v1/schedules:
@@ -126,22 +88,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  schedules:
-                    $ref: '#/components/schemas/Schedules'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/SchedulesResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: schedule.id"
+          $ref: '#/components/responses/InvalidParameterError'
       tags:
         - schedules
   /api/v1/schedules/{scheduleId}:
@@ -159,15 +108,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Schedule'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: scheduleid"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -198,22 +139,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    $ref: '#/components/schemas/Transactions'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TransactionsResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: timestamp"
+          $ref: '#/components/responses/InvalidParameterError'
       tags:
         - transactions
   /api/v1/transactions/{transactionId}:
@@ -236,20 +164,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    $ref: '#/components/schemas/Transactions'
+                $ref: '#/components/schemas/TransactionByIdResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -275,32 +192,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  transactions:
-                    $ref: '#/components/schemas/StateProofFiles'
+                $ref: '#/components/schemas/StateProofResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/TransactionNotFound'
         502:
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/ServiceUnavailableError'
-              example:
-                _status:
-                  messages:
-                    - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
+          $ref: '#/components/responses/ServiceUnavailableError'
       tags:
         - transactions
   /api/v1/topics/{topicId}/messages:
@@ -329,22 +227,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  messages:
-                    $ref: '#/components/schemas/TopicMessages'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TopicMessagesResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: topic_num"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/TopicNotFound'
       tags:
@@ -369,22 +254,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  messages:
-                    $ref: '#/components/schemas/TopicMessages'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TopicMessagesResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: topic_num"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -411,15 +283,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TopicMessage'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: consensus_timestamp"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -442,22 +306,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  tokens:
-                    $ref: '#/components/schemas/Tokens'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TokensResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: account.id"
+          $ref: '#/components/responses/InvalidParameterError'
       tags:
         - tokens
   /api/v1/tokens/{tokenId}:
@@ -572,15 +423,7 @@ paths:
                             amount: 100
                             denominating_token_id: 0.10.7
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: tokenid"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -605,24 +448,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  timestamp:
-                    $ref: '#/components/schemas/Timestamp'
-                  balances:
-                    $ref: '#/components/schemas/TokenDistribution'
-                  links:
-                    $ref: '#/components/schemas/Links'
+                $ref: '#/components/schemas/TokenBalancesResponse'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: account.id"
+          $ref: '#/components/responses/InvalidParameterError'
       tags:
         - tokens
   /api/v1/tokens/{tokenId}/nfts:
@@ -649,18 +477,7 @@ paths:
               schema:
                 type: object
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: account.id"
-                    - message: "Invalid parameter: serialnumber"
-                    - message: "Invalid parameter: limit"
-                    - message: "Invalid parameter: order"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -712,16 +529,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/NftTransactionHistory'
         400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InvalidParameterError'
-              example:
-                _status:
-                  messages:
-                    - message: "Invalid parameter: limit"
-                    - message: "Invalid parameter: order"
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -742,7 +550,7 @@ tags:
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#transactions
   - name: topics
-    description: The topics object represents the information associated with a topic enitty and returns topic messages information.
+    description: The topics object represents the information associated with a topic entity and returns topic messages information.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#topic-messages
   - name: tokens
@@ -777,6 +585,73 @@ servers:
         enum: [ mainnet, previewnet, testnet ]
 components:
   schemas:
+    # API call responses.
+    AccountsResponse:
+      type: object
+      properties:
+        accounts:
+          $ref: '#/components/schemas/Accounts'
+        links:
+          $ref: '#/components/schemas/Links'
+    BalancesResponse:
+      type: object
+      properties:
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountBalance'
+        links:
+          $ref: '#/components/schemas/Links'
+    SchedulesResponse:
+      type: object
+      properties:
+        schedules:
+          $ref: '#/components/schemas/Schedules'
+        links:
+          $ref: '#/components/schemas/Links'
+    StateProofResponse:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/StateProofFiles'
+    TokenBalancesResponse:
+      type: object
+      properties:
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        balances:
+          $ref: '#/components/schemas/TokenDistribution'
+        links:
+          $ref: '#/components/schemas/Links'
+    TokensResponse:
+      type: object
+      properties:
+        tokens:
+          $ref: '#/components/schemas/Tokens'
+        links:
+          $ref: '#/components/schemas/Links'
+    TopicMessagesResponse:
+      type: object
+      properties:
+        messages:
+          $ref: '#/components/schemas/TopicMessages'
+        links:
+          $ref: '#/components/schemas/Links'
+    TransactionByIdResponse:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/Transactions'
+    TransactionsResponse:
+      type: object
+      properties:
+        transactions:
+          $ref: '#/components/schemas/Transactions'
+        links:
+          $ref: '#/components/schemas/Links'
+    # API objects.
     AccountInfo:
       type: object
       required:
@@ -1124,9 +999,6 @@ components:
             0.0.6:
               type: string
               format: byte
-          additionalProperties:
-            type: string
-            format: byte
       example:
         record_file: YzNkOTg3Yzg3NDI5NGViOTViMmRmOWZkMzZiMDY1NjYyMzMxNTc2OWFmMmVmMzQ0YzM1ODY4NzgwMTAyYjVjMA==
         address_books:
@@ -1500,12 +1372,21 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: "Invalid parameter: account.id"
+                - message: Invalid Transaction id. Please use \shard.realm.num-sss-nnn\ format where sss are seconds and nnn are nanoseconds
     ServiceUnavailableError:
       description: Service Unavailable
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            _status:
+              messages:
+                - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
   parameters:
     accountIdQueryParam:
       name: account.id

@@ -66,4 +66,9 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
                 .extracting(TopicCreateTransaction::getTopicMemo, STRING)
                 .contains("Mirror node created test topic");
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return ConsensusCreateTopicTransactionSupplier.class;
+    }
 }

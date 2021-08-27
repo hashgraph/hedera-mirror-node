@@ -94,16 +94,21 @@ describe('schedule formatScheduleRow tests', () => {
       },
     },
     {
-      description: 'input with null signature entry',
+      description: 'input with null signatures',
       input: {
         ...defaultInput,
-        signatures: [
-          {
-            consensus_timestamp: null,
-            public_key_prefix: null,
-            signature: null,
-          },
-        ],
+        signatures: null,
+      },
+      expected: {
+        ...defaultExpected,
+        signatures: [],
+      },
+    },
+    {
+      description: 'input with undefined signatures',
+      input: {
+        ...defaultInput,
+        signatures: null,
       },
       expected: {
         ...defaultExpected,

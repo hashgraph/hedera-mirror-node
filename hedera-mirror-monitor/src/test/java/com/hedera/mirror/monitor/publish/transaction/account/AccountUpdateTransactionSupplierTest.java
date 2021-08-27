@@ -75,4 +75,9 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .extracting(AccountUpdateTransaction::getAccountMemo, STRING)
                 .contains("Mirror node updated test account");
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return AccountUpdateTransactionSupplier.class;
+    }
 }

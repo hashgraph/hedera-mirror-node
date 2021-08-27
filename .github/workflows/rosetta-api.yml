@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, release/** ]
   push:
-    branches: [ main ]
+    branches: [ main, release/** ]
     tags: [ v* ]
 
 defaults:
@@ -48,7 +48,6 @@ jobs:
           if-no-files-found: error
 
   validate:
-    if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -58,52 +57,20 @@ jobs:
       - name: Build Mirror Node All-in-One
         run: docker build --tag="${MODULE}" -f build/Dockerfile ..
 
-      - name: Importer Configuration
-        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application.yml
-
-      - name: Construction Test Prefunded Accounts
-        run: |
-          echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json
-          cd ./scripts/validation/testnet/
-          jq --slurpfile accounts /tmp/accounts.json '.construction.prefunded_accounts=$accounts[0]' \
-            validate-construction.json > /tmp/validate-construction.json
-          mv /tmp/validate-construction.json validate-construction.json
-
-      - name: Set Importer StartDate
-        run: |
-          startdate=$(date --date='15 minutes ago' -Iseconds -u)
-          startdate=${startdate%+*}Z
-          echo "STARTDATE=$startdate" >> $GITHUB_ENV
-          echo "Set importer startDate to $startdate"
-
       - name: Run Mirror Node
         run: |
-          CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
-            -e NETWORK=testnet \
-            -v /tmp/application.yml:/var/importer/application.yml \
-            -p 5432:5432 -p 5700:5700 "${MODULE}")
-
+          CONTAINER_ID=$(docker run -d -p 5432:5432 -p 5700:5700 "${MODULE}")
           echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
 
       - name: Wait for Mirror Node to start syncing
         run: ./scripts/wait-for-mirror-node.sh
 
       - name: Get Genesis Account Balances
-        run: ./scripts/validation/get-genesis-balance.sh testnet
+        run: ./scripts/validation/get-genesis-balance.sh
 
       - name: Run Rosetta CLI Validation
         working-directory: ./hedera-mirror-rosetta/scripts/validation
-        run: |
-          echo "Installing Rosetta CLI"
-          curl -sSfL https://raw.githubusercontent.com/coinbase/rosetta-cli/master/scripts/install.sh | sh -s -- -b .
-
-          ./run-validation.sh testnet construction > /tmp/construction-validation.log 2>&1 &
-          pid=$!
-
-          ./run-validation.sh testnet data && code=0 || code=$?
-          [[ $code -eq 0 ]] && { wait $pid || code=$?; }
-          cat /tmp/construction-validation.log
-          exit $code
+        run: ./run-validation.sh
 
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}
