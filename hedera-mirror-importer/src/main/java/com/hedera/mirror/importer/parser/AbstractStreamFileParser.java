@@ -21,12 +21,17 @@ package com.hedera.mirror.importer.parser;
  */
 
 import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
@@ -35,6 +40,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile> implements 
 
     public static final String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
+    protected final DataSource dataSource;
     protected final Logger log = LogManager.getLogger(getClass());
     protected final MeterRegistry meterRegistry;
     protected final ParserProperties parserProperties;
@@ -44,8 +50,10 @@ public abstract class AbstractStreamFileParser<T extends StreamFile> implements 
     private final Timer parseDurationMetricSuccess;
     private final Timer parseLatencyMetric;
 
-    protected AbstractStreamFileParser(MeterRegistry meterRegistry, ParserProperties parserProperties,
+    protected AbstractStreamFileParser(DataSource dataSource, MeterRegistry meterRegistry,
+                                       ParserProperties parserProperties,
                                        StreamFileRepository<T, Long> streamFileRepository) {
+        this.dataSource = dataSource;
         this.meterRegistry = meterRegistry;
         this.parserProperties = parserProperties;
         this.streamFileRepository = streamFileRepository;
@@ -96,6 +104,16 @@ public abstract class AbstractStreamFileParser<T extends StreamFile> implements 
     }
 
     protected abstract void doParse(T streamFile);
+
+    protected void abortConnectionOnTimeout() {
+        try {
+            log.warn("Attempt to abort the db connection upon timeout in {}", parserProperties.getTransactionTimeout());
+            Connection connection = DataSourceUtils.getConnection(dataSource);
+            connection.abort(MoreExecutors.directExecutor());
+        } catch (SQLException e) {
+            //
+        }
+    }
 
     private void postParse(T streamFile) {
         streamFile.setBytes(null);

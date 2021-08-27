@@ -26,7 +26,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import reactor.core.publisher.Flux;
 
@@ -47,7 +46,7 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
     @Override
     protected EventFileParser getParser() {
         EventParserProperties parserProperties = new EventParserProperties();
-        return new EventFileParser(new SimpleMeterRegistry(), parserProperties, streamFileRepository);
+        return new EventFileParser(dataSource, meterRegistry, parserProperties, streamFileRepository);
     }
 
     @Override

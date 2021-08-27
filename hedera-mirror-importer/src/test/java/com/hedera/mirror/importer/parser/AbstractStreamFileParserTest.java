@@ -23,6 +23,9 @@ package com.hedera.mirror.importer.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,11 @@ import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
+
+    protected static final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+    @Mock
+    protected DataSource dataSource;
 
     @Mock
     protected StreamFileRepository streamFileRepository;

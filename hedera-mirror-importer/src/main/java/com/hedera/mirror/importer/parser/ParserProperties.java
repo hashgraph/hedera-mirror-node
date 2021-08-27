@@ -28,13 +28,13 @@ public interface ParserProperties {
 
     int getBufferSize();
 
-    DbProperties getDb();
-
     Duration getFrequency();
 
     Duration getProcessingTimeout();
 
     StreamType getStreamType();
+
+    Duration getTransactionTimeout();
 
     int getQueueCapacity();
 

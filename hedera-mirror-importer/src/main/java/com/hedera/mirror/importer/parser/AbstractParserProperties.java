@@ -21,10 +21,12 @@ package com.hedera.mirror.importer.parser;
  */
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
 
 @Data
@@ -33,9 +35,6 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     @Min(8192)
     private int bufferSize = 32768; // tested max byte size of buffer used by PGCopyOutputStream
-
-    @NotNull
-    protected DbProperties db = new DbProperties();
 
     protected boolean enabled = true;
 
@@ -52,6 +51,11 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     @NotNull
     protected RetryProperties retry = new RetryProperties();
+
+    @DurationMin(seconds = 4)
+    @DurationUnit(ChronoUnit.SECONDS)
+    @NotNull
+    protected Duration transactionTimeout = Duration.ofSeconds(4);
 
     @Data
     @Validated

@@ -27,9 +27,7 @@ import java.sql.Connection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -44,7 +42,6 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
-import com.hedera.mirror.importer.parser.DbConnectionUtils;
 import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
@@ -54,24 +51,18 @@ import com.hedera.mirror.importer.repository.StreamFileRepository;
 @Named
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
-    private final DataSource dataSource;
-    private final ScheduledExecutorService executor;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final PgCopy<AccountBalance> pgCopyAccountBalance;
     private final PgCopy<TokenBalance> pgCopyTokenBalance;
 
-    public AccountBalanceFileParser(MeterRegistry meterRegistry, BalanceParserProperties parserProperties,
+    public AccountBalanceFileParser(DataSource dataSource, MeterRegistry meterRegistry,
+                                    BalanceParserProperties parserProperties,
                                     StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
-                                    DataSource dataSource,
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        super(meterRegistry, parserProperties, accountBalanceFileRepository);
-        this.dataSource = dataSource;
-        this.executor = Executors.newSingleThreadScheduledExecutor();
+        super(dataSource, meterRegistry, parserProperties, accountBalanceFileRepository);
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
         pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(this.executor::shutdown));
     }
 
     /**
@@ -84,7 +75,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
-    @Transactional(timeoutString = "#{@balanceParserProperties.getDb().getTransactionTimeout().toSeconds()}")
+    @Transactional(timeoutString = "#{@balanceParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(AccountBalanceFile accountBalanceFile) {
         super.parse(accountBalanceFile);
     }
@@ -96,32 +87,35 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         Connection connection = DataSourceUtils.getConnection(dataSource);
         int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
 
-        Future<Void> abortFuture = null;
         long count = 0L;
         List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
         List<TokenBalance> tokenBalances = new ArrayList<>(batchSize);
 
         try {
             if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
-                abortFuture = DbConnectionUtils.scheduleAbort(connection, executor,
-                        parserProperties.getDb().getPgCopyTimeout());
-                count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
-                    accountBalances.add(accountBalance);
-                    tokenBalances.addAll(accountBalance.getTokenBalances());
+                count = accountBalanceFile.getItems()
+                        .doOnNext(accountBalance -> {
+                            accountBalances.add(accountBalance);
+                            tokenBalances.addAll(accountBalance.getTokenBalances());
 
-                    if (accountBalances.size() >= batchSize) {
-                        pgCopyAccountBalance.copy(accountBalances, connection);
-                        accountBalances.clear();
-                    }
+                            if (accountBalances.size() >= batchSize) {
+                                pgCopyAccountBalance.copy(accountBalances, connection);
+                                accountBalances.clear();
+                            }
 
-                    if (tokenBalances.size() >= batchSize) {
-                        pgCopyTokenBalance.copy(tokenBalances, connection);
-                        tokenBalances.clear();
-                    }
-                }).count().block();
-
-                pgCopyAccountBalance.copy(accountBalances, connection);
-                pgCopyTokenBalance.copy(tokenBalances, connection);
+                            if (tokenBalances.size() >= batchSize) {
+                                pgCopyTokenBalance.copy(tokenBalances, connection);
+                                tokenBalances.clear();
+                            }
+                        })
+                        .doOnComplete(() -> {
+                            pgCopyAccountBalance.copy(accountBalances, connection);
+                            pgCopyTokenBalance.copy(tokenBalances, connection);
+                        })
+                        .count()
+                        .timeout(parserProperties.getTransactionTimeout())
+                        .doOnError(TimeoutException.class, (t) -> abortConnectionOnTimeout())
+                        .block();
             }
 
             Instant loadEnd = Instant.now();
@@ -129,7 +123,6 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
             streamFileRepository.save(accountBalanceFile);
         } finally {
-            DbConnectionUtils.cancelAbortFuture(abortFuture);
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
     }

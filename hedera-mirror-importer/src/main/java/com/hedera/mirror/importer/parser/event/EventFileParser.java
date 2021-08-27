@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.event;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
+import javax.sql.DataSource;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,9 +35,9 @@ import com.hedera.mirror.importer.repository.StreamFileRepository;
 @Named
 public class EventFileParser extends AbstractStreamFileParser<EventFile> {
 
-    public EventFileParser(MeterRegistry meterRegistry, EventParserProperties parserProperties,
+    public EventFileParser(DataSource dataSource, MeterRegistry meterRegistry, EventParserProperties parserProperties,
                            StreamFileRepository<EventFile, Long> eventFileRepository) {
-        super(meterRegistry, parserProperties, eventFileRepository);
+        super(dataSource, meterRegistry, parserProperties, eventFileRepository);
     }
 
     @Override
@@ -46,7 +47,7 @@ public class EventFileParser extends AbstractStreamFileParser<EventFile> {
             maxDelayExpression = "#{@eventParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@eventParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@eventParserProperties.getRetry().getMaxAttempts()}")
-    @Transactional(timeoutString = "#{@eventParserProperties.getDb().getTransactionTimeout().toSeconds()}")
+    @Transactional(timeoutString = "#{@eventParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(EventFile eventFile) {
         super.parse(eventFile);
     }

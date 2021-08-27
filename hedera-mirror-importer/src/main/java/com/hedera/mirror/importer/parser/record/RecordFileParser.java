@@ -29,7 +29,10 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
+import javax.sql.DataSource;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,9 +49,9 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
+    private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
-    private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     // Metrics
     private final Map<Integer, Timer> latencyMetrics;
@@ -56,12 +59,12 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final Timer unknownLatencyMetric;
     private final DistributionSummary unknownSizeMetric;
 
-    public RecordFileParser(MeterRegistry meterRegistry, RecordParserProperties parserProperties,
+    public RecordFileParser(DataSource dataSource, MeterRegistry meterRegistry, RecordParserProperties parserProperties,
                             StreamFileRepository<RecordFile, Long> streamFileRepository,
                             RecordItemListener recordItemListener,
                             RecordStreamFileListener recordStreamFileListener,
                             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        super(meterRegistry, parserProperties, streamFileRepository);
+        super(dataSource, meterRegistry, parserProperties, streamFileRepository);
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
@@ -104,7 +107,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
-    @Transactional(timeoutString = "#{@recordParserProperties.getDb().getTransactionTimeout().toSeconds()}")
+    @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(RecordFile recordFile) {
         super.parse(recordFile);
     }
@@ -115,18 +118,23 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                 .getDateRangeFilter(parserProperties.getStreamType());
 
         try {
+            AtomicLong count = new AtomicLong();
             recordStreamFileListener.onStart();
-            long count = recordFile.getItems()
+            recordFile.getItems()
+                    .doOnNext(item -> count.incrementAndGet())
                     .doOnNext(this::logItem)
                     .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .doOnNext(recordItemListener::onItem)
                     .doOnNext(this::recordMetrics)
-                    .count()
+                    .doOnComplete(() -> {
+                        recordFile.setCount(count.get());
+                        recordFile.setLoadEnd(Instant.now().getEpochSecond());
+                        recordStreamFileListener.onEnd(recordFile);
+                    })
+                    .then()
+                    .timeout(parserProperties.getTransactionTimeout())
+                    .doOnError(TimeoutException.class, (t) -> abortConnectionOnTimeout())
                     .block();
-
-            recordFile.setCount(count);
-            recordFile.setLoadEnd(Instant.now().getEpochSecond());
-            recordStreamFileListener.onEnd(recordFile);
         } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;

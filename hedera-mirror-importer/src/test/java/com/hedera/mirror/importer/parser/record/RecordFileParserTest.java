@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -94,7 +93,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         RecordParserProperties parserProperties = new RecordParserProperties();
         when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
                 .thenReturn(DateRangeFilter.all());
-        return new RecordFileParser(new SimpleMeterRegistry(), parserProperties, streamFileRepository,
+        return new RecordFileParser(dataSource, meterRegistry, parserProperties, streamFileRepository,
                 recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
     }
 

@@ -27,9 +27,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -61,8 +58,6 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.DbConnectionUtils;
-import com.hedera.mirror.importer.parser.ParserProperties;
 import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
@@ -86,8 +81,6 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
 
     private final DataSource dataSource;
     private final ApplicationEventPublisher eventPublisher;
-    private final ScheduledExecutorService executor;
-    private final ParserProperties parserProperties;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
 
@@ -143,12 +136,8 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
                              NftUpsertQueryGenerator nftUpsertQueryGenerator) {
         this.dataSource = dataSource;
         this.eventPublisher = eventPublisher;
-        this.executor = Executors.newSingleThreadScheduledExecutor();
-        this.parserProperties = recordParserProperties;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-
-        Runtime.getRuntime().addShutdownHook(new Thread(this.executor::shutdown));
 
         // insert only tables
         assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, recordParserProperties);
@@ -244,15 +233,12 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
 
     private void executeBatches() {
         Connection connection = null;
-        Future<Void> abortFuture = null;
 
         try {
             // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
 
             connection = DataSourceUtils.getConnection(dataSource);
-            abortFuture = DbConnectionUtils.scheduleAbort(connection, executor,
-                    parserProperties.getDb().getPgCopyTimeout());
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // insert only operations
@@ -284,7 +270,6 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
         } catch (Exception e) {
             throw new ParserException(e);
         } finally {
-            DbConnectionUtils.cancelAbortFuture(abortFuture);
             cleanup();
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
