@@ -1080,6 +1080,8 @@ components:
         expiry_timestamp:
           example: null
           nullable: true
+        fee_schedule_key:
+          $ref: '#/components/schemas/Key'
         freeze_default:
           type: boolean
           example: false
@@ -1087,12 +1089,12 @@ components:
           $ref: '#/components/schemas/Key'
         initial_supply:
           type: string
-          example: 1000000
+          example: "1000000"
         kyc_key:
           $ref: '#/components/schemas/Key'
         max_supply:
-          type: number
-          example: 9223372036854775807
+          type: string
+          example: "9223372036854775807"
         modified_timestamp:
           type: string
           example: "1234567890.000000001"
@@ -1111,8 +1113,8 @@ components:
         token_id:
           $ref: '#/components/schemas/EntityId'
         total_supply:
-          type: number
-          example: 1000000
+          type: string
+          example: "1000000"
         treasury_account_id:
           $ref: '#/components/schemas/EntityId'
         type:
@@ -1207,6 +1209,11 @@ components:
       properties:
         consensus_timestamp:
           type: string
+        entity_id:
+          $ref: '#/components/schemas/EntityId'
+        bytes:
+          type: string
+          format: byte
         transaction_hash:
           type: string
           format: byte
@@ -1290,11 +1297,13 @@ components:
                 $ref: '#/components/schemas/EntityId'
       example:
         consensus_timestamp: "1234567890.000000007"
-        transaction_hash: aGFzaA==
+        transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
         valid_start_timestamp: "1234567890.000000006"
         charged_tx_fee: 7
         memo_base64: null
+        bytes: null
         result: SUCCESS
+        entity_id: "0.0.2281979"
         name: CRYPTOTRANSFER
         nft_transfers:
           - receiver_account_id: 0.0.121
@@ -1328,8 +1337,8 @@ components:
           - amount: 100
             collector_account_id: 0.0.10
             effective_payer_account_ids:
-             - 0.0.8
-             - 0.0.72
+              - 0.0.8
+              - 0.0.72
             token_id: 0.0.90001
     Transactions:
       type: array
@@ -1592,9 +1601,11 @@ components:
           summary: Example of timestamp less than or equals operator
           value: lte:1234567890.000000700
       schema:
-        type: string
-        format: >
-          ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
+        type: array
+        items:
+          type: string
+          format: >
+            ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
     tokenInfoTimestampQueryParam:
       name: timestamp
       in: query
@@ -1654,7 +1665,7 @@ components:
         items:
           type: string
     tokenIdPathParam:
-      name: tokenid
+      name: tokenId
       in: path
       required: true
       description: Token entity id
