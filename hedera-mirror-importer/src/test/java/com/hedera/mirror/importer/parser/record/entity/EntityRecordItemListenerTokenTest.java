@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -79,6 +80,7 @@ import com.hedera.mirror.importer.domain.Nft;
 import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
+import com.hedera.mirror.importer.domain.TokenAccountId;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
@@ -147,28 +149,22 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideTokenCreateFtArguments")
-    void tokenCreate(String name, List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey, boolean kycKey,
-                     List<TokenAccount> expectedTokenAccounts) {
-        // given
-        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
-                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
-        // node, token, autorenew, and the number of accounts associated with the token (including the treasury)
-        long expectedEntityCount = 3 + expectedTokenAccounts.size();
+    void tokenCreateWithAutoTokenAssociations(String name, List<CustomFee> customFees, boolean freezeDefault,
+                                              boolean freezeKey, boolean kycKey,
+                                              List<TokenAccount> expectedTokenAccounts) {
+        List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
+                .map(TokenAccount::getId)
+                .map(TokenAccountId::getAccountId)
+                .collect(Collectors.toList());
+        tokenCreate(customFees, freezeDefault, freezeKey, kycKey, expectedTokenAccounts, autoAssociatedAccounts);
+    }
 
-        // when
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
-                kycKey, customFees);
-
-        // then
-        assertEquals(expectedEntityCount, entityRepository.count());
-        assertEntity(expected);
-
-        // verify token
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
-        assertTokenAccountsInRepository(expectedTokenAccounts);
-        assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
-        assertCustomFeesInDb(customFees);
-        assertThat(tokenTransferRepository.count()).isEqualTo(1L);
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideTokenCreateFtArguments")
+    void tokenCreateWithoutAutoTokenAssociations(String name, List<CustomFee> customFees, boolean freezeDefault,
+                                                 boolean freezeKey, boolean kycKey,
+                                                 List<TokenAccount> expectedTokenAccounts) {
+        tokenCreate(customFees, freezeDefault, freezeKey, kycKey, expectedTokenAccounts, Lists.emptyList());
     }
 
     @Test
@@ -191,10 +187,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         // node, token, autorenew, and the number of accounts associated with the token (including the treasury)
         long expectedEntityCount = 3 + expectedTokenAccounts.size();
+        List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
+                .map(TokenAccount::getId)
+                .map(TokenAccountId::getAccountId)
+                .collect(Collectors.toList());;
 
         // when
         createTokenEntity(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
-                kycKey, customFees);
+                kycKey, customFees, autoAssociatedAccounts);
 
         // then
         assertEquals(expectedEntityCount, entityRepository.count());
@@ -794,6 +794,30 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, wipeTimestamp, transferAmount);
     }
 
+    void tokenCreate(List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey, boolean kycKey,
+            List<TokenAccount> expectedTokenAccounts, List<EntityId> autoAssociatedAccounts) {
+        // given
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+                false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
+        // node, token, autorenew, and the number of accounts associated with the token (including the treasury)
+        long expectedEntityCount = 3 + expectedTokenAccounts.size();
+
+        // when
+        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
+                kycKey, customFees, autoAssociatedAccounts);
+
+        // then
+        assertEquals(expectedEntityCount, entityRepository.count());
+        assertEntity(expected);
+
+        // verify token
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        assertTokenAccountsInRepository(expectedTokenAccounts);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
+        assertCustomFeesInDb(customFees);
+        assertThat(tokenTransferRepository.count()).isEqualTo(1L);
+    }
+
     private void insertAndParseTransaction(Transaction transaction, long timestamp, long newTotalSupply,
                                            List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees,
                                            List<Long> serialNumbers, TokenTransferList... tokenTransferLists) {
@@ -1144,23 +1168,48 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(sender, from(com.hedera.mirror.importer.domain.NftTransfer::getSenderAccountId));
     }
 
-    private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
+    private void createTokenEntity(TokenID tokenId, TokenType tokenType, String symbol, long consensusTimestamp,
                                    boolean freezeDefault, boolean setFreezeKey, boolean setKycKey,
-                                   List<CustomFee> customFees) {
-        Transaction createTransaction = tokenCreateTransaction(tokenType, freezeDefault, setFreezeKey, setKycKey,
+                                   List<CustomFee> customFees, List<EntityId> autoAssociatedAccounts) {
+        Transaction transaction = tokenCreateTransaction(tokenType, freezeDefault, setFreezeKey, setKycKey,
                 symbol, customFees);
-        TransactionBody createTransactionBody = getTransactionBody(createTransaction);
-        TokenTransferList tokenTransfer = tokenType == TokenType.FUNGIBLE_COMMON ? tokenTransfer(tokenID, PAYER,
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TokenTransferList tokenTransfer = tokenType == TokenType.FUNGIBLE_COMMON ? tokenTransfer(tokenId, PAYER,
                 INITIAL_SUPPLY) : TokenTransferList.getDefaultInstance();
-        var createTransactionRecord = createTransactionRecord(consensusTimestamp, tokenID
-                .getTokenNum(), createTransactionBody, ResponseCodeEnum.SUCCESS, INITIAL_SUPPLY, tokenTransfer);
+        var transactionRecord = tokenCreateTransactionRecord(autoAssociatedAccounts, consensusTimestamp, tokenId,
+                List.of(tokenTransfer), INITIAL_SUPPLY, transactionBody, ResponseCodeEnum.SUCCESS);
 
-        parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+    }
+
+    private TransactionRecord tokenCreateTransactionRecord(List<EntityId> autoAssociatedAccounts,
+                                                           long consensusTimestamp,
+                                                           TokenID tokenId,
+                                                           List<TokenTransferList> tokenTransferLists,
+                                                           long totalSupply,
+                                                           TransactionBody transactionBody,
+                                                           ResponseCodeEnum responseCode) {
+        var receipt = TransactionReceipt.newBuilder()
+                .setStatus(responseCode)
+                .setTokenID(tokenId)
+                .setNewTotalSupply(totalSupply);
+
+        return buildTransactionRecord(recordBuilder -> recordBuilder
+                .setReceipt(receipt)
+                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp))
+                .addAllTokenTransferLists(tokenTransferLists)
+                .addAllAutomaticTokenAssociations(autoAssociatedAccounts.stream()
+                        .map(account -> TokenAssociation.newBuilder()
+                                .setTokenId(tokenId)
+                                .setAccountId(convertAccountId(account))
+                                .build())
+                        .collect(Collectors.toList())), transactionBody, responseCode.getNumber());
     }
 
     private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
                                    boolean setFreezeKey, boolean setKycKey) {
-        createTokenEntity(tokenID, tokenType, symbol, consensusTimestamp, false, setFreezeKey, setKycKey, Lists.emptyList());
+        createTokenEntity(tokenID, tokenType, symbol, consensusTimestamp, false, setFreezeKey, setKycKey,
+                Lists.emptyList(), Lists.emptyList());
     }
 
     private void createAndAssociateToken(TokenID tokenID, TokenType tokenType, String symbol, long createTimestamp,
@@ -1310,7 +1359,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         return Stream.of(
                 TokenCreateArguments.builder()
-                        .accounts(List.of(treasury))
+                        .autoEnabledAccounts(List.of(treasury))
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
                         .customFeesDescription("empty custom fees")
@@ -1318,7 +1367,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .accounts(autoEnabledAccounts)
+                        .autoEnabledAccounts(autoEnabledAccounts)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -1328,7 +1377,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .accounts(autoEnabledAccounts)
+                        .autoEnabledAccounts(autoEnabledAccounts)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -1339,7 +1388,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .accounts(autoEnabledAccounts)
+                        .autoEnabledAccounts(autoEnabledAccounts)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -1349,7 +1398,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .build()
                         .toArguments(),
                 TokenCreateArguments.builder()
-                        .accounts(autoEnabledAccounts)
+                        .autoEnabledAccounts(autoEnabledAccounts)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -1503,7 +1552,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Builder
     static class TokenCreateArguments {
-        List<EntityId> accounts;
+        List<EntityId> autoEnabledAccounts;
         long createdTimestamp;
         List<CustomFee> customFees;
         String customFeesDescription;
@@ -1524,7 +1573,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     freezeKey ? "has freezeKey" : "no freezeKey",
                     kycKey ? "has kycKey" : "no kycKey"
             );
-            List<TokenAccount> tokenAccounts = accounts.stream()
+            List<TokenAccount> tokenAccounts = autoEnabledAccounts.stream()
                     .map(account -> {
                         TokenAccount tokenAccount = new TokenAccount(tokenId, account);
                         tokenAccount.setAssociated(true);
