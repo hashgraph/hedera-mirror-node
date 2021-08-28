@@ -20,7 +20,7 @@
 
 \copy custom_fee (amount, amount_denominator, collector_account_id, created_timestamp, denominating_token_id, maximum_amount, minimum_amount, token_id) from custom_fee.csv csv;
 
-\copy entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type) from entity.csv csv;
+\copy entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, receiver_sig_required, shard, submit_key, type) from entity.csv csv;
 
 \copy event_file (bytes, consesnsus_start, consensus_end, count, digest_algorithm, file_hash, hash, load_start, load_end, name, node_account_id, previous_hash, version) from event_file.csv csv;
 
