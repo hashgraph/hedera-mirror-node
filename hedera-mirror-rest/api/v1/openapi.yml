@@ -679,6 +679,7 @@ components:
         memo:
           type: string
         receiver_sig_required:
+          nullable: true
           type: boolean
       example:
         account: 0.0.8

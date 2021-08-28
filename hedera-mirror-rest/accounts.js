@@ -46,12 +46,6 @@ const processRow = (row) => {
   accRecord.memo = row.memo;
   accRecord.receiver_sig_required = row.receiver_sig_required;
 
-  logger.info(`*** getAccounts processRow row.memo: ${JSON.stringify(row.memo)}`);
-  logger.info(`*** getAccounts processRow accRecord.memo: ${JSON.stringify(accRecord.memo)}`);
-  logger.info(`*** getAccounts processRow row.receiver_sig_required: ${JSON.stringify(row.receiver_sig_required)}`);
-  logger.info(
-    `*** getAccounts processRow accRecord.receiver_sig_required: ${JSON.stringify(accRecord.receiver_sig_required)}`
-  );
   return accRecord;
 };
 
