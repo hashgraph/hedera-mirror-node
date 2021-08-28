@@ -28,11 +28,13 @@
       },
       {
         "num": 9,
-        "expiration_timestamp": "-9223372036854775808"
+        "expiration_timestamp": "-9223372036854775808",
+        "receiver_sig_required": null
       },
       {
         "num": 10,
-        "expiration_timestamp": "9223372036854775807"
+        "expiration_timestamp": "9223372036854775807",
+        "receiver_sig_required": true
       }
     ],
     "balances": [
@@ -281,7 +283,7 @@
         "key": null,
         "deleted": false,
         "memo": "entity memo",
-        "receiver_sig_required": false
+        "receiver_sig_required": null
       },
       {
         "balance": {
@@ -295,7 +297,7 @@
         "key": null,
         "deleted": false,
         "memo": "entity memo",
-        "receiver_sig_required": false
+        "receiver_sig_required": true
       }
     ],
     "links": {

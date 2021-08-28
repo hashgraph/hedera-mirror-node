@@ -36,10 +36,11 @@ const processRow = (row) => {
   const accRecord = {};
   accRecord.account = EntityId.fromEncodedId(row.entity_id).toString();
   accRecord.auto_renew_period = row.auto_renew_period === null ? null : Number(row.auto_renew_period);
-  accRecord.balance = {};
-  accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
-  accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
-  accRecord.balance.tokens = utils.parseTokenBalances(row.token_balances);
+  accRecord.balance = {
+    balance: row.account_balance === null ? null : Number(row.account_balance),
+    timestamp: row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp),
+    tokens: utils.parseTokenBalances(row.token_balances),
+  };
   accRecord.deleted = row.deleted;
   accRecord.expiry_timestamp = row.expiration_timestamp === null ? null : utils.nsToSecNs(row.expiration_timestamp);
   accRecord.key = row.key === null ? null : utils.encodeKey(row.key);

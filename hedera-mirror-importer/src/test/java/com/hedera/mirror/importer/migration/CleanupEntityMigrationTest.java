@@ -141,9 +141,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
     private Optional<Entity> retrieveEntity(Long id) {
         return Optional.of(jdbcOperations.queryForObject(
-                "select auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, " +
-                        "id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, " +
-                        "submit_key, type from entity where id = ?",
+                "select * from entity where id = ?",
                 new Object[] {id},
                 (rs, rowNum) -> {
                     Entity entity = new Entity();
