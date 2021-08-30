@@ -128,7 +128,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
         assertEquals(createTimestamps.length, entityRepository.count());
         for (int i = 0; i < ids.length; i++) {
-            Optional<Entity> entity = entityRepository.findById(ids[i]);
+            Optional<Entity> entity = retrieveEntity(ids[i]);
             long consensusTimestamp = createTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
@@ -137,6 +137,33 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                             .returns("", Entity::getMemo)
             );
         }
+    }
+
+    private Optional<Entity> retrieveEntity(Long id) {
+        return Optional.of(jdbcOperations.queryForObject(
+                "select * from entity where id = ?",
+                new Object[] {id},
+                (rs, rowNum) -> {
+                    Entity entity = new Entity();
+                    entity.setAutoRenewAccountId(EntityIdEndec
+                            .decode(rs.getLong("auto_renew_account_id"), EntityTypeEnum.ACCOUNT));
+                    entity.setAutoRenewPeriod(rs.getLong("auto_renew_period"));
+                    entity.setCreatedTimestamp(rs.getLong("created_timestamp"));
+                    entity.setDeleted(rs.getBoolean("deleted"));
+                    entity.setExpirationTimestamp(rs.getLong("expiration_timestamp"));
+                    entity.setId(rs.getLong("id"));
+                    entity.setKey(rs.getBytes("key"));
+                    entity.setMemo(rs.getString("memo"));
+                    entity.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+                    entity.setNum(rs.getLong("num"));
+                    entity.setPublicKey(rs.getString("public_key"));
+                    entity.setRealm(rs.getLong("realm"));
+                    entity.setShard(rs.getLong("shard"));
+                    entity.setSubmitKey(rs.getBytes("submit_key"));
+                    entity.setType(rs.getInt("type"));
+
+                    return entity;
+                }));
     }
 
     @Test
@@ -185,7 +212,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
         assertEquals(createTimestamps.length, entityRepository.count());
         for (int i = 0; i < ids.length; i++) {
-            Optional<Entity> entity = entityRepository.findById(ids[i]);
+            Optional<Entity> entity = retrieveEntity(ids[i]);
             long consensusTimestamp = createTimestamps[i];
             assertAll(
                     () -> assertThat(entity).isPresent().get()
@@ -238,7 +265,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
         assertEquals(createTimestamps.length, entityRepository.count());
         for (int i = 0; i < ids.length; i++) {
-            Optional<Entity> entity = entityRepository.findById(ids[i]);
+            Optional<Entity> entity = retrieveEntity(ids[i]);
             long createdTimestamp = createTimestamps[i];
             long modifiedTimestamp = modifiedTimestamps[i];
             assertAll(
@@ -303,7 +330,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
         assertEquals(createTimestamps.length, entityRepository.count());
         for (int i = 0; i < ids.length; i++) {
-            Optional<Entity> entity = entityRepository.findById(ids[i]);
+            Optional<Entity> entity = retrieveEntity(ids[i]);
             long createdTimestamp = createTimestamps[i];
             long modifiedTimestamp = deletedTimestamps[i];
             assertAll(

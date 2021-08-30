@@ -41,6 +41,7 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
     }
 
     @Override
+    @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         CryptoUpdateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoUpdateAccount();
         if (txMessage.hasExpirationTime()) {
@@ -57,6 +58,13 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
 
         if (txMessage.hasMemo()) {
             entity.setMemo(txMessage.getMemo().getValue());
+        }
+
+        if (txMessage.hasReceiverSigRequiredWrapper()) {
+            entity.setReceiverSigRequired(txMessage.getReceiverSigRequiredWrapper().getValue());
+        } else if (txMessage.getReceiverSigRequired()) {
+            // support old transactions
+            entity.setReceiverSigRequired(txMessage.getReceiverSigRequired());
         }
     }
 

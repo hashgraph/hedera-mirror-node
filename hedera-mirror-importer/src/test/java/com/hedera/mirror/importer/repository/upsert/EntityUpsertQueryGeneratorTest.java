@@ -38,15 +38,14 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     protected String getInsertQuery() {
         return "insert into entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, " +
                 "expiration_timestamp, id, key, memo, modified_timestamp, num, proxy_account_id, public_key, realm, " +
-                "shard, submit_key, type) select entity_temp.auto_renew_account_id, entity_temp.auto_renew_period, " +
-                "entity_temp.created_timestamp, entity_temp.deleted, entity_temp.expiration_timestamp, entity_temp" +
-                ".id, entity_temp.key, case when entity_temp.memo = '<uuid>' then '' else coalesce(entity_temp.memo, " +
-                "'') " +
+                "receiver_sig_required, shard, submit_key, type) select entity_temp.auto_renew_account_id, " +
+                "entity_temp.auto_renew_period, entity_temp.created_timestamp, entity_temp.deleted, " +
+                "entity_temp.expiration_timestamp, entity_temp.id, entity_temp.key, " +
+                "case when entity_temp.memo = '<uuid>' then '' else coalesce(entity_temp.memo, '') " +
                 "end, entity_temp.modified_timestamp, entity_temp.num, entity_temp.proxy_account_id, case when " +
                 "entity_temp.public_key = '<uuid>' then '' else coalesce(entity_temp.public_key, null) end, " +
-                "entity_temp" +
-                ".realm, entity_temp.shard, entity_temp.submit_key, entity_temp.type from entity_temp " +
-                "on conflict (id) do nothing";
+                "entity_temp.realm, entity_temp.receiver_sig_required, entity_temp.shard, entity_temp.submit_key, " +
+                "entity_temp.type from entity_temp on conflict (id) do nothing";
     }
 
     @Override
@@ -63,6 +62,7 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "proxy_account_id = coalesce(entity_temp.proxy_account_id, entity.proxy_account_id), " +
                 "public_key = case when entity_temp.public_key = '<uuid>' then '' else " +
                 "coalesce(entity_temp.public_key, entity.public_key) end, " +
+                "receiver_sig_required = coalesce(entity_temp.receiver_sig_required, entity.receiver_sig_required), " +
                 "submit_key = coalesce(entity_temp.submit_key, entity.submit_key) " +
                 "from entity_temp where entity.id = entity_temp.id and entity_temp.created_timestamp is null";
     }

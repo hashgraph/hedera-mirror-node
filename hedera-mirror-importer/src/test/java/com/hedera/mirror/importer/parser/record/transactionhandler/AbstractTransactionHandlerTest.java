@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
@@ -69,6 +70,8 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected static final String DEFAULT_MEMO = "default entity memo";
 
+    protected static final boolean DEFAULT_RECEIVER_SIG_REQUIRED = false;
+
     protected static final Key DEFAULT_SUBMIT_KEY = getKey(
             "5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
 
@@ -77,6 +80,8 @@ public abstract class AbstractTransactionHandlerTest {
             .build();
 
     protected static final String UPDATED_MEMO = "update memo";
+
+    protected static final BoolValue UPDATED_RECEIVER_SIG_REQUIRED = BoolValue.of(true);
 
     private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
 
@@ -149,16 +154,24 @@ public abstract class AbstractTransactionHandlerTest {
 
         FieldDescriptor memoField = getInnerBodyFieldDescriptorByName("memo");
         FieldDescriptor memoWrapperField = getInnerBodyFieldDescriptorByName("memoWrapper");
+        FieldDescriptor receiverSigRequiredField = getInnerBodyFieldDescriptorByName("receiverSigRequired");
+        FieldDescriptor receiverSigRequiredWrapperField = getInnerBodyFieldDescriptorByName(
+                "receiverSigRequiredWrapper");
         List<UpdateEntityTestSpec> testSpecs;
 
         if (memoField != null) {
             // it's either an entity create transaction or entity update transaction when memo field is present
             boolean isMemoString = memoField.getType() == FieldDescriptor.Type.STRING;
+            boolean isReceiverSigRequiredBool = receiverSigRequiredField != null &&
+                    receiverSigRequiredField.getType() == FieldDescriptor.Type.BOOL;
 
-            if (isMemoString && memoWrapperField == null) {
+            if ((isMemoString && memoWrapperField == null) || (isReceiverSigRequiredBool && receiverSigRequiredWrapperField == null)) {
                 testSpecs = getUpdateEntityTestSpecsForCreateTransaction(memoField);
             } else {
-                testSpecs = getUpdateEntityTestSpecsForUpdateTransaction(memoField, memoWrapperField);
+                testSpecs = getUpdateEntityTestSpecsForUpdateTransaction(
+                        memoField,
+                        memoWrapperField,
+                        receiverSigRequiredWrapperField);
             }
         } else {
             // no memo field, either delete or undelete transaction, leave it to the test class
@@ -251,25 +264,40 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForUpdateTransaction(FieldDescriptor memoField,
-                                                                                    FieldDescriptor memoWrapperField) {
+                                                                                    FieldDescriptor memoWrapperField,
+                                                                                    FieldDescriptor receiverSigRequiredWrapperField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
+
+        if (receiverSigRequiredWrapperField != null) {
+            innerBody = innerBody.toBuilder()
+                    .setField(receiverSigRequiredWrapperField, UPDATED_RECEIVER_SIG_REQUIRED)
+                    .build();
+        }
 
         // memo not set, expect memo in entity unchanged
         Entity expected = getExpectedUpdatedEntity();
         expected.setMemo(DEFAULT_MEMO);
         Entity input = new Entity();
         input.setMemo(DEFAULT_MEMO);
+
+        Message unchangedMemoInnerBody = innerBody;
+        if (receiverSigRequiredWrapperField != null) {
+            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        }
+
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
                         .description("update entity without memo, expect memo unchanged")
                         .expected(expected)
                         .input(input)
-                        .recordItem(getRecordItem(body, innerBody))
+                        .recordItem(getRecordItem(body, unchangedMemoInnerBody))
                         .build()
         );
 
+        Message updatedMemoInnerBody = innerBody;
         if (memoWrapperField != null) {
             // memo is of string type
             // non-empty string, expect memo set to non-empty string
@@ -277,16 +305,22 @@ public abstract class AbstractTransactionHandlerTest {
             expected.setMemo(UPDATED_MEMO);
             input = new Entity();
             input.setMemo(DEFAULT_MEMO);
-            Message updatedInnerBody = innerBody.toBuilder().setField(memoField, UPDATED_MEMO).build();
-            testSpecs.add(
-                    UpdateEntityTestSpec.builder()
-                            .description("update entity with non-empty String, expect memo updated")
-                            .expected(expected)
-                            .input(input)
-                            .recordItem(getRecordItem(body, updatedInnerBody))
-                            .build()
-            );
+            updatedMemoInnerBody = innerBody.toBuilder().setField(memoField, UPDATED_MEMO).build();
         }
+
+        if (receiverSigRequiredWrapperField != null) {
+            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        }
+
+        testSpecs.add(
+                UpdateEntityTestSpec.builder()
+                        .description("update entity with non-empty String, expect memo updated")
+                        .expected(expected)
+                        .input(input)
+                        .recordItem(getRecordItem(body, updatedMemoInnerBody))
+                        .build()
+        );
 
         // memo is set through the StringValue field
         // there is always a StringValue field, either "memo" or "memoWrapper"
@@ -298,13 +332,20 @@ public abstract class AbstractTransactionHandlerTest {
         // empty StringValue, expect memo in entity cleared
         input = new Entity();
         input.setMemo(DEFAULT_MEMO);
-        Message updatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
+        expected = getExpectedUpdatedEntity();
+        Message clearedMemoInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
+
+        if (receiverSigRequiredWrapperField != null) {
+            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        }
+
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
                         .description("update entity with empty StringValue memo, expect memo cleared")
-                        .expected(getExpectedUpdatedEntity())
+                        .expected(expected)
                         .input(input)
-                        .recordItem(getRecordItem(body, updatedInnerBody))
+                        .recordItem(getRecordItem(body, clearedMemoInnerBody))
                         .build()
         );
 
@@ -313,13 +354,20 @@ public abstract class AbstractTransactionHandlerTest {
         expected.setMemo(UPDATED_MEMO);
         input = new Entity();
         input.setMemo(DEFAULT_MEMO);
-        updatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO)).build();
+        Message memoStringValueUpdatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO))
+                .build();
+
+        if (receiverSigRequiredWrapperField != null) {
+            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        }
+
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
                         .description("update entity with non-empty StringValue memo, expect memo updated")
                         .expected(expected)
                         .input(input)
-                        .recordItem(getRecordItem(body, updatedInnerBody))
+                        .recordItem(getRecordItem(body, memoStringValueUpdatedInnerBody))
                         .build()
         );
 
@@ -350,8 +398,12 @@ public abstract class AbstractTransactionHandlerTest {
                 case "keys":
                     entity.setKey(DEFAULT_KEY_LIST.toByteArray());
                     break;
+                case "receiverSigRequired":
+                    entity.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
+                    break;
                 case "submitKey":
                     entity.setSubmitKey(DEFAULT_SUBMIT_KEY.toByteArray());
+                    break;
                 default:
                     break;
             }
@@ -382,8 +434,12 @@ public abstract class AbstractTransactionHandlerTest {
                 case "keys":
                     builder.setField(field, DEFAULT_KEY_LIST);
                     break;
+                case "receiverSigRequired":
+                    builder.setField(field, DEFAULT_RECEIVER_SIG_REQUIRED);
+                    break;
                 case "submitKey":
                     builder.setField(field, DEFAULT_SUBMIT_KEY);
+                    break;
                 default:
                     break;
             }

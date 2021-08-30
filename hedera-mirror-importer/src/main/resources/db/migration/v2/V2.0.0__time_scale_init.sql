@@ -10,9 +10,9 @@ CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 -- assessed_custom_fee
 create table if not exists assessed_custom_fee
 (
-    amount                      bigint not null,
-    collector_account_id        bigint not null,
-    consensus_timestamp         bigint not null,
+    amount                      bigint   not null,
+    collector_account_id        bigint   not null,
+    consensus_timestamp         bigint   not null,
     effective_payer_account_ids bigint[] not null,
     token_id                    bigint
 );
@@ -128,6 +128,7 @@ create table if not exists entity
     proxy_account_id      bigint,
     public_key            character varying,
     realm                 bigint          not null,
+    receiver_sig_required boolean         null,
     shard                 bigint          not null,
     submit_key            bytea,
     type                  integer         not null
