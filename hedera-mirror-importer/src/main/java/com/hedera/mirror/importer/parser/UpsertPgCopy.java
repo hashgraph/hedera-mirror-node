@@ -44,9 +44,11 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private static final String TABLE = "table";
     private final String createTempTableSql;
     private final String finalTableName;
+    private final String deleteSql;
     private final String insertSql;
     private final String updateSql;
     private final Timer copyDurationMetric;
+    private final Timer deleteDurationMetric;
     private final Timer finalInsertDurationMetric;
     private final Timer updateDurationMetric;
     private final String truncateSql;
@@ -58,11 +60,16 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         truncateSql = String
                 .format("truncate table %s restart identity cascade", upsertQueryGenerator.getTemporaryTableName());
         finalTableName = upsertQueryGenerator.getFinalTableName();
+        deleteSql = upsertQueryGenerator.getDeleteQuery();
         insertSql = upsertQueryGenerator.getInsertQuery();
         updateSql = upsertQueryGenerator.getUpdateQuery();
         copyDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.copy")
                 .description("Time to copy transaction information from importer to temp table")
                 .tag(TABLE, upsertQueryGenerator.getTemporaryTableName())
+                .register(meterRegistry);
+        deleteDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.delete")
+                .description("Time to delete transaction information from final table")
+                .tag(TABLE, finalTableName)
                 .register(meterRegistry);
         finalInsertDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.insert")
                 .description("Time to insert transaction information from temp to final table")
@@ -87,33 +94,43 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
             // copy items to temp table
             copyItems(items, connection);
 
+            // delete items from final table
+            int deleteCount = deleteItems(connection);
+
             // insert items from temp table to final table
             int insertCount = insertItems(connection);
 
             // update items in final table from temp table
             updateItems(connection);
 
-            log.debug("Inserted {} and updated from a total of {} rows to {}", insertCount, items
-                    .size(), finalTableName);
+            log.debug("Deleted {}, inserted {} and updated from a total of {} rows to {}", deleteCount,
+                    insertCount, items.size(), finalTableName);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }
     }
 
-    private int insertToFinalTable(Connection connection) throws SQLException {
-        int insertCount = 0;
-        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
-            insertCount = preparedStatement.executeUpdate();
+    private int deleteFromFinalTable(Connection connection) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(deleteSql)) {
+            int count = preparedStatement.executeUpdate();
+            log.trace("Deleted {} rows from {} table", count, finalTableName);
+            return count;
         }
-        log.trace("Inserted {} rows from {} table to {} table", insertCount, tableName, finalTableName);
-        return insertCount;
+    }
+
+    private int insertToFinalTable(Connection connection) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
+            int count = preparedStatement.executeUpdate();
+            log.trace("Inserted {} rows from {} table to {} table", count, tableName, finalTableName);
+            return count;
+        }
     }
 
     private void updateFinalTable(Connection connection) throws SQLException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
             preparedStatement.execute();
+            log.trace("Updated rows from {} table to {} table", tableName, finalTableName);
         }
-        log.trace("Updated rows from {} table to {} table", tableName, finalTableName);
     }
 
     private void createTempTable(Connection connection) throws SQLException {
@@ -133,6 +150,17 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         Stopwatch stopwatch = Stopwatch.createStarted();
         super.persistItems(items, connection);
         recordMetric(copyDurationMetric, stopwatch);
+    }
+
+    private int deleteItems(Connection connection) throws SQLException {
+        if (deleteSql == null) {
+            return 0;
+        }
+
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        int count = deleteFromFinalTable(connection);
+        recordMetric(deleteDurationMetric, stopwatch);
+        return count;
     }
 
     private int insertItems(Connection connection) throws SQLException {

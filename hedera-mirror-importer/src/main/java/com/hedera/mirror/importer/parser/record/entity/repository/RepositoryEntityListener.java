@@ -171,6 +171,11 @@ public class RepositoryEntityListener extends AbstractEntityListener {
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        if (tokenAccount.getAssociated() != null && !tokenAccount.getAssociated()) {
+            tokenAccountRepository.findById(tokenAccount.getId()).ifPresent(tokenAccountRepository::delete);
+            return;
+        }
+
         TokenAccount merged = tokenAccountRepository.findById(tokenAccount.getId())
                 .map(existing -> mergeTokenAccount(existing, tokenAccount))
                 .orElse(tokenAccount);

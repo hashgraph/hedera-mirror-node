@@ -28,6 +28,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -41,7 +44,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Flux;
@@ -70,8 +75,8 @@ import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
 @Tag("migration")
@@ -115,9 +120,6 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
 
     @Resource
     private RecordFileRepository recordFileRepository;
-
-    @Resource
-    private TokenAccountRepository tokenAccountRepository;
 
     @Resource
     private TokenRepository tokenRepository;
@@ -172,7 +174,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
         List<TokenAccount> tokenAccountList = Lists.newArrayList(
                 tokenAccount(COLLECTOR_1, true, EXISTING_TOKEN_CREATE_TIMESTAMP + 1, EXISTING_TOKEN)
         );
-        tokenAccountRepository.saveAll(tokenAccountList);
+        persistTokenAccounts(tokenAccountList);
 
         // build account balance file
         long consensusTimestamp = PREVIOUS_TOKEN_BALANCE_TIMESTAMP;
@@ -230,7 +232,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
             tokenAccountList.add(tokenAccount(TREASURY, true, NEW_TOKEN_CREATE_TIMESTAMP,
                     expectedFreezeStatus, expectedKycStatus, NEW_TOKEN));
         }
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccountList);
+        assertThat(retrieveTokenAccounts()).containsExactlyInAnyOrderElementsOf(tokenAccountList);
     }
 
     private AccountBalance accountBalance(EntityId accountId, long consensusTimestamp, EntityId... tokens) {
@@ -248,6 +250,47 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     private String accountBalanceFilename(long consensusTimestamp) {
         Instant instant = Instant.ofEpochSecond(0, consensusTimestamp);
         return StreamFilename.getFilename(StreamType.BALANCE, StreamFilename.FileType.DATA, instant);
+    }
+
+    private List<TokenAccount> retrieveTokenAccounts() {
+        return jdbcOperations.query("select * from token_account", new RowMapper<TokenAccount>() {
+
+            @Override
+            public TokenAccount mapRow(ResultSet rs, int rowNum) throws SQLException {
+                EntityId tokenId = EntityIdEndec.decode(rs.getLong("token_id"), EntityTypeEnum.TOKEN);
+                EntityId accountId = EntityIdEndec.decode(rs.getLong("account_id"), EntityTypeEnum.TOKEN);
+                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+                tokenAccount.setAssociated(rs.getBoolean("associated"));
+                tokenAccount.setCreatedTimestamp(rs.getLong("created_timestamp"));
+                tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.values()[rs.getShort("freeze_status")]);
+                tokenAccount.setKycStatus(TokenKycStatusEnum.values()[rs.getShort("kyc_status")]);
+                tokenAccount.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+                return tokenAccount;
+            }
+        });
+    }
+
+    private void persistTokenAccounts(List<TokenAccount> tokenAccounts) {
+        String sql = "insert into token_account (token_id, account_id, associated, created_timestamp, freeze_status, " +
+                "kyc_status, modified_timestamp) values (?,?,?,?,?,?,?)";
+        jdbcOperations.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                TokenAccount tokenAccount = tokenAccounts.get(i);
+                ps.setLong(1, tokenAccount.getId().getTokenId().getId());
+                ps.setLong(2, tokenAccount.getId().getAccountId().getId());
+                ps.setBoolean(3, tokenAccount.getAssociated());
+                ps.setLong(4, tokenAccount.getCreatedTimestamp());
+                ps.setShort(5, (short)tokenAccount.getFreezeStatus().ordinal());
+                ps.setShort(6, (short)tokenAccount.getKycStatus().ordinal());
+                ps.setLong(7, tokenAccount.getModifiedTimestamp());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return tokenAccounts.size();
+            }
+        });
     }
 
     private RecordFile recordFile(Long lastTransactionConsensusTimestamp) {

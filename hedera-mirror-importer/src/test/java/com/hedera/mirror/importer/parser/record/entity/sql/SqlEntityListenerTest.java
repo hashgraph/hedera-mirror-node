@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import javax.annotation.Resource;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.DecoderException;
@@ -41,7 +40,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.CacheManager;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -118,8 +116,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionTemplate transactionTemplate;
     private final String fileName = "2019-08-30T18_10_00.419072Z.rcd";
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
-    @Resource
-    private CacheManager cacheManager;
     private RecordFile recordFile;
 
     private static Key keyFromString(String key) {
@@ -643,9 +639,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         String accountId1 = "0.0.7";
         String accountId2 = "0.0.11";
-        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 5L, 5L, false,
+        TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
-        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11", 6L, 6L, false,
+        TokenAccount tokenAccount2 = getTokenAccount(tokenId2, "0.0.11", 6L, 6L, true, false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
 
         // when
@@ -663,6 +659,31 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onTokenAccountDissociate() throws Exception {
+        String tokenId1 = "0.0.3";
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, "0.0.500", 1L, 1L);
+        sqlEntityListener.onToken(token1);
+        completeFileAndCommit();
+
+        String accountId1 = "0.0.7";
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, 10L, false, null,
+                null, null);
+
+        // when
+        sqlEntityListener.onTokenAccount(associate);
+        sqlEntityListener.onTokenAccount(dissociate);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertThat(tokenAccountRepository.count()).isZero();
+    }
+
+    @Test
     void onTokenAccountMerge() throws Exception {
         String tokenId1 = "0.0.3";
 
@@ -672,27 +693,63 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         String accountId1 = "0.0.7";
-        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true,
+        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
                 null, null);
         sqlEntityListener.onTokenAccount(tokenAccountAssociate);
 
-        TokenAccount tokenAccountFreeze = getTokenAccount(tokenId1, accountId1, null, 10L, null,
-                TokenFreezeStatusEnum.UNFROZEN, null);
-        sqlEntityListener.onTokenAccount(tokenAccountFreeze);
-
-        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, 15L, null,
+        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, 15L, null, null,
                 null, TokenKycStatusEnum.GRANTED);
         sqlEntityListener.onTokenAccount(tokenAccountKyc);
 
         completeFileAndCommit();
 
         // then
-        TokenAccount tokenAccountMerged = getTokenAccount(tokenId1, accountId1, 5L, 15L, true,
+        TokenAccount tokenAccountMerged = getTokenAccount(tokenId1, accountId1, 5L, 15L, true, false,
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED);
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
         assertEquals(1, tokenAccountRepository.count());
         assertExistsAndEquals(tokenAccountRepository, tokenAccountMerged, new TokenAccountId(EntityId
                 .of(tokenId1, EntityTypeEnum.TOKEN), EntityId.of(accountId1, ACCOUNT)));
+    }
+
+    @Test
+    void onTokenAccountReassociate() throws Exception {
+        String tokenId1 = "0.0.3";
+
+        // save token entities first
+        Token token = getToken(tokenId1, "0.0.500", 1L, 1L);
+        sqlEntityListener.onToken(token);
+
+        // when
+        String accountId1 = "0.0.7";
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
+                null, null);
+        sqlEntityListener.onTokenAccount(associate);
+
+        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, 10L, null, null,
+                TokenFreezeStatusEnum.FROZEN, null);
+        sqlEntityListener.onTokenAccount(freeze);
+
+        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, 15L, null, null,
+                null, TokenKycStatusEnum.GRANTED);
+        sqlEntityListener.onTokenAccount(kycGrant);
+
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, 16L, false, null,
+                null, null);
+        sqlEntityListener.onTokenAccount(dissociate);
+
+        // associate after dissociate
+        TokenAccount reassociate = getTokenAccount(tokenId1, accountId1, 20L, 20L, true, false,
+                null, null);
+        sqlEntityListener.onTokenAccount(reassociate);
+
+        completeFileAndCommit();
+
+        // then
+        TokenAccount expected = getTokenAccount(tokenId1, accountId1, 20L, 20L, true, false,
+                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED);
+        assertThat(recordFileRepository.findAll()).containsExactlyInAnyOrder(recordFile);
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(expected);
     }
 
     @Test
@@ -974,11 +1031,12 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp,
-                                         long modifiedTimeStamp, Boolean associated, TokenFreezeStatusEnum freezeStatus,
-                                         TokenKycStatusEnum kycStatus) {
+                                         long modifiedTimeStamp, Boolean associated, Boolean autoAssociated,
+                                         TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus) {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
         tokenAccount.setAssociated(associated);
+        tokenAccount.setAutoAssociated(autoAssociated);
         tokenAccount.setFreezeStatus(freezeStatus);
         tokenAccount.setKycStatus(kycStatus);
         tokenAccount.setCreatedTimestamp(createdTimestamp);

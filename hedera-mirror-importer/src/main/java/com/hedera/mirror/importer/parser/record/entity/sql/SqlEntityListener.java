@@ -345,6 +345,12 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        if (tokenAccount.getAssociated() != null) {
+            // either token associate or dissociate
+            tokenAccounts.put(tokenAccount.getId(), tokenAccount);
+            return;
+        }
+
         // tokenAccounts may experience multiple updates in a single record file, handle updates in memory for this case
         tokenAccounts.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
     }

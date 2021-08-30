@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
@@ -39,21 +38,28 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     private static final String JOIN_TABLE = "token";
     private final String finalTableName = "token_account";
     private final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> v1ConflictIdColumns = List.of(TokenAccountId_.TOKEN_ID, TokenAccountId_.ACCOUNT_ID);
-    // createdTimestamp is needed for v2 schema compliance as it's used in index
-    private final List<String> v2ConflictIdColumns = List.of(TokenAccountId_.TOKEN_ID,
-            TokenAccountId_.ACCOUNT_ID, TokenAccount_.CREATED_TIMESTAMP);
-    private final Set<String> nonUpdatableColumns = Set.of(TokenAccountId_.ACCOUNT_ID,
-            TokenAccount_.CREATED_TIMESTAMP, TokenAccount_.ID, TokenAccountId_.TOKEN_ID);
+    private final Set<String> nonUpdatableColumns = Set.of(TokenAccountId_.ACCOUNT_ID, TokenAccount_.ASSOCIATED,
+            TokenAccount_.AUTO_ASSOCIATED, TokenAccount_.CREATED_TIMESTAMP, TokenAccount_.ID, TokenAccountId_.TOKEN_ID);
 
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final Set<SingularAttribute> selectableColumns = Set.of(TokenAccountId_.accountId,
-            TokenAccount_.associated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
+    private final Set<SingularAttribute> selectableColumns = Set.of(TokenAccountId_.accountId, TokenAccount_.associated,
+            TokenAccount_.autoAssociated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
             TokenAccount_.kycStatus, TokenAccount_.modifiedTimestamp, TokenAccountId_.tokenId);
 
     @Override
-    public String getInsertWhereClause() {
+    protected String getDeleteWhereClause() {
+        return String.format("where %s is false and %s = %s and %s = %s",
+                getFullTempTableColumnName(TokenAccount_.ASSOCIATED),
+                getFullFinalTableColumnName(TokenAccountId_.TOKEN_ID),
+                getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),
+                getFullFinalTableColumnName(TokenAccountId_.ACCOUNT_ID),
+                getFullTempTableColumnName(TokenAccountId_.ACCOUNT_ID)
+        );
+    }
+
+    @Override
+    protected String getInsertWhereClause() {
         StringBuilder insertWhereQueryBuilder = new StringBuilder();
 
         // ignore entries where token not in db
@@ -61,25 +67,25 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
                 getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),
                 getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, Token_.TOKEN_ID)));
 
-        // ignore entries where token created timestamp is noted
-        insertWhereQueryBuilder.append(String.format(" where %s is not null",
-                getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP)));
+        // token account relationship create entries have associated = true
+        insertWhereQueryBuilder.append(String.format(" where %s is true",
+                getFullTempTableColumnName(TokenAccount_.ASSOCIATED)));
 
         return insertWhereQueryBuilder.toString();
     }
 
     @Override
-    public String getUpdateWhereClause() {
+    protected String getUpdateWhereClause() {
         return String.format(" where %s = %s and %s = %s and %s is null",
                 getFullFinalTableColumnName(TokenAccountId_.TOKEN_ID),
                 getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),
                 getFullFinalTableColumnName(TokenAccountId_.ACCOUNT_ID),
                 getFullTempTableColumnName(TokenAccountId_.ACCOUNT_ID),
-                getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP));
+                getFullTempTableColumnName(TokenAccount_.ASSOCIATED));
     }
 
     @Override
-    public String getAttributeSelectQuery(String attributeName) {
+    protected String getAttributeSelectQuery(String attributeName) {
         if (attributeName.equalsIgnoreCase(TokenAccount_.FREEZE_STATUS)) {
             String freezeStatusInsert = "case when %s is not null then %s when" +
                     " %s is null then %s when %s = true then %s else %s end %s";
@@ -104,5 +110,10 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
         }
 
         return null;
+    }
+
+    @Override
+    protected boolean needsOnConflictAction() {
+        return false;
     }
 }

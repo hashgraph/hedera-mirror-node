@@ -395,38 +395,50 @@ class RepositoryEntityListenerTest extends IntegrationTest {
 
     @Test
     void onTokenAccount() throws ImporterException {
-        TokenAccount tokenAccount = new TokenAccount(TOKEN_ID, ENTITY_ID);
-        tokenAccount.setAssociated(false);
-        tokenAccount.setCreatedTimestamp(1L);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setModifiedTimestamp(1L);
-        repositoryEntityListener.onTokenAccount(tokenAccount);
-        assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
+        TokenAccount associated = new TokenAccount(TOKEN_ID, ENTITY_ID);
+        associated.setAssociated(true);
+        associated.setAutoAssociated(false);
+        associated.setCreatedTimestamp(1L);
+        associated.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+        associated.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        associated.setModifiedTimestamp(1L);
+        repositoryEntityListener.onTokenAccount(associated);
+        assertThat(tokenAccountRepository.findAll()).containsExactly(associated);
 
-        TokenAccount tokenAccountMinimallyUpdated = new TokenAccount();
-        tokenAccountMinimallyUpdated.setId(tokenAccount.getId());
-        repositoryEntityListener.onTokenAccount(tokenAccountMinimallyUpdated);
+        TokenAccount updated = new TokenAccount();
+        updated.setId(associated.getId());
+        updated.setModifiedTimestamp(2L);
+        repositoryEntityListener.onTokenAccount(updated);
         assertThat(tokenAccountRepository.findAll())
                 .hasSize(1)
                 .first()
-                .returns(tokenAccountMinimallyUpdated.getModifiedTimestamp(), TokenAccount::getModifiedTimestamp)
+                .returns(updated.getModifiedTimestamp(), TokenAccount::getModifiedTimestamp)
                 .usingRecursiveComparison()
-                .ignoringFields("modifiedTimestamp");
+                .ignoringFields("modifiedTimestamp")
+                .isEqualTo(associated);
 
-        TokenAccount tokenAccountUpdated = new TokenAccount();
-        tokenAccountUpdated.setAssociated(true);
-        tokenAccountUpdated.setId(tokenAccount.getId());
-        tokenAccountUpdated.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
-        tokenAccountUpdated.setKycStatus(TokenKycStatusEnum.GRANTED);
-        tokenAccountUpdated.setModifiedTimestamp(2L);
-        repositoryEntityListener.onTokenAccount(tokenAccountUpdated);
+        updated = new TokenAccount();
+        updated.setId(associated.getId());
+        updated.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
+        updated.setKycStatus(TokenKycStatusEnum.GRANTED);
+        updated.setModifiedTimestamp(3L);
+        repositoryEntityListener.onTokenAccount(updated);
         assertThat(tokenAccountRepository.findAll())
                 .hasSize(1)
                 .first()
-                .returns(tokenAccount.getCreatedTimestamp(), TokenAccount::getCreatedTimestamp)
+                .returns(updated.getFreezeStatus(), TokenAccount::getFreezeStatus)
+                .returns(updated.getKycStatus(), TokenAccount::getKycStatus)
+                .returns(updated.getModifiedTimestamp(), TokenAccount::getModifiedTimestamp)
                 .usingRecursiveComparison()
-                .ignoringFields("createdTimestamp");
+                .ignoringFields("modifiedTimestamp", "freezeStatus", "kycStatus")
+                .isEqualTo(associated);
+
+        TokenAccount dissociated = new TokenAccount();
+        dissociated.setId(associated.getId());
+        dissociated.setAssociated(false);
+        dissociated.setModifiedTimestamp(4L);
+        repositoryEntityListener.onTokenAccount(dissociated);
+        assertThat(tokenAccountRepository.count()).isZero();
     }
 
     @Test

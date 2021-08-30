@@ -53,6 +53,8 @@ public class Entity {
 
     private byte[] key;
 
+    private Long maxAutomaticTokenAssociations;
+
     @JsonSerialize(using = NullableStringSerializer.class)
     private String memo;
 

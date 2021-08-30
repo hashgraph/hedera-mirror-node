@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
 import javax.annotation.Resource;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -90,6 +89,7 @@ class TokenAccountRepositoryTest extends AbstractRepositoryTest {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
         tokenAccount.setAssociated(true);
+        tokenAccount.setAutoAssociated(false);
         tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setCreatedTimestamp(createdTimestamp);

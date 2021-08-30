@@ -62,6 +62,9 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
 
     @Getter(lazy = true)
+    private final String deleteQuery = generateDeleteQuery();
+
+    @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
 
     @Getter(lazy = true)
@@ -69,11 +72,19 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     protected final Logger log = LogManager.getLogger(getClass());
 
+    protected String getDeleteWhereClause() {
+        return null;
+    }
+
     protected abstract String getInsertWhereClause();
 
     protected abstract Set<String> getNonUpdatableColumns();
 
     protected abstract String getUpdateWhereClause();
+
+    protected boolean needsOnConflictAction() {
+        return true;
+    }
 
     @Override
     public String getCreateTempTableQuery() {
@@ -106,6 +117,16 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return Collections.emptySet();
     }
 
+    private String generateDeleteQuery() {
+        String whereClause = getDeleteWhereClause();
+        if (whereClause == null) {
+            return null;
+        }
+
+        return StringUtils.joinWith(" ", "delete from", getFinalTableName(), "using",
+                getTemporaryTableName(), whereClause);
+    }
+
     private String generateInsertQuery() {
         StringBuilder insertQueryBuilder = new StringBuilder("insert into " + getFinalTableName());
 
@@ -119,7 +140,9 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         // insertable query
         insertQueryBuilder.append(getInsertWhereClause());
 
-        insertQueryBuilder.append(getDoNothingConflictClause());
+        if (needsOnConflictAction()) {
+            insertQueryBuilder.append(getDoNothingConflictClause());
+        }
 
         return insertQueryBuilder.toString();
     }

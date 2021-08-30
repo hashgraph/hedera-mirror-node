@@ -134,10 +134,6 @@ public class AbstractEntityListener implements EntityListener {
     }
 
     protected TokenAccount mergeTokenAccount(TokenAccount cachedTokenAccount, TokenAccount newTokenAccount) {
-        if (newTokenAccount.getAssociated() != null) {
-            cachedTokenAccount.setAssociated(newTokenAccount.getAssociated());
-        }
-
         if (newTokenAccount.getFreezeStatus() != null) {
             cachedTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
         }

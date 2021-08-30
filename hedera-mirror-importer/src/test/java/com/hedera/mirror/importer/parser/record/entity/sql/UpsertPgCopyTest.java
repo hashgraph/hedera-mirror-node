@@ -36,6 +36,7 @@ import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -251,10 +252,10 @@ class UpsertPgCopyTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new HashSet<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, false, 1L));
-        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, false, 2L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, false, 3L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, false, 4L));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, true, 1L));
+        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, true, 2L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, true, 3L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, true, 4L));
 
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
@@ -262,9 +263,13 @@ class UpsertPgCopyTest extends IntegrationTest {
         assertThat(tokenAccountRepository
                 .findAll())
                 .isNotEmpty()
-                .hasSize(4)
-                .extracting(TokenAccount::getModifiedTimestamp)
-                .containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
+                .extracting(TokenAccount::getCreatedTimestamp, TokenAccount::getModifiedTimestamp)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple(1L, 1L),
+                        Tuple.tuple(2L, 2L),
+                        Tuple.tuple(3L, 3L),
+                        Tuple.tuple(4L, 4L)
+                );
     }
 
     @Test
@@ -380,36 +385,34 @@ class UpsertPgCopyTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new HashSet<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 5L, false,
-                6L));
-        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 6L, false,
-                7L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 7L, false,
-                8L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 8L, false,
-                9L));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 5L, true, 6L));
+        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 6L, true, 7L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 7L, true, 8L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 8L, true, 9L));
 
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
         // update
         tokenAccounts.clear();
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", null, true,
-                10L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", null, true,
-                11L));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7001", 10L, true,
-                12L));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7002", 11L, true,
-                13L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", null, null, 10L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", null, null, 11L));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7001", 10L, true, 12L));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7002", 11L, true, 13L));
 
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
         assertThat(tokenAccountRepository
                 .findAll())
                 .isNotEmpty()
-                .hasSize(6)
-                .extracting(TokenAccount::getModifiedTimestamp)
-                .containsExactlyInAnyOrder(6L, 7L, 10L, 11L, 12L, 13L);
+                .extracting(TokenAccount::getCreatedTimestamp, TokenAccount::getModifiedTimestamp)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple(5L, 6L),
+                        Tuple.tuple(6L, 7L),
+                        Tuple.tuple(7L, 10L),
+                        Tuple.tuple(8L, 11L),
+                        Tuple.tuple(10L, 12L),
+                        Tuple.tuple(11L, 13L)
+                );
     }
 
     @Test
@@ -653,6 +656,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         TokenAccount tokenAccount = new TokenAccount(EntityId
                 .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
         tokenAccount.setAssociated(associated);
+        tokenAccount.setAutoAssociated(false);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
         tokenAccount.setFreezeStatus(freezeStatus);
         tokenAccount.setKycStatus(kycStatus);

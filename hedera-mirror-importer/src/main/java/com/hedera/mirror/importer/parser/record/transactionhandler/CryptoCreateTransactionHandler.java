@@ -56,6 +56,7 @@ public class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactio
             entity.setKey(txMessage.getKey().toByteArray());
         }
 
+        entity.setMaxAutomaticTokenAssociations(Integer.toUnsignedLong(txMessage.getMaxAutomaticTokenAssociations()));
         entity.setMemo(txMessage.getMemo());
     }
 

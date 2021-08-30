@@ -32,11 +32,14 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 public class TokenAccount {
+
     @EmbeddedId
     @JsonUnwrapped
     private TokenAccountId id;
 
     private Boolean associated;
+
+    private Boolean autoAssociated;
 
     private Long createdTimestamp;
 

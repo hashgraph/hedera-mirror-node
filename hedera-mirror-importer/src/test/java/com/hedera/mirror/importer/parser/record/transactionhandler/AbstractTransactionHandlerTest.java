@@ -26,6 +26,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
+import com.google.protobuf.UInt32Value;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -149,6 +150,7 @@ public abstract class AbstractTransactionHandlerTest {
 
         FieldDescriptor memoField = getInnerBodyFieldDescriptorByName("memo");
         FieldDescriptor memoWrapperField = getInnerBodyFieldDescriptorByName("memoWrapper");
+        FieldDescriptor maxAutomaticTokenAssociationsField = getInnerBodyFieldDescriptorByName("max_automatic_token_associations");
         List<UpdateEntityTestSpec> testSpecs;
 
         if (memoField != null) {
@@ -158,7 +160,8 @@ public abstract class AbstractTransactionHandlerTest {
             if (isMemoString && memoWrapperField == null) {
                 testSpecs = getUpdateEntityTestSpecsForCreateTransaction(memoField);
             } else {
-                testSpecs = getUpdateEntityTestSpecsForUpdateTransaction(memoField, memoWrapperField);
+                testSpecs = getUpdateEntityTestSpecsForUpdateTransaction(memoField, memoWrapperField,
+                        maxAutomaticTokenAssociationsField);
             }
         } else {
             // no memo field, either delete or undelete transaction, leave it to the test class
@@ -208,7 +211,7 @@ public abstract class AbstractTransactionHandlerTest {
         return entity;
     }
 
-    private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
+    protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
@@ -251,7 +254,8 @@ public abstract class AbstractTransactionHandlerTest {
     }
 
     private List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForUpdateTransaction(FieldDescriptor memoField,
-                                                                                    FieldDescriptor memoWrapperField) {
+                                                                                    FieldDescriptor memoWrapperField,
+                                                                                    FieldDescriptor maxAutomaticTokenAssociationsField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
@@ -323,6 +327,27 @@ public abstract class AbstractTransactionHandlerTest {
                         .build()
         );
 
+        if (maxAutomaticTokenAssociationsField != null) {
+            // only crypto update has max_automatic_token_associations
+            int value = 0x7fffffff;
+            expected = getExpectedUpdatedEntity();
+            expected.setMemo(DEFAULT_MEMO);
+            expected.setMaxAutomaticTokenAssociations((long)value);
+            input = new Entity();
+            input.setMemo(DEFAULT_MEMO);
+            updatedInnerBody = innerBody.toBuilder()
+                    .setField(maxAutomaticTokenAssociationsField, UInt32Value.of(value))
+                    .build();
+            testSpecs.add(
+                    UpdateEntityTestSpec.builder()
+                            .description("update entity with max_automatic_token_associations")
+                            .expected(expected)
+                            .input(input)
+                            .recordItem(getRecordItem(body, updatedInnerBody))
+                            .build()
+            );
+        }
+
         return testSpecs;
     }
 
@@ -362,7 +387,7 @@ public abstract class AbstractTransactionHandlerTest {
         return entity;
     }
 
-    private TransactionBody getTransactionBodyForUpdateEntityWithoutMemo() {
+    protected TransactionBody getTransactionBodyForUpdateEntityWithoutMemo() {
         TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
         Message.Builder builder = innerBody.toBuilder().clear();
@@ -392,18 +417,18 @@ public abstract class AbstractTransactionHandlerTest {
         return getTransactionBody(defaultBody, builder.build());
     }
 
-    private FieldDescriptor getInnerBodyFieldDescriptorByName(String name) {
+    protected FieldDescriptor getInnerBodyFieldDescriptorByName(String name) {
         TransactionBody body = getDefaultTransactionBody().build();
         return getInnerBody(body).getDescriptorForType().findFieldByName(name);
     }
 
-    private Message getInnerBody(TransactionBody body) {
+    protected Message getInnerBody(TransactionBody body) {
         FieldDescriptor innerBodyField = body.getDescriptorForType()
                 .findFieldByNumber(body.getDataCase().getNumber());
         return (Message) body.getField(innerBodyField);
     }
 
-    private TransactionBody getTransactionBody(TransactionBody body, Message innerBody) {
+    protected TransactionBody getTransactionBody(TransactionBody body, Message innerBody) {
         FieldDescriptor innerBodyField = body.getDescriptorForType()
                 .findFieldByNumber(body.getDataCase().getNumber());
         return body.toBuilder().setField(innerBodyField, innerBody).build();

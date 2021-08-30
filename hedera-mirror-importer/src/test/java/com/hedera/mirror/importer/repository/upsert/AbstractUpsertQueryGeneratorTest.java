@@ -39,9 +39,18 @@ abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
 
     protected abstract UpsertQueryGenerator getUpdatableDomainRepositoryCustom();
 
+    protected String getDeleteQuery() {
+        return null;
+    }
+
     protected abstract String getInsertQuery();
 
     protected abstract String getUpdateQuery();
+
+    @Test
+    void delete() {
+        assertThat(getUpdatableDomainRepositoryCustom().getDeleteQuery()).isEqualTo(getDeleteQuery());
+    }
 
     @Test
     void insert() {

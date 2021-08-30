@@ -115,22 +115,23 @@ comment on table custom_fee is 'HTS Custom fees';
 -- entity
 create table if not exists entity
 (
-    auto_renew_account_id bigint,
-    auto_renew_period     bigint,
-    created_timestamp     bigint,
-    deleted               boolean,
-    expiration_timestamp  bigint,
-    id                    bigint          not null,
-    key                   bytea,
-    memo                  text default '' not null,
-    modified_timestamp    bigint,
-    num                   bigint          not null,
-    proxy_account_id      bigint,
-    public_key            character varying,
-    realm                 bigint          not null,
-    shard                 bigint          not null,
-    submit_key            bytea,
-    type                  integer         not null
+    auto_renew_account_id            bigint,
+    auto_renew_period                bigint,
+    created_timestamp                bigint,
+    deleted                          boolean,
+    expiration_timestamp             bigint,
+    id                               bigint          not null,
+    key                              bytea,
+    max_automatic_token_associations bigint,
+    memo                             text default '' not null,
+    modified_timestamp               bigint,
+    num                              bigint          not null,
+    proxy_account_id                 bigint,
+    public_key                       character varying,
+    realm                            bigint          not null,
+    shard                            bigint          not null,
+    submit_key                       bytea,
+    type                             integer         not null
 );
 comment on table entity is 'Network entity with state';
 
@@ -306,6 +307,7 @@ create table if not exists token_account
 (
     account_id         bigint   not null,
     associated         boolean  not null default false,
+    auto_associated    boolean  not null default false,
     created_timestamp  bigint   not null,
     freeze_status      smallint not null default 0,
     kyc_status         smallint not null default 0,

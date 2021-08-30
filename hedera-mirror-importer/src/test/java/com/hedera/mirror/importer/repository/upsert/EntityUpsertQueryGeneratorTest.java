@@ -37,15 +37,15 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Override
     protected String getInsertQuery() {
         return "insert into entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, " +
-                "expiration_timestamp, id, key, memo, modified_timestamp, num, proxy_account_id, public_key, realm, " +
-                "shard, submit_key, type) select entity_temp.auto_renew_account_id, entity_temp.auto_renew_period, " +
-                "entity_temp.created_timestamp, entity_temp.deleted, entity_temp.expiration_timestamp, entity_temp" +
-                ".id, entity_temp.key, case when entity_temp.memo = '<uuid>' then '' else coalesce(entity_temp.memo, " +
-                "'') " +
+                "expiration_timestamp, id, key, max_automatic_token_associations, memo, modified_timestamp, num, " +
+                "proxy_account_id, public_key, realm, shard, submit_key, type) select " +
+                "entity_temp.auto_renew_account_id, entity_temp.auto_renew_period, entity_temp.created_timestamp, " +
+                "entity_temp.deleted, entity_temp.expiration_timestamp, entity_temp.id, entity_temp.key, " +
+                "entity_temp.max_automatic_token_associations, " +
+                "case when entity_temp.memo = '<uuid>' then '' else coalesce(entity_temp.memo, '') " +
                 "end, entity_temp.modified_timestamp, entity_temp.num, entity_temp.proxy_account_id, case when " +
                 "entity_temp.public_key = '<uuid>' then '' else coalesce(entity_temp.public_key, null) end, " +
-                "entity_temp" +
-                ".realm, entity_temp.shard, entity_temp.submit_key, entity_temp.type from entity_temp " +
+                "entity_temp.realm, entity_temp.shard, entity_temp.submit_key, entity_temp.type from entity_temp " +
                 "on conflict (id) do nothing";
     }
 
@@ -57,6 +57,8 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "deleted = coalesce(entity_temp.deleted, entity.deleted), " +
                 "expiration_timestamp = coalesce(entity_temp.expiration_timestamp, entity.expiration_timestamp), " +
                 "key = coalesce(entity_temp.key, entity.key), " +
+                "max_automatic_token_associations = coalesce(entity_temp.max_automatic_token_associations, " +
+                "entity.max_automatic_token_associations), " +
                 "memo = case when entity_temp.memo = '<uuid>' then '' else " +
                 "coalesce(entity_temp.memo, entity.memo) end, " +
                 "modified_timestamp = coalesce(entity_temp.modified_timestamp, entity.modified_timestamp), " +

@@ -237,8 +237,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long dissociateTimeStamp = 10L;
         insertAndParseTransaction(dissociateTransaction, dissociateTimeStamp, INITIAL_SUPPLY);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, true, ASSOCIATE_TIMESTAMP, dissociateTimeStamp, false,
-                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
+        assertThat(tokenAccountRepository.findById(new TokenAccountId(EntityId.of(TOKEN_ID), EntityId.of(PAYER2))))
+                .isNotPresent();
     }
 
     @Test
@@ -1119,7 +1119,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             assertThat(tokenAccountOptional.get())
                     .returns(createdTimestamp, from(TokenAccount::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(TokenAccount::getModifiedTimestamp))
-                    .returns(associated, from(TokenAccount::getAssociated))
                     .returns(frozenStatus, from(TokenAccount::getFreezeStatus))
                     .returns(kycStatus, from(TokenAccount::getKycStatus));
         } else {
@@ -1577,6 +1576,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     .map(account -> {
                         TokenAccount tokenAccount = new TokenAccount(tokenId, account);
                         tokenAccount.setAssociated(true);
+                        tokenAccount.setAutoAssociated(false);
                         tokenAccount.setCreatedTimestamp(createdTimestamp);
                         tokenAccount.setFreezeStatus(freezeStatus);
                         tokenAccount.setKycStatus(kycStatus);
