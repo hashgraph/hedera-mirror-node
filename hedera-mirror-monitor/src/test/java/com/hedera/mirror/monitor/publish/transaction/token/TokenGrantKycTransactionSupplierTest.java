@@ -55,4 +55,9 @@ class TokenGrantKycTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(ONE_TINYBAR, TokenGrantKycTransaction::getMaxTransactionFee)
                 .returns(TOKEN_ID, TokenGrantKycTransaction::getTokenId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenGrantKycTransactionSupplier.class;
+    }
 }

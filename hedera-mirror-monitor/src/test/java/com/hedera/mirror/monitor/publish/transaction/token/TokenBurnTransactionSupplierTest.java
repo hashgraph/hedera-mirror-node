@@ -78,4 +78,9 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
                 .returns(TOKEN_ID, TokenBurnTransaction::getTokenId)
                 .returns(Arrays.asList(10L, 11L), TokenBurnTransaction::getSerials);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return TokenBurnTransactionSupplier.class;
+    }
 }

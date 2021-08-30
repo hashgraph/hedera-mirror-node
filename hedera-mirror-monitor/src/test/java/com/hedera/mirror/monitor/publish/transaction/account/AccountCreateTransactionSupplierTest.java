@@ -66,4 +66,9 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .extracting(AccountCreateTransaction::getAccountMemo, STRING)
                 .contains("Mirror node created test account");
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return AccountCreateTransactionSupplier.class;
+    }
 }

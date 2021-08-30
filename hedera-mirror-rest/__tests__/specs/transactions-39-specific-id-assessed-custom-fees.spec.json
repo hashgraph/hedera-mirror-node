@@ -102,13 +102,13 @@
         ],
         "token_transfers": [
           {
-            "account": "0.0.300",
-            "amount": -1200,
+            "account": "0.0.200",
+            "amount": 200,
             "token_id": "0.0.90000"
           },
           {
-            "account": "0.0.200",
-            "amount": 200,
+            "account": "0.0.300",
+            "amount": -1200,
             "token_id": "0.0.90000"
           },
           {

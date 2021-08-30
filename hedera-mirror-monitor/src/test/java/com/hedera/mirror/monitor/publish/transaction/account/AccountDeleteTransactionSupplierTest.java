@@ -55,4 +55,9 @@ class AccountDeleteTransactionSupplierTest extends AbstractTransactionSupplierTe
                 .returns(ONE_TINYBAR, AccountDeleteTransaction::getMaxTransactionFee)
                 .returns(ACCOUNT_ID_2, AccountDeleteTransaction::getTransferAccountId);
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return AccountDeleteTransactionSupplier.class;
+    }
 }

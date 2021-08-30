@@ -147,14 +147,10 @@
       "royalty_fees": [
         {
           "amount": {
-            "denominator": 131,
-            "numerator": 41
+            "denominator": 17,
+            "numerator": 11
           },
-          "collector_account_id": "0.0.8904",
-          "fallback_fee": {
-            "amount": 8,
-            "denominating_token_id": null
-          }
+          "collector_account_id": "0.0.8901"
         },
         {
           "amount": {
@@ -169,10 +165,14 @@
         },
         {
           "amount": {
-            "denominator": 17,
-            "numerator": 11
+            "denominator": 131,
+            "numerator": 41
           },
-          "collector_account_id": "0.0.8901"
+          "collector_account_id": "0.0.8904",
+          "fallback_fee": {
+            "amount": 8,
+            "denominating_token_id": null
+          }
         }
       ]
     }

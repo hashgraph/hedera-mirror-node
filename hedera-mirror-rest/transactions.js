@@ -50,7 +50,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
         'account_id', account_id,
         'amount', amount,
         'token_id', token_id
-      ))
+      ) order by token_id, account_id
+    )
     from token_transfer
     where token_transfer.consensus_timestamp = t.consensus_ns
   `;
@@ -60,7 +61,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
       'sender_account_id', ${NftTransfer.SENDER_ACCOUNT_ID},
       'serial_number', ${NftTransfer.SERIAL_NUMBER},
       'token_id', ${NftTransfer.TOKEN_ID}
-      ))
+      ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER}
+    )
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
     where ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
   `;
@@ -70,7 +72,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
       'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
       'effective_payer_account_ids', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
       'token_id', ${AssessedCustomFee.TOKEN_ID}
-      ))
+      ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT}
+    )
     from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
     where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
   `;

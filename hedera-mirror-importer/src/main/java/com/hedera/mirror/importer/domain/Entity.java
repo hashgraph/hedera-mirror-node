@@ -70,6 +70,8 @@ public class Entity {
 
     private Long realm;
 
+    private Boolean receiverSigRequired;
+
     private Long shard;
 
     private byte[] submitKey;

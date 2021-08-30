@@ -21,7 +21,7 @@
     "@godaddy/terminus": "^4.9.0",
     "@hashgraph/proto": "^1.1.9",
     "asn1js": "^2.1.1",
-    "aws-sdk": "^2.973.0",
+    "aws-sdk": "^2.978.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -76,7 +76,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-security": "^1.4.0",
-    "husky": "^7.0.1",
+    "husky": "^7.0.2",
     "jest": "^27.0.6",
     "jest-circus": "^27.0.6",
     "jest-junit": "^12.2.0",
@@ -89,7 +89,7 @@
     "rewire": "^5.0.0",
     "sinon": "^11.1.2",
     "supertest": "^6.1.6",
-    "testcontainers": "^7.19.1"
+    "testcontainers": "^7.20.0"
   },
   "jest": {
     "collectCoverage": true,

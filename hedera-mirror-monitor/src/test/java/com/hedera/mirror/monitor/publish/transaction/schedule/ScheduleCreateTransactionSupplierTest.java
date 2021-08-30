@@ -91,4 +91,9 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
                 .extracting(ScheduleCreateTransaction::getScheduleMemo, STRING)
                 .contains("Mirror node created test schedule");
     }
+
+    @Override
+    protected Class getSupplierClass() {
+        return ScheduleCreateTransactionSupplier.class;
+    }
 }

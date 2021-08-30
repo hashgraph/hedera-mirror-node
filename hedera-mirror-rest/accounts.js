@@ -34,15 +34,18 @@ const {DbError} = require('./errors/dbError');
  */
 const processRow = (row) => {
   const accRecord = {};
-  accRecord.balance = {};
   accRecord.account = EntityId.fromEncodedId(row.entity_id).toString();
-  accRecord.balance.timestamp = row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp);
-  accRecord.balance.balance = row.account_balance === null ? null : Number(row.account_balance);
-  accRecord.balance.tokens = utils.parseTokenBalances(row.token_balances);
-  accRecord.expiry_timestamp = row.expiration_timestamp === null ? null : utils.nsToSecNs(row.expiration_timestamp);
   accRecord.auto_renew_period = row.auto_renew_period === null ? null : Number(row.auto_renew_period);
-  accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
+  accRecord.balance = {
+    balance: row.account_balance === null ? null : Number(row.account_balance),
+    timestamp: row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp),
+    tokens: utils.parseTokenBalances(row.token_balances),
+  };
   accRecord.deleted = row.deleted;
+  accRecord.expiry_timestamp = row.expiration_timestamp === null ? null : utils.nsToSecNs(row.expiration_timestamp);
+  accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
+  accRecord.memo = row.memo;
+  accRecord.receiver_sig_required = row.receiver_sig_required;
 
   return accRecord;
 };
@@ -92,6 +95,8 @@ const getAccountQuery = (
        e.auto_renew_period,
        e.key,
        e.deleted,
+       e.memo,
+       e.receiver_sig_required,
        (
          select json_agg(
            json_build_object(
@@ -110,7 +115,7 @@ const getAccountQuery = (
       ${limitQuery || ''}
     ) ab
     ${joinType} join (
-      select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key
+      select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key, memo, receiver_sig_required
       from entity e
       where ${entityWhereFilter}
       order by e.id ${order || ''}

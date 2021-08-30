@@ -133,7 +133,9 @@
         "key": {
           "_type": "ProtobufEncoded",
           "key": "7b2233222c2233222c2233227d"
-        }
+        },
+        "memo": "entity memo",
+        "receiver_sig_required": false
       }
     ],
     "links": {

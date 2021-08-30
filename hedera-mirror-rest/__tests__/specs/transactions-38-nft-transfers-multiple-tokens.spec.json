@@ -100,18 +100,6 @@
         ],
         "nft_transfers": [
           {
-            "receiver_account_id": "0.0.9",
-            "sender_account_id": null,
-            "serial_number": 1,
-            "token_id": "0.0.100000"
-          },
-          {
-            "receiver_account_id": "0.0.98",
-            "sender_account_id": "0.0.9",
-            "serial_number": 2,
-            "token_id": "0.0.100000"
-          },
-          {
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
             "serial_number": 1,
@@ -128,6 +116,18 @@
             "sender_account_id": null,
             "serial_number": 3,
             "token_id": "0.0.90000"
+          },
+          {
+            "receiver_account_id": "0.0.9",
+            "sender_account_id": null,
+            "serial_number": 1,
+            "token_id": "0.0.100000"
+          },
+          {
+            "receiver_account_id": "0.0.98",
+            "sender_account_id": "0.0.9",
+            "serial_number": 2,
+            "token_id": "0.0.100000"
           }
         ]
       }
