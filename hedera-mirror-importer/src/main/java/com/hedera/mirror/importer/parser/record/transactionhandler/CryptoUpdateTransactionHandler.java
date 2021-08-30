@@ -41,6 +41,7 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
     }
 
     @Override
+    @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         CryptoUpdateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoUpdateAccount();
         if (txMessage.hasExpirationTime()) {
