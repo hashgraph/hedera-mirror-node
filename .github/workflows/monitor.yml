@@ -26,15 +26,9 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v2
         with:
+          cache: 'maven'
           distribution: 'adopt'
           java-version: 11
-
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          key: ${{ runner.os }}-m2-${{ hashFiles('./pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
 
       - name: Maven verify
         run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make -Dtest='!com.hedera.mirror.importer.**' -DfailIfNoTests=false
