@@ -186,6 +186,7 @@ const addEntity = async (defaults, entity) => {
     deleted: false,
     expiration_timestamp: null,
     key: null,
+    max_automatic_token_associations: null,
     memo: 'entity memo',
     public_key: null,
     realm: 0,
@@ -198,8 +199,8 @@ const addEntity = async (defaults, entity) => {
 
   await sqlConnection.query(
     `INSERT INTO entity (id, type, shard, realm, num, expiration_timestamp, deleted, public_key,
-                         auto_renew_period, key, memo, receiver_sig_required)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
+                         auto_renew_period, key, max_automatic_token_associations, memo, receiver_sig_required)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
     [
       EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId(),
       entity.type,
@@ -211,6 +212,7 @@ const addEntity = async (defaults, entity) => {
       entity.public_key,
       entity.auto_renew_period,
       entity.key,
+      entity.max_automatic_token_associations,
       entity.memo,
       entity.receiver_sig_required,
     ]
@@ -220,6 +222,7 @@ const addEntity = async (defaults, entity) => {
 const addAccount = async (account) => {
   await addEntity(
     {
+      max_automatic_token_associations: 0,
       public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       type: 1,
     },

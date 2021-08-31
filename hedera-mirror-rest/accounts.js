@@ -44,6 +44,8 @@ const processRow = (row) => {
   accRecord.deleted = row.deleted;
   accRecord.expiry_timestamp = row.expiration_timestamp === null ? null : utils.nsToSecNs(row.expiration_timestamp);
   accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
+  // max_automatic_token_associations is a uint32 in protobuf and saved as a bigint in db
+  accRecord.max_automatic_token_associations = Number(row.max_automatic_token_associations);
   accRecord.memo = row.memo;
   accRecord.receiver_sig_required = row.receiver_sig_required;
 
@@ -95,6 +97,7 @@ const getAccountQuery = (
        e.auto_renew_period,
        e.key,
        e.deleted,
+       e.max_automatic_token_associations,
        e.memo,
        e.receiver_sig_required,
        (
@@ -115,7 +118,17 @@ const getAccountQuery = (
       ${limitQuery || ''}
     ) ab
     ${joinType} join (
-      select id, expiration_timestamp, auto_renew_period, key, deleted, type, public_key, memo, receiver_sig_required
+      select
+        id,
+        expiration_timestamp,
+        auto_renew_period,
+        key,
+        deleted,
+        type,
+        public_key,
+        max_automatic_token_associations,
+        memo,
+        receiver_sig_required
       from entity e
       where ${entityWhereFilter}
       order by e.id ${order || ''}

@@ -144,6 +144,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
+        "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
       },
@@ -167,6 +168,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
+        "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
       },
@@ -181,6 +183,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
+        "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
       },
@@ -195,6 +198,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
+        "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
       },
@@ -218,6 +222,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
+        "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
       }
