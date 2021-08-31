@@ -54,7 +54,7 @@ const v1SchemaConfigs = {
 const v2SchemaConfigs = {
   docker: {
     imageName: 'cockroachdb/cockroach',
-    tagName: 'v21.1.6',
+    tagName: 'v21.1.8',
   },
   flyway: {
     baselineVersion: '1.999.999',

@@ -29,7 +29,6 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -37,7 +36,8 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
 import org.postgresql.PGConnection;
-import org.postgresql.copy.CopyManager;
+import org.postgresql.copy.CopyIn;
+import org.postgresql.copy.PGCopyOutputStream;
 
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
@@ -109,11 +109,14 @@ public class PgCopy<T> {
 
     protected void persistItems(Collection<T> items, Connection connection) throws SQLException, IOException {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
-        CopyManager copyManager = pgConnection.getCopyAPI();
+        CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
-        for (var item : items) {
-            byte[] bytes = writer.writeValueAsBytes(item);
-            copyManager.copyIn(sql, new ByteArrayInputStream(bytes), bytes.length);
+        try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
+            writer.writeValue(pgCopyOutputStream, items);
+        } finally {
+            if (copyIn.isActive()) {
+                copyIn.cancelCopy();
+            }
         }
     }
 }

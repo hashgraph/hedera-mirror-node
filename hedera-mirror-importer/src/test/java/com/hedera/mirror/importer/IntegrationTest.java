@@ -47,7 +47,7 @@ public abstract class IntegrationTest {
 
     protected static final Logger log = LogManager.getLogger(IntegrationTest.class);
 
-    private static final CockroachContainer COCKROACH = new CockroachContainer("cockroachdb/cockroach:v21.1.6")
+    private static final CockroachContainer COCKROACH = new CockroachContainer("cockroachdb/cockroach:v21.1.8")
             .withLogConsumer(o -> log.info("{}", o.getUtf8String().replace("\n", "")));
 
     static {

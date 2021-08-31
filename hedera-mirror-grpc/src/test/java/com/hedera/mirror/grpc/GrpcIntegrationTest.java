@@ -43,7 +43,7 @@ public abstract class GrpcIntegrationTest {
 
     protected static final Logger log = LogManager.getLogger(GrpcIntegrationTest.class);
 
-    private static final CockroachContainer COCKROACH = new CockroachContainer("cockroachdb/cockroach:v21.1.6")
+    private static final CockroachContainer COCKROACH = new CockroachContainer("cockroachdb/cockroach:v21.1.8")
             .withLogConsumer(o -> log.info("{}", o.getUtf8String().replace("\n", "")));
 
     static {

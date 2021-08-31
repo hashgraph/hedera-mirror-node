@@ -39,6 +39,7 @@ hedera-mirror-importer/data/
 application*.yaml
 application*.yml
 Chart.lock
+/cockroach-data/
 /data/
 /db/
 *.log
