@@ -75,7 +75,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      null,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -108,7 +107,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      undefined,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -117,7 +115,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify account id filter', () => {
-    const extraConditions = ['ta.associated is true'];
     const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [5];
     const filters = [
@@ -132,7 +129,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            from token t
                                   join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
                                   join entity e on e.id = t.token_id
-                           where ta.associated is true
                            order by t.token_id asc
                            limit $2`;
     const expectedparams = [5, maxLimit];
@@ -143,7 +139,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      extraConditions,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -152,7 +147,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify token type filter', () => {
-    const extraConditions = ['ta.associated is true'];
     const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [5];
     const tokenType = 'NON_FUNGIBLE_UNIQUE';
@@ -168,8 +162,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            from token t
                                   join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
                                   join entity e on e.id = t.token_id
-                           where ta.associated is true
-                             and t.type = $2
+                           where t.type = $2
                            order by t.token_id asc
                            limit $3`;
     const expectedparams = [5, tokenType, maxLimit];
@@ -180,7 +173,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      extraConditions,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -230,7 +222,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      [],
       expectedquery,
       expectedparams,
       expectedorder,
@@ -243,18 +234,12 @@ const verifyExtractSqlFromTokenRequest = (
   pgSqlQuery,
   pgSqlParams,
   filters,
-  extraConditions,
   expectedquery,
   expectedparams,
   expectedorder,
   expectedlimit
 ) => {
-  const {query, params, order, limit} = tokens.extractSqlFromTokenRequest(
-    pgSqlQuery,
-    pgSqlParams,
-    filters,
-    extraConditions
-  );
+  const {query, params, order, limit} = tokens.extractSqlFromTokenRequest(pgSqlQuery, pgSqlParams, filters);
 
   expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
   expect(params).toStrictEqual(expectedparams);

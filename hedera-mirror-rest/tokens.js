@@ -123,11 +123,11 @@ const tokenIdMatchQuery = 'where token_id = $1';
  * Given top level select columns and filters from request query, extract filters and create final sql query with
  * appropriate where clauses.
  */
-const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
+const extractSqlFromTokenRequest = (query, params, filters) => {
   // add filters
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.ASC;
-  conditions = conditions || [];
+  const conditions = [];
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
@@ -290,14 +290,12 @@ const getTokensRequest = async (req, res) => {
   // per resource unique param names
   const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
-  const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
   const getTokenSqlParams = [];
 
   // if account.id filter is present join on token_account and filter dissociated tokens
   const accountId = req.query[constants.filterKeys.ACCOUNT_ID];
   if (accountId) {
-    conditions.push('ta.associated is true');
     getTokensSqlQuery.push(accountIdJoinQuery);
     getTokenSqlParams.push(EntityId.fromString(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
   }
@@ -309,8 +307,7 @@ const getTokensRequest = async (req, res) => {
   const {query, params, order, limit} = extractSqlFromTokenRequest(
     getTokensSqlQuery.join('\n'),
     getTokenSqlParams,
-    filters,
-    conditions
+    filters
   );
 
   const rows = await getTokens(query, params);

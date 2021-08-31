@@ -648,13 +648,13 @@ const addTokenAccount = async (tokenAccount) => {
   // create token account object
   tokenAccount = {
     account_id: '0.0.0',
-    associated: true,
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
     modified_timestamp: 0,
     token_id: '0.0.0',
     ...tokenAccount,
+    associated: true,
   };
 
   if (!tokenAccount.modified_timestamp) {
