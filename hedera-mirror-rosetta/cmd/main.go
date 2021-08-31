@@ -167,6 +167,7 @@ func main() {
 		[]*rTypes.NetworkIdentifier{network},
 		nil,
 		false,
+		"",
 	)
 	if err != nil {
 		log.Fatalf("%s", err)
