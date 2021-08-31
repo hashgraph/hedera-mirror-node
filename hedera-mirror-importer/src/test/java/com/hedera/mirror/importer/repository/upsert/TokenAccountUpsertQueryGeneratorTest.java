@@ -39,7 +39,7 @@ class TokenAccountUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorT
 
     @Override
     protected String getDeleteQuery() {
-        return "delete from token_account using token_account_temp where token_account_temp.associated is false " +
+        return "delete from token_account using token_account_temp where token_account_temp.associated is not null " +
                 "and token_account.token_id = token_account_temp.token_id and token_account.account_id = " +
                 "token_account_temp.account_id";
     }

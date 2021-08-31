@@ -49,7 +49,12 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
 
     @Override
     protected String getDeleteWhereClause() {
-        return String.format("where %s is false and %s = %s and %s = %s",
+        // a token dissociate and a subsequent token associate for the same <token, account> can happen in the same
+        // batch; per the logic in SqlEntityListener, the associate will override the token dissociate while the
+        // previous <token, account> association is still in db; so the condition here should be
+        //   where token_account_temp.associated is not null
+        // to avoid insert conflict or incorrect data
+        return String.format("where %s is not null and %s = %s and %s = %s",
                 getFullTempTableColumnName(TokenAccount_.ASSOCIATED),
                 getFullFinalTableColumnName(TokenAccountId_.TOKEN_ID),
                 getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),

@@ -718,14 +718,14 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // save token entities first
         Token token = getToken(tokenId1, "0.0.500", 1L, 1L);
-        sqlEntityListener.onToken(token);
+        tokenRepository.save(token);
+
+        // token account was associated before this record file
+        String accountId1 = "0.0.7";
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false, TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED);
+        tokenAccountRepository.save(associate);
 
         // when
-        String accountId1 = "0.0.7";
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
-                null, null);
-        sqlEntityListener.onTokenAccount(associate);
-
         TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, 10L, null, null,
                 TokenFreezeStatusEnum.FROZEN, null);
         sqlEntityListener.onTokenAccount(freeze);
