@@ -42,6 +42,7 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
             TokenAccount_.AUTO_ASSOCIATED, TokenAccount_.CREATED_TIMESTAMP, TokenAccount_.ID, TokenAccountId_.TOKEN_ID);
 
     @Getter(lazy = true)
+    @SuppressWarnings("java:S3740")
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
     private final Set<SingularAttribute> selectableColumns = Set.of(TokenAccountId_.accountId, TokenAccount_.associated,
             TokenAccount_.autoAssociated, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
