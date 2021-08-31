@@ -489,72 +489,74 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertTokenCreate(RecordItem recordItem) {
-        if (entityProperties.getPersist().isTokens()) {
-            // pull token details from TokenCreation body and TokenId from receipt
-            TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            EntityId tokenId = EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
-            EntityId treasury = EntityId.of(tokenCreateTransactionBody.getTreasury());
-            Token token = new Token();
-            token.setCreatedTimestamp(consensusTimestamp);
-            token.setDecimals(tokenCreateTransactionBody.getDecimals());
-            token.setFreezeDefault(tokenCreateTransactionBody.getFreezeDefault());
-            token.setInitialSupply(tokenCreateTransactionBody.getInitialSupply());
-            token.setMaxSupply(tokenCreateTransactionBody.getMaxSupply());
-            token.setModifiedTimestamp(consensusTimestamp);
-            token.setName(tokenCreateTransactionBody.getName());
-            token.setSupplyType(TokenSupplyTypeEnum.fromId(tokenCreateTransactionBody.getSupplyTypeValue()));
-            token.setSymbol(tokenCreateTransactionBody.getSymbol());
-            token.setTokenId(new TokenId(tokenId));
-            token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
-            token.setTreasuryAccountId(treasury);
-            token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenTypeValue()));
-
-            if (tokenCreateTransactionBody.hasFeeScheduleKey()) {
-                token.setFeeScheduleKey(tokenCreateTransactionBody.getFeeScheduleKey().toByteArray());
-            }
-
-            if (tokenCreateTransactionBody.hasFreezeKey()) {
-                token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
-            }
-
-            if (tokenCreateTransactionBody.hasKycKey()) {
-                token.setKycKey(tokenCreateTransactionBody.getKycKey().toByteArray());
-            }
-
-            if (tokenCreateTransactionBody.hasSupplyKey()) {
-                token.setSupplyKey(tokenCreateTransactionBody.getSupplyKey().toByteArray());
-            }
-
-            if (tokenCreateTransactionBody.hasWipeKey()) {
-                token.setWipeKey(tokenCreateTransactionBody.getWipeKey().toByteArray());
-            }
-
-            Set<EntityId> autoAssociatedAccounts = insertCustomFees(tokenCreateTransactionBody.getCustomFeesList(),
-                    consensusTimestamp, true, tokenId);
-            autoAssociatedAccounts.add(treasury);
-            if (recordItem.getRecord().getAutomaticTokenAssociationsCount() > 0) {
-                // automatic_token_associations does not exist prior to services 0.18.0
-                autoAssociatedAccounts.clear();
-                recordItem.getRecord().getAutomaticTokenAssociationsList().stream()
-                        .map(TokenAssociation::getAccountId)
-                        .map(EntityId::of)
-                        .forEach(autoAssociatedAccounts::add);
-            }
-
-            TokenFreezeStatusEnum freezeStatus = token.getFreezeKey() != null ? TokenFreezeStatusEnum.UNFROZEN :
-                    TokenFreezeStatusEnum.NOT_APPLICABLE;
-            TokenKycStatusEnum kycStatus = token.getKycKey() != null ? TokenKycStatusEnum.GRANTED :
-                    TokenKycStatusEnum.NOT_APPLICABLE;
-            autoAssociatedAccounts.forEach(account -> {
-                TokenAccount tokenAccount = associatedTokenAccount(account, false, consensusTimestamp, freezeStatus,
-                        kycStatus, tokenId);
-                entityListener.onEntityId(account);
-                entityListener.onTokenAccount(tokenAccount);
-            });
-
-            entityListener.onToken(token);
+        if (!entityProperties.getPersist().isTokens()) {
+            return;
         }
+
+        // pull token details from TokenCreation body and TokenId from receipt
+        TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        EntityId tokenId = EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
+        EntityId treasury = EntityId.of(tokenCreateTransactionBody.getTreasury());
+        Token token = new Token();
+        token.setCreatedTimestamp(consensusTimestamp);
+        token.setDecimals(tokenCreateTransactionBody.getDecimals());
+        token.setFreezeDefault(tokenCreateTransactionBody.getFreezeDefault());
+        token.setInitialSupply(tokenCreateTransactionBody.getInitialSupply());
+        token.setMaxSupply(tokenCreateTransactionBody.getMaxSupply());
+        token.setModifiedTimestamp(consensusTimestamp);
+        token.setName(tokenCreateTransactionBody.getName());
+        token.setSupplyType(TokenSupplyTypeEnum.fromId(tokenCreateTransactionBody.getSupplyTypeValue()));
+        token.setSymbol(tokenCreateTransactionBody.getSymbol());
+        token.setTokenId(new TokenId(tokenId));
+        token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
+        token.setTreasuryAccountId(treasury);
+        token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenTypeValue()));
+
+        if (tokenCreateTransactionBody.hasFeeScheduleKey()) {
+            token.setFeeScheduleKey(tokenCreateTransactionBody.getFeeScheduleKey().toByteArray());
+        }
+
+        if (tokenCreateTransactionBody.hasFreezeKey()) {
+            token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
+        }
+
+        if (tokenCreateTransactionBody.hasKycKey()) {
+            token.setKycKey(tokenCreateTransactionBody.getKycKey().toByteArray());
+        }
+
+        if (tokenCreateTransactionBody.hasSupplyKey()) {
+            token.setSupplyKey(tokenCreateTransactionBody.getSupplyKey().toByteArray());
+        }
+
+        if (tokenCreateTransactionBody.hasWipeKey()) {
+            token.setWipeKey(tokenCreateTransactionBody.getWipeKey().toByteArray());
+        }
+
+        Set<EntityId> autoAssociatedAccounts = insertCustomFees(tokenCreateTransactionBody.getCustomFeesList(),
+                consensusTimestamp, true, tokenId);
+        autoAssociatedAccounts.add(treasury);
+        if (recordItem.getRecord().getAutomaticTokenAssociationsCount() > 0) {
+            // automatic_token_associations does not exist prior to services 0.18.0
+            autoAssociatedAccounts.clear();
+            recordItem.getRecord().getAutomaticTokenAssociationsList().stream()
+                    .map(TokenAssociation::getAccountId)
+                    .map(EntityId::of)
+                    .forEach(autoAssociatedAccounts::add);
+        }
+
+        TokenFreezeStatusEnum freezeStatus = token.getFreezeKey() != null ? TokenFreezeStatusEnum.UNFROZEN :
+                TokenFreezeStatusEnum.NOT_APPLICABLE;
+        TokenKycStatusEnum kycStatus = token.getKycKey() != null ? TokenKycStatusEnum.GRANTED :
+                TokenKycStatusEnum.NOT_APPLICABLE;
+        autoAssociatedAccounts.forEach(account -> {
+            TokenAccount tokenAccount = associatedTokenAccount(account, false, consensusTimestamp, freezeStatus,
+                    kycStatus, tokenId);
+            entityListener.onEntityId(account);
+            entityListener.onTokenAccount(tokenAccount);
+        });
+
+        entityListener.onToken(token);
     }
 
     private TokenAccount associatedTokenAccount(EntityId accountId, boolean autoAssociated, long consensusTimestamp,
