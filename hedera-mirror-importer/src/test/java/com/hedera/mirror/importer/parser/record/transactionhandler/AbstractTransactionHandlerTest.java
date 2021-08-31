@@ -377,10 +377,10 @@ public abstract class AbstractTransactionHandlerTest {
 
         if (maxAutomaticTokenAssociationsField != null) {
             // only crypto update has max_automatic_token_associations
-            int value = 0x7fffffff;
+            int value = 0xffffffff;
             expected = getExpectedUpdatedEntity();
             expected.setMemo(DEFAULT_MEMO);
-            expected.setMaxAutomaticTokenAssociations((long)value);
+            expected.setMaxAutomaticTokenAssociations(Integer.toUnsignedLong(value));
             expected.setReceiverSigRequired(true);
             input = new Entity();
             input.setMemo(DEFAULT_MEMO);

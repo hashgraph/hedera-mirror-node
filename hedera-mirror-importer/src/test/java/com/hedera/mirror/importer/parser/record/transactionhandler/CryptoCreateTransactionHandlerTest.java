@@ -68,9 +68,9 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
         List<UpdateEntityTestSpec> testSpecs = super.getUpdateEntityTestSpecsForCreateTransaction(memoField);
 
-        // add a test spec with max_automatic_token_associations 0x7fffffff, to verify the handler properly convert
+        // add a test spec with max_automatic_token_associations 0xffffffff, to verify the handler properly convert
         // the protobuf uint32 value presented as a Java int
-        int value = 0x7fffffff;
+        int value = 0xffffffff;
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         FieldDescriptor field = getInnerBodyFieldDescriptorByName("max_automatic_token_associations");
@@ -78,10 +78,10 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         body = getTransactionBody(body, innerBody);
 
         Entity expected = getExpectedUpdatedEntity();
-        expected.setMaxAutomaticTokenAssociations((long)value);
+        expected.setMaxAutomaticTokenAssociations(Integer.toUnsignedLong(value));
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
-                        .description("create entity with 0x7fffffff max_automatic_token_associations")
+                        .description("create entity with 0xffffffff max_automatic_token_associations")
                         .expected(expected)
                         .input(new Entity())
                         .recordItem(getRecordItem(body, getDefaultTransactionRecord().build()))
