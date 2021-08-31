@@ -29,6 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.exception.ParserException;
@@ -153,7 +154,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     }
 
     private int deleteItems(Connection connection) throws SQLException {
-        if (deleteSql == null) {
+        if (StringUtils.isEmpty(deleteSql)) {
             return 0;
         }
 

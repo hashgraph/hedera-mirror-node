@@ -119,7 +119,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     private String generateDeleteQuery() {
         String whereClause = getDeleteWhereClause();
-        if (whereClause == null) {
+        if (StringUtils.isEmpty(whereClause)) {
             return null;
         }
 

@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.vladmihalcea.hibernate.type.util.StringUtils;
 import java.util.ArrayList;
@@ -1214,39 +1213,22 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private void createTokenEntity(TokenID tokenId, TokenType tokenType, String symbol, long consensusTimestamp,
                                    boolean freezeDefault, boolean setFreezeKey, boolean setKycKey,
                                    List<CustomFee> customFees, List<EntityId> autoAssociatedAccounts) {
-        Transaction transaction = tokenCreateTransaction(tokenType, freezeDefault, setFreezeKey, setKycKey,
-                symbol, customFees);
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TokenTransferList tokenTransfer = tokenType == TokenType.FUNGIBLE_COMMON ? tokenTransfer(tokenId, PAYER,
-                INITIAL_SUPPLY) : TokenTransferList.getDefaultInstance();
-        var transactionRecord = tokenCreateTransactionRecord(autoAssociatedAccounts, consensusTimestamp, tokenId,
-                List.of(tokenTransfer), INITIAL_SUPPLY, transactionBody, ResponseCodeEnum.SUCCESS);
+        var transaction = tokenCreateTransaction(tokenType, freezeDefault, setFreezeKey, setKycKey, symbol, customFees);
+        List<TokenTransferList> tokenTransfers = tokenType == TokenType.FUNGIBLE_COMMON ?
+                List.of(tokenTransfer(tokenId, PAYER, INITIAL_SUPPLY)) : Lists.emptyList();
+        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {
+            builder.getReceiptBuilder()
+                    .setTokenID(tokenId)
+                    .setNewTotalSupply(INITIAL_SUPPLY);
+            builder.addAllTokenTransferLists(tokenTransfers)
+                    .addAllAutomaticTokenAssociations(autoAssociatedAccounts.stream()
+                            .map(account -> TokenAssociation.newBuilder()
+                                    .setTokenId(tokenId)
+                                    .setAccountId(convertAccountId(account))
+                                    .build())
+                            .collect(Collectors.toList()));
 
-        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
-    }
-
-    private TransactionRecord tokenCreateTransactionRecord(List<EntityId> autoAssociatedAccounts,
-                                                           long consensusTimestamp,
-                                                           TokenID tokenId,
-                                                           List<TokenTransferList> tokenTransferLists,
-                                                           long totalSupply,
-                                                           TransactionBody transactionBody,
-                                                           ResponseCodeEnum responseCode) {
-        var receipt = TransactionReceipt.newBuilder()
-                .setStatus(responseCode)
-                .setTokenID(tokenId)
-                .setNewTotalSupply(totalSupply);
-
-        return buildTransactionRecord(recordBuilder -> recordBuilder
-                .setReceipt(receipt)
-                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp))
-                .addAllTokenTransferLists(tokenTransferLists)
-                .addAllAutomaticTokenAssociations(autoAssociatedAccounts.stream()
-                        .map(account -> TokenAssociation.newBuilder()
-                                .setTokenId(tokenId)
-                                .setAccountId(convertAccountId(account))
-                                .build())
-                        .collect(Collectors.toList())), transactionBody, responseCode.getNumber());
+        });
     }
 
     private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
