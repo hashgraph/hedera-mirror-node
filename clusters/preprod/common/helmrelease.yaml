@@ -44,6 +44,9 @@ spec:
                 - action: drop
                   regex: (api_request_size_bytes_bucket|executor.*)
                   sourceLabels: [__name__]
+                - action: keep
+                  regex: (kube_pod_container_resource_.*|kube_pod_info|kube_pod_status_ready)
+                  sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     traefik:
       service:
