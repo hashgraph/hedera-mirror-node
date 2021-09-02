@@ -45,6 +45,12 @@ spec:
                   regex: (api_request_size_bytes_bucket|executor.*)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
+    promtail:
+      config:
+        snippets:
+          extraClientConfigs: |
+            external_labels:
+              cluster: mainnet-na
     traefik:
       service:
         annotations:
