@@ -50,9 +50,10 @@ spec:
           replicaExternalLabelName: __replica__
     promtail:
       config:
-        extraClientConfigs: |
-          external_labels:
-            cluster: preprod
+        snippets:
+          extraClientConfigs: |
+            external_labels:
+              cluster: preprod
     traefik:
       service:
         annotations:
