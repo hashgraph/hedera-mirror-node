@@ -48,6 +48,11 @@ spec:
                   regex: (kube_pod_container_resource_.*|kube_pod_info|kube_pod_status_ready)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
+    promtail:
+      config:
+        extraClientConfigs: |
+          external_labels:
+            cluster: preprod
     traefik:
       service:
         annotations:
