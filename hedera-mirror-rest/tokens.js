@@ -95,9 +95,6 @@ const tokenAccountCte = `with ta as (
   order by account_id, token_id, modified_timestamp desc
 )`;
 const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
-const tokensSelectQueryWithAssociation = `select t.token_id, symbol, e.key, t.type,
-  ta.automatic_association, ta.freeze_status, ta.kyc_status
-from token t`;
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 const tokenAccountJoinQuery = 'join ta on ta.token_id = t.token_id';
 
@@ -177,21 +174,11 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
 const formatTokenRow = (row) => {
-  const tokenAccount =
-    row.automatic_association !== undefined
-      ? {
-          automatic_association: row.automatic_association,
-          freeze_status: new TokenFreezeStatus(row.freeze_status),
-          kyc_status: new TokenKycStatus(row.kyc_status),
-        }
-      : {};
-
   return {
     admin_key: utils.encodeKey(row.key),
     symbol: row.symbol,
     token_id: EntityId.fromEncodedId(row.token_id).toString(),
     type: row.type,
-    ...tokenAccount,
   };
 };
 
@@ -317,8 +304,7 @@ const getTokensRequest = async (req, res) => {
   const accountId = req.query[constants.filterKeys.ACCOUNT_ID];
   if (accountId) {
     conditions.push('ta.associated is true');
-    getTokensSqlQuery.splice(0, 1);
-    getTokensSqlQuery.push(tokenAccountCte, tokensSelectQueryWithAssociation);
+    getTokensSqlQuery.unshift(tokenAccountCte);
     getTokensSqlQuery.push(tokenAccountJoinQuery);
     getTokenSqlParams.push(EntityId.fromString(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
   }
@@ -1010,7 +996,6 @@ if (utils.isTestEnv()) {
     tokenAccountJoinQuery,
     tokenBalancesSelectQuery,
     tokensSelectQuery,
-    tokensSelectQueryWithAssociation,
     validateSerialNumberParam,
     validateTokenIdParam,
     validateTokenInfoFilter,

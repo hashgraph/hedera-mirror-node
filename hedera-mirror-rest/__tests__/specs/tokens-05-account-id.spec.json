@@ -106,27 +106,18 @@
     "tokens": [
       {
         "token_id": "0.0.3",
-        "automatic_association": false,
-        "freeze_status": "FROZEN",
-        "kyc_status": "GRANTED",
         "symbol": "FIRSTMOVERLPDJH",
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.7.25301",
-        "automatic_association": true,
-        "freeze_status": "UNFROZEN",
-        "kyc_status": "REVOKED",
         "symbol": "MIRRORTOKEN",
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.23.45678",
-        "automatic_association": false,
-        "freeze_status": "NOT_APPLICABLE",
-        "kyc_status": "NOT_APPLICABLE",
         "symbol": "HEDERACOIN",
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"

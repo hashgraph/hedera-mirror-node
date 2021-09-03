@@ -54,73 +54,6 @@ describe('token formatTokenRow tests', () => {
   test('Verify formatTokenRow', () => {
     expect(tokens.formatTokenRow(rowInput)).toStrictEqual(expectedFormat);
   });
-
-  describe('Verify formatTokenRow with token account info', () => {
-    const testSpecs = [
-      {
-        input: {
-          automatic_association: true,
-          freeze_status: 0,
-          kyc_status: 0,
-          ...rowInput,
-        },
-        expected: {
-          automatic_association: true,
-          freeze_status: new TokenFreezeStatus(0),
-          kyc_status: new TokenKycStatus(0),
-          ...expectedFormat,
-        },
-      },
-      {
-        input: {
-          automatic_association: false,
-          freeze_status: 0,
-          kyc_status: 0,
-          ...rowInput,
-        },
-        expected: {
-          automatic_association: false,
-          freeze_status: new TokenFreezeStatus(0),
-          kyc_status: new TokenKycStatus(0),
-          ...expectedFormat,
-        },
-      },
-      {
-        input: {
-          automatic_association: false,
-          freeze_status: 1,
-          kyc_status: 1,
-          ...rowInput,
-        },
-        expected: {
-          automatic_association: false,
-          freeze_status: new TokenFreezeStatus(1),
-          kyc_status: new TokenKycStatus(1),
-          ...expectedFormat,
-        },
-      },
-      {
-        input: {
-          automatic_association: false,
-          freeze_status: 2,
-          kyc_status: 2,
-          ...rowInput,
-        },
-        expected: {
-          automatic_association: false,
-          freeze_status: new TokenFreezeStatus(2),
-          kyc_status: new TokenKycStatus(2),
-          ...expectedFormat,
-        },
-      },
-    ];
-
-    testSpecs.forEach((spec) =>
-      test(`${JSON.stringify(spec.input)}`, () => {
-        expect(tokens.formatTokenRow(spec.input)).toEqual(spec.expected);
-      })
-    );
-  });
 });
 
 describe('token extractSqlFromTokenRequest tests', () => {
@@ -184,7 +117,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const extraConditions = ['ta.associated is true'];
     const initialQuery = [
       tokens.tokenAccountCte,
-      tokens.tokensSelectQueryWithAssociation,
+      tokens.tokensSelectQuery,
       tokens.tokenAccountJoinQuery,
       tokens.entityIdJoinQuery,
     ].join('\n');
@@ -203,8 +136,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, t.type,
-                                  ta.automatic_association, ta.freeze_status, ta.kyc_status
+                           select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -231,7 +163,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const extraConditions = ['ta.associated is true'];
     const initialQuery = [
       tokens.tokenAccountCte,
-      tokens.tokensSelectQueryWithAssociation,
+      tokens.tokensSelectQuery,
       tokens.tokenAccountJoinQuery,
       tokens.entityIdJoinQuery,
     ].join('\n');
@@ -251,8 +183,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, t.type,
-                                  ta.automatic_association, ta.freeze_status, ta.kyc_status
+                           select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -279,7 +210,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const extraConditions = ['ta.associated is true'];
     const initialQuery = [
       tokens.tokenAccountCte,
-      tokens.tokensSelectQueryWithAssociation,
+      tokens.tokensSelectQuery,
       tokens.tokenAccountJoinQuery,
       tokens.entityIdJoinQuery,
     ].join('\n');
@@ -312,8 +243,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, t.type,
-                                  ta.automatic_association, ta.freeze_status, ta.kyc_status
+                           select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
