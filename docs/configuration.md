@@ -361,7 +361,7 @@ The Rosetta API supports loading configuration from YAML. By default, it loads a
 `application.yml` in each of the search paths (see below). The configuration is loaded in the following order with the
 latter configuration overwriting (technically recursively merged into) the current configuration:
 
-1. `./config/application.yml`
+1. Hard coded configuration embedded in the code
 2. `./application.yml`
 3. `${HEDERA_MIRROR_ROSETTA_API_CONFIG}` environment variable to custom values file (
    e.g. `HEDERA_MIRROR_ROSETTA_API_CONFIG=/Users/Downloads/hedera-mirror-rosetta/application.yml`)
