@@ -1,5 +1,5 @@
 {
-  "name": "hedera-mirror-state-proof-demo",
+  "name": "@hashgraph/mirror-state-proof-demo",
   "version": "1.0.0",
   "description": "An example implementation of a state proof flow fora transaction utilizing the mirror node.",
   "main": "index.js",
