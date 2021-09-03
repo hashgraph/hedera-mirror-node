@@ -8,7 +8,7 @@ values ('NO_REMAINING_AUTOMATIC_ASSOCIATIONS', 262),
        ('REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT', 264);
 
 alter table if exists entity
-    add column max_automatic_token_associations bigint;
+    add column max_automatic_token_associations integer;
 
 update entity
 set max_automatic_token_associations = 0

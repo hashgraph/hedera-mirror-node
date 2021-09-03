@@ -122,7 +122,7 @@ create table if not exists entity
     expiration_timestamp             bigint,
     id                               bigint          not null,
     key                              bytea,
-    max_automatic_token_associations bigint,
+    max_automatic_token_associations integer,
     memo                             text default '' not null,
     modified_timestamp               bigint,
     num                              bigint          not null,
