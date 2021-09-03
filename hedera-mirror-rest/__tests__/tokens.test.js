@@ -26,7 +26,6 @@ const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
 const {TransactionResultService, TransactionTypeService} = require('../service');
-const {TokenFreezeStatus, TokenKycStatus} = require('../model');
 
 const formatSqlQueryString = (query) => {
   return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
@@ -57,6 +56,8 @@ describe('token formatTokenRow tests', () => {
 });
 
 describe('token extractSqlFromTokenRequest tests', () => {
+  const accountQueryCondition = 'ta.associated is true';
+
   test('Verify simple discovery query', () => {
     const initialQuery = [tokens.tokensSelectQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [];
@@ -114,7 +115,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify account id filter', () => {
-    const extraConditions = ['ta.associated is true'];
     const initialQuery = [
       tokens.tokenAccountCte,
       tokens.tokensSelectQuery,
@@ -151,7 +151,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      extraConditions,
+      [accountQueryCondition],
       expectedquery,
       expectedparams,
       expectedorder,
@@ -160,7 +160,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify token type filter', () => {
-    const extraConditions = ['ta.associated is true'];
     const initialQuery = [
       tokens.tokenAccountCte,
       tokens.tokensSelectQuery,
@@ -198,7 +197,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      extraConditions,
+      [accountQueryCondition],
       expectedquery,
       expectedparams,
       expectedorder,
@@ -207,7 +206,6 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify all filters', () => {
-    const extraConditions = ['ta.associated is true'];
     const initialQuery = [
       tokens.tokenAccountCte,
       tokens.tokensSelectQuery,
@@ -261,7 +259,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
-      extraConditions,
+      [accountQueryCondition],
       expectedquery,
       expectedparams,
       expectedorder,

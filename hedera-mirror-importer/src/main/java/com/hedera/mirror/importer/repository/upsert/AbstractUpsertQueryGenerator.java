@@ -48,6 +48,7 @@ import com.hedera.mirror.importer.converter.NullableStringSerializer;
 
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
+    private static final String EMPTY_CLAUSE = "";
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
     private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
@@ -74,18 +75,18 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     protected String getCteForInsert() {
-        return "";
+        return EMPTY_CLAUSE;
     }
 
     protected abstract String getInsertWhereClause();
 
     protected Set<String> getNonUpdatableColumns() {
         return Collections.emptySet();
-    };
+    }
 
     protected String getUpdateWhereClause() {
-        return "";
-    };
+        return EMPTY_CLAUSE;
+    }
 
     protected boolean needsOnConflictAction() {
         return true;
@@ -149,7 +150,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     private String generateUpdateQuery() {
         if (isInsertOnly()) {
-            return "";
+            return EMPTY_CLAUSE;
         }
 
         StringBuilder updateQueryBuilder = new StringBuilder("update " + getFinalTableName() + " set ");
