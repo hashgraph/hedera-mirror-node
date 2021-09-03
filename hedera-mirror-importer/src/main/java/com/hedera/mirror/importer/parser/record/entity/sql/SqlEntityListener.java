@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import com.google.common.base.Stopwatch;
 
-import com.hedera.mirror.importer.domain.TokenAccount_;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.util.ArrayList;

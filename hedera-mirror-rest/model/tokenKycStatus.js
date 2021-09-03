@@ -27,7 +27,7 @@ class TokenKycStatus {
 
   constructor(id) {
     this._id = Number(id);
-    if (Number.isNaN(this._id) || id < 0 || id > 2) {
+    if (Number.isNaN(this._id) || this._id < 0 || this._id > 2) {
       throw new InvalidArgumentError(`Invalid token kyc status id ${id}`);
     }
   }
