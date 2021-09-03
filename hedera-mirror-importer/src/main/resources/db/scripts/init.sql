@@ -18,6 +18,7 @@ grant usage on schema mirrornode to readonly, readwrite;
 grant select, insert, update on database mirror_node to readwrite;
 
 -- run V2.0.0
+-- adjust entity.csv to replace memo "" with UUID, then replace back after import
 alter table assessed_custom_fee
     alter column effective_payer_account_ids set default '{}';
 import into assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id) csv data ('gs://hedera-cockroachdb/assessed_custom_fee.csv.gz') with nullif = '';
@@ -37,7 +38,7 @@ import into live_hash (livehash, consensus_timestamp) csv data ('gs://hedera-coc
 import into non_fee_transfer (entity_id, consensus_timestamp, amount) csv data ('gs://hedera-cockroachdb/non_fee_transfer.csv.gz') with nullif = '';
 import into nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id) csv data ('gs://hedera-cockroachdb/nft.csv.gz') with nullif = '';
 import into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id) csv data ('gs://hedera-cockroachdb/nft_transfer.csv.gz') with nullif = '';
-import into record_file (bytes, consensus_start, consensus_end, count, digest_algorithm, file_hash, hapi_version_major, hapi_version_minor, hapi_version_patch, hash, index, load_start, load_end, name, node_account_id, prev_hash, version) csv data ('gs://hedera-cockroachdb/record_file.csv.gz') with nullif = '';
+import into record_file (bytes, consensus_start, consensus_end, count, digest_algorithm, file_hash, hapi_version_major, hapi_version_minor, hapi_version_patch, hash, "index", load_start, load_end, name, node_account_id, prev_hash, version) csv data ('gs://hedera-cockroachdb/record_file.csv.gz') with nullif = '';
 import into schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body) csv data ('gs://hedera-cockroachdb/schedule.csv.gz') with nullif = '';
 import into token (token_id, created_timestamp, decimals, fee_schedule_key, fee_schedule_key_ed25519_hex, freeze_default, freeze_key, freeze_key_ed25519_hex, initial_supply, kyc_key, kyc_key_ed25519_hex, max_supply, modified_timestamp, name, supply_key, supply_key_ed25519_hex, supply_type, symbol, total_supply, treasury_account_id, type, wipe_key, wipe_key_ed25519_hex) csv data ('gs://hedera-cockroachdb/token.csv.gz') with nullif = '';
 import into token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id) csv data ('gs://hedera-cockroachdb/token_account.csv.gz') with nullif = '';
