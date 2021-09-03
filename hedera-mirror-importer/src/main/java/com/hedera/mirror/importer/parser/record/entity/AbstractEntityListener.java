@@ -134,8 +134,12 @@ public class AbstractEntityListener implements EntityListener {
     }
 
     protected TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
-        // newTokenAccount must have its id (tokenId, accountId, modifiedTimestamp) set
-        // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the last snapshot
+        if (newTokenAccount.getCreatedTimestamp() != null) {
+            return newTokenAccount;
+        }
+
+        // newTokenAccount is a partial update. It must have its id (tokenId, accountId, modifiedTimestamp) set.
+        // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the last snapshot.
         // copy other fields from the last snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());

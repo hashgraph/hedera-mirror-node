@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.importer.domain.TokenAccount_;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -356,14 +359,8 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         var key = new TokenAccountKey(tokenAccount.getId().getTokenId(), tokenAccount.getId().getAccountId());
-        if (tokenAccount.getCreatedTimestamp() != null) {
-            // new token account relationship, replace the old state
-            tokenAccountState.put(key, tokenAccount);
-        } else {
-            tokenAccountState.merge(key, tokenAccount, this::mergeTokenAccount);
-        }
-
-        tokenAccounts.add(tokenAccount);
+        TokenAccount merged = tokenAccountState.merge(key, tokenAccount, this::mergeTokenAccount);
+        tokenAccounts.add(merged);
     }
 
     @Override

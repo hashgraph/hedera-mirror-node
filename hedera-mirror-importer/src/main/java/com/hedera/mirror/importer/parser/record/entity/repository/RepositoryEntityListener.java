@@ -171,16 +171,11 @@ public class RepositoryEntityListener extends AbstractEntityListener {
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        if (tokenAccount.getCreatedTimestamp() != null) {
-            tokenAccountRepository.save(tokenAccount);
-            return;
-        }
-
         long tokenId = tokenAccount.getId().getTokenId().getId();
         long accountId = tokenAccount.getId().getAccountId().getId();
         TokenAccount merged = tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId, accountId)
                 .map(existing -> mergeTokenAccount(existing, tokenAccount))
-                .orElseThrow();
+                .orElse(tokenAccount);
         tokenAccountRepository.save(merged);
     }
 
