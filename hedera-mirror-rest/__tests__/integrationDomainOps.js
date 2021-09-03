@@ -648,13 +648,14 @@ const addTokenAccount = async (tokenAccount) => {
   // create token account object
   tokenAccount = {
     account_id: '0.0.0',
+    associated: true,
+    automatic_association: false,
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
     modified_timestamp: 0,
     token_id: '0.0.0',
     ...tokenAccount,
-    associated: true,
   };
 
   if (!tokenAccount.modified_timestamp) {
@@ -662,12 +663,13 @@ const addTokenAccount = async (tokenAccount) => {
   }
 
   await sqlConnection.query(
-    `INSERT INTO token_account (account_id, associated, created_timestamp, freeze_status, kyc_status,
-                                modified_timestamp, token_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+    `INSERT INTO token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
+                                kyc_status, modified_timestamp, token_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
     [
       EntityId.fromString(tokenAccount.account_id).getEncodedId(),
       tokenAccount.associated,
+      tokenAccount.automatic_association,
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,

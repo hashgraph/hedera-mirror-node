@@ -24,8 +24,6 @@ public interface UpsertQueryGenerator {
 
     String getCreateTempTableQuery();
 
-    String getDeleteQuery();
-
     String getFinalTableName();
 
     String getInsertQuery();

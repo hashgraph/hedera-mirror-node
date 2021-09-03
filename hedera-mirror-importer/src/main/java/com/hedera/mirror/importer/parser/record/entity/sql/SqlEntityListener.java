@@ -51,7 +51,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenAccountId;
+import com.hedera.mirror.importer.domain.TokenAccountKey;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -113,8 +113,9 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftTransfer> nftTransfers;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
-    private final Collection<TopicMessage> topicMessages;
+    private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenTransfer> tokenTransfers;
+    private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
     private final Collection<TransactionSignature> transactionSignatures;
 
@@ -122,8 +123,13 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     private final Map<Long, Entity> entities;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
-    private final Map<TokenAccountId, TokenAccount> tokenAccounts;
     private final Map<NftId, Nft> nfts;
+
+    // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
+    // for each <token, account> update, merge the state and the update, save the merged state to the batch.
+    // during upsert pgcopy, the merged state at time T is again merged with the initial state before the batch to
+    // get the full state at time T
+    private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
 
     public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
                              DataSource dataSource,
@@ -174,6 +180,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
         nftTransfers = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
+        tokenAccounts = new ArrayList<>();
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
@@ -182,7 +189,8 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
         nfts = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
-        tokenAccounts = new HashMap<>();
+
+        tokenAccountState = new HashMap<>();
     }
 
     @Override
@@ -221,6 +229,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
+            tokenAccountState.clear();
             tokens.clear();
             tokenTransfers.clear();
             transactions.clear();
@@ -255,7 +264,8 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
             // insert operations with conflict management
             entityPgCopy.copy(entities.values(), connection);
             tokenPgCopy.copy(tokens.values(), connection);
-            tokenAccountPgCopy.copy(tokenAccounts.values(), connection);
+            // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
+            tokenAccountPgCopy.copy(tokenAccounts, connection);
             nftPgCopy.copy(nfts.values(), connection); // persist nft after token entity
             schedulePgCopy.copy(schedules.values(), connection);
 
@@ -345,14 +355,15 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        if (tokenAccount.getAssociated() != null) {
-            // either token associate or dissociate
-            tokenAccounts.put(tokenAccount.getId(), tokenAccount);
-            return;
+        var key = new TokenAccountKey(tokenAccount.getId().getTokenId(), tokenAccount.getId().getAccountId());
+        if (tokenAccount.getCreatedTimestamp() != null) {
+            // new token account relationship, replace the old state
+            tokenAccountState.put(key, tokenAccount);
+        } else {
+            tokenAccountState.merge(key, tokenAccount, this::mergeTokenAccount);
         }
 
-        // tokenAccounts may experience multiple updates in a single record file, handle updates in memory for this case
-        tokenAccounts.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+        tokenAccounts.add(tokenAccount);
     }
 
     @Override

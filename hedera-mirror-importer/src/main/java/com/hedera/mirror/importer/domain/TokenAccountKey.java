@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository.upsert;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,9 +20,14 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import com.hedera.mirror.importer.EnabledIfV2;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@EnabledIfV2
-@SuppressWarnings("java:S2187")
-class TokenAccountUpsertQueryGeneratorV2Test extends TokenAccountUpsertQueryGeneratorTest {
+@Data
+@AllArgsConstructor
+public class TokenAccountKey {
+
+    private EntityId tokenId;
+
+    private EntityId accountId;
 }

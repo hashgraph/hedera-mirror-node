@@ -70,8 +70,11 @@ import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
 class UpsertPgCopyTest extends IntegrationTest {
 
+    private static final Key KEY = Key.newBuilder()
+            .setEd25519(ByteString.copyFromUtf8("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c"))
+            .build();
+
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-    private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
 
     @Resource
     private DataSource dataSource;
@@ -263,7 +266,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         assertThat(tokenAccountRepository
                 .findAll())
                 .isNotEmpty()
-                .extracting(TokenAccount::getCreatedTimestamp, TokenAccount::getModifiedTimestamp)
+                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getId().getModifiedTimestamp())
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(1L, 1L),
                         Tuple.tuple(2L, 2L),
@@ -277,10 +280,8 @@ class UpsertPgCopyTest extends IntegrationTest {
         // inserts token first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
-        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, true, Key.newBuilder()
-                .setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build(), null));
-        tokens.add(getToken("0.0.4000", "0.0.1001", 3L, false, Key.newBuilder()
-                .setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build(), null));
+        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, true, KEY, null));
+        tokens.add(getToken("0.0.4000", "0.0.1001", 3L, false, KEY, null));
 
         copyWithTransactionSupport(tokenPgCopy, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
@@ -294,13 +295,13 @@ class UpsertPgCopyTest extends IntegrationTest {
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
-        assertThat(tokenAccountRepository
-                .findAll())
-                .isNotEmpty()
-                .hasSize(3)
-                .extracting(TokenAccount::getFreezeStatus)
-                .containsExactlyInAnyOrder(TokenFreezeStatusEnum.NOT_APPLICABLE, TokenFreezeStatusEnum.FROZEN,
-                        TokenFreezeStatusEnum.UNFROZEN);
+        assertThat(tokenAccountRepository.findAll())
+                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getFreezeStatus)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
+                        Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
+                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN)
+                );
 
         // reverse freeze status
         tokenAccounts.clear();
@@ -311,13 +312,15 @@ class UpsertPgCopyTest extends IntegrationTest {
 
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
-        assertThat(tokenAccountRepository
-                .findAll())
-                .isNotEmpty()
-                .hasSize(3)
-                .extracting(TokenAccount::getFreezeStatus)
-                .containsExactlyInAnyOrder(TokenFreezeStatusEnum.NOT_APPLICABLE, TokenFreezeStatusEnum.UNFROZEN,
-                        TokenFreezeStatusEnum.FROZEN);
+        assertThat(tokenAccountRepository.findAll())
+                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getFreezeStatus)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
+                        Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
+                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN),
+                        Tuple.tuple(10L, TokenFreezeStatusEnum.UNFROZEN),
+                        Tuple.tuple(11L, TokenFreezeStatusEnum.FROZEN)
+                );
     }
 
     @Test
@@ -325,8 +328,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         // inserts token first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
-        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, false, null, Key.newBuilder()
-                .setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build()));
+        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, false, null, KEY));
 
         copyWithTransactionSupport(tokenPgCopy, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
@@ -338,12 +340,12 @@ class UpsertPgCopyTest extends IntegrationTest {
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
-        assertThat(tokenAccountRepository
-                .findAll())
-                .isNotEmpty()
-                .hasSize(2)
-                .extracting(TokenAccount::getKycStatus)
-                .containsExactlyInAnyOrder(TokenKycStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.REVOKED);
+        assertThat(tokenAccountRepository.findAll())
+                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getKycStatus)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
+                        Tuple.tuple(6L, TokenKycStatusEnum.REVOKED)
+                );
 
         // grant KYC
         tokenAccounts.clear();
@@ -352,12 +354,13 @@ class UpsertPgCopyTest extends IntegrationTest {
 
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
-        assertThat(tokenAccountRepository
-                .findAll())
-                .isNotEmpty()
-                .hasSize(2)
-                .extracting(TokenAccount::getKycStatus)
-                .containsExactlyInAnyOrder(TokenKycStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.GRANTED);
+        assertThat(tokenAccountRepository.findAll())
+                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getKycStatus)
+                .containsExactlyInAnyOrder(
+                        Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
+                        Tuple.tuple(6L, TokenKycStatusEnum.REVOKED),
+                        Tuple.tuple(11L, TokenKycStatusEnum.GRANTED)
+                );
     }
 
     @Test
@@ -401,14 +404,14 @@ class UpsertPgCopyTest extends IntegrationTest {
 
         copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
 
-        assertThat(tokenAccountRepository
-                .findAll())
-                .isNotEmpty()
-                .extracting(TokenAccount::getCreatedTimestamp, TokenAccount::getModifiedTimestamp)
+        assertThat(tokenAccountRepository.findAll())
+                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getId().getModifiedTimestamp())
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, 6L),
                         Tuple.tuple(6L, 7L),
+                        Tuple.tuple(7L, 8L),
                         Tuple.tuple(7L, 10L),
+                        Tuple.tuple(8L, 9L),
                         Tuple.tuple(8L, 11L),
                         Tuple.tuple(10L, 12L),
                         Tuple.tuple(11L, 13L)
@@ -653,14 +656,13 @@ class UpsertPgCopyTest extends IntegrationTest {
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
                                          Long modifiedTimestamp, TokenFreezeStatusEnum freezeStatus,
                                          TokenKycStatusEnum kycStatus) {
-        TokenAccount tokenAccount = new TokenAccount(EntityId
-                .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, ACCOUNT));
+        TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenId, EntityTypeEnum.TOKEN),
+                EntityId.of(accountId, ACCOUNT), modifiedTimestamp);
         tokenAccount.setAssociated(associated);
-        tokenAccount.setAutoAssociated(false);
+        tokenAccount.setAutomaticAssociation(false);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
         tokenAccount.setFreezeStatus(freezeStatus);
         tokenAccount.setKycStatus(kycStatus);
-        tokenAccount.setModifiedTimestamp(modifiedTimestamp);
 
         return tokenAccount;
     }

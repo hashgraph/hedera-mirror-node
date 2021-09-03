@@ -559,22 +559,21 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onToken(token);
     }
 
-    private TokenAccount associatedTokenAccount(EntityId accountId, boolean autoAssociated, long consensusTimestamp,
+    private TokenAccount associatedTokenAccount(EntityId accountId, boolean autoAssociation, long consensusTimestamp,
                                                 EntityId tokenId) {
         // if null, freeze and kyc status will be set during db upsert flow
-        return associatedTokenAccount(accountId, autoAssociated, consensusTimestamp, null, null, tokenId);
+        return associatedTokenAccount(accountId, autoAssociation, consensusTimestamp, null, null, tokenId);
     }
 
-    private TokenAccount associatedTokenAccount(EntityId accountId, boolean autoAssociated, long consensusTimestamp,
-                                                TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
-                                                EntityId tokenId) {
-        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+    private TokenAccount associatedTokenAccount(EntityId accountId, boolean automaticAssociation,
+                                                long consensusTimestamp, TokenFreezeStatusEnum freezeStatus,
+                                                TokenKycStatusEnum kycStatus, EntityId tokenId) {
+        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, consensusTimestamp);
         tokenAccount.setAssociated(true);
-        tokenAccount.setAutoAssociated(autoAssociated);
+        tokenAccount.setAutomaticAssociation(automaticAssociation);
         tokenAccount.setCreatedTimestamp(consensusTimestamp);
         tokenAccount.setFreezeStatus(freezeStatus);
         tokenAccount.setKycStatus(kycStatus);
-        tokenAccount.setModifiedTimestamp(consensusTimestamp);
         return tokenAccount;
     }
 
@@ -589,9 +588,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                 EntityId tokenId = EntityId.of(token);
                 entityListener.onEntityId(tokenId);
 
-                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, consensusTimestamp);
                 tokenAccount.setAssociated(false);
-                tokenAccount.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onTokenAccount(tokenAccount);
             });
         }
@@ -604,9 +602,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onEntityId(tokenId);
 
             EntityId accountId = EntityId.of(transactionBody.getAccount());
-            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, recordItem.getConsensusTimestamp());
             tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
-            tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
             entityListener.onTokenAccount(tokenAccount);
         }
     }
@@ -618,9 +615,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onEntityId(tokenId);
 
             EntityId accountId = EntityId.of(transactionBody.getAccount());
-            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, recordItem.getConsensusTimestamp());
             tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
-            tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
             entityListener.onTokenAccount(tokenAccount);
         }
     }
@@ -656,9 +652,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onEntityId(tokenId);
 
             EntityId accountId = EntityId.of(tokenRevokeKycTransactionBody.getAccount());
-            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, recordItem.getConsensusTimestamp());
             tokenAccount.setKycStatus(TokenKycStatusEnum.REVOKED);
-            tokenAccount.setModifiedTimestamp(recordItem.getConsensusTimestamp());
             entityListener.onTokenAccount(tokenAccount);
         }
     }
@@ -782,9 +777,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onEntityId(tokenId);
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+            TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, consensusTimestamp);
             tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
-            tokenAccount.setModifiedTimestamp(consensusTimestamp);
             entityListener.onTokenAccount(tokenAccount);
         }
     }

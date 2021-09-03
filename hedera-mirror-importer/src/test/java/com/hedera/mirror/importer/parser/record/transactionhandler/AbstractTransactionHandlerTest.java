@@ -25,9 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
-import com.google.protobuf.UInt32Value;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -377,15 +377,14 @@ public abstract class AbstractTransactionHandlerTest {
 
         if (maxAutomaticTokenAssociationsField != null) {
             // only crypto update has max_automatic_token_associations
-            int value = 0xffffffff;
             expected = getExpectedUpdatedEntity();
             expected.setMemo(DEFAULT_MEMO);
-            expected.setMaxAutomaticTokenAssociations(Integer.toUnsignedLong(value));
+            expected.setMaxAutomaticTokenAssociations(500);
             expected.setReceiverSigRequired(true);
             input = new Entity();
             input.setMemo(DEFAULT_MEMO);
             Message updatedInnerBody = innerBody.toBuilder()
-                    .setField(maxAutomaticTokenAssociationsField, UInt32Value.of(value))
+                    .setField(maxAutomaticTokenAssociationsField, Int32Value.of(500))
                     .build();
             testSpecs.add(
                     UpdateEntityTestSpec.builder()

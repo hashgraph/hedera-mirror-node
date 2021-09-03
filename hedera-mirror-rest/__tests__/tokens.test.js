@@ -26,6 +26,7 @@ const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
 const {TransactionResultService, TransactionTypeService} = require('../service');
+const {TokenFreezeStatus, TokenKycStatus} = require('../model');
 
 const formatSqlQueryString = (query) => {
   return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
@@ -51,11 +52,74 @@ describe('token formatTokenRow tests', () => {
   };
 
   test('Verify formatTokenRow', () => {
-    const formattedInput = tokens.formatTokenRow(rowInput);
+    expect(tokens.formatTokenRow(rowInput)).toStrictEqual(expectedFormat);
+  });
 
-    expect(formattedInput.token_id).toStrictEqual(expectedFormat.token_id);
-    expect(formattedInput.symbol).toStrictEqual(expectedFormat.symbol);
-    expect(JSON.stringify(formattedInput.admin_key)).toStrictEqual(JSON.stringify(expectedFormat.admin_key));
+  describe('Verify formatTokenRow with token account info', () => {
+    const testSpecs = [
+      {
+        input: {
+          automatic_association: true,
+          freeze_status: 0,
+          kyc_status: 0,
+          ...rowInput,
+        },
+        expected: {
+          automatic_association: true,
+          freeze_status: new TokenFreezeStatus(0),
+          kyc_status: new TokenKycStatus(0),
+          ...expectedFormat,
+        },
+      },
+      {
+        input: {
+          automatic_association: false,
+          freeze_status: 0,
+          kyc_status: 0,
+          ...rowInput,
+        },
+        expected: {
+          automatic_association: false,
+          freeze_status: new TokenFreezeStatus(0),
+          kyc_status: new TokenKycStatus(0),
+          ...expectedFormat,
+        },
+      },
+      {
+        input: {
+          automatic_association: false,
+          freeze_status: 1,
+          kyc_status: 1,
+          ...rowInput,
+        },
+        expected: {
+          automatic_association: false,
+          freeze_status: new TokenFreezeStatus(1),
+          kyc_status: new TokenKycStatus(1),
+          ...expectedFormat,
+        },
+      },
+      {
+        input: {
+          automatic_association: false,
+          freeze_status: 2,
+          kyc_status: 2,
+          ...rowInput,
+        },
+        expected: {
+          automatic_association: false,
+          freeze_status: new TokenFreezeStatus(2),
+          kyc_status: new TokenKycStatus(2),
+          ...expectedFormat,
+        },
+      },
+    ];
+
+    testSpecs.forEach((spec) =>
+      test(`${JSON.stringify(spec.input)}`, () => {
+        expect(tokens.formatTokenRow(spec.input)).toEqual(spec.expected);
+      })
+    );
   });
 });
 
@@ -75,6 +139,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
+      null,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -107,6 +172,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
+      undefined,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -115,7 +181,13 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify account id filter', () => {
-    const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
+    const extraConditions = ['ta.associated is true'];
+    const initialQuery = [
+      tokens.tokenAccountCte,
+      tokens.tokensSelectQueryWithAssociation,
+      tokens.tokenAccountJoinQuery,
+      tokens.entityIdJoinQuery,
+    ].join('\n');
     const initialParams = [5];
     const filters = [
       {
@@ -125,10 +197,18 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key, t.type
+    const expectedquery = `with ta as (
+                             select distinct on (account_id, token_id) *
+                             from token_account
+                             where account_id = $1
+                             order by account_id, token_id, modified_timestamp desc
+                           )
+                           select t.token_id, symbol, e.key, t.type,
+                                  ta.automatic_association, ta.freeze_status, ta.kyc_status
                            from token t
-                                  join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+                                  join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
+                           where ta.associated is true
                            order by t.token_id asc
                            limit $2`;
     const expectedparams = [5, maxLimit];
@@ -139,6 +219,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
+      extraConditions,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -147,7 +228,13 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify token type filter', () => {
-    const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
+    const extraConditions = ['ta.associated is true'];
+    const initialQuery = [
+      tokens.tokenAccountCte,
+      tokens.tokensSelectQueryWithAssociation,
+      tokens.tokenAccountJoinQuery,
+      tokens.entityIdJoinQuery,
+    ].join('\n');
     const initialParams = [5];
     const tokenType = 'NON_FUNGIBLE_UNIQUE';
     const filters = [
@@ -158,11 +245,18 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key, t.type
+    const expectedquery = `with ta as (
+                             select distinct on (account_id, token_id) *
+                             from token_account
+                             where account_id = $1
+                             order by account_id, token_id, modified_timestamp desc
+                           )
+                           select t.token_id, symbol, e.key, t.type,
+                                  ta.automatic_association, ta.freeze_status, ta.kyc_status
                            from token t
-                                  join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+                                  join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
-                           where t.type = $2
+                           where ta.associated is true and t.type = $2
                            order by t.token_id asc
                            limit $3`;
     const expectedparams = [5, tokenType, maxLimit];
@@ -173,6 +267,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
+      extraConditions,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -181,7 +276,13 @@ describe('token extractSqlFromTokenRequest tests', () => {
   });
 
   test('Verify all filters', () => {
-    const initialQuery = [tokens.tokensSelectQuery, tokens.accountIdJoinQuery, tokens.entityIdJoinQuery].join('\n');
+    const extraConditions = ['ta.associated is true'];
+    const initialQuery = [
+      tokens.tokenAccountCte,
+      tokens.tokensSelectQueryWithAssociation,
+      tokens.tokenAccountJoinQuery,
+      tokens.entityIdJoinQuery,
+    ].join('\n');
     const initialParams = [5];
     const tokenType = 'FUNGIBLE_COMMON';
     const filters = [
@@ -205,11 +306,19 @@ describe('token extractSqlFromTokenRequest tests', () => {
       {key: filterKeys.ORDER, operator: ' = ', value: orderFilterValues.DESC},
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key, t.type
+    const expectedquery = `with ta as (
+                             select distinct on (account_id, token_id) *
+                             from token_account
+                             where account_id = $1
+                             order by account_id, token_id, modified_timestamp desc
+                           )
+                           select t.token_id, symbol, e.key, t.type,
+                                  ta.automatic_association, ta.freeze_status, ta.kyc_status
                            from token t
-                                  join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id
+                                  join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
-                           where e.public_key = $2
+                           where ta.associated is true
+                             and e.public_key = $2
                              and t.token_id > $3
                              and t.type = $4
                            order by t.token_id desc
@@ -222,6 +331,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       initialQuery,
       initialParams,
       filters,
+      extraConditions,
       expectedquery,
       expectedparams,
       expectedorder,
@@ -234,12 +344,18 @@ const verifyExtractSqlFromTokenRequest = (
   pgSqlQuery,
   pgSqlParams,
   filters,
+  extraConditions,
   expectedquery,
   expectedparams,
   expectedorder,
   expectedlimit
 ) => {
-  const {query, params, order, limit} = tokens.extractSqlFromTokenRequest(pgSqlQuery, pgSqlParams, filters);
+  const {query, params, order, limit} = tokens.extractSqlFromTokenRequest(
+    pgSqlQuery,
+    pgSqlParams,
+    filters,
+    extraConditions
+  );
 
   expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
   expect(params).toStrictEqual(expectedparams);

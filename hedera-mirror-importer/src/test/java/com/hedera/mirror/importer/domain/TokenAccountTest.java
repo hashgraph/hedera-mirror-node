@@ -36,17 +36,16 @@ class TokenAccountTest {
                 () -> assertNotEquals(0, tokenAccount.getCreatedTimestamp()),
                 () -> assertEquals(TokenFreezeStatusEnum.NOT_APPLICABLE, tokenAccount.getFreezeStatus()),
                 () -> assertEquals(TokenKycStatusEnum.NOT_APPLICABLE, tokenAccount.getKycStatus()),
-                () -> assertNotEquals(0, tokenAccount.getModifiedTimestamp())
+                () -> assertNotEquals(0, tokenAccount.getId().getModifiedTimestamp())
         );
     }
 
     private TokenAccount tokenAccount(EntityId tokenId, EntityId accountId) {
-        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, 2L);
         tokenAccount.setAssociated(false);
         tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setCreatedTimestamp(1L);
-        tokenAccount.setModifiedTimestamp(2L);
         return tokenAccount;
     }
 }

@@ -133,16 +133,25 @@ public class AbstractEntityListener implements EntityListener {
         return cachedToken;
     }
 
-    protected TokenAccount mergeTokenAccount(TokenAccount cachedTokenAccount, TokenAccount newTokenAccount) {
-        if (newTokenAccount.getFreezeStatus() != null) {
-            cachedTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
+    protected TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        // newTokenAccount must have its id (tokenId, accountId, modifiedTimestamp) set
+        // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the last snapshot
+        // copy other fields from the last snapshot if not set in newTokenAccount
+        newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
+        newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
+
+        if (newTokenAccount.getAssociated() == null) {
+            newTokenAccount.setAssociated(lastTokenAccount.getAssociated());
         }
 
-        if (newTokenAccount.getKycStatus() != null) {
-            cachedTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
+        if (newTokenAccount.getFreezeStatus() == null) {
+            newTokenAccount.setFreezeStatus(lastTokenAccount.getFreezeStatus());
         }
 
-        cachedTokenAccount.setModifiedTimestamp(newTokenAccount.getModifiedTimestamp());
-        return cachedTokenAccount;
+        if (newTokenAccount.getKycStatus() == null) {
+            newTokenAccount.setKycStatus(lastTokenAccount.getKycStatus());
+        }
+
+        return newTokenAccount;
     }
 }

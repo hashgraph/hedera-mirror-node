@@ -62,9 +62,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
 
     @Getter(lazy = true)
-    private final String deleteQuery = generateDeleteQuery();
-
-    @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
 
     @Getter(lazy = true)
@@ -72,15 +69,23 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     protected final Logger log = LogManager.getLogger(getClass());
 
-    protected String getDeleteWhereClause() {
-        return null;
+    protected boolean isInsertOnly() {
+        return false;
+    }
+
+    protected String getCteForInsert() {
+        return "";
     }
 
     protected abstract String getInsertWhereClause();
 
-    protected abstract Set<String> getNonUpdatableColumns();
+    protected Set<String> getNonUpdatableColumns() {
+        return Collections.emptySet();
+    };
 
-    protected abstract String getUpdateWhereClause();
+    protected String getUpdateWhereClause() {
+        return "";
+    };
 
     protected boolean needsOnConflictAction() {
         return true;
@@ -117,18 +122,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return Collections.emptySet();
     }
 
-    private String generateDeleteQuery() {
-        String whereClause = getDeleteWhereClause();
-        if (StringUtils.isEmpty(whereClause)) {
-            return null;
-        }
-
-        return StringUtils.joinWith(" ", "delete from", getFinalTableName(), "using",
-                getTemporaryTableName(), whereClause);
-    }
-
     private String generateInsertQuery() {
-        StringBuilder insertQueryBuilder = new StringBuilder("insert into " + getFinalTableName());
+        StringBuilder insertQueryBuilder = new StringBuilder(StringUtils.joinWith(
+                " ",
+                getCteForInsert(),
+                "insert into",
+                getFinalTableName()
+        ));
 
         // build target column list
         insertQueryBuilder.append(String.format(" (%s) select ", getColumnListFromSelectableColumns()));
@@ -148,6 +148,10 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String generateUpdateQuery() {
+        if (isInsertOnly()) {
+            return "";
+        }
+
         StringBuilder updateQueryBuilder = new StringBuilder("update " + getFinalTableName() + " set ");
 
         updateQueryBuilder.append(getUpdateClause());

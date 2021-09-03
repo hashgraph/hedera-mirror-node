@@ -259,12 +259,11 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
             public TokenAccount mapRow(ResultSet rs, int rowNum) throws SQLException {
                 EntityId tokenId = EntityIdEndec.decode(rs.getLong("token_id"), EntityTypeEnum.TOKEN);
                 EntityId accountId = EntityIdEndec.decode(rs.getLong("account_id"), EntityTypeEnum.TOKEN);
-                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId);
+                TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, rs.getLong("modified_timestamp"));
                 tokenAccount.setAssociated(rs.getBoolean("associated"));
                 tokenAccount.setCreatedTimestamp(rs.getLong("created_timestamp"));
                 tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.values()[rs.getShort("freeze_status")]);
                 tokenAccount.setKycStatus(TokenKycStatusEnum.values()[rs.getShort("kyc_status")]);
-                tokenAccount.setModifiedTimestamp(rs.getLong("modified_timestamp"));
                 return tokenAccount;
             }
         });
@@ -283,7 +282,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
                 ps.setLong(4, tokenAccount.getCreatedTimestamp());
                 ps.setShort(5, (short)tokenAccount.getFreezeStatus().ordinal());
                 ps.setShort(6, (short)tokenAccount.getKycStatus().ordinal());
-                ps.setLong(7, tokenAccount.getModifiedTimestamp());
+                ps.setLong(7, tokenAccount.getId().getModifiedTimestamp());
             }
 
             @Override
@@ -354,10 +353,9 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
         TokenAccount tokenAccount = new TokenAccount();
         tokenAccount.setAssociated(associated);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
-        tokenAccount.setId(new TokenAccountId(tokenId, accountId));
+        tokenAccount.setId(new TokenAccountId(tokenId, accountId, createdTimestamp));
         tokenAccount.setFreezeStatus(freezeStatus);
         tokenAccount.setKycStatus(kycStatus);
-        tokenAccount.setModifiedTimestamp(createdTimestamp);
         return tokenAccount;
     }
 

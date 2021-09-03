@@ -45,11 +45,9 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private static final String TABLE = "table";
     private final String createTempTableSql;
     private final String finalTableName;
-    private final String deleteSql;
     private final String insertSql;
     private final String updateSql;
     private final Timer copyDurationMetric;
-    private final Timer deleteDurationMetric;
     private final Timer finalInsertDurationMetric;
     private final Timer updateDurationMetric;
     private final String truncateSql;
@@ -61,25 +59,24 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         truncateSql = String
                 .format("truncate table %s restart identity cascade", upsertQueryGenerator.getTemporaryTableName());
         finalTableName = upsertQueryGenerator.getFinalTableName();
-        deleteSql = upsertQueryGenerator.getDeleteQuery();
         insertSql = upsertQueryGenerator.getInsertQuery();
         updateSql = upsertQueryGenerator.getUpdateQuery();
         copyDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.copy")
                 .description("Time to copy transaction information from importer to temp table")
                 .tag(TABLE, upsertQueryGenerator.getTemporaryTableName())
                 .register(meterRegistry);
-        deleteDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.delete")
-                .description("Time to delete transaction information from final table")
-                .tag(TABLE, finalTableName)
-                .register(meterRegistry);
         finalInsertDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.insert")
                 .description("Time to insert transaction information from temp to final table")
                 .tag(TABLE, finalTableName)
                 .register(meterRegistry);
-        updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.update")
-                .description("Time to update parsed transactions information into table")
-                .tag(TABLE, finalTableName)
-                .register(meterRegistry);
+        if (StringUtils.isNotEmpty(updateSql)) {
+            updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.update")
+                    .description("Time to update parsed transactions information into table")
+                    .tag(TABLE, finalTableName)
+                    .register(meterRegistry);
+        } else {
+            updateDurationMetric = null;
+        }
     }
 
     @Override
@@ -95,27 +92,16 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
             // copy items to temp table
             copyItems(items, connection);
 
-            // delete items from final table
-            int deleteCount = deleteItems(connection);
-
             // insert items from temp table to final table
             int insertCount = insertItems(connection);
 
             // update items in final table from temp table
             updateItems(connection);
 
-            log.debug("Deleted {}, inserted {} and updated from a total of {} rows to {}", deleteCount,
-                    insertCount, items.size(), finalTableName);
+            log.debug("Inserted {} and updated from a total of {} rows to {}", insertCount, items.size(),
+                    finalTableName);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
-        }
-    }
-
-    private int deleteFromFinalTable(Connection connection) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(deleteSql)) {
-            int count = preparedStatement.executeUpdate();
-            log.trace("Deleted {} rows from {} table", count, finalTableName);
-            return count;
         }
     }
 
@@ -153,17 +139,6 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         recordMetric(copyDurationMetric, stopwatch);
     }
 
-    private int deleteItems(Connection connection) throws SQLException {
-        if (StringUtils.isEmpty(deleteSql)) {
-            return 0;
-        }
-
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        int count = deleteFromFinalTable(connection);
-        recordMetric(deleteDurationMetric, stopwatch);
-        return count;
-    }
-
     private int insertItems(Connection connection) throws SQLException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         int insertCount = insertToFinalTable(connection);
@@ -172,6 +147,10 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     }
 
     private void updateItems(Connection connection) throws SQLException {
+        if (StringUtils.isEmpty(updateSql)) {
+            return;
+        }
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         updateFinalTable(connection);
         recordMetric(updateDurationMetric, stopwatch);

@@ -62,14 +62,41 @@
         "created_timestamp": "1234567890000000005"
       },
       {
+        "token_id": "0.0.3",
+        "account_id": "0.0.2",
+        "created_timestamp": "1234567890000000006"
+      },
+      {
+        "token_id": "0.0.3",
+        "account_id": "0.0.2",
+        "created_timestamp": "1234567890000000006",
+        "freeze_status": 1,
+        "kyc_status": 1,
+        "modified_timestamp": "1234567891000000006"
+      },
+      {
         "token_id": "0.0.4",
         "account_id": "0.0.1",
         "created_timestamp": "1234567890000000006"
       },
       {
+        "token_id": "0.0.4",
+        "account_id": "0.0.2",
+        "associated": false,
+        "created_timestamp": "1234567890000000006"
+      },
+      {
         "token_id": "0.7.25301",
         "account_id": "0.0.2",
+        "automatic_association": true,
+        "freeze_status": 2,
+        "kyc_status": 2,
         "created_timestamp": "1234567890000000007"
+      },
+      {
+        "token_id": "0.23.45678",
+        "account_id": "0.0.2",
+        "created_timestamp": "1234567899000000007"
       }
     ]
   },
@@ -78,8 +105,29 @@
   "responseJson": {
     "tokens": [
       {
+        "token_id": "0.0.3",
+        "automatic_association": false,
+        "freeze_status": "FROZEN",
+        "kyc_status": "GRANTED",
+        "symbol": "FIRSTMOVERLPDJH",
+        "admin_key": null,
+        "type": "FUNGIBLE_COMMON"
+      },
+      {
         "token_id": "0.7.25301",
+        "automatic_association": true,
+        "freeze_status": "UNFROZEN",
+        "kyc_status": "REVOKED",
         "symbol": "MIRRORTOKEN",
+        "admin_key": null,
+        "type": "FUNGIBLE_COMMON"
+      },
+      {
+        "token_id": "0.23.45678",
+        "automatic_association": false,
+        "freeze_status": "NOT_APPLICABLE",
+        "kyc_status": "NOT_APPLICABLE",
+        "symbol": "HEDERACOIN",
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"
       }

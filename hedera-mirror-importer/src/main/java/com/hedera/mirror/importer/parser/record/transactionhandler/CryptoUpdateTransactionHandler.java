@@ -57,8 +57,7 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
         }
 
         if (txMessage.hasMaxAutomaticTokenAssociations()) {
-            long value = Integer.toUnsignedLong(txMessage.getMaxAutomaticTokenAssociations().getValue());
-            entity.setMaxAutomaticTokenAssociations(value);
+            entity.setMaxAutomaticTokenAssociations(txMessage.getMaxAutomaticTokenAssociations().getValue());
         }
 
         if (txMessage.hasMemo()) {
