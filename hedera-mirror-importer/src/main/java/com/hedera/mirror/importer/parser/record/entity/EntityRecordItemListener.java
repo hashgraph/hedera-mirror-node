@@ -910,6 +910,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
+    /**
+     * Inserts custom fees. Returns the list of collectors automatically associated with the newly created token if
+     * the custom fees are from a token create transaction
+     *
+     * @param customFeeList protobuf custom fee list
+     * @param consensusTimestamp consensus timestamp of the corresponding transaction
+     * @param isTokenCreate if the transaction with the custom fees is a token create
+     * @param tokenId the token id the custom fees are attached to
+     * @return A list of collectors automatically associated with the token if it's a token create transaction
+     */
     private Set<EntityId> insertCustomFees(List<com.hederahashgraph.api.proto.java.CustomFee> customFeeList,
                                            long consensusTimestamp, boolean isTokenCreate, EntityId tokenId) {
         Set<EntityId> autoAssociatedAccounts = new HashSet<>();
