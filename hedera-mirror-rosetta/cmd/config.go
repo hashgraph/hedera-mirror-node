@@ -41,15 +41,38 @@ const (
 
 // loadConfig loads configuration from yaml files and env variables
 func loadConfig() (*types.Config, error) {
-	var logLevel = types.Log{Level: "info"}
-	var pool = types.Pool{MaxIdleConnections: 20, MaxLifetime: 30, MaxOpenConnections: 100}
-	var db = types.Db{Host: "127.0.0.1", Name: "mirror_node", Password: "mirror_rosetta_pass", Pool: pool, Port: 5432,
-		Username: "mirror_rosetta"}
-	var rosetta = types.Rosetta{ApiVersion: "1.4.10", Db: db, Log: logLevel, Network: "DEMO", Nodes: types.NodeMap{},
-		NodeVersion: "0", Online: true, Port: 5700, Realm: "0", Shard: "0", Version: "0.40.0-SNAPSHOT"}
-	var mirror = types.Mirror{Rosetta: rosetta}
-	var hedera = types.Hedera{Mirror: mirror}
-	var config = types.Config{Hedera: hedera}
+	var config = types.Config{
+		Hedera: types.Hedera{
+			Mirror: types.Mirror{
+				Rosetta: types.Rosetta{
+					ApiVersion: "1.4.10",
+					Db: types.Db{
+						Host:     "127.0.0.1",
+						Name:     "mirror_node",
+						Password: "mirror_rosetta_pass",
+						Pool: types.Pool{
+							MaxIdleConnections: 20,
+							MaxLifetime:        30,
+							MaxOpenConnections: 100,
+						},
+						Port:     5432,
+						Username: "mirror_rosetta",
+					},
+					Log: types.Log{
+						Level: "info",
+					},
+					Network:     "DEMO",
+					Nodes:       types.NodeMap{},
+					NodeVersion: "0",
+					Online:      true,
+					Port:        5700,
+					Realm:       "0",
+					Shard:       "0",
+					Version:     "0.40.0-SNAPSHOT",
+				},
+			},
+		},
+	}
 
 	getConfig(&config, mainConfigFile)
 

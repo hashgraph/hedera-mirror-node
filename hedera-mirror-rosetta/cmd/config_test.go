@@ -31,12 +31,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const yml = `
+hedera:
+  mirror:
+    rosetta:
+      db:
+        port: 5431
+        username: foobar`
+
 func TestLoadDefaultConfig(t *testing.T) {
 	config, err := loadConfig()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
-	assert.Equal(t, 5432, config.Hedera.Mirror.Rosetta.Db.Port)
+	assert.Equal(t, uint16(5432), config.Hedera.Mirror.Rosetta.Db.Port)
 	assert.Equal(t, config.Hedera.Mirror.Rosetta.Db.Username, "mirror_rosetta")
 }
 
@@ -51,13 +59,6 @@ func TestLoadCustomConfig(t *testing.T) {
 		assert.Fail(t, "Unable to change directory", err)
 	}
 	customConfig := filepath.Join(tempDir, "application.yml")
-	const yml = `
-hedera:
-  mirror:
-    rosetta:
-      db:
-        port: 5431
-        username: foobar`
 
 	err = ioutil.WriteFile(customConfig, []byte(yml), 0644)
 	if err != nil {
