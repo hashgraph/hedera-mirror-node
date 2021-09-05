@@ -94,9 +94,9 @@ public class TransactionPublisher implements AutoCloseable {
                             }
                         })
                         .timeout(properties.getTimeout())
+                        .onErrorMap(t -> new PublishException(request, t))
                         .doOnNext(scenario::onNext)
-                        .doOnError(scenario::onError)
-                        .onErrorMap(t -> new PublishException(request, t)));
+                        .doOnError(scenario::onError));
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {

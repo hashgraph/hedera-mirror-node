@@ -181,7 +181,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.3.0-debian-10-r11
+    tag: 13.4.0-debian-10-r22
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -302,7 +302,7 @@ timescaledb:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    tag: pg13.3-ts2.3.1-p1
+    tag: pg13.4-ts2.4.1-latest
   loadBalancer:
     enabled: false
   patroni:
@@ -337,7 +337,7 @@ timescaledb:
     image:
       pullPolicy: IfNotPresent
       repository: quay.io/prometheuscommunity/postgres-exporter
-      tag: v0.9.0
+      tag: v0.10.0
   replicaCount: 1
   resources:
     limits:
