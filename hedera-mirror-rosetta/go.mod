@@ -9,7 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/hashgraph/hedera-sdk-go/v2 v2.1.15
 	github.com/iancoleman/strcase v0.2.0
-	github.com/lib/pq v1.10.2
+	github.com/lib/pq v1.10.3
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/ory/dockertest/v3 v3.7.0
 	github.com/pkg/errors v0.9.1
