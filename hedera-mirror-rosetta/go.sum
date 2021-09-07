@@ -244,8 +244,8 @@ github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.5/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
-github.com/hashgraph/hedera-sdk-go/v2 v2.1.15 h1:YZtARSgJfFhosja59CjjvLsPHBTwMI7a7lphDpkzQ6E=
-github.com/hashgraph/hedera-sdk-go/v2 v2.1.15/go.mod h1:PgFrMoxhr/YCs+pFf0++viY0U3O1UZ1F4pUAlD2Opm4=
+github.com/hashgraph/hedera-sdk-go/v2 v2.1.16 h1:Dugpe2I/D6SJGgv34zzQLlumgQTAII+a7C2Rca6w0rs=
+github.com/hashgraph/hedera-sdk-go/v2 v2.1.16/go.mod h1:PgFrMoxhr/YCs+pFf0++viY0U3O1UZ1F4pUAlD2Opm4=
 github.com/hashicorp/consul/api v1.3.0/go.mod h1:MmDNSzIMUjNpY/mQ398R4bk2FnqQLoPndWW5VkKPlCE=
 github.com/hashicorp/consul/sdk v0.3.0/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=

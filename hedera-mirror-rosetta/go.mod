@@ -7,7 +7,7 @@ require (
 	github.com/caarlos0/env/v6 v6.7.0
 	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/hashgraph/hedera-sdk-go/v2 v2.1.15
+	github.com/hashgraph/hedera-sdk-go/v2 v2.1.16
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lib/pq v1.10.2
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
