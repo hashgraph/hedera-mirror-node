@@ -65,7 +65,7 @@
         <grpc.version>1.40.1</grpc.version>
         <guava.version>30.1.1-jre</guava.version>
         <hedera-protobuf.version>0.17.1</hedera-protobuf.version>
-        <hedera-sdk.version>2.0.13</hedera-sdk.version>
+        <hedera-sdk.version>2.0.14</hedera-sdk.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
