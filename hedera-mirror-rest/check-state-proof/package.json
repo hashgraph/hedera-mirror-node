@@ -1,7 +1,7 @@
 {
-  "name": "hedera-mirror-state-proof-demo",
+  "name": "@hashgraph/check-state-proof",
   "version": "1.0.0",
-  "description": "An example implementation of a state proof flow fora transaction utilizing the mirror node.",
+  "description": "An example implementation of a state proof flow for a transaction utilizing the mirror node.",
   "main": "index.js",
   "scripts": {
     "test": "jest --testPathPattern='tests/.*\\.test\\.js'",
