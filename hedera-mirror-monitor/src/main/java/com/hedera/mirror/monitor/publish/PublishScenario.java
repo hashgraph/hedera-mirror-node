@@ -36,7 +36,7 @@ public class PublishScenario extends AbstractScenario<PublishScenarioProperties,
     }
 
     public String getMemo() {
-        return memo;
+        return System.currentTimeMillis() + " " + memo;
     }
 
     @Override
