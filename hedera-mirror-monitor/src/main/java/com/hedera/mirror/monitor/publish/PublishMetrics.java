@@ -20,11 +20,6 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import com.google.common.base.Throwables;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-
-import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
@@ -39,8 +34,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.mirror.monitor.converter.DurationToStringSerializer;
 
 @Log4j2
@@ -66,28 +59,7 @@ public class PublishMetrics {
 
     public void onError(PublishException publishException) {
         PublishRequest request = publishException.getPublishRequest();
-        String status;
-        TransactionType type = request.getScenario().getProperties().getType();
-        Throwable throwable = Throwables.getRootCause(publishException);
-
-        if (throwable instanceof PrecheckStatusException) {
-            PrecheckStatusException pse = (PrecheckStatusException) throwable;
-            status = pse.status.toString();
-            log.debug("Network error {} submitting {} transaction: {}", status, type, pse.getMessage());
-        } else if (throwable instanceof ReceiptStatusException) {
-            ReceiptStatusException rse = (ReceiptStatusException) throwable;
-            status = rse.receipt.status.toString();
-            log.debug("Hedera error for {} transaction {}: {}", type, rse.transactionId,
-                    rse.getMessage());
-        } else if (throwable instanceof StatusRuntimeException) {
-            StatusRuntimeException sre = (StatusRuntimeException) throwable;
-            status = sre.getStatus().getCode().toString();
-            log.debug("GRPC error: {}", sre.getMessage());
-        } else {
-            status = throwable.getClass().getSimpleName();
-            log.debug("{} submitting {} transaction: {}", status, type, throwable.getMessage());
-        }
-
+        String status = publishException.getStatus();
         recordMetric(request, null, status);
     }
 

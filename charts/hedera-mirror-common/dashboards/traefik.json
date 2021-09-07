@@ -43,7 +43,7 @@
           "rgba(237, 129, 40, 0.89)",
           "#299c46"
         ],
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "format": "none",
         "gauge": {
           "maxValue": 100,
@@ -96,7 +96,7 @@
         "tableColumn": "",
         "targets": [
           {
-            "expr": "count(kube_pod_status_ready{namespace=\"$namespace\",condition=\"true\",pod=~\".*traefik.*\"})",
+            "expr": "count(kube_pod_status_ready{cluster=~\"$cluster\",namespace=\"$namespace\",condition=\"true\",pod=~\"$pod\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "refId": "A"
@@ -109,7 +109,7 @@
         "valueMaps": [
           {
             "op": "=",
-            "text": "N/A",
+            "text": "0",
             "value": "null"
           }
         ],
@@ -120,7 +120,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 2,
         "fillGradient": 0,
         "gridPos": {
@@ -157,7 +157,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "histogram_quantile(0.$percentiles, sum(rate(traefik_entrypoint_request_duration_seconds_bucket{namespace=\"$namespace\", code=~\"2..\"}[5m])) by (le))",
+            "expr": "histogram_quantile(0.$percentiles, sum(rate(traefik_entrypoint_request_duration_seconds_bucket{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",code=~\"2..\"}[5m])) by (le))",
             "format": "time_series",
             "hide": false,
             "intervalFactor": 1,
@@ -211,7 +211,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 1,
         "fillGradient": 0,
         "gridPos": {
@@ -250,7 +250,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "histogram_quantile(0.$percentiles, sum(rate(traefik_entrypoint_request_duration_seconds_bucket{namespace=\"$namespace\",code=~\"2..\"}[5m])) by (instance, le))",
+            "expr": "histogram_quantile(0.$percentiles, sum(rate(traefik_entrypoint_request_duration_seconds_bucket{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",code=~\"2..\"}[5m])) by (instance, le))",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "{{ instance }}",
@@ -317,7 +317,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "decimals": 1,
         "fill": 7,
         "fillGradient": 0,
@@ -360,7 +360,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(traefik_entrypoint_open_connections{namespace=\"$namespace\"}) by (entrypoint)",
+            "expr": "sum(traefik_entrypoint_open_connections{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"}) by (entrypoint)",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "{{ entrypoint }}",
@@ -415,7 +415,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 1,
         "fillGradient": 0,
         "gridPos": {
@@ -454,7 +454,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "(sum(rate(traefik_entrypoint_request_duration_seconds_bucket{namespace=\"$namespace\",le=\"0.1\",code=\"200\"}[5m])) by (job) + sum(rate(traefik_entrypoint_request_duration_seconds_bucket{namespace=\"$namespace\",le=\"0.3\",code=\"200\"}[5m])) by (job)) / 2 / sum(rate(traefik_entrypoint_request_duration_seconds_count{namespace=\"$namespace\",code=\"200\"}[5m])) by (job)",
+            "expr": "(sum(rate(traefik_entrypoint_request_duration_seconds_bucket{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",le=\"0.1\",code=\"200\"}[5m])) by (job) + sum(rate(traefik_entrypoint_request_duration_seconds_bucket{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",le=\"0.3\",code=\"200\"}[5m])) by (job)) / 2 / sum(rate(traefik_entrypoint_request_duration_seconds_count{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",code=\"200\"}[5m])) by (job)",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Code 200",
@@ -507,7 +507,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "decimals": 1,
         "fill": 1,
         "fillGradient": 0,
@@ -550,7 +550,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(traefik_entrypoint_requests_total{namespace=\"$namespace\"}[1m])) by (entrypoint)",
+            "expr": "sum(rate(traefik_entrypoint_requests_total{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"}[1m])) by (entrypoint)",
             "format": "time_series",
             "intervalFactor": 2,
             "legendFormat": "{{ entrypoint }}",
@@ -617,7 +617,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 7,
         "fillGradient": 0,
         "gridPos": {
@@ -658,7 +658,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(traefik_service_open_connections{namespace=\"$namespace\"}) by (method)",
+            "expr": "sum(traefik_service_open_connections{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"}) by (method)",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "{{ method }}",
@@ -711,7 +711,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 1,
         "fillGradient": 0,
         "gridPos": {
@@ -750,7 +750,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "(sum(rate(traefik_service_request_duration_seconds_bucket{namespace=\"$namespace\",le=\"0.1\",code=\"200\"}[5m])) by (job) + sum(rate(traefik_service_request_duration_seconds_bucket{namespace=\"$namespace\",le=\"0.3\",code=\"200\"}[5m])) by (job)) / 2 / sum(rate(traefik_service_request_duration_seconds_count{namespace=\"$namespace\",code=\"200\"}[5m])) by (job)",
+            "expr": "(sum(rate(traefik_service_request_duration_seconds_bucket{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",le=\"0.1\",code=\"200\"}[5m])) by (job) + sum(rate(traefik_service_request_duration_seconds_bucket{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",le=\"0.3\",code=\"200\"}[5m])) by (job)) / 2 / sum(rate(traefik_service_request_duration_seconds_count{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",code=\"200\"}[5m])) by (job)",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Code 200",
@@ -803,7 +803,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 1,
         "fillGradient": 0,
         "gridPos": {
@@ -844,7 +844,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(traefik_service_requests_total{namespace=\"$namespace\"}[1m])) by (service)",
+            "expr": "sum(rate(traefik_service_requests_total{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"}[1m])) by (service)",
             "format": "time_series",
             "intervalFactor": 2,
             "legendFormat": "{{ service }}",
@@ -911,7 +911,7 @@
         "bars": true,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "decimals": 1,
         "fill": 1,
         "fillGradient": 0,
@@ -953,7 +953,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(traefik_service_requests_total{namespace=\"$namespace\"}[5m])) by (method, code)",
+            "expr": "sum(rate(traefik_service_requests_total{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"}[5m])) by (method, code)",
             "format": "time_series",
             "intervalFactor": 2,
             "legendFormat": "{{method}} : {{code}}",
@@ -1008,7 +1008,7 @@
         "bars": true,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "decimals": 1,
         "fill": 1,
         "fillGradient": 0,
@@ -1050,7 +1050,7 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(traefik_service_requests_total{namespace=\"$namespace\"}[5m])) by (service, code)",
+            "expr": "sum(rate(traefik_service_requests_total{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"}[5m])) by (service, code)",
             "format": "time_series",
             "intervalFactor": 2,
             "legendFormat": "{{service}} ({{code}})",
@@ -1117,7 +1117,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 1,
         "fillGradient": 0,
         "gridPos": {
@@ -1156,21 +1156,21 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(container_memory_usage_bytes{namespace=\"$namespace\", container=~\".*traefik\"})",
+            "expr": "sum(container_memory_usage_bytes{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Memory used",
             "refId": "A"
           },
           {
-            "expr": "sum(kube_pod_container_resource_requests_memory_bytes{namespace=\"$namespace\", container=~\".*traefik\"})",
+            "expr": "sum(kube_pod_container_resource_requests{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",unit=\"byte\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Requested memory",
             "refId": "B"
           },
           {
-            "expr": "sum(kube_pod_container_resource_limits_memory_bytes{namespace=\"$namespace\", container=~\".*traefik\"})",
+            "expr": "sum(kube_pod_container_resource_limits{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",unit=\"byte\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Limit memory usage",
@@ -1223,7 +1223,7 @@
         "bars": false,
         "dashLength": 10,
         "dashes": false,
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "fill": 1,
         "fillGradient": 0,
         "gridPos": {
@@ -1261,21 +1261,21 @@
         "steppedLine": false,
         "targets": [
           {
-            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container=~\".*traefik\"}[2m]))",
+            "expr": "sum(rate(container_cpu_usage_seconds_total{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\"}[2m]))",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Cpu used",
             "refId": "A"
           },
           {
-            "expr": "sum(kube_pod_container_resource_requests_cpu_cores{namespace=\"$namespace\", container=~\".*traefik\"})",
+            "expr": "sum(kube_pod_container_resource_requests{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",unit=\"core\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Requested cpu",
             "refId": "B"
           },
           {
-            "expr": "sum(kube_pod_container_resource_limits_cpu_cores{namespace=\"$namespace\", container=~\".*traefik\"})",
+            "expr": "sum(kube_pod_container_resource_limits{cluster=~\"$cluster\",namespace=\"$namespace\",pod=~\"$pod\",unit=\"core\"})",
             "format": "time_series",
             "intervalFactor": 1,
             "legendFormat": "Limit cpu usage",
@@ -1322,6 +1322,131 @@
           "align": false,
           "alignLevel": null
         }
+      },
+      {
+        "collapsed": false,
+        "datasource": null,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 80
+        },
+        "id": 38,
+        "panels": [],
+        "title": "Logs",
+        "type": "row"
+      },
+      {
+        "datasource": "${loki}",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 9,
+          "w": 24,
+          "x": 0,
+          "y": 81
+        },
+        "id": 40,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "targets": [
+          {
+            "expr": "sum(rate({cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[5m]))",
+            "instant": false,
+            "legendFormat": " all",
+            "queryType": "randomWalk",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "title": "Rate",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "${loki}",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 90
+        },
+        "id": 42,
+        "options": {
+          "dedupStrategy": "none",
+          "enableLogDetails": true,
+          "prettifyLogMessage": false,
+          "showCommonLabels": false,
+          "showLabels": false,
+          "showTime": false,
+          "sortOrder": "Descending",
+          "wrapLogMessage": false
+        },
+        "targets": [
+          {
+            "expr": "{cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
+            "legendFormat": "",
+            "refId": "A"
+          }
+        ],
+        "title": "Messages",
+        "type": "logs"
       }
     ],
     "schemaVersion": 22,
@@ -1331,27 +1456,136 @@
     ],
     "templating": {
       "list": [
+
         {
-          "allValue": null,
           "current": {
-            "text": "default",
-            "value": "default"
+            "selected": true,
+            "text": "Loki",
+            "value": "Loki"
           },
-          "datasource": "Prometheus",
-          "definition": "",
-          "hide": 0,
+          "description": "Name of the Loki datasource to use",
+          "error": null,
+          "hide": 2,
           "includeAll": false,
-          "label": null,
+          "label": "Loki",
           "multi": false,
-          "name": "namespace",
+          "name": "loki",
           "options": [],
-          "query": "label_values(traefik_config_reloads_total, namespace)",
+          "query": "loki",
+          "queryValue": "",
           "refresh": 1,
           "regex": "",
           "skipUrlSync": false,
-          "sort": 0,
+          "type": "datasource"
+        },
+        {
+          "current": {
+            "selected": false,
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "description": "Name of the Prometheus datasource to use",
+          "error": null,
+          "hide": 0,
+          "includeAll": false,
+          "label": "Prometheus",
+          "multi": false,
+          "name": "prometheus",
+          "options": [],
+          "query": "prometheus",
+          "queryValue": "",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "type": "datasource"
+        },
+        {
+          "allValue": null,
+          "current": {
+            "selected": true,
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "datasource": "${prometheus}",
+          "definition": "label_values(traefik_config_reloads_total, cluster)",
+          "description": "Kubernetes cluster",
+          "error": null,
+          "hide": 0,
+          "includeAll": true,
+          "label": "Cluster",
+          "multi": true,
+          "name": "cluster",
+          "options": [],
+          "query": {
+            "query": "label_values(traefik_config_reloads_total, cluster)",
+            "refId": "StandardVariableQuery"
+          },
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 5,
+          "type": "query"
+        },
+        {
+          "allValue": null,
+          "current": {
+            "selected": true,
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "datasource": "${prometheus}",
+          "definition": "",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Namespace",
+          "multi": true,
+          "name": "namespace",
+          "options": [],
+          "query": "label_values(traefik_config_reloads_total{cluster=~\"$cluster\"}, namespace)",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 5,
           "tagValuesQuery": "",
           "tags": [],
+          "tagsQuery": "",
+          "type": "query",
+          "useTags": false
+        },
+        {
+          "allValue": null,
+          "current": {
+            "selected": true,
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": "${prometheus}",
+          "definition": "label_values(traefik_config_reloads_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}, pod)",
+          "description": null,
+          "error": null,
+          "hide": 0,
+          "includeAll": true,
+          "label": "Pod",
+          "multi": false,
+          "name": "pod",
+          "options": [],
+          "query": {
+            "query": "label_values(traefik_config_reloads_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}, pod)",
+            "refId": "Prometheus-pod-Variable-Query"
+          },
+          "refresh": 2,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 5,
+          "tagValuesQuery": "",
           "tagsQuery": "",
           "type": "query",
           "useTags": false
@@ -1387,7 +1621,7 @@
       ]
     },
     "time": {
-      "from": "now-30m",
+      "from": "now-3h",
       "to": "now"
     },
     "timepicker": {
