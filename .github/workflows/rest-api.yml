@@ -12,7 +12,6 @@ defaults:
     working-directory: ./hedera-mirror-rest
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
   MODULE: hedera-mirror-rest
   SCOPED_MODULE: hashgraph-mirror-rest
 
@@ -39,7 +38,7 @@ jobs:
       - name: Test
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
+        run: ./mvnw verify -pl "${MODULE}" --also-make
         working-directory: .
 
       - name: Rename artifact
