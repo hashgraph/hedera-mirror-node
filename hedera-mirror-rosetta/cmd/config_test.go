@@ -21,7 +21,9 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
@@ -29,16 +31,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLoadDefaultConfig(t *testing.T) {
-	wd, _ := os.Getwd()
-	// change to project root so to load the default config
-	os.Chdir("../")
-	defer os.Chdir(wd)
+const yml = `
+hedera:
+  mirror:
+    rosetta:
+      db:
+        port: 5431
+        username: foobar`
 
+func TestLoadDefaultConfig(t *testing.T) {
 	config, err := loadConfig()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
+	assert.Equal(t, uint16(5432), config.Hedera.Mirror.Rosetta.Db.Port)
+	assert.Equal(t, config.Hedera.Mirror.Rosetta.Db.Username, "mirror_rosetta")
+}
+
+func TestLoadCustomConfig(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "rosetta")
+	if err != nil {
+		assert.Fail(t, "Unable to create temp dir", err)
+	}
+	defer os.RemoveAll(tempDir)
+	err = os.Chdir(tempDir)
+	if err != nil {
+		assert.Fail(t, "Unable to change directory", err)
+	}
+	customConfig := filepath.Join(tempDir, "application.yml")
+
+	err = ioutil.WriteFile(customConfig, []byte(yml), 0644)
+	if err != nil {
+		assert.Fail(t, "Unable to create custom config", err)
+	}
+
+	config, err := loadConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	assert.Equal(t, true, config.Hedera.Mirror.Rosetta.Online)
+	assert.Equal(t, uint16(5431), config.Hedera.Mirror.Rosetta.Db.Port)
+	assert.Equal(t, "foobar", config.Hedera.Mirror.Rosetta.Db.Username)
 }
 
 func TestParseNodesFromEnv(t *testing.T) {

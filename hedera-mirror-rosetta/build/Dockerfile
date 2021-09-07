@@ -64,7 +64,6 @@ USER root
 # Copy the Rosetta Executable from the Rosetta Builder stage
 WORKDIR /var/rosetta
 COPY --from=rosetta-builder /hedera-mirror-rosetta/rosetta-executable .
-COPY --from=rosetta-builder /hedera-mirror-rosetta/config/application.yml ./config/application.yml
 
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer
