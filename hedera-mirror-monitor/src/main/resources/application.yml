@@ -23,6 +23,7 @@ logging:
     #org.springframework.web.reactive.function.client: trace
     com.hedera.mirror.monitor: info
     com.hedera.hashgraph.sdk.Executable: error
+    com.hedera.hashgraph.sdk.TransactionReceiptQuery: error
 management:
   endpoints:
     web:

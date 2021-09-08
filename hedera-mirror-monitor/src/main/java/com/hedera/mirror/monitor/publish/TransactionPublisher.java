@@ -137,19 +137,26 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Flux<Client> getClients() {
+        Map<String, AccountId> validNodes = getValidNodes();
+        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), validNodes.size());
+
+        return Flux.range(0, publishProperties.getClients())
+                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(validNodes))));
+    }
+
+    private Map<String, AccountId> getValidNodes() {
+        log.info("Validating nodes");
         List<NodeProperties> validNodes = validateNodes();
 
         if (validNodes.isEmpty()) {
             throw new IllegalArgumentException("No valid nodes found");
         }
 
+        nodeAccountIds.clear();
         validNodes.forEach(n -> nodeAccountIds.add(AccountId.fromString(n.getAccountId())));
-        Map<String, AccountId> nodeMap = validNodes.stream()
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
-        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), validNodes.size());
 
-        return Flux.range(0, publishProperties.getClients())
-                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodeMap))));
+        return validNodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
 
     private List<NodeProperties> validateNodes() {
@@ -179,7 +186,9 @@ public class TransactionPublisher implements AutoCloseable {
 
     private boolean validateNode(Client client, NodeProperties node) {
         boolean valid = false;
-
+        client.setMinBackoff(Duration.ofMillis(500));
+        client.setMaxBackoff(Duration.ofMillis(1000));
+        client.setMaxAttempts(15);
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);
@@ -206,5 +215,19 @@ public class TransactionPublisher implements AutoCloseable {
         Client client = Client.forNetwork(nodes);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
+    }
+
+    public void revalidateNodes() {
+        log.fatal("Revalidating network");
+        Map<String, AccountId> temp = getValidNodes();
+
+        clients.doOnNext(client -> {
+                    try {
+                        client.setNetwork(temp);
+                    } catch (Exception e) {
+                        log.info("Exception while refreshing network: {}", e);
+                    }
+                })
+                .subscribe();
     }
 }

@@ -28,6 +28,10 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
@@ -44,6 +48,7 @@ import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 
 @Log4j2
 @Configuration
+@EnableScheduling
 class MonitorConfiguration {
 
     static {
@@ -71,7 +76,7 @@ class MonitorConfiguration {
      * Constructs a reactive flow for publishing transactions. The transaction generator will run on a single thread and
      * generate transactions as fast as possible. Next, a parallel Flux will concurrently publish those transactions to
      * the main nodes. Once the response is received, it will be sent to subscribers in case they need to sample them to
-     * validate whether that transaction was received by the mirror node APIs. Finally, metrics will be collected for
+     * validate whether that transaction was received by the @mirror node APIs. Finally, metrics will be collected for
      * every published transaction.
      *
      * @return the publishing flow's Disposable
@@ -119,5 +124,19 @@ class MonitorConfiguration {
                 .doOnSubscribe(s -> log.info("Starting subscribe flow"))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(subscribeMetrics::onNext);
+    }
+
+    @Scheduled(fixedDelayString = "${hedera.mirror.monitor.revalidationRate:600000}", initialDelayString = "${hedera" +
+            ".mirror.monitor.revalidationRate:600000}")
+    public void revalidateNetwork() {
+        transactionPublisher.revalidateNodes();
+    }
+
+    @Bean
+    public TaskScheduler taskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        //One for revalidating the network, one for the metrics logging
+        scheduler.setPoolSize(2);
+        return scheduler;
     }
 }
