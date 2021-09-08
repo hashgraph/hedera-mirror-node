@@ -95,7 +95,7 @@ func (n *NetworkAPIService) NetworkStatus(
 		return nil, err
 	}
 
-	latestBlock, err := n.RetrieveLatest()
+	currentBlock, err := n.RetrieveSecondLatest()
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +107,10 @@ func (n *NetworkAPIService) NetworkStatus(
 
 	return &types.NetworkStatusResponse{
 		CurrentBlockIdentifier: &types.BlockIdentifier{
-			Index: latestBlock.Index,
-			Hash:  hex.SafeAddHexPrefix(latestBlock.Hash),
+			Index: currentBlock.Index,
+			Hash:  hex.SafeAddHexPrefix(currentBlock.Hash),
 		},
-		CurrentBlockTimestamp: latestBlock.GetTimestampMillis(),
+		CurrentBlockTimestamp: currentBlock.GetTimestampMillis(),
 		GenesisBlockIdentifier: &types.BlockIdentifier{
 			Index: genesisBlock.Index,
 			Hash:  hex.SafeAddHexPrefix(genesisBlock.Hash),

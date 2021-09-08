@@ -28,8 +28,11 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -52,9 +55,25 @@ var moduleRoot string
 
 type DbResource struct {
 	db       *sql.DB
+	params   dbParams
 	pool     *dockertest.Pool
 	resource *dockertest.Resource
 	network  *dockertest.Network
+}
+
+func CreateDbRecords(db *gorm.DB, records ...interface{}) {
+	for _, record := range records {
+		db.Create(record)
+	}
+}
+
+func ExecSql(db *gorm.DB, sql string) {
+	db.Exec(sql)
+}
+
+// GetDbConfig returns the db config of the session
+func (d DbResource) GetDbConfig() types.Db {
+	return d.params.toConfig()
 }
 
 // GetDb returns the sql db pool
@@ -85,6 +104,22 @@ func (d dbParams) toDsn() string {
 
 func (d dbParams) toJdbcUrl(endpoint string) string {
 	return fmt.Sprintf("jdbc:postgresql://%s/%s", endpoint, d.name)
+}
+func (d dbParams) toConfig() types.Db {
+	hostPort := strings.Split(d.endpoint, ":")
+	port, _ := strconv.ParseInt(hostPort[1], 10, 32)
+	return types.Db{
+		Host:     hostPort[0],
+		Name:     d.name,
+		Password: d.password,
+		Pool: types.Pool{
+			MaxIdleConnections: 20,
+			MaxLifetime:        30,
+			MaxOpenConnections: 100,
+		},
+		Port:     uint16(port),
+		Username: d.username,
+	}
 }
 
 // CleanupDb cleans the data written to the db during tests
@@ -140,6 +175,7 @@ func SetupDb() DbResource {
 
 	return DbResource{
 		db:       db,
+		params:   dbParams,
 		pool:     pool,
 		resource: resource,
 		network:  network,

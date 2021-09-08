@@ -49,7 +49,7 @@ func (m *MockBlockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 	return m.retrieveBlock(m.Called())
 }
 
-func (m *MockBlockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
+func (m *MockBlockRepository) RetrieveSecondLatest() (*types.Block, *rTypes.Error) {
 	return m.retrieveBlock(m.Called())
 }
 

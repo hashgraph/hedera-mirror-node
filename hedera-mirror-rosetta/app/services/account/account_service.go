@@ -56,16 +56,28 @@ func (a *AccountAPIService) AccountBalance(
 	if request.BlockIdentifier != nil {
 		block, err = a.RetrieveBlock(request.BlockIdentifier)
 	} else {
-		block, err = a.RetrieveLatest()
+		block, err = a.RetrieveSecondLatest()
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	balances, err := a.accountRepo.RetrieveBalanceAtBlock(request.AccountIdentifier.Address, block.ConsensusEndNanos)
+	if block.LatestIndex-block.Index < 1 {
+		// only show info up to the second latest block
+		return nil, errors.ErrBlockNotFound
+	}
+
+	address := request.AccountIdentifier.Address
+	balances, err := a.accountRepo.RetrieveBalanceAtBlock(address, block.ConsensusEndNanos)
 	if err != nil {
 		return nil, err
 	}
+
+	genesisTokenBalances, err := a.getGenesisTokenBalances(address, balances, block.ConsensusEndNanos)
+	if err != nil {
+		return nil, err
+	}
+	balances = append(balances, genesisTokenBalances...)
 
 	return &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
@@ -76,6 +88,51 @@ func (a *AccountAPIService) AccountBalance(
 	}, nil
 }
 
+func (a *AccountAPIService) AccountCoins(
+	ctx context.Context,
+	request *rTypes.AccountCoinsRequest,
+) (*rTypes.AccountCoinsResponse, *rTypes.Error) {
+	return nil, errors.ErrNotImplemented
+}
+
+// getGenesisTokenBalances get the genesis token balances for tokens transferred to the account in the next block after
+// consensusEnd
+func (a *AccountAPIService) getGenesisTokenBalances(
+	address string,
+	balances []types.Amount,
+	consensusEnd int64,
+) ([]types.Amount, *rTypes.Error) {
+	tokens, err := a.accountRepo.RetrieveTransferredTokensInBlockAfter(address, consensusEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tokens) == 0 {
+		return []types.Amount{}, nil
+	}
+
+	tokenSet := make(map[string]bool)
+	for _, balance := range balances {
+		if t, ok := balance.(*types.TokenAmount); ok {
+			tokenSet[t.TokenId.String()] = true
+		}
+	}
+
+	genesisTokenBalances := make([]types.Amount, 0)
+	for _, token := range tokens {
+		if _, ok := tokenSet[token.TokenId.String()]; !ok {
+			tokenBalance := &types.TokenAmount{
+				Decimals: int64(token.Decimals),
+				TokenId:  token.TokenId,
+				Value:    0,
+			}
+			genesisTokenBalances = append(genesisTokenBalances, tokenBalance)
+		}
+	}
+
+	return genesisTokenBalances, nil
+}
+
 func (a *AccountAPIService) toRosettaBalances(balances []types.Amount) []*rTypes.Amount {
 	rosettaBalances := make([]*rTypes.Amount, 0, len(balances))
 	for _, balance := range balances {
@@ -83,11 +140,4 @@ func (a *AccountAPIService) toRosettaBalances(balances []types.Amount) []*rTypes
 	}
 
 	return rosettaBalances
-}
-
-func (a *AccountAPIService) AccountCoins(
-	ctx context.Context,
-	request *rTypes.AccountCoinsRequest,
-) (*rTypes.AccountCoinsResponse, *rTypes.Error) {
-	return nil, errors.ErrNotImplemented
 }

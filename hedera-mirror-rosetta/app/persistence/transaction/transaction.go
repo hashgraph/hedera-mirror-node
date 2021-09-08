@@ -322,13 +322,17 @@ func (tr *transactionRepository) FindByHashInBlock(
 
 func (tr *transactionRepository) retrieveTransactionTypes() []transactionType {
 	var transactionTypes []transactionType
-	tr.dbClient.Raw(selectTransactionTypes).Find(&transactionTypes)
+	if err := tr.dbClient.Raw(selectTransactionTypes).Find(&transactionTypes).Error; err != nil {
+		log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, err)
+	}
 	return transactionTypes
 }
 
 func (tr *transactionRepository) retrieveTransactionResults() []transactionResult {
 	var tResults []transactionResult
-	tr.dbClient.Raw(selectTransactionResults).Find(&tResults)
+	if err := tr.dbClient.Raw(selectTransactionResults).Find(&tResults).Error; err != nil {
+		log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, err)
+	}
 	return tResults
 }
 

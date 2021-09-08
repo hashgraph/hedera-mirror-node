@@ -30,7 +30,7 @@ import (
 const tableNameToken = "token"
 
 type Token struct {
-	TokenId             int64 `gorm:"type:primaryKey"`
+	TokenId             int64 `gorm:"primaryKey"`
 	CreatedTimestamp    int64
 	Decimals            int64
 	FreezeDefault       bool

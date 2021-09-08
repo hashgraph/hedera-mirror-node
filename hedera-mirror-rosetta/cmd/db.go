@@ -31,7 +31,7 @@ import (
 )
 
 // Establish connection to the Postgres Database
-func connectToDb(dbConfig types.Db) *gorm.DB {
+func connectToDb(dbConfig types.Db) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
 		dbConfig.Host,
@@ -42,18 +42,20 @@ func connectToDb(dbConfig types.Db) *gorm.DB {
 	)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("Failed to connect to db: %s", err)
+		return nil, err
 	}
 	log.Info("Successfully connected to Database")
 
 	sqlDb, err := db.DB()
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("Failed to get sql DB: %s", err)
+		return nil, err
 	}
 
 	sqlDb.SetMaxIdleConns(dbConfig.Pool.MaxIdleConnections)
 	sqlDb.SetConnMaxLifetime(time.Duration(dbConfig.Pool.MaxLifetime) * time.Minute)
 	sqlDb.SetMaxOpenConns(dbConfig.Pool.MaxOpenConnections)
 
-	return db
+	return db, nil
 }

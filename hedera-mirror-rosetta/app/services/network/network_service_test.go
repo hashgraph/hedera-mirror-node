@@ -38,6 +38,7 @@ func dummyGenesisBlock() *types.Block {
 	return &types.Block{
 		Index:               1,
 		Hash:                "0x123jsjs",
+		LatestIndex:         3,
 		ConsensusStartNanos: 1000000,
 		ConsensusEndNanos:   20000000,
 		ParentIndex:         0,
@@ -45,10 +46,11 @@ func dummyGenesisBlock() *types.Block {
 	}
 }
 
-func dummyLatestBlock() *types.Block {
+func dummySecondLatestBlock() *types.Block {
 	return &types.Block{
 		Index:               2,
 		Hash:                "0x1323jsjs",
+		LatestIndex:         3,
 		ConsensusStartNanos: 40000000,
 		ConsensusEndNanos:   70000000,
 		ParentIndex:         1,
@@ -245,7 +247,7 @@ func (suite *networkServiceSuite) TestNetworkStatus() {
 	}
 
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	suite.mockBlockRepo.On("RetrieveLatest").Return(dummyLatestBlock(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(dummySecondLatestBlock(), repository.NilError)
 	suite.mockAddressBookEntryRepo.On("Entries").Return(exampleEntries, repository.NilError)
 
 	// when:
@@ -268,10 +270,10 @@ func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveGenesisFail
 	assert.NotNil(suite.T(), e)
 }
 
-func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveLatestFails() {
+func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveSecondLatestFails() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	suite.mockBlockRepo.On("RetrieveLatest").Return(repository.NilBlock, &rTypes.Error{})
+	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(repository.NilBlock, &rTypes.Error{})
 
 	// when:
 	res, e := suite.networkService.NetworkStatus(nil, nil)
@@ -284,7 +286,7 @@ func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveLatestFails
 func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenEntriesFail() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	suite.mockBlockRepo.On("RetrieveLatest").Return(dummyLatestBlock(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(dummySecondLatestBlock(), repository.NilError)
 	suite.mockAddressBookEntryRepo.On("Entries").Return(repository.NilEntries, &rTypes.Error{})
 
 	// when:

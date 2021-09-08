@@ -176,18 +176,21 @@ func main() {
 	var router http.Handler
 
 	if rosettaConfig.Online {
-		dbClient := connectToDb(rosettaConfig.Db)
+		dbClient, err := connectToDb(rosettaConfig.Db)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		router, err = newBlockchainOnlineRouter(network, rosettaConfig.Nodes, asserter, version, dbClient)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.Fatal(err)
 		}
 
 		log.Info("Serving Rosetta API in ONLINE mode")
 	} else {
 		router, err = newBlockchainOfflineRouter(network.Network, rosettaConfig.Nodes, asserter)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.Fatal(err)
 		}
 
 		log.Info("Serving Rosetta API in OFFLINE mode")

@@ -66,8 +66,8 @@ func (c *BaseService) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) 
 	}
 }
 
-func (c *BaseService) RetrieveLatest() (*types.Block, *rTypes.Error) {
-	return c.blockRepo.RetrieveLatest()
+func (c *BaseService) RetrieveSecondLatest() (*types.Block, *rTypes.Error) {
+	return c.blockRepo.RetrieveSecondLatest()
 }
 
 func (c *BaseService) RetrieveGenesis() (*types.Block, *rTypes.Error) {

@@ -25,6 +25,7 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
@@ -34,10 +35,46 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var (
+	token1 = types.Token{
+		TokenId:  entityid.EntityId{EncodedId: 2001, EntityNum: 2001},
+		Decimals: 5,
+		Name:     "foobar1",
+		Symbol:   "foobar1",
+	}
+	token2 = types.Token{
+		TokenId:  entityid.EntityId{EncodedId: 2002, EntityNum: 2002},
+		Decimals: 6,
+		Name:     "foobar2",
+		Symbol:   "foobar2",
+	}
+	token3 = types.Token{
+		TokenId:  entityid.EntityId{EncodedId: 2003, EntityNum: 2003},
+		Decimals: 7,
+		Name:     "foobar3",
+		Symbol:   "foobar3",
+	}
+	token4 = types.Token{
+		TokenId:  entityid.EntityId{EncodedId: 2004, EntityNum: 2004},
+		Decimals: 8,
+		Name:     "foobar4",
+		Symbol:   "foobar4",
+	}
+)
+
+func amount() []types.Amount {
+	return []types.Amount{
+		&types.HbarAmount{Value: int64(1000)},
+		getTokenAmount(token1, 100),
+		getTokenAmount(token2, 200),
+	}
+}
+
 func block() *types.Block {
 	return &types.Block{
 		Index:               1,
 		Hash:                "123jsjs",
+		LatestIndex:         2,
 		ConsensusStartNanos: 1000000,
 		ConsensusEndNanos:   20000000,
 		ParentIndex:         0,
@@ -45,8 +82,16 @@ func block() *types.Block {
 	}
 }
 
-func amount() []types.Amount {
-	return []types.Amount{&types.HbarAmount{Value: int64(1000)}}
+func genesisBlock() *types.Block {
+	return &types.Block{
+		Index:               0,
+		Hash:                "genesis",
+		LatestIndex:         0,
+		ConsensusStartNanos: 1000000,
+		ConsensusEndNanos:   20000000,
+		ParentIndex:         0,
+		ParentHash:          "genesis",
+	}
 }
 
 func request(withBlockIdentifier bool) *rTypes.AccountBalanceRequest {
@@ -76,7 +121,28 @@ func expectedAccountBalanceResponse() *rTypes.AccountBalanceResponse {
 				Value:    "1000",
 				Currency: config.CurrencyHbar,
 			},
+			getTokenAmount(token1, 100).ToRosetta(),
+			getTokenAmount(token2, 200).ToRosetta(),
 		},
+	}
+}
+
+func addGenesisTokenBalances(
+	resp *rTypes.AccountBalanceResponse,
+	tokens ...types.Token,
+) *rTypes.AccountBalanceResponse {
+	for _, token := range tokens {
+		resp.Balances = append(resp.Balances, getTokenAmount(token, 0).ToRosetta())
+	}
+
+	return resp
+}
+
+func getTokenAmount(token types.Token, value int64) *types.TokenAmount {
+	return &types.TokenAmount{
+		Decimals: int64(token.Decimals),
+		TokenId:  token.TokenId,
+		Value:    value,
 	}
 }
 
@@ -103,16 +169,34 @@ func (suite *accountServiceSuite) SetupTest() {
 
 func (suite *accountServiceSuite) TestAccountBalance() {
 	// given:
-
-	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(block(), repository.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return([]types.Token{}, repository.NilError)
 
 	// when:
-	actualResult, e := suite.accountService.AccountBalance(nil, request(false))
+	actual, err := suite.accountService.AccountBalance(nil, request(false))
 
 	// then:
-	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actualResult)
-	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actual)
+	assert.Nil(suite.T(), err)
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByIdentifier")
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByHash")
+}
+
+func (suite *accountServiceSuite) TestAccountBalanceWithGenesisTokenBalance() {
+	// given:
+	tokensInNextBlock := []types.Token{token2, token3, token4}
+	expected := addGenesisTokenBalances(expectedAccountBalanceResponse(), token3, token4)
+	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(block(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return(tokensInNextBlock, repository.NilError)
+
+	// when:
+	actual, err := suite.accountService.AccountBalance(nil, request(false))
+
+	// then:
+	assert.Equal(suite.T(), expected, actual)
+	assert.Nil(suite.T(), err)
 	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByIdentifier")
 	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByHash")
 }
@@ -121,26 +205,60 @@ func (suite *accountServiceSuite) TestAccountBalanceWithBlockIdentifier() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), repository.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return([]types.Token{}, repository.NilError)
 
 	// when:
-	actualResult, e := suite.accountService.AccountBalance(nil, request(true))
+	actual, err := suite.accountService.AccountBalance(nil, request(true))
 
 	// then:
-	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actualResult)
-	assert.Nil(suite.T(), e)
-	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveLatest")
+	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actual)
+	assert.Nil(suite.T(), err)
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveSecondLatest")
 }
 
-func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveLatestFails() {
+func (suite *accountServiceSuite) TestAccountBalanceWithBlockIdentifierAndGenesisTokenBalances() {
 	// given:
-	suite.mockBlockRepo.On("RetrieveLatest").Return(repository.NilBlock, &rTypes.Error{})
+	tokensInNextBlock := []types.Token{token2, token3, token4}
+	expected := addGenesisTokenBalances(expectedAccountBalanceResponse(), token3, token4)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return(tokensInNextBlock, repository.NilError)
 
 	// when:
-	actualResult, e := suite.accountService.AccountBalance(nil, request(false))
+	actual, err := suite.accountService.AccountBalance(nil, request(true))
 
 	// then:
-	assert.Nil(suite.T(), actualResult)
-	assert.NotNil(suite.T(), e)
+	assert.Equal(suite.T(), expected, actual)
+	assert.Nil(suite.T(), err)
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveSecondLatest")
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByHash")
+}
+
+func (suite *accountServiceSuite) TestAccountBalanceWithOnlyGenesisBlock() {
+	// given:
+	suite.mockBlockRepo.On("FindByIdentifier").Return(genesisBlock(), repository.NilError)
+
+	// when:
+	actual, err := suite.accountService.AccountBalance(nil, request(true))
+
+	// then:
+	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), actual)
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveSecondLatest")
+	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveBalanceAtBlock")
+	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveTransferredTokensInBlockAfter")
+}
+
+func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveSecondLatestFails() {
+	// given:
+	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(repository.NilBlock, &rTypes.Error{})
+
+	// when:
+	actual, err := suite.accountService.AccountBalance(nil, request(false))
+
+	// then:
+	assert.Nil(suite.T(), actual)
+	assert.NotNil(suite.T(), err)
 	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveBalanceAtBlock")
 }
 
@@ -149,13 +267,13 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBlockFails
 	suite.mockBlockRepo.On("FindByIdentifier").Return(repository.NilBlock, &rTypes.Error{})
 
 	// when:
-	actualResult, e := suite.accountService.AccountBalance(nil, request(true))
+	actual, err := suite.accountService.AccountBalance(nil, request(true))
 
 	// then:
-	assert.Nil(suite.T(), actualResult)
-	assert.NotNil(suite.T(), e)
+	assert.Nil(suite.T(), actual)
+	assert.NotNil(suite.T(), err)
 	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveBalanceAtBlock")
-	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveLatest")
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveSecondLatest")
 }
 
 func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails() {
@@ -164,11 +282,25 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBalanceAtB
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return([]types.Amount{}, &rTypes.Error{})
 
 	// when:
-	actualResult, e := suite.accountService.AccountBalance(nil, request(true))
+	actualResult, err := suite.accountService.AccountBalance(nil, request(true))
 
 	// then:
 	assert.Nil(suite.T(), actualResult)
-	assert.NotNil(suite.T(), e)
+	assert.NotNil(suite.T(), err)
+}
+
+func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveTransferredTokensInBlockAfterFails() {
+	// given:
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), repository.NilError)
+	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return([]types.Token{}, &rTypes.Error{})
+
+	// when:
+	actualResult, err := suite.accountService.AccountBalance(nil, request(true))
+
+	// then:
+	assert.Nil(suite.T(), actualResult)
+	assert.NotNil(suite.T(), err)
 }
 
 func (suite *accountServiceSuite) TestAccountCoins() {

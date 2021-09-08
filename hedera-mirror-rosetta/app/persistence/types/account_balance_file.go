@@ -18,18 +18,21 @@
  * ‍
  */
 
-package repositories
+package types
 
-import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-)
+const tableNameAccountBalanceFile = "account_balance_file"
 
-// AccountRepository Interface that all AccountRepository structs must implement
-type AccountRepository interface {
-	RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) ([]types.Amount, *rTypes.Error)
-	RetrieveTransferredTokensInBlockAfter(addressStr string, consensusTimestamp int64) (
-		[]types.Token,
-		*rTypes.Error,
-	)
+type AccountBalanceFile struct {
+	ConsensusTimestamp int64 `gorm:"primaryKey"`
+	Count              int64
+	LoadStart          int64
+	LoadEnd            int64
+	FileHash           string
+	Name               string
+	NodeAccountId      int64
+	Bytes              []byte
+}
+
+func (a AccountBalanceFile) TableName() string {
+	return tableNameAccountBalanceFile
 }

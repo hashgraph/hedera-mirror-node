@@ -28,6 +28,8 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -80,6 +82,19 @@ const (
                                            from abm
                                            left join account_balance ab
                                              on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
+	selectTransferredTokensInBlock string = `with rf as (
+											  select consensus_start, consensus_end
+ 											  from record_file
+											  where consensus_end > @consensus_timestamp
+											  order by consensus_end
+										      limit 1
+											)
+											select distinct on (tt.token_id) tt.token_id, t.decimals
+											from token_transfer tt
+										    join rf on rf.consensus_start <= consensus_timestamp and
+												rf.consensus_end >= consensus_timestamp
+											join token t on t.token_id = tt.token_id 
+											where account_id = @account_id`
 )
 
 type combinedAccountBalance struct {
@@ -137,6 +152,40 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	return amounts, nil
 }
 
+// RetrieveTransferredTokensInBlockAfter returns the list of tokens transferred to / from the account in the block after
+// consensusTimestamp
+func (ar *accountRepository) RetrieveTransferredTokensInBlockAfter(
+	addressStr string,
+	consensusTimestamp int64,
+) ([]types.Token, *rTypes.Error) {
+	accountId, err := types.AccountFromString(addressStr)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens := make([]pTypes.Token, 0)
+	result := ar.dbClient.Raw(
+		selectTransferredTokensInBlock,
+		sql.Named("account_id", accountId.EncodedId),
+		sql.Named("consensus_timestamp", consensusTimestamp),
+	).Scan(&tokens)
+	if result.Error != nil {
+		log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, result.Error)
+		return nil, hErrors.ErrDatabaseError
+	}
+
+	domainTokens := make([]types.Token, 0, len(tokens))
+	for _, token := range tokens {
+		domainToken, err := token.ToDomainToken()
+		if err != nil {
+			return nil, err
+		}
+		domainTokens = append(domainTokens, *domainToken)
+	}
+
+	return domainTokens, nil
+}
+
 func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd int64) (
 	int64,
 	*types.HbarAmount,
@@ -152,7 +201,12 @@ func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd in
 	).
 		First(cb)
 	if result.Error != nil {
+		log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, result.Error)
 		return 0, nil, nil, hErrors.ErrDatabaseError
+	}
+
+	if cb.ConsensusTimestamp == 0 {
+		return 0, nil, nil, hErrors.ErrNodeIsStarting
 	}
 
 	hbarAmount := types.HbarAmount{Value: cb.Balance}
@@ -185,6 +239,7 @@ func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consens
 	).
 		First(change)
 	if result.Error != nil {
+		log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, result.Error)
 		return 0, nil, hErrors.ErrDatabaseError
 	}
 

@@ -103,13 +103,24 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 
 func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
-	repo := NewTokenRepository(dbClient)
+	repo := NewTokenRepository(suite.dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.Find("0.0.1200")
 
 	// then
 	assert.Equal(suite.T(), errors.ErrTokenNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
+	// given
+	repo := NewTokenRepository(suite.dbResource.GetGormDb())
+
+	// when
+	actual, err := repo.Find("abc")
+
+	// then
+	assert.Equal(suite.T(), errors.ErrInvalidToken, err)
 	assert.Nil(suite.T(), actual)
 }
