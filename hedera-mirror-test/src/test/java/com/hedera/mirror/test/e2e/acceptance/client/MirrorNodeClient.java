@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -180,7 +179,6 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 t instanceof ReadTimeoutException ||
                 t.getCause() instanceof ReadTimeoutException ||
                 t instanceof TimeoutException ||
-                (t instanceof WebClientResponseException &&
-                        ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND);
+                t instanceof WebClientResponseException;
     }
 }

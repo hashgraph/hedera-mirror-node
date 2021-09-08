@@ -81,13 +81,13 @@ class ClientConfiguration {
         HttpClient httpClient = HttpClient.create()
                 .option(
                         ChannelOption.CONNECT_TIMEOUT_MILLIS,
-                        acceptanceTestProperties.getWebClientProperties().getConnectTimeoutMillis())
+                        (int) acceptanceTestProperties.getWebClientProperties().getConnectionTimeout().toMillis())
                 .doOnConnected(connection -> {
                     connection.addHandlerLast(new ReadTimeoutHandler(
-                            acceptanceTestProperties.getWebClientProperties().getConnectionReadTimeoutMillis(),
+                            acceptanceTestProperties.getWebClientProperties().getReadTimeout().toMillis(),
                             TimeUnit.MILLISECONDS));
                     connection.addHandlerLast(new WriteTimeoutHandler(
-                            acceptanceTestProperties.getWebClientProperties().getConnectionWriteTimeoutMillis(),
+                            acceptanceTestProperties.getWebClientProperties().getWriteTimeout().toMillis(),
                             TimeUnit.MILLISECONDS));
                 })
                 .wiretap(acceptanceTestProperties.getWebClientProperties().isWiretap()); // enable request logging

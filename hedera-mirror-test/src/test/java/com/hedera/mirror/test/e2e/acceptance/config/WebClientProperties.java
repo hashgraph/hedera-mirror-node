@@ -20,9 +20,11 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * ‍
  */
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
+import java.time.Duration;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMax;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -32,17 +34,20 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Validated
 public class WebClientProperties {
-    @Min(5000)
-    @Max(60000)
-    private int connectionReadTimeoutMillis = 10000;
+    @NotNull
+    @DurationMin(millis = 5000L)
+    @DurationMax(millis = 60000L)
+    private Duration connectionTimeout = Duration.ofSeconds(10L);
 
-    @Min(5000)
-    @Max(60000)
-    private int connectionWriteTimeoutMillis = 10000;
-
-    @Min(5000)
-    @Max(60000)
-    private int connectTimeoutMillis = 10000;
+    @NotNull
+    @DurationMin(millis = 5000L)
+    @DurationMax(millis = 10000L)
+    private Duration readTimeout = Duration.ofSeconds(10L);
 
     private boolean wiretap = false;
+
+    @NotNull
+    @DurationMin(millis = 5000L)
+    @DurationMax(millis = 10000L)
+    private Duration writeTimeout = Duration.ofSeconds(10L);
 }

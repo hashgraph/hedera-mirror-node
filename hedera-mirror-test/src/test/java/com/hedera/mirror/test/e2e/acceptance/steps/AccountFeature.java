@@ -121,21 +121,17 @@ public class AccountFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for the crypto transfer transaction")
-    public void verifyMirrorAPIResponses(int status) {
+    public void verifyMirrorAPICryptoTransferResponse(int status) {
         log.info("Verify transaction");
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
-        verifyCryptoTransfers(mirrorTransactionsResponse, status, transactionId);
-    }
-
-    private void verifyCryptoTransfers(MirrorTransactionsResponse mirrorTransactionsResponse, int status,
-                                       String transactionId) {
+        // verify valid set of transactions
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
 
+        // verify transaction details
         MirrorTransaction mirrorTransaction = transactions.get(0);
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
