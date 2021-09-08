@@ -263,13 +263,14 @@ class RepositoryEntityListenerTest extends IntegrationTest {
 
         Nft nftMinimallyUpdated = new Nft();
         nftMinimallyUpdated.setId(nft.getId());
+        nftMinimallyUpdated.setModifiedTimestamp(3L);
         repositoryEntityListener.onNft(nftMinimallyUpdated);
         assertThat(nftRepository.findAll())
                 .hasSize(1)
                 .first()
                 .returns(nftMinimallyUpdated.getModifiedTimestamp(), Nft::getModifiedTimestamp)
                 .usingRecursiveComparison()
-                .ignoringFields("accountId", "modifiedTimestamp")
+                .ignoringFields("modifiedTimestamp")
                 .isEqualTo(nft);
 
         Nft nftUpdated = new Nft();
@@ -277,7 +278,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         nftUpdated.setDeleted(true);
         nftUpdated.setId(nft.getId());
         nftUpdated.setMetadata(null);
-        nftUpdated.setModifiedTimestamp(3L);
+        nftUpdated.setModifiedTimestamp(4L);
         repositoryEntityListener.onNft(nftUpdated);
         assertThat(nftRepository.findAll())
                 .hasSize(1)
