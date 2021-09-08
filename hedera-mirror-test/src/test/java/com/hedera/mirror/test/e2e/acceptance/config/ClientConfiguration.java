@@ -22,7 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -44,7 +44,6 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
-import reactor.netty.tcp.TcpClient;
 
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
@@ -79,24 +78,30 @@ class ClientConfiguration {
 
     @Bean
     WebClient webClient() {
-        TcpClient tcpClient = TcpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+        HttpClient httpClient = HttpClient.create()
+                .option(
+                        ChannelOption.CONNECT_TIMEOUT_MILLIS,
+                        acceptanceTestProperties.getWebClientProperties().getConnectTimeoutMillis())
                 .doOnConnected(connection -> {
-                    connection.addHandlerLast(new ReadTimeoutHandler(5000, TimeUnit.MILLISECONDS));
-                    connection.addHandlerLast(new WriteTimeoutHandler(5000, TimeUnit.MILLISECONDS));
+                    connection.addHandlerLast(new ReadTimeoutHandler(
+                            acceptanceTestProperties.getWebClientProperties().getConnectionReadTimeoutMillis(),
+                            TimeUnit.MILLISECONDS));
+                    connection.addHandlerLast(new WriteTimeoutHandler(
+                            acceptanceTestProperties.getWebClientProperties().getConnectionWriteTimeoutMillis(),
+                            TimeUnit.MILLISECONDS));
                 })
-                .wiretap(true); // enable request logging
+                .wiretap(acceptanceTestProperties.getWebClientProperties().isWiretap()); // enable request logging
 
         // support snake_case to avoid manually mapping JsonProperty on all properties
         ObjectMapper objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         Jackson2JsonDecoder jackson2JsonDecoder = new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON);
         Jackson2JsonEncoder jackson2JsonEncoder = new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON);
 
         return WebClient.builder()
                 .baseUrl(acceptanceTestProperties.getRestPollingProperties().getBaseUrl())
-                .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .codecs(clientCodecConfigurer -> {
                     clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(jackson2JsonDecoder);
                     clientCodecConfigurer.defaultCodecs().jackson2JsonEncoder(jackson2JsonEncoder);

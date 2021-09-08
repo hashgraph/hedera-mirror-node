@@ -21,7 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
-import io.grpc.netty.shaded.io.netty.handler.timeout.ReadTimeoutException;
+import io.netty.handler.timeout.ReadTimeoutException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -178,6 +178,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     protected boolean shouldRetryRestCall(Throwable t) {
         return t instanceof PrematureCloseException ||
                 t instanceof ReadTimeoutException ||
+                t.getCause() instanceof ReadTimeoutException ||
                 t instanceof TimeoutException ||
                 (t instanceof WebClientResponseException &&
                         ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND);
