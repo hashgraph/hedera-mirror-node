@@ -153,6 +153,6 @@ public class AccountFeature {
             transferSum += Long.valueOf(cryptoTransfer.getAmount());
         }
 
-        assertThat(transferSum).isEqualTo(0);
+        assertThat(transferSum).isZero();
     }
 }
