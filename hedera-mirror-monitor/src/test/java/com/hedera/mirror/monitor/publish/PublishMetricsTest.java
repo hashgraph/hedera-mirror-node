@@ -21,8 +21,7 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import static org.junit.platform.commons.util.ReflectionUtils.getDeclaredConstructor;
 
 import io.grpc.Status;
 import io.micrometer.core.instrument.Meter;
@@ -30,6 +29,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.StringWriter;
+import java.lang.reflect.Constructor;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,8 +44,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
-import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
+import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.proto.ResponseCodeEnum;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 class PublishMetricsTest {
 
@@ -121,9 +126,30 @@ class PublishMetricsTest {
         onError(new TimeoutException(), TimeoutException.class.getSimpleName());
     }
 
+    @Test
+    void onErrorPrecheckStatusException() throws Exception {
+        TransactionId transactionId = TransactionId.withValidStart(AccountId.fromString("0.0.3"), Instant.now());
+        com.hedera.hashgraph.sdk.Status status = com.hedera.hashgraph.sdk.Status.SUCCESS;
+        Constructor<PrecheckStatusException> constructor = getDeclaredConstructor(PrecheckStatusException.class);
+        constructor.setAccessible(true);
+        PrecheckStatusException precheckStatusException = constructor.newInstance(status, transactionId);
+        onError(precheckStatusException, status.toString());
+    }
+
+    @Test
+    void onErrorReceiptStatusException() throws Exception {
+        TransactionId transactionId = TransactionId.withValidStart(AccountId.fromString("0.0.3"), Instant.now());
+        TransactionReceipt transactionReceipt = receipt(ResponseCodeEnum.SUCCESS);
+        Constructor<ReceiptStatusException> constructor = getDeclaredConstructor(ReceiptStatusException.class);
+        constructor.setAccessible(true);
+        ReceiptStatusException receiptStatusException = constructor.newInstance(transactionId, transactionReceipt);
+        onError(receiptStatusException, ResponseCodeEnum.SUCCESS.toString());
+    }
+
     void onError(Throwable throwable, String status) {
-        publishMetrics.onError(new PublishException(request(), throwable));
-        publishMetrics.onError(new PublishException(request(), throwable));
+        PublishException publishException = new PublishException(request(), throwable);
+        publishScenario.onError(publishException);
+        publishMetrics.onError(publishException);
 
         assertMetric(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges())
                 .extracting(TimeGauge::value)
@@ -135,19 +161,13 @@ class PublishMetricsTest {
                 .extracting(t -> t.mean(TimeUnit.SECONDS))
                 .asInstanceOf(InstanceOfAssertFactories.DOUBLE)
                 .isGreaterThanOrEqualTo(3.0);
-    }
 
-    @Test
-    void statusError() {
-        PublishException publishException = new PublishException(request(), new TimeoutException());
-        publishScenario.onError(publishException);
-        publishMetrics.onError(publishException);
         publishMetrics.status();
         assertThat(logOutput)
                 .asString()
                 .hasLineCount(1)
                 .contains("Scenario " + SCENARIO_NAME + " published 0 transactions in")
-                .contains("Errors: {TimeoutException=1}");
+                .contains("Errors: {" + status + "=1}");
     }
 
     @Test
@@ -193,11 +213,18 @@ class PublishMetricsTest {
     }
 
     private PublishResponse response() throws Exception {
-        TransactionReceipt transactionReceipt = TransactionReceipt.newBuilder().build();
         return PublishResponse.builder()
-                .receipt(com.hedera.hashgraph.sdk.TransactionReceipt.fromBytes(transactionReceipt.toByteArray()))
+                .receipt(receipt(ResponseCodeEnum.OK))
                 .request(request())
                 .timestamp(Instant.now().minusSeconds(2L))
                 .build();
+    }
+
+    private com.hedera.hashgraph.sdk.TransactionReceipt receipt(ResponseCodeEnum status) throws Exception {
+        byte[] receiptBytes = com.hedera.hashgraph.sdk.proto.TransactionReceipt.newBuilder()
+                .setStatus(status)
+                .build()
+                .toByteArray();
+        return com.hedera.hashgraph.sdk.TransactionReceipt.fromBytes(receiptBytes);
     }
 }

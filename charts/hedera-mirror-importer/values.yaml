@@ -325,7 +325,7 @@ prometheusRules:
       description: "No importer instances are currently ready in {{ $labels.namespace }}"
       summary: No importer instances are ready
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="importer"}) by (namespace) < 1
+    expr: sum(kube_pod_status_ready{pod=~".*-importer-.*",condition="true"}) by (namespace) < 1
     for: 2m
     labels:
       severity: critical

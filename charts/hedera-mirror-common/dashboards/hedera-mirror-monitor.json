@@ -21,7 +21,7 @@
   "panels": [
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The number of pods that are up and ready for processing",
       "fieldConfig": {
         "defaults": {
@@ -81,7 +81,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(kube_pod_status_ready{namespace=~\"$namespace\",pod=~\"$pod\",pod=~\".*-monitor-.*\",condition=\"true\"})",
+          "expr": "sum(kube_pod_status_ready{cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",pod=~\".*-monitor-.*\",condition=\"true\"})",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -94,7 +94,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The average publish TPS",
       "fieldConfig": {
         "defaults": {
@@ -157,7 +157,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -170,7 +170,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The average gRPC subscribe TPS",
       "fieldConfig": {
         "defaults": {
@@ -233,7 +233,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -246,7 +246,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The average amount of time all scenarios have been actively publishing transactions",
       "fieldConfig": {
         "defaults": {
@@ -306,7 +306,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "avg(hedera_mirror_monitor_publish_duration_seconds{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(hedera_mirror_monitor_publish_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -319,7 +319,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The average amount of time all clients have been subscribed",
       "fieldConfig": {
         "defaults": {
@@ -379,7 +379,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "avg(hedera_mirror_monitor_subscribe_duration_seconds{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(hedera_mirror_monitor_subscribe_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -392,7 +392,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The average time from submit to handle transaction",
       "fieldConfig": {
         "defaults": {
@@ -459,7 +459,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "expr": "sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -472,7 +472,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The average end to end latency of the entire system",
       "fieldConfig": {
         "defaults": {
@@ -539,7 +539,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",protocol=\"GRPC\"}[$__rate_interval])) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",protocol=\"GRPC\"}[$__rate_interval]))",
+          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",protocol=\"GRPC\"}[$__rate_interval])) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",protocol=\"GRPC\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -576,7 +576,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 1,
       "description": "The number of transactions per second published broken down by type",
       "fieldConfig": {
@@ -626,7 +626,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (type)",
+          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (type)",
           "interval": "1m",
           "legendFormat": "{{ type }}",
           "refId": "A"
@@ -682,7 +682,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 1,
       "description": "How long the publish scenario has been active",
       "fieldConfig": {
@@ -733,7 +733,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(hedera_mirror_monitor_publish_duration_seconds{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (scenario)",
+          "expr": "sum(hedera_mirror_monitor_publish_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (scenario)",
           "interval": "1m",
           "legendFormat": "{{ scenario }}",
           "refId": "A"
@@ -788,7 +788,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 1,
       "description": "The number of errors per second when submitting transactions",
       "fieldConfig": {
@@ -838,7 +838,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",status!=\"SUCCESS\"}[$__rate_interval])) by (status)",
+          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",status!=\"SUCCESS\"}[$__rate_interval])) by (status)",
           "interval": "1m",
           "legendFormat": "{{ status }}",
           "refId": "A"
@@ -892,7 +892,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "How long it took to submit the transaction to the main node",
       "fieldConfig": {
         "defaults": {
@@ -940,7 +940,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
+          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
           "interval": "1m",
           "legendFormat": "{{scenario}}",
           "refId": "A"
@@ -993,7 +993,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "The time it takes from submit to being handled by the main nodes",
       "fieldConfig": {
         "defaults": {
@@ -1041,7 +1041,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
+          "expr": "sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
           "interval": "1m",
           "legendFormat": "{{scenario}}",
           "refId": "A"
@@ -1115,7 +1115,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 1,
       "description": "The number of transactions per second received broken down by scenario",
       "fieldConfig": {
@@ -1165,7 +1165,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
+          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
           "interval": "1m",
           "legendFormat": "{{ scenario }}",
           "refId": "A"
@@ -1221,7 +1221,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 1,
       "description": "How long it took to submit the transaction to the main node and receive it back from the mirror node",
       "fieldConfig": {
@@ -1271,7 +1271,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
+          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
           "interval": "1m",
           "legendFormat": "{{ scenario }}",
           "refId": "A"
@@ -1327,7 +1327,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 1,
       "description": "How long the subscribe scenario has been active",
       "fieldConfig": {
@@ -1378,7 +1378,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(hedera_mirror_monitor_subscribe_duration_seconds{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (scenario)",
+          "expr": "sum(hedera_mirror_monitor_subscribe_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (scenario)",
           "interval": "1m",
           "legendFormat": "{{ scenario }}",
           "refId": "A"
@@ -1428,7 +1428,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {},
         "overrides": []
@@ -1446,7 +1446,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${prometheus}",
           "decimals": 1,
           "description": "",
           "fieldConfig": {
@@ -1496,7 +1496,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(reactor_subscribed_subscribers_total{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
+              "expr": "sum(rate(reactor_subscribed_subscribers_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
               "interval": "1m",
               "legendFormat": "{{ flow }}",
               "refId": "A"
@@ -1549,7 +1549,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${prometheus}",
           "description": "The number of requests per second for more data",
           "fill": 1,
           "fillGradient": 0,
@@ -1591,7 +1591,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(reactor_requested_requested_amount_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
+              "expr": "sum(rate(reactor_requested_requested_amount_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
               "interval": "1m",
               "legendFormat": "{{ flow }}",
               "refId": "A"
@@ -1643,7 +1643,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${prometheus}",
           "decimals": 0,
           "description": "Times the duration elapsed between a subscription and the termination or cancellation of the sequence",
           "fill": 1,
@@ -1686,7 +1686,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(reactor_flow_duration_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow) / sum(rate(reactor_flow_duration_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
+              "expr": "sum(rate(reactor_flow_duration_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow) / sum(rate(reactor_flow_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
               "interval": "1m",
               "legendFormat": "{{ flow }}",
               "refId": "A"
@@ -1739,7 +1739,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${prometheus}",
           "decimals": 0,
           "description": "",
           "fill": 1,
@@ -1783,7 +1783,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(executor_pool_size_threads{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}) by (reactor_scheduler_id)",
+              "expr": "sum(executor_pool_size_threads{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}) by (reactor_scheduler_id)",
               "interval": "1m",
               "legendFormat": "{{ reactor_scheduler_id }}",
               "refId": "A"
@@ -1836,7 +1836,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${prometheus}",
           "decimals": 0,
           "description": "",
           "fill": 1,
@@ -1880,7 +1880,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "\nsum(executor_queued_tasks{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"} >= 0) by (reactor_scheduler_id)",
+              "expr": "\nsum(executor_queued_tasks{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"} >= 0) by (reactor_scheduler_id)",
               "interval": "1m",
               "legendFormat": "{{ reactor_scheduler_id }}",
               "refId": "A"
@@ -1933,7 +1933,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${prometheus}",
           "decimals": 0,
           "description": "",
           "fill": 1,
@@ -1977,7 +1977,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(executor_seconds_max{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}) by (reactor_scheduler_id)",
+              "expr": "max(executor_seconds_max{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}) by (reactor_scheduler_id)",
               "interval": "1m",
               "legendFormat": "{{ reactor_scheduler_id }}",
               "refId": "A"
@@ -2030,7 +2030,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
+          "datasource": "${prometheus}",
           "decimals": 0,
           "description": "Measures delays between onNext signals (or between onSubscribe and first onNext)",
           "fill": 1,
@@ -2074,7 +2074,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(reactor_onNext_delay_seconds_sum{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow) / sum(rate(reactor_onNext_delay_seconds_count{application=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
+              "expr": "sum(rate(reactor_onNext_delay_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow) / sum(rate(reactor_onNext_delay_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
               "interval": "1m",
               "legendFormat": "{{ flow }}",
               "refId": "A"
@@ -2149,7 +2149,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -2193,20 +2193,20 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(jvm_memory_committed_bytes{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(jvm_memory_committed_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "committed",
           "refId": "A"
         },
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "used",
           "refId": "B"
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "max",
@@ -2259,7 +2259,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -2303,14 +2303,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(system_cpu_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "max",
           "refId": "A"
         },
         {
-          "expr": "sum(process_cpu_usage{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(process_cpu_usage{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "usage",
@@ -2368,7 +2368,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 0,
       "fieldConfig": {
         "defaults": {
@@ -2412,7 +2412,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_threads_states_threads{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (state)",
+          "expr": "sum(jvm_threads_states_threads{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (state)",
           "interval": "1m",
           "legendFormat": "{{ state }}",
           "refId": "A"
@@ -2469,7 +2469,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 0,
       "fieldConfig": {
         "defaults": {
@@ -2513,13 +2513,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(process_files_open_files{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(process_files_open_files{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "open",
           "refId": "B"
         },
         {
-          "expr": "sum(process_files_max_files{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(process_files_max_files{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "max",
           "refId": "A"
@@ -2571,7 +2571,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "decimals": 1,
       "description": "",
       "fieldConfig": {
@@ -2621,7 +2621,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method, uri)",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method, uri)",
           "interval": "1m",
           "legendFormat": "{{ method}} {{uri}}",
           "refId": "A"
@@ -2698,7 +2698,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -2743,7 +2743,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(log4j2_events_total{application=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level)",
+          "expr": "sum(rate(log4j2_events_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level)",
           "interval": "1m",
           "legendFormat": "{{ level }}",
           "refId": "A"
@@ -2791,7 +2791,7 @@
       }
     },
     {
-      "datasource": "Loki",
+      "datasource": "${loki}",
       "description": "",
       "gridPos": {
         "h": 10,
@@ -2810,7 +2810,7 @@
       },
       "targets": [
         {
-          "expr": "{component=\"monitor\",namespace=~\"$namespace\",pod=~\"$pod\"}",
+          "expr": "{component=\"monitor\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -2843,14 +2843,87 @@
         "type": "constant"
       },
       {
+        "current": {
+          "selected": true,
+          "text": "Loki",
+          "value": "Loki"
+        },
+        "description": "Name of the Loki datasource to use",
+        "error": null,
+        "hide": 2,
+        "includeAll": false,
+        "label": "Loki",
+        "multi": false,
+        "name": "loki",
+        "options": [],
+        "query": "loki",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "description": "Name of the Prometheus datasource to use",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus",
+        "multi": false,
+        "name": "prometheus",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "${prometheus}",
+        "definition": "label_values(system_cpu_count{application=\"$application\"}, cluster)",
+        "description": "Kubernetes cluster",
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "query": "label_values(system_cpu_count{application=\"$application\"}, cluster)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 5,
+        "type": "query"
+      },
+      {
         "allValue": null,
         "current": {
           "selected": false,
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "Prometheus",
-        "definition": "label_values(system_cpu_count{application=\"$application\"},namespace)",
+        "datasource": "${prometheus}",
+        "definition": "label_values(system_cpu_count{application=\"$application\",cluster=~\"$cluster\"},namespace)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -2860,13 +2933,13 @@
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "label_values(system_cpu_count{application=\"$application\"},namespace)",
+          "query": "label_values(system_cpu_count{application=\"$application\",cluster=~\"$cluster\"},namespace)",
           "refId": "Prometheus-namespace-Variable-Query"
         },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 1,
+        "sort": 5,
         "tagValuesQuery": "",
         "tagsQuery": "",
         "type": "query",
@@ -2879,8 +2952,8 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "Prometheus",
-        "definition": "label_values(system_cpu_count{application=\"$application\",namespace=~\"$namespace\"},pod)",
+        "datasource": "${prometheus}",
+        "definition": "label_values(system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\"},pod)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -2890,13 +2963,13 @@
         "name": "pod",
         "options": [],
         "query": {
-          "query": "label_values(system_cpu_count{application=\"$application\",namespace=~\"$namespace\"},pod)",
+          "query": "label_values(system_cpu_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\"},pod)",
           "refId": "Prometheus-pod-Variable-Query"
         },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 1,
+        "sort": 5,
         "tagValuesQuery": "",
         "tagsQuery": "",
         "type": "query",

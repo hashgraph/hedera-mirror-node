@@ -36,16 +36,42 @@ import (
 )
 
 const (
-	defaultConfigFile = "config/application.yml"
-	mainConfigFile    = "application.yml"
+	mainConfigFile = "application.yml"
 )
 
 // loadConfig loads configuration from yaml files and env variables
 func loadConfig() (*types.Config, error) {
-	var config types.Config
-
-	if !getConfig(&config, defaultConfigFile) {
-		return nil, errors.New("failed to load the default config file: " + defaultConfigFile)
+	var config = types.Config{
+		Hedera: types.Hedera{
+			Mirror: types.Mirror{
+				Rosetta: types.Rosetta{
+					ApiVersion: "1.4.10",
+					Db: types.Db{
+						Host:     "127.0.0.1",
+						Name:     "mirror_node",
+						Password: "mirror_rosetta_pass",
+						Pool: types.Pool{
+							MaxIdleConnections: 20,
+							MaxLifetime:        30,
+							MaxOpenConnections: 100,
+						},
+						Port:     5432,
+						Username: "mirror_rosetta",
+					},
+					Log: types.Log{
+						Level: "info",
+					},
+					Network:     "DEMO",
+					Nodes:       types.NodeMap{},
+					NodeVersion: "0",
+					Online:      true,
+					Port:        5700,
+					Realm:       "0",
+					Shard:       "0",
+					Version:     "0.40.0-SNAPSHOT",
+				},
+			},
+		},
 	}
 
 	getConfig(&config, mainConfigFile)
@@ -59,6 +85,11 @@ func loadConfig() (*types.Config, error) {
 	}); err != nil {
 		return nil, err
 	}
+
+	var password = config.Hedera.Mirror.Rosetta.Db.Password
+	config.Hedera.Mirror.Rosetta.Db.Password = "<omitted>"
+	log.Infof("Using configuration: %+v", &config)
+	config.Hedera.Mirror.Rosetta.Db.Password = password
 
 	return &config, nil
 }

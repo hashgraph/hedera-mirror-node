@@ -21,4 +21,4 @@ jobs:
           java-version: 11
 
       - name: Maven package
-        run: ./mvnw.cmd package --batch-mode --no-transfer-progress -DskipTests
+        run: ./mvnw.cmd package -DskipTests

@@ -7,8 +7,6 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
     steps:
       - uses: actions/checkout@v2
 
@@ -29,7 +27,7 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build and push images
-        run: ./mvnw ${MAVEN_CLI_OPTS} deploy -DskipTests -Ddocker.tag.version=main
+        run: ./mvnw deploy -DskipTests -Ddocker.tag.version=main
 
   deploy:
     needs: publish

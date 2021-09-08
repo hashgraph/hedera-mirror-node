@@ -258,7 +258,7 @@ prometheus:
     additionalPodMonitors:
       - name: traefik
         podMetricsEndpoints:
-          - port: traefik
+          - port: metrics
             path: /metrics
             interval: 15s
         selector:
@@ -317,7 +317,6 @@ traefik:
   additionalArguments:
     - "--accesslog=true"
     - "--entrypoints.websecure.http.tls=true"
-    - "--metrics.prometheus=true"
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:

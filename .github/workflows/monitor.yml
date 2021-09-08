@@ -12,7 +12,6 @@ defaults:
     working-directory: ./hedera-mirror-monitor
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
   MODULE: hedera-mirror-monitor
 
 jobs:
@@ -31,7 +30,7 @@ jobs:
           java-version: 11
 
       - name: Maven verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make -Dtest='!com.hedera.mirror.importer.**' -DfailIfNoTests=false
+        run: ./mvnw verify -pl "${MODULE}" --also-make -Dtest='!com.hedera.mirror.importer.**' -DfailIfNoTests=false
         working-directory: .
 
       - name: Upload coverage report

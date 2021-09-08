@@ -211,7 +211,7 @@ prometheusRules:
       description: "No gRPC API instances are currently running in {{ $labels.namespace }}"
       summary: No gRPC API instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="grpc"}) by (namespace) < 1
+    expr: sum(kube_pod_status_ready{pod=~".*-grpc-.*",condition="true"}) by (namespace) < 1
     for: 2m
     labels:
       severity: critical

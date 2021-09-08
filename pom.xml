@@ -53,19 +53,19 @@
     </parent>
 
     <properties>
-        <dependency-check.version>6.2.2</dependency-check.version>
+        <dependency-check.version>6.3.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.37.0</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.0.11</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.0.13</embedded.testcontainers.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.40.1</grpc.version>
         <guava.version>30.1.1-jre</guava.version>
         <hedera-protobuf.version>0.18.0-alpha.3-SNAPSHOT</hedera-protobuf.version>
-        <hedera-sdk.version>2.0.13</hedera-sdk.version>
+        <hedera-sdk.version>2.0.14</hedera-sdk.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
@@ -532,7 +532,7 @@
                                         <include>hedera-mirror-rest/**/openapi.yml</include>
                                         <include>hedera-mirror-rest/package*.json</include>
                                         <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
-                                        <include>hedera-mirror-rosetta/config/application*.yml</include>
+                                        <include>hedera-mirror-rosetta/cmd/config.go</include>
                                     </includes>
                                     <replacements>
                                         <replacement>
@@ -542,6 +542,10 @@
                                         </replacement>
                                         <replacement>
                                             <token><![CDATA[(?<=(\s{3})version: )[0-9a-zA-Z.-]+]]></token>
+                                            <value>${release.version}</value>
+                                        </replacement>
+                                        <replacement>
+                                            <token><![CDATA[(?<= Version: ")[0-9a-zA-Z.-]+]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>

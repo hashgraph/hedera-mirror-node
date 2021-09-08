@@ -3,9 +3,4 @@ Hedera Mirror Node {{ .Chart.AppVersion }} successfully installed.
 {{ if .Values.traefik.enabled -}}
 To get the load balancer IP:
   export SERVICE_IP=$(kubectl get svc -n {{ include "hedera-mirror-common.namespace" . }} {{ printf "%s-traefik" .Release.Name }} -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
-
-{{ if and .Values.prometheus.enabled .Values.prometheus.grafana.enabled -}}
-To view the Grafana dashboard:
-  open "http://${SERVICE_IP}:{{ .Values.traefik.ports.web.exposedPort }}/grafana"
-{{- end -}}
 {{- end -}}

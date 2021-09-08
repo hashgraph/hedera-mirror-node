@@ -13,9 +13,9 @@
         "type": "dashboard"
       },
       {
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "enable": true,
-        "expr": "resets(process_uptime_seconds{application=\"$application\", pod=\"$pod\"}[1m]) > 0",
+        "expr": "resets(process_uptime_seconds{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m]) > 0",
         "iconColor": "rgba(255, 96, 96, 1)",
         "name": "Restart Detection",
         "showIn": 0,
@@ -58,7 +58,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(50, 172, 45, 0.97)"
       ],
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "decimals": 1,
       "editable": true,
       "error": false,
@@ -120,7 +120,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(process_uptime_seconds{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_uptime_seconds{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -145,7 +145,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -198,12 +198,15 @@
           "fields": "",
           "values": false
         },
+        "text": {
+          "valueSize": 28
+        },
         "textMode": "value"
       },
       "pluginVersion": "7.2.1",
       "targets": [
         {
-          "expr": "sum(process_start_time_seconds{application=\"$application\", pod=\"$pod\"} * 1000)",
+          "expr": "sum(process_start_time_seconds{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"} * 1000)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -225,7 +228,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(245, 54, 54, 0.9)"
       ],
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -286,7 +289,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", area=\"heap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",pod=\"$pod\", area=\"heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"heap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"heap\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -317,7 +320,7 @@
         "rgba(237, 129, 40, 0.89)",
         "rgba(245, 54, 54, 0.9)"
       ],
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "decimals": 2,
       "editable": true,
       "error": false,
@@ -383,7 +386,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", area=\"nonheap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",pod=\"$pod\", area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"nonheap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"nonheap\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "",
@@ -429,7 +432,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -474,7 +477,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\", pod=\"$pod\"}[1m]))",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "HTTP",
@@ -531,7 +534,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -576,7 +579,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\", pod=\"$pod\", status=~\"5..\"}[1m]))",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", status=~\"5..\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -631,7 +634,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -676,7 +679,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"$application\", pod=\"$pod\", status!~\"5..\"}[1m]))/sum(rate(http_server_requests_seconds_count{application=\"$application\", pod=\"$pod\", status!~\"5..\"}[1m]))",
+          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", status!~\"5..\"}[1m]))/sum(rate(http_server_requests_seconds_count{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", status!~\"5..\"}[1m]))",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -684,7 +687,7 @@
           "refId": "A"
         },
         {
-          "expr": "max(http_server_requests_seconds_max{application=\"$application\", pod=\"$pod\", status!~\"5..\"})",
+          "expr": "max(http_server_requests_seconds_max{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", status!~\"5..\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -738,7 +741,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -785,7 +788,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "tomcat_threads_busy_threads{application=\"$application\", pod=\"$pod\"}",
+          "expr": "tomcat_threads_busy_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -793,7 +796,7 @@
           "refId": "A"
         },
         {
-          "expr": "tomcat_threads_current_threads{application=\"$application\", pod=\"$pod\"}",
+          "expr": "tomcat_threads_current_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -801,7 +804,7 @@
           "refId": "B"
         },
         {
-          "expr": "tomcat_threads_config_max_threads{application=\"$application\", pod=\"$pod\"}",
+          "expr": "tomcat_threads_config_max_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -809,7 +812,7 @@
           "refId": "C"
         },
         {
-          "expr": "jetty_threads_busy{application=\"$application\", pod=\"$pod\"}",
+          "expr": "jetty_threads_busy{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -817,7 +820,7 @@
           "refId": "D"
         },
         {
-          "expr": "jetty_threads_current{application=\"$application\", pod=\"$pod\"}",
+          "expr": "jetty_threads_current{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -825,7 +828,7 @@
           "refId": "E"
         },
         {
-          "expr": "jetty_threads_config_max{application=\"$application\", pod=\"$pod\"}",
+          "expr": "jetty_threads_config_max{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 2,
@@ -837,7 +840,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Utilisation",
+      "title": "Web Container Threads",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -894,7 +897,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -949,7 +952,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", area=\"heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"heap\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "used",
@@ -958,7 +961,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", area=\"heap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"heap\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -966,7 +969,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", area=\"heap\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"heap\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1027,7 +1030,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -1082,7 +1085,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"nonheap\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1092,7 +1095,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"nonheap\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -1100,7 +1103,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", area=\"nonheap\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"nonheap\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1161,7 +1164,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -1217,7 +1220,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "used",
@@ -1226,7 +1229,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "committed",
@@ -1234,7 +1237,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "max",
@@ -1295,7 +1298,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -1351,7 +1354,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(process_memory_vss_bytes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_memory_vss_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -1362,7 +1365,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(process_memory_rss_bytes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_memory_rss_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1370,7 +1373,7 @@
           "refId": "B"
         },
         {
-          "expr": "sum(process_memory_swap_bytes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_memory_swap_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1378,7 +1381,7 @@
           "refId": "C"
         },
         {
-          "expr": "sum(process_memory_rss_bytes{application=\"$application\", pod=\"$pod\"} + process_memory_swap_bytes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_memory_rss_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"} + process_memory_swap_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1454,7 +1457,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -1509,7 +1512,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(system_cpu_usage{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(system_cpu_usage{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -1520,7 +1523,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(process_cpu_usage{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_cpu_usage{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -1529,7 +1532,7 @@
           "refId": "B"
         },
         {
-          "expr": "sum(avg_over_time(process_cpu_usage{application=\"$application\", pod=\"$pod\"}[1h]))",
+          "expr": "sum(avg_over_time(process_cpu_usage{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1h]))",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -1592,7 +1595,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -1647,7 +1650,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(system_load_average_1m{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(system_load_average_1m{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1657,7 +1660,7 @@
           "step": 2400
         },
         {
-          "expr": "avg(system_cpu_count{application=\"$application\", pod=\"$pod\"})",
+          "expr": "avg(system_cpu_count{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1719,7 +1722,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -1774,7 +1777,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_threads_live_threads{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(jvm_threads_live_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1784,7 +1787,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_threads_daemon_threads{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(jvm_threads_daemon_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1794,7 +1797,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_threads_peak_threads{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(jvm_threads_peak_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1803,7 +1806,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(process_threads{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1873,7 +1876,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -1920,7 +1923,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_threads_states_threads{application=\"$application\", pod=\"$pod\"}) by (state)",
+          "expr": "sum(jvm_threads_states_threads{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}) by (state)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1980,7 +1983,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -2049,7 +2052,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(log4j2_events_total{application=\"$application\", pod=\"$pod\"}[5m])) by (level)",
+          "expr": "sum(rate(log4j2_events_total{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[5m])) by (level)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -2113,7 +2116,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -2168,7 +2171,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(process_files_open_files{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_files_open_files{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2179,7 +2182,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(process_files_max_files{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(process_files_max_files{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2259,7 +2262,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -2324,7 +2327,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2335,7 +2338,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2346,7 +2349,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2410,7 +2413,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -2476,7 +2479,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2487,7 +2490,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2498,7 +2501,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2562,7 +2565,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -2628,7 +2631,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2639,7 +2642,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2650,7 +2653,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_heap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2729,7 +2732,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -2794,7 +2797,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"})",
+          "expr": "sum(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2805,7 +2808,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"})",
+          "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2816,7 +2819,7 @@
           "step": 1800
         },
         {
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"})",
+          "expr": "sum(jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"})",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2880,7 +2883,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -2946,7 +2949,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2957,7 +2960,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -2968,7 +2971,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3032,7 +3035,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -3098,7 +3101,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3109,7 +3112,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3120,7 +3123,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3184,7 +3187,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -3250,7 +3253,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3261,7 +3264,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3272,7 +3275,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3336,7 +3339,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -3402,7 +3405,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3413,7 +3416,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_committed_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_committed_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3424,7 +3427,7 @@
           "step": 1800
         },
         {
-          "expr": "jvm_memory_max_bytes{application=\"$application\", pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
+          "expr": "jvm_memory_max_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=~\"$jvm_memory_pool_nonheap\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3503,7 +3506,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3547,7 +3550,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(jvm_gc_pause_seconds_count{application=\"$application\", pod=\"$pod\"}[1m])) by (action, cause)",
+          "expr": "sum(rate(jvm_gc_pause_seconds_count{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m])) by (action, cause)",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3602,7 +3605,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3646,7 +3649,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(jvm_gc_pause_seconds_sum{application=\"$application\", pod=\"$pod\"}[1m])/rate(jvm_gc_pause_seconds_count{application=\"$application\", pod=\"$pod\"}[1m])) by (action, cause)",
+          "expr": "sum(rate(jvm_gc_pause_seconds_sum{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m])/rate(jvm_gc_pause_seconds_count{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m])) by (action, cause)",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -3656,7 +3659,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(jvm_gc_pause_seconds_max{application=\"$application\", pod=\"$pod\"}) by (action, cause)",
+          "expr": "sum(jvm_gc_pause_seconds_max{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}) by (action, cause)",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -3712,7 +3715,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3756,7 +3759,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(jvm_gc_memory_allocated_bytes_total{application=\"$application\", pod=\"$pod\"}[1m]))",
+          "expr": "sum(rate(jvm_gc_memory_allocated_bytes_total{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -3764,7 +3767,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(jvm_gc_memory_promoted_bytes_total{application=\"$application\", pod=\"$pod\"}[1m]))",
+          "expr": "sum(rate(jvm_gc_memory_promoted_bytes_total{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m]))",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -3834,7 +3837,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -3888,7 +3891,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_classes_loaded_classes{application=\"$application\", pod=\"$pod\"})",
+          "expr": "sum(jvm_classes_loaded_classes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -3951,7 +3954,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -4005,7 +4008,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(delta(jvm_classes_loaded_classes{application=\"$application\",pod=\"$pod\"}[1m]))",
+          "expr": "sum(delta(jvm_classes_loaded_classes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[1m]))",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -4085,7 +4088,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -4139,7 +4142,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_buffer_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=\"direct\"})",
+          "expr": "sum(jvm_buffer_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=\"direct\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -4149,7 +4152,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_buffer_total_capacity_bytes{application=\"$application\", pod=\"$pod\", id=\"direct\"})",
+          "expr": "sum(jvm_buffer_total_capacity_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=\"direct\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -4212,7 +4215,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -4266,7 +4269,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_buffer_count_buffers{application=\"$application\", pod=\"$pod\", id=\"direct\"})",
+          "expr": "sum(jvm_buffer_count_buffers{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=\"direct\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -4330,7 +4333,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -4384,7 +4387,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_buffer_memory_used_bytes{application=\"$application\", pod=\"$pod\", id=\"mapped\"})",
+          "expr": "sum(jvm_buffer_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=\"mapped\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -4394,7 +4397,7 @@
           "step": 2400
         },
         {
-          "expr": "sum(jvm_buffer_total_capacity_bytes{application=\"$application\", pod=\"$pod\", id=\"mapped\"})",
+          "expr": "sum(jvm_buffer_total_capacity_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=\"mapped\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -4457,7 +4460,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "editable": true,
       "error": false,
       "fieldConfig": {
@@ -4511,7 +4514,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(jvm_buffer_count_buffers{application=\"$application\", pod=\"$pod\", id=\"mapped\"})",
+          "expr": "sum(jvm_buffer_count_buffers{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", id=\"mapped\"})",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -4578,13 +4581,34 @@
   "templating": {
     "list": [
       {
+        "current": {
+          "selected": false,
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "description": "Name of the Prometheus datasource to use",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus",
+        "multi": false,
+        "name": "prometheus",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
         "allValue": null,
         "current": {
           "selected": false,
           "text": "hedera-mirror-importer",
           "value": "hedera-mirror-importer"
         },
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "definition": "",
         "hide": 0,
         "includeAll": false,
@@ -4592,11 +4616,11 @@
         "multi": false,
         "name": "application",
         "options": [],
-        "query": "label_values(application)",
+        "query": "label_values(jvm_memory_used_bytes, application)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 5,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -4604,14 +4628,70 @@
         "useTags": false
       },
       {
-        "allFormat": "glob",
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "${prometheus}",
+        "definition": "label_values(jvm_memory_used_bytes{application=\"$application\"}, cluster)",
+        "description": "Kubernetes cluster",
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "query": "label_values(jvm_memory_used_bytes{application=\"$application\"}, cluster)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 5,
+        "type": "query"
+      },
+      {
         "allValue": null,
         "current": {
           "selected": false,
-          "text": "dev-mirror-importer-0",
-          "value": "dev-mirror-importer-0"
+          "text": "All",
+          "value": "$__all"
         },
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
+        "definition": "label_values(jvm_memory_used_bytes{application=\"$application\",cluster=~\"$cluster\"},namespace)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "query": "label_values(jvm_memory_used_bytes{application=\"$application\",cluster=~\"$cluster\"},namespace)",
+          "refId": "Prometheus-namespace-Variable-Query"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 5,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "glob",
+        "allValue": null,
+        "datasource": "${prometheus}",
         "definition": "",
         "hide": 0,
         "includeAll": false,
@@ -4620,11 +4700,11 @@
         "multiFormat": "glob",
         "name": "pod",
         "options": [],
-        "query": "label_values(jvm_memory_used_bytes{application=\"$application\"}, pod)",
+        "query": "label_values(jvm_memory_used_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\"}, pod)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 5,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -4639,16 +4719,16 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "definition": "",
-        "hide": 0,
+        "hide": 2,
         "includeAll": true,
         "label": "JVM Memory Pools Heap",
         "multi": false,
         "multiFormat": "glob",
         "name": "jvm_memory_pool_heap",
         "options": [],
-        "query": "label_values(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", area=\"heap\"},id)",
+        "query": "label_values(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"heap\"},id)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -4667,16 +4747,16 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "Prometheus",
+        "datasource": "${prometheus}",
         "definition": "",
-        "hide": 0,
+        "hide": 2,
         "includeAll": true,
         "label": "JVM Memory Pools Non-Heap",
         "multi": false,
         "multiFormat": "glob",
         "name": "jvm_memory_pool_nonheap",
         "options": [],
-        "query": "label_values(jvm_memory_used_bytes{application=\"$application\", pod=\"$pod\", area=\"nonheap\"},id)",
+        "query": "label_values(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"nonheap\"},id)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -4690,7 +4770,7 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
