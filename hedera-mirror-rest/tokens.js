@@ -32,7 +32,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // models
-const {CustomFee, Nft, NftTransfer, Token, TokenFreezeStatus, TokenKycStatus, Transaction} = require('./model');
+const {CustomFee, Nft, NftTransfer, Token, Transaction} = require('./model');
 
 // middleware
 const {httpStatusCodes} = require('./constants');

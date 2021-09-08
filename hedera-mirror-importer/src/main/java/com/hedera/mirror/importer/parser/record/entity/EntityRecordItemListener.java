@@ -464,7 +464,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             transactionBody.getTokensList().forEach(token -> {
                 EntityId tokenId = EntityId.of(token);
-                TokenAccount tokenAccount = associatedTokenAccount(accountId, false, consensusTimestamp, tokenId);
+                TokenAccount tokenAccount = getAssociatedTokenAccount(accountId, false, consensusTimestamp, tokenId);
                 entityListener.onEntityId(tokenId);
                 entityListener.onTokenAccount(tokenAccount);
             });
@@ -550,7 +550,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         TokenKycStatusEnum kycStatus = token.getKycKey() != null ? TokenKycStatusEnum.GRANTED :
                 TokenKycStatusEnum.NOT_APPLICABLE;
         autoAssociatedAccounts.forEach(account -> {
-            TokenAccount tokenAccount = associatedTokenAccount(account, false, consensusTimestamp, freezeStatus,
+            TokenAccount tokenAccount = getAssociatedTokenAccount(account, false, consensusTimestamp, freezeStatus,
                     kycStatus, tokenId);
             entityListener.onEntityId(account);
             entityListener.onTokenAccount(tokenAccount);
@@ -559,15 +559,15 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onToken(token);
     }
 
-    private TokenAccount associatedTokenAccount(EntityId accountId, boolean autoAssociation, long consensusTimestamp,
-                                                EntityId tokenId) {
+    private TokenAccount getAssociatedTokenAccount(EntityId accountId, boolean autoAssociation, long consensusTimestamp,
+                                                   EntityId tokenId) {
         // if null, freeze and kyc status will be set during db upsert flow
-        return associatedTokenAccount(accountId, autoAssociation, consensusTimestamp, null, null, tokenId);
+        return getAssociatedTokenAccount(accountId, autoAssociation, consensusTimestamp, null, null, tokenId);
     }
 
-    private TokenAccount associatedTokenAccount(EntityId accountId, boolean automaticAssociation,
-                                                long consensusTimestamp, TokenFreezeStatusEnum freezeStatus,
-                                                TokenKycStatusEnum kycStatus, EntityId tokenId) {
+    private TokenAccount getAssociatedTokenAccount(EntityId accountId, boolean automaticAssociation,
+                                                   long consensusTimestamp, TokenFreezeStatusEnum freezeStatus,
+                                                   TokenKycStatusEnum kycStatus, EntityId tokenId) {
         TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, consensusTimestamp);
         tokenAccount.setAssociated(true);
         tokenAccount.setAutomaticAssociation(automaticAssociation);
@@ -709,7 +709,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 // token transfers, so no need to duplicate the logic here
                 EntityId accountId = EntityId.of(tokenAssociation.getAccountId());
                 EntityId tokenId = EntityId.of(tokenAssociation.getTokenId());
-                TokenAccount tokenAccount = associatedTokenAccount(accountId, true, consensusTimestamp, tokenId);
+                TokenAccount tokenAccount = getAssociatedTokenAccount(accountId, true, consensusTimestamp, tokenId);
                 entityListener.onTokenAccount(tokenAccount);
             });
         }

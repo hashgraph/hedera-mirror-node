@@ -21,9 +21,9 @@ package com.hedera.mirror.importer.domain;
  */
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Value;
 
-@Data
+@Value
 @AllArgsConstructor
 public class TokenAccountKey {
 
