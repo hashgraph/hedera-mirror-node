@@ -101,7 +101,7 @@ public class AccountClient extends AbstractNetworkClient {
                 .execute(client)
                 .hbars;
 
-        log.debug("{} balance is {}", accountId, balance);
+        log.info("{} balance is {}", accountId, balance);
 
         return balance.toTinybars();
     }

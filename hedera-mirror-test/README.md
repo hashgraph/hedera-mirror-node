@@ -77,6 +77,11 @@ under `hedera.mirror.test.acceptance` include:
   nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
 - `sdkProperties`
   - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
+- `webclient`
+  - `connectionTimeout` - The timeout duration to wait to establish a connection with the server
+  - `readTimeout` - The timeout duration to wait for data to be read.
+  - `wiretap` - Whether a wire logger configuration should be applied to connection calls.
+  - `writeTimeout` - The timeout duration to wait for data to be written.
 
 (Recommended) Options can be set by creating your own configuration file with the above properties. This allows for
 multiple files per env. The following command will help to point out which file to use:

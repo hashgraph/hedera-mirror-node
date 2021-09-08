@@ -60,9 +60,6 @@ public class AccountFeature {
     @When("I request balance info for this account")
     public void getAccountBalance() {
         balance = accountClient.getBalance();
-        log.info("{} account balance is {}",
-                accountClient.getSdkClient().getExpandedOperatorAccountId().getAccountId(),
-                balance);
     }
 
     @Then("the crypto balance should be greater than or equal to {long}")
