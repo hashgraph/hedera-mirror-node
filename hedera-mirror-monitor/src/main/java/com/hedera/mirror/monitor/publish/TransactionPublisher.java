@@ -107,6 +107,7 @@ public class TransactionPublisher implements AutoCloseable {
         if (transaction.getNodeAccountIds() == null) {
             int nodeIndex = secureRandom.nextInt(nodeAccountIds.size());
             List<AccountId> nodeAccountId = List.of(nodeAccountIds.get(nodeIndex));
+            log.fatal("This is the node account id {}", nodeAccountId);
             transaction.setNodeAccountIds(nodeAccountId);
         }
 

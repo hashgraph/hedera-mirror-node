@@ -126,8 +126,8 @@ class MonitorConfiguration {
                 .subscribe(subscribeMetrics::onNext);
     }
 
-    @Scheduled(fixedDelayString = "${hedera.mirror.monitor.revalidationRate:600000}", initialDelayString = "${hedera" +
-            ".mirror.monitor.revalidationRate:600000}")
+    @Scheduled(fixedDelayString = "${hedera.mirror.monitor.revalidationFrequency:600000}", initialDelayString = "$" +
+            "{hedera.mirror.monitor.revalidationFrequency:600000}")
     public void revalidateNetwork() {
         transactionPublisher.revalidateNodes();
     }
