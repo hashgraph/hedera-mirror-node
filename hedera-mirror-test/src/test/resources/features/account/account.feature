@@ -7,7 +7,7 @@ Feature: Account Coverage Feature
         Then the crypto balance should be greater than or equal to <threshold>
         Examples:
             | threshold  |
-            | 1000000000 |
+            | 4000000000 |
 
     @createcryptoaccount
     Scenario Outline: Create crypto account
