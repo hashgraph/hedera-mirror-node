@@ -59,23 +59,27 @@ public class TransactionPublisher implements AutoCloseable {
     private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
-    private final Disposable nodeValidator;
+    private Disposable nodeValidator;
 
     public TransactionPublisher(MonitorProperties monitorProperties, PublishProperties publishProperties) {
         this.monitorProperties = monitorProperties;
         this.publishProperties = publishProperties;
-        this.nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
-                        monitorProperties.getValidateFrequency())
-                .subscribeOn(Schedulers.parallel())
-                .flatMap(i -> revalidateNodes())
-                .subscribe();
+        if (monitorProperties.isValidateNodes()) {
+            this.nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
+                            monitorProperties.getValidateFrequency())
+                    .subscribeOn(Schedulers.parallel())
+                    .flatMap(i -> revalidateNodes())
+                    .subscribe();
+        }
     }
 
     @Override
     public void close() {
         if (publishProperties.isEnabled()) {
             log.warn("Closing {} clients", publishProperties.getClients());
-            nodeValidator.dispose();
+            if (nodeValidator != null) {
+                nodeValidator.dispose();
+            }
             clients.subscribe(client -> {
                 try {
                     client.close();
@@ -119,7 +123,6 @@ public class TransactionPublisher implements AutoCloseable {
         if (transaction.getNodeAccountIds() == null) {
             int nodeIndex = secureRandom.nextInt(nodeAccountIds.size());
             List<AccountId> nodeAccountId = List.of(nodeAccountIds.get(nodeIndex));
-            log.fatal("This is the node account id {}", nodeAccountId);
             transaction.setNodeAccountIds(nodeAccountId);
         }
 
