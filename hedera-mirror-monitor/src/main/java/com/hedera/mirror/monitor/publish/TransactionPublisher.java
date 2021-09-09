@@ -33,8 +33,10 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
@@ -59,11 +61,25 @@ public class TransactionPublisher implements AutoCloseable {
     private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
+    private final Disposable nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
+                    monitorProperties.getValidateFrequency())
+            .subscribeOn(Schedulers.parallel())
+            .subscribe(i -> {
+                Map<String, AccountId> temp = getValidNodes();
+                clients.doOnNext(client -> {
+                    try {
+                        client.setNetwork(temp);
+                    } catch (Exception e) {
+                        log.info("Exception while refreshing network: {}", e);
+                    }
+                }).subscribe();
+            });
 
     @Override
     public void close() {
         if (publishProperties.isEnabled()) {
             log.warn("Closing {} clients", publishProperties.getClients());
+            nodeValidator.dispose();
             clients.subscribe(client -> {
                 try {
                     client.close();
@@ -216,19 +232,5 @@ public class TransactionPublisher implements AutoCloseable {
         Client client = Client.forNetwork(nodes);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
-    }
-
-    public void revalidateNodes() {
-        log.fatal("Revalidating network");
-        Map<String, AccountId> temp = getValidNodes();
-
-        clients.doOnNext(client -> {
-                    try {
-                        client.setNetwork(temp);
-                    } catch (Exception e) {
-                        log.info("Exception while refreshing network: {}", e);
-                    }
-                })
-                .subscribe();
     }
 }

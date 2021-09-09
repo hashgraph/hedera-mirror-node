@@ -258,7 +258,7 @@ Name                                                            | Default    | D
 `hedera.mirror.monitor.publish.scenarios.<name>.type`           |            | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-monitor/src/main/java/com/hedera/mirror/monitor/publish/transaction/TransactionType.java) enum for a list of possible values
 `hedera.mirror.monitor.publish.statusFrequency`                 | 10s        | How often to log publishing statistics
 `hedera.mirror.monitor.publish.warmupPeriod`                    | 30s        | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
-`hedera.mirror.monitor.revalidationFrequency`                   | 600000     | The amount of time (in milliseconds) between validations of the network.
+`hedera.mirror.monitor.validateFrequency`                       | 5m         | The amount of time between validations of the network.
 `hedera.mirror.monitor.subscribe.clients`                       | 1          | How many SDK clients should be created to subscribe to mirror node APIs. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.subscribe.enabled`                       | true       | Whether to enable subscribing to mirror node APIs to verify published transactions
 `hedera.mirror.monitor.subscribe.grpc`                          |            | A map of scenario name to gRPC subscriber scenarios. The name is used as a unique identifier in logs, metrics, and the REST API

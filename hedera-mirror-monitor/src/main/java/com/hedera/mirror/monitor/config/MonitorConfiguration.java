@@ -30,7 +30,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -124,12 +123,6 @@ class MonitorConfiguration {
                 .doOnSubscribe(s -> log.info("Starting subscribe flow"))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(subscribeMetrics::onNext);
-    }
-
-    @Scheduled(fixedDelayString = "${hedera.mirror.monitor.revalidationFrequency:600000}", initialDelayString = "$" +
-            "{hedera.mirror.monitor.revalidationFrequency:600000}")
-    public void revalidateNetwork() {
-        transactionPublisher.revalidateNodes();
     }
 
     @Bean
