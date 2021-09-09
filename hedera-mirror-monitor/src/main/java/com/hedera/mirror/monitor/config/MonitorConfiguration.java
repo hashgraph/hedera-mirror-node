@@ -28,9 +28,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
@@ -47,7 +44,6 @@ import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 
 @Log4j2
 @Configuration
-@EnableScheduling
 class MonitorConfiguration {
 
     static {
@@ -123,13 +119,5 @@ class MonitorConfiguration {
                 .doOnSubscribe(s -> log.info("Starting subscribe flow"))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(subscribeMetrics::onNext);
-    }
-
-    @Bean
-    public TaskScheduler taskScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        //One for revalidating the network, one for the metrics logging
-        scheduler.setPoolSize(2);
-        return scheduler;
     }
 }
