@@ -48,6 +48,7 @@ public class MonitorProperties {
     @NotNull
     private OperatorProperties operator = new OperatorProperties();
 
+    @NotNull
     @DurationMin(seconds = 30)
     private Duration validateFrequency = Duration.ofMinutes(5);
 
