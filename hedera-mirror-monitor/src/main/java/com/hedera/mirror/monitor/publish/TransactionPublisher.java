@@ -240,7 +240,10 @@ public class TransactionPublisher implements AutoCloseable {
         return clients.doOnNext(client -> {
             try {
                 client.setNetwork(temp);
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
+                log.info("Exception while refreshing network: {}", e);
+                Thread.currentThread().interrupt();
+            } catch (TimeoutException e) {
                 log.info("Exception while refreshing network: {}", e);
             }
         });
