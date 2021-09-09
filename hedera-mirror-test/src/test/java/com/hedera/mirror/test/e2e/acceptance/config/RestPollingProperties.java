@@ -53,5 +53,6 @@ public class RestPollingProperties {
     @DurationMin(millis = 100L)
     private Duration minBackoff = Duration.ofMillis(250L);
 
+    @NotNull
     private Set<Class> retryableExceptions = Set.of(Exception.class);
 }
