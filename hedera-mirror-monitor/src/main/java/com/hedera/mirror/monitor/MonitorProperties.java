@@ -20,12 +20,14 @@ package com.hedera.mirror.monitor;
  * ‍
  */
 
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -45,6 +47,9 @@ public class MonitorProperties {
 
     @NotNull
     private OperatorProperties operator = new OperatorProperties();
+
+    @DurationMin(seconds = 30)
+    private Duration validateFrequency = Duration.ofMinutes(5);
 
     private boolean validateNodes = true;
 
