@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  */
 
 import java.time.Duration;
+import java.util.Set;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -51,4 +52,6 @@ public class RestPollingProperties {
     @NotNull
     @DurationMin(millis = 100L)
     private Duration minBackoff = Duration.ofMillis(250L);
+
+    private Set<Class> retryableExceptions = Set.of(Exception.class);
 }

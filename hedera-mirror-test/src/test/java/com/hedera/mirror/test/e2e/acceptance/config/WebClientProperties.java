@@ -35,19 +35,19 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class WebClientProperties {
     @NotNull
-    @DurationMin(millis = 5000L)
-    @DurationMax(millis = 60000L)
+    @DurationMin(seconds = 5L)
+    @DurationMax(seconds = 60L)
     private Duration connectionTimeout = Duration.ofSeconds(10L);
 
     @NotNull
-    @DurationMin(millis = 5000L)
-    @DurationMax(millis = 10000L)
+    @DurationMin(seconds = 5L)
+    @DurationMax(seconds = 60L)
     private Duration readTimeout = Duration.ofSeconds(10L);
 
     private boolean wiretap = false;
 
     @NotNull
-    @DurationMin(millis = 5000L)
-    @DurationMax(millis = 10000L)
+    @DurationMin(seconds = 5L)
+    @DurationMax(seconds = 60L)
     private Duration writeTimeout = Duration.ofSeconds(10L);
 }

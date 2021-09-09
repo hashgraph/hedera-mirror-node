@@ -73,6 +73,7 @@ under `hedera.mirror.test.acceptance` include:
   - `maxAttempts` - The maximum number of attempts when calling a REST API endpoint and receiving a 404.
   - `maxBackoff` - The maximum backoff duration the mirror grpc subscriber will wait between attempts.
   - `minBackoff` - The minimum backoff duration the mirror grpc subscriber will wait between attempts.
+  - `retryableExceptions` - List of retryable exception class types
 - `retrieveAddressBook` - Whether to download the address book from the network and use those nodes over the default
   nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
 - `sdkProperties`
