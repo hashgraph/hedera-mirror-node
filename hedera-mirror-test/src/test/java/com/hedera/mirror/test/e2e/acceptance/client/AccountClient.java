@@ -101,7 +101,7 @@ public class AccountClient extends AbstractNetworkClient {
                 .execute(client)
                 .hbars;
 
-        log.debug("{} balance is {}", accountId, balance);
+        log.info("{} balance is {}", accountId, balance);
 
         return balance.toTinybars();
     }
@@ -114,7 +114,7 @@ public class AccountClient extends AbstractNetworkClient {
                 .setTransactionMemo("transfer test");
     }
 
-    public TransactionReceipt sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
+    public NetworkTransactionResponse sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
         log.debug(
                 "Send CryptoTransfer of {} tℏ from {} to {}", hbarAmount.toTinybars(),
                 sdkClient.getExpandedOperatorAccountId().getAccountId(),
@@ -123,12 +123,12 @@ public class AccountClient extends AbstractNetworkClient {
         TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sdkClient
                 .getExpandedOperatorAccountId().getAccountId(), recipient, hbarAmount);
 
-        TransactionReceipt transactionReceipt = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction)
-                .getReceipt();
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(cryptoTransferTransaction);
 
         log.debug("Sent CryptoTransfer");
 
-        return transactionReceipt;
+        return networkTransactionResponse;
     }
 
     public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,

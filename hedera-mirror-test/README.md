@@ -73,10 +73,16 @@ under `hedera.mirror.test.acceptance` include:
   - `maxAttempts` - The maximum number of attempts when calling a REST API endpoint and receiving a 404.
   - `maxBackoff` - The maximum backoff duration the mirror grpc subscriber will wait between attempts.
   - `minBackoff` - The minimum backoff duration the mirror grpc subscriber will wait between attempts.
+  - `retryableExceptions` - List of retryable exception class types
 - `retrieveAddressBook` - Whether to download the address book from the network and use those nodes over the default
   nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
 - `sdkProperties`
   - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
+- `webclient`
+  - `connectionTimeout` - The timeout duration to wait to establish a connection with the server
+  - `readTimeout` - The timeout duration to wait for data to be read.
+  - `wiretap` - Whether a wire logger configuration should be applied to connection calls.
+  - `writeTimeout` - The timeout duration to wait for data to be written.
 
 (Recommended) Options can be set by creating your own configuration file with the above properties. This allows for
 multiple files per env. The following command will help to point out which file to use:
@@ -123,11 +129,11 @@ tag are run. To run a different set of files different tags can be specified
 
 Test Suite Tags
 
-- `@critical` - Test cases to ensure the network is up and running and satisfies base scenarios. Total cost to run 31.6
+- `@critical` - Test cases to ensure the network is up and running and satisfies base scenarios. Total cost to run 6.5
   ℏ.
 - `@release` - Test cases to verify a new deployed version satisfies core scenarios and is release worthy. Total cost to
   run 19.2 ℏ.
-- `@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria. Total cost to run 6.5
+- `@acceptance` - Test cases to verify most feature scenarios meet customer acceptance criteria. Total cost to run 31.6
   ℏ.
 - `@fullsuite` - All cases - this will require some configuration of feature files and may include some disabled tests
   that will fail on execution. Total cost to run 33.9 ℏ.

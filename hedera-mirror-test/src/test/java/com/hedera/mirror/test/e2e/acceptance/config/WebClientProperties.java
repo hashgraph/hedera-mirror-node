@@ -21,38 +21,33 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  */
 
 import java.time.Duration;
-import java.util.Set;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMax;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Component
-@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.rest")
+@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.webclient")
 @Data
 @Validated
-public class RestPollingProperties {
-
-    @NotBlank
-    private String baseUrl;
-
-    @Min(1)
-    @Max(60)
-    private int maxAttempts = 60;
+public class WebClientProperties {
+    @NotNull
+    @DurationMin(seconds = 5L)
+    @DurationMax(seconds = 60L)
+    private Duration connectionTimeout = Duration.ofSeconds(10L);
 
     @NotNull
-    @DurationMin(millis = 500L)
-    private Duration maxBackoff = Duration.ofSeconds(8L);
+    @DurationMin(seconds = 5L)
+    @DurationMax(seconds = 60L)
+    private Duration readTimeout = Duration.ofSeconds(10L);
+
+    private boolean wiretap = false;
 
     @NotNull
-    @DurationMin(millis = 100L)
-    private Duration minBackoff = Duration.ofMillis(250L);
-
-    @NotNull
-    private Set<Class> retryableExceptions = Set.of(Exception.class);
+    @DurationMin(seconds = 5L)
+    @DurationMax(seconds = 60L)
+    private Duration writeTimeout = Duration.ofSeconds(10L);
 }
