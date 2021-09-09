@@ -31,7 +31,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -53,7 +52,6 @@ import com.hedera.mirror.monitor.NodeProperties;
 
 @Log4j2
 @Named
-@RequiredArgsConstructor
 public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
@@ -61,19 +59,25 @@ public class TransactionPublisher implements AutoCloseable {
     private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
-    private final Disposable nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
-                    monitorProperties.getValidateFrequency())
-            .subscribeOn(Schedulers.parallel())
-            .subscribe(i -> {
-                Map<String, AccountId> temp = getValidNodes();
-                clients.doOnNext(client -> {
-                    try {
-                        client.setNetwork(temp);
-                    } catch (Exception e) {
-                        log.info("Exception while refreshing network: {}", e);
-                    }
-                }).subscribe();
-            });
+    private final Disposable nodeValidator;
+
+    public TransactionPublisher(MonitorProperties monitorProperties, PublishProperties publishProperties) {
+        this.monitorProperties = monitorProperties;
+        this.publishProperties = publishProperties;
+        this.nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
+                        monitorProperties.getValidateFrequency())
+                .subscribeOn(Schedulers.parallel())
+                .subscribe(i -> {
+                    Map<String, AccountId> temp = getValidNodes();
+                    clients.doOnNext(client -> {
+                        try {
+                            client.setNetwork(temp);
+                        } catch (Exception e) {
+                            log.info("Exception while refreshing network: {}", e);
+                        }
+                    }).subscribe();
+                });
+    }
 
     @Override
     public void close() {
