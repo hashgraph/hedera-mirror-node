@@ -67,16 +67,8 @@ public class TransactionPublisher implements AutoCloseable {
         this.nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
                         monitorProperties.getValidateFrequency())
                 .subscribeOn(Schedulers.parallel())
-                .subscribe(i -> {
-                    Map<String, AccountId> temp = getValidNodes();
-                    clients.doOnNext(client -> {
-                        try {
-                            client.setNetwork(temp);
-                        } catch (Exception e) {
-                            log.info("Exception while refreshing network: {}", e);
-                        }
-                    }).subscribe();
-                });
+                .flatMap(i -> revalidateNodes())
+                .subscribe();
     }
 
     @Override
@@ -236,5 +228,18 @@ public class TransactionPublisher implements AutoCloseable {
         Client client = Client.forNetwork(nodes);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
+    }
+
+    public Flux<Client> revalidateNodes() {
+        log.info("Revalidating network");
+        Map<String, AccountId> temp = getValidNodes();
+
+        return clients.doOnNext(client -> {
+            try {
+                client.setNetwork(temp);
+            } catch (Exception e) {
+                log.info("Exception while refreshing network: {}", e);
+            }
+        });
     }
 }
