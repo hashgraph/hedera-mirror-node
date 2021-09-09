@@ -1,3 +1,5 @@
+package com.hedera.mirror.importer.domain;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,17 +20,14 @@
  * ‍
  */
 
-'use strict';
+import lombok.AllArgsConstructor;
+import lombok.Value;
 
-module.exports = {
-  AssessedCustomFee: require('./assessedCustomFee'),
-  CustomFee: require('./customFee'),
-  Nft: require('./nft'),
-  NftTransfer: require('./nftTransfer'),
-  Token: require('./token'),
-  TokenFreezeStatus: require('./tokenFreezeStatus'),
-  TokenKycStatus: require('./tokenKycStatus'),
-  Transaction: require('./transaction'),
-  TransactionResult: require('./transactionResult'),
-  TransactionType: require('./transactionType'),
-};
+@Value
+@AllArgsConstructor
+public class TokenAccountKey {
+
+    private EntityId tokenId;
+
+    private EntityId accountId;
+}

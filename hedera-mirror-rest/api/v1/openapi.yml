@@ -661,6 +661,7 @@ components:
         - auto_renew_period
         - key
         - deleted
+        - max_automatic_token_associations
         - memo
         - receiver_sig_required
       properties:
@@ -676,6 +677,9 @@ components:
           nullable: true
         key:
           $ref: '#/components/schemas/Key'
+        max_automatic_token_associations:
+          type: integer
+          format: int64
         memo:
           type: string
         receiver_sig_required:
@@ -693,6 +697,7 @@ components:
         deleted: false
         expiry_timestamp: null
         key: null
+        max_automatic_token_associations: 200
         memo: "entity memo"
         receiver_sig_required: false
     Accounts:
@@ -737,6 +742,9 @@ components:
           $ref: '#/components/schemas/Key'
         deleted:
           type: boolean
+        max_automatic_token_associations:
+          type: integer
+          format: int64
         memo:
           type: string
         receiver_sig_required:

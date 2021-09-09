@@ -20,15 +20,29 @@
 
 'use strict';
 
-module.exports = {
-  AssessedCustomFee: require('./assessedCustomFee'),
-  CustomFee: require('./customFee'),
-  Nft: require('./nft'),
-  NftTransfer: require('./nftTransfer'),
-  Token: require('./token'),
-  TokenFreezeStatus: require('./tokenFreezeStatus'),
-  TokenKycStatus: require('./tokenKycStatus'),
-  Transaction: require('./transaction'),
-  TransactionResult: require('./transactionResult'),
-  TransactionType: require('./transactionType'),
-};
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+
+class TokenFreezeStatus {
+  static STATUSES = ['NOT_APPLICABLE', 'FROZEN', 'UNFROZEN'];
+
+  constructor(id) {
+    this._id = Number(id);
+    if (Number.isNaN(this._id) || this._id < 0 || this._id > 2) {
+      throw new InvalidArgumentError(`Invalid token freeze status id ${id}`);
+    }
+  }
+
+  getId() {
+    return this._id;
+  }
+
+  toJSON() {
+    return this.toString();
+  }
+
+  toString() {
+    return TokenFreezeStatus.STATUSES[this._id];
+  }
+}
+
+module.exports = TokenFreezeStatus;

@@ -239,7 +239,8 @@ class PubSubMessageTest {
                 "    }]" +
                 "  }," +
                 "  \"tokenTransferLists\":[]," +
-                "  \"assessedCustomFees\":[]" +
+                "  \"assessedCustomFees\":[]," +
+                "  \"automaticTokenAssociations\":[]" +
                 "}";
     }
 }

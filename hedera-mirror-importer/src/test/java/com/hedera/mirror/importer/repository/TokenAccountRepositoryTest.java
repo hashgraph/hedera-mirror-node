@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import javax.annotation.Resource;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
@@ -32,68 +32,56 @@ import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 
 class TokenAccountRepositoryTest extends AbstractRepositoryTest {
+
     @Resource
     protected TokenAccountRepository tokenAccountRepository;
 
-    private final String tokenId = "0.0.101";
-    private final String accountId = "0.0.102";
+    private final EntityId tokenId = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
+    private final EntityId accountId = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private final EntityId tokenId2 = EntityId.of("0.2.22", EntityTypeEnum.TOKEN);
+    private final EntityId accountId2 = EntityId.of("0.0.44", EntityTypeEnum.ACCOUNT);
 
     @Test
     void save() {
-        TokenAccount token = tokenAccountRepository.save(tokenAccount(tokenId, accountId, 1));
-        Assertions.assertThat(tokenAccountRepository.findById(token.getId()).get())
+        TokenAccount token = tokenAccountRepository.save(tokenAccount(tokenId, accountId, 1, 1));
+        assertThat(tokenAccountRepository.findById(token.getId()))
+                .get()
                 .isNotNull()
                 .isEqualTo(token);
     }
 
     @Test
-    void findByTokenIdAndAccountId() {
-        tokenAccountRepository.save(tokenAccount(tokenId, accountId, 1));
-        String tokenId2 = "0.2.22";
-        String accountId2 = "0.2.44";
-        TokenAccount token2 = tokenAccountRepository.save(tokenAccount(tokenId2, accountId2, 2));
-        tokenAccountRepository.save(tokenAccount("1.0.7", "1.0.34", 3));
-        Assertions.assertThat(tokenAccountRepository
-                .findByTokenIdAndAccountId(EntityId.of(tokenId2, EntityTypeEnum.TOKEN).getId(), EntityId
-                        .of(accountId2, EntityTypeEnum.ACCOUNT).getId()).get())
-                .isNotNull()
-                .isEqualTo(token2);
-
-        Assertions.assertThat(tokenAccountRepository
-                .findByTokenIdAndAccountId(EntityId.of("1.2.3", EntityTypeEnum.TOKEN).getId(), EntityId
-                        .of("0.2.44", EntityTypeEnum.ACCOUNT).getId())).isNotPresent();
+    void findLastByTokenIdAndAccountId() {
+        tokenAccountRepository.save(tokenAccount(tokenId, accountId, 1, 1));
+        tokenAccountRepository.save(tokenAccount(tokenId, accountId, 1, 10));
+        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId.getId(), accountId.getId()))
+                .get()
+                .isEqualTo(tokenAccount(tokenId, accountId, 1, 10));
     }
 
     @Test
-    void findByTokenIdAndAccountIdMultipleTokensSameAccount() {
-        String tokenId2 = "0.2.22";
-        String accountId2 = "0.0.44";
+    void findLastByTokenIdAndAccountIdMultipleTokensSameAccount() {
         long createTimestamp1 = 55;
         long createTimestamp2 = 66;
-        tokenAccountRepository.save(tokenAccount(tokenId, accountId, createTimestamp1));
-        tokenAccountRepository
-                .save(tokenAccount(tokenId, accountId, createTimestamp2));
-        TokenAccount tokenAccount_1_2 = tokenAccountRepository
-                .save(tokenAccount(tokenId2, accountId, createTimestamp2));
-        Assertions.assertThat(tokenAccountRepository
-                .findByTokenIdAndAccountId(EntityId.of(tokenId2, EntityTypeEnum.TOKEN).getId(), EntityId
-                        .of(accountId, EntityTypeEnum.ACCOUNT).getId()).get())
-                .isNotNull()
-                .isEqualTo(tokenAccount_1_2);
+        tokenAccountRepository.save(tokenAccount(tokenId, accountId, createTimestamp1, createTimestamp1));
+        tokenAccountRepository.save(tokenAccount(tokenId, accountId, createTimestamp2, createTimestamp2));
+        tokenAccountRepository.save(tokenAccount(tokenId2, accountId, createTimestamp2, createTimestamp2));
 
-        Assertions.assertThat(tokenAccountRepository
-                .findByTokenIdAndAccountId(EntityId.of(tokenId2, EntityTypeEnum.TOKEN).getId(), EntityId
-                        .of(accountId2, EntityTypeEnum.ACCOUNT).getId())).isNotPresent();
+        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId2.getId(), accountId.getId()))
+                .get()
+                .isEqualTo(tokenAccount(tokenId2, accountId, createTimestamp2, createTimestamp2));
+        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId.getId(), accountId2.getId()))
+                .isNotPresent();
     }
 
-    private TokenAccount tokenAccount(String tokenId, String accountId, long createdTimestamp) {
-        TokenAccount tokenAccount = new TokenAccount(EntityId
-                .of(tokenId, EntityTypeEnum.TOKEN), EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
+    private TokenAccount tokenAccount(EntityId tokenId, EntityId accountId, long createdTimestamp,
+                                      long modifiedTimestamp) {
+        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, modifiedTimestamp);
         tokenAccount.setAssociated(true);
+        tokenAccount.setAutomaticAssociation(false);
         tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
-        tokenAccount.setModifiedTimestamp(createdTimestamp);
         return tokenAccount;
     }
 }

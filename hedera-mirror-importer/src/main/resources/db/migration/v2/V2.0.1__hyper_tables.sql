@@ -82,7 +82,7 @@ select create_hypertable('token', 'created_timestamp', chunk_time_interval => ${
                          create_default_indexes => false, if_not_exists => true);
 
 -- token_account
-select create_hypertable('token_account', 'created_timestamp', chunk_time_interval => ${chunkTimeInterval},
+select create_hypertable('token_account', 'modified_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
 -- token_balance

@@ -184,9 +184,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
 
     private List<Entity> retrieveAllEntity() {
         return jdbcOperations.query(
-                "select auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, " +
-                        "id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, " +
-                        "submit_key, type from entity",
+                "select * from entity",
                 (rs, rowNum) -> {
                     Entity entity = new Entity();
                     entity.setAutoRenewAccountId(EntityIdEndec

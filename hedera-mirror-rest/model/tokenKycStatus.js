@@ -20,15 +20,29 @@
 
 'use strict';
 
-module.exports = {
-  AssessedCustomFee: require('./assessedCustomFee'),
-  CustomFee: require('./customFee'),
-  Nft: require('./nft'),
-  NftTransfer: require('./nftTransfer'),
-  Token: require('./token'),
-  TokenFreezeStatus: require('./tokenFreezeStatus'),
-  TokenKycStatus: require('./tokenKycStatus'),
-  Transaction: require('./transaction'),
-  TransactionResult: require('./transactionResult'),
-  TransactionType: require('./transactionType'),
-};
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+
+class TokenKycStatus {
+  static STATUSES = ['NOT_APPLICABLE', 'GRANTED', 'REVOKED'];
+
+  constructor(id) {
+    this._id = Number(id);
+    if (Number.isNaN(this._id) || this._id < 0 || this._id > 2) {
+      throw new InvalidArgumentError(`Invalid token kyc status id ${id}`);
+    }
+  }
+
+  getId() {
+    return this._id;
+  }
+
+  toJSON() {
+    return this.toString();
+  }
+
+  toString() {
+    return TokenKycStatus.STATUSES[this._id];
+  }
+}
+
+module.exports = TokenKycStatus;
