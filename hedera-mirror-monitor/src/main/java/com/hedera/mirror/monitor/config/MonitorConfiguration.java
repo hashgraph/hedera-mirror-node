@@ -71,7 +71,7 @@ class MonitorConfiguration {
      * Constructs a reactive flow for publishing transactions. The transaction generator will run on a single thread and
      * generate transactions as fast as possible. Next, a parallel Flux will concurrently publish those transactions to
      * the main nodes. Once the response is received, it will be sent to subscribers in case they need to sample them to
-     * validate whether that transaction was received by the @mirror node APIs. Finally, metrics will be collected for
+     * validate whether that transaction was received by the mirror node APIs. Finally, metrics will be collected for
      * every published transaction.
      *
      * @return the publishing flow's Disposable
