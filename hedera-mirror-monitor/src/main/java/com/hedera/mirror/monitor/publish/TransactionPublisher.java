@@ -152,7 +152,6 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Flux<Client> getClients() {
-        //
         validateNodes();
 
         log.info("Creating {} connections to {} nodes", publishProperties.getClients(), monitorProperties.getNodes()
@@ -234,7 +233,7 @@ public class TransactionPublisher implements AutoCloseable {
         return client;
     }
 
-    public void revalidateNodes() {
+    private void revalidateNodes() {
         log.info("Revalidating network");
         validateNodes();
     }
