@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -56,7 +56,7 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
+    private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>();
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
     private Disposable nodeValidator;
@@ -64,22 +64,21 @@ public class TransactionPublisher implements AutoCloseable {
     public TransactionPublisher(MonitorProperties monitorProperties, PublishProperties publishProperties) {
         this.monitorProperties = monitorProperties;
         this.publishProperties = publishProperties;
-        if (monitorProperties.isValidateNodes()) {
+        if (monitorProperties.isValidateNodes() && publishProperties.isEnabled()) {
             this.nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
                             monitorProperties.getValidateFrequency())
                     .subscribeOn(Schedulers.parallel())
-                    .flatMap(i -> revalidateNodes())
-                    .subscribe();
+                    .subscribe(i -> revalidateNodes());
         }
     }
 
     @Override
     public void close() {
+        if (nodeValidator != null) {
+            nodeValidator.dispose();
+        }
         if (publishProperties.isEnabled()) {
             log.warn("Closing {} clients", publishProperties.getClients());
-            if (nodeValidator != null) {
-                nodeValidator.dispose();
-            }
             clients.subscribe(client -> {
                 try {
                     client.close();
@@ -121,8 +120,8 @@ public class TransactionPublisher implements AutoCloseable {
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            int nodeIndex = secureRandom.nextInt(nodeAccountIds.size());
-            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get(nodeIndex));
+            int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
+            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get().get(nodeIndex));
             transaction.setNodeAccountIds(nodeAccountId);
         }
 
@@ -153,33 +152,24 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Flux<Client> getClients() {
-        Map<String, AccountId> validNodes = getValidNodes();
-        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), validNodes.size());
+        //
+        validateNodes();
 
-        return Flux.range(0, publishProperties.getClients())
-                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(validNodes))));
-    }
-
-    private Map<String, AccountId> getValidNodes() {
-        log.info("Validating nodes");
-        List<NodeProperties> validNodes = validateNodes();
-
-        if (validNodes.isEmpty()) {
-            throw new IllegalArgumentException("No valid nodes found");
-        }
-
-        nodeAccountIds.clear();
-        validNodes.forEach(n -> nodeAccountIds.add(AccountId.fromString(n.getAccountId())));
-
-        return validNodes.stream()
+        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), monitorProperties.getNodes()
+                .size());
+        Map<String, AccountId> nodes = monitorProperties.getNodes().stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+        return Flux.range(0, publishProperties.getClients())
+                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodes))));
     }
 
-    private List<NodeProperties> validateNodes() {
+    private void validateNodes() {
+        log.info("Validating nodes");
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
         if (!monitorProperties.isValidateNodes()) {
-            return new ArrayList<>(nodes);
+            setNodeAccountIds(new ArrayList<>(nodes));
+            return;
         }
 
         List<NodeProperties> validNodes = new ArrayList<>();
@@ -197,7 +187,18 @@ public class TransactionPublisher implements AutoCloseable {
         }
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
-        return validNodes;
+
+        if (validNodes.isEmpty()) {
+            throw new IllegalArgumentException("No valid nodes found");
+        }
+
+        setNodeAccountIds(validNodes);
+    }
+
+    private void setNodeAccountIds(List<NodeProperties> validNodes) {
+        List<AccountId> newNodeAccountIds = new ArrayList<>();
+        validNodes.forEach(n -> newNodeAccountIds.add(AccountId.fromString(n.getAccountId())));
+        nodeAccountIds.set(newNodeAccountIds);
     }
 
     private boolean validateNode(Client client, NodeProperties node) {
@@ -233,19 +234,8 @@ public class TransactionPublisher implements AutoCloseable {
         return client;
     }
 
-    public Flux<Client> revalidateNodes() {
+    public void revalidateNodes() {
         log.info("Revalidating network");
-        Map<String, AccountId> temp = getValidNodes();
-
-        return clients.doOnNext(client -> {
-            try {
-                client.setNetwork(temp);
-            } catch (InterruptedException e) {
-                log.info("Exception while refreshing network: {}", e);
-                Thread.currentThread().interrupt();
-            } catch (TimeoutException e) {
-                log.info("Exception while refreshing network: {}", e);
-            }
-        });
+        validateNodes();
     }
 }
