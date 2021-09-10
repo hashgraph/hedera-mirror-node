@@ -68,7 +68,7 @@ func loadConfig() (*types.Config, error) {
 					Port:        5700,
 					Realm:       "0",
 					Shard:       "0",
-					Version:     "0.40.0-rc2",
+					Version:     "0.40.0-rc3",
 				},
 			},
 		},
