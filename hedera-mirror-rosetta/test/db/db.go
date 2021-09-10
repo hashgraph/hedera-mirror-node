@@ -105,6 +105,7 @@ func (d dbParams) toDsn() string {
 func (d dbParams) toJdbcUrl(endpoint string) string {
 	return fmt.Sprintf("jdbc:postgresql://%s/%s", endpoint, d.name)
 }
+
 func (d dbParams) toConfig() types.Db {
 	hostPort := strings.Split(d.endpoint, ":")
 	port, _ := strconv.ParseInt(hostPort[1], 10, 32)

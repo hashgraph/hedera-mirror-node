@@ -41,9 +41,9 @@ const (
                                            hash,
                                            index,
                                            prev_hash,
-										   (index + 1) latest_index
+                                           (index + 1) latest_index
                                     from record_file
-							        where index < (select max(index) from record_file)
+                                    where index < (select max(index) from record_file)
                                     order by index desc
                                     limit 1`
 
@@ -53,7 +53,7 @@ const (
                                            hash,
                                            index,
                                            prev_hash,
-         								   (select max(index) from record_file) latest_index
+                                            (select max(index) from record_file) latest_index
                                     FROM record_file
                                     WHERE hash = @hash`
 
