@@ -76,15 +76,20 @@ while [[ $SECONDS -lt 120 ]];
 do
   genesis_timestamp=$($psql_cmd -c "$genesis_timestamp_query")
   if [[ -n "$genesis_timestamp" ]]; then
+    # get genesis hbar balances from genesis account balance file
     account_balances=$(echo "$genesis_hbar_balance_query" | $psql_cmd -v genesis_timestamp="$genesis_timestamp")
     echo "account balances - $(echo "$account_balances" | jq . )"
 
+    # get genesis token balances from genesis account balance file
     account_ids=$(echo "$account_balances" | jq -r '[.[].id] | join(",")')
     token_balances=$(echo "$genesis_token_balance_query" \
       | $psql_cmd -v account_ids="$account_ids" -v genesis_timestamp="$genesis_timestamp")
     echo "token_balances - $(echo "$token_balances" | jq . )"
 
+    # get additional 0-value token balances from the genesis record file, that is, those tokens the account_ids have
+    # transfers with and not in the genesis account balance file
     known_token_ids=$(echo "$token_balances" | jq -r '[.[].token] | join(",")')
+    # an empty known_token_ids passed to sql will cause failure, so replace it with a famous non-token entity
     known_token_ids=${known_token_ids:-3}
     additional_token_balances=$(echo "$additional_transferred_token_query" | $psql_cmd -v account_ids="$account_ids" \
       -v genesis_timestamp="$genesis_timestamp" -v known_token_ids="$known_token_ids")
