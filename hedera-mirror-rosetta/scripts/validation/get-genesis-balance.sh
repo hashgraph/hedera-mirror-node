@@ -96,7 +96,7 @@ do
   sleep 5
 done
 
-if [[ -z $genesis_timestamp ]]; then
+if [[ -z "$genesis_timestamp" ]]; then
   echo "Failed to get genesis timestamp"
   exit 1
 fi
