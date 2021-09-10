@@ -25,19 +25,6 @@ alertmanager:
             - namespace
             - pod
 
-    InhibitLogAlertWhenHighPublishErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: MonitorPublishErrors
-          targetMatch:
-            - name: alertname
-              value: MonitorLog4j2Errors
-          equal:
-            - namespace
-            - pod
-
     InhibitAllWhenPodIssues:
       enabled: true
       matches:
@@ -174,7 +161,7 @@ prometheusRules:
       description: "No monitor instances are currently running in {{ $labels.namespace }}"
       summary: No monitor instances running
     enabled: true
-    expr: sum(kube_pod_container_status_ready{container="monitor"}) by (namespace) < 1
+    expr: sum(kube_pod_status_ready{pod=~".*-monitor-.*",condition="true"}) by (namespace) < 1
     for: 2m
     labels:
       severity: critical

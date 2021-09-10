@@ -20,19 +20,27 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
+import java.util.List;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
 @Cucumber
@@ -41,9 +49,13 @@ public class AccountFeature {
     private long balance;
     private AccountId accountId;
     private long startingBalance;
+    private NetworkTransactionResponse networkTransactionResponse;
 
     @Autowired
     private AccountClient accountClient;
+
+    @Autowired
+    private MirrorNodeClient mirrorClient;
 
     @When("I request balance info for this account")
     public void getAccountBalance() {
@@ -61,31 +73,79 @@ public class AccountFeature {
         assertNotNull(accountId);
     }
 
+    @Given("I send {long} tℏ to {string}")
+    public void treasuryDisbursement(long amount, String accountName) {
+        accountId = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName)).getAccountId();
+
+        startingBalance = accountClient.getBalance(accountId);
+
+        networkTransactionResponse = accountClient
+                .sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
     @When("I send {long} tℏ to newly created account")
     public void sendTinyHbars(long amount) {
         startingBalance = accountClient.getBalance(accountId);
-        TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
-        assertNotNull(receipt);
+        networkTransactionResponse = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I send {long} tℏ to account {int}")
     public void sendTinyHbars(long amount, int accountNum) {
         accountId = new AccountId(accountNum);
         startingBalance = accountClient.getBalance(accountId);
-        TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
-        assertNotNull(receipt);
+        networkTransactionResponse = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I send {int} ℏ to account {int}")
     public void sendHbars(int amount, int accountNum) {
         accountId = new AccountId(accountNum);
         startingBalance = accountClient.getBalance(accountId);
-        TransactionReceipt receipt = accountClient.sendCryptoTransfer(accountId, Hbar.from(amount));
-        assertNotNull(receipt);
+        networkTransactionResponse = accountClient.sendCryptoTransfer(accountId, Hbar.from(amount));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Then("the new balance should reflect cryptotransfer of {long}")
     public void accountReceivedFunds(long amount) {
-        assertTrue(accountClient.getBalance(accountId) >= startingBalance + amount);
+        assertThat(accountClient.getBalance(accountId)).isGreaterThanOrEqualTo(startingBalance + amount);
+    }
+
+    @Then("the mirror node REST API should return status {int} for the crypto transfer transaction")
+    public void verifyMirrorAPICryptoTransferResponse(int status) {
+        log.info("Verify transaction");
+        String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+
+        // verify valid set of transactions
+        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+        assertNotNull(transactions);
+        assertThat(transactions).isNotEmpty();
+
+        // verify transaction details
+        MirrorTransaction mirrorTransaction = transactions.get(0);
+        if (status == HttpStatus.OK.value()) {
+            assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
+        }
+        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
+        assertThat(mirrorTransaction.getValidStartTimestamp())
+                .isEqualTo(networkTransactionResponse.getValidStartString());
+        assertThat(mirrorTransaction.getName()).isEqualTo("CRYPTOTRANSFER");
+
+        assertThat(mirrorTransaction.getTransfers().size()).isGreaterThanOrEqualTo(3); // network, node and transfer
+
+        //verify transfer credit and debits balance out
+        long transferSum = 0;
+        for (MirrorTransfer cryptoTransfer : mirrorTransaction.getTransfers()) {
+            transferSum += Long.valueOf(cryptoTransfer.getAmount());
+        }
+
+        assertThat(transferSum).isZero();
     }
 }

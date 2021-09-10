@@ -12,7 +12,6 @@ defaults:
     working-directory: ./hedera-mirror-rosetta
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
   MODULE: hedera-mirror-rosetta
 
 jobs:
@@ -30,7 +29,7 @@ jobs:
           restore-keys: ${{ runner.os }}-go-
 
       - name: Maven verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
+        run: ./mvnw verify -pl "${MODULE}" --also-make
         working-directory: .
         env:
           GOPATH: ~/go

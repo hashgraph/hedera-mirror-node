@@ -12,7 +12,6 @@ defaults:
     working-directory: ./hedera-mirror-grpc
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
   MODULE: hedera-mirror-grpc
 
 jobs:
@@ -34,7 +33,7 @@ jobs:
           java-version: 11
 
       - name: Maven verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make -Dspring.profiles.active=${{ matrix.schema }}
+        run: ./mvnw verify -pl "${MODULE}" --also-make -Dspring.profiles.active=${{ matrix.schema }}
         working-directory: .
 
       - name: Upload coverage report

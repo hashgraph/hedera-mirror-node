@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.migration;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

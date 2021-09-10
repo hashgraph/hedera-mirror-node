@@ -25,10 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.EnabledIfV1;
-
-@EnabledIfV1
 class TokenAccountUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
+
     @Resource
     private TokenAccountUpsertQueryGenerator tokenAccountRepositoryCustom;
 
@@ -39,27 +37,47 @@ class TokenAccountUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorT
 
     @Override
     protected String getInsertQuery() {
-        return "insert into token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, " +
-                "modified_timestamp, token_id) select token_account_temp.account_id, token_account_temp.associated, " +
-                "token_account_temp.created_timestamp, case when token_account_temp.freeze_status is not null then " +
-                "token_account_temp.freeze_status when token.freeze_key is null then 0 when token.freeze_default = " +
-                "true then 1 else 2 end freeze_status, " +
-                "case when token_account_temp.kyc_status is not null then token_account_temp.kyc_status when token" +
-                ".kyc_key is null then 0 else 2 end kyc_status, " +
-                "token_account_temp.modified_timestamp, token_account_temp.token_id from token_account_temp join " +
-                "token on token_account_temp.token_id = token.token_id where token_account_temp.created_timestamp is " +
-                "not null on conflict (token_id, account_id) do nothing";
-    }
-
-    @Override
-    protected String getUpdateQuery() {
-        return "update token_account set associated = coalesce(token_account_temp.associated, token_account" +
-                ".associated), freeze_status = coalesce(token_account_temp.freeze_status, token_account" +
-                ".freeze_status), kyc_status = coalesce(token_account_temp.kyc_status, token_account.kyc_status), " +
-                "modified_timestamp = coalesce(token_account_temp.modified_timestamp, token_account" +
-                ".modified_timestamp) from token_account_temp " +
-                "where token_account.token_id = token_account_temp.token_id and token_account.account_id = " +
-                "token_account_temp.account_id and token_account_temp.created_timestamp is null";
+        return "with last as (" +
+                "  select distinct on (token_account.account_id, token_account.token_id) token_account.*" +
+                "  from token_account" +
+                "  join token_account_temp on token_account_temp.account_id = token_account.account_id" +
+                "    and token_account_temp.token_id = token_account.token_id" +
+                "  order by token_account.account_id, token_account.token_id, token_account.modified_timestamp desc" +
+                ")" +
+                "  insert into token_account" +
+                "   (account_id, associated, automatic_association, created_timestamp, freeze_status, kyc_status," +
+                "    modified_timestamp, token_id) " +
+                "  select " +
+                "    token_account_temp.account_id," +
+                "    coalesce(token_account_temp.associated, last.associated)," +
+                "    coalesce(token_account_temp.automatic_association, last.automatic_association)," +
+                "    coalesce(token_account_temp.created_timestamp, last.created_timestamp)," +
+                "    case when token_account_temp.freeze_status is not null then token_account_temp.freeze_status" +
+                "         when token_account_temp.created_timestamp is not null then" +
+                "           case" +
+                "             when token.freeze_key is null then 0" +
+                "             when token.freeze_default is true then 1" +
+                "             else 2" +
+                "           end" +
+                "         else last.freeze_status" +
+                "    end freeze_status," +
+                "    case when token_account_temp.kyc_status is not null then token_account_temp.kyc_status" +
+                "         when token_account_temp.created_timestamp is not null then" +
+                "           case" +
+                "             when token.kyc_key is null then 0" +
+                "             else 2" +
+                "            end" +
+                "         else last.kyc_status" +
+                "    end kyc_status," +
+                "    token_account_temp.modified_timestamp," +
+                "    token_account_temp.token_id " +
+                "  from token_account_temp " +
+                "  join token on token_account_temp.token_id = token.token_id" +
+                "  left join last on last.account_id = token_account_temp.account_id and" +
+                "    last.token_id = token_account_temp.token_id" +
+                "    and last.associated is true" +
+                "  where token_account_temp.created_timestamp is not null or last.created_timestamp is not null" +
+                "  order by token_account_temp.modified_timestamp";
     }
 
     @Test

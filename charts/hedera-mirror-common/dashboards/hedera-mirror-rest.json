@@ -38,11 +38,22 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The number of pods that are up and ready for processing",
       "fieldConfig": {
         "defaults": {
-          "mappings": [],
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "red",
+                  "text": "0"
+                }
+              },
+              "type": "special"
+            }
+          ],
           "max": 100,
           "min": 0,
           "thresholds": {
@@ -91,7 +102,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(kube_pod_status_ready{namespace=~\"$namespace\",pod=~\"$pod\",pod=~\".*-rest-.*\",condition=\"true\"})",
+          "expr": "sum(kube_pod_status_ready{cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",pod=~\".*-rest-.*\",condition=\"true\"})",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -105,7 +116,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The rate of incoming requests",
       "fieldConfig": {
         "defaults": {
@@ -165,7 +176,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(rate(api_all_request_total{container=\"$application\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))  ",
+          "expr": "sum(rate(api_all_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]))  ",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -179,7 +190,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The total number of all API requests currently in processing (no response yet)",
       "fieldConfig": {
         "defaults": {
@@ -239,7 +250,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(api_all_request_in_processing_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "sum(api_all_request_in_processing_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -253,7 +264,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The average response size",
       "fieldConfig": {
         "defaults": {
@@ -311,7 +322,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(rate(api_response_size_bytes_sum{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval])) / \nsum(rate(api_response_size_bytes_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval]))",
+          "expr": "sum(rate(api_response_size_bytes_sum{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval])) / \nsum(rate(api_response_size_bytes_count{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -325,7 +336,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The total number of all API requests with server error response",
       "fieldConfig": {
         "defaults": {
@@ -392,7 +403,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(rate(api_all_errors_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / \nsum(rate(api_all_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "expr": "sum(rate(api_all_errors_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / \nsum(rate(api_all_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -406,7 +417,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -466,7 +477,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "(sum(rate(api_request_duration_milliseconds_bucket{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",le=\"100\",code=~\"^2..$\"}[$__rate_interval])) +\nsum(rate(api_request_duration_milliseconds_bucket{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",le=\"250\",code=~\"^2..$\"}[$__rate_interval])))\n/ 2 / sum(rate(api_request_duration_milliseconds_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "expr": "(sum(rate(api_request_duration_milliseconds_bucket{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",le=\"100\",code=~\"^2..$\"}[$__rate_interval])) +\nsum(rate(api_request_duration_milliseconds_bucket{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",le=\"250\",code=~\"^2..$\"}[$__rate_interval])))\n/ 2 / sum(rate(api_request_duration_milliseconds_count{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -503,7 +514,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The rate of all API requests received",
       "fill": 1,
       "fillGradient": 0,
@@ -546,7 +557,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum(rate(api_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (path))",
+          "expr": "topk(10, sum(rate(api_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (path))",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 10,
@@ -601,7 +612,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The total number of all API requests with error response",
       "fill": 1,
       "fillGradient": 0,
@@ -646,7 +657,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(api_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..$\"}[$__rate_interval]))",
+          "expr": "sum(rate(api_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..$\"}[$__rate_interval]))",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -656,7 +667,7 @@
           "step": 2
         },
         {
-          "expr": "sum(rate(api_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^3..$\"}[$__rate_interval]))",
+          "expr": "sum(rate(api_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^3..$\"}[$__rate_interval]))",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -666,7 +677,7 @@
           "step": 2
         },
         {
-          "expr": "sum(rate(api_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^4..$\"}[$__rate_interval]))",
+          "expr": "sum(rate(api_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^4..$\"}[$__rate_interval]))",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -676,7 +687,7 @@
           "step": 2
         },
         {
-          "expr": "sum(rate(api_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^5..$\"}[$__rate_interval]))",
+          "expr": "sum(rate(api_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^5..$\"}[$__rate_interval]))",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -732,7 +743,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "How long a request took to process and return a response",
       "fill": 1,
       "fillGradient": 0,
@@ -752,6 +763,8 @@
         "min": true,
         "rightSide": true,
         "show": true,
+        "sort": "avg",
+        "sortDesc": true,
         "total": false,
         "values": true
       },
@@ -773,7 +786,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, sum(rate(api_request_duration_milliseconds_sum{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) /  sum(rate(api_request_duration_milliseconds_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) > 0)",
+          "expr": "topk(10, sum(rate(api_request_duration_milliseconds_sum{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) /  sum(rate(api_request_duration_milliseconds_count{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) > 0)",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -782,7 +795,7 @@
           "step": 2
         },
         {
-          "expr": "sum(rate(api_request_duration_milliseconds_sum{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (path) /  sum(rate(api_request_duration_milliseconds_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (path) > 0",
+          "expr": "sum(rate(api_request_duration_milliseconds_sum{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (path) /  sum(rate(api_request_duration_milliseconds_count{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (path) > 0",
           "format": "time_series",
           "interval": "1m",
           "intervalFactor": 2,
@@ -833,7 +846,7 @@
       }
     },
     {
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "API request duration distributed into buckets",
       "fieldConfig": {
         "defaults": {
@@ -879,7 +892,7 @@
       "pluginVersion": "8.0.1",
       "targets": [
         {
-          "expr": "sum(increase(api_request_duration_milliseconds_bucket{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..$\"}[$__rate_interval])) by (le)",
+          "expr": "sum(increase(api_request_duration_milliseconds_bucket{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..$\"}[$__rate_interval])) by (le)",
           "format": "heatmap",
           "hide": false,
           "instant": false,
@@ -900,7 +913,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "API request size in bytes",
       "fill": 1,
       "fillGradient": 0,
@@ -945,7 +958,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": " sum(api_request_size_bytes_sum{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}) / \n sum(api_request_size_bytes_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": " sum(api_request_size_bytes_sum{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) / \n sum(api_request_size_bytes_count{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1001,7 +1014,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The total number of all API requests with error response",
       "fill": 1,
       "fillGradient": 0,
@@ -1046,7 +1059,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(api_request_total{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code!~\"^2..$\"}[$__rate_interval])) by (code)",
+          "expr": "sum(rate(api_request_total{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code!~\"^2..$\"}[$__rate_interval])) by (code)",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1102,7 +1115,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "API response size in bytes by path",
       "fill": 1,
       "fillGradient": 0,
@@ -1147,7 +1160,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(api_response_size_bytes_sum{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval])) by (path) / \nsum(rate(api_response_size_bytes_count{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval])) by (path)",
+          "expr": "sum(rate(api_response_size_bytes_sum{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval])) by (path) / \nsum(rate(api_response_size_bytes_count{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",code=~\"^2..\"}[$__rate_interval])) by (path)",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1199,7 +1212,7 @@
       }
     },
     {
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "API response size distributed into buckets",
       "fieldConfig": {
         "defaults": {
@@ -1245,7 +1258,7 @@
       "repeat": null,
       "targets": [
         {
-          "expr": "sum(increase(api_response_size_bytes_bucket{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+          "expr": "sum(increase(api_response_size_bytes_bucket{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
           "format": "heatmap",
           "hide": false,
           "instant": false,
@@ -1284,7 +1297,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The average Node.js process memory",
       "fill": 1,
       "fillGradient": 0,
@@ -1329,7 +1342,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(nodejs_process_memory_external_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_external_bytes{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1339,7 +1352,7 @@
           "step": 2
         },
         {
-          "expr": "avg(nodejs_process_memory_rss_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_rss_bytes{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1349,7 +1362,7 @@
           "step": 2
         },
         {
-          "expr": "avg(nodejs_process_memory_heap_used_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_heap_used_bytes{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1359,7 +1372,7 @@
           "step": 2
         },
         {
-          "expr": "avg(nodejs_process_memory_heap_total_bytes{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_memory_heap_total_bytes{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1415,7 +1428,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "${prometheus}",
       "description": "The average Node.js process CPU utilization",
       "fill": 1,
       "fillGradient": 0,
@@ -1460,7 +1473,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(nodejs_process_cpu_usage_percentage{container=\"$application\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(nodejs_process_cpu_usage_percentage{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "format": "time_series",
           "hide": false,
           "interval": "1m",
@@ -1534,7 +1547,7 @@
       "bars": true,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Loki",
+      "datasource": "${loki}",
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -1578,7 +1591,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate({component=\"rest\",namespace=~\"$namespace\",pod=~\"$pod\"} | regexp `(?P<timestamp>\\S+) (?P<level>\\S+) (?P<requestId>\\S+) (?P<message>.+)`[5m])) by (level)",
+          "expr": "sum(rate({component=\"rest\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"} | regexp `(?P<timestamp>\\S+) (?P<level>\\S+) (?P<requestId>\\S+) (?P<message>.+)`[5m])) by (level)",
           "instant": false,
           "legendFormat": "{{level}}",
           "range": true,
@@ -1629,7 +1642,7 @@
       }
     },
     {
-      "datasource": "Loki",
+      "datasource": "${loki}",
       "description": "",
       "gridPos": {
         "h": 8,
@@ -1649,7 +1662,7 @@
       "pluginVersion": "7.2.1",
       "targets": [
         {
-          "expr": "{component=\"rest\",namespace=~\"$namespace\",pod=~\"$pod\"}",
+          "expr": "{component=\"rest\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -1683,14 +1696,87 @@
         "type": "constant"
       },
       {
+        "current": {
+          "selected": true,
+          "text": "Loki",
+          "value": "Loki"
+        },
+        "description": "Name of the Loki datasource to use",
+        "error": null,
+        "hide": 2,
+        "includeAll": false,
+        "label": "Loki",
+        "multi": false,
+        "name": "loki",
+        "options": [],
+        "query": "loki",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "description": "Name of the Prometheus datasource to use",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus",
+        "multi": false,
+        "name": "prometheus",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "${prometheus}",
+        "definition": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\"}, cluster)",
+        "description": "Kubernetes cluster",
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "query": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\"}, cluster)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 5,
+        "type": "query"
+      },
+      {
         "allValue": null,
         "current": {
           "selected": true,
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "Prometheus",
-        "definition": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\"}, namespace)",
+        "datasource": "${prometheus}",
+        "definition": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\",cluster=~\"$cluster\"}, namespace)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -1700,13 +1786,13 @@
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\"}, namespace)",
+          "query": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\",cluster=~\"$cluster\"}, namespace)",
           "refId": "Prometheus-namespace-Variable-Query"
         },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 1,
+        "sort": 5,
         "tagValuesQuery": "",
         "tagsQuery": "",
         "type": "query",
@@ -1719,8 +1805,8 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "Prometheus",
-        "definition": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\",namespace=~\"$namespace\"}, pod)",
+        "datasource": "${prometheus}",
+        "definition": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\"}, pod)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -1730,13 +1816,13 @@
         "name": "pod",
         "options": [],
         "query": {
-          "query": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\",namespace=~\"$namespace\"}, pod)",
+          "query": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\"}, pod)",
           "refId": "Prometheus-pod-Variable-Query"
         },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 1,
+        "sort": 5,
         "tagValuesQuery": "",
         "tagsQuery": "",
         "type": "query",
@@ -1745,7 +1831,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {

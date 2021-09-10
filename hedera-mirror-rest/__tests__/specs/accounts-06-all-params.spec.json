@@ -134,6 +134,7 @@
           "_type": "ProtobufEncoded",
           "key": "7b2233222c2233222c2233227d"
         },
+        "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
       }

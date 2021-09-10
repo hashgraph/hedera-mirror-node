@@ -24,8 +24,6 @@ import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-
 import io.grpc.Server;
 import io.grpc.Status;
 import io.grpc.inprocess.InProcessServerBuilder;
@@ -38,6 +36,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
@@ -63,6 +62,7 @@ import com.hedera.hashgraph.sdk.proto.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.OperatorProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 @Log4j2
 class TransactionPublisherTest {
@@ -126,6 +126,9 @@ class TransactionPublisherTest {
                 })
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
+
+        assertThat(request.getTransaction().getTransactionMemo())
+                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"));
     }
 
     @Test

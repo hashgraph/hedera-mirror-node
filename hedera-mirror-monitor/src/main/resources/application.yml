@@ -27,7 +27,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, loggers, prometheus
+        include: health, info, prometheus
   metrics:
     export:
       elastic:

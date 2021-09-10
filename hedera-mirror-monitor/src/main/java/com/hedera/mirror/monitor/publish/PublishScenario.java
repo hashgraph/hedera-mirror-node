@@ -36,11 +36,21 @@ public class PublishScenario extends AbstractScenario<PublishScenarioProperties,
     }
 
     public String getMemo() {
-        return memo;
+        return System.currentTimeMillis() + " " + memo;
     }
 
     @Override
     public ScenarioProtocol getProtocol() {
         return ScenarioProtocol.GRPC;
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+        if (throwable instanceof PublishException) {
+            PublishException publishException = (PublishException) throwable;
+            errors.add(publishException.getStatus());
+        } else {
+            super.onError(throwable);
+        }
     }
 }

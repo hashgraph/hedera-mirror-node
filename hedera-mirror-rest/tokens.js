@@ -88,9 +88,15 @@ const nftSelectQuery = ['select', nftSelectFields.join(',\n'), 'from nft'].join(
 const entityNftsJoinQuery = 'join entity e on e.id = nft.token_id';
 
 // token discovery sql queries
+const tokenAccountCte = `with ta as (
+  select distinct on (account_id, token_id) *
+  from token_account
+  where account_id = $1
+  order by account_id, token_id, modified_timestamp desc
+)`;
 const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
-const accountIdJoinQuery = 'join token_account ta on ta.account_id = $1 and t.token_id = ta.token_id';
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
+const tokenAccountJoinQuery = 'join ta on ta.token_id = t.token_id';
 
 // token info sql queries
 const tokenInfoSelectFields = [
@@ -298,7 +304,8 @@ const getTokensRequest = async (req, res) => {
   const accountId = req.query[constants.filterKeys.ACCOUNT_ID];
   if (accountId) {
     conditions.push('ta.associated is true');
-    getTokensSqlQuery.push(accountIdJoinQuery);
+    getTokensSqlQuery.unshift(tokenAccountCte);
+    getTokensSqlQuery.push(tokenAccountJoinQuery);
     getTokenSqlParams.push(EntityId.fromString(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
   }
 
@@ -972,7 +979,6 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
-    accountIdJoinQuery,
     entityIdJoinQuery,
     extractSqlFromNftTransferHistoryRequest,
     extractSqlFromTokenInfoRequest,
@@ -986,6 +992,8 @@ if (utils.isTestEnv()) {
     nftSelectQuery,
     nftDeleteHistorySelectQuery,
     nftTransferHistorySelectQuery,
+    tokenAccountCte,
+    tokenAccountJoinQuery,
     tokenBalancesSelectQuery,
     tokensSelectQuery,
     validateSerialNumberParam,

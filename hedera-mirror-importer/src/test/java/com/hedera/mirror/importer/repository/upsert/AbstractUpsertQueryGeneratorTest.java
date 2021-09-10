@@ -22,18 +22,24 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.vertical_blank.sqlformatter.SqlFormatter;
+import com.github.vertical_blank.sqlformatter.languages.Dialect;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
 
 abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
+
+    private static final SqlFormatter.Formatter SQL_FORMATTER = SqlFormatter.of(Dialect.PostgreSql);
+
     @Resource
     private DataSource dataSource;
 
@@ -41,13 +47,15 @@ abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
 
     protected abstract String getInsertQuery();
 
-    protected abstract String getUpdateQuery();
+    protected String getUpdateQuery() {
+        return "";
+    };
 
     @Test
     void insert() {
         String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery()
                 .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
-        assertThat(insertQuery).isEqualTo(getInsertQuery());
+        assertEqual(insertQuery, getInsertQuery());
     }
 
     @Test
@@ -77,6 +85,18 @@ abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
     void update() {
         String updateQuery = getUpdatableDomainRepositoryCustom().getUpdateQuery()
                 .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
-        assertThat(updateQuery).isEqualTo(getUpdateQuery());
+        assertEqual(updateQuery, getUpdateQuery());
+    }
+
+    private void assertEqual(String actualSql, String expectedSql) {
+        assertThat(formatSql(actualSql)).isEqualTo(formatSql(expectedSql));
+    }
+
+    private String formatSql(String sql) {
+        if (StringUtils.isEmpty(sql)) {
+            return "";
+        }
+
+        return SQL_FORMATTER.format(sql);
     }
 }
