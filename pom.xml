@@ -524,7 +524,7 @@
                                     <replacements>
                                         <replacement>
                                             <token>
-                                                <![CDATA[(?<="hedera-mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
+                                                <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>
