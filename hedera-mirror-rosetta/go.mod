@@ -11,6 +11,7 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lib/pq v1.10.3
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
+	github.com/onrik/gorm-logrus v0.3.0
 	github.com/ory/dockertest/v3 v3.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1

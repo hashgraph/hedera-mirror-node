@@ -27,7 +27,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/thanhpk/randstr"
@@ -39,25 +39,25 @@ func TestTokenRepositorySuite(t *testing.T) {
 }
 
 type tokenRepositorySuite struct {
+	test.IntegrationTest
 	suite.Suite
-	dbResource db.DbResource
 }
 
 func (suite *tokenRepositorySuite) SetupSuite() {
-	suite.dbResource = db.SetupDb()
+	suite.Setup()
 }
 
 func (suite *tokenRepositorySuite) TearDownSuite() {
-	db.TeardownDb(suite.dbResource)
+	suite.TearDown()
 }
 
 func (suite *tokenRepositorySuite) SetupTest() {
-	db.CleanupDb(suite.dbResource.GetDb())
+	suite.CleanupDb()
 }
 
 func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 
 	token := &dbTypes.Token{
 		TokenId:             1200,
@@ -103,7 +103,7 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 
 func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 	// given
-	repo := NewTokenRepository(suite.dbResource.GetGormDb())
+	repo := NewTokenRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := repo.Find("0.0.1200")
@@ -115,12 +115,24 @@ func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 
 func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
 	// given
-	repo := NewTokenRepository(suite.dbResource.GetGormDb())
+	repo := NewTokenRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := repo.Find("abc")
 
 	// then
 	assert.Equal(suite.T(), errors.ErrInvalidToken, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *tokenRepositorySuite) TestFindTokenDbConnectionError() {
+	// given
+	repo := NewTokenRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.Find("0.0.1200")
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
 }

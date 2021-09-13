@@ -21,41 +21,33 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	gormlogrus "github.com/onrik/gorm-logrus"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 // Establish connection to the Postgres Database
-func connectToDb(dbConfig types.Db) (*gorm.DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
-		dbConfig.Host,
-		dbConfig.Port,
-		dbConfig.Username,
-		dbConfig.Name,
-		dbConfig.Password,
-	)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+func connectToDb(dbConfig types.Db) *gorm.DB {
+	db, err := gorm.Open(postgres.Open(dbConfig.GetDsn()), &gorm.Config{Logger: gormlogrus.New()})
 	if err != nil {
-		log.Errorf("Failed to connect to db: %s", err)
-		return nil, err
+		log.Warn(err)
+	} else {
+		log.Info("Successfully connected to database")
 	}
-	log.Info("Successfully connected to Database")
 
 	sqlDb, err := db.DB()
 	if err != nil {
 		log.Errorf("Failed to get sql DB: %s", err)
-		return nil, err
+		return nil
 	}
 
 	sqlDb.SetMaxIdleConns(dbConfig.Pool.MaxIdleConnections)
 	sqlDb.SetConnMaxLifetime(time.Duration(dbConfig.Pool.MaxLifetime) * time.Minute)
 	sqlDb.SetMaxOpenConns(dbConfig.Pool.MaxOpenConnections)
 
-	return db, nil
+	return db
 }

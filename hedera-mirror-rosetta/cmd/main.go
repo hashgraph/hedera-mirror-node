@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -63,6 +64,21 @@ func configLogger(level string) {
 		ForceFormatting: true,
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02T15:04:05.000-0700",
+	})
+}
+
+func loggerMiddleware(inner http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		inner.ServeHTTP(w, r)
+
+		log.Infof(
+			"%s %s %s",
+			r.Method,
+			r.RequestURI,
+			time.Since(start),
+		)
 	})
 }
 
@@ -170,16 +186,13 @@ func main() {
 		"",
 	)
 	if err != nil {
-		log.Fatalf("%s", err)
+		log.Fatal(err)
 	}
 
 	var router http.Handler
 
 	if rosettaConfig.Online {
-		dbClient, err := connectToDb(rosettaConfig.Db)
-		if err != nil {
-			log.Fatal(err)
-		}
+		dbClient := connectToDb(rosettaConfig.Db)
 
 		router, err = newBlockchainOnlineRouter(network, rosettaConfig.Nodes, asserter, version, dbClient)
 		if err != nil {
@@ -196,7 +209,7 @@ func main() {
 		log.Info("Serving Rosetta API in OFFLINE mode")
 	}
 
-	loggedRouter := server.LoggerMiddleware(router)
+	loggedRouter := loggerMiddleware(router)
 	corsRouter := server.CorsMiddleware(loggedRouter)
 	log.Infof("Listening on port %d", rosettaConfig.Port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", rosettaConfig.Port), corsRouter))

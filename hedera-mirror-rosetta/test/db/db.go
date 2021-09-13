@@ -183,7 +183,7 @@ func SetupDb() DbResource {
 	}
 }
 
-func TeardownDb(dbResource DbResource) {
+func TearDownDb(dbResource DbResource) {
 	log.Info("Remove postgres container")
 	if err := dbResource.pool.Purge(dbResource.resource); err != nil {
 		log.Errorf("Failed to purge postgresql resource: %s", err)

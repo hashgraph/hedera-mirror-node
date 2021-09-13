@@ -25,7 +25,9 @@ import (
 
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -273,26 +275,26 @@ func TestAccountRepositorySuite(t *testing.T) {
 }
 
 type accountRepositorySuite struct {
+	test.IntegrationTest
 	suite.Suite
-	dbResource db.DbResource
 }
 
 func (suite *accountRepositorySuite) SetupSuite() {
-	suite.dbResource = db.SetupDb()
+	suite.Setup()
 }
 
 func (suite *accountRepositorySuite) TearDownSuite() {
-	db.TeardownDb(suite.dbResource)
+	suite.TearDown()
 }
 
 func (suite *accountRepositorySuite) SetupTest() {
-	db.CleanupDb(suite.dbResource.GetDb())
-	db.CreateDbRecords(suite.dbResource.GetGormDb(), snapshotAccountBalanceFile)
+	suite.CleanupDb()
+	db.CreateDbRecords(suite.DbResource.GetGormDb(), snapshotAccountBalanceFile)
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, token1, token2)
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
 	// transfers before or at the snapshot timestamp should not affect balance calculation
@@ -325,7 +327,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
 	// transfers before or at the snapshot timestamp should not affect balance calculation
 	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot)
@@ -347,7 +349,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, token1, token2)
 	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers)
 
@@ -376,7 +378,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountBalanceFile() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	db.ExecSql(dbClient, "truncate account_balance_file")
 	repo := NewAccountRepository(dbClient)
 
@@ -390,7 +392,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountBalanceF
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockInvalidAccountIdStr() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	repo := NewAccountRepository(dbClient)
 
 	// when
@@ -401,9 +403,21 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockInvalidAccountIdS
 	assert.Nil(suite.T(), actual)
 }
 
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError() {
+	// given
+	repo := NewAccountRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfter() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, token1, token2)
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances[0])
 	// add the next record file, and a token transfer in the record file
@@ -426,7 +440,7 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfter()
 
 func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNoTransferredTokens() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, token1, token2)
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances[0])
 	// add the next record file, and a token transfer in the record file
@@ -444,7 +458,7 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNo
 
 func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNoNextBlock() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, token1, token2)
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances[0])
 	// add the next record file, and a token transfer in the record file
@@ -462,7 +476,7 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNo
 
 func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterInvalidAccountIdStr() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 	repo := NewAccountRepository(dbClient)
 
 	// when
@@ -470,6 +484,18 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterIn
 
 	// then
 	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterDbConnectionError() {
+	// given
+	repo := NewAccountRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(accountString, consensusEnd)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
 }
 
