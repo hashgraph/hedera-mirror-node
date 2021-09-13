@@ -20,7 +20,7 @@ fi
 
 target_tag="${target_tag#v}" # Strip v prefix if present
 target_tag_minor="${target_tag%\.*}"
-bats_tag="1.4.1"
+bats_tag="v1.4.1"
 postgresql_tag="12.5.0-debian-10-r88"
 registry="gcr.io/mirror-node-public/hedera-mirror-node"
 
