@@ -34,8 +34,8 @@ const (
 	readinessPath = "/health/readiness"
 )
 
-// HealthController holds data used to response to health probes
-type HealthController struct {
+// healthController holds data used to response to health probes
+type healthController struct {
 	livenessHealth  *health.Health
 	readinessHealth *health.Health
 }
@@ -61,14 +61,14 @@ func NewHealthController(dbConfig types.Db) (server.Router, error) {
 		return nil, err
 	}
 
-	return &HealthController{
+	return &healthController{
 		livenessHealth:  livenessHealth,
 		readinessHealth: readinessHealth,
 	}, nil
 }
 
 // Routes returns the Health controller routes
-func (c *HealthController) Routes() server.Routes {
+func (c *healthController) Routes() server.Routes {
 	return server.Routes{
 		{
 			"liveness",

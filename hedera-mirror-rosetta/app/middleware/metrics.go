@@ -68,17 +68,17 @@ func init() {
 	register.MustRegister(responseBytesHistogram)
 }
 
-// MetricsController holds data used to serve metric requests
-type MetricsController struct {
+// metricsController holds data used to serve metric requests
+type metricsController struct {
 }
 
 // NewMetricsController constructs a new MetricsController object
 func NewMetricsController() server.Router {
-	return &MetricsController{}
+	return &metricsController{}
 }
 
 // Routes returns the metrics controller routes
-func (c *MetricsController) Routes() server.Routes {
+func (c *metricsController) Routes() server.Routes {
 	return server.Routes{
 		{
 			"metrics",

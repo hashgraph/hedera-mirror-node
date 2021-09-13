@@ -33,44 +33,48 @@ const (
 	xRealIpHeader       = "X-Real-IP"
 )
 
+var internalPaths = map[string]bool{livenessPath: true, metricsPath: true, readinessPath: true}
+
 // tracingResponseWriter wraps a regular ResponseWriter in order to store the HTTP status code
 type tracingResponseWriter struct {
 	http.ResponseWriter
+	data       []byte
 	statusCode int
 }
 
 func newTracingResponseWriter(w http.ResponseWriter) *tracingResponseWriter {
-	return &tracingResponseWriter{w, http.StatusOK}
+	return &tracingResponseWriter{w, []byte{}, http.StatusOK}
 }
 
-func (lrw *tracingResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
+func (w *tracingResponseWriter) WriteHeader(code int) {
+	w.statusCode = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *tracingResponseWriter) Write(data []byte) (n int, err error) {
+	w.data = data
+	return w.ResponseWriter.Write(data)
 }
 
 // TracingMiddleware traces requests to the log
 func TracingMiddleware(inner http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		start := time.Now()
-		clientIpAddress := getClientIpAddress(r)
-		path := r.URL.RequestURI()
-		loggingResponseWriter := newTracingResponseWriter(w)
+		clientIpAddress := getClientIpAddress(request)
+		path := request.URL.RequestURI()
+		tracingResponseWriter := newTracingResponseWriter(responseWriter)
 
-		inner.ServeHTTP(loggingResponseWriter, r)
+		inner.ServeHTTP(tracingResponseWriter, request)
 
 		message := fmt.Sprintf("%s %s %s (%d) in %s",
-			clientIpAddress, r.Method, path, loggingResponseWriter.statusCode, time.Since(start))
+			clientIpAddress, request.Method, path, tracingResponseWriter.statusCode, time.Since(start))
 
-		if isInternal(path) {
+		if internalPaths[path] {
 			log.Debug(message)
 		} else {
 			log.Info(message)
 		}
 	})
-}
-
-func isInternal(path string) bool {
-	return path == metricsPath || path == livenessPath || path == readinessPath
 }
 
 func getClientIpAddress(r *http.Request) string {
