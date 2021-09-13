@@ -62,6 +62,7 @@ import com.hedera.hashgraph.sdk.proto.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.OperatorProperties;
+import com.hedera.mirror.monitor.RevalidationProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 @Log4j2
@@ -69,6 +70,7 @@ class TransactionPublisherTest {
 
     private CryptoServiceStub cryptoServiceStub;
     private MonitorProperties monitorProperties;
+    private RevalidationProperties revalidationProperties;
     private PublishProperties publishProperties;
     private PublishScenarioProperties publishScenarioProperties;
     private Server server;
@@ -85,6 +87,8 @@ class TransactionPublisherTest {
         monitorProperties = new MonitorProperties();
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
         monitorProperties.setOperator(operatorProperties);
+        revalidationProperties = new RevalidationProperties();
+        monitorProperties.setRevalidationProperties(revalidationProperties);
         publishProperties = new PublishProperties();
         transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties);
 
@@ -212,7 +216,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(5)
     void publishWithRevalidate() throws InterruptedException {
-        monitorProperties.setValidateFrequency(Duration.ofSeconds(1));
+        revalidationProperties.setRevalidateFrequency(Duration.ofSeconds(1));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
@@ -248,7 +252,7 @@ class TransactionPublisherTest {
     @Timeout(20)
     void publishWithRevalidateDisabled() throws InterruptedException {
         monitorProperties.setValidateNodes(false);
-        monitorProperties.setValidateFrequency(Duration.ofSeconds(1));
+        revalidationProperties.setRevalidateFrequency(Duration.ofSeconds(1));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())

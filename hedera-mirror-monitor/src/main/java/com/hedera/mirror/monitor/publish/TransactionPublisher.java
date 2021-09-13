@@ -50,6 +50,7 @@ import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
+import com.hedera.mirror.monitor.RevalidationProperties;
 
 @Log4j2
 @Named
@@ -158,8 +159,10 @@ public class TransactionPublisher implements AutoCloseable {
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
 
         if (monitorProperties.isValidateNodes() && publishProperties.isEnabled()) {
-            nodeValidator = Optional.of(Flux.interval(monitorProperties.getValidateFrequency(),
-                            monitorProperties.getValidateFrequency())
+
+            Duration revalidateFrequency = monitorProperties.getRevalidationProperties()
+                    .getRevalidateFrequency();
+            nodeValidator = Optional.of(Flux.interval(revalidateFrequency, revalidateFrequency)
                     .subscribeOn(Schedulers.parallel())
                     .doOnNext(i -> validateNodes())
                     .onErrorContinue((e, i) -> log.error("Exception revalidating nodes: {}", e))
@@ -209,9 +212,10 @@ public class TransactionPublisher implements AutoCloseable {
 
     private boolean validateNode(Client client, NodeProperties node) {
         boolean valid = false;
-        client.setMinBackoff(Duration.ofMillis(500));
-        client.setMaxBackoff(Duration.ofMillis(1000));
-        client.setMaxAttempts(15);
+        RevalidationProperties revalidationProperties = monitorProperties.getRevalidationProperties();
+        client.setMinBackoff(revalidationProperties.getMinBackoff());
+        client.setMaxBackoff(revalidationProperties.getMaxBackoff());
+        client.setMaxAttempts(revalidationProperties.getMaxAttempts());
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);
