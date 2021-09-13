@@ -23,6 +23,7 @@ package transaction
 import (
 	"testing"
 
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -447,7 +448,10 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	domain.AddTransaction(dbClient, consensusTimestamp, tokenId2.EncodedId, nodeAccount.EncodedId, firstAccount.EncodedId, 22,
 		[]byte{0xaa, 0xcc, 0xdd}, dbTypes.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, tokenTransfers)
 	metadata := map[string]interface{}{
-		"decimals":       tokenDecimals,
+		"currency": &rTypes.Currency{
+			Symbol:   tokenId2.String(),
+			Decimals: int32(tokenDecimals),
+		},
 		"freeze_default": false,
 		"initial_supply": tokenInitialSupply,
 	}

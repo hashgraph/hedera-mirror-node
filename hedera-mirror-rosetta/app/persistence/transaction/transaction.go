@@ -557,20 +557,17 @@ func getTokenOperation(
 		Type:    transactionType,
 		Status:  transactionResult,
 		Account: payerId,
-		Amount:  token.getAmount(),
 	}
 
+	// best effort for immutable fields
+	metadata := make(map[string]interface{})
+	metadata["currency"] = token.getAmount().ToRosetta().Currency
 	if transaction.Type == dbTypes.TransactionTypeTokenCreation {
-		// token creation shouldn't have Amount
-		operation.Amount = nil
-		metadata := make(map[string]interface{})
-		operation.Metadata = metadata
-
-		// best effort for immutable fields
-		metadata["decimals"] = token.Decimals
 		metadata["freeze_default"] = token.FreezeDefault
 		metadata["initial_supply"] = token.InitialSupply
 	}
+
+	operation.Metadata = metadata
 
 	return operation, nil
 }
