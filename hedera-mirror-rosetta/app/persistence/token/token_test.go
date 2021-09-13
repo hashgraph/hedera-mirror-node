@@ -33,6 +33,8 @@ import (
 	"github.com/thanhpk/randstr"
 )
 
+var tokenId = entityid.EntityId{EncodedId: 1200, EntityNum: 1200}
+
 // run the suite
 func TestTokenRepositorySuite(t *testing.T) {
 	suite.Run(t, new(tokenRepositorySuite))
@@ -60,7 +62,7 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	dbClient := suite.DbResource.GetGormDb()
 
 	token := &dbTypes.Token{
-		TokenId:             1200,
+		TokenId:             tokenId.EncodedId,
 		CreatedTimestamp:    10001,
 		Decimals:            9,
 		FreezeDefault:       true,
@@ -94,7 +96,7 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	repo := NewTokenRepository(dbClient)
 
 	// when
-	actual, err := repo.Find("0.0.1200")
+	actual, err := repo.Find(tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), expected, actual)
@@ -106,7 +108,7 @@ func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 	repo := NewTokenRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.Find("0.0.1200")
+	actual, err := repo.Find(tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), errors.ErrTokenNotFound, err)
@@ -130,7 +132,7 @@ func (suite *tokenRepositorySuite) TestFindTokenDbConnectionError() {
 	repo := NewTokenRepository(suite.InvalidDbClient)
 
 	// when
-	actual, err := repo.Find("0.0.1200")
+	actual, err := repo.Find(tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
