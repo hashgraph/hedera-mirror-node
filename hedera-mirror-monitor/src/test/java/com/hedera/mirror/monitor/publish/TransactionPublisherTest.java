@@ -210,6 +210,75 @@ class TransactionPublisherTest {
     }
 
     @Test
+    @Timeout(5)
+    void publishWithRevalidate() throws InterruptedException {
+        monitorProperties.setValidateFrequency(Duration.ofSeconds(1));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+
+        // Force the only node to be unhealthy, verify error occurs
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
+
+        Thread.sleep(1200L);
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectError(PublishException.class)
+                .verify(Duration.ofSeconds(1L));
+
+        // Set the node back to healthy, ensure that transactions flow again
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        Thread.sleep(1200L);
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+    }
+
+    @Test
+    @Timeout(20)
+    void publishWithRevalidateDisabled() throws InterruptedException {
+        monitorProperties.setValidateNodes(false);
+        monitorProperties.setValidateFrequency(Duration.ofSeconds(1));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
+
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        Thread.sleep(1200L);
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        Thread.sleep(1200L);
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+    }
+
+    @Test
     @Timeout(3)
     void publishRetryError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
@@ -294,6 +363,91 @@ class TransactionPublisherTest {
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
     }
+
+//        PublishRequest request2 = request().build();
+//        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+//        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+//
+//        transactionPublisher.publish(request2)
+//                .doOnNext(x -> log.info("Hello world 3"))
+//                .as(StepVerifier::create)
+//                .expectNextMatches(r -> {
+//                    assertThat(r)
+//                            .isNotNull()
+//                            .returns(request2, PublishResponse::getRequest)
+//                            .returns(request2.getTransaction().getTransactionId(), PublishResponse::getTransactionId)
+//                            .extracting(PublishResponse::getTimestamp)
+//                            .isNotNull();
+//                    return true;
+//                })
+//                .expectComplete()
+//                .verify(Duration.ofSeconds(1L));
+//        log.info("HELLO 4");
+//        assertThat(request2.getTransaction().getTransactionMemo())
+//                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"));
+//    }
+
+//    @Test
+//    @Timeout(15)
+//    void testTime() throws InterruptedException {
+////        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
+////                new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
+//        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+//        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.delay(Duration.ofSeconds(5L))
+//                .thenReturn(response(OK)));
+//
+//        transactionPublisher.publish(request().build())
+//                .doOnNext(x -> log.info("Hello world"))
+//                .as(StepVerifier::create)
+//                .expectNextCount(1L)
+//                .expectComplete()
+//                .verify(Duration.ofSeconds(20L));
+//    }
+
+//    @Test
+//    @Timeout(3)
+//    void allNodesFailRevalidation() {
+//        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+//        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+//
+//        transactionPublisher.publish(request().build())
+//                .as(StepVerifier::create)
+//                .expectNextCount(1L)
+//                .expectComplete()
+//                .verify(Duration.ofSeconds(1L));
+//
+//        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"))); // Illegal DNS to avoid SDK
+//        retry
+//        transactionPublisher.revalidateNodes();
+//        cryptoServiceStub.addTransactions(Mono.error(Status.INTERNAL.asRuntimeException()));
+//        transactionPublisher.publish(request().build())
+//                .as(StepVerifier::create)
+//                .expectError(PublishException.class)
+//                .verify(Duration.ofSeconds(1L));
+//    }
+//
+//    @Test
+//    @Timeout(3)
+//    void noNodesUntilRevalidation() {
+//        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"))); // Illegal DNS to avoid SDK
+//        retry
+//        cryptoServiceStub.addTransactions(Mono.error(Status.INTERNAL.asRuntimeException()));
+//        transactionPublisher.publish(request().build())
+//                .as(StepVerifier::create)
+//                .expectError(IllegalArgumentException.class)
+//                .verify(Duration.ofSeconds(1L));
+//
+//        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+//        transactionPublisher.revalidateNodes();
+//        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+//        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+//
+//        transactionPublisher.publish(request().build())
+//                .as(StepVerifier::create)
+//                .expectNextCount(1L)
+//                .expectComplete()
+//                .verify(Duration.ofSeconds(1L));
+//    }
 
     @Test
     @Timeout(3)

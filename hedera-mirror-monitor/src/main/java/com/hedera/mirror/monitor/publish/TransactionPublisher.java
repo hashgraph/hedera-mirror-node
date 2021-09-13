@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,24 +60,17 @@ public class TransactionPublisher implements AutoCloseable {
     private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>();
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
-    private Disposable nodeValidator;
+    private Optional<Disposable> nodeValidator = Optional.empty();
 
     public TransactionPublisher(MonitorProperties monitorProperties, PublishProperties publishProperties) {
         this.monitorProperties = monitorProperties;
         this.publishProperties = publishProperties;
-        if (monitorProperties.isValidateNodes() && publishProperties.isEnabled()) {
-            this.nodeValidator = Flux.interval(monitorProperties.getValidateFrequency(),
-                            monitorProperties.getValidateFrequency())
-                    .subscribeOn(Schedulers.parallel())
-                    .subscribe(i -> revalidateNodes());
-        }
     }
 
     @Override
     public void close() {
-        if (nodeValidator != null) {
-            nodeValidator.dispose();
-        }
+        nodeValidator.ifPresent(Disposable::dispose);
+
         if (publishProperties.isEnabled()) {
             log.warn("Closing {} clients", publishProperties.getClients());
             clients.subscribe(client -> {
@@ -120,8 +114,12 @@ public class TransactionPublisher implements AutoCloseable {
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            int nodeIndex = secureRandom.nextInt(nodeAccountIds.get().size());
-            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get().get(nodeIndex));
+            if (nodeAccountIds.get().size() == 0) {
+                throw new PublishException(request, new IllegalArgumentException("No valid nodes"));
+            }
+            List<AccountId> nodes = nodeAccountIds.get();
+            int nodeIndex = secureRandom.nextInt(nodes.size());
+            List<AccountId> nodeAccountId = List.of(nodes.get(nodeIndex));
             transaction.setNodeAccountIds(nodeAccountId);
         }
 
@@ -158,6 +156,15 @@ public class TransactionPublisher implements AutoCloseable {
                 .size());
         Map<String, AccountId> nodes = monitorProperties.getNodes().stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+
+        if (monitorProperties.isValidateNodes() && publishProperties.isEnabled()) {
+            nodeValidator = Optional.of(Flux.interval(monitorProperties.getValidateFrequency(),
+                            monitorProperties.getValidateFrequency())
+                    .subscribeOn(Schedulers.parallel())
+                    .doOnNext(i -> validateNodes())
+                    .onErrorContinue((e, i) -> log.error("Exception revalidating nodes: {}", e))
+                    .subscribe());
+        }
         return Flux.range(0, publishProperties.getClients())
                 .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodes))));
     }
@@ -187,11 +194,11 @@ public class TransactionPublisher implements AutoCloseable {
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
 
+        setNodeAccountIds(validNodes);
+
         if (validNodes.isEmpty()) {
             throw new IllegalArgumentException("No valid nodes found");
         }
-
-        setNodeAccountIds(validNodes);
     }
 
     private void setNodeAccountIds(List<NodeProperties> validNodes) {
@@ -231,10 +238,5 @@ public class TransactionPublisher implements AutoCloseable {
         Client client = Client.forNetwork(nodes);
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
-    }
-
-    private void revalidateNodes() {
-        log.info("Revalidating network");
-        validateNodes();
     }
 }
