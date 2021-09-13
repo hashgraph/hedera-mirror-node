@@ -23,7 +23,7 @@ package main
 import (
 	"testing"
 
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -34,26 +34,26 @@ func TestDbSuite(t *testing.T) {
 }
 
 type dbSuite struct {
+	test.IntegrationTest
 	suite.Suite
-	dbResource db.DbResource
 }
 
 func (suite *dbSuite) SetupSuite() {
-	suite.dbResource = db.SetupDb()
+	suite.Setup()
 }
 
 func (suite *dbSuite) TearDownSuite() {
-	db.TearDownDb(suite.dbResource)
+	suite.TearDown()
 }
 
 func (suite *dbSuite) TestConnectToDb() {
-	client := connectToDb(suite.dbResource.GetDbConfig())
+	client := connectToDb(suite.DbResource.GetDbConfig())
 	err := client.Exec("select 1").Error
 	assert.Nil(suite.T(), err)
 }
 
 func (suite *dbSuite) TestConnectToDbInvalidPassword() {
-	dbConfig := suite.dbResource.GetDbConfig()
+	dbConfig := suite.DbResource.GetDbConfig()
 	dbConfig.Password = "bad_password_dab"
 	client := connectToDb(dbConfig)
 	err := client.Exec("select 1").Error
