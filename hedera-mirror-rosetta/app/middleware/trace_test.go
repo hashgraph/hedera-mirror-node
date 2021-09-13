@@ -34,8 +34,11 @@ import (
 )
 
 const (
-	clientIp  = "10.0.0.100"
-	defaultIp = "192.0.2.1"
+	clientIp    = "10.0.0.100"
+	defaultIp   = "192.0.2.1"
+	defaultPath = "/network/list"
+	levelDebug  = "level=debug"
+	levelInfo   = "level=info"
 )
 
 func TestTrace(t *testing.T) {
@@ -45,32 +48,32 @@ func TestTrace(t *testing.T) {
 		messages []string
 	}{{
 		headers:  map[string]string{"": ""},
-		path:     "/network/list",
-		messages: []string{"level=info", "GET /network/list (200)", defaultIp},
+		path:     defaultPath,
+		messages: []string{levelInfo, "GET " + defaultPath + " (200)", defaultIp},
 	}, {
 		headers:  map[string]string{"": ""},
 		path:     livenessPath,
-		messages: []string{"level=debug", livenessPath, defaultIp},
+		messages: []string{levelDebug, livenessPath, defaultIp},
 	}, {
 		headers:  map[string]string{"": ""},
 		path:     readinessPath,
-		messages: []string{"level=debug", readinessPath, defaultIp},
+		messages: []string{levelDebug, readinessPath, defaultIp},
 	}, {
 		headers:  map[string]string{"": ""},
 		path:     metricsPath,
-		messages: []string{"level=debug", metricsPath, defaultIp},
+		messages: []string{levelDebug, metricsPath, defaultIp},
 	}, {
 		headers:  map[string]string{"": ""},
 		path:     metricsPath + "s",
-		messages: []string{"level=info", "GET /metricss (200)", defaultIp},
+		messages: []string{levelInfo, "GET /metricss (200)", defaultIp},
 	}, {
 		headers:  map[string]string{xRealIpHeader: clientIp},
-		path:     "/network/list",
-		messages: []string{"GET /network/list (200)", clientIp},
+		path:     defaultPath,
+		messages: []string{clientIp},
 	}, {
 		headers:  map[string]string{xForwardedForHeader: clientIp},
-		path:     "/network/list",
-		messages: []string{"GET /network/list (200)", clientIp},
+		path:     defaultPath,
+		messages: []string{clientIp},
 	}} {
 		buf := bytes.NewBuffer(nil)
 		level := log.GetLevel()
