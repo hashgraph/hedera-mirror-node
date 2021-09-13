@@ -61,7 +61,6 @@ const (
                                   group by tt.account_id, tt.token_id, t.decimals
                                 ) token_change
                               ), '[]') as token_values`
-
 	latestBalanceBeforeConsensus = `with abm as (
                                       select max(consensus_timestamp)
                                       from account_balance_file where consensus_timestamp <= @timestamp
@@ -85,19 +84,19 @@ const (
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
 	// gosec somehow thinks the sql query has hardcoded credentials
 	// #nosec
-	selectTransferredTokensInBlock = `with rf as (
-									    select consensus_start, consensus_end
- 									    from record_file
-										where consensus_end > @consensus_timestamp
-										order by consensus_end
-									    limit 1
-									  )
-									  select distinct on (tt.token_id) tt.token_id, t.decimals
-									  from token_transfer tt
-									  join rf on rf.consensus_start <= consensus_timestamp and
-									 	rf.consensus_end >= consensus_timestamp
-									  join token t on t.token_id = tt.token_id 
-									  where account_id = @account_id`
+	selectTransferredTokensInBlockAfterTimestamp = `with rf as (
+                                                      select consensus_start, consensus_end
+                                                       from record_file
+                                                      where consensus_end > @consensus_timestamp
+                                                      order by consensus_end
+                                                      limit 1
+                                                    )
+                                                    select distinct on (tt.token_id) tt.token_id, t.decimals
+                                                    from token_transfer tt
+                                                    join rf on rf.consensus_start <= consensus_timestamp and
+                                                       rf.consensus_end >= consensus_timestamp
+                                                    join token t on t.token_id = tt.token_id
+                                                    where account_id = @account_id`
 )
 
 type combinedAccountBalance struct {
@@ -118,9 +117,7 @@ type accountRepository struct {
 
 // NewAccountRepository creates an instance of a accountRepository struct
 func NewAccountRepository(dbClient *gorm.DB) repositories.AccountRepository {
-	return &accountRepository{
-		dbClient: dbClient,
-	}
+	return &accountRepository{dbClient}
 }
 
 // RetrieveBalanceAtBlock returns the hbar balance and token balances of the account at a given block (
@@ -167,13 +164,12 @@ func (ar *accountRepository) RetrieveTransferredTokensInBlockAfter(
 	}
 
 	tokens := make([]pTypes.Token, 0)
-	result := ar.dbClient.Raw(
-		selectTransferredTokensInBlock,
+	if err := ar.dbClient.Raw(
+		selectTransferredTokensInBlockAfterTimestamp,
 		sql.Named("account_id", accountId.EncodedId),
 		sql.Named("consensus_timestamp", consensusTimestamp),
-	).Scan(&tokens)
-	if result.Error != nil {
-		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, result.Error)
+	).Scan(&tokens).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
 	}
 
@@ -197,14 +193,12 @@ func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd in
 ) {
 	// gets the most recent balance at or before consensusEnd
 	cb := &combinedAccountBalance{}
-	result := ar.dbClient.Raw(
+	if err := ar.dbClient.Raw(
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", consensusEnd),
-	).
-		First(cb)
-	if result.Error != nil {
-		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, result.Error)
+	).First(cb).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return 0, nil, nil, hErrors.ErrDatabaseError
 	}
 
@@ -234,15 +228,13 @@ func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consens
 ) {
 	change := &accountBalanceChange{}
 	// gets the balance change from the Balance snapshot until the target block
-	result := ar.dbClient.Raw(
+	if err := ar.dbClient.Raw(
 		balanceChangeBetween,
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-	).
-		First(change)
-	if result.Error != nil {
-		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, result.Error)
+	).First(change).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return 0, nil, hErrors.ErrDatabaseError
 	}
 
