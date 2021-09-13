@@ -38,33 +38,12 @@ select json_agg(json_build_object(
 ))
 from token_balance tb
 join token t on t.token_id = tb.token_id
-where tb.consensus_timestamp = :genesis_timestamp and tb.account_id in (:account_ids)
+where tb.consensus_timestamp = :genesis_timestamp and
+  tb.account_id in (:account_ids) and
+  balance <> 0
 EOF
 )
 
-additional_transferred_token_query=$(cat <<EOF
-with genesis_record_file as (
-  select consensus_end
-  from record_file
-  where consensus_end > :genesis_timestamp
-  order by consensus_end
-  limit 1
-)
-select json_agg(json_build_object(
-  'id', account_id::text,
-  'token', tt.token_id::text,
-  'decimals', t.decimals,
-  'value', '0'
-))
-from token_transfer tt
-join token t on t.token_id = tt.token_id
-join genesis_record_file on tt.consensus_timestamp <= consensus_end
-where tt.consensus_timestamp > :genesis_timestamp and
-  tt.account_id in (:account_ids) and
-  tt.token_id not in (:known_token_ids)
-group by tt.account_id, tt.token_id
-EOF
-)
 network=${1:-demo}
 parent_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P)"
 psql_cmd="psql -h localhost -U mirror_rosetta mirror_node -t -P format=unaligned"
@@ -86,14 +65,6 @@ do
       | $psql_cmd -v account_ids="$account_ids" -v genesis_timestamp="$genesis_timestamp")
     echo "token_balances - $(echo "$token_balances" | jq . )"
 
-    # get additional 0-value token balances from the genesis record file, that is, those tokens the account_ids have
-    # transfers with and not in the genesis account balance file
-    known_token_ids=$(echo "$token_balances" | jq -r '[.[].token] | join(",")')
-    # an empty known_token_ids passed to sql will cause failure, so replace it with a famous non-token entity
-    known_token_ids=${known_token_ids:-3}
-    additional_token_balances=$(echo "$additional_transferred_token_query" | $psql_cmd -v account_ids="$account_ids" \
-      -v genesis_timestamp="$genesis_timestamp" -v known_token_ids="$known_token_ids")
-    echo "additional_token_balances - $(echo "$additional_token_balances" | jq . )"
     break
   fi
 
@@ -110,8 +81,8 @@ hbar_json=$(echo "$account_balances" | \
   jq --argjson currency "$currency" \
   '[.[] | .account_identifier.address=("0.0." + .id) | del(.id) ] | .[].currency=$currency')
 
-token_json=$(echo "$token_balances $additional_token_balances" | \
-  jq -s 'add | select (.!=null) | [.[] | .account_identifier.address=("0.0." + .id) | del(.id)
+token_json=$(echo "$token_balances" | \
+  jq 'select (.!=null) | [.[] | .account_identifier.address=("0.0." + .id) | del(.id)
     | .currency={symbol: ("0.0." + .token), decimals: .decimals} | del(.token) | del(.decimals)]')
 
 echo "$hbar_json $token_json" | jq -s add > "$parent_path/$network/data_genesis_balances.json"
