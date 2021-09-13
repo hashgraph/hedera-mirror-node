@@ -90,8 +90,6 @@ ingress:
   enabled: true
   hosts:
     - host: ""
-      paths: ["/monitor/api"]
-    - host: ""
       paths: ["/actuator/health/cluster"]
   middleware:
     enabled: false

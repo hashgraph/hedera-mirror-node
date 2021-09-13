@@ -1,0 +1,30 @@
+{{- if .Values.test.enabled -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-failed,hook-succeeded
+  labels:
+    {{- include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}-test
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  containers:
+    - name: test
+      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag | default .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.test.image.pullPolicy }}
+      args:
+        - /usr/lib/hedera/test.sh
+      volumeMounts:
+        - name: tests
+          mountPath: /usr/lib/hedera
+          readOnly: true
+  terminationGracePeriodSeconds: 1
+  restartPolicy: Never
+  volumes:
+    - name: tests
+      configMap:
+        defaultMode: 0555
+        name: {{ include "hedera-mirror-rosetta.fullname" . }}-test
+{{- end -}}

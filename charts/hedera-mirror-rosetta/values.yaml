@@ -6,12 +6,12 @@ affinity:
           topologyKey: kubernetes.io/hostname
           labelSelector:
             matchLabels:
-              app.kubernetes.io/component: rest
+              app.kubernetes.io/component: rosetta
 
 alertmanager:
   inhibitRules:
     enabled: false
-    InhibitAllWhenPodIssues:
+    RosettaInhibitAll:
       enabled: true
       matches:
         - sourceMatch:
@@ -19,20 +19,14 @@ alertmanager:
               value: resource
           targetMatch:
             - name: application
-              value: hedera-mirror-rest
+              value: hedera-mirror-rosetta
           equal:
             - namespace
             - pod
 
 annotations: {}
 
-config:
-  hedera:
-    mirror:
-      rest:
-        metrics:
-          config:
-            authentication: false
+config: {}
 
 # Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
 env:
@@ -58,23 +52,23 @@ global:
 hpa:
   enabled: true
   minReplicas: 1
-  maxReplicas: 15
+  maxReplicas: 10
   utilization: 80
 
 image:
   pullPolicy: IfNotPresent
-  repository: gcr.io/mirrornode/hedera-mirror-rest
+  repository: gcr.io/mirrornode/hedera-mirror-rosetta
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
 
 ingress:
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-rest.namespace" . }}-{{ include "hedera-mirror-rest.fullname" . }}@kubernetescrd'
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-rosetta.namespace" . }}-{{ include "hedera-mirror-rosetta.fullname" . }}@kubernetescrd'
   enabled: true
   hosts:
     - host: ""
-      paths: ["/api/v1"]
+      paths: ["/account", "/block", "/call", "/construction", "/events", "/mempool", "/network", "/search"]
   middleware:
     circuitBreaker: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
     connectionsPerIP: 5
@@ -82,7 +76,7 @@ ingress:
     ipWhitelist:
       - 0.0.0.0/0
     rateLimit:
-      average: 20
+      average: 10
       sourceCriterion:
         requestHost: true
   tls:
@@ -92,10 +86,12 @@ ingress:
 labels: {}
 
 livenessProbe:
+  failureThreshold: 5
   httpGet:
     path: /health/liveness
     port: http
-  initialDelaySeconds: 25
+  initialDelaySeconds: 30
+  periodSeconds: 10
   timeoutSeconds: 2
 
 nodeSelector: {}
@@ -114,64 +110,53 @@ priorityClassName: ""
 
 prometheusRules:
   enabled: false
-  RestErrors:
+  RosettaApiErrors:
     annotations:
-      description: "REST API 5xx error rate for {{ $labels.namespace }}/{{ $labels.pod }} is {{ $value | humanizePercentage }}"
-      summary: "Mirror REST API error rate exceeds 5%"
+      description: "Rosetta API 5xx error rate for {{ $labels.namespace }}/{{ $labels.pod }} is {{ $value | humanizePercentage }}"
+      summary: "Mirror Rosetta API error rate exceeds 5%"
     enabled: true
-    expr: sum(rate(api_request_total{container="rest",code=~"^5.."}[5m])) by (namespace, pod) / sum(rate(api_request_total{container="rest"}[5m])) by (namespace, pod) > 0.05
+    expr: sum(rate(hedera_mirror_rosetta_request_duration_count{application="hedera-mirror-rosetta",status_code=~"^5.."}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_rosetta_request_duration_count{application="hedera-mirror-rosetta"}[5m])) by (namespace, pod) > 0.05
     for: 1m
     labels:
+      application: hedera-mirror-rosetta
       severity: critical
-      application: hedera-mirror-rest
 
-  RestHighCPU:
+  RosettaNoPodsReady:
     annotations:
-      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
-      summary: "Mirror REST API CPU usage exceeds 80%"
+      description: "No Rosetta API instances are currently running in {{ $labels.namespace }}"
+      summary: No Rosetta API instances running
     enabled: true
-    expr: sum(nodejs_process_cpu_usage_percentage{container="rest"}) by (namespace, pod) > 80
-    for: 5m
-    labels:
-      severity: critical
-      application: hedera-mirror-rest
-      area: resource
-
-  RestNoPodsReady:
-    annotations:
-      description: "No REST API instances are currently running in {{ $labels.namespace }}"
-      summary: No REST API instances running
-    enabled: true
-    expr: sum(kube_pod_status_ready{pod=~".*-rest-.*",condition="true"}) by (namespace) < 1
+    expr: sum(kube_pod_status_ready{pod=~".*-rosetta-.*",condition="true"}) by (namespace) < 1
     for: 2m
     labels:
-      severity: critical
-      application: hedera-mirror-rest
+      application: hedera-mirror-rosetta
       area: resource
+      severity: critical
 
-  RestNoRequests:
+  RosettaNoRequests:
     annotations:
-      description: "REST API has not seen any requests to {{ $labels.namespace }} for 5m"
-      summary: "No Mirror REST API requests seen for awhile"
-    enabled: true
-    expr: sum(rate(api_all_request_total{container="rest"}[3m])) by (namespace) <= 0
+      description: "Rosetta API has not seen any requests to {{ $labels.namespace }} for 5m"
+      summary: "No Mirror Rosetta API requests seen for awhile"
+    enabled: false
+    expr: sum(rate(hedera_mirror_rosetta_request_duration_count{application="hedera-mirror-rosetta"}[3m])) by (namespace) <= 0
     for: 5m
     labels:
+      application: hedera-mirror-rosetta
       severity: warning
-      application: hedera-mirror-rest
 
-  RestSlowResponse:
+  RosettaSlowResponse:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} is taking {{ $value | humanizeDuration }} to generate a response"
-      summary: "Mirror REST API is taking too long to respond"
+      summary: "Mirror Rosetta API is taking too long to respond"
     enabled: true
-    expr: sum(rate(api_request_duration_milliseconds_sum{container="rest"}[5m])) by (namespace, pod) / sum(rate(api_request_duration_milliseconds_count{container="rest"}[5m])) by (namespace, pod) > 2000
+    expr: sum(rate(hedera_mirror_rosetta_request_duration_sum{application="hedera-mirror-rosetta"}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_rosetta_request_duration_count{application="hedera-mirror-rosetta"}[5m])) by (namespace, pod) > 2000
     for: 1m
     labels:
+      application: hedera-mirror-rosetta
       severity: warning
-      application: hedera-mirror-rest
 
 readinessProbe:
+  failureThreshold: 5
   httpGet:
     path: /health/readiness
     port: http
@@ -183,8 +168,8 @@ readinessProbe:
 
 resources:
   limits:
-    cpu: 750m
-    memory: 350Mi
+    cpu: 500m
+    memory: 200Mi
   requests:
     cpu: 50m
     memory: 64Mi
@@ -231,14 +216,14 @@ updateStrategy:
     maxSurge: 10%
     maxUnavailable: 25%
 
-# Volumes to add to the container. The key is the volume name and the value is the volume mount definition. The same keys should also appear in volumes below.
+# Volume mounts to add to the container. The key is the volume name and the value is the volume mount definition. The same keys should also appear in volumes below.
 volumeMounts:
   config:
     mountPath: /usr/etc/hedera
 
-# Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
+# Volume to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
 volumes:
   config:
     secret:
       defaultMode: 420
-      secretName: '{{ include "hedera-mirror-rest.fullname" . }}'
+      secretName: '{{ include "hedera-mirror-rosetta.fullname" . }}'
