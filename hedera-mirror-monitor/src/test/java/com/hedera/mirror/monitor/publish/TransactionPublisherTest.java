@@ -214,9 +214,9 @@ class TransactionPublisherTest {
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     void publishWithRevalidate() throws InterruptedException {
-        revalidationProperties.setFrequency(Duration.ofSeconds(1));
+        revalidationProperties.setFrequency(Duration.ofSeconds(2));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
@@ -229,7 +229,7 @@ class TransactionPublisherTest {
         // Force the only node to be unhealthy, verify error occurs
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
 
-        Thread.sleep(1200L);
+        Thread.sleep(2500L);
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectError(PublishException.class)
@@ -240,7 +240,7 @@ class TransactionPublisherTest {
 
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-        Thread.sleep(1200L);
+        Thread.sleep(2500L);
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
