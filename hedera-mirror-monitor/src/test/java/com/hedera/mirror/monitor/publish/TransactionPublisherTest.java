@@ -216,7 +216,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(5)
     void publishWithRevalidate() throws InterruptedException {
-        revalidationProperties.setRevalidateFrequency(Duration.ofSeconds(1));
+        revalidationProperties.setFrequency(Duration.ofSeconds(1));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
@@ -252,7 +252,7 @@ class TransactionPublisherTest {
     @Timeout(20)
     void publishWithRevalidateDisabled() throws InterruptedException {
         monitorProperties.setValidateNodes(false);
-        revalidationProperties.setRevalidateFrequency(Duration.ofSeconds(1));
+        revalidationProperties.setFrequency(Duration.ofSeconds(1));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())
