@@ -46,7 +46,7 @@ public class MonitorProperties {
     @NotNull
     private OperatorProperties operator = new OperatorProperties();
 
-    private NodeValidationProperties nodeValidationProperties = new NodeValidationProperties();
+    private NodeValidationProperties nodeValidation = new NodeValidationProperties();
 
     public MirrorNodeProperties getMirrorNode() {
         return Objects.requireNonNullElseGet(this.mirrorNode, network::getMirrorNode);
