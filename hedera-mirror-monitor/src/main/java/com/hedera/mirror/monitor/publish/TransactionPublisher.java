@@ -161,7 +161,7 @@ public class TransactionPublisher implements AutoCloseable {
         if (monitorProperties.isValidateNodes() && publishProperties.isEnabled()) {
 
             Duration revalidateFrequency = monitorProperties.getRevalidationProperties()
-                    .getRevalidateFrequency();
+                    .getFrequency();
             nodeValidator = Optional.of(Flux.interval(revalidateFrequency, revalidateFrequency)
                     .subscribeOn(Schedulers.parallel())
                     .doOnNext(i -> validateNodes())

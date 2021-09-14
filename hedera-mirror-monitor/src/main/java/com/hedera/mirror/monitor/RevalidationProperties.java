@@ -11,14 +11,14 @@ import org.springframework.validation.annotation.Validated;
 public class RevalidationProperties {
 
     @DurationMin(seconds = 30)
-    private Duration revalidateFrequency = Duration.ofMinutes(5);
-
-    @DurationMin(millis = 250)
-    private Duration minBackoff = Duration.ofMillis(500);
+    private Duration frequency = Duration.ofMinutes(5);
 
     @DurationMin(seconds = 10)
     private Duration maxBackoff = Duration.ofMillis(1000);
 
     @Min(1)
     private int maxAttempts = 15;
+
+    @DurationMin(millis = 250)
+    private Duration minBackoff = Duration.ofMillis(500);
 }
