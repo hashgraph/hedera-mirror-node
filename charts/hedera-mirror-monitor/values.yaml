@@ -85,14 +85,11 @@ image:
 imagePullSecrets: []
 
 ingress:
-  annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-monitor.namespace" . }}-{{ include "hedera-mirror-monitor.fullname" . }}@kubernetescrd'
+  annotations: {}
   enabled: true
   hosts:
     - host: ""
       paths: ["/actuator/health/cluster"]
-  middleware:
-    enabled: false
   tls:
     enabled: false
     secretName: ""

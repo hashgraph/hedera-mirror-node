@@ -328,9 +328,6 @@ promtail:
     enabled: true
 
 traefik:
-  additionalArguments:
-    - "--accesslog=true"
-    - "--entrypoints.websecure.http.tls=true"
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -344,9 +341,16 @@ traefik:
     kind: DaemonSet
   enabled: true
   globalArguments: []
+  logs:
+    access:
+      enabled: true
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
+  ports:
+    websecure:
+      tls:
+        enabled: true
   priorityClassName: critical
   resources:
     limits:
