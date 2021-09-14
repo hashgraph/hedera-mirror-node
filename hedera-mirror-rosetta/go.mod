@@ -8,15 +8,16 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/hashgraph/hedera-sdk-go/v2 v2.1.15
+	github.com/hellofresh/health-go/v4 v4.4.2
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lib/pq v1.10.3
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/ory/dockertest/v3 v3.7.0
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.11.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/thanhpk/randstr v1.0.4
-	github.com/x-cray/logrus-prefixed-formatter v0.5.2
+	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.1.0

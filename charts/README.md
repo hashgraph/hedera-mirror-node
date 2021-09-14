@@ -6,11 +6,12 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 - [Hedera Mirror GRPC API](hedera-mirror-grpc)
 - [Hedera Mirror Monitor](hedera-mirror-monitor)
 - [Hedera Mirror REST API](hedera-mirror-rest)
+- [Hedera Mirror Rosetta API](hedera-mirror-rosetta)
 
 ## Requirements
 
 - [Helm 3+](https://helm.sh)
-- [Kubernetes 1.19+](https://kubernetes.io)
+- [Kubernetes 1.20+](https://kubernetes.io)
 
 Set environment variables that will be used for the remainder of the document:
 
@@ -175,6 +176,12 @@ To access the REST API:
 
 ```shell script
 curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
+```
+
+To access the Rosetta API:
+
+```shell script
+curl -sL -d '{"metadata":{}}' "http://${SERVICE_IP}/network/list"
 ```
 
 To view the Grafana dashboard:

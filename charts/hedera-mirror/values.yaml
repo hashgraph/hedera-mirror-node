@@ -181,7 +181,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.4.0-debian-10-r22
+    tag: 13.4.0-debian-10-r28
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -274,6 +274,33 @@ rest:
         secretKeyRef:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
+
+rosetta:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_rosetta
+  enabled: true
+  env:
+    HEDERA_MIRROR_ROSETTA_DB_HOST:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_HOST
+    HEDERA_MIRROR_ROSETTA_DB_NAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_NAME
+    HEDERA_MIRROR_ROSETTA_DB_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_ROSETTA_DB_PASSWORD
+    HEDERA_MIRROR_ROSETTA_DB_USERNAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_ROSETTA_DB_USERNAME
 
 test:
   config:

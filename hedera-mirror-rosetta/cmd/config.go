@@ -96,7 +96,7 @@ func loadConfig() (*types.Config, error) {
 
 func getConfig(config *types.Config, path string) bool {
 	if _, err := os.Stat(path); err != nil {
-		log.Errorf("Failed to locate the config file %s: %s", path, err)
+		log.Warnf("Failed to locate the config file %s: %s", path, err)
 		return false
 	}
 
