@@ -32,6 +32,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -50,23 +52,20 @@ import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
-import com.hedera.mirror.monitor.RevalidationProperties;
+import com.hedera.mirror.monitor.NodeValidationProperties;
 
 @Log4j2
 @Named
+@RequiredArgsConstructor
 public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>();
+    @Getter
+    protected final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
     private Optional<Disposable> nodeValidator = Optional.empty();
-
-    public TransactionPublisher(MonitorProperties monitorProperties, PublishProperties publishProperties) {
-        this.monitorProperties = monitorProperties;
-        this.publishProperties = publishProperties;
-    }
 
     @Override
     public void close() {
@@ -154,20 +153,16 @@ public class TransactionPublisher implements AutoCloseable {
     private Flux<Client> getClients() {
         validateNodes();
 
-        if (nodeAccountIds.get().isEmpty()) {
-            throw new IllegalArgumentException("No valid nodes found");
-        }
-
         log.info("Creating {} connections to {} nodes", publishProperties.getClients(), monitorProperties.getNodes()
                 .size());
         Map<String, AccountId> nodes = monitorProperties.getNodes().stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
 
-        if (monitorProperties.isValidateNodes()) {
+        NodeValidationProperties validationProperties = monitorProperties.getNodeValidationProperties();
+        if (validationProperties.isValidateNodes()) {
 
-            Duration revalidateFrequency = monitorProperties.getRevalidationProperties()
-                    .getFrequency();
-            nodeValidator = Optional.of(Flux.interval(revalidateFrequency, revalidateFrequency)
+            nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency(),
+                            validationProperties.getFrequency())
                     .subscribeOn(Schedulers.parallel())
                     .doOnNext(i -> validateNodes())
                     .onErrorContinue((e, i) -> log.error("Exception revalidating nodes: {}", e))
@@ -181,7 +176,7 @@ public class TransactionPublisher implements AutoCloseable {
         log.info("Validating nodes");
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
-        if (!monitorProperties.isValidateNodes()) {
+        if (!monitorProperties.getNodeValidationProperties().isValidateNodes()) {
             setNodeAccountIds(new ArrayList<>(nodes));
             return;
         }
@@ -203,6 +198,10 @@ public class TransactionPublisher implements AutoCloseable {
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
 
         setNodeAccountIds(validNodes);
+
+        if (nodeAccountIds.get().isEmpty()) {
+            throw new IllegalArgumentException("No valid nodes found");
+        }
     }
 
     private void setNodeAccountIds(List<NodeProperties> validNodes) {
@@ -213,10 +212,10 @@ public class TransactionPublisher implements AutoCloseable {
 
     private boolean validateNode(Client client, NodeProperties node) {
         boolean valid = false;
-        RevalidationProperties revalidationProperties = monitorProperties.getRevalidationProperties();
-        client.setMinBackoff(revalidationProperties.getMinBackoff());
-        client.setMaxBackoff(revalidationProperties.getMaxBackoff());
-        client.setMaxAttempts(revalidationProperties.getMaxAttempts());
+        NodeValidationProperties nodeValidationProperties = monitorProperties.getNodeValidationProperties();
+        client.setMinBackoff(nodeValidationProperties.getMinBackoff());
+        client.setMaxBackoff(nodeValidationProperties.getMaxBackoff());
+        client.setMaxAttempts(nodeValidationProperties.getMaxAttempts());
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);

@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-public class RevalidationProperties {
+public class NodeValidationProperties {
 
     @DurationMin(seconds = 30)
     @NotNull
@@ -28,4 +28,6 @@ public class RevalidationProperties {
     @DurationMax(seconds = 10)
     @NotNull
     private Duration minBackoff = Duration.ofMillis(500);
+
+    private boolean validateNodes = true;
 }
