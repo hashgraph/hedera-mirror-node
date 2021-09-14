@@ -116,7 +116,7 @@ public class TransactionPublisher implements AutoCloseable {
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
             List<AccountId> nodes = nodeAccountIds.get();
-            if (nodes.size() == 0) {
+            if (nodes.isEmpty()) {
                 throw new PublishException(request, new IllegalArgumentException("No valid nodes available to publish" +
                         " to"));
             }
