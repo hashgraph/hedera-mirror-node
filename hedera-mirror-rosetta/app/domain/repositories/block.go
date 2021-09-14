@@ -30,6 +30,6 @@ type BlockRepository interface {
 	FindByHash(hash string) (*types.Block, *rTypes.Error)
 	FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error)
 	FindByIndex(index int64) (*types.Block, *rTypes.Error)
-	RetrieveLatest() (*types.Block, *rTypes.Error)
 	RetrieveGenesis() (*types.Block, *rTypes.Error)
+	RetrieveLatest() (*types.Block, *rTypes.Error)
 }

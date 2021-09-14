@@ -129,19 +129,6 @@ func NewBlockRepository(dbClient *gorm.DB) *blockRepository {
 	return &blockRepository{dbClient: dbClient, genesisConsensusStart: genesisConsensusStartUnset}
 }
 
-// FindByIndex retrieves a block by given Index
-func (br *blockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
-	if index < 0 {
-		return nil, hErrors.ErrInvalidArgument
-	}
-
-	if err := br.initGenesisRecordFile(); err != nil {
-		return nil, err
-	}
-
-	return br.findBlockByIndex(index)
-}
-
 // FindByHash retrieves a block by a given Hash
 func (br *blockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
 	if hash == "" {
@@ -175,6 +162,19 @@ func (br *blockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 	}
 
 	return block, nil
+}
+
+// FindByIndex retrieves a block by given Index
+func (br *blockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
+	if index < 0 {
+		return nil, hErrors.ErrInvalidArgument
+	}
+
+	if err := br.initGenesisRecordFile(); err != nil {
+		return nil, err
+	}
+
+	return br.findBlockByIndex(index)
 }
 
 // RetrieveGenesis retrieves the genesis block
