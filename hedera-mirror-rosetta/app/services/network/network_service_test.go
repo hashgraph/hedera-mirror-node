@@ -247,7 +247,7 @@ func (suite *networkServiceSuite) TestNetworkStatus() {
 	}
 
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(dummySecondLatestBlock(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveLatest").Return(dummySecondLatestBlock(), repository.NilError)
 	suite.mockAddressBookEntryRepo.On("Entries").Return(exampleEntries, repository.NilError)
 
 	// when:
@@ -273,7 +273,7 @@ func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveGenesisFail
 func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveSecondLatestFails() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(repository.NilBlock, &rTypes.Error{})
+	suite.mockBlockRepo.On("RetrieveLatest").Return(repository.NilBlock, &rTypes.Error{})
 
 	// when:
 	res, e := suite.networkService.NetworkStatus(nil, nil)
@@ -286,7 +286,7 @@ func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenRetrieveSecondLates
 func (suite *networkServiceSuite) TestNetworkStatusThrowsWhenEntriesFail() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(dummyGenesisBlock(), repository.NilError)
-	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(dummySecondLatestBlock(), repository.NilError)
+	suite.mockBlockRepo.On("RetrieveLatest").Return(dummySecondLatestBlock(), repository.NilError)
 	suite.mockAddressBookEntryRepo.On("Entries").Return(repository.NilEntries, &rTypes.Error{})
 
 	// when:

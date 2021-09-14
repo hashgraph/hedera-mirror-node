@@ -445,14 +445,14 @@ func (suite *blockRepositorySuite) TestRetrieveSecondLatestGenesisBlock() {
 	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.RetrieveSecondLatest()
+	actual, err := repo.RetrieveLatest()
 
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), expectedGenesisBlock, actual)
 }
 
-func (suite *blockRepositorySuite) TestRetrieveSecondLatestNonGenesisBlock() {
+func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 	// given
 	db.CreateDbRecords(suite.DbResource.GetGormDb(), thirdRecordFile)
 	expected := *expectedSecondBlock
@@ -460,61 +460,61 @@ func (suite *blockRepositorySuite) TestRetrieveSecondLatestNonGenesisBlock() {
 	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.RetrieveSecondLatest()
+	actual, err := repo.RetrieveLatest()
 
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), &expected, actual)
 }
 
-func (suite *blockRepositorySuite) TestRetrieveSecondLatestWithOnlyGenesisBlock() {
+func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 	// given
 	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
 	db.CreateDbRecords(suite.DbResource.GetGormDb(), genesisRecordFile)
 	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.RetrieveSecondLatest()
+	actual, err := repo.RetrieveLatest()
 
 	// then
 	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestRetrieveSecondLatestWithBlockBeforeGenesis() {
+func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 	// given
 	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
 	db.CreateDbRecords(suite.DbResource.GetGormDb(), recordFileBeforeGenesis, genesisRecordFile)
 	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.RetrieveSecondLatest()
+	actual, err := repo.RetrieveLatest()
 
 	// then
 	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestRetrieveSecondLatestNoAccountBalanceFile() {
+func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
 	// given
 	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
 	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.RetrieveSecondLatest()
+	actual, err := repo.RetrieveLatest()
 
 	// then
 	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestRetrieveSecondLatestNoRecordFile() {
+func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 	// given
 	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
 	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.RetrieveSecondLatest()
+	actual, err := repo.RetrieveLatest()
 
 	// then
 	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
@@ -526,7 +526,7 @@ func (suite *blockRepositorySuite) TestetrieveSecondLatestDbConnectionError() {
 	repo := NewBlockRepository(suite.InvalidDbClient)
 
 	// when
-	actual, err := repo.RetrieveSecondLatest()
+	actual, err := repo.RetrieveLatest()
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)

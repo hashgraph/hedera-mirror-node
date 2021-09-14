@@ -95,7 +95,7 @@ func (n *NetworkAPIService) NetworkStatus(
 		return nil, err
 	}
 
-	currentBlock, err := n.RetrieveSecondLatest()
+	currentBlock, err := n.RetrieveLatest()
 	if err != nil {
 		return nil, err
 	}

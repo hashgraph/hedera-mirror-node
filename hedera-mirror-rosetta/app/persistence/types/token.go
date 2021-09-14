@@ -64,7 +64,7 @@ func (t Token) ToDomainToken() (*types.Token, *rTypes.Error) {
 
 	return &types.Token{
 		TokenId:  tokenId,
-		Decimals: uint32(t.Decimals),
+		Decimals: t.Decimals,
 		Name:     t.Name,
 		Symbol:   t.Symbol,
 	}, nil

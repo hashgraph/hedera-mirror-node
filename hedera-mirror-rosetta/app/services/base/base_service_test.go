@@ -197,13 +197,13 @@ func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByHash() {
 
 func (suite *baseServiceSuite) TestRetrieveSecondLatest() {
 	// given:
-	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(
+	suite.mockBlockRepo.On("RetrieveLatest").Return(
 		block(),
 		repository.NilError,
 	)
 
 	// when:
-	res, e := suite.baseService.RetrieveSecondLatest()
+	res, e := suite.baseService.RetrieveLatest()
 
 	// then:
 	assert.Nil(suite.T(), e)
@@ -212,13 +212,13 @@ func (suite *baseServiceSuite) TestRetrieveSecondLatest() {
 
 func (suite *baseServiceSuite) TestRetrieveSecondLatestThrows() {
 	// given:
-	suite.mockBlockRepo.On("RetrieveSecondLatest").Return(
+	suite.mockBlockRepo.On("RetrieveLatest").Return(
 		repository.NilBlock,
 		&rTypes.Error{},
 	)
 
 	// when:
-	res, e := suite.baseService.RetrieveSecondLatest()
+	res, e := suite.baseService.RetrieveLatest()
 
 	// then:
 	assert.Nil(suite.T(), res)

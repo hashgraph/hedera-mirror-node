@@ -18,19 +18,14 @@
  * ‍
  */
 
-package repositories
+package types
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// AccountRepository Interface that all AccountRepository structs must implement
-type AccountRepository interface {
-	RetrieveBalanceAtBlock(accountId int64, consensusEnd int64) ([]types.Amount, *rTypes.Error)
-	RetrieveDissociatedTokens(accountId int64, consensusEnd int64) ([]types.Token, *rTypes.Error)
-	RetrieveTransferredTokensInBlockAfter(accountId int64, consensusTimestamp int64) (
-		[]types.Token,
-		*rTypes.Error,
-	)
+func TestTokenAccountTableName(t *testing.T) {
+	assert.Equal(t, "token_account", TokenAccount{}.TableName())
 }

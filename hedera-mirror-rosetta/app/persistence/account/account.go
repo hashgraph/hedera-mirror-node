@@ -82,6 +82,17 @@ const (
                                     from abm
                                     left join account_balance ab
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
+	selectDissociatedTokensAtTimestamp = `with latest as (
+                                            select distinct on (ta.token_id) ta.token_id, t.decimals, ta.associated
+                                            from token_account ta
+                                            join token t on t.token_id = ta.token_id
+                                            where ta.modified_timestamp <= @consensus_timestamp and
+                                              ta.account_id = @account_id
+                                            order by ta.token_id, ta.modified_timestamp desc
+                                          )
+                                          select token_id, decimals
+                                          from latest
+                                          where associated is false`
 	// gosec somehow thinks the sql query has hardcoded credentials
 	// #nosec
 	selectTransferredTokensInBlockAfterTimestamp = `with rf as (
@@ -124,26 +135,21 @@ func NewAccountRepository(dbClient *gorm.DB) repositories.AccountRepository {
 // provided by consensusEnd timestamp).
 // balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
 func (ar *accountRepository) RetrieveBalanceAtBlock(
-	addressStr string,
+	accountId int64,
 	consensusEnd int64,
 ) ([]types.Amount, *rTypes.Error) {
-	accountId, err := types.AccountFromString(addressStr)
+	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(accountId, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
 
-	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(accountId.EncodedId, consensusEnd)
-	if err != nil {
-		return nil, err
-	}
-
-	hbarValue, tokenValues, err := ar.getBalanceChange(accountId.EncodedId, snapshotTimestamp, consensusEnd)
+	hbarValue, tokenValues, err := ar.getBalanceChange(accountId, snapshotTimestamp, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
 
 	hbarAmount.Value += hbarValue
-	tokenAmounts := ar.getUpdatedTokenAmounts(tokenAmountMap, tokenValues)
+	tokenAmounts := getUpdatedTokenAmounts(tokenAmountMap, tokenValues)
 
 	amounts := make([]types.Amount, 0, 1+len(tokenAmounts))
 	amounts = append(amounts, hbarAmount)
@@ -152,37 +158,42 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	return amounts, nil
 }
 
+// RetrieveDissociatedTokens returns the list of tokens at consensusEnd the accountId has a dissociated relationship
+// with
+func (ar *accountRepository) RetrieveDissociatedTokens(
+	accountId int64,
+	consensusEnd int64,
+) ([]types.Token, *rTypes.Error) {
+	tokens := make([]pTypes.Token, 0)
+	if err := ar.dbClient.Raw(
+		selectDissociatedTokensAtTimestamp,
+		sql.Named("account_id", accountId),
+		sql.Named("consensus_timestamp", consensusEnd),
+	).Scan(&tokens).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return nil, hErrors.ErrDatabaseError
+	}
+
+	return getDomainTokens(tokens)
+}
+
 // RetrieveTransferredTokensInBlockAfter returns the list of tokens transferred to / from the account in the block after
 // consensusTimestamp
 func (ar *accountRepository) RetrieveTransferredTokensInBlockAfter(
-	addressStr string,
+	accountId int64,
 	consensusTimestamp int64,
 ) ([]types.Token, *rTypes.Error) {
-	accountId, err := types.AccountFromString(addressStr)
-	if err != nil {
-		return nil, err
-	}
-
 	tokens := make([]pTypes.Token, 0)
 	if err := ar.dbClient.Raw(
 		selectTransferredTokensInBlockAfterTimestamp,
-		sql.Named("account_id", accountId.EncodedId),
+		sql.Named("account_id", accountId),
 		sql.Named("consensus_timestamp", consensusTimestamp),
 	).Scan(&tokens).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
 	}
 
-	domainTokens := make([]types.Token, 0, len(tokens))
-	for _, token := range tokens {
-		domainToken, err := token.ToDomainToken()
-		if err != nil {
-			return nil, err
-		}
-		domainTokens = append(domainTokens, *domainToken)
-	}
-
-	return domainTokens, nil
+	return getDomainTokens(tokens)
 }
 
 func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd int64) (
@@ -246,7 +257,21 @@ func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consens
 	return change.Value, tokenValues, nil
 }
 
-func (ar *accountRepository) getUpdatedTokenAmounts(
+func getDomainTokens(tokens []pTypes.Token) ([]types.Token, *rTypes.Error) {
+	domainTokens := make([]types.Token, 0, len(tokens))
+	for _, token := range tokens {
+		domainToken, err := token.ToDomainToken()
+		if err != nil {
+			return nil, err
+		}
+
+		domainTokens = append(domainTokens, *domainToken)
+	}
+
+	return domainTokens, nil
+}
+
+func getUpdatedTokenAmounts(
 	tokenAmountMap map[int64]*types.TokenAmount,
 	tokenValues []*types.TokenAmount,
 ) []types.Amount {

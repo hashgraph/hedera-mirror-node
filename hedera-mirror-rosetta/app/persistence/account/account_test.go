@@ -23,6 +23,7 @@ package account
 import (
 	"testing"
 
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
@@ -35,7 +36,6 @@ import (
 
 var (
 	account               int64 = 9000
-	accountString               = "0.0.9000"
 	account2              int64 = 9001
 	consensusEnd          int64 = 200
 	snapshotTimestamp     int64 = 100
@@ -318,7 +318,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -340,7 +340,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 	expected := []types.Amount{hbarAmount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -369,7 +369,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -383,20 +383,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountBalanceF
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
-
-	// then
-	assert.NotNil(suite.T(), err)
-	assert.Nil(suite.T(), actual)
-}
-
-func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockInvalidAccountIdStr() {
-	// given
-	dbClient := suite.DbResource.GetGormDb()
-	repo := NewAccountRepository(dbClient)
-
-	// when
-	actual, err := repo.RetrieveBalanceAtBlock("a", consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -408,7 +395,70 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError
 	repo := NewAccountRepository(suite.InvalidDbClient)
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveDissociatedTokens() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, token1, token2)
+	db.CreateDbRecords(
+		dbClient,
+		getTokenAccount(account, true, 20, 20, token1.TokenId),
+		getTokenAccount(account, false, 20, 50, token1.TokenId),
+		getTokenAccount(account, true, 30, 30, token2.TokenId),
+		getTokenAccount(account, false, 30, 40, token2.TokenId),
+		getTokenAccount(account2, true, 21, 21, token1.TokenId),
+		getTokenAccount(account2, true, 25, 25, token2.TokenId),
+		getTokenAccount(account2, false, 25, 37, token2.TokenId),
+	)
+	expected := []types.Token{{
+		TokenId:  token2EntityId,
+		Decimals: token2.Decimals,
+	}}
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveDissociatedTokens(account, 45)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expected, actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveDissociatedTokensNoTokenEntity() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(
+		dbClient,
+		getTokenAccount(account, true, 20, 20, token1.TokenId),
+		getTokenAccount(account, false, 20, 50, token1.TokenId),
+		getTokenAccount(account, true, 30, 30, token2.TokenId),
+		getTokenAccount(account, false, 30, 40, token2.TokenId),
+		getTokenAccount(account2, true, 21, 21, token1.TokenId),
+		getTokenAccount(account2, true, 25, 25, token2.TokenId),
+		getTokenAccount(account2, false, 25, 37, token2.TokenId),
+	)
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveDissociatedTokens(account, 45)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Empty(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveDissociatedTokensDbConnectionerror() {
+	// given
+	repo := NewAccountRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.RetrieveDissociatedTokens(account, 45)
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
@@ -427,11 +477,11 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfter()
 
 	expected := []types.Token{{
 		TokenId:  token1EntityId,
-		Decimals: uint32(token1.Decimals),
+		Decimals: token1.Decimals,
 	}}
 
 	// when
-	actual, err := repo.RetrieveTransferredTokensInBlockAfter(accountString, consensusEnd)
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -449,7 +499,7 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNo
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveTransferredTokensInBlockAfter(accountString, consensusEnd)
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -467,24 +517,11 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNo
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveTransferredTokensInBlockAfter(accountString, consensusEnd)
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Empty(suite.T(), actual)
-}
-
-func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterInvalidAccountIdStr() {
-	// given
-	dbClient := suite.DbResource.GetGormDb()
-	repo := NewAccountRepository(dbClient)
-
-	// when
-	actual, err := repo.RetrieveTransferredTokensInBlockAfter("a", consensusEnd)
-
-	// then
-	assert.NotNil(suite.T(), err)
-	assert.Nil(suite.T(), actual)
 }
 
 func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterDbConnectionError() {
@@ -492,11 +529,143 @@ func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterDb
 	repo := NewAccountRepository(suite.InvalidDbClient)
 
 	// when
-	actual, err := repo.RetrieveTransferredTokensInBlockAfter(accountString, consensusEnd)
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
+}
+
+func TestGetDomainTokens(t *testing.T) {
+	domainToken1 := types.Token{
+		TokenId:  token1EntityId,
+		Decimals: token1.Decimals,
+		Name:     token1.Name,
+		Symbol:   token1.Symbol,
+	}
+	domainToken2 := types.Token{
+		TokenId:  token2EntityId,
+		Decimals: token2.Decimals,
+		Name:     token2.Name,
+		Symbol:   token2.Symbol,
+	}
+
+	tests := []struct {
+		name        string
+		input       []dbTypes.Token
+		expected    []types.Token
+		expectedErr *rTypes.Error
+	}{
+		{
+			"empty input",
+			[]dbTypes.Token{},
+			[]types.Token{},
+			nil,
+		},
+		{
+			"single token",
+			[]dbTypes.Token{*token1},
+			[]types.Token{domainToken1},
+			nil,
+		},
+		{
+			"multiple tokens",
+			[]dbTypes.Token{*token1, *token2},
+			[]types.Token{domainToken1, domainToken2},
+			nil,
+		},
+		{
+			"invalid token id",
+			[]dbTypes.Token{{TokenId: -1, Decimals: 5}},
+			nil,
+			errors.ErrInvalidToken,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := getDomainTokens(tt.input)
+			assert.Equal(t, tt.expected, actual)
+			assert.Equal(t, tt.expectedErr, err)
+		})
+	}
+}
+
+func TestGetUpdatedTokenAmounts(t *testing.T) {
+	token3EntityId := entityid.EntityId{EncodedId: 2007, EntityNum: 2007}
+	tests := []struct {
+		name           string
+		tokenAmountMap map[int64]*types.TokenAmount
+		tokenValues    []*types.TokenAmount
+		expected       []types.Amount
+	}{
+		{
+			"empty tokenAmountMap and tokenValues",
+			map[int64]*types.TokenAmount{},
+			[]*types.TokenAmount{},
+			[]types.Amount{},
+		},
+		{
+			"empty tokenValues",
+			map[int64]*types.TokenAmount{
+				token1.TokenId: {Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+			[]*types.TokenAmount{},
+			[]types.Amount{
+				&types.TokenAmount{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+		},
+		{
+			"empty tokenAmountMap",
+			map[int64]*types.TokenAmount{},
+			[]*types.TokenAmount{
+				{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+			[]types.Amount{
+				&types.TokenAmount{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+		},
+		{
+			"non-empty tokenAmountMap and tokenValues",
+			map[int64]*types.TokenAmount{
+				token1.TokenId: {Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+				token2.TokenId: {Decimals: token2.Decimals, TokenId: token2EntityId, Value: 220},
+			},
+			[]*types.TokenAmount{
+				{Decimals: token1.Decimals, TokenId: token1EntityId, Value: -20},
+				{Decimals: token2.Decimals, TokenId: token2EntityId, Value: 30},
+				{Decimals: 12, TokenId: token3EntityId, Value: 70},
+			},
+			[]types.Amount{
+				&types.TokenAmount{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 180},
+				&types.TokenAmount{Decimals: token2.Decimals, TokenId: token2EntityId, Value: 250},
+				&types.TokenAmount{Decimals: 12, TokenId: token3EntityId, Value: 70},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := getUpdatedTokenAmounts(tt.tokenAmountMap, tt.tokenValues)
+			assert.ElementsMatch(t, tt.expected, actual)
+		})
+	}
+}
+
+func getTokenAccount(
+	accountId int64,
+	associated bool,
+	createdTimestamp int64,
+	modifiedTimestamp int64,
+	tokenId int64,
+) *dbTypes.TokenAccount {
+	return &dbTypes.TokenAccount{
+		AccountId:         accountId,
+		Associated:        associated,
+		CreatedTimestamp:  createdTimestamp,
+		ModifiedTimestamp: modifiedTimestamp,
+		TokenId:           tokenId,
+	}
 }
 
 func sum(amounts []int64) int64 {

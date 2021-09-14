@@ -186,8 +186,9 @@ func (br *blockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 	return br.findBlockByIndex(0)
 }
 
-// RetrieveSecondLatest retrieves the second latest block
-func (br *blockRepository) RetrieveSecondLatest() (*types.Block, *rTypes.Error) {
+// RetrieveLatest retrieves the second latest block. It's required to hide the latest block so account service can
+// add 0-amount genesis token balance to a block for tokens whose first transfer to the account is in the next block
+func (br *blockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 	if err := br.initGenesisRecordFile(); err != nil {
 		return nil, err
 	}

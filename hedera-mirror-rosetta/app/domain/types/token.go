@@ -29,7 +29,7 @@ import (
 // Token is domain level struct used to represent Token conceptual mapping in Hedera
 type Token struct {
 	TokenId  entityid.EntityId
-	Decimals uint32
+	Decimals int64
 	Name     string
 	Symbol   string
 }

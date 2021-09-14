@@ -61,3 +61,11 @@ func (t *TokenAmount) ToRosetta() *rTypes.Amount {
 		},
 	}
 }
+
+func NewTokenAmount(token Token, amount int64) *TokenAmount {
+	return &TokenAmount{
+		Decimals: token.Decimals,
+		TokenId:  token.TokenId,
+		Value:    amount,
+	}
+}
