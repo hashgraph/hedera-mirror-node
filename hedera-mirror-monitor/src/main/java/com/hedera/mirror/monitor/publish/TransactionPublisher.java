@@ -158,7 +158,7 @@ public class TransactionPublisher implements AutoCloseable {
         Map<String, AccountId> nodes = monitorProperties.getNodes().stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
 
-        NodeValidationProperties validationProperties = monitorProperties.getNodeValidationProperties();
+        NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
         if (validationProperties.isEnabled()) {
 
             nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency(),
@@ -176,7 +176,7 @@ public class TransactionPublisher implements AutoCloseable {
         log.info("Validating nodes");
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
-        if (!monitorProperties.getNodeValidationProperties().isEnabled()) {
+        if (!monitorProperties.getNodeValidation().isEnabled()) {
             setNodeAccountIds(new ArrayList<>(nodes));
             return;
         }
@@ -212,7 +212,7 @@ public class TransactionPublisher implements AutoCloseable {
 
     private boolean validateNode(Client client, NodeProperties node) {
         boolean valid = false;
-        NodeValidationProperties nodeValidationProperties = monitorProperties.getNodeValidationProperties();
+        NodeValidationProperties nodeValidationProperties = monitorProperties.getNodeValidation();
         client.setMinBackoff(nodeValidationProperties.getMinBackoff());
         client.setMaxBackoff(nodeValidationProperties.getMaxBackoff());
         client.setMaxAttempts(nodeValidationProperties.getMaxAttempts());

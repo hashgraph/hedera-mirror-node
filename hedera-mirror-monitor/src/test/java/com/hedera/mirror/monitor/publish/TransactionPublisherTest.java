@@ -93,7 +93,7 @@ class TransactionPublisherTest {
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
         monitorProperties.setOperator(operatorProperties);
         nodeValidationProperties = new NodeValidationProperties();
-        monitorProperties.setNodeValidationProperties(nodeValidationProperties);
+        monitorProperties.setNodeValidation(nodeValidationProperties);
         publishProperties = new PublishProperties();
         transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties);
 
