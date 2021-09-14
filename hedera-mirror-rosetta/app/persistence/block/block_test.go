@@ -538,12 +538,12 @@ func TestRecordFileToBlock(t *testing.T) {
 	genesisIndex := int64(5)
 	tests := []struct {
 		name     string
-		input    recordFile
+		input    recordBlock
 		expected *types.Block
 	}{
 		{
 			"genesis block",
-			recordFile{
+			recordBlock{
 				ConsensusStart: 100,
 				ConsensusEnd:   200,
 				Hash:           "hash",
@@ -563,7 +563,7 @@ func TestRecordFileToBlock(t *testing.T) {
 		},
 		{
 			"non-genesis block",
-			recordFile{
+			recordBlock{
 				ConsensusStart: 201,
 				ConsensusEnd:   300,
 				Hash:           "hash",

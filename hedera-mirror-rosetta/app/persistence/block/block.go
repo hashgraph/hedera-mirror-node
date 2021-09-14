@@ -35,7 +35,7 @@ import (
 const (
 	genesisConsensusStartUnset = -1
 
-	// selectSecondLatestWithIndex - Selects the second latest row
+	// selectSecondLatestWithIndex - Selects the second latest record block
 	selectSecondLatestWithIndex string = `select consensus_start,
                                            consensus_end,
                                            hash,
@@ -72,8 +72,8 @@ const (
                             order by consensus_end
                             limit 1`
 
-	// selectRecordFileByIndex - Selects the record_file by its index
-	selectRecordFileByIndex string = `SELECT consensus_start,
+	// selectRecordBlockByIndex - Selects the record block by its index
+	selectRecordBlockByIndex string = `SELECT consensus_start,
                                              consensus_end,
                                              hash,
                                              index,
@@ -83,7 +83,7 @@ const (
                                       WHERE index = @index`
 )
 
-type recordFile struct {
+type recordBlock struct {
 	ConsensusStart int64
 	ConsensusEnd   int64
 	Hash           string
@@ -92,27 +92,27 @@ type recordFile struct {
 	PrevHash       string
 }
 
-func (rf *recordFile) ToBlock(genesisConsensusStart int64, genesisIndex int64) *types.Block {
-	consensusStart := rf.ConsensusStart
-	index := rf.Index - genesisIndex
+func (rb *recordBlock) ToBlock(genesisConsensusStart int64, genesisIndex int64) *types.Block {
+	consensusStart := rb.ConsensusStart
+	index := rb.Index - genesisIndex
 	parentIndex := index - 1
-	parentHash := rf.PrevHash
+	parentHash := rb.PrevHash
 
 	// Handle the edge case for querying first block
 	if parentIndex < 0 {
 		consensusStart = genesisConsensusStart
 		parentIndex = 0      // Parent index should be 0, same as current block index
-		parentHash = rf.Hash // Parent hash should be same as current block hash
+		parentHash = rb.Hash // Parent hash should be same as current block hash
 	}
 
 	return &types.Block{
 		Index:               index,
-		Hash:                rf.Hash,
-		LatestIndex:         rf.LatestIndex - genesisIndex,
+		Hash:                rb.Hash,
+		LatestIndex:         rb.LatestIndex - genesisIndex,
 		ParentIndex:         parentIndex,
 		ParentHash:          parentHash,
 		ConsensusStartNanos: consensusStart,
-		ConsensusEndNanos:   rf.ConsensusEnd,
+		ConsensusEndNanos:   rb.ConsensusEnd,
 	}
 }
 
@@ -193,35 +193,35 @@ func (br *blockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 		return nil, err
 	}
 
-	rf := &recordFile{}
-	if err := br.dbClient.Raw(selectSecondLatestWithIndex).First(rf).Error; err != nil {
+	rb := &recordBlock{}
+	if err := br.dbClient.Raw(selectSecondLatestWithIndex).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
-	if rf.Index < br.genesisRecordFileIndex {
+	if rb.Index < br.genesisRecordFileIndex {
 		return nil, hErrors.ErrBlockNotFound
 	}
 
-	return rf.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
+	return rb.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
 }
 
 func (br *blockRepository) findBlockByIndex(index int64) (*types.Block, *rTypes.Error) {
-	rf := &recordFile{}
+	rb := &recordBlock{}
 	index += br.genesisRecordFileIndex
-	if err := br.dbClient.Raw(selectRecordFileByIndex, sql.Named("index", index)).First(rf).Error; err != nil {
+	if err := br.dbClient.Raw(selectRecordBlockByIndex, sql.Named("index", index)).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
-	return rf.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
+	return rb.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
 }
 
 func (br *blockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.Error) {
-	rf := &recordFile{}
-	if err := br.dbClient.Raw(selectByHashWithIndex, sql.Named("hash", hash)).First(rf).Error; err != nil {
+	rb := &recordBlock{}
+	if err := br.dbClient.Raw(selectByHashWithIndex, sql.Named("hash", hash)).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
-	return rf.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
+	return rb.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
 }
 
 func (br *blockRepository) initGenesisRecordFile() *rTypes.Error {
@@ -229,17 +229,17 @@ func (br *blockRepository) initGenesisRecordFile() *rTypes.Error {
 		return nil
 	}
 
-	rf := &recordFile{}
-	if err := br.dbClient.Raw(selectGenesis).First(rf).Error; err != nil {
+	rb := &recordBlock{}
+	if err := br.dbClient.Raw(selectGenesis).First(rb).Error; err != nil {
 		return handleDatabaseError(err, hErrors.ErrNodeIsStarting)
 	}
 
 	br.once.Do(func() {
-		br.genesisConsensusStart = rf.ConsensusStart
-		br.genesisRecordFileIndex = rf.Index
+		br.genesisConsensusStart = rb.ConsensusStart
+		br.genesisRecordFileIndex = rb.Index
 	})
 
-	log.Infof("Fetched genesis record file, index - %d", rf.Index)
+	log.Infof("Fetched genesis record file, index - %d", rb.Index)
 	return nil
 }
 
