@@ -159,7 +159,7 @@ public class TransactionPublisher implements AutoCloseable {
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
 
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidationProperties();
-        if (validationProperties.isValidateNodes()) {
+        if (validationProperties.isEnabled()) {
 
             nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency(),
                             validationProperties.getFrequency())
@@ -176,7 +176,7 @@ public class TransactionPublisher implements AutoCloseable {
         log.info("Validating nodes");
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
-        if (!monitorProperties.getNodeValidationProperties().isValidateNodes()) {
+        if (!monitorProperties.getNodeValidationProperties().isEnabled()) {
             setNodeAccountIds(new ArrayList<>(nodes));
             return;
         }

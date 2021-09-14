@@ -12,6 +12,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class NodeValidationProperties {
 
+    private boolean enabled = true;
+
     @DurationMin(seconds = 30)
     @NotNull
     private Duration frequency = Duration.ofMinutes(5);
@@ -28,6 +30,4 @@ public class NodeValidationProperties {
     @DurationMax(seconds = 10)
     @NotNull
     private Duration minBackoff = Duration.ofMillis(500);
-
-    private boolean validateNodes = true;
 }

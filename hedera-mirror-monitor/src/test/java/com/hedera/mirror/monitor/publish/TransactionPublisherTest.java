@@ -256,7 +256,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(20)
     void publishWithRevalidateDisabled() throws InterruptedException {
-        nodeValidationProperties.setValidateNodes(false);
+        nodeValidationProperties.setEnabled(false);
         nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
@@ -336,7 +336,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void skipNodeValidation() {
-        nodeValidationProperties.setValidateNodes(false);
+        nodeValidationProperties.setEnabled(false);
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())
