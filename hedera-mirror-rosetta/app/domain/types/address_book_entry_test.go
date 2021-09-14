@@ -21,88 +21,59 @@
 package types
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/stretchr/testify/assert"
 )
 
 func exampleAddressBookEntries() *AddressBookEntries {
 	return &AddressBookEntries{
-		[]*AddressBookEntry{
-			newDummyAddressBookEntry(0, 0, 1, dummyMetadata("someip", "someport")),
-			newDummyAddressBookEntry(0, 0, 2, dummyMetadata("someip2", "someport2")),
-			newDummyAddressBookEntry(0, 1, 3, dummyMetadata("someip3", "someport3")),
-			newDummyAddressBookEntry(10, 1, 3, dummyMetadata("someip3", "someport3")),
+		[]AddressBookEntry{
+			newDummyAddressBookEntry(0, 3, "10.0.0.1:50211"),
+			newDummyAddressBookEntry(1, 4, "192.168.0.5:50211"),
+			newDummyAddressBookEntry(2, 5, "192.168.50.2:50211, 192.168.140.7:50211"),
+			newDummyAddressBookEntry(3, 6, ""),
 		},
 	}
 }
 
 func expectedRosettaPeers() []*types.Peer {
 	return []*types.Peer{
-		newDummyPeer(0, 0, 1, dummyMetadata("someip", "someport")),
-		newDummyPeer(0, 0, 2, dummyMetadata("someip2", "someport2")),
-		newDummyPeer(0, 1, 3, dummyMetadata("someip3", "someport3")),
-		newDummyPeer(10, 1, 3, dummyMetadata("someip3", "someport3")),
+		newDummyPeer("3", dummyMetadata("0.0.6", "")),
+		newDummyPeer("0", dummyMetadata("0.0.3", "10.0.0.1:50211")),
+		newDummyPeer("1", dummyMetadata("0.0.4", "192.168.0.5:50211")),
+		newDummyPeer("2", dummyMetadata("0.0.5", "192.168.50.2:50211, 192.168.140.7:50211")),
 	}
 }
 
 func TestToRosettaPeers(t *testing.T) {
 	// when:
-	result := exampleAddressBookEntries().ToRosetta()
+	actual := exampleAddressBookEntries().ToRosetta()
 
 	// then:
-	assert.Equal(t, len(expectedRosettaPeers()), len(result))
-
-	// and:
-	for _, a := range result {
-		found := false
-		for _, e := range result {
-			if reflect.DeepEqual(a, e) {
-				found = true
-				break
-			}
-		}
-		assert.True(t, found)
-	}
+	assert.ElementsMatch(t, expectedRosettaPeers(), actual)
 }
 
-func newDummyPeer(shard, realm, entity int64, metadata map[string]interface{}) *types.Peer {
-	encoded, _ := entityid.Encode(shard, realm, entity)
+func newDummyPeer(nodeId string, metadata map[string]interface{}) *types.Peer {
 	return &types.Peer{
-		PeerID: (&Account{
-			entityid.EntityId{
-				ShardNum:  shard,
-				RealmNum:  realm,
-				EntityNum: entity,
-				EncodedId: encoded,
-			},
-		}).String(),
+		PeerID:   nodeId,
 		Metadata: metadata,
 	}
 }
 
-func newDummyAddressBookEntry(shard, realm, entity int64, metadata map[string]interface{}) *AddressBookEntry {
-	encoded, _ := entityid.Encode(shard, realm, entity)
-	return &AddressBookEntry{
-		PeerId: Account{
-			entityid.EntityId{
-				ShardNum:  shard,
-				RealmNum:  realm,
-				EntityNum: entity,
-				EncodedId: encoded,
-			},
-		},
-		Metadata: metadata,
+func newDummyAddressBookEntry(nodeId int64, accountId int64, endpoints string) AddressBookEntry {
+	account, _ := NewAccountFromEncodedID(accountId)
+	return AddressBookEntry{
+		NodeId:    nodeId,
+		AccountId: account,
+		Endpoints: endpoints,
 	}
 }
 
-func dummyMetadata(ip, port string) map[string]interface{} {
-	return map[string]interface {
-	}{
-		"ip":   ip,
-		"port": port,
+func dummyMetadata(accountId string, endpoints string) map[string]interface{} {
+	return map[string]interface{}{
+		"account_id": accountId,
+		"endpoints":  endpoints,
 	}
 }

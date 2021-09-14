@@ -231,7 +231,7 @@ func (suite *networkServiceSuite) TestNetworkOptionsThrowsWhenTypesAsArrayFails(
 
 func (suite *networkServiceSuite) TestNetworkStatus() {
 	// given:
-	exampleEntries := &types.AddressBookEntries{Entries: []*types.AddressBookEntry{}}
+	exampleEntries := &types.AddressBookEntries{Entries: []types.AddressBookEntry{}}
 
 	expectedResult := &rTypes.NetworkStatusResponse{
 		CurrentBlockIdentifier: &rTypes.BlockIdentifier{
