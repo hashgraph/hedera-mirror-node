@@ -117,7 +117,8 @@ public class TransactionPublisher implements AutoCloseable {
         if (transaction.getNodeAccountIds() == null) {
             List<AccountId> nodes = nodeAccountIds.get();
             if (nodes.size() == 0) {
-                throw new PublishException(request, new IllegalArgumentException("No valid nodes"));
+                throw new PublishException(request, new IllegalArgumentException("No valid nodes available to publish" +
+                        " to"));
             }
             int nodeIndex = secureRandom.nextInt(nodes.size());
             List<AccountId> nodeAccountId = List.of(nodes.get(nodeIndex));
@@ -153,12 +154,16 @@ public class TransactionPublisher implements AutoCloseable {
     private Flux<Client> getClients() {
         validateNodes();
 
+        if (nodeAccountIds.get().isEmpty()) {
+            throw new IllegalArgumentException("No valid nodes found");
+        }
+
         log.info("Creating {} connections to {} nodes", publishProperties.getClients(), monitorProperties.getNodes()
                 .size());
         Map<String, AccountId> nodes = monitorProperties.getNodes().stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
 
-        if (monitorProperties.isValidateNodes() && publishProperties.isEnabled()) {
+        if (monitorProperties.isValidateNodes()) {
 
             Duration revalidateFrequency = monitorProperties.getRevalidationProperties()
                     .getFrequency();
@@ -198,10 +203,6 @@ public class TransactionPublisher implements AutoCloseable {
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
 
         setNodeAccountIds(validNodes);
-
-        if (validNodes.isEmpty()) {
-            throw new IllegalArgumentException("No valid nodes found");
-        }
     }
 
     private void setNodeAccountIds(List<NodeProperties> validNodes) {
