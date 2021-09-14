@@ -21,12 +21,12 @@
 package middleware
 
 import (
-	"fmt"
+	"time"
+
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hellofresh/health-go/v4"
 	"github.com/hellofresh/health-go/v4/checks/postgres"
-	"time"
 )
 
 const (
@@ -51,10 +51,7 @@ func NewHealthController(dbConfig types.Db) (server.Router, error) {
 		Name:      "postgresql",
 		Timeout:   time.Second * 10,
 		SkipOnErr: false,
-		Check: postgres.New(postgres.Config{
-			DSN: fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", // prefer and allow not supported
-				dbConfig.Username, dbConfig.Password, dbConfig.Host, dbConfig.Port, dbConfig.Name),
-		}),
+		Check:     postgres.New(postgres.Config{DSN: dbConfig.GetDsn()}),
 	}))
 
 	if err != nil {

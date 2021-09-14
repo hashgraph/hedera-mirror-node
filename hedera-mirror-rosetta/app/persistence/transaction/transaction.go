@@ -46,6 +46,7 @@ const (
 )
 
 const (
+	databaseErrorFormat      = "%s: %s"
 	andTransactionHashFilter = " and transaction_hash = @hash"
 	orderByConsensusNs       = " order by consensus_ns"
 	selectTransactionResults = "select * from " + tableNameTransactionResults
@@ -213,8 +214,7 @@ func NewTransactionRepository(dbClient *gorm.DB) repositories.TransactionReposit
 // Types returns map of all transaction types
 func (tr *transactionRepository) Types() (map[int]string, *rTypes.Error) {
 	if tr.types == nil {
-		err := tr.retrieveTransactionTypesAndResults()
-		if err != nil {
+		if err := tr.retrieveTransactionTypesAndResults(); err != nil {
 			return nil, err
 		}
 	}
@@ -224,8 +224,7 @@ func (tr *transactionRepository) Types() (map[int]string, *rTypes.Error) {
 // Results returns map of all transaction results
 func (tr *transactionRepository) Results() (map[int]string, *rTypes.Error) {
 	if tr.results == nil {
-		err := tr.retrieveTransactionTypesAndResults()
-		if err != nil {
+		if err := tr.retrieveTransactionTypesAndResults(); err != nil {
 			return nil, err
 		}
 	}
@@ -251,10 +250,16 @@ func (tr *transactionRepository) FindBetween(start, end int64) ([]*types.Transac
 
 	for start <= end {
 		transactionsBatch := make([]*transaction, 0)
-		tr.dbClient.
+		err := tr.dbClient.
 			Raw(selectTransactionsInTimestampRangeOrdered, sql.Named("start", start), sql.Named("end", end)).
 			Limit(batchSize).
-			Find(&transactionsBatch)
+			Find(&transactionsBatch).
+			Error
+		if err != nil {
+			log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+			return nil, hErrors.ErrDatabaseError
+		}
+
 		transactions = append(transactions, transactionsBatch...)
 
 		if len(transactionsBatch) < batchSize {
@@ -300,14 +305,20 @@ func (tr *transactionRepository) FindByHashInBlock(
 		return nil, hErrors.ErrInvalidTransactionIdentifier
 	}
 
-	tr.dbClient.
+	err = tr.dbClient.
 		Raw(
 			selectTransactionsByHashInTimestampRange,
 			sql.Named("hash", transactionHash),
 			sql.Named("start", consensusStart),
 			sql.Named("end", consensusEnd),
 		).
-		Find(&transactions)
+		Find(&transactions).
+		Error
+	if err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return nil, hErrors.ErrDatabaseError
+	}
+
 	if len(transactions) == 0 {
 		return nil, hErrors.ErrTransactionNotFound
 	}
@@ -320,35 +331,35 @@ func (tr *transactionRepository) FindByHashInBlock(
 	return transaction, nil
 }
 
-func (tr *transactionRepository) retrieveTransactionTypes() []transactionType {
+func (tr *transactionRepository) retrieveTransactionTypes() ([]transactionType, *rTypes.Error) {
 	var transactionTypes []transactionType
-	tr.dbClient.Raw(selectTransactionTypes).Find(&transactionTypes)
-	return transactionTypes
+	if err := tr.dbClient.Raw(selectTransactionTypes).Find(&transactionTypes).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return nil, hErrors.ErrDatabaseError
+	}
+	return transactionTypes, nil
 }
 
-func (tr *transactionRepository) retrieveTransactionResults() []transactionResult {
+func (tr *transactionRepository) retrieveTransactionResults() ([]transactionResult, *rTypes.Error) {
 	var tResults []transactionResult
-	tr.dbClient.Raw(selectTransactionResults).Find(&tResults)
-	return tResults
+	if err := tr.dbClient.Raw(selectTransactionResults).Find(&tResults).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return nil, hErrors.ErrDatabaseError
+	}
+	return tResults, nil
 }
 
 func (tr *transactionRepository) constructTransaction(sameHashTransactions []*transaction) (
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	transactionTypes, err := tr.Types()
-	if err != nil {
-		return nil, err
-	}
-
-	transactionResults, err := tr.Results()
-	if err != nil {
+	if err := tr.retrieveTransactionTypesAndResults(); err != nil {
 		return nil, err
 	}
 
 	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
 	operations := make([]*types.Operation, 0)
-	success := transactionResults[transactionResultSuccess]
+	success := tr.results[transactionResultSuccess]
 
 	for _, transaction := range sameHashTransactions {
 		cryptoTransfers := make([]hbarTransfer, 0)
@@ -371,8 +382,8 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 			return nil, hErrors.ErrInternalServerError
 		}
 
-		transactionResult := transactionResults[int(transaction.Result)]
-		transactionType := transactionTypes[int(transaction.Type)]
+		transactionResult := tr.results[int(transaction.Result)]
+		transactionType := tr.types[int(transaction.Type)]
 
 		nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
 		adjustedCryptoTransfers := adjustCryptoTransfers(cryptoTransfers, nonFeeTransferMap)
@@ -442,8 +453,15 @@ func (tr *transactionRepository) appendTransferOperations(
 }
 
 func (tr *transactionRepository) retrieveTransactionTypesAndResults() *rTypes.Error {
-	typeArray := tr.retrieveTransactionTypes()
-	resultArray := tr.retrieveTransactionResults()
+	typeArray, err := tr.retrieveTransactionTypes()
+	if err != nil {
+		return err
+	}
+
+	resultArray, err := tr.retrieveTransactionResults()
+	if err != nil {
+		return err
+	}
 
 	if len(typeArray) == 0 {
 		log.Warn("No Transaction Types were found in the database.")
@@ -539,20 +557,17 @@ func getTokenOperation(
 		Type:    transactionType,
 		Status:  transactionResult,
 		Account: payerId,
-		Amount:  token.getAmount(),
 	}
 
+	// best effort for immutable fields
+	metadata := make(map[string]interface{})
+	metadata["currency"] = token.getAmount().ToRosetta().Currency
 	if transaction.Type == dbTypes.TransactionTypeTokenCreation {
-		// token creation shouldn't have Amount
-		operation.Amount = nil
-		metadata := make(map[string]interface{})
-		operation.Metadata = metadata
-
-		// best effort for immutable fields
-		metadata["decimals"] = token.Decimals
 		metadata["freeze_default"] = token.FreezeDefault
 		metadata["initial_supply"] = token.InitialSupply
 	}
+
+	operation.Metadata = metadata
 
 	return operation, nil
 }

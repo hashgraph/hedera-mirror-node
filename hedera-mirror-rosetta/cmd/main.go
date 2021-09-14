@@ -180,7 +180,7 @@ func main() {
 		"",
 	)
 	if err != nil {
-		log.Fatalf("%s", err)
+		log.Fatal(err)
 	}
 
 	var router http.Handler
@@ -190,14 +190,14 @@ func main() {
 
 		router, err = newBlockchainOnlineRouter(network, *rosettaConfig, asserter, version, dbClient)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.Fatal(err)
 		}
 
 		log.Info("Serving Rosetta API in ONLINE mode")
 	} else {
 		router, err = newBlockchainOfflineRouter(network.Network, *rosettaConfig, asserter)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.Fatal(err)
 		}
 
 		log.Info("Serving Rosetta API in OFFLINE mode")

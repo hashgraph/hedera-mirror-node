@@ -62,3 +62,18 @@ func TestTokenAmountToRosettaAmount(t *testing.T) {
 	// then:
 	assert.Equal(t, tokenRosettaAmount, actual)
 }
+
+func TestNewTokenAmount(t *testing.T) {
+	token := Token{
+		TokenId:  entityid.EntityId{EncodedId: 1001, EntityNum: 1001},
+		Decimals: 5,
+		Name:     "foobar",
+		Symbol:   "xoobar",
+	}
+	expected := &TokenAmount{
+		Decimals: 5,
+		TokenId:  token.TokenId,
+		Value:    20,
+	}
+	assert.Equal(t, expected, NewTokenAmount(token, 20))
+}

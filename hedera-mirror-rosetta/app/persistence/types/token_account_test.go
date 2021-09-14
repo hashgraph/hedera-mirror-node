@@ -18,18 +18,14 @@
  * ‍
  */
 
-package repositories
+package types
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// BlockRepository Interface that all BlockRepository structs must implement
-type BlockRepository interface {
-	FindByHash(hash string) (*types.Block, *rTypes.Error)
-	FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error)
-	FindByIndex(index int64) (*types.Block, *rTypes.Error)
-	RetrieveGenesis() (*types.Block, *rTypes.Error)
-	RetrieveLatest() (*types.Block, *rTypes.Error)
+func TestTokenAccountTableName(t *testing.T) {
+	assert.Equal(t, "token_account", TokenAccount{}.TableName())
 }

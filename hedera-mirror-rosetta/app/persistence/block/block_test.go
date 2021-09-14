@@ -21,784 +21,571 @@
 package block
 
 import (
-	"database/sql/driver"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
+	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
+	"github.com/stretchr/testify/suite"
 )
 
 const (
-	indexZero = int64(0)
+	truncateAccountBalanceFileSql = "truncate account_balance_file"
+	truncateRecordFileSql         = "truncate record_file"
 )
 
 var (
-	recordFileColumns       = mocks.GetFieldsNamesToSnakeCase(recordFile{})
-	selectRecordFileColumns = []string{"hash", "consensus_start", "consensus_end", "index", "prev_hash"}
-
-	expectedBlock = &types.Block{
-		ConsensusStartNanos: dbRecordFile.ConsensusStart,
-		ConsensusEndNanos:   dbRecordFile.ConsensusEnd,
-		Hash:                dbRecordFile.Hash,
-		Index:               index,
-		ParentHash:          dbRecordFile.PrevHash,
-		ParentIndex:         index - 1,
+	accountBalanceFiles = []*pTypes.AccountBalanceFile{
+		{
+			ConsensusTimestamp: 90,
+			Count:              10,
+			FileHash:           "genesis_account_balance_file_hash",
+			Name:               "genesis_account_balance_file",
+		},
+		{
+			ConsensusTimestamp: 10000,
+			Count:              10,
+			FileHash:           "second_account_balance_file_hash",
+			Name:               "second_account_balance_file",
+		},
+		{
+			ConsensusTimestamp: 20000,
+			Count:              10,
+			FileHash:           "third_account_balance_file_hash",
+			Name:               "third_account_balance_file",
+		},
 	}
 	expectedGenesisBlock = &types.Block{
-		ConsensusStartNanos: dbGenesis.ConsensusStart,
-		ConsensusEndNanos:   dbGenesis.ConsensusEnd,
-		Hash:                dbGenesis.Hash,
+		ConsensusStartNanos: 91,
+		ConsensusEndNanos:   100,
+		Hash:                "genesis_record_file_hash",
 		Index:               0,
-		ParentHash:          dbGenesis.Hash,
+		LatestIndex:         1,
+		ParentHash:          "genesis_record_file_hash",
 		ParentIndex:         0,
 	}
-
-	index     = int64(1)
-	dbGenesis = &recordFile{
-		ConsensusStart: 100,
-		ConsensusEnd:   199,
-		Hash:           "0x12345",
-		Index:          int64(7),
-		PrevHash:       "0x23456",
+	expectedSecondBlock = &types.Block{
+		ConsensusStartNanos: 101,
+		ConsensusEndNanos:   120,
+		Hash:                "second_record_file_hash",
+		Index:               1,
+		LatestIndex:         1,
+		ParentHash:          "genesis_record_file_hash",
+		ParentIndex:         0,
 	}
-	dbRecordFile = &recordFile{
-		ConsensusStart: 200,
-		ConsensusEnd:   299,
-		Hash:           "0x200200",
-		Index:          dbGenesis.Index + 1,
-		PrevHash:       "0x12345",
+	recordFiles = []*pTypes.RecordFile{
+		{
+			ConsensusStart: 80,
+			ConsensusEnd:   100,
+			Hash:           "genesis_record_file_hash",
+			Index:          3,
+			Name:           "genesis_record_file",
+			PrevHash:       "previous_record_file_hash",
+		},
+		{
+			ConsensusStart: 101,
+			ConsensusEnd:   120,
+			Hash:           "second_record_file_hash",
+			Index:          4,
+			Name:           "second_record_file",
+			PrevHash:       "genesis_record_file_hash",
+		},
+	}
+	genesisRecordFile       = recordFiles[0]
+	recordFileBeforeGenesis = &pTypes.RecordFile{
+		ConsensusStart: 50,
+		ConsensusEnd:   79,
+		Hash:           "previous_record_file_hash",
+		Index:          2,
+		Name:           "previous_record_file",
+		PrevHash:       "some_hash",
+	}
+	thirdRecordFile = &pTypes.RecordFile{
+		ConsensusStart: 121,
+		ConsensusEnd:   130,
+		Hash:           "third_record_file_hash",
+		Index:          5,
+		Name:           "third_record_file",
+		PrevHash:       "second_record_file_hash",
 	}
 )
 
-func TestShouldSuccessFindByIndex(t *testing.T) {
-	var tests = []struct {
-		name     string
-		index    int64
-		expected *types.Block
-	}{
-		{
-			name:     "GenesisBlock",
-			index:    0,
-			expected: expectedGenesisBlock,
-		},
-		{
-			name:     "SecondBlock",
-			index:    1,
-			expected: expectedBlock,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepository(t)
-			mock.ExpectQuery(selectGenesis).
-				WillReturnRows(sqlmock.NewRows(recordFileColumns).
-					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
-			if tt.index != 0 {
-				mock.ExpectQuery(selectRecordFileByIndex).
-					WithArgs(dbRecordFile.Index).
-					WillReturnRows(sqlmock.NewRows(recordFileColumns).
-						AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
-			}
-
-			// when
-			result, err := br.FindByIndex(tt.index)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, err)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
+// run the suite
+func TestBlockRepositorySuite(t *testing.T) {
+	suite.Run(t, new(blockRepositorySuite))
 }
 
-func TestShouldSuccessFindByIndexNegativeIndex(t *testing.T) {
+type blockRepositorySuite struct {
+	test.IntegrationTest
+	suite.Suite
+}
+
+func (suite *blockRepositorySuite) SetupSuite() {
+	suite.Setup()
+}
+
+func (suite *blockRepositorySuite) TearDownSuite() {
+	suite.TearDown()
+}
+
+func (suite *blockRepositorySuite) SetupTest() {
+	suite.CleanupDb()
+	db.CreateDbRecords(suite.DbResource.GetGormDb(), accountBalanceFiles, recordFiles)
+}
+
+func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
 	// given
-	br, mock := setupRepository(t)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	result, err := br.FindByIndex(-1)
+	actual, err := repo.FindByHash(genesisRecordFile.Hash)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.Equal(t, errors.ErrInvalidArgument, err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedGenesisBlock, actual)
 }
 
-func TestShouldFailFindByIndexNoRecordFile(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrBlockNotFound,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepository(t)
-			mock.ExpectQuery(selectGenesis).
-				WillReturnRows(sqlmock.NewRows(recordFileColumns).
-					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
-			mock.ExpectQuery(selectRecordFileByIndex).WillReturnError(tt.dbErr)
-
-			// when
-			result, err := br.FindByIndex(1)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, result)
-			assert.Equal(t, tt.expected, err)
-		})
-	}
-}
-
-func TestShouldFailFindByIndexNoGenesisRecordFile(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrNodeIsStarting,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		// given
-		br, mock := setupRepository(t)
-		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
-
-		// when
-		result, err := br.FindByIndex(1)
-
-		// then
-		assert.NoError(t, mock.ExpectationsWereMet())
-		assert.Nil(t, result)
-		assert.Equal(t, tt.expected, err)
-	}
-}
-
-func TestShouldSuccessFindByHash(t *testing.T) {
-	var tests = []struct {
-		name     string
-		hash     string
-		expected *types.Block
-	}{
-		{
-			name:     "GenesisBlock",
-			hash:     dbGenesis.Hash,
-			expected: expectedGenesisBlock,
-		},
-		{
-			name:     "SecondBlock",
-			hash:     dbRecordFile.Hash,
-			expected: expectedBlock,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepository(t)
-			mock.ExpectQuery(selectGenesis).
-				WillReturnRows(sqlmock.NewRows(recordFileColumns).
-					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
-			if tt.hash != dbGenesis.Hash {
-				mock.ExpectQuery(selectByHashWithIndex).
-					WithArgs(dbRecordFile.Hash).
-					WillReturnRows(sqlmock.NewRows(recordFileColumns).
-						AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
-			}
-
-			// when
-			result, err := br.FindByHash(tt.hash)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, err)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestShouldFailFindByHasEmptyHash(t *testing.T) {
+func (suite *blockRepositorySuite) TestFindByHashNonGenesisBlock() {
 	// given
-	br, mock := setupRepository(t)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	result, err := br.FindByHash("")
+	actual, err := repo.FindByHash(expectedSecondBlock.Hash)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, result)
-	assert.Equal(t, errors.ErrInvalidArgument, err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedSecondBlock, actual)
 }
 
-func TestShouldFailFindByHashNoGenesisRecordFile(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrNodeIsStarting,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
+func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepository(t)
+	// when
+	actual, err := repo.FindByHash(genesisRecordFile.Hash)
 
-			mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
-
-			// when
-			result, err := br.FindByHash(dbRecordFile.Hash)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, result)
-			assert.Equal(t, tt.expected, err)
-		})
-	}
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
 }
 
-func TestShouldSuccessFindByIdentifier(t *testing.T) {
-	var tests = []struct {
-		name     string
-		hash     string
-		index    int64
-		expected *types.Block
-	}{
-		{
-			name:     "GenesisBlock",
-			hash:     dbGenesis.Hash,
-			index:    0,
-			expected: expectedGenesisBlock,
-		},
-		{
-			name:     "SecondBlock",
-			hash:     dbRecordFile.Hash,
-			index:    1,
-			expected: expectedBlock,
-		},
-	}
+func (suite *blockRepositorySuite) TestFindByHashNoRecordFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepository(t)
+	// when
+	actual, err := repo.FindByHash(genesisRecordFile.Hash)
 
-			mock.ExpectQuery(selectGenesis).
-				WillReturnRows(sqlmock.NewRows(recordFileColumns).
-					AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
-			if tt.index != 0 {
-				mock.ExpectQuery(selectByHashWithIndex).
-					WithArgs(dbRecordFile.Hash).
-					WillReturnRows(sqlmock.NewRows(recordFileColumns).
-						AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
-			}
-
-			// when
-			result, err := br.FindByIdentifier(tt.index, tt.hash)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Equal(t, tt.expected, result)
-			assert.Nil(t, err)
-		})
-	}
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
 }
 
-func TestShouldFailFindByIdentifierInvalidArgument(t *testing.T) {
-	var tests = []struct {
+func (suite *blockRepositorySuite) TestFindByHashEmptyHash() {
+	// given
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.FindByHash("")
+
+	// then
+	assert.Equal(suite.T(), errors.ErrInvalidArgument, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByHashDbConnectionError() {
+	// given
+	repo := NewBlockRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.FindByHash(genesisRecordFile.Hash)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIdentifierGenesisBlock() {
+	// given
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedGenesisBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIdentifierNonGenesisBlock() {
+	// given
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.FindByIdentifier(expectedSecondBlock.Index, expectedSecondBlock.Hash)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedSecondBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIdentifierInvalidArgument() {
+	// given
+	tests := []struct {
 		name  string
 		index int64
 		hash  string
 	}{
 		{
-			name:  "NegativeIndex",
-			index: -1,
-			hash:  "0x12345",
+			"negative index",
+			-1,
+			"hash",
 		},
 		{
-			name:  "EmptyHash",
-			index: 1,
+			"empty hash",
+			0,
+			"",
 		},
 	}
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepository(t)
-
+		suite.T().Run(tt.name, func(t *testing.T) {
 			// when
-			result, err := br.FindByIdentifier(tt.index, tt.hash)
+			actual, err := repo.FindByIdentifier(tt.index, tt.hash)
 
 			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, result)
 			assert.Equal(t, errors.ErrInvalidArgument, err)
+			assert.Nil(t, actual)
 		})
 	}
 }
 
-func TestShouldFailFindByIdentifierNoGenesisRecordFile(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrNodeIsStarting,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		// given
-		br, mock := setupRepository(t)
-
-		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
-
-		// when
-		result, err := br.FindByIdentifier(1, dbRecordFile.Hash)
-
-		// then
-		assert.NoError(t, mock.ExpectationsWereMet())
-		assert.Nil(t, result)
-		assert.Equal(t, tt.expected, err)
-	}
-}
-
-func TestShouldFailFindByIdentifierMismatchIndices(t *testing.T) {
+func (suite *blockRepositorySuite) TestFindByIdentifierIndexHashMismatch() {
 	// given
-	mismatchingRecordFileIndex := &recordFile{
-		Index: dbRecordFile.Index + 1,
-		Hash:  "0x12345",
-	}
-	br, mock := setupRepository(t)
-
-	mock.ExpectQuery(selectGenesis).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
-	mock.ExpectQuery(selectByHashWithIndex).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(mismatchingRecordFileIndex)...))
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	result, err := br.FindByIdentifier(index, dbRecordFile.Hash)
+	actual, err := repo.FindByIdentifier(expectedGenesisBlock.Index, expectedSecondBlock.Hash)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, errors.ErrBlockNotFound, err)
-	assert.Nil(t, result)
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
 }
 
-func TestShouldSuccessRetrieveGenesis(t *testing.T) {
+func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalanceFile() {
 	// given
-	expected := &types.Block{
-		ConsensusStartNanos: dbGenesis.ConsensusStart,
-		ConsensusEndNanos:   dbGenesis.ConsensusEnd,
-		Hash:                dbGenesis.Hash,
-		Index:               indexZero,
-		ParentHash:          dbGenesis.Hash,
-		ParentIndex:         indexZero,
-	}
-
-	br, mock := setupRepository(t)
-
-	mock.ExpectQuery(selectGenesis).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	result, err := br.RetrieveGenesis()
+	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-	assert.Equal(t, expected, result)
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
 }
 
-func TestShouldFailRetrieveGenesisNoGenesisRecordFile(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrNodeIsStarting,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		// given
-		br, mock := setupRepository(t)
-
-		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
-
-		// when
-		result, err := br.RetrieveGenesis()
-
-		// then
-		assert.NoError(t, mock.ExpectationsWereMet())
-		assert.Nil(t, result)
-		assert.Equal(t, tt.expected, err)
-	}
-}
-
-func TestShouldSuccessRetrieveLatest(t *testing.T) {
+func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 	// given
-	dbSelectRecordFile := []driver.Value{
-		dbRecordFile.Hash,
-		dbRecordFile.ConsensusStart,
-		dbRecordFile.ConsensusEnd,
-		dbRecordFile.Index,
-		dbRecordFile.PrevHash,
-	}
-	br, mock := setupRepository(t)
-
-	mock.ExpectQuery(selectGenesis).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
-	mock.ExpectQuery(selectLatestWithIndex).
-		WillReturnRows(sqlmock.NewRows(selectRecordFileColumns).AddRow(dbSelectRecordFile...))
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	result, err := br.RetrieveLatest()
+	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, expectedBlock, result)
-	assert.Nil(t, err)
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
 }
 
-func TestShouldFailRetrieveLatestRecordFileNotFound(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrBlockNotFound,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		// given
-		br, mock := setupRepository(t)
-
-		mock.ExpectQuery(selectGenesis).
-			WillReturnRows(sqlmock.NewRows(recordFileColumns).
-				AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
-		mock.ExpectQuery(selectLatestWithIndex).WillReturnError(tt.dbErr)
-
-		// when
-		result, err := br.RetrieveLatest()
-
-		// then
-		assert.NoError(t, mock.ExpectationsWereMet())
-		assert.Nil(t, result)
-		assert.Equal(t, tt.expected, err)
-	}
-}
-
-func TestShouldFailRetrieveLatestNoGenesisRecordFile(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrNodeIsStarting,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		// given
-		br, mock := setupRepository(t)
-
-		mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
-
-		// when
-		result, err := br.RetrieveLatest()
-
-		// then
-		assert.NoError(t, mock.ExpectationsWereMet())
-		assert.Nil(t, result)
-		assert.Equal(t, tt.expected, err)
-	}
-}
-
-func TestShouldSuccessFindRecordFileByHash(t *testing.T) {
+func (suite *blockRepositorySuite) TestFindByIdentifierDbConnectionError() {
 	// given
-	br, mock := setupRepositoryWithGenesisRecordFile(t, dbGenesis)
-
-	mock.ExpectQuery(selectByHashWithIndex).
-		WithArgs(dbRecordFile.Hash).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).AddRow(mocks.GetFieldsValuesAsDriverValue(dbRecordFile)...))
+	repo := NewBlockRepository(suite.InvalidDbClient)
 
 	// when
-	result, err := br.findBlockByHash(dbRecordFile.Hash)
+	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Nil(t, err)
-	assert.Equal(t, expectedBlock, result)
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
 }
 
-func TestShouldFailFindRecordFileByHashNoRecordFound(t *testing.T) {
-	var tests = []struct {
-		name     string
-		dbErr    error
-		expected *rTypes.Error
-	}{
-		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrBlockNotFound,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepositoryWithGenesisRecordFile(t, dbGenesis)
-
-			mock.ExpectQuery(selectByHashWithIndex).WithArgs(dbRecordFile.Hash).WillReturnError(tt.dbErr)
-
-			// when
-			result, err := br.findBlockByHash(dbRecordFile.Hash)
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, result)
-			assert.Equal(t, tt.expected, err)
-		})
-	}
-}
-
-func TestShouldSuccessGetGenesisRecordFileRepeatedly(t *testing.T) {
+func (suite *blockRepositorySuite) TestFindByIndexGenesisBlock() {
 	// given
-	br, mock := setupRepository(t)
-
-	mock.ExpectQuery(selectGenesis).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	br.getGenesisRecordFile()
-	result, err := br.getGenesisRecordFile()
+	actual, err := repo.FindByIndex(0)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, dbGenesis, result)
-	assert.Equal(t, dbGenesis, br.genesisRecordFile)
-	assert.Equal(t, dbGenesis.Index, br.genesisRecordFileIndex)
-	assert.Nil(t, err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedGenesisBlock, actual)
 }
 
-func TestShouldSuccessGetGenesisRecordFile(t *testing.T) {
+func (suite *blockRepositorySuite) TestFindByIndexNonGenesisBlock() {
 	// given
-	br, mock := setupRepository(t)
-
-	mock.ExpectQuery(selectGenesis).
-		WillReturnRows(sqlmock.NewRows(recordFileColumns).
-			AddRow(mocks.GetFieldsValuesAsDriverValue(dbGenesis)...))
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
 
 	// when
-	result, err := br.getGenesisRecordFile()
+	actual, err := repo.FindByIndex(expectedSecondBlock.Index)
 
 	// then
-	assert.NoError(t, mock.ExpectationsWereMet())
-	assert.Equal(t, dbGenesis, result)
-	assert.Equal(t, dbGenesis, br.genesisRecordFile)
-	assert.Equal(t, dbGenesis.Index, br.genesisRecordFileIndex)
-	assert.Nil(t, err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedSecondBlock, actual)
 }
 
-func TestShouldFailGetGenesis(t *testing.T) {
-	var tests = []struct {
+func (suite *blockRepositorySuite) TestFindByIndexInvalidIndex() {
+	// given
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.FindByIndex(-1)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrInvalidArgument, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalanceFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.FindByIndex(0)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.FindByIndex(0)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIndexDbConnectionError() {
+	// given
+	repo := NewBlockRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.FindByIndex(0)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveGenesis() {
+	// given
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveGenesis()
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedGenesisBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveGenesis()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveGenesisNoRecordFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveGenesis()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
+	// given
+	repo := NewBlockRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.RetrieveGenesis()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveSecondLatestGenesisBlock() {
+	// given
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveLatest()
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedGenesisBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
+	// given
+	db.CreateDbRecords(suite.DbResource.GetGormDb(), thirdRecordFile)
+	expected := *expectedSecondBlock
+	expected.LatestIndex = 2
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveLatest()
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), &expected, actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
+	db.CreateDbRecords(suite.DbResource.GetGormDb(), genesisRecordFile)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveLatest()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
+	db.CreateDbRecords(suite.DbResource.GetGormDb(), recordFileBeforeGenesis, genesisRecordFile)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveLatest()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveLatest()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
+	// given
+	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.RetrieveLatest()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestetrieveSecondLatestDbConnectionError() {
+	// given
+	repo := NewBlockRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.RetrieveLatest()
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func TestRecordFileToBlock(t *testing.T) {
+	genesisConsensusStart := int64(110)
+	genesisIndex := int64(5)
+	tests := []struct {
 		name     string
-		dbErr    error
-		expected *rTypes.Error
+		input    recordBlock
+		expected *types.Block
 	}{
 		{
-			name:     "DbRecordNotFound",
-			dbErr:    gorm.ErrRecordNotFound,
-			expected: errors.ErrNodeIsStarting,
-		},
-		{
-			name:     "OtherDbError",
-			dbErr:    gorm.ErrInvalidTransaction,
-			expected: errors.ErrDatabaseError,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// given
-			br, mock := setupRepository(t)
-
-			mock.ExpectQuery(selectGenesis).WillReturnError(tt.dbErr)
-
-			// when
-			result, err := br.getGenesisRecordFile()
-
-			// then
-			assert.NoError(t, mock.ExpectationsWereMet())
-			assert.Nil(t, result)
-			assert.Equal(t, tt.expected, err)
-
-		})
-	}
-}
-
-func TestShouldSuccessReturnRecordFileTableName(t *testing.T) {
-	assert.Equal(t, tableNameRecordFile, (&recordFile{}).TableName())
-}
-
-func TestShouldSuccessReturnBlock(t *testing.T) {
-	rf := &recordFile{
-		ConsensusStart: 100,
-		ConsensusEnd:   199,
-		Hash:           "0x12345",
-		Index:          15,
-		PrevHash:       "0x54321",
-	}
-
-	var tests = []struct {
-		name                   string
-		genesisRecordFileIndex int64
-		expected               *types.Block
-	}{
-		{
-			name:                   "GenesisBlock",
-			genesisRecordFileIndex: rf.Index,
-			expected: &types.Block{
-				ConsensusStartNanos: rf.ConsensusStart,
-				ConsensusEndNanos:   rf.ConsensusEnd,
-				Hash:                rf.Hash,
+			"genesis block",
+			recordBlock{
+				ConsensusStart: 100,
+				ConsensusEnd:   200,
+				Hash:           "hash",
+				Index:          5,
+				LatestIndex:    9,
+				PrevHash:       "prev_hash",
+			},
+			&types.Block{
 				Index:               0,
-				ParentHash:          rf.Hash,
+				Hash:                "hash",
+				LatestIndex:         4,
 				ParentIndex:         0,
+				ParentHash:          "hash",
+				ConsensusStartNanos: genesisConsensusStart,
+				ConsensusEndNanos:   200,
 			},
 		},
 		{
-			name:                   "NonGenesisBlock",
-			genesisRecordFileIndex: rf.Index - 2,
-			expected: &types.Block{
-				ConsensusStartNanos: rf.ConsensusStart,
-				ConsensusEndNanos:   rf.ConsensusEnd,
-				Hash:                rf.Hash,
-				Index:               2,
-				ParentHash:          rf.PrevHash,
-				ParentIndex:         1,
+			"non-genesis block",
+			recordBlock{
+				ConsensusStart: 201,
+				ConsensusEnd:   300,
+				Hash:           "hash",
+				Index:          8,
+				LatestIndex:    9,
+				PrevHash:       "prev_hash",
+			},
+			&types.Block{
+				Index:               3,
+				Hash:                "hash",
+				LatestIndex:         4,
+				ParentIndex:         2,
+				ParentHash:          "prev_hash",
+				ConsensusStartNanos: 201,
+				ConsensusEndNanos:   300,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, rf.ToBlock(tt.genesisRecordFileIndex))
+			assert.Equal(t, tt.expected, tt.input.ToBlock(genesisConsensusStart, genesisIndex))
 		})
 	}
-}
-
-func TestShouldSuccessReturnRepository(t *testing.T) {
-	// given
-	gormDbClient, _ := mocks.DatabaseMock(t)
-
-	// when
-	result := NewBlockRepository(gormDbClient)
-
-	// then
-	assert.NotNil(t, result)
-	assert.Implements(t, (*repositories.BlockRepository)(nil), result)
-	assert.Equal(t, result.dbClient, gormDbClient)
-}
-
-func setupRepository(t *testing.T) (*blockRepository, sqlmock.Sqlmock) {
-	return setupRepositoryWithGenesisRecordFile(t, nil)
-}
-
-func setupRepositoryWithGenesisRecordFile(
-	t *testing.T,
-	genesisRecordFile *recordFile,
-) (*blockRepository, sqlmock.Sqlmock) {
-	gormDbClient, mock := mocks.DatabaseMock(t)
-
-	aber := NewBlockRepository(gormDbClient)
-	if genesisRecordFile != nil {
-		aber.genesisRecordFile = genesisRecordFile
-		aber.genesisRecordFileIndex = genesisRecordFile.Index
-	}
-
-	return aber, mock
 }

@@ -18,18 +18,32 @@
  * ‍
  */
 
-package repositories
+package test
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-// BlockRepository Interface that all BlockRepository structs must implement
-type BlockRepository interface {
-	FindByHash(hash string) (*types.Block, *rTypes.Error)
-	FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error)
-	FindByIndex(index int64) (*types.Block, *rTypes.Error)
-	RetrieveGenesis() (*types.Block, *rTypes.Error)
-	RetrieveLatest() (*types.Block, *rTypes.Error)
+type IntegrationTest struct {
+	DbResource      db.DbResource
+	InvalidDbClient *gorm.DB
+}
+
+func (it *IntegrationTest) CleanupDb() {
+	db.CleanupDb(it.DbResource.GetDb())
+}
+
+func (it *IntegrationTest) Setup() {
+	it.DbResource = db.SetupDb()
+
+	config := it.DbResource.GetDbConfig()
+	config.Password = "bad_password"
+	it.InvalidDbClient, _ = gorm.Open(postgres.Open(config.GetDsn()), &gorm.Config{Logger: logger.Discard})
+}
+
+func (it IntegrationTest) TearDown() {
+	db.TearDownDb(it.DbResource)
 }

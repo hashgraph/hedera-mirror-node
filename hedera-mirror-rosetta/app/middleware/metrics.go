@@ -21,11 +21,12 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/coinbase/rosetta-sdk-go/server"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/weaveworks/common/middleware"
-	"net/http"
 )
 
 const (

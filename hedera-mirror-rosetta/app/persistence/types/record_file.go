@@ -18,18 +18,30 @@
  * ‍
  */
 
-package repositories
+package types
 
-import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-)
+const tableNameRecordFile = "record_file"
 
-// BlockRepository Interface that all BlockRepository structs must implement
-type BlockRepository interface {
-	FindByHash(hash string) (*types.Block, *rTypes.Error)
-	FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error)
-	FindByIndex(index int64) (*types.Block, *rTypes.Error)
-	RetrieveGenesis() (*types.Block, *rTypes.Error)
-	RetrieveLatest() (*types.Block, *rTypes.Error)
+type RecordFile struct {
+	ConsensusStart   int64
+	ConsensusEnd     int64 `gorm:"primaryKey"`
+	Count            int64
+	DigestAlgorithm  int
+	FileHash         string
+	HapiVersionMajor int
+	HapiVersionMinor int
+	HapiVersionPatch int
+	Hash             string
+	Index            int64
+	LoadEnd          int64
+	LoadStart        int64
+	Name             string
+	NodeAccountID    int64
+	PrevHash         string
+	Version          int
+}
+
+// TableName returns record file table name
+func (RecordFile) TableName() string {
+	return tableNameRecordFile
 }

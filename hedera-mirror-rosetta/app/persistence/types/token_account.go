@@ -18,18 +18,21 @@
  * ‍
  */
 
-package repositories
+package types
 
-import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-)
+const tableNameTokenAccount = "token_account"
 
-// BlockRepository Interface that all BlockRepository structs must implement
-type BlockRepository interface {
-	FindByHash(hash string) (*types.Block, *rTypes.Error)
-	FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error)
-	FindByIndex(index int64) (*types.Block, *rTypes.Error)
-	RetrieveGenesis() (*types.Block, *rTypes.Error)
-	RetrieveLatest() (*types.Block, *rTypes.Error)
+type TokenAccount struct {
+	AccountId            int64 `gorm:"primaryKey"`
+	Associated           bool
+	AutomaticAssociation bool
+	CreatedTimestamp     int64
+	FreezeStatus         int16
+	KycStatus            int16
+	ModifiedTimestamp    int64 `gorm:"primaryKey"`
+	TokenId              int64 `gorm:"primaryKey"`
+}
+
+func (TokenAccount) TableName() string {
+	return tableNameTokenAccount
 }

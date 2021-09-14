@@ -21,19 +21,21 @@
 package types
 
 import (
+	"time"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
-	"time"
 )
 
 // Block is domain level struct used to represent Block conceptual mapping in Hedera
 type Block struct {
-	Index               int64
-	Hash                string
-	ConsensusStartNanos int64
 	ConsensusEndNanos   int64
-	ParentIndex         int64
+	ConsensusStartNanos int64
+	Hash                string
+	Index               int64
+	LatestIndex         int64
 	ParentHash          string
+	ParentIndex         int64
 	Transactions        []*Transaction
 }
 

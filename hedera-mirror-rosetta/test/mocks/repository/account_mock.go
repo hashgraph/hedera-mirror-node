@@ -30,10 +30,26 @@ type MockAccountRepository struct {
 	mock.Mock
 }
 
-func (m *MockAccountRepository) RetrieveBalanceAtBlock(addressStr string, consensusEnd int64) (
+func (m *MockAccountRepository) RetrieveBalanceAtBlock(accountId int64, consensusEnd int64) (
 	[]types.Amount,
 	*rTypes.Error,
 ) {
 	args := m.Called()
 	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
+}
+
+func (m *MockAccountRepository) RetrieveDissociatedTokens(
+	accountId int64,
+	consensusEnd int64,
+) ([]types.Token, *rTypes.Error) {
+	args := m.Called()
+	return args.Get(0).([]types.Token), args.Get(1).(*rTypes.Error)
+}
+
+func (m *MockAccountRepository) RetrieveTransferredTokensInBlockAfter(accountId int64, consensusTimestamp int64) (
+	[]types.Token,
+	*rTypes.Error,
+) {
+	args := m.Called()
+	return args.Get(0).([]types.Token), args.Get(1).(*rTypes.Error)
 }
