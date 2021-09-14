@@ -3,7 +3,7 @@
 # and run the services using supervisord
 
 # ------------------------------  Rosetta  ------------------------------- #
-FROM golang:1.16 as rosetta-builder
+FROM golang:1.17.1 as rosetta-builder
 COPY hedera-mirror-rosetta /hedera-mirror-rosetta
 WORKDIR /hedera-mirror-rosetta
 RUN go build -o rosetta-executable ./cmd

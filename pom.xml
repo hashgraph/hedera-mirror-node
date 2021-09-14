@@ -59,7 +59,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.0.13</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.0.14</embedded.testcontainers.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.40.1</grpc.version>
@@ -524,7 +524,7 @@
                                     <replacements>
                                         <replacement>
                                             <token>
-                                                <![CDATA[(?<="hedera-mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
+                                                <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>

@@ -1,9 +1,10 @@
-FROM golang:1.16 as build
-WORKDIR /tmp/src/hedera-mirror-rosetta
+FROM golang:1.17.1 as build
+WORKDIR /app
 COPY . .
-RUN go build -o main ./cmd
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o hedera-mirror-rosetta ./cmd
+CMD ["./hedera-mirror-rosetta"]
 
-FROM ubuntu:20.04
-WORKDIR $GOPATH/src/hedera-mirror-rosetta
-COPY --from=build /tmp/src/hedera-mirror-rosetta/main .
-CMD ["./main"]
+FROM scratch
+WORKDIR /app
+COPY --from=build /app/hedera-mirror-rosetta .
+CMD ["./hedera-mirror-rosetta"]
