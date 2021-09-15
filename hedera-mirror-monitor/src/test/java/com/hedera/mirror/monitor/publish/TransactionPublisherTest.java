@@ -221,6 +221,7 @@ class TransactionPublisherTest {
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
 
+        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
@@ -231,7 +232,9 @@ class TransactionPublisherTest {
         monitorProperties.setNodes(Set.of(
                 new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK retry
 
+        log.info("Executing second validate for revalidate test");
         await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
+        log.info("Executing second step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectError(PublishException.class)
@@ -241,8 +244,10 @@ class TransactionPublisherTest {
         monitorProperties.setNodes(Set.of(
                 new NodeProperties("0.0.3", "in-process:test")));
 
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        log.info("Executing third validate for revalidate test");
         await().atMost(10, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
+        log.info("Executing third step for revalidate test");
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
