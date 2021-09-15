@@ -97,6 +97,15 @@ jobs:
           [[ $code -eq 0 ]] && { wait $pid || code=$?; }
           cat /tmp/construction-validation.log
           exit $code
+
+      - name: Install Postman newman CLI
+        working-directory: ./hedera-mirror-rosetta/scripts/validation/postman
+        run: npm install -g newman
+
+      - name: Run Rosetta Postman API Tests
+        working-directory: ./hedera-mirror-rosetta/scripts/validation/postman
+        run: newman run mirror-rosetta-tests.postman_collection.json
+
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}
         run: docker logs $CONTAINER_ID
