@@ -34,7 +34,7 @@ const (
                                     abe.node_id,
                                     node_account_id, 
                                     string_agg(
-                                      ip_address_v4::text || ':' || port::text, ',' order by ip_address_v4, port
+                                      ip_address_v4 || ':' || port::text, ',' order by ip_address_v4, port
                                     ) endpoints
                                   from address_book_entry abe
                                   left join address_book_service_endpoint abse on
