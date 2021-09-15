@@ -244,10 +244,11 @@ class TransactionPublisherTest {
         monitorProperties.setNodes(Set.of(
                 new NodeProperties("0.0.3", "in-process:test")));
 
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         log.info("Executing third validate for revalidate test");
         await().atMost(10, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
         log.info("Executing third step for revalidate test");
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)

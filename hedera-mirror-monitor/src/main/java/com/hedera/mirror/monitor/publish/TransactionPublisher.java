@@ -219,6 +219,7 @@ public class TransactionPublisher implements AutoCloseable {
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);
+            log.info("About to send validation transaction");
             new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
