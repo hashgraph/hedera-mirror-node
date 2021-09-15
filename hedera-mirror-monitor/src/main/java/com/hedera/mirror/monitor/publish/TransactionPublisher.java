@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,11 +62,13 @@ public class TransactionPublisher implements AutoCloseable {
     private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
-    private volatile Optional<Disposable> nodeValidator = Optional.empty();
+    private AtomicReference<Disposable> nodeValidator = new AtomicReference<>();
 
     @Override
     public void close() {
-        nodeValidator.ifPresent(Disposable::dispose);
+        if (nodeValidator.get() != null) {
+            nodeValidator.get().dispose();
+        }
 
         if (publishProperties.isEnabled()) {
             log.warn("Closing {} clients", publishProperties.getClients());
@@ -159,7 +160,7 @@ public class TransactionPublisher implements AutoCloseable {
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
         if (validationProperties.isEnabled()) {
 
-            nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency())
+            nodeValidator = new AtomicReference<>(Flux.interval(validationProperties.getFrequency())
                     .subscribeOn(Schedulers.parallel())
                     .doOnNext(i -> validateNodes())
                     .onErrorContinue((e, i) -> log.error("Exception validating nodes: ", e))
