@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import lombok.Data;
@@ -44,7 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -76,7 +74,6 @@ class TransactionPublisherTest {
     private PublishProperties publishProperties;
     private PublishScenarioProperties publishScenarioProperties;
     private Server server;
-    private Server server2;
     private TransactionPublisher transactionPublisher;
 
     @BeforeEach
@@ -100,11 +97,6 @@ class TransactionPublisherTest {
                 .directExecutor()
                 .build()
                 .start();
-        server2 = InProcessServerBuilder.forName("test2")
-                .addService(cryptoServiceStub)
-                .directExecutor()
-                .build()
-                .start();
     }
 
     @AfterEach
@@ -114,10 +106,6 @@ class TransactionPublisherTest {
         if (server != null) {
             server.shutdown();
             server.awaitTermination();
-        }
-        if (server2 != null) {
-            server2.shutdown();
-            server2.awaitTermination();
         }
     }
 
@@ -259,54 +247,46 @@ class TransactionPublisherTest {
 //}
 
     @Test
-    @Timeout(10)
-    void publishWithRevalidate() throws InterruptedException {
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
-                new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
+    @Timeout(20)
+    void publishWithRevalidate() {
         nodeValidationProperties.setFrequency(Duration.ofSeconds(60));
-
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
-
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
-
-        // Force the only node to be unhealthy, verify error occurs
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
-                new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
-
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        CountDownLatch countDownLatch2 = new CountDownLatch(1);
-        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(3))
-                .doOnNext(i -> {
-                    countDownLatch.countDown();
-                }).subscribe();
-
-        countDownLatch.await();
+        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
-        unhealthy.dispose();
 
-        // Set the node back to healthy, ensure that transactions flow again
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:2"),
-                new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
-        Disposable healthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
-                .onErrorContinue((e, i) -> countDownLatch2.countDown()).subscribe();
-        countDownLatch2.await();
+        monitorProperties.setNodes(Set.of(
+                new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK etry
+
+        boolean exceptionThrown = false;
+        try {
+            transactionPublisher.validateNodes();
+        } catch (IllegalArgumentException e) {
+            exceptionThrown = true;
+        }
+        assertThat(exceptionThrown).isTrue();
+
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectError(PublishException.class)
                 .verify(Duration.ofSeconds(1L));
-        healthy.dispose();
+
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        transactionPublisher.validateNodes();
+
+        log.info("Executing first step for revalidate test");
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
@@ -480,13 +460,8 @@ class TransactionPublisherTest {
             response.delayElement(Duration.ofMillis(100L))
                     .doOnError(responseObserver::onError)
                     .doOnNext(responseObserver::onNext)
-                    .doOnNext(t -> log.info("Sending {}", t))
                     .doOnNext(t -> log.trace("Next: {}", t))
-                    .doOnSuccess(r -> {
-                        log.info("Completing {}", r);
-                        responseObserver.onCompleted();
-                        log.info("Completed {}", r);
-                    })
+                    .doOnSuccess(r -> responseObserver.onCompleted())
                     .subscribe();
         }
 
