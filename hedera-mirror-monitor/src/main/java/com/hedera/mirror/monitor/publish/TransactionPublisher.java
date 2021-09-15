@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.Disposable;
@@ -60,6 +61,7 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
+    @Getter
     private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
@@ -119,6 +121,7 @@ public class TransactionPublisher implements AutoCloseable {
             }
             int nodeIndex = secureRandom.nextInt(nodes.size());
             List<AccountId> nodeAccountId = List.of(nodes.get(nodeIndex));
+            log.info("Publishing to {}", nodeAccountId);
             transaction.setNodeAccountIds(nodeAccountId);
         }
 
@@ -158,15 +161,19 @@ public class TransactionPublisher implements AutoCloseable {
 
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
         if (validationProperties.isEnabled()) {
-            nodeValidator = Optional.of(getRevalidationFlux(validationProperties.getFrequency()).onErrorContinue((e,
-                                                                                                                  i) -> log.error("Exception revalidating nodes: {}", e))
+
+            nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency(),
+                            validationProperties.getFrequency())
+                    .subscribeOn(Schedulers.parallel())
+                    .doOnNext(i -> validateNodes())
+                    .onErrorContinue((e, i) -> log.error("Exception revalidating nodes: {}", e))
                     .subscribe());
         }
         return Flux.range(0, publishProperties.getClients())
                 .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodes))));
     }
 
-    protected void validateNodes() {
+    private void validateNodes() {
         log.info("Validating nodes");
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
@@ -192,6 +199,7 @@ public class TransactionPublisher implements AutoCloseable {
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
 
         setNodeAccountIds(validNodes);
+        log.info(validNodes);
 
         if (nodeAccountIds.get().isEmpty()) {
             throw new IllegalArgumentException("No valid nodes found");
@@ -213,6 +221,7 @@ public class TransactionPublisher implements AutoCloseable {
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);
+            log.info("About to send validation transaction");
             new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
@@ -227,13 +236,6 @@ public class TransactionPublisher implements AutoCloseable {
         }
 
         return valid;
-    }
-
-    protected Flux getRevalidationFlux(Duration frequency) {
-        return Flux.interval(frequency,
-                        frequency)
-                .subscribeOn(Schedulers.parallel())
-                .doOnNext(i -> validateNodes());
     }
 
     private Client toClient(Map<String, AccountId> nodes) {

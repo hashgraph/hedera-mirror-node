@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.grpc.Server;
 import io.grpc.Status;
@@ -35,7 +36,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import lombok.Data;
@@ -44,7 +45,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -76,6 +76,7 @@ class TransactionPublisherTest {
     private PublishProperties publishProperties;
     private PublishScenarioProperties publishScenarioProperties;
     private Server server;
+    private Server server2;
     private TransactionPublisher transactionPublisher;
 
     @BeforeEach
@@ -99,6 +100,11 @@ class TransactionPublisherTest {
                 .directExecutor()
                 .build()
                 .start();
+        server2 = InProcessServerBuilder.forName("test2")
+                .addService(cryptoServiceStub)
+                .directExecutor()
+                .build()
+                .start();
     }
 
     @AfterEach
@@ -108,6 +114,10 @@ class TransactionPublisherTest {
         if (server != null) {
             server.shutdown();
             server.awaitTermination();
+        }
+        if (server2 != null) {
+            server2.shutdown();
+            server2.awaitTermination();
         }
     }
 
@@ -215,13 +225,16 @@ class TransactionPublisherTest {
     }
 
     @Test
-    @Timeout(10)
-    void publishWithRevalidate() throws InterruptedException {
-        nodeValidationProperties.setFrequency(Duration.ofSeconds(60));
+    @Timeout(20)
+    void publishWithRevalidate2() {
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
+                new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(5));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
 
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-
+        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
@@ -229,65 +242,51 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
 
         // Force the only node to be unhealthy, verify error occurs
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"))); // Illegal DNS to avoid SDK retry
-
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        CountDownLatch countDownLatch2 = new CountDownLatch(1);
-        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
-                .onErrorContinue((e, i) -> {
-                    countDownLatch.countDown();
-                }).subscribe();
-
-        countDownLatch.await();
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectError(PublishException.class)
-                .verify(Duration.ofSeconds(1L));
-        unhealthy.dispose();
-
-        // Set the node back to healthy, ensure that transactions flow again
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"),
+                new NodeProperties("0.0.4", "in-process:test"))); // Illegal DNS to avoid SDK retry
 
-        Disposable healthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
-                .doOnNext(i -> countDownLatch2.countDown()).subscribe();
-        countDownLatch2.await();
+        log.info("Executing second validate for revalidate test");
+        await().atMost(20, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds()
+                .get() != null && transactionPublisher.getNodeAccountIds().get().size() == 1);
+        log.info("Executing second step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
-        healthy.dispose();
     }
 
     @Test
-    @Timeout(5)
-    void publishWithRevalidateDisabled() throws InterruptedException {
-        nodeValidationProperties.setEnabled(false);
-        nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+    @Timeout(20)
+    void publishWithRevalidate() {
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
+                new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(2));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
 
+        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
 
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"))); // Illegal DNS to avoid SDK retry
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(1))
-                .doOnNext(i -> countDownLatch.countDown())
-                .subscribe();
+        // Force the only node to be unhealthy, verify error occurs
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:test"),
+                new NodeProperties("0.0.4", "invalid:test2"))); // Illegal DNS to avoid SDK retry
 
-        countDownLatch.await();
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
-        unhealthy.dispose();
+        log.info("Executing second validate for revalidate test");
+        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
+        log.info("Executing second step for revalidate test");
+
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
+                new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
     }
 
     @Test
