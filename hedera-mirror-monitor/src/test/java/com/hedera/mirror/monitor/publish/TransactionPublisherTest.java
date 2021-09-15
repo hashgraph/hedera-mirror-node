@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import lombok.Data;
@@ -83,8 +82,7 @@ class TransactionPublisherTest {
         operatorProperties.setAccountId("0.0.100");
         operatorProperties.setPrivateKey(PrivateKey.generate().toString());
         publishScenarioProperties = new PublishScenarioProperties();
-        String scenario = "test" + UUID.randomUUID();
-        publishScenarioProperties.setName(scenario);
+        publishScenarioProperties.setName("test");
         publishScenarioProperties.setType(TransactionType.CRYPTO_TRANSFER);
         monitorProperties = new MonitorProperties();
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
@@ -94,7 +92,7 @@ class TransactionPublisherTest {
         publishProperties = new PublishProperties();
         transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties);
         cryptoServiceStub = new CryptoServiceStub();
-        server = InProcessServerBuilder.forName(scenario)
+        server = InProcessServerBuilder.forName("test")
                 .addService(cryptoServiceStub)
                 .directExecutor()
                 .build()
