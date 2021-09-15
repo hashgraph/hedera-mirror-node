@@ -63,7 +63,7 @@ public class TransactionPublisher implements AutoCloseable {
     private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
-    private Optional<Disposable> nodeValidator = Optional.empty();
+    private volatile Optional<Disposable> nodeValidator = Optional.empty();
 
     @Override
     public void close() {

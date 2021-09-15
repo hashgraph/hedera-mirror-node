@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import io.grpc.Server;
 import io.grpc.Status;
@@ -61,7 +62,6 @@ import com.hedera.hashgraph.sdk.proto.TransactionRecord;
 import com.hedera.hashgraph.sdk.proto.TransactionResponse;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
-import com.hedera.mirror.monitor.NodeValidationProperties;
 import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
@@ -70,7 +70,6 @@ class TransactionPublisherTest {
 
     private CryptoServiceStub cryptoServiceStub;
     private MonitorProperties monitorProperties;
-    private NodeValidationProperties nodeValidationProperties;
     private PublishProperties publishProperties;
     private PublishScenarioProperties publishScenarioProperties;
     private Server server;
@@ -78,17 +77,14 @@ class TransactionPublisherTest {
 
     @BeforeEach
     void setup() throws IOException {
-        OperatorProperties operatorProperties = new OperatorProperties();
-        operatorProperties.setAccountId("0.0.100");
-        operatorProperties.setPrivateKey(PrivateKey.generate().toString());
         publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName("test");
         publishScenarioProperties.setType(TransactionType.CRYPTO_TRANSFER);
         monitorProperties = new MonitorProperties();
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
-        monitorProperties.setOperator(operatorProperties);
-        nodeValidationProperties = new NodeValidationProperties();
-        monitorProperties.setNodeValidation(nodeValidationProperties);
+        OperatorProperties operatorProperties = monitorProperties.getOperator();
+        operatorProperties.setAccountId("0.0.100");
+        operatorProperties.setPrivateKey(PrivateKey.generate().toString());
         publishProperties = new PublishProperties();
         transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties);
         cryptoServiceStub = new CryptoServiceStub();
@@ -213,41 +209,36 @@ class TransactionPublisherTest {
     }
 
     @Test
-    @Timeout(20)
+    @Timeout(3)
     void publishWithRevalidate() {
-        nodeValidationProperties.setFrequency(Duration.ofSeconds(60));
+        //Disable validation and do it manually for this test
+        monitorProperties.getNodeValidation().setFrequency(Duration.ofSeconds(60));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
-        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
 
+        //Set node to unhealthy and confirm message can't be published
         monitorProperties.setNodes(Set.of(
-                new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK etry
+                new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK retry
 
-        boolean exceptionThrown = false;
-        try {
-            transactionPublisher.validateNodes();
-        } catch (IllegalArgumentException e) {
-            exceptionThrown = true;
-        }
-        assertThat(exceptionThrown).isTrue();
+        assertThrows(IllegalArgumentException.class, transactionPublisher::validateNodes);
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectError(PublishException.class)
                 .verify(Duration.ofSeconds(1L));
 
+        //Set node back to healthy, confirm publishing resumes.
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
         transactionPublisher.validateNodes();
 
-        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
@@ -304,7 +295,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void skipNodeValidation() {
-        nodeValidationProperties.setEnabled(false);
+        monitorProperties.getNodeValidation().setEnabled(false);
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())
