@@ -235,7 +235,7 @@ class TransactionPublisherTest {
                 new NodeProperties("0.0.3", "invalid:test"), // Illegal DNS to avoid SDK retry
                 (new NodeProperties("0.0.4", "invalid2:test"))));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.nodeAccountIds.get().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectError(PublishException.class)
@@ -247,7 +247,7 @@ class TransactionPublisherTest {
                 (new NodeProperties("0.0.4", "invalid:test"))));
 
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !transactionPublisher.nodeAccountIds.get().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)

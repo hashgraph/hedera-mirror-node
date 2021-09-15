@@ -60,7 +60,7 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
+    protected final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
     private Optional<Disposable> nodeValidator = Optional.empty();
@@ -158,15 +158,19 @@ public class TransactionPublisher implements AutoCloseable {
 
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
         if (validationProperties.isEnabled()) {
-            nodeValidator = Optional.of(getRevalidationFlux(validationProperties.getFrequency()).onErrorContinue((e,
-                                                                                                                  i) -> log.error("Exception revalidating nodes: {}", e))
+
+            nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency(),
+                            validationProperties.getFrequency())
+                    .subscribeOn(Schedulers.parallel())
+                    .doOnNext(i -> validateNodes())
+                    .onErrorContinue((e, i) -> log.error("Exception revalidating nodes: {}", e))
                     .subscribe());
         }
         return Flux.range(0, publishProperties.getClients())
                 .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodes))));
     }
 
-    protected void validateNodes() {
+    private void validateNodes() {
         log.info("Validating nodes");
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
@@ -227,13 +231,6 @@ public class TransactionPublisher implements AutoCloseable {
         }
 
         return valid;
-    }
-
-    protected Flux getRevalidationFlux(Duration frequency) {
-        return Flux.interval(frequency,
-                        frequency)
-                .subscribeOn(Schedulers.parallel())
-                .doOnNext(i -> validateNodes());
     }
 
     private Client toClient(Map<String, AccountId> nodes) {
