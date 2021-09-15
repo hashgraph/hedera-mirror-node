@@ -120,6 +120,27 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoEntries() {
 func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 	// given
 	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, addressBooks, addressBookEntries)
+
+	expected := &types.AddressBookEntries{
+		Entries: []types.AddressBookEntry{
+			{0, accountId80, ""},
+			{1, accountId70, ""},
+		},
+	}
+	repo := NewAddressBookEntryRepository(dbClient)
+
+	// when
+	actual, err := repo.Entries()
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expected, actual)
+}
+
+func (suite *addressBookEntryRepositorySuite) TestEntriesDbInvalidNodeAccountId() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, addressBooks, getAddressBookEntry(20, 0, -1))
 
 	repo := NewAddressBookEntryRepository(dbClient)
@@ -132,20 +153,10 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *addressBookEntryRepositorySuite) TestEntriesDbInvalidNodeAccountId() {
-	// given
-	repo := NewAddressBookEntryRepository(suite.InvalidDbClient)
-	// when
-	actual, err := repo.Entries()
-
-	// then
-	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
-	assert.Nil(suite.T(), actual)
-}
-
 func (suite *addressBookEntryRepositorySuite) TestEntriesDbConnectionError() {
 	// given
 	repo := NewAddressBookEntryRepository(suite.InvalidDbClient)
+
 	// when
 	actual, err := repo.Entries()
 
