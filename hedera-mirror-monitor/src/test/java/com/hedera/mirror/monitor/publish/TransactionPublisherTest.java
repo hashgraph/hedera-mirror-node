@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.grpc.Server;
 import io.grpc.Status;
@@ -35,6 +36,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import lombok.Data;
@@ -212,46 +214,46 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
     }
 
-//    @Test
-//    @Timeout(10)
-//    void publishWithRevalidate() {
-//        monitorProperties.setNodes(Set.of(
-//                new NodeProperties("0.0.3", "in-process:test"),
-//                (new NodeProperties("0.0.4", "in-process2:test"))));
-//        nodeValidationProperties.setFrequency(Duration.ofSeconds(2));
-//        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
-//        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
-//
-//        transactionPublisher.publish(request().build())
-//                .as(StepVerifier::create)
-//                .expectNextCount(1L)
-//                .expectComplete()
-//                .verify(Duration.ofSeconds(1L));
-//
-//        // Force the only node to be unhealthy, verify error occurs
-//        monitorProperties.setNodes(Set.of(
-//                new NodeProperties("0.0.3", "invalid:test"), // Illegal DNS to avoid SDK retry
-//                (new NodeProperties("0.0.4", "invalid2:test"))));
-//
-//        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
-//        transactionPublisher.publish(request().build())
-//                .as(StepVerifier::create)
-//                .expectError(PublishException.class)
-//                .verify(Duration.ofSeconds(1L));
-//
-//        // Set a node back to healthy, ensure that transactions flow again
-//        monitorProperties.setNodes(Set.of(
-//                new NodeProperties("0.0.3", "in-process:test"),
-//                (new NodeProperties("0.0.4", "invalid:test"))));
-//
-//        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-//        await().atMost(5, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
-//        transactionPublisher.publish(request().build())
-//                .as(StepVerifier::create)
-//                .expectNextCount(1L)
-//                .expectComplete()
-//                .verify(Duration.ofSeconds(1L));
-//    }
+    @Test
+    @Timeout(10)
+    void publishWithRevalidate() {
+        monitorProperties.setNodes(Set.of(
+                new NodeProperties("0.0.3", "in-process:test"),
+                (new NodeProperties("0.0.4", "in-process2:test"))));
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(2));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
+
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+
+        // Force the only node to be unhealthy, verify error occurs
+        monitorProperties.setNodes(Set.of(
+                new NodeProperties("0.0.3", "invalid:test"), // Illegal DNS to avoid SDK retry
+                (new NodeProperties("0.0.4", "invalid2:test"))));
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectError(PublishException.class)
+                .verify(Duration.ofSeconds(1L));
+
+        // Set a node back to healthy, ensure that transactions flow again
+        monitorProperties.setNodes(Set.of(
+                new NodeProperties("0.0.3", "in-process:test"),
+                (new NodeProperties("0.0.4", "invalid:test"))));
+
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+    }
 
     @Test
     @Timeout(3)
