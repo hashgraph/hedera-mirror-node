@@ -459,19 +459,19 @@ class TransactionPublisherTest {
 
         @Override
         public void cryptoTransfer(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-            log.info("cryptoTransfer: {}", request);
+            log.debug("cryptoTransfer: {}", request);
             send(responseObserver, transactions.poll());
         }
 
         @Override
         public void getTransactionReceipts(Query request, StreamObserver<Response> responseObserver) {
-            log.info("getTransactionReceipts: {}", request);
+            log.debug("getTransactionReceipts: {}", request);
             send(responseObserver, queries.poll());
         }
 
         @Override
         public void getTxRecordByTxID(Query request, StreamObserver<Response> responseObserver) {
-            log.info("getTxRecordByTxID: {}", request);
+            log.debug("getTxRecordByTxID: {}", request);
             send(responseObserver, queries.poll());
         }
 
@@ -480,7 +480,8 @@ class TransactionPublisherTest {
             response.delayElement(Duration.ofMillis(100L))
                     .doOnError(responseObserver::onError)
                     .doOnNext(responseObserver::onNext)
-                    .doOnNext(t -> log.info("Next: {}", t))
+                    .doOnNext(t -> log.info("Sending!"))
+                    .doOnNext(t -> log.trace("Next: {}", t))
                     .doOnSuccess(r -> responseObserver.onCompleted())
                     .subscribe();
         }
