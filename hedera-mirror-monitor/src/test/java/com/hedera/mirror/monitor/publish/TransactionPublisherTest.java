@@ -480,9 +480,13 @@ class TransactionPublisherTest {
             response.delayElement(Duration.ofMillis(100L))
                     .doOnError(responseObserver::onError)
                     .doOnNext(responseObserver::onNext)
-                    .doOnNext(t -> log.info("Sending!"))
+                    .doOnNext(t -> log.info("Sending {}", t))
                     .doOnNext(t -> log.trace("Next: {}", t))
-                    .doOnSuccess(r -> responseObserver.onCompleted())
+                    .doOnSuccess(r -> {
+                        log.info("Completing {}", r);
+                        responseObserver.onCompleted();
+                        log.info("Completed {}", r);
+                    })
                     .subscribe();
         }
 
