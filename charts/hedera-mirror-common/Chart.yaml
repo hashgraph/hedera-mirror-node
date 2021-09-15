@@ -13,7 +13,7 @@ dependencies:
     condition: prometheus.enabled
     name: kube-prometheus-stack
     repository: https://prometheus-community.github.io/helm-charts
-    version: 18.0.5
+    version: 18.0.6
   - name: promtail
     condition: promtail.enabled
     version: 3.8.1
@@ -33,4 +33,4 @@ maintainers:
 name: hedera-mirror-common
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.27.0-SNAPSHOT
+version: 0.28.0-SNAPSHOT

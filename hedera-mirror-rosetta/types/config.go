@@ -21,6 +21,8 @@
 package types
 
 import (
+	"fmt"
+
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -79,6 +81,17 @@ type Db struct {
 	Pool     Pool   `yaml:"pool"`
 	Port     uint16 `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_DB_PORT"`
 	Username string `yaml:"username" env:"HEDERA_MIRROR_ROSETTA_DB_USERNAME"`
+}
+
+func (db Db) GetDsn() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
+		db.Host,
+		db.Port,
+		db.Username,
+		db.Name,
+		db.Password,
+	)
 }
 
 type Pool struct {

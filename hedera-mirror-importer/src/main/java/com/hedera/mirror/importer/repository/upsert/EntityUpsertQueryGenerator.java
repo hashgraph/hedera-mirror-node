@@ -36,8 +36,8 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
     private final List<String> v2ConflictIdColumns = List.of(Entity_.ID);
     private final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
             Entity_.AUTO_RENEW_PERIOD, Entity_.CREATED_TIMESTAMP, Entity_.DELETED, Entity_.EXPIRATION_TIMESTAMP,
-            Entity_.KEY, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY, Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY,
-            Entity_.RECEIVER_SIG_REQUIRED);
+            Entity_.KEY, Entity_.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY,
+            Entity_.PROXY_ACCOUNT_ID, Entity_.SUBMIT_KEY, Entity_.RECEIVER_SIG_REQUIRED);
     private final Set<String> nonUpdatableColumns = Set.of(Entity_.CREATED_TIMESTAMP, Entity_.ID,
             Entity_.NUM, Entity_.REALM, Entity_.SHARD, Entity_.TYPE);
 

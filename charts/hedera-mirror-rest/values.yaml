@@ -57,7 +57,7 @@ global:
 
 hpa:
   enabled: true
-  minReplicas: 3
+  minReplicas: 1
   maxReplicas: 15
   utilization: 80
 
@@ -221,7 +221,7 @@ test:
   image:
     pullPolicy: IfNotPresent
     repository: bats/bats
-    tag: 1.2.1
+    tag: v1.4.1
 
 tolerations: []
 

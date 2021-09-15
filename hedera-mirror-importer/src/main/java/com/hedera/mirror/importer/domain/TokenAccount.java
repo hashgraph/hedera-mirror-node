@@ -32,11 +32,14 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 public class TokenAccount {
+
     @EmbeddedId
     @JsonUnwrapped
     private TokenAccountId id;
 
     private Boolean associated;
+
+    private Boolean automaticAssociation;
 
     private Long createdTimestamp;
 
@@ -46,9 +49,7 @@ public class TokenAccount {
     @Enumerated(EnumType.ORDINAL)
     private TokenKycStatusEnum kycStatus;
 
-    private long modifiedTimestamp;
-
-    public TokenAccount(EntityId tokenId, EntityId accountId) {
-        id = new TokenAccountId(tokenId, accountId);
+    public TokenAccount(EntityId tokenId, EntityId accountId, long modifiedTimestamp) {
+        id = new TokenAccountId(tokenId, accountId, modifiedTimestamp);
     }
 }

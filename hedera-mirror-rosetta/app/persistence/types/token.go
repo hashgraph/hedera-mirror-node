@@ -30,7 +30,7 @@ import (
 const tableNameToken = "token"
 
 type Token struct {
-	TokenId             int64 `gorm:"type:primaryKey"`
+	TokenId             int64 `gorm:"primaryKey"`
 	CreatedTimestamp    int64
 	Decimals            int64
 	FreezeDefault       bool
@@ -64,7 +64,7 @@ func (t Token) ToDomainToken() (*types.Token, *rTypes.Error) {
 
 	return &types.Token{
 		TokenId:  tokenId,
-		Decimals: uint32(t.Decimals),
+		Decimals: t.Decimals,
 		Name:     t.Name,
 		Symbol:   t.Symbol,
 	}, nil

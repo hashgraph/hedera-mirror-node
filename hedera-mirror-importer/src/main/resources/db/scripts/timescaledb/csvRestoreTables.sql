@@ -20,7 +20,7 @@
 
 \copy custom_fee (amount, amount_denominator, collector_account_id, created_timestamp, denominating_token_id, maximum_amount, minimum_amount, token_id) from custom_fee.csv csv;
 
-\copy entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type, receiver_sig_required) from entity.csv csv;
+\copy entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, proxy_account_id, realm, shard, submit_key, type, receiver_sig_required, max_automatic_token_associations) from entity.csv csv;
 
 \copy event_file (bytes, consesnsus_start, consensus_end, count, digest_algorithm, file_hash, hash, load_start, load_end, name, node_account_id, previous_hash, version) from event_file.csv csv;
 
@@ -40,7 +40,7 @@
 
 \copy token (token_id, created_timestamp, decimals, fee_schedule_key, fee_schedule_key_ed25519_hex, freeze_default, freeze_key, freeze_key_ed25519_hex, initial_supply, kyc_key, kyc_key_ed25519_hex, max_supply, modified_timestamp, name, supply_key, supply_key_ed25519_hex, supply_type, symbol, total_supply, treasury_account_id, type, wipe_key, wipe_key_ed25519_hex) from token.csv csv;
 
-\copy token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id) from token_account.csv csv;
+\copy token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id, automatic_association) from token_account.csv csv;
 
 \copy token_balance (consensus_timestamp, account_id, balance, token_id) from token_balance.csv csv;
 

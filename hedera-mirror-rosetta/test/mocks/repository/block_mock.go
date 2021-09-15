@@ -30,17 +30,17 @@ type MockBlockRepository struct {
 	mock.Mock
 }
 
-func (m *MockBlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
-	args := m.Called()
-	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
-}
-
 func (m *MockBlockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
 	args := m.Called()
 	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
 }
 
 func (m *MockBlockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
+	args := m.Called()
+	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
+}
+
+func (m *MockBlockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
 	args := m.Called()
 	return args.Get(0).(*types.Block), args.Get(1).(*rTypes.Error)
 }

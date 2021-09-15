@@ -101,7 +101,5 @@ func (aber *addressBookEntryRepository) retrieveEntries() []addressBookEntry {
 
 // NewAddressBookEntryRepository creates an instance of a addressBookEntryRepository struct.
 func NewAddressBookEntryRepository(dbClient *gorm.DB) repositories.AddressBookEntryRepository {
-	return &addressBookEntryRepository{
-		dbClient: dbClient,
-	}
+	return &addressBookEntryRepository{dbClient}
 }

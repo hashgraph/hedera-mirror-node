@@ -32,9 +32,10 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenAccountId;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, TokenAccountId> {
+
     @Cacheable(cacheNames = "tokenaccounts", cacheManager = EXPIRE_AFTER_30M, key = "{#p0, #p1}")
-    @Query(value = "select * from token_account where token_id = ?1 and account_id = ?2", nativeQuery = true)
-    Optional<TokenAccount> findByTokenIdAndAccountId(long encodedTokenId, long encodedAccountId);
+    @Query(value = "select * from token_account where token_id = ?1 and account_id = ?2 order by modified_timestamp desc limit 1", nativeQuery = true)
+    Optional<TokenAccount> findLastByTokenIdAndAccountId(long encodedTokenId, long encodedAccountId);
 
     @CachePut(cacheNames = "tokenaccounts", cacheManager = EXPIRE_AFTER_30M, key = "{#p0.id.tokenId.id, #p0.id" +
             ".accountId.id}")

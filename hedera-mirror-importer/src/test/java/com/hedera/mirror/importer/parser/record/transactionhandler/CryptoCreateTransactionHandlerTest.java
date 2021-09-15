@@ -20,12 +20,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.List;
 
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -51,5 +55,36 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.ACCOUNT;
+    }
+
+    @Override
+    protected Entity getExpectedUpdatedEntity() {
+        Entity entity = super.getExpectedUpdatedEntity();
+        entity.setMaxAutomaticTokenAssociations(0);
+        return entity;
+    }
+
+    @Override
+    protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
+        List<UpdateEntityTestSpec> testSpecs = super.getUpdateEntityTestSpecsForCreateTransaction(memoField);
+
+        TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
+        Message innerBody = getInnerBody(body);
+        FieldDescriptor field = getInnerBodyFieldDescriptorByName("max_automatic_token_associations");
+        innerBody = innerBody.toBuilder().setField(field, 500).build();
+        body = getTransactionBody(body, innerBody);
+
+        Entity expected = getExpectedUpdatedEntity();
+        expected.setMaxAutomaticTokenAssociations(500);
+        testSpecs.add(
+                UpdateEntityTestSpec.builder()
+                        .description("create entity with non-zero max_automatic_token_associations")
+                        .expected(expected)
+                        .input(new Entity())
+                        .recordItem(getRecordItem(body, getDefaultTransactionRecord().build()))
+                        .build()
+        );
+
+        return testSpecs;
     }
 }

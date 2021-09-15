@@ -75,6 +75,8 @@ public class AcceptanceTestProperties {
 
     private final SdkProperties sdkProperties;
 
+    private final WebClientProperties webClientProperties;
+
     public Set<NodeProperties> getNodes() {
         if (network == HederaNetwork.OTHER && nodes.isEmpty()) {
             throw new IllegalArgumentException("nodes must not be empty");

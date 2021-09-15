@@ -26,6 +26,8 @@ module.exports = {
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),
   Token: require('./token'),
+  TokenFreezeStatus: require('./tokenFreezeStatus'),
+  TokenKycStatus: require('./tokenKycStatus'),
   Transaction: require('./transaction'),
   TransactionResult: require('./transactionResult'),
   TransactionType: require('./transactionType'),

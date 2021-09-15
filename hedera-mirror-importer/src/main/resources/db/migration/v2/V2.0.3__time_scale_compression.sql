@@ -96,7 +96,8 @@ alter table record_file
 
 -- token skipped as update on compressed chunk is not allowed
 
--- token_account skipped as update on compressed chunk is not allowed
+alter table token_account
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id, token_id');
 
 alter table token_balance
     set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id, token_id');
@@ -126,6 +127,7 @@ select add_compression_policy('live_hash', bigint '${compressionAge}');
 select add_compression_policy('nft_transfer', bigint '${compressionAge}');
 select add_compression_policy('non_fee_transfer', bigint '${compressionAge}');
 select add_compression_policy('record_file', bigint '${compressionAge}');
+select add_compression_policy('token_account', bigint '${compressionAge}');
 select add_compression_policy('token_balance', bigint '${compressionAge}');
 select add_compression_policy('token_transfer', bigint '${compressionAge}');
 select add_compression_policy('topic_message', bigint '${compressionAge}');

@@ -59,12 +59,12 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.0.13</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.0.14</embedded.testcontainers.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.40.1</grpc.version>
         <guava.version>30.1.1-jre</guava.version>
-        <hedera-protobuf.version>0.17.1</hedera-protobuf.version>
+        <hedera-protobuf.version>0.18.0-alpha.3</hedera-protobuf.version>
         <hedera-sdk.version>2.0.14</hedera-sdk.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
@@ -73,8 +73,8 @@
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.0</msgpack.version>
         <protobuf.version>3.17.3</protobuf.version>
-        <release.version>0.40.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.27.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.41.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.28.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -130,6 +130,7 @@
             <version>${guava.version}</version>
         </dependency>
     </dependencies>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -523,7 +524,7 @@
                                     <replacements>
                                         <replacement>
                                             <token>
-                                                <![CDATA[(?<="hedera-mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
+                                                <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>
@@ -531,7 +532,7 @@
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>
-                                            <token><![CDATA[(?<= Version: ")[0-9a-zA-Z.-]+]]></token>
+                                            <token><![CDATA[(?<=\sVersion:     ")[0-9a-zA-Z.-]+]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>

@@ -23,9 +23,12 @@ package account
 import (
 	"testing"
 
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -33,7 +36,7 @@ import (
 
 var (
 	account               int64 = 9000
-	accountString               = "0.0.9000"
+	account2              int64 = 9001
 	consensusEnd          int64 = 200
 	snapshotTimestamp     int64 = 100
 	cryptoTransferAmounts       = []int64{150, -178}
@@ -192,6 +195,31 @@ var (
 			TokenId:            token2.TokenId,
 		},
 	}
+	tokenTransfersInNextBlock = []*tokenTransfer{
+		{
+			AccountId:          account,
+			Amount:             5,
+			ConsensusTimestamp: consensusEnd + 1,
+			TokenId:            token1.TokenId,
+		},
+		{
+			AccountId:          account2,
+			Amount:             8,
+			ConsensusTimestamp: consensusEnd + 2,
+			TokenId:            token1.TokenId,
+		},
+	}
+	nextRecordFile = &dbTypes.RecordFile{
+		ConsensusStart: consensusEnd + 1,
+		ConsensusEnd:   consensusEnd + 10,
+		Count:          5,
+		FileHash:       "filehash",
+		Hash:           "hash",
+		Index:          5,
+		Name:           "next_record_file.rcd",
+		PrevHash:       "prevhash",
+		Version:        5,
+	}
 )
 
 type accountBalance struct {
@@ -247,33 +275,32 @@ func TestAccountRepositorySuite(t *testing.T) {
 }
 
 type accountRepositorySuite struct {
+	test.IntegrationTest
 	suite.Suite
-	dbResource db.DbResource
 }
 
 func (suite *accountRepositorySuite) SetupSuite() {
-	suite.dbResource = db.SetupDb()
+	suite.Setup()
 }
 
 func (suite *accountRepositorySuite) TearDownSuite() {
-	db.TeardownDb(suite.dbResource)
+	suite.TearDown()
 }
 
 func (suite *accountRepositorySuite) SetupTest() {
-	db.CleanupDb(suite.dbResource.GetDb())
-
-	suite.createDbRecords(snapshotAccountBalanceFile)
+	suite.CleanupDb()
+	db.CreateDbRecords(suite.DbResource.GetGormDb(), snapshotAccountBalanceFile)
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	// given
-	suite.createDbRecords(token1, token2)
-	suite.createDbRecords(initialAccountBalance, initialTokenBalances)
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, token1, token2)
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
 	// transfers before or at the snapshot timestamp should not affect balance calculation
-	suite.createDbRecords(cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot)
-	suite.createDbRecords(cryptoTransfers, tokenTransfers)
+	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot)
+	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers)
 
-	dbClient := suite.dbResource.GetGormDb()
 	repo := NewAccountRepository(dbClient)
 
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance.Balance + sum(cryptoTransferAmounts)}
@@ -291,7 +318,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -300,12 +327,12 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 	// given
-	suite.createDbRecords(initialAccountBalance, initialTokenBalances)
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
 	// transfers before or at the snapshot timestamp should not affect balance calculation
-	suite.createDbRecords(cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot)
-	suite.createDbRecords(cryptoTransfers, tokenTransfers)
+	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot)
+	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers)
 
-	dbClient := suite.dbResource.GetGormDb()
 	repo := NewAccountRepository(dbClient)
 
 	// no token entities, so only hbar balance
@@ -313,7 +340,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 	expected := []types.Amount{hbarAmount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -322,10 +349,10 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance() {
 	// given
-	suite.createDbRecords(token1, token2)
-	suite.createDbRecords(cryptoTransfers, tokenTransfers)
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, token1, token2)
+	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers)
 
-	dbClient := suite.dbResource.GetGormDb()
 	repo := NewAccountRepository(dbClient)
 
 	hbarAmount := &types.HbarAmount{Value: sum(cryptoTransferAmounts)}
@@ -342,31 +369,302 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(accountString, consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
 	assert.ElementsMatch(suite.T(), expected, actual)
 }
 
-func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockInvalidAccountIdStr() {
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountBalanceFile() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
+	db.ExecSql(dbClient, "truncate account_balance_file")
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock("a", consensusEnd)
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
 
 	// then
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *accountRepositorySuite) createDbRecords(records ...interface{}) {
-	dbClient := suite.dbResource.GetGormDb()
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError() {
+	// given
+	repo := NewAccountRepository(suite.InvalidDbClient)
 
-	for _, record := range records {
-		dbClient.Create(record)
+	// when
+	actual, err := repo.RetrieveBalanceAtBlock(account, consensusEnd)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveDissociatedTokens() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, token1, token2)
+	db.CreateDbRecords(
+		dbClient,
+		getTokenAccount(account, true, 20, 20, token1.TokenId),
+		getTokenAccount(account, false, 20, 50, token1.TokenId),
+		getTokenAccount(account, true, 30, 30, token2.TokenId),
+		getTokenAccount(account, false, 30, 40, token2.TokenId),
+		getTokenAccount(account2, true, 21, 21, token1.TokenId),
+		getTokenAccount(account2, true, 25, 25, token2.TokenId),
+		getTokenAccount(account2, false, 25, 37, token2.TokenId),
+	)
+	expected := []types.Token{{
+		TokenId:  token2EntityId,
+		Decimals: token2.Decimals,
+	}}
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveDissociatedTokens(account, 45)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expected, actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveDissociatedTokensNoTokenEntity() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(
+		dbClient,
+		getTokenAccount(account, true, 20, 20, token1.TokenId),
+		getTokenAccount(account, false, 20, 50, token1.TokenId),
+		getTokenAccount(account, true, 30, 30, token2.TokenId),
+		getTokenAccount(account, false, 30, 40, token2.TokenId),
+		getTokenAccount(account2, true, 21, 21, token1.TokenId),
+		getTokenAccount(account2, true, 25, 25, token2.TokenId),
+		getTokenAccount(account2, false, 25, 37, token2.TokenId),
+	)
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveDissociatedTokens(account, 45)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Empty(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveDissociatedTokensDbConnectionerror() {
+	// given
+	repo := NewAccountRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.RetrieveDissociatedTokens(account, 45)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfter() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, token1, token2)
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances[0])
+	// add the next record file, and a token transfer in the record file
+	db.CreateDbRecords(dbClient, cryptoTransfers, nextRecordFile, tokenTransfersInNextBlock)
+
+	repo := NewAccountRepository(dbClient)
+
+	expected := []types.Token{{
+		TokenId:  token1EntityId,
+		Decimals: token1.Decimals,
+	}}
+
+	// when
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.ElementsMatch(suite.T(), expected, actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNoTransferredTokens() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, token1, token2)
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances[0])
+	// add the next record file, and a token transfer in the record file
+	db.CreateDbRecords(dbClient, cryptoTransfers, nextRecordFile)
+
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Empty(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterNoNextBlock() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(dbClient, token1, token2)
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances[0])
+	// add the next record file, and a token transfer in the record file
+	db.CreateDbRecords(dbClient, cryptoTransfers)
+
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Empty(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveTransferredTokensInBlockAfterDbConnectionError() {
+	// given
+	repo := NewAccountRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.RetrieveTransferredTokensInBlockAfter(account, consensusEnd)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func TestGetDomainTokens(t *testing.T) {
+	domainToken1 := types.Token{
+		TokenId:  token1EntityId,
+		Decimals: token1.Decimals,
+		Name:     token1.Name,
+		Symbol:   token1.Symbol,
+	}
+	domainToken2 := types.Token{
+		TokenId:  token2EntityId,
+		Decimals: token2.Decimals,
+		Name:     token2.Name,
+		Symbol:   token2.Symbol,
+	}
+
+	tests := []struct {
+		name        string
+		input       []dbTypes.Token
+		expected    []types.Token
+		expectedErr *rTypes.Error
+	}{
+		{
+			"empty input",
+			[]dbTypes.Token{},
+			[]types.Token{},
+			nil,
+		},
+		{
+			"single token",
+			[]dbTypes.Token{*token1},
+			[]types.Token{domainToken1},
+			nil,
+		},
+		{
+			"multiple tokens",
+			[]dbTypes.Token{*token1, *token2},
+			[]types.Token{domainToken1, domainToken2},
+			nil,
+		},
+		{
+			"invalid token id",
+			[]dbTypes.Token{{TokenId: -1, Decimals: 5}},
+			nil,
+			errors.ErrInvalidToken,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := getDomainTokens(tt.input)
+			assert.Equal(t, tt.expected, actual)
+			assert.Equal(t, tt.expectedErr, err)
+		})
+	}
+}
+
+func TestGetUpdatedTokenAmounts(t *testing.T) {
+	token3EntityId := entityid.EntityId{EncodedId: 2007, EntityNum: 2007}
+	tests := []struct {
+		name           string
+		tokenAmountMap map[int64]*types.TokenAmount
+		tokenValues    []*types.TokenAmount
+		expected       []types.Amount
+	}{
+		{
+			"empty tokenAmountMap and tokenValues",
+			map[int64]*types.TokenAmount{},
+			[]*types.TokenAmount{},
+			[]types.Amount{},
+		},
+		{
+			"empty tokenValues",
+			map[int64]*types.TokenAmount{
+				token1.TokenId: {Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+			[]*types.TokenAmount{},
+			[]types.Amount{
+				&types.TokenAmount{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+		},
+		{
+			"empty tokenAmountMap",
+			map[int64]*types.TokenAmount{},
+			[]*types.TokenAmount{
+				{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+			[]types.Amount{
+				&types.TokenAmount{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+			},
+		},
+		{
+			"non-empty tokenAmountMap and tokenValues",
+			map[int64]*types.TokenAmount{
+				token1.TokenId: {Decimals: token1.Decimals, TokenId: token1EntityId, Value: 200},
+				token2.TokenId: {Decimals: token2.Decimals, TokenId: token2EntityId, Value: 220},
+			},
+			[]*types.TokenAmount{
+				{Decimals: token1.Decimals, TokenId: token1EntityId, Value: -20},
+				{Decimals: token2.Decimals, TokenId: token2EntityId, Value: 30},
+				{Decimals: 12, TokenId: token3EntityId, Value: 70},
+			},
+			[]types.Amount{
+				&types.TokenAmount{Decimals: token1.Decimals, TokenId: token1EntityId, Value: 180},
+				&types.TokenAmount{Decimals: token2.Decimals, TokenId: token2EntityId, Value: 250},
+				&types.TokenAmount{Decimals: 12, TokenId: token3EntityId, Value: 70},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := getUpdatedTokenAmounts(tt.tokenAmountMap, tt.tokenValues)
+			assert.ElementsMatch(t, tt.expected, actual)
+		})
+	}
+}
+
+func getTokenAccount(
+	accountId int64,
+	associated bool,
+	createdTimestamp int64,
+	modifiedTimestamp int64,
+	tokenId int64,
+) *dbTypes.TokenAccount {
+	return &dbTypes.TokenAccount{
+		AccountId:         accountId,
+		Associated:        associated,
+		CreatedTimestamp:  createdTimestamp,
+		ModifiedTimestamp: modifiedTimestamp,
+		TokenId:           tokenId,
 	}
 }
 
