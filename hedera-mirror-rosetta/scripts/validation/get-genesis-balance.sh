@@ -14,6 +14,7 @@ EOF
 genesis_timestamp_query="select min(consensus_timestamp) from account_balance_file"
 
 genesis_hbar_balance_query=$(cat <<EOF
+\set ON_ERROR_STOP on
 with genesis_balance as (
   select account_id, balance
   from account_balance ab
@@ -30,6 +31,7 @@ EOF
 )
 
 genesis_token_balance_query=$(cat <<EOF
+\set ON_ERROR_STOP on
 select json_agg(json_build_object(
   'id', account_id::text,
   'token', tb.token_id::text,
