@@ -48,3 +48,6 @@ import into topic_message (consensus_timestamp, realm_num, topic_num, message, r
 import into transaction (consensus_ns, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, scheduled, transaction_hash, transaction_bytes) csv data ('gs://hedera-cockroachdb/transaction.csv.gz') with nullif = '';
 import into transaction_signature (consensus_timestamp, public_key_prefix, entity_id, signature) csv data ('gs://hedera-cockroachdb/transaction_signature.csv.gz') with nullif = '';
 
+import into t_entity_types (id, name) csv data ('gs://hedera-cockroachdb/t_entity_types.csv');
+import into t_transaction_results (proto_id, result) csv data ('gs://hedera-cockroachdb/t_transaction_results.csv');
+import into t_transaction_types (name, entity_type, proto_id) csv data ('gs://hedera-cockroachdb/t_transaction_types.csv') with nullif = '';
