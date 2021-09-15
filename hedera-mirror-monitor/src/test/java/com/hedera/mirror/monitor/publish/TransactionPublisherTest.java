@@ -23,7 +23,6 @@ package com.hedera.mirror.monitor.publish;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.grpc.Server;
 import io.grpc.Status;
@@ -36,7 +35,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import lombok.Data;
@@ -45,8 +44,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -70,7 +68,6 @@ import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 @Log4j2
-@ExtendWith(MockitoExtension.class)
 class TransactionPublisherTest {
 
     private CryptoServiceStub cryptoServiceStub;
@@ -96,7 +93,6 @@ class TransactionPublisherTest {
         monitorProperties.setNodeValidation(nodeValidationProperties);
         publishProperties = new PublishProperties();
         transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties);
-
         cryptoServiceStub = new CryptoServiceStub();
         server = InProcessServerBuilder.forName("test")
                 .addService(cryptoServiceStub)
@@ -220,8 +216,9 @@ class TransactionPublisherTest {
 
     @Test
     @Timeout(10)
-    void publishWithRevalidate() {
-        nodeValidationProperties.setFrequency(Duration.ofSeconds(2));
+    void publishWithRevalidate() throws InterruptedException {
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(60));
+
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
@@ -234,27 +231,38 @@ class TransactionPublisherTest {
         // Force the only node to be unhealthy, verify error occurs
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch countDownLatch2 = new CountDownLatch(1);
+        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
+                .onErrorContinue((e, i) -> {
+                    countDownLatch.countDown();
+                }).subscribe();
+
+        countDownLatch.await();
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectError(PublishException.class)
                 .verify(Duration.ofSeconds(1L));
+        unhealthy.dispose();
 
         // Set the node back to healthy, ensure that transactions flow again
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
-
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
+
+        Disposable healthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
+                .doOnNext(i -> countDownLatch2.countDown()).subscribe();
+        countDownLatch2.await();
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
+        healthy.dispose();
     }
 
     @Test
-    @Timeout(20)
+    @Timeout(5)
     void publishWithRevalidateDisabled() throws InterruptedException {
         nodeValidationProperties.setEnabled(false);
         nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
@@ -266,25 +274,20 @@ class TransactionPublisherTest {
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
 
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"))); // Illegal DNS to avoid SDK retry
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(1))
+                .doOnNext(i -> countDownLatch.countDown())
+                .subscribe();
 
+        countDownLatch.await();
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        Thread.sleep(1200L);
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
-
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
-
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        Thread.sleep(1200L);
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
+        unhealthy.dispose();
     }
 
     @Test
