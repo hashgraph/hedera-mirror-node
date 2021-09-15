@@ -275,6 +275,8 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
 
         // Force the only node to be unhealthy, verify error occurs
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
                 new NodeProperties("0.0.4", "invalid:test2"))); // Illegal DNS to avoid SDK retry
 
