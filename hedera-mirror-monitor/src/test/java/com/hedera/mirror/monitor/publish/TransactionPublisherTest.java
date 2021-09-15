@@ -256,7 +256,7 @@ class TransactionPublisherTest {
 //                .expectNextCount(1L)
 //                .expectComplete()
 //                .verify(Duration.ofSeconds(1L));
-}
+//}
 
     @Test
     @Timeout(20)
@@ -423,51 +423,51 @@ class TransactionPublisherTest {
                 .build();
     }
 
-@Data
-private class CryptoServiceStub extends CryptoServiceGrpc.CryptoServiceImplBase {
+    @Data
+    private class CryptoServiceStub extends CryptoServiceGrpc.CryptoServiceImplBase {
 
-    private Queue<Mono<TransactionResponse>> transactions = new LinkedList<>();
-    private Queue<Mono<Response>> queries = new LinkedList<>();
+        private Queue<Mono<TransactionResponse>> transactions = new LinkedList<>();
+        private Queue<Mono<Response>> queries = new LinkedList<>();
 
-    void addQueries(Mono<Response>... query) {
-        queries.addAll(Arrays.asList(query));
+        void addQueries(Mono<Response>... query) {
+            queries.addAll(Arrays.asList(query));
+        }
+
+        void addTransactions(Mono<TransactionResponse>... transaction) {
+            transactions.addAll(Arrays.asList(transaction));
+        }
+
+        @Override
+        public void cryptoTransfer(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
+            log.debug("cryptoTransfer: {}", request);
+            send(responseObserver, transactions.poll());
+        }
+
+        @Override
+        public void getTransactionReceipts(Query request, StreamObserver<Response> responseObserver) {
+            log.debug("getTransactionReceipts: {}", request);
+            send(responseObserver, queries.poll());
+        }
+
+        @Override
+        public void getTxRecordByTxID(Query request, StreamObserver<Response> responseObserver) {
+            log.debug("getTxRecordByTxID: {}", request);
+            send(responseObserver, queries.poll());
+        }
+
+        private <T> void send(StreamObserver<T> responseObserver, Mono<T> response) {
+            assertThat(response).isNotNull();
+            response.delayElement(Duration.ofMillis(100L))
+                    .doOnError(responseObserver::onError)
+                    .doOnNext(responseObserver::onNext)
+                    .doOnNext(t -> log.trace("Next: {}", t))
+                    .doOnSuccess(r -> responseObserver.onCompleted())
+                    .subscribe();
+        }
+
+        void verify() {
+            assertThat(queries).isEmpty();
+            assertThat(transactions).isEmpty();
+        }
     }
-
-    void addTransactions(Mono<TransactionResponse>... transaction) {
-        transactions.addAll(Arrays.asList(transaction));
-    }
-
-    @Override
-    public void cryptoTransfer(Transaction request, StreamObserver<TransactionResponse> responseObserver) {
-        log.debug("cryptoTransfer: {}", request);
-        send(responseObserver, transactions.poll());
-    }
-
-    @Override
-    public void getTransactionReceipts(Query request, StreamObserver<Response> responseObserver) {
-        log.debug("getTransactionReceipts: {}", request);
-        send(responseObserver, queries.poll());
-    }
-
-    @Override
-    public void getTxRecordByTxID(Query request, StreamObserver<Response> responseObserver) {
-        log.debug("getTxRecordByTxID: {}", request);
-        send(responseObserver, queries.poll());
-    }
-
-    private <T> void send(StreamObserver<T> responseObserver, Mono<T> response) {
-        assertThat(response).isNotNull();
-        response.delayElement(Duration.ofMillis(100L))
-                .doOnError(responseObserver::onError)
-                .doOnNext(responseObserver::onNext)
-                .doOnNext(t -> log.trace("Next: {}", t))
-                .doOnSuccess(r -> responseObserver.onCompleted())
-                .subscribe();
-    }
-
-    void verify() {
-        assertThat(queries).isEmpty();
-        assertThat(transactions).isEmpty();
-    }
-}
 }
