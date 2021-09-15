@@ -23,7 +23,6 @@ package com.hedera.mirror.monitor.publish;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.grpc.Server;
 import io.grpc.Status;
@@ -36,7 +35,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import lombok.Data;
@@ -45,6 +44,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -259,15 +259,15 @@ class TransactionPublisherTest {
 //}
 
     @Test
-    @Timeout(20)
-    void publishWithRevalidate() {
+    @Timeout(10)
+    void publishWithRevalidate() throws InterruptedException {
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
                 new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
-        nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(60));
+
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
 
-        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
@@ -275,14 +275,38 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
 
         // Force the only node to be unhealthy, verify error occurs
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
-                new NodeProperties("0.0.4", "invalid:test2"))); // Illegal DNS to avoid SDK retry
+                new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
 
-        log.info("Executing second validate for revalidate test");
-        await().atMost(20, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().size() == 1);
-        log.info("Executing second step for revalidate test");
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch countDownLatch2 = new CountDownLatch(1);
+        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(3))
+                .doOnNext(i -> {
+                    countDownLatch.countDown();
+                }).subscribe();
+
+        countDownLatch.await();
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+        unhealthy.dispose();
+
+        // Set the node back to healthy, ensure that transactions flow again
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:2"),
+                new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
+        Disposable healthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
+                .onErrorContinue((e, i) -> countDownLatch2.countDown()).subscribe();
+        countDownLatch2.await();
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectError(PublishException.class)
+                .verify(Duration.ofSeconds(1L));
+        healthy.dispose();
     }
 
     @Test
