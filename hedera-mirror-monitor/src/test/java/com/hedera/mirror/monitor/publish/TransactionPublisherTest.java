@@ -218,8 +218,8 @@ class TransactionPublisherTest {
     @Timeout(20)
     void publishWithRevalidate() {
         nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
         log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
@@ -244,7 +244,8 @@ class TransactionPublisherTest {
         monitorProperties.setNodes(Set.of(
                 new NodeProperties("0.0.3", "in-process:test")));
 
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
         log.info("Executing third validate for revalidate test");
         await().atMost(10, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
         log.info("Executing third step for revalidate test");
