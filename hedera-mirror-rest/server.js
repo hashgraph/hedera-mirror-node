@@ -48,6 +48,7 @@ const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 const {TransactionResultService, TransactionTypeService} = require('./service');
+const fs = require('fs');
 
 // Logger
 const logger = log4js.getLogger();
@@ -81,8 +82,7 @@ if (port === undefined || Number.isNaN(Number(port))) {
 }
 
 // Postgres pool
-const Pool = getPoolClass(isTestEnv());
-const pool = new Pool({
+const poolConfig = {
   user: config.db.username,
   host: config.db.host,
   database: config.db.name,
@@ -91,7 +91,19 @@ const pool = new Pool({
   connectionTimeoutMillis: config.db.pool.connectionTimeout,
   max: config.db.pool.maxConnections,
   statement_timeout: config.db.pool.statementTimeout,
-});
+};
+
+if (config.db.tls.enabled) {
+  poolConfig.ssl = {
+    ca: fs.readFileSync(config.db.tls.ca).toString(),
+    cert: fs.readFileSync(config.db.tls.cert).toString(),
+    key: fs.readFileSync(config.db.tls.key).toString(),
+    rejectUnauthorized: false,
+  };
+}
+
+const Pool = getPoolClass(isTestEnv());
+const pool = new Pool(poolConfig);
 global.pool = pool;
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
