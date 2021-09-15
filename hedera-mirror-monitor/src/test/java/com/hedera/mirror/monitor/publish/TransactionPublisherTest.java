@@ -217,9 +217,6 @@ class TransactionPublisherTest {
     @Test
     @Timeout(20)
     void publishWithRevalidate() {
-        monitorProperties.setNodes(Set.of(
-                new NodeProperties("0.0.3", "in-process:test"),
-                (new NodeProperties("0.0.4", "in-process2:test"))));
         nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
@@ -232,8 +229,7 @@ class TransactionPublisherTest {
 
         // Force the only node to be unhealthy, verify error occurs
         monitorProperties.setNodes(Set.of(
-                new NodeProperties("0.0.3", "invalid:test"), // Illegal DNS to avoid SDK retry
-                (new NodeProperties("0.0.4", "invalid2:test"))));
+                new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK retry
 
         await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
         transactionPublisher.publish(request().build())
@@ -243,8 +239,7 @@ class TransactionPublisherTest {
 
         // Set a node back to healthy, ensure that transactions flow again
         monitorProperties.setNodes(Set.of(
-                new NodeProperties("0.0.3", "in-process:test"),
-                (new NodeProperties("0.0.4", "invalid:test"))));
+                new NodeProperties("0.0.3", "in-process:test")));
 
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         await().atMost(10, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
