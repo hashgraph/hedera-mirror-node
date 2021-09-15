@@ -30,20 +30,20 @@ import (
 func exampleAddressBookEntries() *AddressBookEntries {
 	return &AddressBookEntries{
 		[]AddressBookEntry{
-			newDummyAddressBookEntry(0, 3, "10.0.0.1:50211"),
-			newDummyAddressBookEntry(1, 4, "192.168.0.5:50211"),
-			newDummyAddressBookEntry(2, 5, "192.168.50.2:50211, 192.168.140.7:50211"),
-			newDummyAddressBookEntry(3, 6, ""),
+			newDummyAddressBookEntry(0, 3, []string{"10.0.0.1:50211"}),
+			newDummyAddressBookEntry(1, 4, []string{"192.168.0.5:50211"}),
+			newDummyAddressBookEntry(2, 5, []string{"192.168.50.2:50211", "192.168.140.7:50211"}),
+			newDummyAddressBookEntry(3, 6, []string{}),
 		},
 	}
 }
 
 func expectedRosettaPeers() []*types.Peer {
 	return []*types.Peer{
-		newDummyPeer("3", dummyMetadata("0.0.6", "")),
-		newDummyPeer("0", dummyMetadata("0.0.3", "10.0.0.1:50211")),
-		newDummyPeer("1", dummyMetadata("0.0.4", "192.168.0.5:50211")),
-		newDummyPeer("2", dummyMetadata("0.0.5", "192.168.50.2:50211, 192.168.140.7:50211")),
+		newDummyPeer("3", dummyMetadata("0.0.6", []string{})),
+		newDummyPeer("0", dummyMetadata("0.0.3", []string{"10.0.0.1:50211"})),
+		newDummyPeer("1", dummyMetadata("0.0.4", []string{"192.168.0.5:50211"})),
+		newDummyPeer("2", dummyMetadata("0.0.5", []string{"192.168.50.2:50211", "192.168.140.7:50211"})),
 	}
 }
 
@@ -62,7 +62,7 @@ func newDummyPeer(nodeId string, metadata map[string]interface{}) *types.Peer {
 	}
 }
 
-func newDummyAddressBookEntry(nodeId int64, accountId int64, endpoints string) AddressBookEntry {
+func newDummyAddressBookEntry(nodeId int64, accountId int64, endpoints []string) AddressBookEntry {
 	account, _ := NewAccountFromEncodedID(accountId)
 	return AddressBookEntry{
 		NodeId:    nodeId,
@@ -71,7 +71,7 @@ func newDummyAddressBookEntry(nodeId int64, accountId int64, endpoints string) A
 	}
 }
 
-func dummyMetadata(accountId string, endpoints string) map[string]interface{} {
+func dummyMetadata(accountId string, endpoints []string) map[string]interface{} {
 	return map[string]interface{}{
 		"account_id": accountId,
 		"endpoints":  endpoints,

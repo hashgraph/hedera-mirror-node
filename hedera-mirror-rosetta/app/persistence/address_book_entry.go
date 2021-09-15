@@ -21,6 +21,9 @@
 package persistence
 
 import (
+	"database/sql"
+	"strings"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -30,20 +33,20 @@ import (
 )
 
 const (
-	latestNodeServiceEndpoints = `select
+	fileId101                  int64 = 101
+	fileId102                  int64 = 102
+	latestNodeServiceEndpoints       = `select
                                     abe.node_id,
-                                    node_account_id, 
-                                    string_agg(
-                                      ip_address_v4 || ':' || port::text, ',' order by ip_address_v4, port
-                                    ) endpoints
-                                  from address_book_entry abe
-                                  left join address_book_service_endpoint abse on
-                                    abse.node_id = abe.node_id and
-                                    abse.consensus_timestamp =
-                                      (select max(consensus_timestamp) from address_book_service_endpoint)
-                                  where abe.consensus_timestamp =
-                                    (select max(consensus_timestamp) from address_book_entry)
-                                  group by abe.node_id, node_account_id`
+                                    abe.node_account_id,
+                                    string_agg(ip_address_v4 || ':' || port::text, ','
+                                      order by ip_address_v4,port) endpoints
+                                  from (
+                                    select max(start_consensus_timestamp) from address_book where file_id = @file_id
+                                  ) current
+                                  join address_book_entry abe on abe.consensus_timestamp = current.max
+                                  left join address_book_service_endpoint abse
+                                    on abse.consensus_timestamp = current.max and abse.node_id = abe.node_id 
+                                  group by abe.node_id, abe.node_account_id`
 )
 
 type nodeServiceEndpoint struct {
@@ -60,9 +63,19 @@ type addressBookEntryRepository struct {
 // Entries return all found Address Book Entries
 func (aber *addressBookEntryRepository) Entries() (*types.AddressBookEntries, *rTypes.Error) {
 	nodes := make([]nodeServiceEndpoint, 0)
-	if err := aber.dbClient.Raw(latestNodeServiceEndpoints).Scan(&nodes).Error; err != nil {
-		log.Error("Failed to get latest node service endpoints", err)
-		return nil, errors.ErrDatabaseError
+	// address book file 101 has service endpoints for nodes, resort to file 102 if 101 doesn't exist
+	for _, fileId := range []int64{fileId101, fileId102} {
+		if err := aber.dbClient.Raw(
+			latestNodeServiceEndpoints,
+			sql.Named("file_id", fileId),
+		).Scan(&nodes).Error; err != nil {
+			log.Error("Failed to get latest node service endpoints", err)
+			return nil, errors.ErrDatabaseError
+		}
+
+		if len(nodes) != 0 {
+			break
+		}
 	}
 
 	entries := make([]types.AddressBookEntry, 0, len(nodes))
@@ -71,10 +84,15 @@ func (aber *addressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 		if err != nil {
 			return nil, errors.ErrInternalServerError
 		}
+
+		endpoints := []string{}
+		if node.Endpoints != "" {
+			endpoints = strings.Split(node.Endpoints, ",")
+		}
 		entries = append(entries, types.AddressBookEntry{
 			NodeId:    node.NodeId,
 			AccountId: nodeAccountId,
-			Endpoints: node.Endpoints,
+			Endpoints: endpoints,
 		})
 	}
 

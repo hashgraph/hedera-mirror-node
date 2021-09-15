@@ -37,12 +37,14 @@ var (
 	accountId4, _  = types.NewAccountFromEncodedID(4)
 	accountId80, _ = types.NewAccountFromEncodedID(80)
 	accountId70, _ = types.NewAccountFromEncodedID(70)
-	// needed for foreign key constraint
-	addressBooks = []*pTypes.AddressBook{
-		getAddressBook(10, 19),
-		getAddressBook(20, 0),
+	addressBooks   = []*pTypes.AddressBook{
+		getAddressBook(9, 0, 102),
+		getAddressBook(10, 19, 101),
+		getAddressBook(20, 0, 101),
 	}
 	addressBookEntries = []*pTypes.AddressBookEntry{
+		getAddressBookEntry(9, 0, accountId3.EncodedId),
+		getAddressBookEntry(9, 1, accountId4.EncodedId),
 		getAddressBookEntry(10, 0, accountId3.EncodedId),
 		getAddressBookEntry(10, 1, accountId4.EncodedId),
 		getAddressBookEntry(20, 0, accountId80.EncodedId),
@@ -83,12 +85,13 @@ func (suite *addressBookEntryRepositorySuite) SetupTest() {
 func (suite *addressBookEntryRepositorySuite) TestEntries() {
 	// given
 	dbClient := suite.DbResource.GetGormDb()
+	// persist addressbooks before addressbook entries due to foreign key constraint
 	db.CreateDbRecords(dbClient, addressBooks, addressBookEntries, addressBookServiceEndpoints)
 
 	expected := &types.AddressBookEntries{
 		Entries: []types.AddressBookEntry{
-			{0, accountId80, "192.168.0.1:50211,192.168.0.1:50217,192.168.0.10:50211"},
-			{1, accountId70, "192.168.1.10:50211"},
+			{0, accountId80, []string{"192.168.0.1:50211", "192.168.0.1:50217", "192.168.0.10:50211"}},
+			{1, accountId70, []string{"192.168.1.10:50211"}},
 		},
 	}
 	repo := NewAddressBookEntryRepository(dbClient)
@@ -124,8 +127,37 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 
 	expected := &types.AddressBookEntries{
 		Entries: []types.AddressBookEntry{
-			{0, accountId80, ""},
-			{1, accountId70, ""},
+			{0, accountId80, []string{}},
+			{1, accountId70, []string{}},
+		},
+	}
+	repo := NewAddressBookEntryRepository(dbClient)
+
+	// when
+	actual, err := repo.Entries()
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expected, actual)
+}
+
+func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
+	// given
+	dbClient := suite.DbResource.GetGormDb()
+	db.CreateDbRecords(
+		dbClient,
+		getAddressBook(10, 19, 102),
+		getAddressBook(20, 0, 102),
+		getAddressBookEntry(10, 0, accountId4.EncodedId),
+		getAddressBookEntry(10, 1, accountId3.EncodedId),
+		getAddressBookEntry(20, 0, accountId70.EncodedId),
+		getAddressBookEntry(20, 1, accountId80.EncodedId),
+	)
+
+	expected := &types.AddressBookEntries{
+		Entries: []types.AddressBookEntry{
+			{0, accountId70, []string{}},
+			{1, accountId80, []string{}},
 		},
 	}
 	repo := NewAddressBookEntryRepository(dbClient)
@@ -165,11 +197,12 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesDbConnectionError() {
 	assert.Nil(suite.T(), actual)
 }
 
-func getAddressBook(start int64, end int64) *pTypes.AddressBook {
+func getAddressBook(start, end int64, fileId int64) *pTypes.AddressBook {
+	addressBook := pTypes.AddressBook{StartConsensusTimestamp: start, FileId: fileId}
 	if end != 0 {
-		return &pTypes.AddressBook{StartConsensusTimestamp: start, EndConsensusTimestamp: &end}
+		addressBook.EndConsensusTimestamp = &end
 	}
-	return &pTypes.AddressBook{StartConsensusTimestamp: start}
+	return &addressBook
 }
 
 func getAddressBookEntry(consensusTimestamp int64, nodeId int64, nodeAccountId int64) *pTypes.AddressBookEntry {

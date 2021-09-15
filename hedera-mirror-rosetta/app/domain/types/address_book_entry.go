@@ -30,7 +30,7 @@ import (
 type AddressBookEntry struct {
 	NodeId    int64
 	AccountId Account
-	Endpoints string
+	Endpoints []string
 }
 
 // AddressBookEntries is domain level struct used to represent an array of AddressBookEntry
