@@ -119,7 +119,6 @@ public class TransactionPublisher implements AutoCloseable {
             }
             int nodeIndex = secureRandom.nextInt(nodes.size());
             List<AccountId> nodeAccountId = List.of(nodes.get(nodeIndex));
-            log.info("Publishing to {}", nodeAccountId);
             transaction.setNodeAccountIds(nodeAccountId);
         }
 
@@ -164,7 +163,7 @@ public class TransactionPublisher implements AutoCloseable {
                             validationProperties.getFrequency())
                     .subscribeOn(Schedulers.parallel())
                     .doOnNext(i -> validateNodes())
-                    .onErrorContinue((e, i) -> log.error("Exception revalidating nodes: {}", e))
+                    .onErrorContinue((e, i) -> log.error("Exception validating nodes: ", e))
                     .subscribe());
         }
         return Flux.range(0, publishProperties.getClients())
@@ -197,7 +196,6 @@ public class TransactionPublisher implements AutoCloseable {
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
 
         setNodeAccountIds(validNodes);
-        log.info(validNodes);
 
         if (nodeAccountIds.get().isEmpty()) {
             throw new IllegalArgumentException("No valid nodes found");
@@ -219,7 +217,6 @@ public class TransactionPublisher implements AutoCloseable {
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);
-            log.info("About to send validation transaction");
             new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
