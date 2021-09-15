@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import reactor.core.Disposable;
@@ -60,7 +61,8 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    protected final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
+    @Getter
+    private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
     private Optional<Disposable> nodeValidator = Optional.empty();
