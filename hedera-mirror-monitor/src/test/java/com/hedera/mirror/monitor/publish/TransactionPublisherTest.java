@@ -275,18 +275,18 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
 
         // Force the only node to be unhealthy, verify error occurs
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:test"),
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
                 new NodeProperties("0.0.4", "invalid:test2"))); // Illegal DNS to avoid SDK retry
 
         log.info("Executing second validate for revalidate test");
-        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().size() == 1);
         log.info("Executing second step for revalidate test");
 
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
                 new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().size() == 2);
     }
 
     @Test
