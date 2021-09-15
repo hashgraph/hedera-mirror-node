@@ -28,11 +28,14 @@
       },
       {
         "num": 9,
-        "expiration_timestamp": "-9223372036854775808"
+        "expiration_timestamp": "-9223372036854775808",
+        "max_automatic_token_associations": 150,
+        "receiver_sig_required": null
       },
       {
         "num": 10,
-        "expiration_timestamp": "9223372036854775807"
+        "expiration_timestamp": "9223372036854775807",
+        "receiver_sig_required": true
       }
     ],
     "balances": [
@@ -146,10 +149,13 @@
           ]
         },
         "account": "0.0.1",
+        "deleted": false,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -170,7 +176,10 @@
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -182,7 +191,10 @@
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -194,7 +206,10 @@
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -215,7 +230,10 @@
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -227,7 +245,10 @@
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -239,7 +260,10 @@
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -251,7 +275,10 @@
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
       },
       {
         "balance": {
@@ -263,7 +290,10 @@
         "expiry_timestamp": "-9223372036.854775808",
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 150,
+        "memo": "entity memo",
+        "receiver_sig_required": null
       },
       {
         "balance": {
@@ -275,7 +305,10 @@
         "expiry_timestamp": "9223372036.854775807",
         "auto_renew_period": null,
         "key": null,
-        "deleted": false
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": true
       }
     ],
     "links": {

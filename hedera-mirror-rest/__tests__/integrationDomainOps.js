@@ -186,9 +186,11 @@ const addEntity = async (defaults, entity) => {
     deleted: false,
     expiration_timestamp: null,
     key: null,
-    memo: '',
+    max_automatic_token_associations: null,
+    memo: 'entity memo',
     public_key: null,
     realm: 0,
+    receiver_sig_required: false,
     shard: 0,
     type: 1,
     ...defaults,
@@ -197,8 +199,8 @@ const addEntity = async (defaults, entity) => {
 
   await sqlConnection.query(
     `INSERT INTO entity (id, type, shard, realm, num, expiration_timestamp, deleted, public_key,
-                         auto_renew_period, key, memo)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+                         auto_renew_period, key, max_automatic_token_associations, memo, receiver_sig_required)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
     [
       EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId(),
       entity.type,
@@ -210,7 +212,9 @@ const addEntity = async (defaults, entity) => {
       entity.public_key,
       entity.auto_renew_period,
       entity.key,
+      entity.max_automatic_token_associations,
       entity.memo,
+      entity.receiver_sig_required,
     ]
   );
 };
@@ -218,6 +222,7 @@ const addEntity = async (defaults, entity) => {
 const addAccount = async (account) => {
   await addEntity(
     {
+      max_automatic_token_associations: 0,
       public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       type: 1,
     },
@@ -644,6 +649,7 @@ const addTokenAccount = async (tokenAccount) => {
   tokenAccount = {
     account_id: '0.0.0',
     associated: true,
+    automatic_association: false,
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
@@ -657,12 +663,13 @@ const addTokenAccount = async (tokenAccount) => {
   }
 
   await sqlConnection.query(
-    `INSERT INTO token_account (account_id, associated, created_timestamp, freeze_status, kyc_status,
-                                modified_timestamp, token_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+    `INSERT INTO token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
+                                kyc_status, modified_timestamp, token_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
     [
       EntityId.fromString(tokenAccount.account_id).getEncodedId(),
       tokenAccount.associated,
+      tokenAccount.automatic_association,
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,

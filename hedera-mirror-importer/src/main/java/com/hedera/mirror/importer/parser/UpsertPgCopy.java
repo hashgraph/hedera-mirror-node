@@ -29,6 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.exception.ParserException;
@@ -68,10 +69,14 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
                 .description("Time to insert transaction information from temp to final table")
                 .tag(TABLE, finalTableName)
                 .register(meterRegistry);
-        updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.update")
-                .description("Time to update parsed transactions information into table")
-                .tag(TABLE, finalTableName)
-                .register(meterRegistry);
+        if (StringUtils.isNotEmpty(updateSql)) {
+            updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.update")
+                    .description("Time to update parsed transactions information into table")
+                    .tag(TABLE, finalTableName)
+                    .register(meterRegistry);
+        } else {
+            updateDurationMetric = null;
+        }
     }
 
     @Override
@@ -99,27 +104,26 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
             // update items in final table from temp table
             updateItems(connection);
 
-            log.debug("Inserted {} and updated from a total of {} rows to {}", insertCount, items
-                    .size(), finalTableName);
+            log.debug("Inserted {} and updated from a total of {} rows to {}", insertCount, items.size(),
+                    finalTableName);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }
     }
 
     private int insertToFinalTable(Connection connection) throws SQLException {
-        int insertCount = 0;
         try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
-            insertCount = preparedStatement.executeUpdate();
+            int count = preparedStatement.executeUpdate();
+            log.trace("Inserted {} rows from {} table to {} table", count, tableName, finalTableName);
+            return count;
         }
-        log.trace("Inserted {} rows from {} table to {} table", insertCount, tableName, finalTableName);
-        return insertCount;
     }
 
     private void updateFinalTable(Connection connection) throws SQLException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
             preparedStatement.execute();
+            log.trace("Updated rows from {} table to {} table", tableName, finalTableName);
         }
-        log.trace("Updated rows from {} table to {} table", tableName, finalTableName);
     }
 
     private void createTempTable(Connection connection) throws SQLException {
@@ -154,6 +158,10 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     }
 
     private void updateItems(Connection connection) throws SQLException {
+        if (StringUtils.isEmpty(updateSql)) {
+            return;
+        }
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         updateFinalTable(connection);
         recordMetric(updateDurationMetric, stopwatch);

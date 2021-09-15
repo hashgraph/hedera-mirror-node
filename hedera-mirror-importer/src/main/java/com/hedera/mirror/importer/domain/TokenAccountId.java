@@ -45,4 +45,6 @@ public class TokenAccountId implements Serializable {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId accountId;
+
+    private long modifiedTimestamp;
 }

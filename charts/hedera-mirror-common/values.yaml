@@ -82,6 +82,20 @@ loki:
           for: 1m
           labels:
             severity: critical
+    - name: hedera-mirror-rosetta
+      rules:
+        - alert: RosettaLogErrors
+          annotations:
+            description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
+            summary: "High rate of log errors"
+          expr: >
+            sum(rate({component="rosetta"}
+              | logfmt
+              | level = "error" or level = "fatal"
+            [1m])) by (namespace, pod) > 0.04
+          for: 1m
+          labels:
+            severity: critical
   config:
     ruler:
       alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
@@ -258,7 +272,7 @@ prometheus:
     additionalPodMonitors:
       - name: traefik
         podMetricsEndpoints:
-          - port: traefik
+          - port: metrics
             path: /metrics
             interval: 15s
         selector:
@@ -314,10 +328,6 @@ promtail:
     enabled: true
 
 traefik:
-  additionalArguments:
-    - "--accesslog=true"
-    - "--entrypoints.websecure.http.tls=true"
-    - "--metrics.prometheus=true"
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -331,9 +341,16 @@ traefik:
     kind: DaemonSet
   enabled: true
   globalArguments: []
+  logs:
+    access:
+      enabled: true
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
+  ports:
+    websecure:
+      tls:
+        enabled: true
   priorityClassName: critical
   resources:
     limits:

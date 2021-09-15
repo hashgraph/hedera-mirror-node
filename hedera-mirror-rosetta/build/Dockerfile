@@ -3,7 +3,7 @@
 # and run the services using supervisord
 
 # ------------------------------  Rosetta  ------------------------------- #
-FROM golang:1.16 as rosetta-builder
+FROM golang:1.17.1 as rosetta-builder
 COPY hedera-mirror-rosetta /hedera-mirror-rosetta
 WORKDIR /hedera-mirror-rosetta
 RUN go build -o rosetta-executable ./cmd
@@ -64,7 +64,6 @@ USER root
 # Copy the Rosetta Executable from the Rosetta Builder stage
 WORKDIR /var/rosetta
 COPY --from=rosetta-builder /hedera-mirror-rosetta/rosetta-executable .
-COPY --from=rosetta-builder /hedera-mirror-rosetta/config/application.yml ./config/application.yml
 
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer

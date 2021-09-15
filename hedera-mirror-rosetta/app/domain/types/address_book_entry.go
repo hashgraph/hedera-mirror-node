@@ -21,18 +21,21 @@
 package types
 
 import (
+	"fmt"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 )
 
 // AddressBookEntry is domain level struct used to represent Rosetta Peer
 type AddressBookEntry struct {
-	PeerId   Account
-	Metadata map[string]interface{}
+	NodeId    int64
+	AccountId Account
+	Endpoints []string
 }
 
 // AddressBookEntries is domain level struct used to represent an array of AddressBookEntry
 type AddressBookEntries struct {
-	Entries []*AddressBookEntry
+	Entries []AddressBookEntry
 }
 
 // ToRosetta returns an array of Rosetta type Peer
@@ -40,8 +43,11 @@ func (abe *AddressBookEntries) ToRosetta() []*rTypes.Peer {
 	peers := make([]*rTypes.Peer, len(abe.Entries))
 	for i, e := range abe.Entries {
 		peers[i] = &rTypes.Peer{
-			PeerID:   e.PeerId.String(),
-			Metadata: e.Metadata,
+			PeerID: fmt.Sprintf("%d", e.NodeId),
+			Metadata: map[string]interface{}{
+				"account_id": e.AccountId.String(),
+				"endpoints":  e.Endpoints,
+			},
 		}
 	}
 

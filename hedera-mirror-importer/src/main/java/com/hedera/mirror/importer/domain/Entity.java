@@ -53,6 +53,8 @@ public class Entity {
 
     private byte[] key;
 
+    private Integer maxAutomaticTokenAssociations;
+
     @JsonSerialize(using = NullableStringSerializer.class)
     private String memo;
 
@@ -67,6 +69,8 @@ public class Entity {
     private String publicKey;
 
     private Long realm;
+
+    private Boolean receiverSigRequired;
 
     private Long shard;
 

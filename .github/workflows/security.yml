@@ -7,9 +7,6 @@ on:
     branches: [ main, release/** ]
     tags: [ v* ]
 
-env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
-
 jobs:
   dependencies:
     name: Dependency check
@@ -18,15 +15,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v2
+      - name: Install JDK
+        uses: actions/setup-java@v2
         with:
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
+          distribution: 'adopt'
+          java-version: 11
 
       - name: Vulnerability check
-        run: ./mvnw ${MAVEN_CLI_OPTS} dependency-check:aggregate
+        run: ./mvnw dependency-check:aggregate
 
   sonar:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
@@ -38,12 +35,12 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v2
+      - name: Install JDK
+        uses: actions/setup-java@v2
         with:
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
+          distribution: 'adopt'
+          java-version: 11
 
       - name: Cache SonarCloud dependencies
         uses: actions/cache@v2
@@ -53,7 +50,7 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Maven Sonar
-        run: ./mvnw ${MAVEN_CLI_OPTS} compile sonar:sonar -Dsonar.login=$SONAR_TOKEN
+        run: ./mvnw compile sonar:sonar -Dsonar.login=$SONAR_TOKEN
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -6,9 +6,8 @@ To access the gRPC API:
   GRPC_IP="$(kubectl get "service/{{ .Release.Name }}-grpc" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 {{- else if contains "ClusterIP" .Values.grpc.service.type }}
   kubectl port-forward "service/{{ .Release.Name }}-grpc" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.grpc.service.port }}:5600 &
-  GRPC_IP="127.0.0.1"
 {{- end }}
-  grpcurl -plaintext "${GRPC_IP}:5600" list
+  grpcurl -plaintext "${GRPC_IP:-127.0.0.1}:{{.Values.grpc.service.port}}" list
 {{- end }}
 
 {{- if and .Values.rest.enabled .Values.rest.service }}
@@ -17,7 +16,16 @@ To access the REST API:
   REST_IP="$(kubectl get "service/{{ .Release.Name }}-rest" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 {{- else if contains "ClusterIP" .Values.rest.service.type }}
   kubectl port-forward "service/{{ .Release.Name }}-rest" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.rest.service.port }}:80 &
-  REST_IP="127.0.0.1"
 {{- end }}
-  curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
+  curl -s "http://${REST_IP:-127.0.0.1}:{{.Values.rest.service.port}}/api/v1/transactions?limit=1"
+{{- end }}
+
+{{- if and .Values.rosetta.enabled .Values.rosetta.service }}
+To access the Rosetta API:
+{{- if contains "LoadBalancer" .Values.rosetta.service.type }}
+  REST_IP="$(kubectl get "service/{{ .Release.Name }}-rosetta" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+{{- else if contains "ClusterIP" .Values.rosetta.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-rosetta" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.rosetta.service.port }}:80 &
+{{- end }}
+  curl -sL -d '{"metadata":{}}' "http://${ROSETTA_IP:-127.0.0.1}:{{.Values.rosetta.service.port}}/network/list"
 {{- end }}

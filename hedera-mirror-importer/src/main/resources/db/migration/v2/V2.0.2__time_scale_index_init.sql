@@ -86,8 +86,6 @@ create unique index if not exists t_transaction_types_name
 -- token
 
 -- token_account
-create unique index if not exists token_account__token_account_timestamp
-    on token_account (token_id, account_id);
 
 -- token_balance
 

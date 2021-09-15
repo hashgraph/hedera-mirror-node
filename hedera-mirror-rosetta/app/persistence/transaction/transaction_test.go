@@ -23,11 +23,12 @@ package transaction
 import (
 	"testing"
 
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -166,52 +167,73 @@ func TestTransactionRepositorySuite(t *testing.T) {
 }
 
 type transactionRepositorySuite struct {
+	test.IntegrationTest
 	suite.Suite
-	dbResource db.DbResource
 }
 
 func (suite *transactionRepositorySuite) SetupSuite() {
-	suite.dbResource = db.SetupDb()
+	suite.Setup()
 }
 
 func (suite *transactionRepositorySuite) TearDownSuite() {
-	db.TeardownDb(suite.dbResource)
+	suite.TearDown()
 }
 
 func (suite *transactionRepositorySuite) SetupTest() {
-	db.CleanupDb(suite.dbResource.GetDb())
+	suite.CleanupDb()
 }
 
 func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 	assert.NotNil(suite.T(), t)
 }
 
 func (suite *transactionRepositorySuite) TestTypes() {
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 	actual, err := t.Types()
 	assert.Nil(suite.T(), err)
 	assert.NotEmpty(suite.T(), actual)
 }
 
+func (suite *transactionRepositorySuite) TestTypesDbConnectionError() {
+	t := NewTransactionRepository(suite.InvalidDbClient)
+	actual, err := t.Types()
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *transactionRepositorySuite) TestResults() {
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 	actual, err := t.Results()
 	assert.Nil(suite.T(), err)
 	assert.NotEmpty(suite.T(), actual)
 }
 
+func (suite *transactionRepositorySuite) TestResultsDbConnectionError() {
+	t := NewTransactionRepository(suite.InvalidDbClient)
+	actual, err := t.Results()
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *transactionRepositorySuite) TestTypesAsArray() {
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 	actual, err := t.TypesAsArray()
 	assert.Nil(suite.T(), err)
 	assert.NotEmpty(suite.T(), actual)
 }
 
+func (suite *transactionRepositorySuite) TestTypesAsArrayDbConnectionError() {
+	t := NewTransactionRepository(suite.InvalidDbClient)
+	actual, err := t.TypesAsArray()
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *transactionRepositorySuite) TestFindBetween() {
 	// given
 	expected := suite.setupDb(true)
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := t.FindBetween(consensusStart, consensusEnd)
@@ -224,7 +246,7 @@ func (suite *transactionRepositorySuite) TestFindBetween() {
 func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
 	// given
 	expected := suite.setupDb(false)
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := t.FindBetween(consensusStart, consensusEnd)
@@ -236,7 +258,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
 
 func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd() {
 	// given
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := t.FindBetween(consensusStart, consensusStart-1)
@@ -246,10 +268,22 @@ func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd(
 	assert.Nil(suite.T(), actual)
 }
 
+func (suite *transactionRepositorySuite) TestFindBetweenDbConnectionError() {
+	// given
+	t := NewTransactionRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := t.FindBetween(consensusStart, consensusEnd)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 	// given
 	expected := suite.setupDb(true)
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := t.FindByHashInBlock(expected[0].Hash, consensusStart, consensusEnd)
@@ -262,7 +296,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
 	// given
 	expected := suite.setupDb(false)
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := t.FindByHashInBlock(expected[1].Hash, consensusStart, consensusEnd)
@@ -272,9 +306,9 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
 	assertTransactions(suite.T(), []*types.Transaction{expected[1]}, []*types.Transaction{actual})
 }
 
-func (suite *transactionRepositorySuite) TestFindByHashThrowsInvalidHash() {
+func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsInvalidHash() {
 	// given
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := t.FindByHashInBlock("invalid hash", consensusStart, consensusEnd)
@@ -284,9 +318,9 @@ func (suite *transactionRepositorySuite) TestFindByHashThrowsInvalidHash() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *transactionRepositorySuite) TestFindByHashThrowsNotFound() {
+func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsNotFound() {
 	// given
-	t := NewTransactionRepository(suite.dbResource.GetGormDb())
+	t := NewTransactionRepository(suite.DbResource.GetGormDb())
 
 	// when
 	actual, err := t.FindByHashInBlock("0x123456", consensusStart, consensusEnd)
@@ -296,8 +330,20 @@ func (suite *transactionRepositorySuite) TestFindByHashThrowsNotFound() {
 	assert.Nil(suite.T(), actual)
 }
 
+func (suite *transactionRepositorySuite) TestFindByHashInBlockDbConnectionError() {
+	// given
+	t := NewTransactionRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := t.FindByHashInBlock("0x123456", consensusStart, consensusEnd)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*types.Transaction {
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 
 	// successful crypto transfer transaction
 	consensusTimestamp := consensusStart + 1
@@ -402,7 +448,10 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	domain.AddTransaction(dbClient, consensusTimestamp, tokenId2.EncodedId, nodeAccount.EncodedId, firstAccount.EncodedId, 22,
 		[]byte{0xaa, 0xcc, 0xdd}, dbTypes.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, tokenTransfers)
 	metadata := map[string]interface{}{
-		"decimals":       tokenDecimals,
+		"currency": &rTypes.Currency{
+			Symbol:   tokenId2.String(),
+			Decimals: int32(tokenDecimals),
+		},
 		"freeze_default": false,
 		"initial_supply": tokenInitialSupply,
 	}

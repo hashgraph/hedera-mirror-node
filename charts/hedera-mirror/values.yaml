@@ -181,7 +181,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.3.0-debian-10-r11
+    tag: 13.4.0-debian-10-r28
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -275,6 +275,33 @@ rest:
           name: mirror-passwords
           key: HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME
 
+rosetta:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_rosetta
+  enabled: true
+  env:
+    HEDERA_MIRROR_ROSETTA_DB_HOST:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_HOST
+    HEDERA_MIRROR_ROSETTA_DB_NAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_NAME
+    HEDERA_MIRROR_ROSETTA_DB_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_ROSETTA_DB_PASSWORD
+    HEDERA_MIRROR_ROSETTA_DB_USERNAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_ROSETTA_DB_USERNAME
+
 test:
   config:
     hedera:
@@ -302,7 +329,7 @@ timescaledb:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    tag: pg13.3-ts2.3.1-p1
+    tag: pg13.4-ts2.4.1-latest
   loadBalancer:
     enabled: false
   patroni:
@@ -337,7 +364,7 @@ timescaledb:
     image:
       pullPolicy: IfNotPresent
       repository: quay.io/prometheuscommunity/postgres-exporter
-      tag: v0.9.0
+      tag: v0.10.0
   replicaCount: 1
   resources:
     limits:

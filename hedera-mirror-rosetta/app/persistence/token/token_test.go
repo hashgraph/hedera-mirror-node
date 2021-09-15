@@ -27,11 +27,13 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/thanhpk/randstr"
 )
+
+var tokenId = entityid.EntityId{EncodedId: 1200, EntityNum: 1200}
 
 // run the suite
 func TestTokenRepositorySuite(t *testing.T) {
@@ -39,28 +41,28 @@ func TestTokenRepositorySuite(t *testing.T) {
 }
 
 type tokenRepositorySuite struct {
+	test.IntegrationTest
 	suite.Suite
-	dbResource db.DbResource
 }
 
 func (suite *tokenRepositorySuite) SetupSuite() {
-	suite.dbResource = db.SetupDb()
+	suite.Setup()
 }
 
 func (suite *tokenRepositorySuite) TearDownSuite() {
-	db.TeardownDb(suite.dbResource)
+	suite.TearDown()
 }
 
 func (suite *tokenRepositorySuite) SetupTest() {
-	db.CleanupDb(suite.dbResource.GetDb())
+	suite.CleanupDb()
 }
 
 func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
+	dbClient := suite.DbResource.GetGormDb()
 
 	token := &dbTypes.Token{
-		TokenId:             1200,
+		TokenId:             tokenId.EncodedId,
 		CreatedTimestamp:    10001,
 		Decimals:            9,
 		FreezeDefault:       true,
@@ -94,7 +96,7 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	repo := NewTokenRepository(dbClient)
 
 	// when
-	actual, err := repo.Find("0.0.1200")
+	actual, err := repo.Find(tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), expected, actual)
@@ -103,13 +105,36 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 
 func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 	// given
-	dbClient := suite.dbResource.GetGormDb()
-	repo := NewTokenRepository(dbClient)
+	repo := NewTokenRepository(suite.DbResource.GetGormDb())
 
 	// when
-	actual, err := repo.Find("0.0.1200")
+	actual, err := repo.Find(tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), errors.ErrTokenNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
+	// given
+	repo := NewTokenRepository(suite.DbResource.GetGormDb())
+
+	// when
+	actual, err := repo.Find("abc")
+
+	// then
+	assert.Equal(suite.T(), errors.ErrInvalidToken, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *tokenRepositorySuite) TestFindTokenDbConnectionError() {
+	// given
+	repo := NewTokenRepository(suite.InvalidDbClient)
+
+	// when
+	actual, err := repo.Find(tokenId.String())
+
+	// then
+	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
 }

@@ -21,18 +21,14 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
-import io.grpc.netty.shaded.io.netty.handler.timeout.ReadTimeoutException;
+import com.google.common.base.Throwables;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.netty.http.client.PrematureCloseException;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
@@ -176,10 +172,8 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     }
 
     protected boolean shouldRetryRestCall(Throwable t) {
-        return t instanceof PrematureCloseException ||
-                t instanceof ReadTimeoutException ||
-                t instanceof TimeoutException ||
-                (t instanceof WebClientResponseException &&
-                        ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND);
+        return sdkClient.getAcceptanceTestProperties().getRestPollingProperties().getRetryableExceptions()
+                .stream()
+                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
     }
 }

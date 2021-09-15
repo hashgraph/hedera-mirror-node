@@ -20,6 +20,7 @@
         <commons-compress.version>1.21</commons-compress.version>
         <commons-io.version>2.11.0</commons-io.version>
         <s3proxy.version>1.8.0</s3proxy.version>
+        <sql-formatter.version>2.0.2</sql-formatter.version>
     </properties>
 
     <dependencyManagement>
@@ -27,7 +28,7 @@
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
-                <version>2.17.24</version>
+                <version>2.17.38</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -215,6 +216,12 @@
             <artifactId>sts</artifactId>
         </dependency>
         <!-- Test -->
+        <dependency>
+            <groupId>com.github.vertical-blank</groupId>
+            <artifactId>sql-formatter</artifactId>
+            <version>${sql-formatter.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.gaul</groupId>
             <artifactId>s3proxy</artifactId>

@@ -22,15 +22,22 @@ dependencies:
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 7.7.0
+    version: 7.9.3
   - condition: redis.enabled
     name: redis
     repository: https://charts.bitnami.com/bitnami
-    version: 14.4.0
+    version: 15.3.2
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
     repository: file://../hedera-mirror-rest
+    tags:
+      - api
+    version: ">=0.18.0-0"
+  - alias: rosetta
+    condition: rosetta.enabled
+    name: hedera-mirror-rosetta
+    repository: file://../hedera-mirror-rosetta
     tags:
       - api
     version: ">=0.18.0-0"
@@ -56,4 +63,4 @@ maintainers:
 name: hedera-mirror
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.27.0-SNAPSHOT
+version: 0.28.0-SNAPSHOT

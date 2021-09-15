@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {{ toYaml .Values.service.annotations | nindent 4 }}
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector: {{ include "hedera-mirror-rosetta.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.service.type }}

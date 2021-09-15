@@ -28,58 +28,86 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 const (
-	balanceChangeBetween string = `select
-                                    coalesce((
-                                      select sum(amount::bigint) from crypto_transfer
-                                      where
-                                        consensus_timestamp > @start and
-                                        consensus_timestamp <= @end and
-                                        entity_id = @account_id
-                                    ), 0) as value,
-                                    coalesce((
-                                      select json_agg(change)
-                                      from (
-                                        select json_build_object(
-                                            'token_id', tt.token_id,
-                                            'decimals', t.decimals,
-                                            'value', sum(tt.amount::bigint)
-                                        ) change
-                                        from token_transfer tt
+	databaseErrorFormat  = "%s: %s"
+	balanceChangeBetween = `select
+                              coalesce((
+                                select sum(amount::bigint) from crypto_transfer
+                                where
+                                  consensus_timestamp > @start and
+                                  consensus_timestamp <= @end and
+                                  entity_id = @account_id
+                              ), 0) as value,
+                              coalesce((
+                                select json_agg(change)
+                                from (
+                                  select json_build_object(
+                                      'token_id', tt.token_id,
+                                      'decimals', t.decimals,
+                                      'value', sum(tt.amount::bigint)
+                                  ) change
+                                  from token_transfer tt
+                                  join token t
+                                    on t.token_id = tt.token_id
+                                  where
+                                    consensus_timestamp > @start and
+                                    consensus_timestamp <= @end and
+                                    account_id = @account_id
+                                  group by tt.account_id, tt.token_id, t.decimals
+                                ) token_change
+                              ), '[]') as token_values`
+	latestBalanceBeforeConsensus = `with abm as (
+                                      select max(consensus_timestamp)
+                                      from account_balance_file where consensus_timestamp <= @timestamp
+                                    )
+                                    select
+                                      abm.max consensus_timestamp,
+                                      coalesce(ab.balance, 0) balance,
+                                      coalesce((
+                                        select json_agg(json_build_object(
+                                          'token_id', tb.token_id,
+                                          'decimals', t.decimals,
+                                          'value', tb.balance
+                                        ))
+                                        from token_balance tb
                                         join token t
-                                          on t.token_id = tt.token_id
-                                        where
-                                          consensus_timestamp > @start and
-                                          consensus_timestamp <= @end and
-                                          account_id = @account_id
-                                        group by tt.account_id, tt.token_id, t.decimals
-                                      ) token_change
-                                    ), '[]') as token_values`
-
-	latestBalanceBeforeConsensus string = `with abm as (
-                                             select max(consensus_timestamp)
-                                             from account_balance_file where consensus_timestamp <= @timestamp
-                                           )
-                                           select
-                                             abm.max consensus_timestamp,
-                                             coalesce(ab.balance, 0) balance,
-                                             coalesce((
-                                               select json_agg(json_build_object(
-                                                 'token_id', tb.token_id,
-                                                 'decimals', t.decimals,
-                                                 'value', tb.balance
-                                               ))
-                                               from token_balance tb
-                                               join token t
-                                                 on t.token_id = tb.token_id
-                                               where tb.consensus_timestamp = abm.max and tb.account_id = @account_id
-                                             ), '[]') token_balances
-                                           from abm
-                                           left join account_balance ab
-                                             on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
+                                          on t.token_id = tb.token_id
+                                        where tb.consensus_timestamp = abm.max and tb.account_id = @account_id
+                                      ), '[]') token_balances
+                                    from abm
+                                    left join account_balance ab
+                                      on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
+	selectDissociatedTokensAtTimestamp = `with latest as (
+                                            select distinct on (ta.token_id) ta.token_id, t.decimals, ta.associated
+                                            from token_account ta
+                                            join token t on t.token_id = ta.token_id
+                                            where ta.modified_timestamp <= @consensus_timestamp and
+                                              ta.account_id = @account_id
+                                            order by ta.token_id, ta.modified_timestamp desc
+                                          )
+                                          select token_id, decimals
+                                          from latest
+                                          where associated is false`
+	// gosec somehow thinks the sql query has hardcoded credentials
+	// #nosec
+	selectTransferredTokensInBlockAfterTimestamp = `with rf as (
+                                                      select consensus_start, consensus_end
+                                                       from record_file
+                                                      where consensus_end > @consensus_timestamp
+                                                      order by consensus_end
+                                                      limit 1
+                                                    )
+                                                    select distinct on (tt.token_id) tt.token_id, t.decimals
+                                                    from token_transfer tt
+                                                    join rf on rf.consensus_start <= consensus_timestamp and
+                                                       rf.consensus_end >= consensus_timestamp
+                                                    join token t on t.token_id = tt.token_id
+                                                    where account_id = @account_id`
 )
 
 type combinedAccountBalance struct {
@@ -100,41 +128,72 @@ type accountRepository struct {
 
 // NewAccountRepository creates an instance of a accountRepository struct
 func NewAccountRepository(dbClient *gorm.DB) repositories.AccountRepository {
-	return &accountRepository{
-		dbClient: dbClient,
-	}
+	return &accountRepository{dbClient}
 }
 
 // RetrieveBalanceAtBlock returns the hbar balance and token balances of the account at a given block (
 // provided by consensusEnd timestamp).
 // balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
 func (ar *accountRepository) RetrieveBalanceAtBlock(
-	addressStr string,
+	accountId int64,
 	consensusEnd int64,
 ) ([]types.Amount, *rTypes.Error) {
-	accountId, err := types.AccountFromString(addressStr)
+	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(accountId, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
 
-	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(accountId.EncodedId, consensusEnd)
-	if err != nil {
-		return nil, err
-	}
-
-	hbarValue, tokenValues, err := ar.getBalanceChange(accountId.EncodedId, snapshotTimestamp, consensusEnd)
+	hbarValue, tokenValues, err := ar.getBalanceChange(accountId, snapshotTimestamp, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
 
 	hbarAmount.Value += hbarValue
-	tokenAmounts := ar.getUpdatedTokenAmounts(tokenAmountMap, tokenValues)
+	tokenAmounts := getUpdatedTokenAmounts(tokenAmountMap, tokenValues)
 
 	amounts := make([]types.Amount, 0, 1+len(tokenAmounts))
 	amounts = append(amounts, hbarAmount)
 	amounts = append(amounts, tokenAmounts...)
 
 	return amounts, nil
+}
+
+// RetrieveDissociatedTokens returns the list of tokens at consensusEnd the accountId has a dissociated relationship
+// with
+func (ar *accountRepository) RetrieveDissociatedTokens(
+	accountId int64,
+	consensusEnd int64,
+) ([]types.Token, *rTypes.Error) {
+	tokens := make([]pTypes.Token, 0)
+	if err := ar.dbClient.Raw(
+		selectDissociatedTokensAtTimestamp,
+		sql.Named("account_id", accountId),
+		sql.Named("consensus_timestamp", consensusEnd),
+	).Scan(&tokens).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return nil, hErrors.ErrDatabaseError
+	}
+
+	return getDomainTokens(tokens)
+}
+
+// RetrieveTransferredTokensInBlockAfter returns the list of tokens transferred to / from the account in the block after
+// consensusTimestamp
+func (ar *accountRepository) RetrieveTransferredTokensInBlockAfter(
+	accountId int64,
+	consensusTimestamp int64,
+) ([]types.Token, *rTypes.Error) {
+	tokens := make([]pTypes.Token, 0)
+	if err := ar.dbClient.Raw(
+		selectTransferredTokensInBlockAfterTimestamp,
+		sql.Named("account_id", accountId),
+		sql.Named("consensus_timestamp", consensusTimestamp),
+	).Scan(&tokens).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return nil, hErrors.ErrDatabaseError
+	}
+
+	return getDomainTokens(tokens)
 }
 
 func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd int64) (
@@ -145,14 +204,17 @@ func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd in
 ) {
 	// gets the most recent balance at or before consensusEnd
 	cb := &combinedAccountBalance{}
-	result := ar.dbClient.Raw(
+	if err := ar.dbClient.Raw(
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", consensusEnd),
-	).
-		First(cb)
-	if result.Error != nil {
+	).First(cb).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return 0, nil, nil, hErrors.ErrDatabaseError
+	}
+
+	if cb.ConsensusTimestamp == 0 {
+		return 0, nil, nil, hErrors.ErrNodeIsStarting
 	}
 
 	hbarAmount := types.HbarAmount{Value: cb.Balance}
@@ -177,14 +239,13 @@ func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consens
 ) {
 	change := &accountBalanceChange{}
 	// gets the balance change from the Balance snapshot until the target block
-	result := ar.dbClient.Raw(
+	if err := ar.dbClient.Raw(
 		balanceChangeBetween,
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-	).
-		First(change)
-	if result.Error != nil {
+	).First(change).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return 0, nil, hErrors.ErrDatabaseError
 	}
 
@@ -196,7 +257,21 @@ func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consens
 	return change.Value, tokenValues, nil
 }
 
-func (ar *accountRepository) getUpdatedTokenAmounts(
+func getDomainTokens(tokens []pTypes.Token) ([]types.Token, *rTypes.Error) {
+	domainTokens := make([]types.Token, 0, len(tokens))
+	for _, token := range tokens {
+		domainToken, err := token.ToDomainToken()
+		if err != nil {
+			return nil, err
+		}
+
+		domainTokens = append(domainTokens, *domainToken)
+	}
+
+	return domainTokens, nil
+}
+
+func getUpdatedTokenAmounts(
 	tokenAmountMap map[int64]*types.TokenAmount,
 	tokenValues []*types.TokenAmount,
 ) []types.Amount {

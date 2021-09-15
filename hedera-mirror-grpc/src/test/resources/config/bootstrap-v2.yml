@@ -1,6 +1,6 @@
 embedded:
   postgresql:
-    docker-image: timescale/timescaledb-ha:pg13.3-ts2.3.1-p1
+    docker-image: timescale/timescaledb-ha:pg13.4-ts2.4.1-latest
     enabled: false
 spring:
   flyway:

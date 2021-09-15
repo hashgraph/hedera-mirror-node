@@ -12,7 +12,6 @@ defaults:
     working-directory: ./hedera-mirror-grpc
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
   MODULE: hedera-mirror-grpc
 
 jobs:
@@ -29,18 +28,12 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v2
         with:
+          cache: 'maven'
           distribution: 'adopt'
           java-version: 11
 
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          key: ${{ runner.os }}-m2-${{ hashFiles('./pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
-
       - name: Maven verify
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make -Dspring.profiles.active=${{ matrix.schema }}
+        run: ./mvnw verify -pl "${MODULE}" --also-make -Dspring.profiles.active=${{ matrix.schema }}
         working-directory: .
 
       - name: Upload coverage report

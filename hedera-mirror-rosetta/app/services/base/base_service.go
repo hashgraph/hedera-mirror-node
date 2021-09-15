@@ -66,12 +66,12 @@ func (c *BaseService) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) 
 	}
 }
 
-func (c *BaseService) RetrieveLatest() (*types.Block, *rTypes.Error) {
-	return c.blockRepo.RetrieveLatest()
-}
-
 func (c *BaseService) RetrieveGenesis() (*types.Block, *rTypes.Error) {
 	return c.blockRepo.RetrieveGenesis()
+}
+
+func (c *BaseService) RetrieveLatest() (*types.Block, *rTypes.Error) {
+	return c.blockRepo.RetrieveLatest()
 }
 
 func (c *BaseService) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {

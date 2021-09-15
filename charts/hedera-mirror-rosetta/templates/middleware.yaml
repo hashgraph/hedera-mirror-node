@@ -1,0 +1,73 @@
+{{- if and .Values.ingress.enabled .Values.ingress.middleware.enabled -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  chain:
+    middlewares:
+    - name: {{ include "hedera-mirror-rosetta.fullname" . }}-ip-whitelist
+    - name: {{ include "hedera-mirror-rosetta.fullname" . }}-connection-limit
+    - name: {{ include "hedera-mirror-rosetta.fullname" . }}-rate-limit
+    - name: {{ include "hedera-mirror-rosetta.fullname" . }}-circuit-breaker
+    - name: {{ include "hedera-mirror-rosetta.fullname" . }}-strip-prefix
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}-ip-whitelist
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  ipWhiteList:
+    sourceRange: {{ toYaml .Values.ingress.middleware.ipWhitelist | nindent 6 }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}-connection-limit
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  inFlightReq:
+    amount: {{ .Values.ingress.middleware.connectionsPerIP }}
+    sourceCriterion:
+      ipStrategy:
+        depth: 1
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}-rate-limit
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  rateLimit: {{ toYaml .Values.ingress.middleware.rateLimit | nindent 4 }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}-circuit-breaker
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  circuitBreaker:
+    expression: {{ .Values.ingress.middleware.circuitBreaker }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}-strip-prefix
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  stripPrefix:
+    prefixes: {{ toYaml .Values.ingress.middleware.stripPrefix | nindent 6 }}
+{{- end -}}

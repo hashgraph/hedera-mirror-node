@@ -7,9 +7,6 @@ on:
     branches: [ main, release/** ]
     tags: [ v* ]
 
-env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -34,16 +31,17 @@ jobs:
           fetch-depth: 0
 
       - name: Build images
-        run: ./mvnw ${MAVEN_CLI_OPTS} install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=${IMAGE_TAG}
+        run: ./mvnw install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest,hedera-mirror-rosetta --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=${IMAGE_TAG}
 
       - name: Create k3d cluster
         run: |
           set -ex
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-          k3d cluster create mirror --agents 1 --timeout 5m --image rancher/k3s:v1.21.4-k3s1
+          k3d cluster create mirror --agents 1 --timeout 5m --image rancher/k3s:v1.20.10-k3s1
           k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-grpc:${IMAGE_TAG}"
           k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-importer:${IMAGE_TAG}"
           k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-rest:${IMAGE_TAG}"
+          k3d image import -c mirror "gcr.io/mirrornode/hedera-mirror-rosetta:${IMAGE_TAG}"
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.1.0

@@ -48,6 +48,7 @@ import com.hedera.mirror.importer.converter.NullableStringSerializer;
 
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
+    private static final String EMPTY_CLAUSE = "";
     private static final String EMPTY_STRING = "\'\'";
     private static final String NULL_STRING = "null";
     private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
@@ -70,11 +71,27 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     protected final Logger log = LogManager.getLogger(getClass());
 
+    protected boolean isInsertOnly() {
+        return false;
+    }
+
+    protected String getCteForInsert() {
+        return EMPTY_CLAUSE;
+    }
+
     protected abstract String getInsertWhereClause();
 
-    protected abstract Set<String> getNonUpdatableColumns();
+    protected Set<String> getNonUpdatableColumns() {
+        return Collections.emptySet();
+    }
 
-    protected abstract String getUpdateWhereClause();
+    protected String getUpdateWhereClause() {
+        return EMPTY_CLAUSE;
+    }
+
+    protected boolean needsOnConflictAction() {
+        return true;
+    }
 
     @Override
     public String getCreateTempTableQuery() {
@@ -108,7 +125,12 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private String generateInsertQuery() {
-        StringBuilder insertQueryBuilder = new StringBuilder("insert into " + getFinalTableName());
+        StringBuilder insertQueryBuilder = new StringBuilder(StringUtils.joinWith(
+                " ",
+                getCteForInsert(),
+                "insert into",
+                getFinalTableName()
+        ));
 
         // build target column list
         insertQueryBuilder.append(String.format(" (%s) select ", getColumnListFromSelectableColumns()));
@@ -120,12 +142,18 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         // insertable query
         insertQueryBuilder.append(getInsertWhereClause());
 
-        insertQueryBuilder.append(getDoNothingConflictClause());
+        if (needsOnConflictAction()) {
+            insertQueryBuilder.append(getDoNothingConflictClause());
+        }
 
         return insertQueryBuilder.toString();
     }
 
     private String generateUpdateQuery() {
+        if (isInsertOnly()) {
+            return EMPTY_CLAUSE;
+        }
+
         StringBuilder updateQueryBuilder = new StringBuilder("update " + getFinalTableName() + " set ");
 
         updateQueryBuilder.append(getUpdateClause());

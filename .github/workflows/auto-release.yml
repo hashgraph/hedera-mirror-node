@@ -10,9 +10,6 @@ on:
         description: 'Chart Version (semver)'
         required: true
 
-env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
-
 jobs:
   release:
     name: Release
@@ -81,12 +78,12 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Cache Maven Packages
-        uses: actions/cache@v2
+      - name: Install JDK
+        uses: actions/setup-java@v2
         with:
-          key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
+          distribution: 'adopt'
+          java-version: 11
 
       - name: Create and Switch to Release Branch
         run: |
@@ -102,7 +99,7 @@ jobs:
           fi
 
       - name: Maven Release
-        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -Ddocker.tag.version=$VERSION -N -P=release
+        run: ./mvnw package -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -Ddocker.tag.version=$VERSION -N -P=release
         env:
           VERSION: ${{ steps.version_parser.outputs.version }}
           CHART_VERSION: ${{ steps.chart_version_parser.outputs.version }}
@@ -172,12 +169,12 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Cache Maven Packages
-        uses: actions/cache@v2
+      - name: Install JDK
+        uses: actions/setup-java@v2
         with:
-          key: ${{ runner.os }}-m2-${{ hashFiles('pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
+          distribution: 'adopt'
+          java-version: 11
 
       - name: Reset main to release branch
         run: |
@@ -185,7 +182,7 @@ jobs:
           git reset --hard $RELEASE_BRANCH
 
       - name: Maven Release for Next Minor Snapshot
-        run: ./mvnw clean package $MAVEN_CLI_OPTS -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -Ddocker.tag.version=main -N -P=release
+        run: ./mvnw package -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -Ddocker.tag.version=main -N -P=release
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3

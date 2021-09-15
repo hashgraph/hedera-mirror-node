@@ -140,7 +140,7 @@ func validateToken(tokenRepo repositories.TokenRepository, currency *types.Curre
 		return nil, rErr
 	}
 
-	if token.Decimals != uint32(currency.Decimals) {
+	if token.Decimals != int64(currency.Decimals) {
 		log.Errorf("token decimals mismatch: provided - %d, actual - %d", currency.Decimals, token.Decimals)
 		return nil, errors.ErrInvalidToken
 	}

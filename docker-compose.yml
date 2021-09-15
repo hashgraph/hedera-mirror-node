@@ -4,7 +4,7 @@ services:
   postgresdb:
     deploy:
       replicas: 0
-    image: postgres:13.3-alpine # Or timescale/timescaledb-ha:pg13.3-ts2.3.1-p1
+    image: postgres:13.3-alpine # Or timescale/timescaledb-ha:pg13-latest
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM

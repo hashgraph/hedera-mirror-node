@@ -82,7 +82,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
     @Test
     void verifyEntityTimestampMigration() throws Exception {
         // given
-        entityRepository.saveAll(List.of(
+        persistEntities(List.of(
                 entity(9000, EntityTypeEnum.ACCOUNT, 99L, 99L),
                 entity(9001, EntityTypeEnum.ACCOUNT, 100L, 101L),
                 entity(9002, EntityTypeEnum.CONTRACT),
@@ -120,7 +120,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(entityRepository.findAll())
+        assertThat(retrieveAllEntity())
                 .usingElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
@@ -153,5 +153,58 @@ class EntityTimestampMigrationTest extends IntegrationTest {
 
     private void migrate() throws Exception {
         jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+    }
+
+    private void persistEntities(List<Entity> entities) {
+        for (Entity entity : entities) {
+            jdbcOperations.update(
+                    "insert into entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, " +
+                            "expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, " +
+                            "proxy_account_id, realm, shard, submit_key, type) " +
+                            "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    entity.getAutoRenewAccountId() == null ? null : entity.getAutoRenewAccountId().getId(),
+                    entity.getAutoRenewPeriod(),
+                    entity.getCreatedTimestamp(),
+                    entity.getDeleted(),
+                    entity.getExpirationTimestamp(),
+                    entity.getId(),
+                    entity.getKey(),
+                    entity.getMemo(),
+                    entity.getModifiedTimestamp(),
+                    entity.getNum(),
+                    entity.getPublicKey(),
+                    entity.getProxyAccountId() == null ? null : entity.getProxyAccountId().getId(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    entity.getSubmitKey(),
+                    entity.getType()
+            );
+        }
+    }
+
+    private List<Entity> retrieveAllEntity() {
+        return jdbcOperations.query(
+                "select * from entity",
+                (rs, rowNum) -> {
+                    Entity entity = new Entity();
+                    entity.setAutoRenewAccountId(EntityIdEndec
+                            .decode(rs.getLong("auto_renew_account_id"), EntityTypeEnum.ACCOUNT));
+                    entity.setAutoRenewPeriod(rs.getLong("auto_renew_period"));
+                    entity.setCreatedTimestamp(rs.getLong("created_timestamp"));
+                    entity.setDeleted(rs.getBoolean("deleted"));
+                    entity.setExpirationTimestamp(rs.getLong("expiration_timestamp"));
+                    entity.setId(rs.getLong("id"));
+                    entity.setKey(rs.getBytes("key"));
+                    entity.setMemo(rs.getString("memo"));
+                    entity.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+                    entity.setNum(rs.getLong("num"));
+                    entity.setPublicKey(rs.getString("public_key"));
+                    entity.setRealm(rs.getLong("realm"));
+                    entity.setShard(rs.getLong("shard"));
+                    entity.setSubmitKey(rs.getBytes("submit_key"));
+                    entity.setType(rs.getInt("type"));
+
+                    return entity;
+                });
     }
 }

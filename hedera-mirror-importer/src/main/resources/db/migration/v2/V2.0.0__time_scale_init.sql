@@ -10,9 +10,9 @@ CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 -- assessed_custom_fee
 create table if not exists assessed_custom_fee
 (
-    amount                      bigint not null,
-    collector_account_id        bigint not null,
-    consensus_timestamp         bigint not null,
+    amount                      bigint   not null,
+    collector_account_id        bigint   not null,
+    consensus_timestamp         bigint   not null,
     effective_payer_account_ids bigint[] not null,
     token_id                    bigint
 );
@@ -120,22 +120,24 @@ comment on table custom_fee is 'HTS Custom fees';
 -- entity
 create table if not exists entity
 (
-    auto_renew_account_id bigint,
-    auto_renew_period     bigint,
-    created_timestamp     bigint,
-    deleted               boolean,
-    expiration_timestamp  bigint,
-    id                    bigint          not null primary key,
-    key                   bytea,
-    memo                  text default '' not null,
-    modified_timestamp    bigint,
-    num                   bigint          not null,
-    proxy_account_id      bigint,
-    public_key            character varying,
-    realm                 bigint          not null,
-    shard                 bigint          not null,
-    submit_key            bytea,
-    type                  integer         not null
+    auto_renew_account_id            bigint,
+    auto_renew_period                bigint,
+    created_timestamp                bigint,
+    deleted                          boolean,
+    expiration_timestamp             bigint,
+    id                               bigint          not null primary key,
+    key                              bytea,
+    max_automatic_token_associations integer,
+    memo                             text default '' not null,
+    modified_timestamp               bigint,
+    num                              bigint          not null,
+    proxy_account_id                 bigint,
+    public_key                       character varying,
+    realm                            bigint          not null,
+    receiver_sig_required            boolean         null,
+    shard                            bigint          not null,
+    submit_key                       bytea,
+    type                             integer         not null
 );
 comment on table entity is 'Network entity with state';
 
@@ -301,14 +303,15 @@ comment on table token is 'Token entity';
 --- token_account
 create table if not exists token_account
 (
-    account_id         bigint   not null,
-    associated         boolean  not null default false,
-    created_timestamp  bigint   not null,
-    freeze_status      smallint not null default 0,
-    kyc_status         smallint not null default 0,
-    modified_timestamp bigint   not null,
-    token_id           bigint   not null,
-    primary key (created_timestamp, token_id)
+    account_id            bigint   not null,
+    associated            boolean  not null default false,
+    automatic_association boolean  not null default false,
+    created_timestamp     bigint   not null,
+    freeze_status         smallint not null default 0,
+    kyc_status            smallint not null default 0,
+    modified_timestamp    bigint   not null,
+    token_id              bigint   not null,
+    primary key (account_id, token_id, modified_timestamp)
 );
 comment on table token is 'Token account entity';
 

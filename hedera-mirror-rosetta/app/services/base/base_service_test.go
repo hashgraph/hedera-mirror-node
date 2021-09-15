@@ -43,6 +43,7 @@ func block() *types.Block {
 	return &types.Block{
 		Index:               1,
 		Hash:                "0x12345",
+		LatestIndex:         5,
 		ConsensusStartNanos: 1000000,
 		ConsensusEndNanos:   20000000,
 		ParentIndex:         2,
@@ -194,7 +195,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByHash() {
 	assert.NotNil(suite.T(), e)
 }
 
-func (suite *baseServiceSuite) TestRetrieveLatest() {
+func (suite *baseServiceSuite) TestRetrieveSecondLatest() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveLatest").Return(
 		block(),
@@ -209,7 +210,7 @@ func (suite *baseServiceSuite) TestRetrieveLatest() {
 	assert.Equal(suite.T(), block(), res)
 }
 
-func (suite *baseServiceSuite) TestRetrieveLatestThrows() {
+func (suite *baseServiceSuite) TestRetrieveSecondLatestThrows() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveLatest").Return(
 		repository.NilBlock,

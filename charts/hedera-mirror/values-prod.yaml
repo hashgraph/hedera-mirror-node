@@ -41,9 +41,6 @@ monitor:
   alertmanager:
     inhibitRules:
       enabled: true
-  ingress:
-    middleware:
-      enabled: true
   priorityClassName: medium
   prometheusRules:
     enabled: true
@@ -75,6 +72,25 @@ rest:
   alertmanager:
     inhibitRules:
       enabled: true
+  hpa:
+    minReplicas: 3
+  ingress:
+    middleware:
+      enabled: true
+  podDisruptionBudget:
+    enabled: true
+  priorityClassName: medium
+  prometheusRules:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+
+rosetta:
+  alertmanager:
+    inhibitRules:
+      enabled: true
+  hpa:
+    minReplicas: 2
   ingress:
     middleware:
       enabled: true

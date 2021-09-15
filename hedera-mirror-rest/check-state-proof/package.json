@@ -1,7 +1,7 @@
 {
-  "name": "hedera-mirror-state-proof-demo",
+  "name": "@hashgraph/check-state-proof",
   "version": "1.0.0",
-  "description": "An example implementation of a state proof flow fora transaction utilizing the mirror node.",
+  "description": "An example implementation of a state proof flow for a transaction utilizing the mirror node.",
   "main": "index.js",
   "scripts": {
     "test": "jest --testPathPattern='tests/.*\\.test\\.js'",
@@ -26,12 +26,12 @@
     "check-state-proof": "./index.js"
   },
   "dependencies": {
-    "@hashgraph/proto": "^1.1.9",
+    "@hashgraph/proto": "^2.0.0",
     "abort-controller": "^3.0.0",
-    "boxen": "^5.0.1",
+    "boxen": "^5.1.0",
     "chalk": "^4.1.2",
     "glob": "^7.1.7",
-    "jest": "^27.0.6",
+    "jest": "^27.2.0",
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
     "node-fetch": "^2.6.1",

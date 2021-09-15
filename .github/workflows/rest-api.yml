@@ -12,8 +12,8 @@ defaults:
     working-directory: ./hedera-mirror-rest
 
 env:
-  MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
   MODULE: hedera-mirror-rest
+  SCOPED_MODULE: hashgraph-mirror-rest
 
 jobs:
   test:
@@ -38,11 +38,11 @@ jobs:
       - name: Test
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
-        run: ./mvnw ${MAVEN_CLI_OPTS} verify -pl "${MODULE}" --also-make
+        run: ./mvnw verify -pl "${MODULE}" --also-make
         working-directory: .
 
       - name: Rename artifact
-        run: for file in *.tgz ; do mv $file ${file//$MODULE-/$MODULE-v} ; done
+        run: for file in *.tgz ; do mv $file ${file//$SCOPED_MODULE-/$MODULE-v} ; done
 
       - name: Upload coverage report
         if: always()

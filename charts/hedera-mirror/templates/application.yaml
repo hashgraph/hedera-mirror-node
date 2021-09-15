@@ -55,17 +55,29 @@ spec:
       - name: Hedera Mirror Node team
         email: mirrornode@hedera.com
     notes: |
+      {{- if .Values.grpc.enabled -}}
       To access the GRPC API:
 
         GRPC_IP=$(kubectl get service/{{ .Release.Name }}-grpc -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
         grpcurl -plaintext "${GRPC_IP}:5600" list
 
+      {{ end -}}
+      {{- if .Values.rest.enabled -}}
       To access the REST API:
 
         REST_IP=$(kubectl get service/{{ .Release.Name }}-rest -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
         curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
+
+      {{ end -}}
+      {{- if .Values.rosetta.enabled -}}
+      To access the Rosetta API:
+
+        ROSETTA_IP=$(kubectl get service/{{ .Release.Name }}-rosetta -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+        curl -s -d '{"metadata":{}}' "http://${ROSETTA_IP}/rosetta/network/list"
+      {{- end -}}
     type: hedera-mirror-node
     version: {{ default .Chart.AppVersion .Values.applicationResource.version | quote }}
   {{- end }}

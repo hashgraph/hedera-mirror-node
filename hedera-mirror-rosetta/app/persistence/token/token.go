@@ -40,7 +40,7 @@ type tokenRepository struct {
 
 // NewTokenRepository creates an instance of a tokenRepository struct
 func NewTokenRepository(dbClient *gorm.DB) repositories.TokenRepository {
-	return &tokenRepository{dbClient: dbClient}
+	return &tokenRepository{dbClient}
 }
 
 func (tr *tokenRepository) Find(tokenIdStr string) (*types.Token, *rTypes.Error) {

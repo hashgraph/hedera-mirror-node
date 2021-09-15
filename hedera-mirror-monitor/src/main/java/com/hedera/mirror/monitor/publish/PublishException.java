@@ -20,7 +20,12 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import com.google.common.base.Throwables;
+import io.grpc.StatusRuntimeException;
 import lombok.Getter;
+
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
 
 @Getter
 public class PublishException extends RuntimeException {
@@ -31,5 +36,22 @@ public class PublishException extends RuntimeException {
     public PublishException(PublishRequest publishRequest, Throwable throwable) {
         super(throwable);
         this.publishRequest = publishRequest;
+    }
+
+    public String getStatus() {
+        Throwable throwable = Throwables.getRootCause(this);
+
+        if (throwable instanceof PrecheckStatusException) {
+            PrecheckStatusException pse = (PrecheckStatusException) throwable;
+            return pse.status.toString();
+        } else if (throwable instanceof ReceiptStatusException) {
+            ReceiptStatusException rse = (ReceiptStatusException) throwable;
+            return rse.receipt.status.toString();
+        } else if (throwable instanceof StatusRuntimeException) {
+            StatusRuntimeException sre = (StatusRuntimeException) throwable;
+            return sre.getStatus().getCode().toString();
+        } else {
+            return throwable.getClass().getSimpleName();
+        }
     }
 }

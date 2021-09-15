@@ -23,7 +23,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, loggers, prometheus
+        include: health, info, prometheus
   health:
     pubsub:
       # Just importing pubsub deps enables its health checker and it requires auth credentials.

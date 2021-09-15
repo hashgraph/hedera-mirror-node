@@ -8,17 +8,15 @@ jobs:
   image:
     name: Publish images
     runs-on: ubuntu-latest
-    env:
-      MAVEN_CLI_OPTS: --batch-mode --no-transfer-progress
     steps:
       - uses: actions/checkout@v2
 
-      - name: Cache Maven packages
-        uses: actions/cache@v2
+      - name: Install JDK
+        uses: actions/setup-java@v2
         with:
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          path: ~/.m2
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
+          distribution: 'adopt'
+          java-version: 11
 
       - name: Login to Google Container Registry
         uses: google-github-actions/setup-gcloud@master
@@ -30,7 +28,7 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build and push images
-        run: ./mvnw ${MAVEN_CLI_OPTS} dependency:copy-dependencies license:download-licenses deploy -DskipTests
+        run: ./mvnw dependency:copy-dependencies license:download-licenses deploy -DskipTests
 
   chart:
     name: Publish charts
