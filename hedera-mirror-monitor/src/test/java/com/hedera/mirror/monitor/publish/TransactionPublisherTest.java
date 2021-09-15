@@ -23,7 +23,6 @@ package com.hedera.mirror.monitor.publish;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.grpc.Server;
 import io.grpc.Status;
@@ -36,7 +35,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import lombok.Data;
@@ -45,6 +44,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -215,13 +215,13 @@ class TransactionPublisherTest {
     }
 
     @Test
-    @Timeout(20)
-    void publishWithRevalidate() {
-        nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
+    @Timeout(10)
+    void publishWithRevalidate() throws InterruptedException {
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(60));
+
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
 
-        log.info("Executing first step for revalidate test");
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
@@ -229,32 +229,65 @@ class TransactionPublisherTest {
                 .verify(Duration.ofSeconds(1L));
 
         // Force the only node to be unhealthy, verify error occurs
-        monitorProperties.setNodes(Set.of(
-                new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK retry
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"))); // Illegal DNS to avoid SDK retry
 
-        log.info("Executing second validate for revalidate test");
-        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().isEmpty());
-        log.info("Executing second step for revalidate test");
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        CountDownLatch countDownLatch2 = new CountDownLatch(1);
+        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
+                .onErrorContinue((e, i) -> {
+                    countDownLatch.countDown();
+                }).subscribe();
+
+        countDownLatch.await();
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectError(PublishException.class)
                 .verify(Duration.ofSeconds(1L));
+        unhealthy.dispose();
 
-        // Set a node back to healthy, ensure that transactions flow again
-        monitorProperties.setNodes(Set.of(
-                new NodeProperties("0.0.3", "in-process:test")));
-
+        // Set the node back to healthy, ensure that transactions flow again
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-        log.info("Executing third validate for revalidate test");
-        await().atMost(10, TimeUnit.SECONDS).until(() -> !transactionPublisher.getNodeAccountIds().get().isEmpty());
-        log.info("Executing third step for revalidate test");
+
+        Disposable healthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(2))
+                .doOnNext(i -> countDownLatch2.countDown()).subscribe();
+        countDownLatch2.await();
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+        healthy.dispose();
+    }
+
+    @Test
+    @Timeout(5)
+    void publishWithRevalidateDisabled() throws InterruptedException {
+        nodeValidationProperties.setEnabled(false);
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
+
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "invalid:1"))); // Illegal DNS to avoid SDK retry
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        Disposable unhealthy = transactionPublisher.getRevalidationFlux(Duration.ofSeconds(1))
+                .doOnNext(i -> countDownLatch.countDown())
+                .subscribe();
+
+        countDownLatch.await();
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+        unhealthy.dispose();
     }
 
     @Test
