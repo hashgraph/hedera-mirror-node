@@ -263,7 +263,7 @@ class TransactionPublisherTest {
     void publishWithRevalidate() {
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
                 new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
-        nodeValidationProperties.setFrequency(Duration.ofSeconds(2));
+        nodeValidationProperties.setFrequency(Duration.ofSeconds(1));
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)), Mono.just(response(OK)));
 
@@ -281,14 +281,8 @@ class TransactionPublisherTest {
                 new NodeProperties("0.0.4", "invalid:test2"))); // Illegal DNS to avoid SDK retry
 
         log.info("Executing second validate for revalidate test");
-        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().size() == 1);
+        await().atMost(20, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().size() == 1);
         log.info("Executing second step for revalidate test");
-
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
-                new NodeProperties("0.0.4", "in-process:test2"))); // Illegal DNS to avoid SDK retry
-        await().atMost(5, TimeUnit.SECONDS).until(() -> transactionPublisher.getNodeAccountIds().get().size() == 2);
     }
 
     @Test
