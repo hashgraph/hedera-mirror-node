@@ -12,6 +12,7 @@ spec:
     - name: {{ include "hedera-mirror-rosetta.fullname" . }}-connection-limit
     - name: {{ include "hedera-mirror-rosetta.fullname" . }}-rate-limit
     - name: {{ include "hedera-mirror-rosetta.fullname" . }}-circuit-breaker
+    - name: {{ include "hedera-mirror-rosetta.fullname" . }}-strip-prefix
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
@@ -58,4 +59,15 @@ metadata:
 spec:
   circuitBreaker:
     expression: {{ .Values.ingress.middleware.circuitBreaker }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rosetta.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rosetta.fullname" . }}-strip-prefix
+  namespace: {{ include "hedera-mirror-rosetta.namespace" . }}
+spec:
+  stripPrefix:
+    prefixes: {{ toYaml .Values.ingress.middleware.stripPrefix | nindent 6 }}
 {{- end -}}

@@ -68,7 +68,15 @@ ingress:
   enabled: true
   hosts:
     - host: ""
-      paths: ["/account", "/block", "/call", "/construction", "/events", "/mempool", "/network", "/search"]
+      paths:
+        - "/rosetta/account"
+        - "/rosetta/block"
+        - "/rosetta/call"
+        - "/rosetta/construction"
+        - "/rosetta/events"
+        - "/rosetta/mempool"
+        - "/rosetta/network"
+        - "/rosetta/search"
   middleware:
     circuitBreaker: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
     connectionsPerIP: 5
@@ -79,6 +87,8 @@ ingress:
       average: 10
       sourceCriterion:
         requestHost: true
+    stripPrefix:
+      - "/rosetta"
   tls:
     enabled: false
     secretName: ""
