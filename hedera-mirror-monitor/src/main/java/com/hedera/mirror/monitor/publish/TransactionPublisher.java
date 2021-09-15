@@ -159,8 +159,7 @@ public class TransactionPublisher implements AutoCloseable {
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
         if (validationProperties.isEnabled()) {
 
-            nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency(),
-                            validationProperties.getFrequency())
+            nodeValidator = Optional.of(Flux.interval(validationProperties.getFrequency())
                     .subscribeOn(Schedulers.parallel())
                     .doOnNext(i -> validateNodes())
                     .onErrorContinue((e, i) -> log.error("Exception validating nodes: ", e))
