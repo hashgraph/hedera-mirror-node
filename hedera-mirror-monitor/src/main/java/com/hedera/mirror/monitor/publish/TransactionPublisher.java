@@ -62,7 +62,7 @@ public class TransactionPublisher implements AutoCloseable {
     private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
-    private AtomicReference<Disposable> nodeValidator = new AtomicReference<>();
+    private final AtomicReference<Disposable> nodeValidator = new AtomicReference<>();
 
     @Override
     public void close() {
@@ -160,7 +160,7 @@ public class TransactionPublisher implements AutoCloseable {
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
         if (validationProperties.isEnabled()) {
 
-            nodeValidator = new AtomicReference<>(Flux.interval(validationProperties.getFrequency())
+            nodeValidator.compareAndSet(null, Flux.interval(validationProperties.getFrequency())
                     .subscribeOn(Schedulers.parallel())
                     .doOnNext(i -> validateNodes())
                     .onErrorContinue((e, i) -> log.error("Exception validating nodes: ", e))
