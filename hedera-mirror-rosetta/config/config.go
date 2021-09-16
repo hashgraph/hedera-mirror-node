@@ -39,15 +39,16 @@ const (
 )
 
 const (
-	Blockchain       = "Hedera"
-	CurrencySymbol   = "HBAR"
-	CurrencyDecimals = 8
+	Blockchain = "Hedera"
+
+	currencySymbol   = "HBAR"
+	currencyDecimals = 8
 )
 
 var (
 	CurrencyHbar = &types.Currency{
-		Symbol:   CurrencySymbol,
-		Decimals: CurrencyDecimals,
+		Symbol:   currencySymbol,
+		Decimals: currencyDecimals,
 		Metadata: map[string]interface{}{
 			"issuer": Blockchain,
 		},

@@ -186,7 +186,7 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.O
 		return nil, nil, rErr
 	}
 
-	currencies := map[string]rTypes.Currency{config.CurrencySymbol: *config.CurrencyHbar}
+	currencies := map[string]rTypes.Currency{config.CurrencyHbar.Symbol: *config.CurrencyHbar}
 	transfers := make([]transfer, 0, len(operations))
 	senderMap := senderMap{}
 	sums := make(map[string]int64)

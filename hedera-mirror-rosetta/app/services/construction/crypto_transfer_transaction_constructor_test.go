@@ -132,8 +132,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 	}
 
 	expectedTransfers := []string{
-		transferStringify(accountIdA, -15, config.CurrencySymbol),
-		transferStringify(accountIdB, 15, config.CurrencySymbol),
+		transferStringify(accountIdA, -15, config.CurrencyHbar.Symbol),
+		transferStringify(accountIdB, 15, config.CurrencyHbar.Symbol),
 		transferStringify(accountIdA, -25, tokenIdA.String()),
 		transferStringify(accountIdB, 25, tokenIdA.String()),
 		transferStringify(accountIdB, -35, tokenIdB.String()),
@@ -404,7 +404,7 @@ func assertCryptoTransferTransaction(
 	for accountId, amount := range actualHbarTransfers {
 		actualTransfers = append(
 			actualTransfers,
-			transferStringify(accountId, amount.AsTinybar(), config.CurrencySymbol),
+			transferStringify(accountId, amount.AsTinybar(), config.CurrencyHbar.Symbol),
 		)
 	}
 
