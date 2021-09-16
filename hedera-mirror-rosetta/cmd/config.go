@@ -21,122 +21,101 @@
 package main
 
 import (
-	"io/ioutil"
+	"bytes"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"github.com/spf13/viper"
 )
 
 const (
-	mainConfigFile = "application.yml"
+	configName      = "application"
+	configTypeYaml  = "yml"
+	envKeyDelimiter = "_"
+	keyDelimiter    = "::"
 )
+
+var configPaths = []string{"/usr/etc/hedera-mirror-rosetta", "."}
 
 // loadConfig loads configuration from yaml files and env variables
 func loadConfig() (*types.Config, error) {
-	var config = types.Config{
-		Hedera: types.Hedera{
-			Mirror: types.Mirror{
-				Rosetta: types.Rosetta{
-					ApiVersion: "1.4.10",
-					Db: types.Db{
-						Host:     "127.0.0.1",
-						Name:     "mirror_node",
-						Password: "mirror_rosetta_pass",
-						Pool: types.Pool{
-							MaxIdleConnections: 20,
-							MaxLifetime:        30,
-							MaxOpenConnections: 100,
-						},
-						Port:     5432,
-						Username: "mirror_rosetta",
-					},
-					Log: types.Log{
-						Level: "info",
-					},
-					Network:     "DEMO",
-					Nodes:       types.NodeMap{},
-					NodeVersion: "0",
-					Online:      true,
-					Port:        5700,
-					Realm:       "0",
-					Shard:       "0",
-					Version:     "0.41.0-SNAPSHOT",
-				},
-			},
-		},
-	}
-
-	getConfig(&config, mainConfigFile)
+	// NodeMap's key has '.', set viper key delimiter to avoid parsing it as a nested key
+	v := viper.NewWithOptions(viper.KeyDelimiter(keyDelimiter))
+	v.SetConfigType(configTypeYaml)
 
 	if envConfigFile, ok := os.LookupEnv("HEDERA_MIRROR_ROSETTA_API_CONFIG"); ok {
-		getConfig(&config, envConfigFile)
+		v.SetConfigFile(envConfigFile)
+	} else {
+		// only set config name and config paths when no config file env variable is set
+		v.SetConfigName(configName)
+		for _, configPath := range configPaths {
+			v.AddConfigPath(configPath)
+		}
 	}
 
-	if err := env.ParseWithFuncs(&config, map[reflect.Type]env.ParserFunc{
-		reflect.TypeOf(types.NodeMap{}): parseNodesFromEnv,
-	}); err != nil {
+	// read the default
+	if err := v.ReadConfig(bytes.NewBuffer(defaultConfig)); err != nil {
+		return nil, err
+	}
+
+	if err := v.MergeInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, err
+		}
+
+		log.Info("External configuration file not found, load the default")
+	}
+
+	if v.ConfigFileUsed() != "" {
+		log.Infof("Loaded external config file: %s", v.ConfigFileUsed())
+	}
+
+	// enable parsing env variables after the configuration files are loaded so viper knows all configuration keys
+	// and can override the config accordingly
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(keyDelimiter, envKeyDelimiter))
+
+	var config types.Config
+	if err := v.Unmarshal(&config, viper.DecodeHook(nodeMapDecodeHookFunc)); err != nil {
 		return nil, err
 	}
 
 	var password = config.Hedera.Mirror.Rosetta.Db.Password
 	config.Hedera.Mirror.Rosetta.Db.Password = "<omitted>"
-	log.Infof("Using configuration: %+v", &config)
+	log.Infof("Using configuration: %+v", config.Hedera.Mirror.Rosetta)
 	config.Hedera.Mirror.Rosetta.Db.Password = password
 
 	return &config, nil
 }
 
-func getConfig(config *types.Config, path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		log.Warnf("Failed to locate the config file %s: %s", path, err)
-		return false
+func nodeMapDecodeHookFunc(from, to reflect.Type, data interface{}) (interface{}, error) {
+	if to != reflect.TypeOf(types.NodeMap{}) {
+		return data, nil
 	}
 
-	filename, _ := filepath.Abs(path)
-
-	// Disable gosec since we want to support loading config via env variable like SPRING_CONFIG_ADDITIONAL_LOCATION
-	yamlFile, err := ioutil.ReadFile(filename) // #nosec
-	if err != nil {
-		log.Errorf("Failed to read the config file %s: %s", filename, err)
-		return false
+	input, ok := data.(map[string]interface{})
+	if !ok {
+		return nil, errors.Errorf("Invalid data type for NodeMap")
 	}
 
-	err = yaml.Unmarshal(yamlFile, config)
-	if err != nil {
-		log.Errorf("Failed to unmarshal the yaml config file %s: %s", filename, err)
-		return false
-	}
-
-	log.Infof("Loaded external config file: %s", path)
-	return true
-}
-
-func parseNodesFromEnv(v string) (interface{}, error) {
-	nodeMap := make(types.NodeMap, 0)
-
-	if len(v) == 0 {
-		return nodeMap, nil
-	}
-
-	for _, kv := range strings.Split(v, ",") {
-		parts := strings.Split(kv, "=")
-		if len(parts) != 2 {
-			return nil, errors.New("invalid value " + kv)
+	nodeMap := make(types.NodeMap)
+	for key, nodeAccountId := range input {
+		nodeAccountIdStr, ok := nodeAccountId.(string)
+		if !ok {
+			return nil, errors.Errorf("Invalid data type for node account ID")
 		}
 
-		accountId, err := hedera.AccountIDFromString(parts[1])
+		accountId, err := hedera.AccountIDFromString(nodeAccountIdStr)
 		if err != nil {
 			return nil, err
 		}
-		nodeMap[parts[0]] = accountId
+
+		nodeMap[key] = accountId
 	}
 
 	return nodeMap, nil

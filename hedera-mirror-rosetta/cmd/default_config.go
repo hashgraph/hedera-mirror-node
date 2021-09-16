@@ -18,28 +18,31 @@
  * ‍
  */
 
-package types
+package main
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestDbGetDsn(t *testing.T) {
-	db := Db{
-		Host:     "127.0.0.1",
-		Name:     "mirror_node",
-		Password: "mirror_user_pass",
-		Pool: Pool{
-			MaxIdleConnections: 20,
-			MaxLifetime:        2000,
-			MaxOpenConnections: 30,
-		},
-		Port:     5432,
-		Username: "mirror_user",
-	}
-	expected := "host=127.0.0.1 port=5432 user=mirror_user dbname=mirror_node password=mirror_user_pass sslmode=disable"
-
-	assert.Equal(t, expected, db.GetDsn())
-}
+var defaultConfig = []byte(`
+hedera:
+  mirror:
+    rosetta:
+      apiVersion: 1.4.10
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_rosetta_pass
+        pool:
+          maxIdleConnections: 20
+          maxLifetime: 30
+          maxOpenConnections: 100
+        port: 5432
+        username: mirror_rosetta
+      log:
+        level: info
+      network: DEMO
+      nodes:
+      nodeVersion: 0
+      online: true
+      port: 5700
+      realm: 0
+      shard: 0
+      version: 0.41.0-SNAPSHOT
+`)

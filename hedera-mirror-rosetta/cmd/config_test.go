@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
@@ -31,13 +32,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const yml = `
+const (
+	invalidYaml                   = "this is invalid"
+	invalidYamlIncorrectAccountId = `
+hedera:
+  mirror:
+    rosetta:
+      nodes:
+        "192.168.0.1:50211": 0.3`
+	testConfigFilename = "application.yml"
+	yml                = `
 hedera:
   mirror:
     rosetta:
       db:
         port: 5431
         username: foobar`
+)
 
 func TestLoadDefaultConfig(t *testing.T) {
 	config, err := loadConfig()
@@ -49,77 +60,125 @@ func TestLoadDefaultConfig(t *testing.T) {
 }
 
 func TestLoadCustomConfig(t *testing.T) {
-	tempDir, err := ioutil.TempDir("", "rosetta")
-	if err != nil {
-		assert.Fail(t, "Unable to create temp dir", err)
-	}
-	defer os.RemoveAll(tempDir)
-	err = os.Chdir(tempDir)
-	if err != nil {
-		assert.Fail(t, "Unable to change directory", err)
-	}
-	customConfig := filepath.Join(tempDir, "application.yml")
-
-	err = ioutil.WriteFile(customConfig, []byte(yml), 0644)
-	if err != nil {
-		assert.Fail(t, "Unable to create custom config", err)
-	}
-
-	config, err := loadConfig()
-	assert.NoError(t, err)
-	assert.NotNil(t, config)
-	assert.Equal(t, true, config.Hedera.Mirror.Rosetta.Online)
-	assert.Equal(t, uint16(5431), config.Hedera.Mirror.Rosetta.Db.Port)
-	assert.Equal(t, "foobar", config.Hedera.Mirror.Rosetta.Db.Username)
-}
-
-func TestParseNodesFromEnv(t *testing.T) {
-	var tests = []struct {
-		name     string
-		input    string
-		expected types.NodeMap
-		wantErr  bool
+	tests := []struct {
+		name   string
+		useEnv bool
 	}{
 		{
-			name:  "ValidInput",
-			input: "10.0.0.1:50211=0.0.3,10.0.0.2:50211=0.0.4,10.0.0.3:50211=0.0.5",
-			expected: types.NodeMap{
-				"10.0.0.1:50211": hedera.AccountID{Account: 3},
-				"10.0.0.2:50211": hedera.AccountID{Account: 4},
-				"10.0.0.3:50211": hedera.AccountID{Account: 5},
-			},
-			wantErr: false,
+			"from search path",
+			false,
 		},
 		{
-			name:     "EmptyInput",
-			input:    "",
-			expected: types.NodeMap{},
-			wantErr:  false,
-		},
-		{
-			name:     "ExtraEqualSign",
-			input:    "10.0.0.1:50211=0.=0.3,10.0.0.2:50211=0.0.4,10.0.0.3:50211=0.0.5",
-			expected: nil,
-			wantErr:  true,
-		},
-		{
-			name:     "InvalidAccountId",
-			input:    "10.0.0.1:50211=3,10.0.0.2:50211=0.0.4,10.0.0.3:50211=0.0.5",
-			expected: nil,
-			wantErr:  true,
+			"from env variable",
+			true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := parseNodesFromEnv(tt.input)
-			if tt.wantErr {
+			tempDir, filePath := createYamlConfigFile(yml, !tt.useEnv, t)
+			defer os.RemoveAll(tempDir)
+
+			if tt.useEnv {
+				os.Setenv("HEDERA_MIRROR_ROSETTA_API_CONFIG", filePath)
+			}
+
+			config, err := loadConfig()
+
+			assert.NoError(t, err)
+			assert.NotNil(t, config)
+			assert.True(t, config.Hedera.Mirror.Rosetta.Online)
+			assert.Equal(t, uint16(5431), config.Hedera.Mirror.Rosetta.Db.Port)
+			assert.Equal(t, "foobar", config.Hedera.Mirror.Rosetta.Db.Username)
+
+			// reset env
+			if tt.useEnv {
+				os.Unsetenv("HEDERA_MIRROR_ROSETTA_API_CONFIG")
+			}
+		})
+	}
+}
+
+func TestLoadCustomConfigInvalidYaml(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+	}{
+		{"invalid yaml", invalidYaml},
+		{"incorrect account id", invalidYamlIncorrectAccountId},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir, _ := createYamlConfigFile(tt.content, true, t)
+			defer os.RemoveAll(tempDir)
+
+			config, err := loadConfig()
+
+			assert.Error(t, err)
+			assert.Nil(t, config)
+		})
+	}
+}
+
+func TestNodeMapDecodeHookFunc(t *testing.T) {
+	nodeMapTye := reflect.TypeOf(types.NodeMap{})
+	tests := []struct {
+		name        string
+		from        reflect.Type
+		data        interface{}
+		expected    types.NodeMap
+		expectError bool
+	}{
+		{
+			name:     "valid data",
+			from:     reflect.TypeOf(map[string]interface{}{}),
+			data:     map[string]interface{}{"192.168.0.1:50211": "0.0.3"},
+			expected: types.NodeMap{"192.168.0.1:50211": hedera.AccountID{Account: 3}},
+		},
+		{
+			name:        "invalid data type",
+			from:        reflect.TypeOf(map[int]string{}),
+			data:        map[int]interface{}{1: "0.0.3"},
+			expectError: true,
+		},
+		{
+			name:        "invalid node account id",
+			from:        reflect.TypeOf(map[string]interface{}{}),
+			data:        map[string]interface{}{"192.168.0.1:50211": "3"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := nodeMapDecodeHookFunc(tt.from, nodeMapTye, tt.data)
+
+			if tt.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, actual)
 			} else {
 				assert.NoError(t, err)
-				assert.EqualValues(t, tt.expected, actual)
+				assert.Equal(t, tt.expected, actual)
 			}
 		})
 	}
+}
+
+func createYamlConfigFile(content string, chdir bool, t *testing.T) (string, string) {
+	tempDir, err := ioutil.TempDir("", "rosetta")
+	if err != nil {
+		assert.Fail(t, "Unable to create temp dir", err)
+	}
+	if chdir && os.Chdir(tempDir) != nil {
+		assert.Fail(t, "Unable to change directory")
+	}
+
+	customConfig := filepath.Join(tempDir, testConfigFilename)
+
+	if err = ioutil.WriteFile(customConfig, []byte(content), 0644); err != nil {
+		assert.Fail(t, "Unable to create custom config", err)
+	}
+
+	return tempDir, customConfig
 }

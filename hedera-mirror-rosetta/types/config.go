@@ -27,60 +27,38 @@ import (
 )
 
 type Config struct {
-	Hedera Hedera `yaml:"hedera"`
+	Hedera Hedera
 }
 
 type Hedera struct {
-	Mirror Mirror `yaml:"mirror"`
+	Mirror Mirror
 }
 
 type Mirror struct {
-	Rosetta Rosetta `yaml:"rosetta"`
-}
-
-type NodeMap map[string]hedera.AccountID
-
-// UnmarshalYAML implements customized unmarshal for network nodes map
-func (n *NodeMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	nodes := make(map[string]string, 0)
-	if err := unmarshal(&nodes); err != nil {
-		return err
-	}
-
-	*n = make(NodeMap, len(nodes))
-	for endpoint, nodeAccountIdStr := range nodes {
-		nodeAccountId, err := hedera.AccountIDFromString(nodeAccountIdStr)
-		if err != nil {
-			return err
-		}
-
-		(*n)[endpoint] = nodeAccountId
-	}
-
-	return nil
+	Rosetta Rosetta
 }
 
 type Rosetta struct {
-	ApiVersion  string  `yaml:"apiVersion" env:"HEDERA_MIRROR_ROSETTA_API_VERSION"`
-	Db          Db      `yaml:"db"`
-	Log         Log     `yaml:"log"`
-	Network     string  `yaml:"network" env:"HEDERA_MIRROR_ROSETTA_NETWORK"`
-	Nodes       NodeMap `yaml:"nodes" env:"HEDERA_MIRROR_ROSETTA_NODES"`
-	NodeVersion string  `yaml:"nodeVersion" env:"HEDERA_MIRROR_ROSETTA_NODE_VERSION"`
-	Online      bool    `yaml:"online" env:"HEDERA_MIRROR_ROSETTA_ONLINE"`
-	Port        uint16  `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_PORT"`
-	Realm       string  `yaml:"realm" env:"HEDERA_MIRROR_ROSETTA_REALM"`
-	Shard       string  `yaml:"shard" env:"HEDERA_MIRROR_ROSETTA_SHARD"`
-	Version     string  `yaml:"version" env:"HEDERA_MIRROR_ROSETTA_VERSION"`
+	ApiVersion  string
+	Db          Db
+	Log         Log
+	Network     string
+	Nodes       NodeMap
+	NodeVersion string
+	Online      bool
+	Port        uint16
+	Realm       string
+	Shard       string
+	Version     string
 }
 
 type Db struct {
-	Host     string `yaml:"host" env:"HEDERA_MIRROR_ROSETTA_DB_HOST"`
-	Name     string `yaml:"name" env:"HEDERA_MIRROR_ROSETTA_DB_NAME"`
-	Password string `yaml:"password" env:"HEDERA_MIRROR_ROSETTA_DB_PASSWORD"`
-	Pool     Pool   `yaml:"pool"`
-	Port     uint16 `yaml:"port" env:"HEDERA_MIRROR_ROSETTA_DB_PORT"`
-	Username string `yaml:"username" env:"HEDERA_MIRROR_ROSETTA_DB_USERNAME"`
+	Host     string
+	Name     string
+	Password string
+	Pool     Pool
+	Port     uint16
+	Username string
 }
 
 func (db Db) GetDsn() string {
@@ -94,12 +72,14 @@ func (db Db) GetDsn() string {
 	)
 }
 
-type Pool struct {
-	MaxIdleConnections int `yaml:"maxIdleConnections" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_IDLE_CONNECTIONS"`
-	MaxLifetime        int `yaml:"maxLifetime" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_LIFETIME"`
-	MaxOpenConnections int `yaml:"maxOpenConnections" env:"HEDERA_MIRROR_ROSETTA_DB_POOL_MAX_OPEN_CONNECTIONS"`
+type Log struct {
+	Level string
 }
 
-type Log struct {
-	Level string `yaml:"level" env:"HEDERA_MIRROR_ROSETTA_LOG_LEVEL"`
+type NodeMap map[string]hedera.AccountID
+
+type Pool struct {
+	MaxIdleConnections int
+	MaxLifetime        int
+	MaxOpenConnections int
 }
