@@ -31,10 +31,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/middleware"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/account"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/block"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/token"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/transaction"
 	accountService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/account"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	blockService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/block"
@@ -74,11 +70,11 @@ func newBlockchainOnlineRouter(
 	version *rTypes.Version,
 	dbClient *gorm.DB,
 ) (http.Handler, error) {
-	accountRepo := account.NewAccountRepository(dbClient)
+	accountRepo := persistence.NewAccountRepository(dbClient)
 	addressBookEntryRepo := persistence.NewAddressBookEntryRepository(dbClient)
-	blockRepo := block.NewBlockRepository(dbClient)
-	tokenRepo := token.NewTokenRepository(dbClient)
-	transactionRepo := transaction.NewTransactionRepository(dbClient)
+	blockRepo := persistence.NewBlockRepository(dbClient)
+	tokenRepo := persistence.NewTokenRepository(dbClient)
+	transactionRepo := persistence.NewTransactionRepository(dbClient)
 
 	baseService := base.NewBaseService(blockRepo, transactionRepo)
 

@@ -18,32 +18,49 @@
  * ‍
  */
 
-package test
+package persistence
 
 import (
+	"os"
+	"testing"
+
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-type IntegrationTest struct {
-	DbResource      db.DbResource
-	InvalidDbClient *gorm.DB
+const (
+	truncateAccountBalanceFileSql = "truncate account_balance_file"
+	truncateRecordFileSql         = "truncate record_file"
+)
+
+var (
+	dbResource      db.DbResource
+	invalidDbClient *gorm.DB
+)
+
+type integrationTest struct{}
+
+func (*integrationTest) SetupTest() {
+	db.CleanupDb(dbResource.GetDb())
 }
 
-func (it *IntegrationTest) CleanupDb() {
-	db.CleanupDb(it.DbResource.GetDb())
-}
+func setup() {
+	dbResource = db.SetupDb(true)
 
-func (it *IntegrationTest) Setup() {
-	it.DbResource = db.SetupDb()
-
-	config := it.DbResource.GetDbConfig()
+	config := dbResource.GetDbConfig()
 	config.Password = "bad_password"
-	it.InvalidDbClient, _ = gorm.Open(postgres.Open(config.GetDsn()), &gorm.Config{Logger: logger.Discard})
+	invalidDbClient, _ = gorm.Open(postgres.Open(config.GetDsn()), &gorm.Config{Logger: logger.Discard})
 }
 
-func (it IntegrationTest) TearDown() {
-	db.TearDownDb(it.DbResource)
+func teardown() {
+	db.TearDownDb(dbResource)
+}
+
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	teardown()
+	os.Exit(code)
 }

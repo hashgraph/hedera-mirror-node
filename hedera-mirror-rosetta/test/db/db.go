@@ -137,7 +137,7 @@ func CleanupDb(db *sql.DB) {
 	}
 }
 
-func SetupDb() DbResource {
+func SetupDb(migrate bool) DbResource {
 	var db *sql.DB
 
 	pool, err := dockertest.NewPool("")
@@ -171,8 +171,10 @@ func SetupDb() DbResource {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	log.Info("Run flyway migration")
-	runFlywayMigration(pool, network, dbParams)
+	if migrate {
+		log.Info("Run flyway migration")
+		runFlywayMigration(pool, network, dbParams)
+	}
 
 	return DbResource{
 		db:       db,

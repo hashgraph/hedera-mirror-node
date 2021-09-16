@@ -27,7 +27,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/transaction"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
 )
@@ -70,7 +70,7 @@ func (n *NetworkAPIService) NetworkOptions(
 	for value, name := range results {
 		operationStatuses = append(operationStatuses, &types.OperationStatus{
 			Status:     name,
-			Successful: transaction.IsTransactionResultSuccessful(value),
+			Successful: persistence.IsTransactionResultSuccessful(value),
 		})
 	}
 

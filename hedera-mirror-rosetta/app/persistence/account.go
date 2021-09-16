@@ -18,7 +18,7 @@
  * ‍
  */
 
-package account
+package persistence
 
 import (
 	"database/sql"
@@ -34,7 +34,6 @@ import (
 )
 
 const (
-	databaseErrorFormat  = "%s: %s"
 	balanceChangeBetween = `select
                               coalesce((
                                 select sum(amount::bigint) from crypto_transfer

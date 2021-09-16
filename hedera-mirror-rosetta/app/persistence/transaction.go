@@ -18,7 +18,7 @@
  * ‍
  */
 
-package transaction
+package persistence
 
 import (
 	"database/sql"
@@ -46,7 +46,6 @@ const (
 )
 
 const (
-	databaseErrorFormat      = "%s: %s"
 	andTransactionHashFilter = " and transaction_hash = @hash"
 	orderByConsensusNs       = " order by consensus_ns"
 	selectTransactionResults = "select * from " + tableNameTransactionResults

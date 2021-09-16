@@ -18,7 +18,7 @@
  * ‍
  */
 
-package block
+package persistence
 
 import (
 	"database/sql"

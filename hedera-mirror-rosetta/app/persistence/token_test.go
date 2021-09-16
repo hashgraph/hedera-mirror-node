@@ -18,7 +18,7 @@
  * ‍
  */
 
-package token
+package persistence
 
 import (
 	"testing"
@@ -27,7 +27,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/thanhpk/randstr"
@@ -41,25 +40,13 @@ func TestTokenRepositorySuite(t *testing.T) {
 }
 
 type tokenRepositorySuite struct {
-	test.IntegrationTest
+	integrationTest
 	suite.Suite
-}
-
-func (suite *tokenRepositorySuite) SetupSuite() {
-	suite.Setup()
-}
-
-func (suite *tokenRepositorySuite) TearDownSuite() {
-	suite.TearDown()
-}
-
-func (suite *tokenRepositorySuite) SetupTest() {
-	suite.CleanupDb()
 }
 
 func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	// given
-	dbClient := suite.DbResource.GetGormDb()
+	dbClient := dbResource.GetGormDb()
 
 	token := &dbTypes.Token{
 		TokenId:             tokenId.EncodedId,
@@ -105,7 +92,7 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 
 func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 	// given
-	repo := NewTokenRepository(suite.DbResource.GetGormDb())
+	repo := NewTokenRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.Find(tokenId.String())
@@ -117,7 +104,7 @@ func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 
 func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
 	// given
-	repo := NewTokenRepository(suite.DbResource.GetGormDb())
+	repo := NewTokenRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.Find("abc")
@@ -129,7 +116,7 @@ func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
 
 func (suite *tokenRepositorySuite) TestFindTokenDbConnectionError() {
 	// given
-	repo := NewTokenRepository(suite.InvalidDbClient)
+	repo := NewTokenRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.Find(tokenId.String())

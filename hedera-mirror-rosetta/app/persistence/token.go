@@ -18,7 +18,7 @@
  * ‍
  */
 
-package token
+package persistence
 
 import (
 	"errors"

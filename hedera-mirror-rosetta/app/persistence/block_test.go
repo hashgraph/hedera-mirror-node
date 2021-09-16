@@ -18,7 +18,7 @@
  * ‍
  */
 
-package block
+package persistence
 
 import (
 	"testing"
@@ -26,15 +26,9 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-)
-
-const (
-	truncateAccountBalanceFileSql = "truncate account_balance_file"
-	truncateRecordFileSql         = "truncate record_file"
 )
 
 var (
@@ -119,26 +113,18 @@ func TestBlockRepositorySuite(t *testing.T) {
 }
 
 type blockRepositorySuite struct {
-	test.IntegrationTest
+	integrationTest
 	suite.Suite
 }
 
-func (suite *blockRepositorySuite) SetupSuite() {
-	suite.Setup()
-}
-
-func (suite *blockRepositorySuite) TearDownSuite() {
-	suite.TearDown()
-}
-
 func (suite *blockRepositorySuite) SetupTest() {
-	suite.CleanupDb()
-	db.CreateDbRecords(suite.DbResource.GetGormDb(), accountBalanceFiles, recordFiles)
+	suite.integrationTest.SetupTest()
+	db.CreateDbRecords(dbResource.GetGormDb(), accountBalanceFiles, recordFiles)
 }
 
 func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByHash(genesisRecordFile.Hash)
@@ -150,7 +136,7 @@ func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByHashNonGenesisBlock() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByHash(expectedSecondBlock.Hash)
@@ -162,8 +148,8 @@ func (suite *blockRepositorySuite) TestFindByHashNonGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByHash(genesisRecordFile.Hash)
@@ -175,8 +161,8 @@ func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestFindByHashNoRecordFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByHash(genesisRecordFile.Hash)
@@ -188,7 +174,7 @@ func (suite *blockRepositorySuite) TestFindByHashNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestFindByHashEmptyHash() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByHash("")
@@ -200,7 +186,7 @@ func (suite *blockRepositorySuite) TestFindByHashEmptyHash() {
 
 func (suite *blockRepositorySuite) TestFindByHashDbConnectionError() {
 	// given
-	repo := NewBlockRepository(suite.InvalidDbClient)
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.FindByHash(genesisRecordFile.Hash)
@@ -212,7 +198,7 @@ func (suite *blockRepositorySuite) TestFindByHashDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierGenesisBlock() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
@@ -224,7 +210,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierNonGenesisBlock() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIdentifier(expectedSecondBlock.Index, expectedSecondBlock.Hash)
@@ -252,7 +238,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierInvalidArgument() {
 			"",
 		},
 	}
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
@@ -268,7 +254,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierInvalidArgument() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierIndexHashMismatch() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIdentifier(expectedGenesisBlock.Index, expectedSecondBlock.Hash)
@@ -280,8 +266,8 @@ func (suite *blockRepositorySuite) TestFindByIdentifierIndexHashMismatch() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalanceFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
@@ -293,8 +279,8 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
@@ -306,7 +292,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierDbConnectionError() {
 	// given
-	repo := NewBlockRepository(suite.InvalidDbClient)
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(0, expectedGenesisBlock.Hash)
@@ -318,7 +304,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestFindByIndexGenesisBlock() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIndex(0)
@@ -330,7 +316,7 @@ func (suite *blockRepositorySuite) TestFindByIndexGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByIndexNonGenesisBlock() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIndex(expectedSecondBlock.Index)
@@ -342,7 +328,7 @@ func (suite *blockRepositorySuite) TestFindByIndexNonGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByIndexInvalidIndex() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIndex(-1)
@@ -354,8 +340,8 @@ func (suite *blockRepositorySuite) TestFindByIndexInvalidIndex() {
 
 func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalanceFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIndex(0)
@@ -367,8 +353,8 @@ func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.FindByIndex(0)
@@ -380,7 +366,7 @@ func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestFindByIndexDbConnectionError() {
 	// given
-	repo := NewBlockRepository(suite.InvalidDbClient)
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.FindByIndex(0)
@@ -392,7 +378,7 @@ func (suite *blockRepositorySuite) TestFindByIndexDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestRetrieveGenesis() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveGenesis()
@@ -404,8 +390,8 @@ func (suite *blockRepositorySuite) TestRetrieveGenesis() {
 
 func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveGenesis()
@@ -417,8 +403,8 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestRetrieveGenesisNoRecordFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveGenesis()
@@ -430,7 +416,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
 	// given
-	repo := NewBlockRepository(suite.InvalidDbClient)
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.RetrieveGenesis()
@@ -442,7 +428,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestRetrieveSecondLatestGenesisBlock() {
 	// given
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveLatest()
@@ -454,10 +440,10 @@ func (suite *blockRepositorySuite) TestRetrieveSecondLatestGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 	// given
-	db.CreateDbRecords(suite.DbResource.GetGormDb(), thirdRecordFile)
+	db.CreateDbRecords(dbResource.GetGormDb(), thirdRecordFile)
 	expected := *expectedSecondBlock
 	expected.LatestIndex = 2
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveLatest()
@@ -469,9 +455,9 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
-	db.CreateDbRecords(suite.DbResource.GetGormDb(), genesisRecordFile)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateRecordFileSql)
+	db.CreateDbRecords(dbResource.GetGormDb(), genesisRecordFile)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveLatest()
@@ -483,9 +469,9 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
-	db.CreateDbRecords(suite.DbResource.GetGormDb(), recordFileBeforeGenesis, genesisRecordFile)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateRecordFileSql)
+	db.CreateDbRecords(dbResource.GetGormDb(), recordFileBeforeGenesis, genesisRecordFile)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveLatest()
@@ -497,8 +483,8 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateAccountBalanceFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveLatest()
@@ -510,8 +496,8 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 	// given
-	db.ExecSql(suite.DbResource.GetGormDb(), truncateRecordFileSql)
-	repo := NewBlockRepository(suite.DbResource.GetGormDb())
+	db.ExecSql(dbResource.GetGormDb(), truncateRecordFileSql)
+	repo := NewBlockRepository(dbResource.GetGormDb())
 
 	// when
 	actual, err := repo.RetrieveLatest()
@@ -523,7 +509,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestetrieveSecondLatestDbConnectionError() {
 	// given
-	repo := NewBlockRepository(suite.InvalidDbClient)
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest()
