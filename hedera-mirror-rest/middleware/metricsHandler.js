@@ -24,25 +24,12 @@
 const extend = require('extend');
 const client = require('prom-client');
 const swStats = require('swagger-stats');
+const url = require('url');
 
 // files
 const config = require('../config');
 const oasHandler = require('./openapiHandler');
 const {ipMask} = require('../utils');
-
-const metricsHandler = () => {
-  const defaultMetricsConfig = {
-    name: process.env.npm_package_name,
-    onAuthenticate: onMetricsAuthenticate,
-    swaggerSpec: oasHandler.getV1OpenApiObject(),
-    version: process.env.npm_package_version,
-  };
-
-  // combine defaultMetricsConfig with file defined configs
-  extend(true, defaultMetricsConfig, config.metrics.config);
-
-  return swStats.getMiddleware(defaultMetricsConfig);
-};
 
 const onMetricsAuthenticate = async (req, username, password) => {
   return new Promise(function (resolve, reject) {
@@ -64,6 +51,34 @@ const recordIpAndEndpoint = async (req, res, next) => {
   if (req.route !== undefined) {
     ipEndpointHistogram.labels(req.route.path, ipMask(req.ip)).inc();
   }
+};
+
+const metricsHandler = () => {
+  const defaultMetricsConfig = {
+    name: process.env.npm_package_name,
+    onAuthenticate: onMetricsAuthenticate,
+    swaggerSpec: oasHandler.getV1OpenApiObject(),
+    version: process.env.npm_package_version,
+  };
+
+  // combine defaultMetricsConfig with file defined configs
+  extend(true, defaultMetricsConfig, config.metrics.config);
+
+  const swaggerPath = `${config.metrics.config.uriPath}`;
+  const metricsPath = `${swaggerPath}/metrics/`;
+  const swaggerStats = swStats.getMiddleware(defaultMetricsConfig);
+
+  return function filter(req, res, next) {
+    let {pathname} = url.parse(req.url, false);
+    pathname += pathname.endsWith('/') ? '' : '/';
+
+    // Ignore all the other swagger stat endpoints
+    if (pathname.startsWith(swaggerPath) && pathname !== metricsPath) {
+      return next();
+    }
+
+    return swaggerStats(req, res, next);
+  };
 };
 
 module.exports = {
