@@ -29,25 +29,42 @@ import (
 
 const tableNameToken = "token"
 
+const (
+	Finite   TokenSupplyType = "FINITE"
+	Infinite TokenSupplyType = "INFINITE"
+
+	FungibleCommon    TokenType = "FUNGIBLE_COMMON"
+	NonFungibleUnique TokenType = "NON_FUNGIBLE_UNIQUE"
+)
+
+type TokenSupplyType string
+
+type TokenType string
+
 type Token struct {
-	TokenId             int64 `gorm:"primaryKey"`
-	CreatedTimestamp    int64
-	Decimals            int64
-	FreezeDefault       bool
-	FreezeKey           []byte
-	FreezeKeyEd25519Hex string
-	InitialSupply       int64
-	KycKey              []byte
-	KycKeyEd25519Hex    string
-	ModifiedTimestamp   int64
-	Name                string
-	SupplyKey           []byte
-	SupplyKeyEd25519Hex string
-	Symbol              string
-	TotalSupply         int64
-	TreasuryAccountId   int64
-	WipeKey             []byte
-	WipeKeyEd25519Hex   string
+	TokenId                  int64 `gorm:"primaryKey"`
+	CreatedTimestamp         int64
+	Decimals                 int64
+	FeeScheduleKey           []byte
+	FeeScheduleKeyEd25519Hex string
+	FreezeDefault            bool
+	FreezeKey                []byte
+	FreezeKeyEd25519Hex      string
+	InitialSupply            int64
+	KycKey                   []byte
+	KycKeyEd25519Hex         string
+	MaxSupply                int64
+	ModifiedTimestamp        int64
+	Name                     string
+	SupplyKey                []byte
+	SupplyKeyEd25519Hex      string
+	SupplyType               TokenSupplyType
+	Symbol                   string
+	TotalSupply              int64
+	TreasuryAccountId        int64
+	Type                     TokenType
+	WipeKey                  []byte
+	WipeKeyEd25519Hex        string
 }
 
 // TableName returns token table name
