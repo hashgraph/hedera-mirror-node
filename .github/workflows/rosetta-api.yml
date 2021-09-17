@@ -73,6 +73,7 @@ jobs:
           startdate=${startdate%+*}Z
           echo "STARTDATE=$startdate" >> $GITHUB_ENV
           echo "Set importer startDate to $startdate"
+
       - name: Run Mirror Node
         run: |
           CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
@@ -80,6 +81,7 @@ jobs:
             -v /tmp/application.yml:/var/importer/application.yml \
             -p 5432:5432 -p 5700:5700 "${MODULE}")
           echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
+
       - name: Wait for Mirror Node to start syncing
         run: ./scripts/wait-for-mirror-node.sh
 
@@ -97,6 +99,14 @@ jobs:
           [[ $code -eq 0 ]] && { wait $pid || code=$?; }
           cat /tmp/construction-validation.log
           exit $code
+
+      - name: Install Postman newman CLI
+        run: npm install -g newman
+
+      - name: Run Rosetta Postman API Tests
+        working-directory: ./hedera-mirror-rosetta/scripts/validation/postman
+        run: newman run rosetta-api-postman.json
+
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}
         run: docker logs $CONTAINER_ID
