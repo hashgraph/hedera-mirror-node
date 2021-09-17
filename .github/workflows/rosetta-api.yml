@@ -105,7 +105,7 @@ jobs:
 
       - name: Run Rosetta Postman API Tests
         working-directory: ./hedera-mirror-rosetta/scripts/validation/postman
-        run: newman run rosetta-api-postman.json --env-var base_url=http://localhost:5700
+        run: newman run rosetta-api-postman.json
 
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}

@@ -55,12 +55,12 @@ npm install -g newman
 
 Configuration properties are passed as parameters to the newman CLI. Available properties include:
 
-- `base_url` - The network https domain url e.g. `http://localhost:5700`
+- `base_url` - The base URL of the target Rosetta API e.g. `http://localhost:5700`
 
 #### Execution
 
 Tests can be run using the `newman run --env-var <key>=<value>` command.
 
 ```shell
-newman run rosetta-api-postman.json --env-var base_url=http://localhost:5700
+newman run rosetta-api-postman.json --env-var base_url=https://previewnet.mirrornode.hedera.com/rosetta
 ```
