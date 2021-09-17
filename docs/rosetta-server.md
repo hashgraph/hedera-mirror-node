@@ -42,7 +42,7 @@ The Rosetta module supports integration tests that can be run against deployed i
 
 ### Postman API Tests
 
-[Postmans](https://www.postman.com/) [Newman](https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/)
+[Postman's](https://www.postman.com/) [Newman](https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/)
 command-line collection runner is utilized for easy configuration and sharing.
 
 #### Setup
