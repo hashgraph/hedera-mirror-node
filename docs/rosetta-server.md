@@ -38,14 +38,14 @@ marshaling/unmarshaling the data and triggering the business logic services.
 
 ## Integration Tests
 
-The Rosetta module supports integration tests that can be run against deployed instances
+The Rosetta module supports integration tests that can be run against deployed instances.
 
 ### Postman API Tests
 
 [Postmans](https://www.postman.com/) [Newman](https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/)
 command-line collection runner is utilized for easy configuration and sharing.
 
-#### Install Postman newman CLI
+#### Setup
 
 ```shell
 npm install -g newman
@@ -53,16 +53,14 @@ npm install -g newman
 
 #### Test Configuration
 
-Configuration properties are set in
-the [hedera_network.postman_environment.json](../hedera-mirror-rosetta/scripts/validation/postman/hedera_network.postman_environment.json)
-file. Available properties include:
+Configuration properties are passed as parameters to the newman CLI. Available properties include:
 
-- `network_domain` - The network https domain url e.g. `http://localhost:5700`
+- `base_url` - The network https domain url e.g. `http://localhost:5700`
 
-#### Run Rosetta Postman API Tests
+#### Execution
 
-Tests can be run using the `newman run <collectionFile>` command.
+Tests can be run using the `newman run --env-var <key>=<value>` command.
 
 ```shell
-newman run mirror-rosetta-api-tests.postman_collection.json -e hedera_network.postman_environment.json
+newman run rosetta-api-postman.json --env-var base_url=http://localhost:5700
 ```
