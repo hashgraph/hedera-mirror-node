@@ -27,6 +27,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
@@ -54,7 +55,7 @@ type tokenCreateTransactionConstructor struct {
 }
 
 func (t *tokenCreateTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*rTypes.Operation) (
-	ITransaction,
+	interfaces.Transaction,
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
@@ -121,7 +122,7 @@ func (t *tokenCreateTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenCreateTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenCreateTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,

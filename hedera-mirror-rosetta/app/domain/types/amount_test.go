@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,7 +33,7 @@ var (
 	hbarAmount        = &HbarAmount{Value: 400}
 	hbarRosettaAmount = &types.Amount{Value: "400", Currency: config.CurrencyHbar}
 	tokenAmount       = &TokenAmount{
-		TokenId:  entityid.EntityId{EntityNum: 1580, EncodedId: 1580},
+		TokenId:  domain.EntityId{EntityNum: 1580, EncodedId: 1580},
 		Decimals: 9,
 		Value:    6000,
 	}
@@ -64,8 +64,8 @@ func TestTokenAmountToRosettaAmount(t *testing.T) {
 }
 
 func TestNewTokenAmount(t *testing.T) {
-	token := Token{
-		TokenId:  entityid.EntityId{EncodedId: 1001, EntityNum: 1001},
+	token := domain.Token{
+		TokenId:  domain.MustDecodeEntityId(1001),
 		Decimals: 5,
 		Name:     "foobar",
 		Symbol:   "xoobar",

@@ -25,8 +25,9 @@ import (
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
@@ -49,11 +50,11 @@ type tokenUpdate struct {
 
 type tokenUpdateTransactionConstructor struct {
 	transactionType string
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 }
 
 func (t *tokenUpdateTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*rTypes.Operation) (
-	ITransaction,
+	interfaces.Transaction,
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
@@ -130,7 +131,7 @@ func (t *tokenUpdateTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenUpdateTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenUpdateTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -159,7 +160,7 @@ func (t *tokenUpdateTransactionConstructor) Parse(transaction ITransaction) (
 		Account: &rTypes.AccountIdentifier{Address: payerId.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
-			Currency: token.ToRosettaCurrency(),
+			Currency: types.Token{Token: token}.ToRosettaCurrency(),
 		},
 		Type: t.GetOperationType(),
 	}
@@ -262,7 +263,7 @@ func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Oper
 	return &payer, tokenUpdate, nil
 }
 
-func newTokenUpdateTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenUpdateTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenUpdateTransaction{}).Name()
 	return &tokenUpdateTransactionConstructor{
 		transactionType: transactionType,

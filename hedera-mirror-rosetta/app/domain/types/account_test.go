@@ -24,21 +24,21 @@ import (
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/stretchr/testify/assert"
 )
 
 var zeroAccount Account
 
 func exampleAccount() *Account {
-	return &Account{entityid.EntityId{}}
+	return &Account{domain.EntityId{}}
 }
 
 func exampleAccountWith(shard, realm, entity int64) Account {
-	encoded, _ := entityid.Encode(shard, realm, entity)
+	encoded, _ := domain.EncodeEntityId(shard, realm, entity)
 	return Account{
-		entityid.EntityId{
+		domain.EntityId{
 			ShardNum:  shard,
 			RealmNum:  realm,
 			EntityNum: entity,

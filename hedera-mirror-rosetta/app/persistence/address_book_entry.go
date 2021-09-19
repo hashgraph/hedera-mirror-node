@@ -25,9 +25,9 @@ import (
 	"strings"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -100,6 +100,6 @@ func (aber *addressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 }
 
 // NewAddressBookEntryRepository creates an instance of a addressBookEntryRepository struct.
-func NewAddressBookEntryRepository(dbClient *gorm.DB) repositories.AddressBookEntryRepository {
+func NewAddressBookEntryRepository(dbClient *gorm.DB) interfaces.AddressBookEntryRepository {
 	return &addressBookEntryRepository{dbClient}
 }

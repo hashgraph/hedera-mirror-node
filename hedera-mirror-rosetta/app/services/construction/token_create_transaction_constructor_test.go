@@ -25,6 +25,7 @@ import (
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -104,7 +105,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() ITransaction {
+	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTokenCreateTransaction().
 			SetAdminKey(adminKey).
 			SetAutoRenewAccount(autoRenewAccount).
@@ -126,7 +127,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 
 	var tests = []struct {
 		name           string
-		getTransaction func() ITransaction
+		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -135,14 +136,14 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TokenNameNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenSymbol(symbol).
@@ -152,7 +153,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TokenSymboolNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenName(name).
@@ -162,7 +163,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenName(name).
@@ -380,7 +381,7 @@ func assertTokenCreateTransaction(
 	t *testing.T,
 	operation *rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.TokenCreateTransaction{}, actual)
 

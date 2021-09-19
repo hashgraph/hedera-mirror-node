@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +37,7 @@ func exampleTransaction() *Transaction {
 				Index:   1,
 				Type:    "transfer",
 				Status:  "pending",
-				Account: Account{entityid.EntityId{}},
+				Account: Account{domain.EntityId{}},
 				Amount:  &HbarAmount{Value: int64(400)},
 			},
 		},
@@ -51,7 +51,6 @@ func expectedTransaction() *types.Transaction {
 		Operations: []*types.Operation{
 			{
 				OperationIdentifier: &types.OperationIdentifier{Index: 1},
-				RelatedOperations:   []*types.OperationIdentifier{},
 				Type:                "transfer",
 				Status:              &status,
 				Account:             &types.AccountIdentifier{Address: "0.0.0"},

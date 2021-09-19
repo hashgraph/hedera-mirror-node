@@ -26,8 +26,9 @@ import (
 	"strconv"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
@@ -39,20 +40,20 @@ type tokenAmount struct {
 
 type tokenBurnMintTransactionConstructor struct {
 	operationType   string
-	tokeRepo        repositories.TokenRepository
+	tokeRepo        interfaces.TokenRepository
 	transactionType string
 }
 
 func (t *tokenBurnMintTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	payer, tokenAmount, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
-	var tx ITransaction
+	var tx interfaces.Transaction
 	var err error
 
 	if t.operationType == config.OperationTypeTokenBurn {
@@ -78,7 +79,7 @@ func (t *tokenBurnMintTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenBurnMintTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -93,7 +94,7 @@ func (t *tokenBurnMintTransactionConstructor) Parse(transaction ITransaction) (
 			return nil, nil, hErrors.ErrTransactionInvalidType
 		}
 
-		amount = tx.GetAmmount()
+		amount = tx.GetAmount()
 		payer = tx.GetTransactionID().AccountID
 		tokenId = tx.GetTokenID()
 	case *hedera.TokenMintTransaction:
@@ -124,7 +125,7 @@ func (t *tokenBurnMintTransactionConstructor) Parse(transaction ITransaction) (
 		Account: &rTypes.AccountIdentifier{Address: payer.String()},
 		Amount: &rTypes.Amount{
 			Value:    fmt.Sprintf("%d", amount),
-			Currency: dbToken.ToRosettaCurrency(),
+			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 		},
 		Type: t.operationType,
 	}
@@ -185,7 +186,7 @@ func (t *tokenBurnMintTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func newTokenBurnTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenBurnTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenBurnTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
 		operationType:   config.OperationTypeTokenBurn,
@@ -194,7 +195,7 @@ func newTokenBurnTransactionConstructor(tokenRepo repositories.TokenRepository) 
 	}
 }
 
-func newTokenMintTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenMintTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenMintTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
 		operationType:   config.OperationTypeTokenMint,

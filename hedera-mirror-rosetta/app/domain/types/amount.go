@@ -23,13 +23,13 @@ package types
 import (
 	"strconv"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 )
 
 type Amount interface {
-	ToRosetta() *rTypes.Amount
+	ToRosetta() *types.Amount
 }
 
 type HbarAmount struct {
@@ -37,8 +37,8 @@ type HbarAmount struct {
 }
 
 // ToRosetta returns Rosetta type Amount with hbar currency
-func (h *HbarAmount) ToRosetta() *rTypes.Amount {
-	return &rTypes.Amount{
+func (h *HbarAmount) ToRosetta() *types.Amount {
+	return &types.Amount{
 		Value:    strconv.FormatInt(h.Value, 10),
 		Currency: config.CurrencyHbar,
 	}
@@ -46,23 +46,23 @@ func (h *HbarAmount) ToRosetta() *rTypes.Amount {
 
 // TokenAmount holds token amount unmarshalled from aggregated json string built by db query
 type TokenAmount struct {
-	Decimals int64             `json:"decimals"`
-	TokenId  entityid.EntityId `json:"token_id"`
-	Value    int64             `json:"value"`
+	Decimals int64           `json:"decimals"`
+	TokenId  domain.EntityId `json:"token_id"`
+	Value    int64           `json:"value"`
 }
 
 // ToRosetta returns Rosetta type Amount with the token's currency
-func (t *TokenAmount) ToRosetta() *rTypes.Amount {
-	return &rTypes.Amount{
+func (t *TokenAmount) ToRosetta() *types.Amount {
+	return &types.Amount{
 		Value: strconv.FormatInt(t.Value, 10),
-		Currency: &rTypes.Currency{
+		Currency: &types.Currency{
 			Symbol:   t.TokenId.String(),
 			Decimals: int32(t.Decimals),
 		},
 	}
 }
 
-func NewTokenAmount(token Token, amount int64) *TokenAmount {
+func NewTokenAmount(token domain.Token, amount int64) *TokenAmount {
 	return &TokenAmount{
 		Decimals: token.Decimals,
 		TokenId:  token.TokenId,

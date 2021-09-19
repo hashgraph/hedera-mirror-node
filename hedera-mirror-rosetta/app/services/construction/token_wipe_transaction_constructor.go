@@ -27,8 +27,9 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
@@ -40,7 +41,7 @@ type tokenWipe struct {
 }
 
 type tokenWipeTransactionConstructor struct {
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 	transactionType string
 	validate        *validator.Validate
 }
@@ -48,7 +49,7 @@ type tokenWipeTransactionConstructor struct {
 func (t *tokenWipeTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	payer, tokenWipe, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
@@ -68,7 +69,7 @@ func (t *tokenWipeTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenWipeTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -98,7 +99,7 @@ func (t *tokenWipeTransactionConstructor) Parse(transaction ITransaction) (
 		Account: &rTypes.AccountIdentifier{Address: payer.String()},
 		Amount: &rTypes.Amount{
 			Value:    fmt.Sprintf("%d", tx.GetAmount()),
-			Currency: dbToken.ToRosettaCurrency(),
+			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 		},
 		Type: t.GetOperationType(),
 		Metadata: map[string]interface{}{
@@ -168,7 +169,7 @@ func (t *tokenWipeTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func newTokenWipeTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenWipeTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	return &tokenWipeTransactionConstructor{
 		tokenRepo:       tokenRepo,
 		transactionType: reflect.TypeOf(hedera.TokenWipeTransaction{}).Name(),

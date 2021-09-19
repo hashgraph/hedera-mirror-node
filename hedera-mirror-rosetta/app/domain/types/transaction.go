@@ -20,9 +20,7 @@
 
 package types
 
-import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-)
+import "github.com/coinbase/rosetta-sdk-go/types"
 
 // Transaction is domain level struct used to represent Transaction conceptual mapping in Hedera
 type Transaction struct {
@@ -31,15 +29,14 @@ type Transaction struct {
 }
 
 // ToRosetta returns Rosetta type Transaction from the current domain type Transaction
-func (t *Transaction) ToRosetta() *rTypes.Transaction {
-	operations := make([]*rTypes.Operation, len(t.Operations))
+func (t *Transaction) ToRosetta() *types.Transaction {
+	operations := make([]*types.Operation, len(t.Operations))
 	for i, o := range t.Operations {
 		operations[i] = o.ToRosetta()
 	}
 
-	rTransaction := &rTypes.Transaction{
-		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: t.Hash},
+	return &types.Transaction{
+		TransactionIdentifier: &types.TransactionIdentifier{Hash: t.Hash},
 		Operations:            operations,
 	}
-	return rTransaction
 }

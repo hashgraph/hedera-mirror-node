@@ -25,8 +25,9 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
@@ -38,7 +39,7 @@ type tokenFreezeUnfreeze struct {
 
 type tokenFreezeUnfreezeTransactionConstructor struct {
 	operationType   string
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 	transactionType string
 	validate        *validator.Validate
 }
@@ -46,13 +47,13 @@ type tokenFreezeUnfreezeTransactionConstructor struct {
 func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	payer, tokenFreezeUnfreeze, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
-	var tx ITransaction
+	var tx interfaces.Transaction
 	var err error
 
 	if t.operationType == config.OperationTypeTokenFreeze {
@@ -78,7 +79,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -119,7 +120,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(transaction ITransacti
 		Account:             &rTypes.AccountIdentifier{Address: payer.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
-			Currency: dbToken.ToRosettaCurrency(),
+			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 		},
 		Metadata: map[string]interface{}{
 			"account": account.String(),
@@ -182,7 +183,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) GetSdkTransactionType() stri
 	return t.transactionType
 }
 
-func newTokenFreezeTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenFreezeTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenFreezeTransaction{}).Name()
 	return &tokenFreezeUnfreezeTransactionConstructor{
 		operationType:   config.OperationTypeTokenFreeze,
@@ -192,7 +193,7 @@ func newTokenFreezeTransactionConstructor(tokenRepo repositories.TokenRepository
 	}
 }
 
-func newTokenUnfreezeTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenUnfreezeTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenUnfreezeTransaction{}).Name()
 	return &tokenFreezeUnfreezeTransactionConstructor{
 		operationType:   config.OperationTypeTokenUnfreeze,

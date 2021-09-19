@@ -24,8 +24,10 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -40,17 +42,17 @@ type tokenDeleteTransactionConstructorSuite struct {
 }
 
 func (suite *tokenDeleteTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := newTokenDeleteTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenDeleteTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenDeleteTransactionConstructorSuite) TestGetOperationType() {
-	h := newTokenDeleteTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenDeleteTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.Equal(suite.T(), config.OperationTypeTokenDelete, h.GetOperationType())
 }
 
 func (suite *tokenDeleteTransactionConstructorSuite) TestGetSdkTransactionType() {
-	h := newTokenDeleteTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenDeleteTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.Equal(suite.T(), "TokenDeleteTransaction", h.GetSdkTransactionType())
 }
 
@@ -76,7 +78,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := getTokenDeleteOperations()
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenDeleteTransactionConstructor(mockTokenRepo)
 			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
 
@@ -103,7 +105,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() ITransaction {
+	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTokenDeleteTransaction().
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTransactionID(hedera.TransactionIDGenerate(payerId)).
@@ -113,7 +115,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 	var tests = []struct {
 		name           string
 		tokenRepoErr   bool
-		getTransaction func() ITransaction
+		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -128,14 +130,14 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenDeleteTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenID(tokenIdA)
@@ -144,7 +146,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TokenIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenDeleteTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId))
@@ -158,7 +160,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 			// given
 			expectedOperations := getTokenDeleteOperations()
 
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenDeleteTransactionConstructor(mockTokenRepo)
 			tx := tt.getTransaction()
 
@@ -249,7 +251,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 			// given
 			operations := getTokenDeleteOperations()
 
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenDeleteTransactionConstructor(mockTokenRepo)
 
 			if tt.tokenRepoErr {
@@ -282,7 +284,7 @@ func assertTokenDeleteTransaction(
 	t *testing.T,
 	operation *rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.TokenDeleteTransaction{}, actual)
 
@@ -303,7 +305,7 @@ func getTokenDeleteOperations() []*rTypes.Operation {
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 			Amount: &rTypes.Amount{
 				Value:    "0",
-				Currency: dbTokenA.ToRosettaCurrency(),
+				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 			},
 		},
 	}

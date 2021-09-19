@@ -27,13 +27,11 @@ import (
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	hexUtils "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/maphelper"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -142,7 +140,7 @@ type transaction struct {
 }
 
 func (t transaction) getHashString() string {
-	return hexUtils.SafeAddHexPrefix(hex.EncodeToString(t.Hash))
+	return tools.SafeAddHexPrefix(hex.EncodeToString(t.Hash))
 }
 
 type transfer interface {
@@ -151,8 +149,8 @@ type transfer interface {
 }
 
 type hbarTransfer struct {
-	AccountId entityid.EntityId `json:"account_id"`
-	Amount    int64             `json:"amount"`
+	AccountId domain.EntityId `json:"account_id"`
+	Amount    int64           `json:"amount"`
 }
 
 func (t hbarTransfer) getAccount() types.Account {
@@ -164,10 +162,10 @@ func (t hbarTransfer) getAmount() types.Amount {
 }
 
 type tokenTransfer struct {
-	AccountId entityid.EntityId `json:"account_id"`
-	Amount    int64             `json:"amount"`
-	Decimals  int64             `json:"decimals"`
-	TokenId   entityid.EntityId `json:"token_id"`
+	AccountId domain.EntityId `json:"account_id"`
+	Amount    int64           `json:"amount"`
+	Decimals  int64           `json:"decimals"`
+	TokenId   domain.EntityId `json:"token_id"`
 }
 
 func (t tokenTransfer) getAccount() types.Account {
@@ -183,10 +181,10 @@ func (t tokenTransfer) getAmount() types.Amount {
 }
 
 type token struct {
-	Decimals      int64             `json:"decimals"`
-	FreezeDefault bool              `json:"freeze_default"`
-	InitialSupply int64             `json:"initial_supply"`
-	TokenId       entityid.EntityId `json:"token_id"`
+	Decimals      int64           `json:"decimals"`
+	FreezeDefault bool            `json:"freeze_default"`
+	InitialSupply int64           `json:"initial_supply"`
+	TokenId       domain.EntityId `json:"token_id"`
 }
 
 func (t token) getAmount() types.Amount {
@@ -206,7 +204,7 @@ type transactionRepository struct {
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
-func NewTransactionRepository(dbClient *gorm.DB) repositories.TransactionRepository {
+func NewTransactionRepository(dbClient *gorm.DB) interfaces.TransactionRepository {
 	return &transactionRepository{dbClient: dbClient}
 }
 
@@ -236,7 +234,7 @@ func (tr *transactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
 	if err != nil {
 		return nil, err
 	}
-	return maphelper.GetStringValuesFromIntStringMap(transactionTypes), nil
+	return tools.GetStringValuesFromIntStringMap(transactionTypes), nil
 }
 
 // FindBetween retrieves all Transactions between the provided start and end timestamp
@@ -299,7 +297,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 	consensusEnd int64,
 ) (*types.Transaction, *rTypes.Error) {
 	var transactions []*transaction
-	transactionHash, err := hex.DecodeString(hexUtils.SafeRemoveHexPrefix(hashStr))
+	transactionHash, err := hex.DecodeString(tools.SafeRemoveHexPrefix(hashStr))
 	if err != nil {
 		return nil, hErrors.ErrInvalidTransactionIdentifier
 	}
@@ -561,7 +559,7 @@ func getTokenOperation(
 	// best effort for immutable fields
 	metadata := make(map[string]interface{})
 	metadata["currency"] = token.getAmount().ToRosetta().Currency
-	if transaction.Type == dbTypes.TransactionTypeTokenCreation {
+	if transaction.Type == domain.TransactionTypeTokenCreation {
 		metadata["freeze_default"] = token.FreezeDefault
 		metadata["initial_supply"] = token.InitialSupply
 	}

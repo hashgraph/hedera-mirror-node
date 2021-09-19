@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type K struct {
+type k struct {
 	Key publicKey `json:"key"`
 }
 
@@ -42,7 +42,7 @@ func TestPublicKeyUnmarshalJSONSuccess(t *testing.T) {
 	input := fmt.Sprintf("{\"key\": \"%s\"}", expected.String())
 
 	// when
-	actual := &K{}
+	actual := &k{}
 	err = json.Unmarshal([]byte(input), actual)
 
 	// then
@@ -55,7 +55,7 @@ func TestPublicKeyUnmarshalJSONInvalidInput(t *testing.T) {
 	input := "foobar"
 
 	// when
-	actual := &K{}
+	actual := &k{}
 	err := json.Unmarshal([]byte(input), actual)
 
 	// then

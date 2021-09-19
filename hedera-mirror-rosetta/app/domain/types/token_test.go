@@ -23,17 +23,19 @@ package types
 import (
 	"testing"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 var token = &Token{
-	TokenId:  entityid.EntityId{EntityNum: 123, EncodedId: 123},
-	Decimals: 10,
-	Name:     "teebar",
-	Symbol:   "foobar",
+	Token: domain.Token{
+		TokenId:  domain.EntityId{EntityNum: 123, EncodedId: 123},
+		Decimals: 10,
+		Name:     "teebar",
+		Symbol:   "foobar",
+	},
 }
 
 func TestTokenToHederaTokenId(t *testing.T) {
@@ -49,7 +51,7 @@ func TestTokenToHederaTokenId(t *testing.T) {
 
 func TestTokenToRosettaCurrency(t *testing.T) {
 	// given
-	expected := &rTypes.Currency{
+	expected := &types.Currency{
 		Symbol:   "0.0.123",
 		Decimals: 10,
 	}

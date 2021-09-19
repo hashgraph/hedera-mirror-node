@@ -24,6 +24,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -31,6 +32,8 @@ import (
 )
 
 const (
+	tokenEntityType = 5
+
 	truncateAccountBalanceFileSql = "truncate account_balance_file"
 	truncateRecordFileSql         = "truncate record_file"
 )
@@ -44,6 +47,56 @@ type integrationTest struct{}
 
 func (*integrationTest) SetupTest() {
 	db.CleanupDb(dbResource.GetDb())
+}
+
+func addEntity(dbClient *gorm.DB, id domain.EntityId, entityType int) {
+	entity := &domain.Entity{
+		Id:   id.EncodedId,
+		Num:  id.EntityNum,
+		Type: entityType,
+	}
+	dbClient.Create(entity)
+}
+
+func addTransaction(
+	dbClient *gorm.DB,
+	consensusNs int64,
+	entityId *domain.EntityId,
+	nodeAccountId *domain.EntityId,
+	payerAccountId domain.EntityId,
+	result int16,
+	transactionHash []byte,
+	transactionType int16,
+	validStartNs int64,
+	cryptoTransfers []domain.CryptoTransfer,
+	nonFeeTransfers []domain.NonFeeTransfer,
+	tokenTransfers []domain.TokenTransfer,
+) {
+	tx := &domain.Transaction{
+		ConsensusNs:          consensusNs,
+		ChargedTxFee:         17,
+		EntityId:             entityId,
+		NodeAccountId:        nodeAccountId,
+		PayerAccountId:       payerAccountId,
+		Result:               result,
+		TransactionHash:      transactionHash,
+		Type:                 transactionType,
+		ValidDurationSeconds: 120,
+		ValidStartNs:         validStartNs,
+	}
+	dbClient.Create(tx)
+
+	if len(cryptoTransfers) != 0 {
+		dbClient.Create(cryptoTransfers)
+	}
+
+	if len(nonFeeTransfers) != 0 {
+		dbClient.Create(nonFeeTransfers)
+	}
+
+	if len(tokenTransfers) != 0 {
+		dbClient.Create(tokenTransfers)
+	}
 }
 
 func setup() {

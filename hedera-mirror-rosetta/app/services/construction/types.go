@@ -22,32 +22,22 @@ package construction
 
 import (
 	"github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
-
-// ITransaction defines the transaction methods used by constructor service
-type ITransaction interface {
-	Execute(client *hedera.Client) (hedera.TransactionResponse, error)
-	GetNodeAccountIDs() []hedera.AccountID
-	GetSignatures() (map[hedera.AccountID]map[*hedera.PublicKey][]byte, error)
-	GetTransactionHash() ([]byte, error)
-	GetTransactionID() hedera.TransactionID
-	ToBytes() ([]byte, error)
-	String() string
-}
 
 // TransactionConstructor defines the methods to construct a transaction
 type TransactionConstructor interface {
 	// Construct constructs a transaction from its operations
 	Construct(nodeAccountId hedera.AccountID, operations []*types.Operation) (
-		ITransaction,
+		interfaces.Transaction,
 		[]hedera.AccountID,
 		*types.Error,
 	)
 
 	// Parse parses a signed or unsigned transaction to get its operations and required signers
-	Parse(transaction ITransaction) ([]*types.Operation, []hedera.AccountID, *types.Error)
+	Parse(transaction interfaces.Transaction) ([]*types.Operation, []hedera.AccountID, *types.Error)
 
 	// Preprocess preprocesses the operations to get required signers
 	Preprocess(operations []*types.Operation) ([]hedera.AccountID, *types.Error)
@@ -60,7 +50,7 @@ type publicKey struct {
 
 func (pk *publicKey) UnmarshalJSON(data []byte) error {
 	var err error
-	pk.PublicKey, err = hedera.PublicKeyFromString(parse.SafeUnquote(string(data)))
+	pk.PublicKey, err = hedera.PublicKeyFromString(tools.SafeUnquote(string(data)))
 	return err
 }
 

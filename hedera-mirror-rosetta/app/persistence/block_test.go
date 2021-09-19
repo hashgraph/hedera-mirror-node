@@ -25,31 +25,34 @@ import (
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	accountBalanceFiles = []*pTypes.AccountBalanceFile{
+	accountBalanceFiles = []*domain.AccountBalanceFile{
 		{
 			ConsensusTimestamp: 90,
 			Count:              10,
 			FileHash:           "genesis_account_balance_file_hash",
 			Name:               "genesis_account_balance_file",
+			NodeAccountId:      nodeAccountId,
 		},
 		{
 			ConsensusTimestamp: 10000,
 			Count:              10,
 			FileHash:           "second_account_balance_file_hash",
 			Name:               "second_account_balance_file",
+			NodeAccountId:      nodeAccountId,
 		},
 		{
 			ConsensusTimestamp: 20000,
 			Count:              10,
 			FileHash:           "third_account_balance_file_hash",
 			Name:               "third_account_balance_file",
+			NodeAccountId:      nodeAccountId,
 		},
 	}
 	expectedGenesisBlock = &types.Block{
@@ -70,13 +73,15 @@ var (
 		ParentHash:          "genesis_record_file_hash",
 		ParentIndex:         0,
 	}
-	recordFiles = []*pTypes.RecordFile{
+	nodeAccountId = domain.MustDecodeEntityId(3)
+	recordFiles   = []*domain.RecordFile{
 		{
 			ConsensusStart: 80,
 			ConsensusEnd:   100,
 			Hash:           "genesis_record_file_hash",
 			Index:          3,
 			Name:           "genesis_record_file",
+			NodeAccountID:  nodeAccountId,
 			PrevHash:       "previous_record_file_hash",
 		},
 		{
@@ -85,24 +90,27 @@ var (
 			Hash:           "second_record_file_hash",
 			Index:          4,
 			Name:           "second_record_file",
+			NodeAccountID:  nodeAccountId,
 			PrevHash:       "genesis_record_file_hash",
 		},
 	}
 	genesisRecordFile       = recordFiles[0]
-	recordFileBeforeGenesis = &pTypes.RecordFile{
+	recordFileBeforeGenesis = &domain.RecordFile{
 		ConsensusStart: 50,
 		ConsensusEnd:   79,
 		Hash:           "previous_record_file_hash",
 		Index:          2,
 		Name:           "previous_record_file",
+		NodeAccountID:  nodeAccountId,
 		PrevHash:       "some_hash",
 	}
-	thirdRecordFile = &pTypes.RecordFile{
+	thirdRecordFile = &domain.RecordFile{
 		ConsensusStart: 121,
 		ConsensusEnd:   130,
 		Hash:           "third_record_file_hash",
 		Index:          5,
 		Name:           "third_record_file",
+		NodeAccountID:  nodeAccountId,
 		PrevHash:       "second_record_file_hash",
 	}
 )

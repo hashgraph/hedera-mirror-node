@@ -25,16 +25,17 @@ import (
 	"strconv"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/parse"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
 type cryptoTransferTransactionConstructor struct {
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 	transactionType string
 }
 
@@ -55,7 +56,7 @@ func (m senderMap) toSenders() []hedera.AccountID {
 }
 
 func (c *cryptoTransferTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*rTypes.Operation) (
-	ITransaction,
+	interfaces.Transaction,
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
@@ -94,7 +95,7 @@ func (c *cryptoTransferTransactionConstructor) GetSdkTransactionType() string {
 	return c.transactionType
 }
 
-func (c *cryptoTransferTransactionConstructor) Parse(transaction ITransaction) (
+func (c *cryptoTransferTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -132,7 +133,7 @@ func (c *cryptoTransferTransactionConstructor) Parse(transaction ITransaction) (
 			return nil, nil, err
 		}
 
-		currency := dbToken.ToRosettaCurrency()
+		currency := types.Token{Token: dbToken}.ToRosettaCurrency()
 		for _, tokenTransfer := range sameTokenTransfers {
 			operations = c.addOperation(tokenTransfer.AccountID, tokenTransfer.Amount, currency, operations, senderMap)
 		}
@@ -197,7 +198,7 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.O
 			return nil, nil, errors.ErrInvalidAccount
 		}
 
-		amount, err := parse.ToInt64(operation.Amount.Value)
+		amount, err := tools.ToInt64(operation.Amount.Value)
 		if err != nil || amount == 0 {
 			return nil, nil, errors.ErrInvalidAmount
 		}
@@ -258,7 +259,7 @@ func (c *cryptoTransferTransactionConstructor) validateCurrency(
 	return true
 }
 
-func newCryptoTransferTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newCryptoTransferTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TransferTransaction{}).Name()
 	return &cryptoTransferTransactionConstructor{
 		tokenRepo:       tokenRepo,

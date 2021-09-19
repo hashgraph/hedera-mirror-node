@@ -24,12 +24,12 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -47,23 +47,22 @@ const (
 // variables used in all token constructor tests
 var (
 	accountId = hedera.AccountID{Account: 197}
-	dbTokenA  = &types.Token{
+	dbTokenA  = domain.Token{
 		TokenId:  tokenEntityIdA,
 		Decimals: decimals,
 		Name:     nameA,
 		Symbol:   symbolA,
 	}
-	dbTokenB = &types.Token{
+	dbTokenB = domain.Token{
 		TokenId:  tokenEntityIdB,
 		Decimals: decimals,
 		Name:     nameB,
 		Symbol:   symbolB,
 	}
-	nilErr            *rTypes.Error
 	nodeAccountId     = hedera.AccountID{Account: 7}
 	payerId           = hedera.AccountID{Account: 100}
-	tokenEntityIdA, _ = entityid.Decode(212)
-	tokenEntityIdB, _ = entityid.Decode(252)
+	tokenEntityIdA, _ = domain.DecodeEntityId(212)
+	tokenEntityIdB, _ = domain.DecodeEntityId(252)
 	tokenIdA          = hedera.TokenID{Token: 212}
 	tokenIdB          = hedera.TokenID{Token: 252}
 
@@ -91,7 +90,7 @@ var (
 	}
 )
 
-type newConstructorFunc func(repositories.TokenRepository) transactionConstructorWithType
+type newConstructorFunc func(interfaces.TokenRepository) transactionConstructorWithType
 type updateOperationsFunc func([]*rTypes.Operation) []*rTypes.Operation
 
 func TestTokenAssociateDissociateTransactionConstructorSuite(t *testing.T) {
@@ -103,12 +102,12 @@ type tokenAssociateDissociateTransactionConstructorSuite struct {
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestNewTokenAssociateTransactionConstructor() {
-	h := newTokenAssociateTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenAssociateTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestNewTokenDissociateTransactionConstructor() {
-	h := newTokenDissociateTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenDissociateTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
@@ -132,7 +131,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestGetOperati
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newConsturctor(&repository.MockTokenRepository{})
+			h := tt.newConsturctor(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
@@ -158,7 +157,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestGetSdkTran
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&repository.MockTokenRepository{})
+			h := tt.newHandler(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -197,7 +196,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType)
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
 				configMockTokenRepo(mockTokenRepo, mockTokenRepoConfigA)
@@ -235,7 +234,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func(operationType string) ITransaction {
+	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == config.OperationTypeTokenAssociate {
 			return hedera.NewTokenAssociateTransaction().
 				SetAccountID(payerId).
@@ -253,7 +252,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 
 	var tests = []struct {
 		name                 string
-		getTransaction       func(operationType string) ITransaction
+		getTransaction       func(operationType string) interfaces.Transaction
 		mockTokenRepoConfigs []mockTokenRepoConfig
 		expectError          bool
 	}{
@@ -269,14 +268,14 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionMismatch",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenAssociate {
 					return hedera.NewTokenDissociateTransaction()
 				}
@@ -288,7 +287,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionAccountNotSet",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -305,7 +304,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionTokenIDsNotSet",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
 						SetAccountID(payerId).
@@ -322,7 +321,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionTransactionIDNotSet",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
 						SetAccountID(payerId).
@@ -339,7 +338,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionAccountPayerMismatch",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
 						SetAccountID(accountId).
@@ -364,7 +363,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 				// given
 				expectedOperations := suite.getOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 				tx := tt.getTransaction(operationType)
 
@@ -460,7 +459,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess
 				// given
 				operations := suite.getOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
 				if len(tt.mockTokenRepoConfigs) == 0 {
@@ -506,7 +505,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) getOperations(
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 			Amount: &rTypes.Amount{
 				Value:    "0",
-				Currency: dbTokenA.ToRosettaCurrency(),
+				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 			},
 		},
 		{
@@ -515,7 +514,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) getOperations(
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 			Amount: &rTypes.Amount{
 				Value:    "0",
-				Currency: dbTokenB.ToRosettaCurrency(),
+				Currency: types.Token{Token: dbTokenB}.ToRosettaCurrency(),
 			},
 		},
 	}
@@ -525,7 +524,7 @@ func assertTokenAssociateDissociateTransaction(
 	t *testing.T,
 	operations []*rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	if operations[0].Type == config.OperationTypeTokenAssociate {
 		assert.IsType(t, &hedera.TokenAssociateTransaction{}, actual)
@@ -561,13 +560,13 @@ func assertTokenAssociateDissociateTransaction(
 }
 
 type mockTokenRepoConfig struct {
-	dbToken *types.Token
+	dbToken domain.Token
 	err     *rTypes.Error
 	tokenId hedera.TokenID
 }
 
 func configMockTokenRepo(
-	mock *repository.MockTokenRepository,
+	mock *mocks.MockTokenRepository,
 	configs ...mockTokenRepoConfig,
 ) {
 	for _, config := range configs {

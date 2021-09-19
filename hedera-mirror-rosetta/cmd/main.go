@@ -31,12 +31,8 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/middleware"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence"
-	accountService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/account"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/base"
-	blockService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/block"
-	constructionService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
-	mempoolService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/mempool"
-	networkService "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/network"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
@@ -76,28 +72,28 @@ func newBlockchainOnlineRouter(
 	tokenRepo := persistence.NewTokenRepository(dbClient)
 	transactionRepo := persistence.NewTransactionRepository(dbClient)
 
-	baseService := base.NewBaseService(blockRepo, transactionRepo)
+	baseService := services.NewBaseService(blockRepo, transactionRepo)
 
-	networkAPIService := networkService.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
+	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockAPIService := blockService.NewBlockAPIService(baseService)
+	blockAPIService := services.NewBlockAPIService(baseService)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
-	mempoolAPIService := mempoolService.NewMempoolAPIService()
+	mempoolAPIService := services.NewMempoolAPIService()
 	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
-	constructionAPIService, err := constructionService.NewConstructionAPIService(
+	constructionAPIService, err := services.NewConstructionAPIService(
 		network.Network,
 		rosetta.Nodes,
-		constructionService.NewTransactionConstructor(tokenRepo),
+		construction.NewTransactionConstructor(tokenRepo),
 	)
 	if err != nil {
 		return nil, err
 	}
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 
-	accountAPIService := accountService.NewAccountAPIService(baseService, accountRepo)
+	accountAPIService := services.NewAccountAPIService(baseService, accountRepo)
 	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
 	healthController, err := middleware.NewHealthController(rosetta.Db)
 	metricsController := middleware.NewMetricsController()
@@ -124,10 +120,10 @@ func newBlockchainOfflineRouter(
 	rosetta types.Rosetta,
 	asserter *asserter.Asserter,
 ) (http.Handler, error) {
-	constructionAPIService, err := constructionService.NewConstructionAPIService(
+	constructionAPIService, err := services.NewConstructionAPIService(
 		network,
 		rosetta.Nodes,
-		constructionService.NewTransactionConstructor(nil),
+		construction.NewTransactionConstructor(nil),
 	)
 	if err != nil {
 		return nil, err

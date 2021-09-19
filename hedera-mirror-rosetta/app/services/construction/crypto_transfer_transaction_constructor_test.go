@@ -26,8 +26,10 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -53,17 +55,17 @@ type cryptoTransferTransactionConstructorSuite struct {
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := newCryptoTransferTransactionConstructor(&repository.MockTokenRepository{})
+	h := newCryptoTransferTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestGetOperationType() {
-	h := newCryptoTransferTransactionConstructor(&repository.MockTokenRepository{})
+	h := newCryptoTransferTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.Equal(suite.T(), config.OperationTypeCryptoTransfer, h.GetOperationType())
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestGetSdkTransactionType() {
-	h := newCryptoTransferTransactionConstructor(&repository.MockTokenRepository{})
+	h := newCryptoTransferTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.Equal(suite.T(), "TransferTransaction", h.GetSdkTransactionType())
 }
 
@@ -79,10 +81,10 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 			transfers: []transferOperation{
 				{account: accountIdA.String(), amount: -15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 15, currency: config.CurrencyHbar},
-				{account: accountIdB.String(), amount: -25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: -30, currency: dbTokenB.ToRosettaCurrency()},
-				{account: accountIdB.String(), amount: 30, currency: dbTokenB.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: -25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: -30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: 30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
 			},
 			expectedSigners: []hedera.AccountID{accountIdA, accountIdB},
 		},
@@ -96,7 +98,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := suite.makeOperations(tt.transfers)
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newCryptoTransferTransactionConstructor(mockTokenRepo)
 			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs...)
 
@@ -119,7 +121,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() ITransaction {
+	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTransferTransaction().
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTransactionID(hedera.TransactionIDGenerate(accountIdA)).
@@ -143,7 +145,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 	var tests = []struct {
 		name           string
 		tokenRepoErr   bool
-		getTransaction func() ITransaction
+		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -158,14 +160,14 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction().SetNodeAccountIDs([]hedera.AccountID{nodeAccountId})
 			},
 			expectError: true,
@@ -175,7 +177,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newCryptoTransferTransactionConstructor(mockTokenRepo)
 			tx := tt.getTransaction()
 
@@ -225,10 +227,10 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			transfers: []transferOperation{
 				{account: accountIdA.String(), amount: -15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 15, currency: config.CurrencyHbar},
-				{account: accountIdB.String(), amount: -25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: -30, currency: dbTokenB.ToRosettaCurrency()},
-				{account: accountIdB.String(), amount: 30, currency: dbTokenB.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: -25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: -30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: 30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
 			},
 			expectedSigners: []hedera.AccountID{accountIdA, accountIdB},
 		},
@@ -237,10 +239,10 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			transfers: []transferOperation{
 				{account: "x.y.z", amount: -15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 15, currency: config.CurrencyHbar},
-				{account: accountIdB.String(), amount: -25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: -30, currency: dbTokenB.ToRosettaCurrency()},
-				{account: accountIdB.String(), amount: 30, currency: dbTokenB.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: -25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: -30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: 30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
 			},
 			expectError: true,
 		},
@@ -250,9 +252,9 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 				{account: accountIdA.String(), amount: -15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: -25, currency: &rTypes.Currency{Symbol: "x.y.z", Decimals: 6}},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: -30, currency: dbTokenB.ToRosettaCurrency()},
-				{account: accountIdB.String(), amount: 30, currency: dbTokenB.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: -30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: 30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
 			},
 			expectError: true,
 		},
@@ -261,10 +263,10 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			transfers: []transferOperation{
 				{account: accountIdA.String(), amount: 0, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 15, currency: config.CurrencyHbar},
-				{account: accountIdB.String(), amount: -25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: -30, currency: dbTokenB.ToRosettaCurrency()},
-				{account: accountIdB.String(), amount: 30, currency: dbTokenB.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: -25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: -30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: 30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
 			},
 			expectError: true,
 		},
@@ -274,8 +276,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			transfers: []transferOperation{
 				{account: accountIdA.String(), amount: -15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 10, currency: config.CurrencyHbar},
-				{account: accountIdB.String(), amount: -25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: -25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
 			},
 			expectError: true,
 		},
@@ -284,8 +286,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			transfers: []transferOperation{
 				{account: accountIdA.String(), amount: -15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 10, currency: config.CurrencyHbar},
-				{account: accountIdB.String(), amount: -25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: 20, currency: dbTokenA.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: -25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 20, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
 			},
 			expectError: true,
 		},
@@ -299,7 +301,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 					amount:   -25,
 					currency: &rTypes.Currency{Symbol: tokenIdA.String(), Decimals: 1980},
 				},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
 			},
 			expectError: true,
 		},
@@ -308,10 +310,10 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			transfers: []transferOperation{
 				{account: accountIdA.String(), amount: -15, currency: config.CurrencyHbar},
 				{account: accountIdB.String(), amount: 15, currency: config.CurrencyHbar},
-				{account: accountIdB.String(), amount: -25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: 25, currency: dbTokenA.ToRosettaCurrency()},
-				{account: accountIdA.String(), amount: -30, currency: dbTokenB.ToRosettaCurrency()},
-				{account: accountIdB.String(), amount: 30, currency: dbTokenB.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: -25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: 25, currency: types.Token{dbTokenA}.ToRosettaCurrency()},
+				{account: accountIdA.String(), amount: -30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
+				{account: accountIdB.String(), amount: 30, currency: types.Token{dbTokenB}.ToRosettaCurrency()},
 			},
 			tokenRepoErr: true,
 			expectError:  true,
@@ -338,7 +340,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 				operations = suite.makeOperations(tt.transfers)
 			}
 
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newCryptoTransferTransactionConstructor(mockTokenRepo)
 
 			if !tt.tokenRepoErr {
@@ -384,7 +386,7 @@ func assertCryptoTransferTransaction(
 	t *testing.T,
 	operations []*rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.TransferTransaction{}, actual)
 

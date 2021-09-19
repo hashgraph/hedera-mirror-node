@@ -25,8 +25,10 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -43,12 +45,12 @@ type tokenTokenBurnMintTransactionConstructorSuite struct {
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenBurnTransactionConstructor() {
-	h := newTokenBurnTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenBurnTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenMintTransactionConstructor() {
-	h := newTokenMintTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenMintTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
@@ -72,7 +74,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetOperationType
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&repository.MockTokenRepository{})
+			h := tt.newHandler(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
@@ -98,7 +100,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetSdkTransactio
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&repository.MockTokenRepository{})
+			h := tt.newHandler(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -127,7 +129,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType)
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
 				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
@@ -164,7 +166,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func(operationType string) ITransaction {
+	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == config.OperationTypeTokenBurn {
 			return hedera.NewTokenBurnTransaction().
 				SetAmount(amount).
@@ -183,7 +185,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 	var tests = []struct {
 		name           string
 		tokenRepoErr   bool
-		getTransaction func(operationType string) ITransaction
+		getTransaction func(operationType string) interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -198,14 +200,14 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionMismatch",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenBurn {
 					return hedera.NewTokenMintTransaction()
 				}
@@ -217,7 +219,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionTokenIDNotSet",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
 						SetAmount(amount).
@@ -234,7 +236,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionTransactionIDNotSet",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
 						SetAmount(amount).
@@ -257,7 +259,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 				// given
 				expectedOperations := suite.getOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 				tx := tt.getTransaction(operationType)
 
@@ -365,7 +367,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 				// given
 				operations := suite.getOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
 				if tt.tokenRepoErr {
@@ -411,7 +413,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(operat
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 			Amount: &rTypes.Amount{
 				Value:    fmt.Sprintf("%d", amount),
-				Currency: dbTokenA.ToRosettaCurrency(),
+				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 			},
 		},
 	}
@@ -421,7 +423,7 @@ func assertTokenBurnMintTransaction(
 	t *testing.T,
 	operations []*rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	if operations[0].Type == config.OperationTypeTokenBurn {
 		assert.IsType(t, &hedera.TokenBurnTransaction{}, actual)

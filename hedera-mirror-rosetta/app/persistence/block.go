@@ -28,6 +28,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -125,7 +126,7 @@ type blockRepository struct {
 }
 
 // NewBlockRepository creates an instance of a blockRepository struct
-func NewBlockRepository(dbClient *gorm.DB) *blockRepository {
+func NewBlockRepository(dbClient *gorm.DB) interfaces.BlockRepository {
 	return &blockRepository{dbClient: dbClient, genesisConsensusStart: genesisConsensusStartUnset}
 }
 
@@ -248,6 +249,6 @@ func handleDatabaseError(err error, recordNotFoundErr *rTypes.Error) *rTypes.Err
 		return recordNotFoundErr
 	}
 
-	log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, err)
+	log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 	return hErrors.ErrDatabaseError
 }

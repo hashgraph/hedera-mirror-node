@@ -25,8 +25,10 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -41,17 +43,17 @@ type tokenWipeTransactionConstructorSuite struct {
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := newTokenWipeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetOperationType() {
-	h := newTokenWipeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.Equal(suite.T(), config.OperationTypeTokenWipe, h.GetOperationType())
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetSdkTransactionType() {
-	h := newTokenWipeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.Equal(suite.T(), "TokenWipeTransaction", h.GetSdkTransactionType())
 }
 
@@ -77,7 +79,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := getTokenWipeOperations()
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenWipeTransactionConstructor(mockTokenRepo)
 			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
 
@@ -104,7 +106,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() ITransaction {
+	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTokenWipeTransaction().
 			SetAccountID(accountId).
 			SetAmount(amount).
@@ -116,7 +118,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 	var tests = []struct {
 		name           string
 		tokenRepoErr   bool
-		getTransaction func() ITransaction
+		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -131,14 +133,14 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "AccountIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
 					SetAmount(amount).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -149,7 +151,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
 					SetAccountID(accountId).
 					SetAmount(amount).
@@ -160,7 +162,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TokenIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
 					SetAccountID(accountId).
 					SetAmount(amount).
@@ -176,7 +178,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 			// given
 			expectedOperations := getTokenWipeOperations()
 
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenWipeTransactionConstructor(mockTokenRepo)
 			tx := tt.getTransaction()
 
@@ -291,7 +293,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			// given
 			operations := getTokenWipeOperations()
 
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenWipeTransactionConstructor(mockTokenRepo)
 
 			if tt.tokenRepoErr {
@@ -324,7 +326,7 @@ func assertTokenWipeTransaction(
 	t *testing.T,
 	operation *rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.TokenWipeTransaction{}, actual)
 
@@ -349,7 +351,7 @@ func getTokenWipeOperations() []*rTypes.Operation {
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 			Amount: &rTypes.Amount{
 				Value:    fmt.Sprintf("%d", amount),
-				Currency: dbTokenA.ToRosettaCurrency(),
+				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 			},
 			Metadata: map[string]interface{}{
 				"account": accountId.String(),

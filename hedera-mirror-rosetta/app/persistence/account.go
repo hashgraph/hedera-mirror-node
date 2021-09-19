@@ -25,10 +25,10 @@ import (
 	"encoding/json"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -126,7 +126,7 @@ type accountRepository struct {
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
-func NewAccountRepository(dbClient *gorm.DB) repositories.AccountRepository {
+func NewAccountRepository(dbClient *gorm.DB) interfaces.AccountRepository {
 	return &accountRepository{dbClient}
 }
 
@@ -162,8 +162,8 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 func (ar *accountRepository) RetrieveDissociatedTokens(
 	accountId int64,
 	consensusEnd int64,
-) ([]types.Token, *rTypes.Error) {
-	tokens := make([]pTypes.Token, 0)
+) ([]domain.Token, *rTypes.Error) {
+	tokens := make([]domain.Token, 0)
 	if err := ar.dbClient.Raw(
 		selectDissociatedTokensAtTimestamp,
 		sql.Named("account_id", accountId),
@@ -173,7 +173,7 @@ func (ar *accountRepository) RetrieveDissociatedTokens(
 		return nil, hErrors.ErrDatabaseError
 	}
 
-	return getDomainTokens(tokens)
+	return tokens, nil
 }
 
 // RetrieveTransferredTokensInBlockAfter returns the list of tokens transferred to / from the account in the block after
@@ -181,8 +181,8 @@ func (ar *accountRepository) RetrieveDissociatedTokens(
 func (ar *accountRepository) RetrieveTransferredTokensInBlockAfter(
 	accountId int64,
 	consensusTimestamp int64,
-) ([]types.Token, *rTypes.Error) {
-	tokens := make([]pTypes.Token, 0)
+) ([]domain.Token, *rTypes.Error) {
+	tokens := make([]domain.Token, 0)
 	if err := ar.dbClient.Raw(
 		selectTransferredTokensInBlockAfterTimestamp,
 		sql.Named("account_id", accountId),
@@ -192,7 +192,7 @@ func (ar *accountRepository) RetrieveTransferredTokensInBlockAfter(
 		return nil, hErrors.ErrDatabaseError
 	}
 
-	return getDomainTokens(tokens)
+	return tokens, nil
 }
 
 func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd int64) (
@@ -256,19 +256,14 @@ func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consens
 	return change.Value, tokenValues, nil
 }
 
-func getDomainTokens(tokens []pTypes.Token) ([]types.Token, *rTypes.Error) {
-	domainTokens := make([]types.Token, 0, len(tokens))
-	for _, token := range tokens {
-		domainToken, err := token.ToDomainToken()
-		if err != nil {
-			return nil, err
-		}
-
-		domainTokens = append(domainTokens, *domainToken)
-	}
-
-	return domainTokens, nil
-}
+// func getDomainTokens(tokens []domain.Token) []types.Token {
+// 	domainTokens := make([]types.Token, 0, len(tokens))
+// 	for _, token := range tokens {
+// 		domainTokens = append(domainTokens, *types.NewTokenFromDbToken(token))
+// 	}
+//
+// 	return domainTokens
+// }
 
 func getUpdatedTokenAmounts(
 	tokenAmountMap map[int64]*types.TokenAmount,

@@ -25,7 +25,7 @@ import (
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -36,20 +36,20 @@ var (
 	accountId4, _  = types.NewAccountFromEncodedID(4)
 	accountId80, _ = types.NewAccountFromEncodedID(80)
 	accountId70, _ = types.NewAccountFromEncodedID(70)
-	addressBooks   = []*pTypes.AddressBook{
+	addressBooks   = []*domain.AddressBook{
 		getAddressBook(9, 0, 102),
 		getAddressBook(10, 19, 101),
 		getAddressBook(20, 0, 101),
 	}
-	addressBookEntries = []*pTypes.AddressBookEntry{
-		getAddressBookEntry(9, 0, accountId3.EncodedId),
-		getAddressBookEntry(9, 1, accountId4.EncodedId),
-		getAddressBookEntry(10, 0, accountId3.EncodedId),
-		getAddressBookEntry(10, 1, accountId4.EncodedId),
-		getAddressBookEntry(20, 0, accountId80.EncodedId),
-		getAddressBookEntry(20, 1, accountId70.EncodedId),
+	addressBookEntries = []*domain.AddressBookEntry{
+		getAddressBookEntry(9, 0, accountId3.EntityId),
+		getAddressBookEntry(9, 1, accountId4.EntityId),
+		getAddressBookEntry(10, 0, accountId3.EntityId),
+		getAddressBookEntry(10, 1, accountId4.EntityId),
+		getAddressBookEntry(20, 0, accountId80.EntityId),
+		getAddressBookEntry(20, 1, accountId70.EntityId),
 	}
-	addressBookServiceEndpoints = []*pTypes.AddressBookServiceEndpoint{
+	addressBookServiceEndpoints = []*domain.AddressBookServiceEndpoint{
 		{10, "192.168.0.10", 0, 50211},
 		{10, "192.168.1.10", 1, 50211},
 		{20, "192.168.0.10", 0, 50211},
@@ -135,10 +135,10 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 		dbClient,
 		getAddressBook(10, 19, 102),
 		getAddressBook(20, 0, 102),
-		getAddressBookEntry(10, 0, accountId4.EncodedId),
-		getAddressBookEntry(10, 1, accountId3.EncodedId),
-		getAddressBookEntry(20, 0, accountId70.EncodedId),
-		getAddressBookEntry(20, 1, accountId80.EncodedId),
+		getAddressBookEntry(10, 0, accountId4.EntityId),
+		getAddressBookEntry(10, 1, accountId3.EntityId),
+		getAddressBookEntry(20, 0, accountId70.EntityId),
+		getAddressBookEntry(20, 1, accountId80.EntityId),
 	)
 
 	expected := &types.AddressBookEntries{
@@ -160,7 +160,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 func (suite *addressBookEntryRepositorySuite) TestEntriesDbInvalidNodeAccountId() {
 	// given
 	dbClient := dbResource.GetGormDb()
-	db.CreateDbRecords(dbClient, addressBooks, getAddressBookEntry(20, 0, -1))
+	db.CreateDbRecords(dbClient, addressBooks, getAddressBookEntry(20, 0, domain.EntityId{EncodedId: -1}))
 
 	repo := NewAddressBookEntryRepository(dbClient)
 
@@ -184,16 +184,16 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesDbConnectionError() {
 	assert.Nil(suite.T(), actual)
 }
 
-func getAddressBook(start, end int64, fileId int64) *pTypes.AddressBook {
-	addressBook := pTypes.AddressBook{StartConsensusTimestamp: start, FileId: fileId}
+func getAddressBook(start, end int64, fileId int64) *domain.AddressBook {
+	addressBook := domain.AddressBook{StartConsensusTimestamp: start, FileId: domain.MustDecodeEntityId(fileId)}
 	if end != 0 {
 		addressBook.EndConsensusTimestamp = &end
 	}
 	return &addressBook
 }
 
-func getAddressBookEntry(consensusTimestamp int64, nodeId int64, nodeAccountId int64) *pTypes.AddressBookEntry {
-	return &pTypes.AddressBookEntry{
+func getAddressBookEntry(consensusTimestamp int64, nodeId int64, nodeAccountId domain.EntityId) *domain.AddressBookEntry {
+	return &domain.AddressBookEntry{
 		ConsensusTimestamp: consensusTimestamp,
 		NodeId:             nodeId,
 		NodeAccountId:      nodeAccountId,

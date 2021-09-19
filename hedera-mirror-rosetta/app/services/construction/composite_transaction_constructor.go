@@ -24,8 +24,8 @@ import (
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
@@ -44,7 +44,7 @@ type compositeTransactionConstructor struct {
 func (c *compositeTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, nil, err
@@ -53,7 +53,7 @@ func (c *compositeTransactionConstructor) Construct(
 	return h.Construct(nodeAccountId, operations)
 }
 
-func (c *compositeTransactionConstructor) Parse(transaction ITransaction) (
+func (c *compositeTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -103,7 +103,7 @@ func (c *compositeTransactionConstructor) validate(operations []*rTypes.Operatio
 	return h, nil
 }
 
-func NewTransactionConstructor(tokenRepo repositories.TokenRepository) TransactionConstructor {
+func NewTransactionConstructor(tokenRepo interfaces.TokenRepository) TransactionConstructor {
 	c := &compositeTransactionConstructor{
 		constructorsByOperationType:   make(map[string]transactionConstructorWithType),
 		constructorsByTransactionType: make(map[string]transactionConstructorWithType),

@@ -24,21 +24,22 @@ import (
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 type tokenDeleteTransactionConstructor struct {
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 	transactionType string
 }
 
 func (t *tokenDeleteTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	payerId, tokenId, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
@@ -56,7 +57,7 @@ func (t *tokenDeleteTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenDeleteTransactionConstructor) Parse(transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -85,7 +86,7 @@ func (t *tokenDeleteTransactionConstructor) Parse(transaction ITransaction) (
 		Account: &rTypes.AccountIdentifier{Address: payerId.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
-			Currency: dbToken.ToRosettaCurrency(),
+			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 		},
 		Type: t.GetOperationType(),
 	}
@@ -140,7 +141,7 @@ func (t *tokenDeleteTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func newTokenDeleteTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenDeleteTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	return &tokenDeleteTransactionConstructor{
 		tokenRepo:       tokenRepo,
 		transactionType: reflect.TypeOf(hedera.TokenDeleteTransaction{}).Name(),

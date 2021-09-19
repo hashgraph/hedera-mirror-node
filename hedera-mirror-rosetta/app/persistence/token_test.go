@@ -23,16 +23,17 @@ package persistence
 import (
 	"testing"
 
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/thanhpk/randstr"
 )
 
-var tokenId = entityid.EntityId{EncodedId: 1200, EntityNum: 1200}
+var (
+	defaultToken domain.Token
+	tokenId      = domain.MustDecodeEntityId(1200)
+)
 
 // run the suite
 func TestTokenRepositorySuite(t *testing.T) {
@@ -48,37 +49,31 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	// given
 	dbClient := dbResource.GetGormDb()
 
-	token := &dbTypes.Token{
-		TokenId:             tokenId.EncodedId,
-		CreatedTimestamp:    10001,
-		Decimals:            9,
-		FreezeDefault:       true,
-		FreezeKey:           randstr.Bytes(10),
-		FreezeKeyEd25519Hex: randstr.Hex(10),
-		InitialSupply:       120,
-		KycKey:              randstr.Bytes(11),
-		KycKeyEd25519Hex:    randstr.Hex(11),
-		ModifiedTimestamp:   10001,
-		Name:                randstr.Hex(6),
-		SupplyKey:           randstr.Bytes(12),
-		SupplyKeyEd25519Hex: randstr.Hex(12),
-		Symbol:              randstr.Hex(4),
-		TotalSupply:         200,
-		TreasuryAccountId:   1100,
-		WipeKey:             randstr.Bytes(19),
-		WipeKeyEd25519Hex:   randstr.Hex(19),
+	expected := domain.Token{
+		TokenId:                  tokenId,
+		CreatedTimestamp:         10001,
+		Decimals:                 9,
+		FeeScheduleKey:           randstr.Bytes(10),
+		FeeScheduleKeyEd25519Hex: randstr.Hex(10),
+		FreezeDefault:            true,
+		FreezeKey:                randstr.Bytes(10),
+		FreezeKeyEd25519Hex:      randstr.Hex(10),
+		InitialSupply:            120,
+		KycKey:                   randstr.Bytes(11),
+		KycKeyEd25519Hex:         randstr.Hex(11),
+		ModifiedTimestamp:        10001,
+		Name:                     randstr.Hex(6),
+		SupplyKey:                randstr.Bytes(12),
+		SupplyKeyEd25519Hex:      randstr.Hex(12),
+		SupplyType:               domain.Infinite,
+		Symbol:                   randstr.Hex(4),
+		TotalSupply:              200,
+		TreasuryAccountId:        domain.MustDecodeEntityId(1100),
+		Type:                     domain.FungibleCommon,
+		WipeKey:                  randstr.Bytes(19),
+		WipeKeyEd25519Hex:        randstr.Hex(19),
 	}
-	dbClient.Create(token)
-
-	expected := &types.Token{
-		TokenId: entityid.EntityId{
-			EntityNum: 1200,
-			EncodedId: 1200,
-		},
-		Decimals: 9,
-		Name:     token.Name,
-		Symbol:   token.Symbol,
-	}
+	dbClient.Create(&expected)
 
 	repo := NewTokenRepository(dbClient)
 
@@ -99,7 +94,7 @@ func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 
 	// then
 	assert.Equal(suite.T(), errors.ErrTokenNotFound, err)
-	assert.Nil(suite.T(), actual)
+	assert.Equal(suite.T(), defaultToken, actual)
 }
 
 func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
@@ -111,7 +106,7 @@ func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
 
 	// then
 	assert.Equal(suite.T(), errors.ErrInvalidToken, err)
-	assert.Nil(suite.T(), actual)
+	assert.Equal(suite.T(), defaultToken, actual)
 }
 
 func (suite *tokenRepositorySuite) TestFindTokenDbConnectionError() {
@@ -123,5 +118,5 @@ func (suite *tokenRepositorySuite) TestFindTokenDbConnectionError() {
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
-	assert.Nil(suite.T(), actual)
+	assert.Equal(suite.T(), defaultToken, actual)
 }

@@ -26,10 +26,9 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -41,48 +40,9 @@ var (
 		{Type: config.OperationTypeCryptoTransfer},
 		{Type: config.OperationTypeTokenCreate},
 	}
-	nilError              *types.Error
-	nilOperations         []*types.Operation
-	nilSigners            []hedera.AccountID
-	nilTransaction        *hedera.TransferTransaction
 	unsupportedOperations = []*types.Operation{{Type: config.OperationTypeTokenCreate}}
 	signers               = []hedera.AccountID{payerId}
 )
-
-type mockTransactionConstructor struct {
-	mock.Mock
-}
-
-func (m *mockTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*types.Operation) (
-	ITransaction,
-	[]hedera.AccountID,
-	*types.Error,
-) {
-	args := m.Called(nodeAccountId, operations)
-	return args.Get(0).(ITransaction), args.Get(1).([]hedera.AccountID), args.Get(2).(*types.Error)
-}
-
-func (m *mockTransactionConstructor) Parse(transaction ITransaction) (
-	[]*types.Operation,
-	[]hedera.AccountID,
-	*types.Error,
-) {
-	args := m.Called(transaction)
-	return args.Get(0).([]*types.Operation), args.Get(1).([]hedera.AccountID), args.Get(2).(*types.Error)
-}
-
-func (m *mockTransactionConstructor) Preprocess(operations []*types.Operation) ([]hedera.AccountID, *types.Error) {
-	args := m.Called(operations)
-	return args.Get(0).([]hedera.AccountID), args.Get(1).(*types.Error)
-}
-
-func (m *mockTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeCryptoTransfer
-}
-
-func (m *mockTransactionConstructor) GetSdkTransactionType() string {
-	return "TransferTransaction"
-}
 
 func TestCompositeTransactionConstructorSuite(t *testing.T) {
 	suite.Run(t, new(compositeTransactionConstructorSuite))
@@ -91,11 +51,11 @@ func TestCompositeTransactionConstructorSuite(t *testing.T) {
 type compositeTransactionConstructorSuite struct {
 	suite.Suite
 	constructor     TransactionConstructor
-	mockConstructor *mockTransactionConstructor
+	mockConstructor *mocks.MockTransactionConstructor
 }
 
 func (suite *compositeTransactionConstructorSuite) SetupTest() {
-	mockConstructor := &mockTransactionConstructor{}
+	mockConstructor := &mocks.MockTransactionConstructor{}
 	constructor := &compositeTransactionConstructor{
 		constructorsByOperationType:   map[string]transactionConstructorWithType{},
 		constructorsByTransactionType: map[string]transactionConstructorWithType{},
@@ -107,7 +67,7 @@ func (suite *compositeTransactionConstructorSuite) SetupTest() {
 }
 
 func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := NewTransactionConstructor(&repository.MockTokenRepository{})
+	h := NewTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
@@ -120,7 +80,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 	// given
 	suite.mockConstructor.
 		On("Construct", nodeAccountId, cryptoTransferOperations).
-		Return(cryptoTransferTransaction, signers, nilError)
+		Return(cryptoTransferTransaction, signers, mocks.NilError)
 
 	// when
 	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations)
@@ -136,7 +96,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstructFail() {
 	// given
 	suite.mockConstructor.
 		On("Construct", nodeAccountId, cryptoTransferOperations).
-		Return(nilTransaction, nilSigners, errors.ErrInternalServerError)
+		Return(mocks.NilHederaTransaction, mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
 	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations)
@@ -191,7 +151,7 @@ func (suite *compositeTransactionConstructorSuite) TestParse() {
 	// given
 	suite.mockConstructor.
 		On("Parse", cryptoTransferTransaction).
-		Return(cryptoTransferOperations, signers, nilError)
+		Return(cryptoTransferOperations, signers, mocks.NilError)
 
 	// when
 	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction)
@@ -207,7 +167,7 @@ func (suite *compositeTransactionConstructorSuite) TestParseFail() {
 	// given
 	suite.mockConstructor.
 		On("Parse", cryptoTransferTransaction).
-		Return(nilOperations, nilSigners, errors.ErrInternalServerError)
+		Return(mocks.NilOperations, mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
 	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction)
@@ -236,7 +196,7 @@ func (suite *compositeTransactionConstructorSuite) TestPreprocess() {
 	// given
 	suite.mockConstructor.
 		On("Preprocess", cryptoTransferOperations).
-		Return(signers, nilError)
+		Return(signers, mocks.NilError)
 
 	// when
 	actualSigner, err := suite.constructor.Preprocess(cryptoTransferOperations)
@@ -251,7 +211,7 @@ func (suite *compositeTransactionConstructorSuite) TestPreprocessFail() {
 	// given
 	suite.mockConstructor.
 		On("Preprocess", cryptoTransferOperations).
-		Return(nilSigners, errors.ErrInternalServerError)
+		Return(mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
 	actualSigner, err := suite.constructor.Preprocess(cryptoTransferOperations)

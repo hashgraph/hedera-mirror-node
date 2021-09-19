@@ -24,11 +24,9 @@ import (
 	"errors"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	dbTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -39,25 +37,25 @@ type tokenRepository struct {
 }
 
 // NewTokenRepository creates an instance of a tokenRepository struct
-func NewTokenRepository(dbClient *gorm.DB) repositories.TokenRepository {
+func NewTokenRepository(dbClient *gorm.DB) interfaces.TokenRepository {
 	return &tokenRepository{dbClient}
 }
 
-func (tr *tokenRepository) Find(tokenIdStr string) (*types.Token, *rTypes.Error) {
-	entityId, err := entityid.FromString(tokenIdStr)
+func (tr *tokenRepository) Find(tokenIdStr string) (domain.Token, *rTypes.Error) {
+	var token domain.Token
+	entityId, err := domain.EntityIdFromString(tokenIdStr)
 	if err != nil {
-		return nil, hErrors.ErrInvalidToken
+		return token, hErrors.ErrInvalidToken
 	}
 
-	token := &dbTypes.Token{}
-	if err := tr.dbClient.First(token, entityId.EncodedId).Error; err != nil {
+	if err = tr.dbClient.First(&token, entityId.EncodedId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, hErrors.ErrTokenNotFound
+			return token, hErrors.ErrTokenNotFound
 		}
 
-		log.Errorf("%s: %s", hErrors.ErrDatabaseError.Message, err)
-		return nil, hErrors.ErrDatabaseError
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return token, hErrors.ErrDatabaseError
 	}
 
-	return token.ToDomainToken()
+	return token, nil
 }

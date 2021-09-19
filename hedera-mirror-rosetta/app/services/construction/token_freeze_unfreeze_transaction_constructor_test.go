@@ -24,8 +24,10 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -40,12 +42,12 @@ type tokenFreezeUnfreezeTransactionConstructorSuite struct {
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestNewTokenFreezeTransactionConstructor() {
-	h := newTokenFreezeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenFreezeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestNewTokenUnfreezeTransactionConstructor() {
-	h := newTokenUnfreezeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenUnfreezeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
@@ -69,7 +71,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetOperationTyp
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&repository.MockTokenRepository{})
+			h := tt.newHandler(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
@@ -95,7 +97,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetSdkTransacti
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&repository.MockTokenRepository{})
+			h := tt.newHandler(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -124,7 +126,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := getFreezeUnfreezeOperations(operationType)
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
 
@@ -171,7 +173,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 		SetTokenID(tokenIdA).
 		SetTransactionID(hedera.TransactionIDGenerate(payerId))
 
-	defaultGetTransaction := func(operationType string) ITransaction {
+	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == config.OperationTypeTokenFreeze {
 			return tokenFreezeTransaction
 		}
@@ -182,7 +184,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 	var tests = []struct {
 		name           string
 		tokenRepoErr   bool
-		getTransaction func(operationType string) ITransaction
+		getTransaction func(operationType string) interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -197,14 +199,14 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionMismatch",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenFreeze {
 					return tokenUnfreezeTransaction
 				}
@@ -221,7 +223,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 				// given
 				expectedOperations := getFreezeUnfreezeOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 				tx := tt.getTransaction(operationType)
 
@@ -340,7 +342,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 				// given
 				operations := getFreezeUnfreezeOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
 				if tt.tokenRepoErr {
@@ -382,7 +384,7 @@ func assertTokenFreezeUnfreezeTransaction(
 	t *testing.T,
 	operation *rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	if operation.Type == config.OperationTypeTokenFreeze {
 		assert.IsType(t, &hedera.TokenFreezeTransaction{}, actual)
@@ -419,7 +421,7 @@ func getFreezeUnfreezeOperations(operationType string) []*rTypes.Operation {
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 			Amount: &rTypes.Amount{
 				Value:    "0",
-				Currency: dbTokenA.ToRosettaCurrency(),
+				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 			},
 			Metadata: map[string]interface{}{
 				"account": accountId.String(),

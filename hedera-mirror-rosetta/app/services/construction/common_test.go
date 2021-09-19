@@ -25,8 +25,9 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -470,11 +471,11 @@ func TestValidateToken(t *testing.T) {
 	}{
 		{
 			name:     "Success",
-			currency: dbTokenA.ToRosettaCurrency(),
+			currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 		},
 		{
 			name:         "TokenNotFound",
-			currency:     dbTokenA.ToRosettaCurrency(),
+			currency:     types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 			tokenRepoErr: true,
 			expectError:  true,
 		},
@@ -487,7 +488,7 @@ func TestValidateToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 
 			if tt.tokenRepoErr {
 				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
@@ -501,7 +502,7 @@ func TestValidateToken(t *testing.T) {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, dbTokenA.ToHederaTokenId(), token)
+				assert.Equal(t, types.Token{Token: dbTokenA}.ToHederaTokenId(), token)
 				mockTokenRepo.AssertExpectations(t)
 			}
 		})

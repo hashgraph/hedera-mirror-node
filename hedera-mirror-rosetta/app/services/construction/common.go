@@ -24,15 +24,16 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/coinbase/rosetta-sdk-go/types"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
-func compareCurrency(currencyA *types.Currency, currencyB *types.Currency) bool {
+func compareCurrency(currencyA *rTypes.Currency, currencyB *rTypes.Currency) bool {
 	if currencyA == currencyB {
 		return true
 	}
@@ -71,7 +72,7 @@ func parseOperationMetadata(
 	validate *validator.Validate,
 	out interface{},
 	metadatas ...map[string]interface{},
-) *types.Error {
+) *rTypes.Error {
 	metadata := make(map[string]interface{})
 
 	for _, m := range metadatas {
@@ -100,7 +101,7 @@ func parseOperationMetadata(
 	return nil
 }
 
-func validateOperations(operations []*types.Operation, size int, opType string, expectNilAmount bool) *types.Error {
+func validateOperations(operations []*rTypes.Operation, size int, opType string, expectNilAmount bool) *rTypes.Error {
 	if len(operations) == 0 {
 		return errors.ErrEmptyOperations
 	}
@@ -134,7 +135,7 @@ func validateOperations(operations []*types.Operation, size int, opType string, 
 	return nil
 }
 
-func validateToken(tokenRepo repositories.TokenRepository, currency *types.Currency) (*hedera.TokenID, *types.Error) {
+func validateToken(tokenRepo interfaces.TokenRepository, currency *rTypes.Currency) (*hedera.TokenID, *rTypes.Error) {
 	token, rErr := tokenRepo.Find(currency.Symbol)
 	if rErr != nil {
 		return nil, rErr
@@ -145,5 +146,5 @@ func validateToken(tokenRepo repositories.TokenRepository, currency *types.Curre
 		return nil, errors.ErrInvalidToken
 	}
 
-	return token.ToHederaTokenId(), nil
+	return types.Token{Token: token}.ToHederaTokenId(), nil
 }

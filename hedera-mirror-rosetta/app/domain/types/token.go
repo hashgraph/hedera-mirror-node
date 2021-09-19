@@ -21,17 +21,14 @@
 package types
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	entityid "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 // Token is domain level struct used to represent Token conceptual mapping in Hedera
 type Token struct {
-	TokenId  entityid.EntityId
-	Decimals int64
-	Name     string
-	Symbol   string
+	domain.Token
 }
 
 func (t Token) ToHederaTokenId() *hedera.TokenID {
@@ -42,8 +39,8 @@ func (t Token) ToHederaTokenId() *hedera.TokenID {
 	}
 }
 
-func (t Token) ToRosettaCurrency() *rTypes.Currency {
-	return &rTypes.Currency{
+func (t Token) ToRosettaCurrency() *types.Currency {
+	return &types.Currency{
 		Symbol:   t.TokenId.String(),
 		Decimals: int32(t.Decimals),
 	}
