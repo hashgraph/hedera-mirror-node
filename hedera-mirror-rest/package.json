@@ -89,7 +89,7 @@
     "rewire": "^5.0.0",
     "sinon": "^11.1.2",
     "supertest": "^6.1.6",
-    "testcontainers": "^7.20.2"
+    "testcontainers": "^7.20.4"
   },
   "jest": {
     "collectCoverage": true,
