@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.26.0'
+      version: '0.27.0'
   install:
     crds: CreateReplace
   interval: 1m
