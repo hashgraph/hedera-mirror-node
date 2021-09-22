@@ -30,9 +30,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Named;
+import org.apache.logging.log4j.Level;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -115,9 +117,14 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                 .getDateRangeFilter(parserProperties.getStreamType());
 
         try {
+            Flux<RecordItem> recordItems = recordFile.getItems();
+
+            if (log.getLevel().isInRange(Level.TRACE, Level.DEBUG)) {
+                recordItems = recordItems.doOnNext(this::logItem);
+            }
+
             recordStreamFileListener.onStart();
-            long count = recordFile.getItems()
-                    .doOnNext(this::logItem)
+            long count = recordItems.filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .doOnNext(recordItemListener::onItem)
                     .doOnNext(this::recordMetrics)

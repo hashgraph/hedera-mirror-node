@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
  * ‍
  */
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -61,6 +63,9 @@ public class RedisEntityListener implements BatchEntityListener {
     private final RedisProperties redisProperties;
     private final RedisOperations<String, StreamMessage> redisOperations;
     private final MeterRegistry meterRegistry;
+    private final LoadingCache<Integer, String> channelNames = Caffeine.newBuilder()
+            .maximumSize(1000L)
+            .build(this::getChannelName);
 
     private AtomicLong lastConsensusTimestamp;
     private Timer timer;
@@ -144,7 +149,7 @@ public class RedisEntityListener implements BatchEntityListener {
             @Override
             public Object execute(RedisOperations operations) {
                 for (TopicMessage topicMessage : messages) {
-                    String channel = getChannelName(topicMessage);
+                    String channel = channelNames.get(topicMessage.getTopicNum());
                     redisOperations.convertAndSend(channel, topicMessage);
                 }
                 return null;
@@ -152,8 +157,8 @@ public class RedisEntityListener implements BatchEntityListener {
         };
     }
 
-    private String getChannelName(TopicMessage topicMessage) {
-        return String.format(TOPIC_FORMAT, mirrorProperties.getShard(), topicMessage.getRealmNum(), topicMessage
-                .getTopicNum());
+    // For now, we assume realm is zero. Once we optimize TopicMessage to store encoded ID we can use that instead.
+    private String getChannelName(Integer id) {
+        return String.format(TOPIC_FORMAT, mirrorProperties.getShard(), 0, id);
     }
 }
