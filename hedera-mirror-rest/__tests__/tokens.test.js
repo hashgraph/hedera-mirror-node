@@ -675,6 +675,7 @@ describe('token formatTokenInfoRow tests', () => {
     wipe_key: [5, 5, 5],
     created_timestamp: 10,
     decimals: 10,
+    deleted: true,
     initial_supply: 1000000,
     total_supply: 2000000,
     expiration_timestamp: 1594431063696143000,
@@ -729,6 +730,7 @@ describe('token formatTokenInfoRow tests', () => {
     auto_renew_period: 7890000,
     created_timestamp: '0.000000010',
     decimals: 10,
+    deleted: true,
     expiry_timestamp: 1594431063696143000,
     fee_schedule_key: {
       _type: 'ProtobufEncoded',
@@ -1339,6 +1341,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    e.auto_renew_period,
                    t.created_timestamp,
                    decimals,
+                   e.deleted,
                    e.expiration_timestamp,
                    fee_schedule_key,
                    freeze_default,
