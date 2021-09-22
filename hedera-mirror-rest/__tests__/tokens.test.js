@@ -1345,6 +1345,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    e.key,
                    kyc_key,
                    max_supply,
+                   e.memo,
                    t.modified_timestamp,
                    name,
                    supply_key,

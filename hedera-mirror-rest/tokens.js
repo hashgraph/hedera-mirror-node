@@ -94,7 +94,7 @@ const tokenAccountCte = `with ta as (
   where account_id = $1
   order by account_id, token_id, modified_timestamp desc
 )`;
-const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
+const tokensSelectQuery = 'select t.token_id, symbol, e.key, e.memo, t.type from token t';
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 const tokenAccountJoinQuery = 'join ta on ta.token_id = t.token_id';
 
@@ -112,6 +112,7 @@ const tokenInfoSelectFields = [
   'e.key',
   'kyc_key',
   'max_supply',
+  'e.memo',
   't.modified_timestamp',
   'name',
   'supply_key',
@@ -176,6 +177,7 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
 const formatTokenRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
+    memo: row.memo,
     symbol: row.symbol,
     token_id: EntityId.fromEncodedId(row.token_id).toString(),
     type: row.type,
@@ -229,6 +231,7 @@ const formatTokenInfoRow = (row) => {
     initial_supply: row.initial_supply,
     kyc_key: utils.encodeKey(row.kyc_key),
     max_supply: row.max_supply,
+    memo: row.memo,
     modified_timestamp: utils.nsToSecNs(row.modified_timestamp),
     name: row.name,
     supply_key: utils.encodeKey(row.supply_key),

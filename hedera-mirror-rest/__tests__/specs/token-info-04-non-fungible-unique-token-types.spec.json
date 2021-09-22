@@ -4,21 +4,25 @@
     "entities": [
       {
         "num": 1,
-        "type": 5
+        "type": 5,
+        "memo": "token.0.0.1"
       },
       {
         "num": 1135,
-        "type": 5
+        "type": 5,
+        "memo": "token.0.0.1135"
       },
       {
         "realm": 7,
         "num": 25301,
-        "type": 5
+        "type": 5,
+        "memo": "token.0.7.25301"
       },
       {
         "realm": 23,
         "num": 45678,
-        "type": 5
+        "type": 5,
+        "memo": "token.0.23.45678"
       }
     ],
     "tokens": [
@@ -50,6 +54,7 @@
     "initial_supply": "0",
     "kyc_key": null,
     "max_supply": "9223372036854775807",
+    "memo": "token.0.0.1135",
     "modified_timestamp": "1234567890.000000002",
     "name": "Token name",
     "supply_key": null,
