@@ -1098,6 +1098,9 @@ components:
         decimals:
           type: string
           example: 1000
+        deleted:
+          type: boolean
+          example: true
         expiry_timestamp:
           example: null
           nullable: true
