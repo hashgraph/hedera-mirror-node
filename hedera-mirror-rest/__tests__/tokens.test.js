@@ -34,6 +34,7 @@ const formatSqlQueryString = (query) => {
 describe('token formatTokenRow tests', () => {
   const rowInput = {
     key: [3, 3, 3],
+    memo: 'token.memo',
     public_key: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
     symbol: 'YBTJBOAZ',
     token_id: '7',
@@ -47,6 +48,7 @@ describe('token formatTokenRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '030303',
     },
+    memo: 'token.memo',
     type: 'FUNGIBLE_COMMON',
   };
 
@@ -64,7 +66,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const filters = [];
 
     const expectedquery =
-      'select t.token_id, symbol, e.key, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
+      'select t.token_id, symbol, e.key, e.memo, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -92,7 +94,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key, t.type
+    const expectedquery = `select t.token_id, symbol, e.key, e.memo, t.type
                            from token t
                                   join entity e on e.id = t.token_id
                            where e.public_key = $1
@@ -136,7 +138,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, t.type
+                           select t.token_id, symbol, e.key, e.memo, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -182,7 +184,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, t.type
+                           select t.token_id, symbol, e.key, e.memo, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -241,7 +243,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, t.type
+                           select t.token_id, symbol, e.key, e.memo, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
