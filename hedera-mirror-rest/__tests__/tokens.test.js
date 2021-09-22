@@ -66,7 +66,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const filters = [];
 
     const expectedquery =
-      'select t.token_id, symbol, e.key, e.memo, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
+      'select t.token_id, symbol, e.key, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [maxLimit];
     const expectedorder = orderFilterValues.ASC;
     const expectedlimit = maxLimit;
@@ -94,7 +94,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key, e.memo, t.type
+    const expectedquery = `select t.token_id, symbol, e.key, t.type
                            from token t
                                   join entity e on e.id = t.token_id
                            where e.public_key = $1
@@ -138,7 +138,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, e.memo, t.type
+                           select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -184,7 +184,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, e.memo, t.type
+                           select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -243,7 +243,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by account_id, token_id, modified_timestamp desc
                            )
-                           select t.token_id, symbol, e.key, e.memo, t.type
+                           select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -687,6 +687,7 @@ describe('token formatTokenInfoRow tests', () => {
     type: 'FUNGIBLE_COMMON',
     max_supply: '9000000',
     supply_type: 'FINITE',
+    memo: 'token.memo',
     custom_fees: [
       {
         amount: 55,
@@ -746,6 +747,7 @@ describe('token formatTokenInfoRow tests', () => {
       key: '020202',
     },
     max_supply: '9000000',
+    memo: 'token.memo',
     modified_timestamp: '1603394416.676293000',
     name: 'Token name',
     supply_key: {
