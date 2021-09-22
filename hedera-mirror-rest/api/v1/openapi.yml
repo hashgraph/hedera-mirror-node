@@ -1042,8 +1042,6 @@ components:
           type: string
         admin_key:
           $ref: '#/components/schemas/Key'
-        memo:
-          type: string
         type:
           type: string
       required:
@@ -1055,7 +1053,6 @@ components:
         token_id: 0.0.1
         symbol: FIRSTMOVERLPDJH
         admin_key: null
-        memo: "token memo"
         type: FUNGIBLE_COMMON
     TokenBalance:
       type: object

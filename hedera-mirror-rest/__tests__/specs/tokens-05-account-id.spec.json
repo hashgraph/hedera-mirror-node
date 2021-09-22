@@ -12,25 +12,21 @@
     "entities": [
       {
         "num": 3,
-        "type": 5,
-        "memo": "token.0.0.3"
+        "type": 5
       },
       {
         "num": 4,
-        "type": 5,
-        "memo": "token.0.0.4"
+        "type": 5
       },
       {
         "realm": 7,
         "num": 25301,
-        "type": 5,
-        "memo": "token.0.7.25301"
+        "type": 5
       },
       {
         "realm": 23,
         "num": 45678,
-        "type": 5,
-        "memo": "token.0.23.45678"
+        "type": 5
       }
     ],
     "tokens": [
@@ -112,21 +108,18 @@
         "token_id": "0.0.3",
         "symbol": "FIRSTMOVERLPDJH",
         "admin_key": null,
-        "memo": "token.0.0.3",
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
         "admin_key": null,
-        "memo": "token.0.7.25301",
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.23.45678",
         "symbol": "HEDERACOIN",
         "admin_key": null,
-        "memo": "token.0.23.45678",
         "type": "FUNGIBLE_COMMON"
       }
     ],
