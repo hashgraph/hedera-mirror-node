@@ -34,7 +34,6 @@ const formatSqlQueryString = (query) => {
 describe('token formatTokenRow tests', () => {
   const rowInput = {
     key: [3, 3, 3],
-    memo: 'token.memo',
     public_key: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
     symbol: 'YBTJBOAZ',
     token_id: '7',
@@ -48,7 +47,6 @@ describe('token formatTokenRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '030303',
     },
-    memo: 'token.memo',
     type: 'FUNGIBLE_COMMON',
   };
 
