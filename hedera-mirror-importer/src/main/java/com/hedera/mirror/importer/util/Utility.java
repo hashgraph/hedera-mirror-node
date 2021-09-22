@@ -22,13 +22,18 @@ package com.hedera.mirror.importer.util;
 
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
+import com.google.protobuf.ByteOutput;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.TextFormat;
+import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -221,5 +226,79 @@ public class Utility {
      */
     public static String sanitize(String input) {
         return input != null ? input.replace(NULL_CHARACTER, NULL_REPLACEMENT) : null;
+    }
+
+    /**
+     * This method converts a protobuf ByteString into a byte array. Optimization is done in case the input is a
+     * LiteralByteString to not make a copy of the underlying array and return it as is. This is okay for our purposes
+     * since we never modify the array and just directly store it in the database.
+     * <p>
+     * If the ByteString is smaller than the estimated size to allocate an UnsafeByteOutput object, copy the array
+     * regardless since we'd be allocating a similar amount of memory either way.
+     *
+     * @param byteString to convert
+     * @return bytes extracted from the ByteString
+     */
+    public static byte[] toBytes(ByteString byteString) {
+        if (byteString == null) {
+            return null;
+        }
+
+        try {
+            if (UnsafeByteOutput.supports(byteString)) {
+                UnsafeByteOutput byteOutput = new UnsafeByteOutput();
+                UnsafeByteOperations.unsafeWriteTo(byteString, byteOutput);
+                return byteOutput.bytes;
+            }
+        } catch (IOException e) {
+            log.warn("Unsafe retrieval of bytes failed", e);
+        }
+
+        return byteString.toByteArray();
+    }
+
+    static class UnsafeByteOutput extends ByteOutput {
+
+        static final short SIZE = 12 + 4; // Size of the object header plus a compressed object reference to bytes field
+        private static final Class<?> SUPPORTED_CLASS;
+
+        static {
+            try {
+                SUPPORTED_CLASS = Class.forName(ByteString.class.getName() + "$LiteralByteString");
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private byte[] bytes;
+
+        private static boolean supports(ByteString byteString) {
+            return byteString.size() > UnsafeByteOutput.SIZE && byteString.getClass() == UnsafeByteOutput.SUPPORTED_CLASS;
+        }
+
+        @Override
+        public void write(byte value) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void write(byte[] bytes, int offset, int length) throws IOException {
+            this.bytes = bytes;
+        }
+
+        @Override
+        public void writeLazy(byte[] bytes, int offset, int length) throws IOException {
+            this.bytes = bytes;
+        }
+
+        @Override
+        public void write(ByteBuffer value) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void writeLazy(ByteBuffer value) throws IOException {
+            throw new UnsupportedOperationException();
+        }
     }
 }

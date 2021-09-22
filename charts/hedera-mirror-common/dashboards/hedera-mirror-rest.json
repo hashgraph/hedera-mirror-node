@@ -1698,8 +1698,8 @@
       {
         "current": {
           "selected": true,
-          "text": "Loki",
-          "value": "Loki"
+          "text": "",
+          "value": ""
         },
         "description": "Name of the Loki datasource to use",
         "error": null,
@@ -1719,8 +1719,8 @@
       {
         "current": {
           "selected": false,
-          "text": "Prometheus",
-          "value": "Prometheus"
+          "text": "",
+          "value": ""
         },
         "description": "Name of the Prometheus datasource to use",
         "error": null,
@@ -1762,7 +1762,7 @@
           "query": "label_values(nodejs_process_cpu_usage_percentage{container=\"$application\"}, cluster)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 5,

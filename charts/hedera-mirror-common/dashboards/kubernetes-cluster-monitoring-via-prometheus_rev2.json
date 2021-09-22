@@ -1864,7 +1864,7 @@
           "query": "label_values(container_memory_working_set_bytes, namespace)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
@@ -1891,7 +1891,7 @@
           "query": "label_values(kube_pod_info, node)",
           "refId": "Prometheus-Node-Variable-Query"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,

@@ -214,7 +214,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
             } else if (body.hasFileCreate()) {
-                insertFileData(consensusNs, body.getFileCreate().getContents().toByteArray(),
+                insertFileData(consensusNs, Utility.toBytes(body.getFileCreate().getContents()),
                         txRecord.getReceipt().getFileID(), transactionType);
             } else if (body.hasFileUpdate()) {
                 insertFileUpdate(consensusNs, body.getFileUpdate(), transactionType);
@@ -275,14 +275,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         tx.setConsensusNs(consensusTimestamp);
         tx.setInitialBalance(0L);
         tx.setMaxFee(body.getTransactionFee());
-        tx.setMemo(body.getMemoBytes().toByteArray());
+        tx.setMemo(Utility.toBytes(body.getMemoBytes()));
         tx.setNodeAccountId(nodeAccount);
         tx.setPayerAccountId(payerAccount);
         tx.setResult(txRecord.getReceipt().getStatusValue());
         tx.setScheduled(txRecord.hasScheduleRef());
         tx.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
                 recordItem.getTransactionBytes() : null);
-        tx.setTransactionHash(txRecord.getTransactionHash().toByteArray());
+        tx.setTransactionHash(Utility.toBytes(txRecord.getTransactionHash()));
         tx.setType(recordItem.getTransactionType());
         tx.setValidDurationSeconds(validDurationSeconds);
         tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
@@ -332,9 +332,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         topicMessage.setConsensusTimestamp(Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
-        topicMessage.setMessage(transactionBody.getMessage().toByteArray());
+        topicMessage.setMessage(Utility.toBytes(transactionBody.getMessage()));
         topicMessage.setRealmNum((int) topicId.getRealmNum());
-        topicMessage.setRunningHash(receipt.getTopicRunningHash().toByteArray());
+        topicMessage.setRunningHash(Utility.toBytes(receipt.getTopicRunningHash()));
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());
         topicMessage.setTopicNum((int) topicId.getTopicNum());
@@ -343,13 +343,13 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody,
                                   int transactionType) {
-        byte[] contents = transactionBody.getContents().toByteArray();
+        byte[] contents = Utility.toBytes(transactionBody.getContents());
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), transactionType);
     }
 
     private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody,
                                   int transactionType) {
-        byte[] contents = transactionBody.getContents().toByteArray();
+        byte[] contents = Utility.toBytes(transactionBody.getContents());
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), transactionType);
     }
 
@@ -370,7 +370,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertCryptoAddLiveHash(long consensusTimestamp,
                                          CryptoAddLiveHashTransactionBody transactionBody) {
         if (entityProperties.getPersist().isClaims()) {
-            byte[] liveHash = transactionBody.getLiveHash().getHash().toByteArray();
+            byte[] liveHash = Utility.toBytes(transactionBody.getLiveHash().getHash());
             entityListener.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
         }
     }
@@ -379,7 +379,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     ContractCallTransactionBody transactionBody,
                                     TransactionRecord transactionRecord) {
         if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
-            byte[] functionParams = transactionBody.getFunctionParameters().toByteArray();
+            byte[] functionParams = Utility.toBytes(transactionBody.getFunctionParameters());
             long gasSupplied = transactionBody.getGas();
             byte[] callResult = transactionRecord.getContractCallResult().toByteArray();
             long gasUsed = transactionRecord.getContractCallResult().getGasUsed();
@@ -391,7 +391,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                                               ContractCreateTransactionBody transactionBody,
                                               TransactionRecord transactionRecord) {
         if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
-            byte[] functionParams = transactionBody.getConstructorParameters().toByteArray();
+            byte[] functionParams = Utility.toBytes(transactionBody.getConstructorParameters());
             long gasSupplied = transactionBody.getGas();
             byte[] callResult = transactionRecord.getContractCreateResult().toByteArray();
             long gasUsed = transactionRecord.getContractCreateResult().getGasUsed();
@@ -637,7 +637,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 Nft nft = new Nft(serialNumbers.get(i), tokenId);
                 nft.setCreatedTimestamp(consensusTimestamp);
                 nft.setDeleted(false);
-                nft.setMetadata(tokenMintTransactionBody.getMetadata(i).toByteArray());
+                nft.setMetadata(Utility.toBytes(tokenMintTransactionBody.getMetadata(i)));
                 nft.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onNft(nft);
             }
@@ -868,9 +868,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                 TransactionSignature transactionSignature = new TransactionSignature();
                 transactionSignature.setId(new TransactionSignature.Id(
                         consensusTimestamp,
-                        prefix.toByteArray()));
+                        Utility.toBytes(prefix)));
                 transactionSignature.setEntityId(entityId);
-                transactionSignature.setSignature(signaturePair.getEd25519().toByteArray());
+                transactionSignature.setSignature(Utility.toBytes(signaturePair.getEd25519()));
 
                 entityListener.onTransactionSignature(transactionSignature);
             }
@@ -911,13 +911,13 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /**
-     * Inserts custom fees. Returns the list of collectors automatically associated with the newly created token if
-     * the custom fees are from a token create transaction
+     * Inserts custom fees. Returns the list of collectors automatically associated with the newly created token if the
+     * custom fees are from a token create transaction
      *
-     * @param customFeeList protobuf custom fee list
+     * @param customFeeList      protobuf custom fee list
      * @param consensusTimestamp consensus timestamp of the corresponding transaction
-     * @param isTokenCreate if the transaction with the custom fees is a token create
-     * @param tokenId the token id the custom fees are attached to
+     * @param isTokenCreate      if the transaction with the custom fees is a token create
+     * @param tokenId            the token id the custom fees are attached to
      * @return A list of collectors automatically associated with the token if it's a token create transaction
      */
     private Set<EntityId> insertCustomFees(List<com.hederahashgraph.api.proto.java.CustomFee> customFeeList,
@@ -977,8 +977,8 @@ public class EntityRecordItemListener implements RecordItemListener {
      * Parse protobuf FixedFee object to domain CustomFee object.
      *
      * @param customFee the domain CustomFee object
-     * @param fixedFee the protobuf FixedFee object
-     * @param tokenId the attached token id
+     * @param fixedFee  the protobuf FixedFee object
+     * @param tokenId   the attached token id
      * @return whether the fee is paid in the attached token
      */
     private boolean parseFixedFee(CustomFee customFee, FixedFee fixedFee, EntityId tokenId) {

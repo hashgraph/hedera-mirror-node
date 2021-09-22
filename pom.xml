@@ -235,7 +235,7 @@
                         <container>
                             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
                             <jvmFlags>
-                                <jvmFlag>-XX:MaxRAMPercentage=70</jvmFlag>
+                                <jvmFlag>-XX:MaxRAMPercentage=80</jvmFlag>
                             </jvmFlags>
                         </container>
                         <extraDirectories>
