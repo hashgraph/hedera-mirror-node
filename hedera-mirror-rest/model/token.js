@@ -36,6 +36,7 @@ class Token {
     this.kycKey = token.kyc_key;
     this.kycKeyEd25519Hex = token.kyc_key_ed25519_hex;
     this.maxSupply = BigInt(token.max_supply);
+    this.memo = token.memo;
     this.modifiedTimestamp = BigInt(token.modified_timestamp);
     this.name = token.name;
     this.supplyKey = token.supply_key;

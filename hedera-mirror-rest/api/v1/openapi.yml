@@ -1098,6 +1098,9 @@ components:
         decimals:
           type: string
           example: 1000
+        deleted:
+          type: boolean
+          example: true
         expiry_timestamp:
           example: null
           nullable: true
@@ -1122,6 +1125,9 @@ components:
         name:
           type: string
           example: Token name
+        memo:
+          type: string
+          example: "token memo"
         supply_key:
           $ref: '#/components/schemas/Key'
         supply_type:
