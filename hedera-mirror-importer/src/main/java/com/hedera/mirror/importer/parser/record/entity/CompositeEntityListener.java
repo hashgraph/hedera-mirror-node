@@ -55,10 +55,11 @@ public class CompositeEntityListener implements EntityListener {
     private final List<EntityListener> entityListeners;
 
     private <T> void onEach(BiConsumer<EntityListener, T> consumer, T t) {
-        entityListeners.stream()
-                .filter(EntityListener::isEnabled)
-                .peek(e -> log.trace("On: {}", t))
-                .forEach(e -> consumer.accept(e, t));
+        for (EntityListener entityListener : entityListeners) {
+            if (entityListener.isEnabled()) {
+                consumer.accept(entityListener, t);
+            }
+        }
     }
 
     @Override

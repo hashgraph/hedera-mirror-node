@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.converter;
  * ‍
  */
 
+import static com.hedera.mirror.importer.converter.ByteArrayToHexSerializer.PREFIX;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -31,33 +32,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ByteArrayToHexSerializerTest {
+
+    private final ByteArrayToHexSerializer byteArrayToHexSerializer = ByteArrayToHexSerializer.INSTANCE;
+
     @Mock
-    JsonGenerator jsonGenerator;
+    private JsonGenerator jsonGenerator;
 
     @Test
     void testNullBytes() throws Exception {
-        // when
-        new ByteArrayToHexSerializer().serialize(null, jsonGenerator, null);
-
-        // then
+        byteArrayToHexSerializer.serialize(null, jsonGenerator, null);
         verifyNoInteractions(jsonGenerator);
     }
 
     @Test
     void testEmptyBytes() throws Exception {
-        // when
-        new ByteArrayToHexSerializer().serialize(new byte[0], jsonGenerator, null);
-
-        // then
-        verify(jsonGenerator).writeString("\\x");
+        byteArrayToHexSerializer.serialize(new byte[0], jsonGenerator, null);
+        verify(jsonGenerator).writeString(PREFIX);
     }
 
     @Test
     void testBytes() throws Exception {
-        // when
-        new ByteArrayToHexSerializer().serialize(new byte[] {0b0, 0b1, 0b10, 0b01111111}, jsonGenerator, null);
-
-        // then
-        verify(jsonGenerator).writeString("\\x0001027f");
+        byteArrayToHexSerializer.serialize(new byte[] {0b0, 0b1, 0b10, 0b01111111}, jsonGenerator, null);
+        verify(jsonGenerator).writeString(PREFIX + "0001027f");
     }
 }
