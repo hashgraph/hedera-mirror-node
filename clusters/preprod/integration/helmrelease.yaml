@@ -44,6 +44,13 @@ spec:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "1"
+      prometheusRules:
+        MonitorPublishErrors:
+          enabled: false
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
+          enabled: false
     rest:
       test:
         checkRecent: false
