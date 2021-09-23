@@ -119,13 +119,12 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         try {
             Flux<RecordItem> recordItems = recordFile.getItems();
 
-            if (log.getLevel().isInRange(Level.TRACE, Level.DEBUG)) {
+            if (log.getLevel().isInRange(Level.DEBUG, Level.TRACE)) {
                 recordItems = recordItems.doOnNext(this::logItem);
             }
 
             recordStreamFileListener.onStart();
             long count = recordItems.filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
-                    .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .doOnNext(recordItemListener::onItem)
                     .doOnNext(this::recordMetrics)
                     .count()
@@ -146,7 +145,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                     Utility.printProtoMessage(recordItem.getTransaction()),
                     Utility.printProtoMessage(recordItem.getRecord()));
         } else if (log.isDebugEnabled()) {
-            log.debug("Storing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
+            log.debug("Parsing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
         }
     }
 
