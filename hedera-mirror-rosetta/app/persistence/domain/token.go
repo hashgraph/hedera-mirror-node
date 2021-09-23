@@ -28,8 +28,8 @@ const (
 	TokenSupplyTypeInfinite string = "INFINITE"
 
 	TokenTypeUnknown           string = ""
-	TokenTypeFungibleCommon    string = "FUNGIBLE_COMMON"
-	TokenTypeNonFungibleUnique string = "NON_FUNGIBLE_UNIQUE"
+	TokenTypeFungibleCommon    string = "FUNGIBLE_COMMON"     // #nosec
+	TokenTypeNonFungibleUnique string = "NON_FUNGIBLE_UNIQUE" // #nosec
 )
 
 type Token struct {

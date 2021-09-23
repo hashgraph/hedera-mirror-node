@@ -109,6 +109,7 @@ const (
                                     from abm
                                     left join account_balance ab
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
+	// #nosec
 	selectEverOwnedTokensByBlockAfter = `with next_rf as (
                                           select consensus_end
                                           from record_file
