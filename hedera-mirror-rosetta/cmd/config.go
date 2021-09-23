@@ -59,7 +59,7 @@ func loadConfig() (*types.Config, error) {
 	}
 
 	// read the default
-	if err := v.ReadConfig(bytes.NewBuffer(defaultConfig)); err != nil {
+	if err := v.ReadConfig(bytes.NewBuffer([]byte(defaultConfig))); err != nil {
 		return nil, err
 	}
 

@@ -120,7 +120,7 @@ func EncodeEntityId(shardNum int64, realmNum int64, entityNum int64) (int64, err
 		(shardNum&shardMask)<<(realmBits+numberBits), nil
 }
 
-// DecodeEntityId - decodes the Entity DB id into Account struct
+// DecodeEntityId - decodes the Entity DB id into EntityId struct
 func DecodeEntityId(encodedID int64) (EntityId, error) {
 	if encodedID < 0 {
 		return EntityId{}, fmt.Errorf("encodedID cannot be negative: %d", encodedID)

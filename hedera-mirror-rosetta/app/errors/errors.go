@@ -42,7 +42,7 @@ const (
 	OperationResultsNotFound       string = "Operation Results not found"
 	OperationTypesNotFound         string = "Operation Types not found"
 	StartMustNotBeAfterEnd         string = "Start must not be after end"
-	TransactionDecodeFailed        string = "Transaction DecodeEntityId failed"
+	TransactionDecodeFailed        string = "Transaction Decode failed"
 	TransactionMarshallingFailed   string = "Transaction marshalling failed"
 	TransactionUnmarshallingFailed string = "Transaction unmarshalling failed"
 	TransactionSubmissionFailed    string = "Transaction submission failed"

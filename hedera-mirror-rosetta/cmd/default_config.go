@@ -20,7 +20,7 @@
 
 package main
 
-var defaultConfig = []byte(`
+const defaultConfig = `
 hedera:
   mirror:
     rosetta:
@@ -34,6 +34,7 @@ hedera:
           maxLifetime: 30
           maxOpenConnections: 100
         port: 5432
+        statementTimeout: 20
         username: mirror_rosetta
       log:
         level: info
@@ -45,4 +46,4 @@ hedera:
       realm: 0
       shard: 0
       version: 0.41.0-SNAPSHOT
-`)
+`
