@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
@@ -428,7 +429,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) makeOperations(transfers
 			},
 		}
 		if len(transfer.serialNumbers) != 0 {
-			operation.Amount.Metadata = map[string]interface{}{"serial_numbers": transfer.serialNumbers}
+			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeySerialNumbers: transfer.serialNumbers}
 		}
 		operations = append(operations, &operation)
 	}
@@ -491,10 +492,10 @@ func assertCryptoTransferTransaction(
 func operationTransferStringify(operation *rTypes.Operation) string {
 	var serialNumber int64
 	amount := operation.Amount
-	if amount.Metadata["serial_numbers"] != nil {
-		if serialNumbers, ok := amount.Metadata["serial_numbers"].([]float64); ok {
+	if amount.Metadata[types.MetadataKeySerialNumbers] != nil {
+		if serialNumbers, ok := amount.Metadata[types.MetadataKeySerialNumbers].([]float64); ok {
 			serialNumber = int64(serialNumbers[0])
-		} else if serialNumbers, ok := amount.Metadata["serial_numbers"].([]int64); ok {
+		} else if serialNumbers, ok := amount.Metadata[types.MetadataKeySerialNumbers].([]int64); ok {
 			serialNumber = serialNumbers[0]
 		}
 	}

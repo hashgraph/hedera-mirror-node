@@ -26,11 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	tokenName   = "foobar name"
-	tokenSymbol = "foobar symbol"
-)
-
 func TestTokenTableName(t *testing.T) {
 	assert.Equal(t, "token", Token{}.TableName())
 }

@@ -174,7 +174,7 @@ func (c *cryptoTransferTransactionConstructor) Parse(transaction interfaces.Tran
 			return nil, nil, err
 		}
 		for _, nftTransfer := range nftTransfers {
-			metadata := map[string]interface{}{"serial_numbers": []int64{nftTransfer.SerialNumber}}
+			metadata := map[string]interface{}{types.MetadataKeySerialNumbers: []int64{nftTransfer.SerialNumber}}
 			operations = c.addOperation(nftTransfer.ReceiverAccountID, 1, currency, metadata, operations, senderMap)
 			operations = c.addOperation(nftTransfer.SenderAccountID, -1, currency, metadata, operations, senderMap)
 		}

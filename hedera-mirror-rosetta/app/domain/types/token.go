@@ -43,6 +43,6 @@ func (t Token) ToRosettaCurrency() *types.Currency {
 	return &types.Currency{
 		Symbol:   t.TokenId.String(),
 		Decimals: int32(t.Decimals),
-		Metadata: map[string]interface{}{"type": string(t.Type)},
+		Metadata: map[string]interface{}{MetadataKeyType: t.Type},
 	}
 }

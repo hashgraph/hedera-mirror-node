@@ -25,6 +25,7 @@ import (
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
@@ -211,8 +212,14 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 		expectError      bool
 	}{
 		{name: "Success"},
-		{name: "SuccessFT", updateOperations: updateOperationMetadata("type", domain.TokenTypeFungibleCommon)},
-		{name: "SuccessNFT", updateOperations: updateOperationMetadata("type", domain.TokenTypeNonFungibleUnique)},
+		{
+			name:             "SuccessFT",
+			updateOperations: updateOperationMetadata(types.MetadataKeyType, domain.TokenTypeFungibleCommon),
+		},
+		{
+			name:             "SuccessNFT",
+			updateOperations: updateOperationMetadata(types.MetadataKeyType, domain.TokenTypeNonFungibleUnique),
+		},
 		{
 			name:             "SuccessInfinite",
 			updateOperations: updateOperationMetadata("supply_type", domain.TokenSupplyTypeInfinite),
@@ -298,7 +305,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 		},
 		{
 			name:             "InvalidTokenType",
-			updateOperations: updateOperationMetadata("type", "unknown"),
+			updateOperations: updateOperationMetadata(types.MetadataKeyType, "unknown"),
 			expectError:      true,
 		},
 		{
@@ -377,7 +384,7 @@ func assertTokenCreateTransaction(
 	assert.Equal(t, operation.Metadata["symbol"], tx.GetTokenSymbol())
 	assert.Equal(t, operation.Metadata["wipe_key"], tx.GetWipeKey().String())
 
-	tokenType, _ := operation.Metadata["type"].(string)
+	tokenType, _ := operation.Metadata[types.MetadataKeyType].(string)
 	sdkTokenType := hedera.TokenTypeNonFungibleUnique
 	if tokenType == "" || tokenType == domain.TokenTypeFungibleCommon {
 		sdkTokenType = hedera.TokenTypeFungibleCommon
@@ -408,7 +415,7 @@ func getTokenCreateOperations(tokenType string) []*rTypes.Operation {
 		},
 	}
 	if tokenType != "" {
-		operation.Metadata["type"] = tokenType
+		operation.Metadata[types.MetadataKeyType] = tokenType
 	}
 
 	return []*rTypes.Operation{operation}

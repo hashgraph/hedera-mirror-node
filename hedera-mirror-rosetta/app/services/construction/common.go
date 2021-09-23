@@ -212,7 +212,7 @@ func validateToken(tokenRepo interfaces.TokenRepository, currency *rTypes.Curren
 		return nil, errors.ErrInvalidCurrency
 	}
 
-	if tokenType, ok := currency.Metadata["type"].(string); !ok || tokenType != token.Type {
+	if tokenType, ok := currency.Metadata[types.MetadataKeyType].(string); !ok || tokenType != token.Type {
 		return nil, errors.ErrInvalidCurrency
 	}
 

@@ -31,6 +31,12 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 )
 
+const (
+	MetadataKeyMetadatas     = "metadatas"
+	MetadataKeySerialNumbers = "serial_numbers"
+	MetadataKeyType          = "type"
+)
+
 type Amount interface {
 	GetValue() int64
 	ToRosetta() *types.Amount
@@ -83,7 +89,7 @@ func (t *TokenAmount) ToRosetta() *types.Amount {
 		Currency: &types.Currency{
 			Symbol:   t.TokenId.String(),
 			Decimals: int32(t.Decimals),
-			Metadata: map[string]interface{}{"type": string(t.Type)},
+			Metadata: map[string]interface{}{MetadataKeyType: t.Type},
 		},
 	}
 	if t.Type == domain.TokenTypeNonFungibleUnique {
@@ -93,7 +99,7 @@ func (t *TokenAmount) ToRosetta() *types.Amount {
 			for _, serialNumber := range t.SerialNumbers {
 				serialNumbers = append(serialNumbers, float64(serialNumber))
 			}
-			metadata["serial_numbers"] = serialNumbers
+			metadata[MetadataKeySerialNumbers] = serialNumbers
 		}
 
 		if len(t.Metadatas) > 0 {
@@ -101,7 +107,7 @@ func (t *TokenAmount) ToRosetta() *types.Amount {
 			for _, nftMetadata := range t.Metadatas {
 				nftMetadatas = append(nftMetadatas, base64.StdEncoding.EncodeToString(nftMetadata))
 			}
-			metadata["metadatas"] = nftMetadatas
+			metadata[MetadataKeyMetadatas] = nftMetadatas
 		}
 
 		amount.Metadata = metadata
@@ -139,7 +145,7 @@ func NewAmount(amount *types.Amount) (Amount, *types.Error) {
 		return nil, errors.ErrInvalidToken
 	}
 
-	tokenType, ok := currency.Metadata["type"].(string)
+	tokenType, ok := currency.Metadata[MetadataKeyType].(string)
 	if !ok {
 		return nil, errors.ErrInvalidCurrency
 	}
@@ -176,13 +182,13 @@ func parseNftMetadata(metadata map[string]interface{}, tokenAmount *TokenAmount)
 		return errors.ErrInvalidOperationsAmount
 	}
 
-	if serialNumbers, ok := metadata["serial_numbers"].([]float64); ok {
+	if serialNumbers, ok := metadata[MetadataKeySerialNumbers].([]float64); ok {
 		// numbers are unmarshalled as float64 without a concrete type
 		tokenAmount.SerialNumbers = make([]int64, 0, len(serialNumbers))
 		for _, serialNumber := range serialNumbers {
 			tokenAmount.SerialNumbers = append(tokenAmount.SerialNumbers, int64(serialNumber))
 		}
-	} else if metadatas, ok := metadata["metadatas"].([]string); ok {
+	} else if metadatas, ok := metadata[MetadataKeyMetadatas].([]string); ok {
 		tokenAmount.Metadatas = make([][]byte, 0, len(metadatas))
 		for _, metadata := range metadatas {
 			metaBytes, err := base64.StdEncoding.DecodeString(metadata)

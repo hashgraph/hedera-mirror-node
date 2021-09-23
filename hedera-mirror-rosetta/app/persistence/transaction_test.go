@@ -496,7 +496,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		"currency": &rTypes.Currency{
 			Symbol:   tokenId2.String(),
 			Decimals: int32(tokenDecimals),
-			Metadata: map[string]interface{}{"type": domain.TokenTypeFungibleCommon},
+			Metadata: map[string]interface{}{types.MetadataKeyType: domain.TokenTypeFungibleCommon},
 		},
 		"freeze_default": false,
 		"initial_supply": tokenInitialSupply,
@@ -538,7 +538,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	metadata = map[string]interface{}{
 		"currency": &rTypes.Currency{
 			Symbol:   tokenId3.String(),
-			Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+			Metadata: map[string]interface{}{types.MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 		},
 		"freeze_default": false,
 		"initial_supply": int64(0),

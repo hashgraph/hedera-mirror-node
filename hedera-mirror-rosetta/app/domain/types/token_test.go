@@ -55,7 +55,7 @@ func TestTokenToRosettaCurrency(t *testing.T) {
 	expected := &types.Currency{
 		Symbol:   "0.0.123",
 		Decimals: 10,
-		Metadata: map[string]interface{}{"type": string(domain.TokenTypeFungibleCommon)},
+		Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeFungibleCommon},
 	}
 
 	// when
