@@ -164,7 +164,7 @@ func main() {
 	}
 
 	asserter, err := asserter.NewServer(
-		[]string{config.OperationTypeCryptoTransfer},
+		config.SupportedOperationTypes,
 		true,
 		[]*rTypes.NetworkIdentifier{network},
 		nil,

@@ -53,4 +53,20 @@ var (
 			"issuer": Blockchain,
 		},
 	}
+
+	SupportedOperationTypes = []string{
+		OperationTypeCryptoTransfer,
+		OperationTypeTokenAssociate,
+		OperationTypeTokenBurn,
+		OperationTypeTokenCreate,
+		OperationTypeTokenDelete,
+		OperationTypeTokenDissociate,
+		OperationTypeTokenFreeze,
+		OperationTypeTokenGrantKyc,
+		OperationTypeTokenMint,
+		OperationTypeTokenRevokeKyc,
+		OperationTypeTokenUnfreeze,
+		OperationTypeTokenUpdate,
+		OperationTypeTokenWipe,
+	}
 )
