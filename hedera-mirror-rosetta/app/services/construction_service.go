@@ -166,7 +166,21 @@ func (c *constructionAPIService) ConstructionPayloads(
 	ctx context.Context,
 	request *rTypes.ConstructionPayloadsRequest,
 ) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
-	transaction, signers, rErr := c.transactionHandler.Construct(c.getRandomNodeAccountId(), request.Operations)
+	validStartNanos, rErr := c.getValidStartNanos(request.Metadata)
+	if rErr != nil {
+		return nil, rErr
+	}
+
+	// payer, rErr := c.getPayer(request.Metadata)
+	// if rErr != nil {
+	// 	return nil, rErr
+	// }
+
+	transaction, signers, rErr := c.transactionHandler.Construct(
+		c.getRandomNodeAccountId(),
+		request.Operations,
+		validStartNanos,
+	)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -254,6 +268,43 @@ func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	}
 
 	return c.nodeAccountIds[index.Int64()]
+}
+
+// func (c *constructionAPIService) getPayer(metadata map[string]interface{}) (*hedera.AccountID, *rTypes.Error) {
+// 	var payer *hedera.AccountID
+// 	var rErr *rTypes.Error
+//
+// 	if metadata != nil && metadata["payer"] != nil {
+// 		rErr = errors.ErrInvalidAccount
+// 		if accountIdStr, ok := metadata["payer"].(string); ok {
+// 			if accountId, err := hedera.AccountIDFromString(accountIdStr); err == nil {
+// 				payer = &accountId
+// 				rErr = nil
+// 			}
+// 		}
+// 	}
+//
+// 	return payer, rErr
+// }
+
+func (c *constructionAPIService) getValidStartNanos(metadata map[string]interface{}) (int64, *rTypes.Error) {
+	var validStartNanos int64
+
+	if metadata != nil && metadata["valid_start_nanos"] != nil {
+		switch nanos := metadata["valid_start_nanos"].(type) {
+		case string:
+			var err error
+			if validStartNanos, err = tools.ToInt64(nanos); err != nil {
+				return 0, errors.ErrInvalidArgument
+			}
+		case float64:
+			validStartNanos = int64(nanos)
+		default:
+			return validStartNanos, errors.ErrInvalidArgument
+		}
+	}
+
+	return validStartNanos, nil
 }
 
 // NewConstructionAPIService creates a new instance of a constructionAPIService.

@@ -44,13 +44,14 @@ type compositeTransactionConstructor struct {
 func (c *compositeTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
+	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return h.Construct(nodeAccountId, operations)
+	return h.Construct(nodeAccountId, operations, validStartNanos)
 }
 
 func (c *compositeTransactionConstructor) Parse(transaction interfaces.Transaction) (

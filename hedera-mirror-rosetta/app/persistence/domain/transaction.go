@@ -21,9 +21,12 @@
 package domain
 
 const (
-	TransactionTypeTokenCreation int16 = 29
-	TransactionTypeTokenDeletion int16 = 35
-	TransactionTypeTokenUpdate   int16 = 36
+	TransactionTypeCryptoTransfer  int16 = 14
+	TransactionTypeTokenCreation   int16 = 29
+	TransactionTypeTokenDeletion   int16 = 35
+	TransactionTypeTokenUpdate     int16 = 36
+	TransactionTypeTokenMint       int16 = 37
+	TransactionTypeTokenDissociate int16 = 41
 
 	transactionTableName = "transaction"
 )

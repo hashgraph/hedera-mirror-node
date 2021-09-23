@@ -36,34 +36,38 @@ import (
 
 var (
 	token1 = domain.Token{
-		TokenId:  domain.EntityId{EncodedId: 2001, EntityNum: 2001},
+		TokenId:  domain.MustDecodeEntityId(2001),
 		Decimals: 5,
 		Name:     "foobar1",
 		Symbol:   "foobar1",
+		Type:     domain.TokenTypeFungibleCommon,
 	}
 	token2 = domain.Token{
-		TokenId:  domain.EntityId{EncodedId: 2002, EntityNum: 2002},
+		TokenId:  domain.MustDecodeEntityId(2002),
 		Decimals: 6,
 		Name:     "foobar2",
 		Symbol:   "foobar2",
+		Type:     domain.TokenTypeFungibleCommon,
 	}
 	token3 = domain.Token{
-		TokenId:  domain.EntityId{EncodedId: 2003, EntityNum: 2003},
+		TokenId:  domain.MustDecodeEntityId(2003),
 		Decimals: 7,
 		Name:     "foobar3",
 		Symbol:   "foobar3",
+		Type:     domain.TokenTypeFungibleCommon,
 	}
 	token4 = domain.Token{
-		TokenId:  domain.EntityId{EncodedId: 2004, EntityNum: 2004},
+		TokenId:  domain.MustDecodeEntityId(2004),
 		Decimals: 8,
 		Name:     "foobar4",
 		Symbol:   "foobar4",
+		Type:     domain.TokenTypeFungibleCommon,
 	}
 	token5 = domain.Token{
-		TokenId:  domain.EntityId{EncodedId: 2005, EntityNum: 2005},
-		Decimals: 9,
-		Name:     "foobar5",
-		Symbol:   "foobar5",
+		TokenId: domain.MustDecodeEntityId(2005),
+		Name:    "foobar5",
+		Symbol:  "foobar5",
+		Type:    domain.TokenTypeNonFungibleUnique,
 	}
 )
 
@@ -156,8 +160,7 @@ func (suite *accountServiceSuite) TestAccountBalance() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return([]domain.Token{}, mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveDissociatedTokens").Return([]domain.Token{}, mocks.NilError)
+	suite.mockAccountRepo.On("RetrieveEverOwnedTokensByBlockAfter").Return([]domain.Token{}, mocks.NilError)
 
 	// when:
 	actual, err := suite.accountService.AccountBalance(nil, request(false))
@@ -171,13 +174,11 @@ func (suite *accountServiceSuite) TestAccountBalance() {
 
 func (suite *accountServiceSuite) TestAccountBalanceWithGenesisTokenBalance() {
 	// given:
-	tokensInNextBlock := []domain.Token{token2, token3, token4}
-	dissociatedTokens := []domain.Token{token3, token4, token5}
-	expected := addGenesisTokenBalances(expectedAccountBalanceResponse(), token3, token4, token5)
+	everOwnedTokens := []domain.Token{token1, token2, token3, token4}
+	expected := addGenesisTokenBalances(expectedAccountBalanceResponse(), token3, token4)
 	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return(tokensInNextBlock, mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveDissociatedTokens").Return(dissociatedTokens, mocks.NilError)
+	suite.mockAccountRepo.On("RetrieveEverOwnedTokensByBlockAfter").Return(everOwnedTokens, mocks.NilError)
 
 	// when:
 	actual, err := suite.accountService.AccountBalance(nil, request(false))
@@ -193,8 +194,7 @@ func (suite *accountServiceSuite) TestAccountBalanceWithBlockIdentifier() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return([]domain.Token{}, mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveDissociatedTokens").Return([]domain.Token{}, mocks.NilError)
+	suite.mockAccountRepo.On("RetrieveEverOwnedTokensByBlockAfter").Return([]domain.Token{}, mocks.NilError)
 
 	// when:
 	actual, err := suite.accountService.AccountBalance(nil, request(true))
@@ -207,13 +207,11 @@ func (suite *accountServiceSuite) TestAccountBalanceWithBlockIdentifier() {
 
 func (suite *accountServiceSuite) TestAccountBalanceWithBlockIdentifierAndAdditionalTokens() {
 	// given:
-	tokensInNextBlock := []domain.Token{token2, token3, token4}
-	dissociatedTokens := []domain.Token{token2, token5}
-	expected := addGenesisTokenBalances(expectedAccountBalanceResponse(), token3, token4, token5)
+	everOwnedTokens := []domain.Token{token1, token2, token3, token4}
+	expected := addGenesisTokenBalances(expectedAccountBalanceResponse(), token3, token4)
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return(tokensInNextBlock, mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveDissociatedTokens").Return(dissociatedTokens, mocks.NilError)
+	suite.mockAccountRepo.On("RetrieveEverOwnedTokensByBlockAfter").Return(everOwnedTokens, mocks.NilError)
 
 	// when:
 	actual, err := suite.accountService.AccountBalance(nil, request(true))
@@ -237,7 +235,7 @@ func (suite *accountServiceSuite) TestAccountBalanceWithOnlyGenesisBlock() {
 	assert.Nil(suite.T(), actual)
 	suite.mockBlockRepo.AssertNotCalled(suite.T(), "RetrieveLatest")
 	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveBalanceAtBlock")
-	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveTransferredTokensInBlockAfter")
+	suite.mockAccountRepo.AssertNotCalled(suite.T(), "RetrieveEverOwnedTokensByBlockAfter")
 }
 
 func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveLatestFails() {
@@ -280,27 +278,11 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBalanceAtB
 	assert.NotNil(suite.T(), err)
 }
 
-func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveTransferredTokensInBlockAfterFails() {
+func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveEverOwnedTokensByBlockAfterFails() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return([]domain.Token{}, &rTypes.Error{})
-	suite.mockAccountRepo.On("RetrieveDissociatedTokens").Return([]domain.Token{}, mocks.NilError)
-
-	// when:
-	actual, err := suite.accountService.AccountBalance(nil, request(true))
-
-	// then:
-	assert.Nil(suite.T(), actual)
-	assert.NotNil(suite.T(), err)
-}
-
-func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveDissociatedTokensFails() {
-	// given:
-	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveTransferredTokensInBlockAfter").Return([]domain.Token{}, mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveDissociatedTokens").Return([]domain.Token{}, &rTypes.Error{})
+	suite.mockAccountRepo.On("RetrieveEverOwnedTokensByBlockAfter").Return([]domain.Token{}, &rTypes.Error{})
 
 	// when:
 	actual, err := suite.accountService.AccountBalance(nil, request(true))

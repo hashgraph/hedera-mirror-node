@@ -81,21 +81,15 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestGetSdkTransactionType()
 }
 
 func (suite *tokenUpdateTransactionConstructorSuite) TestConstruct() {
-	var tests = []struct {
+	tests := []struct {
 		name             string
 		updateOperations updateOperationsFunc
+		validStartNanos  int64
 		expectError      bool
 	}{
-		{
-			name: "Success",
-		},
-		{
-			name: "EmptyOperations",
-			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
-				return make([]*rTypes.Operation, 0)
-			},
-			expectError: true,
-		},
+		{name: "Success"},
+		{name: "SuccessValidStartNanos", validStartNanos: 100},
+		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
 	for _, tt := range tests {
@@ -111,7 +105,7 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestConstruct() {
 			}
 
 			// when
-			tx, signers, err := h.Construct(nodeAccountId, operations)
+			tx, signers, err := h.Construct(nodeAccountId, operations, tt.validStartNanos)
 
 			// then
 			if tt.expectError {
@@ -123,6 +117,10 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestConstruct() {
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 				assertTokenUpdateTransaction(t, operations[0], nodeAccountId, tx)
 				mockTokenRepo.AssertExpectations(t)
+
+				if tt.validStartNanos != 0 {
+					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
+				}
 			}
 		})
 	}
@@ -148,7 +146,7 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 			SetWipeKey(wipeKey)
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		name           string
 		tokenRepoErr   bool
 		getTransaction func() interfaces.Transaction
@@ -255,24 +253,16 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
+		{name: "Success"},
 		{
-			name: "Success",
+			name:             "InvalidAccountAddress",
+			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account.Address = "x.y.z"
-				return operations
-			},
-			expectError: true,
-		},
-		{
-			name: "TokenDecimalsMismatch",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Currency.Decimals = 1990
-				return operations
-			},
-			expectError: true,
+			name:             "TokenDecimalsMismatch",
+			updateOperations: updateTokenDecimals(1990),
+			expectError:      true,
 		},
 		{
 			name:         "TokenNotFound",
@@ -280,115 +270,74 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 			expectError:  true,
 		},
 		{
-			name: "InvalidMetadataAdminKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["admin_key"] = "admin key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataAdminKey",
+			updateOperations: updateOperationMetadata("admin_key", "admin_key"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoRenewAccount",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["auto_renew_account"] = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataAutoRenewAccount",
+			updateOperations: updateOperationMetadata("auto_renew_account", "x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoRenewPeriod",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["auto_renew_period"] = "x"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataAutoRenewPeriod",
+			updateOperations: updateOperationMetadata("auto_renew_period", "x"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataExpiry",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["expiry"] = "x"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataExpiry",
+			updateOperations: updateOperationMetadata("expiry", "x"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoFreezeKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["freeze_key"] = "freeze key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataFreezeKey",
+			updateOperations: updateOperationMetadata("freeze_key", "freeze_key"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoKycKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["kyc_key"] = "kyc key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataKycKey",
+			updateOperations: updateOperationMetadata("kyc_key", "kyc_key"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataMemo",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["memo"] = 156
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataMemo",
+			updateOperations: updateOperationMetadata("memo", 156),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataName",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["name"] = 156
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataName",
+			updateOperations: updateOperationMetadata("name", 156),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataSupplyKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["supply_key"] = "supply key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataSupplyKey",
+			updateOperations: updateOperationMetadata("supply_key", "supply_key"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataSymbol",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["symbol"] = 156
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataSymbol",
+			updateOperations: updateOperationMetadata("symbol", 156),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataTreasury",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["treasury"] = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataTreasury",
+			updateOperations: updateOperationMetadata("treasury", "x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataWipeKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["wipe_key"] = "wipe key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataWipeKey",
+			updateOperations: updateOperationMetadata("wipe_key", "wipe_key"),
+			expectError:      true,
 		},
 		{
-			name: "MultipleOperations",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				return append(operations, &rTypes.Operation{})
-			},
-			expectError: true,
+			name:             "MultipleOperations",
+			updateOperations: addOperation,
+			expectError:      true,
 		},
 		{
-			name: "InvalidOperationType",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Type = config.OperationTypeCryptoTransfer
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidOperationType",
+			updateOperations: updateOperationType(config.OperationTypeCryptoTransfer),
+			expectError:      true,
 		},
 	}
 

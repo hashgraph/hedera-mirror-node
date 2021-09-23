@@ -28,6 +28,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	tokenAmount = &TokenAmount{
+		Decimals: 9,
+		TokenId:  tokenId,
+		Type:     domain.TokenTypeFungibleCommon,
+		Value:    6000,
+	}
+	tokenRosettaAmount = &types.Amount{
+		Value: "6000",
+		Currency: &types.Currency{
+			Symbol:   tokenId.String(),
+			Decimals: 9,
+			Metadata: map[string]interface{}{
+				"type": domain.TokenTypeFungibleCommon,
+			},
+		},
+	}
+)
+
 func exampleOperation(amount Amount) *Operation {
 	return &Operation{
 		Index:   1,

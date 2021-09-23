@@ -36,7 +36,7 @@ import (
 const (
 	balanceChangeBetween = `select
                               coalesce((
-                                select sum(amount::bigint) from crypto_transfer
+                                select sum(amount) from crypto_transfer
                                 where
                                   consensus_timestamp > @start and
                                   consensus_timestamp <= @end and
@@ -48,7 +48,8 @@ const (
                                   select json_build_object(
                                       'token_id', tt.token_id,
                                       'decimals', t.decimals,
-                                      'value', sum(tt.amount::bigint)
+                                      'type', t.type,
+                                      'value', sum(tt.amount)
                                   ) change
                                   from token_transfer tt
                                   join token t
@@ -57,9 +58,35 @@ const (
                                     consensus_timestamp > @start and
                                     consensus_timestamp <= @end and
                                     account_id = @account_id
-                                  group by tt.account_id, tt.token_id, t.decimals
+                                  group by tt.account_id, tt.token_id, t.decimals, t.type
                                 ) token_change
-                              ), '[]') as token_values`
+                              ), '[]') as token_values,
+                              coalesce((
+                                select json_agg(change)
+                                from (
+                                  select json_build_object(
+                                    'token_id', token_id,
+                                    'type', type,
+                                    'value', sum(amount)
+                                  ) change
+                                  from (
+                                    select
+                                      t.token_id,
+                                      t.type,
+                                      case when nftt.receiver_account_id = @account_id then 1
+                                        else -1
+                                      end amount
+                                    from nft_transfer nftt
+                                    join token t on t.token_id = nftt.token_id
+                                    where
+                                      consensus_timestamp > @start and
+                                      consensus_timestamp <= @end and
+                                      (receiver_account_id = @account_id or sender_account_id = @account_id) and
+                                      serial_number <> -1
+                                  ) nft_change
+                                  group by token_id, type
+                                ) aggregated_nft_change
+                              ), '[]') as nft_values`
 	latestBalanceBeforeConsensus = `with abm as (
                                       select max(consensus_timestamp)
                                       from account_balance_file where consensus_timestamp <= @timestamp
@@ -69,8 +96,9 @@ const (
                                       coalesce(ab.balance, 0) balance,
                                       coalesce((
                                         select json_agg(json_build_object(
-                                          'token_id', tb.token_id,
                                           'decimals', t.decimals,
+                                          'token_id', tb.token_id,
+                                          'type', t.type,
                                           'value', tb.balance
                                         ))
                                         from token_balance tb
@@ -81,32 +109,18 @@ const (
                                     from abm
                                     left join account_balance ab
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
-	selectDissociatedTokensAtTimestamp = `with latest as (
-                                            select distinct on (ta.token_id) ta.token_id, t.decimals, ta.associated
-                                            from token_account ta
-                                            join token t on t.token_id = ta.token_id
-                                            where ta.modified_timestamp <= @consensus_timestamp and
-                                              ta.account_id = @account_id
-                                            order by ta.token_id, ta.modified_timestamp desc
-                                          )
-                                          select token_id, decimals
-                                          from latest
-                                          where associated is false`
-	// gosec somehow thinks the sql query has hardcoded credentials
-	// #nosec
-	selectTransferredTokensInBlockAfterTimestamp = `with rf as (
-                                                      select consensus_start, consensus_end
-                                                       from record_file
-                                                      where consensus_end > @consensus_timestamp
-                                                      order by consensus_end
-                                                      limit 1
-                                                    )
-                                                    select distinct on (tt.token_id) tt.token_id, t.decimals
-                                                    from token_transfer tt
-                                                    join rf on rf.consensus_start <= consensus_timestamp and
-                                                       rf.consensus_end >= consensus_timestamp
-                                                    join token t on t.token_id = tt.token_id
-                                                    where account_id = @account_id`
+	selectEverOwnedTokensByBlockAfter = `with next_rf as (
+                                          select consensus_end
+                                          from record_file
+                                          where consensus_end > @consensus_timestamp
+                                          order by consensus_end
+                                          limit 1
+                                        )
+                                        select distinct on (t.token_id) t.decimals, t.token_id, t.type
+                                        from token_account ta
+                                        join next_rf on ta.modified_timestamp <= consensus_end
+                                        join token t on t.token_id = ta.token_id
+                                        where account_id = @account_id`
 )
 
 type combinedAccountBalance struct {
@@ -118,6 +132,7 @@ type combinedAccountBalance struct {
 type accountBalanceChange struct {
 	Value       int64
 	TokenValues string
+	NftValues   string
 }
 
 // accountRepository struct that has connection to the Database
@@ -157,36 +172,17 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	return amounts, nil
 }
 
-// RetrieveDissociatedTokens returns the list of tokens at consensusEnd the accountId has a dissociated relationship
-// with
-func (ar *accountRepository) RetrieveDissociatedTokens(
-	accountId int64,
-	consensusEnd int64,
-) ([]domain.Token, *rTypes.Error) {
+// RetrieveEverOwnedTokensByBlockAfter returns the tokens the account has ever owned by the end of the block after
+// consensusEnd
+func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(accountId int64, consensusEnd int64) (
+	[]domain.Token,
+	*rTypes.Error,
+) {
 	tokens := make([]domain.Token, 0)
 	if err := ar.dbClient.Raw(
-		selectDissociatedTokensAtTimestamp,
+		selectEverOwnedTokensByBlockAfter,
 		sql.Named("account_id", accountId),
 		sql.Named("consensus_timestamp", consensusEnd),
-	).Scan(&tokens).Error; err != nil {
-		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
-		return nil, hErrors.ErrDatabaseError
-	}
-
-	return tokens, nil
-}
-
-// RetrieveTransferredTokensInBlockAfter returns the list of tokens transferred to / from the account in the block after
-// consensusTimestamp
-func (ar *accountRepository) RetrieveTransferredTokensInBlockAfter(
-	accountId int64,
-	consensusTimestamp int64,
-) ([]domain.Token, *rTypes.Error) {
-	tokens := make([]domain.Token, 0)
-	if err := ar.dbClient.Raw(
-		selectTransferredTokensInBlockAfterTimestamp,
-		sql.Named("account_id", accountId),
-		sql.Named("consensus_timestamp", consensusTimestamp),
 	).Scan(&tokens).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
@@ -248,22 +244,23 @@ func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consens
 		return 0, nil, hErrors.ErrDatabaseError
 	}
 
+	// fungible token values with the exception that a TokenDissociate of a deleted NFT class will have an entry
+	// and its type then should be 'NON_FUNGIBLE_UNIQUE'
 	var tokenValues []*types.TokenAmount
 	if err := json.Unmarshal([]byte(change.TokenValues), &tokenValues); err != nil {
 		return 0, nil, hErrors.ErrInvalidToken
 	}
 
+	// nft values
+	var nftValues []*types.TokenAmount
+	if err := json.Unmarshal([]byte(change.NftValues), &nftValues); err != nil {
+		return 0, nil, hErrors.ErrInvalidToken
+	}
+
+	tokenValues = append(tokenValues, nftValues...)
+
 	return change.Value, tokenValues, nil
 }
-
-// func getDomainTokens(tokens []domain.Token) []types.Token {
-// 	domainTokens := make([]types.Token, 0, len(tokens))
-// 	for _, token := range tokens {
-// 		domainTokens = append(domainTokens, *types.NewTokenFromDbToken(token))
-// 	}
-//
-// 	return domainTokens
-// }
 
 func getUpdatedTokenAmounts(
 	tokenAmountMap map[int64]*types.TokenAmount,

@@ -31,8 +31,8 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 )
 
-// NetworkAPIService implements the server.NetworkAPIServicer interface.
-type NetworkAPIService struct {
+// networkAPIService implements the server.NetworkAPIServicer interface.
+type networkAPIService struct {
 	BaseService
 	addressBookEntryRepo interfaces.AddressBookEntryRepository
 	network              *types.NetworkIdentifier
@@ -40,7 +40,7 @@ type NetworkAPIService struct {
 }
 
 // NetworkList implements the /network/list endpoint.
-func (n *NetworkAPIService) NetworkList(
+func (n *networkAPIService) NetworkList(
 	ctx context.Context,
 	request *types.MetadataRequest,
 ) (*types.NetworkListResponse, *types.Error) {
@@ -52,7 +52,7 @@ func (n *NetworkAPIService) NetworkList(
 }
 
 // NetworkOptions implements the /network/options endpoint.
-func (n *NetworkAPIService) NetworkOptions(
+func (n *networkAPIService) NetworkOptions(
 	ctx context.Context,
 	request *types.NetworkRequest,
 ) (*types.NetworkOptionsResponse, *types.Error) {
@@ -85,7 +85,7 @@ func (n *NetworkAPIService) NetworkOptions(
 }
 
 // NetworkStatus implements the /network/status endpoint.
-func (n *NetworkAPIService) NetworkStatus(
+func (n *networkAPIService) NetworkStatus(
 	ctx context.Context,
 	request *types.NetworkRequest,
 ) (*types.NetworkStatusResponse, *types.Error) {
@@ -118,15 +118,15 @@ func (n *NetworkAPIService) NetworkStatus(
 	}, nil
 }
 
-// NewNetworkAPIService creates a new instance of a NetworkAPIService.
+// NewNetworkAPIService creates a new instance of a networkAPIService.
 func NewNetworkAPIService(
-	commons BaseService,
+	baseService BaseService,
 	addressBookEntryRepo interfaces.AddressBookEntryRepository,
 	network *types.NetworkIdentifier,
 	version *types.Version,
 ) server.NetworkAPIServicer {
-	return &NetworkAPIService{
-		BaseService:          commons,
+	return &networkAPIService{
+		BaseService:          baseService,
 		addressBookEntryRepo: addressBookEntryRepo,
 		network:              network,
 		version:              version,

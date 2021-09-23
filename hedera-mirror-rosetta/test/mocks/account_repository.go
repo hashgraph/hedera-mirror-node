@@ -41,15 +41,7 @@ func (m *MockAccountRepository) RetrieveBalanceAtBlock(accountId int64, consensu
 	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
 }
 
-func (m *MockAccountRepository) RetrieveDissociatedTokens(
-	accountId int64,
-	consensusEnd int64,
-) ([]domain.Token, *rTypes.Error) {
-	args := m.Called()
-	return args.Get(0).([]domain.Token), args.Get(1).(*rTypes.Error)
-}
-
-func (m *MockAccountRepository) RetrieveTransferredTokensInBlockAfter(accountId int64, consensusTimestamp int64) (
+func (m *MockAccountRepository) RetrieveEverOwnedTokensByBlockAfter(accountId int64, consensusEnd int64) (
 	[]domain.Token,
 	*rTypes.Error,
 ) {

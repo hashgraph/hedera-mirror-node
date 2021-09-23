@@ -38,12 +38,12 @@ type MockTransactionConstructor struct {
 	mock.Mock
 }
 
-func (m *MockTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*types.Operation) (
-	interfaces.Transaction,
-	[]hedera.AccountID,
-	*types.Error,
-) {
-	args := m.Called(nodeAccountId, operations)
+func (m *MockTransactionConstructor) Construct(
+	nodeAccountId hedera.AccountID,
+	operations []*types.Operation,
+	validStartNanos int64,
+) (interfaces.Transaction, []hedera.AccountID, *types.Error) {
+	args := m.Called(nodeAccountId, operations, validStartNanos)
 	return args.Get(0).(interfaces.Transaction), args.Get(1).([]hedera.AccountID),
 		args.Get(2).(*types.Error)
 }

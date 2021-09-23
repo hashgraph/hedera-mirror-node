@@ -27,6 +27,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
@@ -34,7 +35,16 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const amount = 100
+const (
+	defaultAmount = 2
+	burnAmount    = -defaultAmount
+	mintAmount    = defaultAmount
+)
+
+var (
+	metadatasBytes  = [][]byte{[]byte("foo"), []byte("bar")}
+	metadatasBase64 = []string{"Zm9v", "YmFy"}
+)
 
 func TestTokenBurnMintTransactionConstructorSuite(t *testing.T) {
 	suite.Run(t, new(tokenTokenBurnMintTransactionConstructorSuite))
@@ -55,7 +65,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenMintTran
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetOperationType() {
-	var tests = []struct {
+	tests := []struct {
 		name       string
 		newHandler newConstructorFunc
 		expected   string
@@ -81,7 +91,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetOperationType
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetSdkTransactionType() {
-	var tests = []struct {
+	tests := []struct {
 		name       string
 		newHandler newConstructorFunc
 		expected   string
@@ -107,39 +117,36 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetSdkTransactio
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
-	var tests = []struct {
-		name             string
-		updateOperations updateOperationsFunc
-		expectError      bool
+	tests := []struct {
+		name                 string
+		updateOperations     updateOperationsFunc
+		tokenRepoConfigIndex int
+		token                domain.Token
+		validStartNanos      int64
+		expectError          bool
 	}{
-		{
-			name: "Success",
-		},
-		{
-			name: "EmptyOperations",
-			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
-				return make([]*rTypes.Operation, 0)
-			},
-			expectError: true,
-		},
+		{name: "SuccessFT", tokenRepoConfigIndex: 0, token: dbTokenA},
+		{name: "SuccessNFT", tokenRepoConfigIndex: 2, token: dbTokenC},
+		{name: "SuccessValidStartNanos", tokenRepoConfigIndex: 0, token: dbTokenA, validStartNanos: 100},
+		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
 	runTests := func(t *testing.T, operationType string, newHandler newConstructorFunc) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
-				operations := suite.getOperations(operationType)
+				operations := suite.getOperations(operationType, tt.token)
 				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.tokenRepoConfigIndex])
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
 				}
 
 				// when
-				tx, signers, err := h.Construct(nodeAccountId, operations)
+				tx, signers, err := h.Construct(nodeAccountId, operations, tt.validStartNanos)
 
 				// then
 				if tt.expectError {
@@ -151,6 +158,10 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assertTokenBurnMintTransaction(t, operations, nodeAccountId, tx)
 					mockTokenRepo.AssertExpectations(t)
+
+					if tt.validStartNanos != 0 {
+						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
+					}
 				}
 			})
 		}
@@ -166,52 +177,61 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func(operationType string) interfaces.Transaction {
+	defaultGetTransaction := func(operationType string, token domain.Token) interfaces.Transaction {
+		tokenId, _ := hedera.TokenIDFromString(token.TokenId.String())
 		if operationType == config.OperationTypeTokenBurn {
-			return hedera.NewTokenBurnTransaction().
-				SetAmount(amount).
+			tx := hedera.NewTokenBurnTransaction().
+				SetAmount(-burnAmount).
 				SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-				SetTokenID(tokenIdA).
+				SetTokenID(tokenId).
 				SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			if token.Type == domain.TokenTypeNonFungibleUnique {
+				tx.SetSerialNumbers([]int64{1, 2})
+			}
+			return tx
 		}
 
-		return hedera.NewTokenMintTransaction().
-			SetAmount(amount).
+		tx := hedera.NewTokenMintTransaction().
+			SetAmount(mintAmount).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenID(tokenIdA).
+			SetTokenID(tokenId).
 			SetTransactionID(hedera.TransactionIDGenerate(payerId))
+		if token.Type == domain.TokenTypeNonFungibleUnique {
+			tx.SetMetadatas(metadatasBytes)
+		}
+		return tx
 	}
 
-	var tests = []struct {
-		name           string
-		tokenRepoErr   bool
-		getTransaction func(operationType string) interfaces.Transaction
-		expectError    bool
+	tests := []struct {
+		name                 string
+		getTransaction       func(operationType string, token domain.Token) interfaces.Transaction
+		token                domain.Token
+		tokenRepoConfigIndex int
+		tokenRepoErr         bool
+		expectError          bool
 	}{
-		{
-			name:           "Success",
-			getTransaction: defaultGetTransaction,
-		},
+		{name: "SuccessFT", getTransaction: defaultGetTransaction, token: dbTokenA},
+		{name: "SuccessNFT", getTransaction: defaultGetTransaction, tokenRepoConfigIndex: 2, token: dbTokenC},
 		{
 			name:           "TokenNotFound",
+			token:          dbTokenA,
 			tokenRepoErr:   true,
 			getTransaction: defaultGetTransaction,
 			expectError:    true,
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func(operationType string) interfaces.Transaction {
+			getTransaction: func(string, domain.Token) interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionMismatch",
-			getTransaction: func(operationType string) interfaces.Transaction {
+			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenBurn {
 					return hedera.NewTokenMintTransaction()
 				}
-
 				return hedera.NewTokenBurnTransaction()
 
 			},
@@ -219,16 +239,16 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionTokenIDNotSet",
-			getTransaction: func(operationType string) interfaces.Transaction {
+			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
-						SetAmount(amount).
+						SetAmount(-burnAmount).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 						SetTransactionID(hedera.TransactionIDGenerate(payerId))
 				}
 
 				return hedera.NewTokenMintTransaction().
-					SetAmount(amount).
+					SetAmount(mintAmount).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId))
 			},
@@ -236,16 +256,16 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionTransactionIDNotSet",
-			getTransaction: func(operationType string) interfaces.Transaction {
+			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
 				if operationType == config.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
-						SetAmount(amount).
+						SetAmount(-burnAmount).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 						SetTokenID(tokenIdA)
 				}
 
 				return hedera.NewTokenMintTransaction().
-					SetAmount(amount).
+					SetAmount(mintAmount).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenID(tokenIdA)
 			},
@@ -257,16 +277,16 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
-				expectedOperations := suite.getOperations(operationType)
+				expectedOperations := suite.getOperations(operationType, tt.token)
 
 				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
-				tx := tt.getTransaction(operationType)
+				tx := tt.getTransaction(operationType, tt.token)
 
 				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
+					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[tt.tokenRepoConfigIndex])
 				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.tokenRepoConfigIndex])
 				}
 
 				// when
@@ -297,67 +317,85 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
-	var tests = []struct {
-		name             string
-		tokenRepoErr     bool
-		updateOperations updateOperationsFunc
-		expectError      bool
+	tests := []struct {
+		name                 string
+		token                domain.Token
+		tokenRepoConfigIndex int
+		tokenRepoErr         bool
+		updateOperations     updateOperationsFunc
+		expectError          bool
 	}{
+		{name: "SuccessFT", token: dbTokenA, tokenRepoConfigIndex: 0},
+		{name: "SuccessNFT", token: dbTokenC, tokenRepoConfigIndex: 2},
 		{
-			name: "Success",
+			name:                 "InvalidAccountAddress",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateOperationAccount("x.y.z"),
+			expectError:          true,
 		},
 		{
-			name: "InvalidAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account.Address = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:                 "ZeroAccountAddress",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateOperationAccount("0.0.0"),
+			expectError:          true,
 		},
 		{
-			name: "TokenDecimalsMismatch",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Currency.Decimals = 1900
-				return operations
-			},
-			expectError: true,
+			name:                 "InvalidCurrency",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateCurrency(config.CurrencyHbar),
+			expectError:          true,
 		},
 		{
-			name: "ZeroAmountValue",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Value = "0"
-				return operations
-			},
-			expectError: true,
+			name:                 "InvalidCurrencySymbol",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateTokenSymbol("1"),
+			expectError:          true,
 		},
 		{
-			name: "NegativeAmountValue",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Value = "-100"
-				return operations
-			},
-			expectError: true,
+			name:                 "TokenDecimalsMismatch",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateTokenDecimals(1990),
+			expectError:          true,
 		},
 		{
-			name: "MissingAmount",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount = nil
-				return operations
-			},
-			expectError: true,
+			name:                 "ZeroAmountValue",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateAmountValue("0"),
+			expectError:          true,
 		},
 		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
+			name:                 "NegatedAmountValue",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     negateAmountValue,
+			expectError:          true,
 		},
 		{
-			name: "InvalidOperationType",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Type = config.OperationTypeCryptoTransfer
-				return operations
-			},
-			expectError: true,
+			name:                 "MissingAmount",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateAmount(nil),
+			expectError:          true,
+		},
+		{
+			name:                 "TokenNotFound",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			tokenRepoErr:         true,
+			expectError:          true,
+		},
+		{
+			name:                 "InvalidOperationType",
+			token:                dbTokenA,
+			tokenRepoConfigIndex: 0,
+			updateOperations:     updateOperationType(config.OperationTypeCryptoTransfer),
+			expectError:          true,
 		},
 	}
 
@@ -365,15 +403,15 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
-				operations := suite.getOperations(operationType)
+				operations := suite.getOperations(operationType, tt.token)
 
 				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
 				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
+					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[tt.tokenRepoConfigIndex])
 				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.tokenRepoConfigIndex])
 				}
 
 				if tt.updateOperations != nil {
@@ -405,18 +443,34 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 	})
 }
 
-func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(operationType string) []*rTypes.Operation {
-	return []*rTypes.Operation{
-		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                operationType,
-			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-			Amount: &rTypes.Amount{
-				Value:    fmt.Sprintf("%d", amount),
-				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
-			},
+func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(
+	operationType string,
+	token domain.Token,
+) []*rTypes.Operation {
+	amount := burnAmount
+	if operationType == config.OperationTypeTokenMint {
+		amount = mintAmount
+	}
+
+	operation := &rTypes.Operation{
+		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
+		Type:                operationType,
+		Account:             payerAccountIdentifier,
+		Amount: &rTypes.Amount{
+			Value:    fmt.Sprintf("%d", amount),
+			Currency: types.Token{Token: token}.ToRosettaCurrency(),
 		},
 	}
+
+	if token.Type == domain.TokenTypeNonFungibleUnique {
+		if operationType == config.OperationTypeTokenBurn {
+			operation.Amount.Metadata = map[string]interface{}{"serial_numbers": []float64{1, 2}}
+		} else {
+			operation.Amount.Metadata = map[string]interface{}{"metadatas": metadatasBase64}
+		}
+	}
+
+	return []*rTypes.Operation{operation}
 }
 
 func assertTokenBurnMintTransaction(

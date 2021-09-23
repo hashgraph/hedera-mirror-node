@@ -548,7 +548,7 @@ func TestConstructionPayloads(t *testing.T) {
 		Freeze()
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Construct", mock.IsType(hedera.AccountID{}), mock.IsType([]*types.Operation{})).
+		On("Construct", mock.IsType(hedera.AccountID{}), mock.IsType([]*types.Operation{}), mock.IsType(int64(0))).
 		Return(transaction, []hedera.AccountID{defaultAccountId1}, mocks.NilError)
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
@@ -568,7 +568,7 @@ func TestConstructionPayloadsThrowsWithConstuctorConstructFailure(t *testing.T) 
 	}
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Construct", mock.IsType(hedera.AccountID{}), mock.IsType([]*types.Operation{})).
+		On("Construct", mock.IsType(hedera.AccountID{}), mock.IsType([]*types.Operation{}), mock.IsType(int64(0))).
 		Return(mocks.NilHederaTransaction, mocks.NilSigners, errors.ErrInternalServerError)
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
@@ -695,7 +695,7 @@ func freezeTransaction(transaction interfaces.Transaction) {
 	case *hedera.TokenUnfreezeTransaction:
 		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
 			SetTransactionID(transactionId).
-			Unfreeze() // SDK typo
+			Freeze()
 	case *hedera.TokenUpdateTransaction:
 		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
 			SetTransactionID(transactionId).
@@ -962,7 +962,7 @@ func createTransactionHexString(transaction interfaces.Transaction, signed bool)
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenUnfreezeTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Unfreeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}

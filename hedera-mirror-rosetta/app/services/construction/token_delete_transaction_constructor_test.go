@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
@@ -58,36 +57,40 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestGetSdkTransactionType()
 
 func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 	var tests = []struct {
-		name             string
-		updateOperations updateOperationsFunc
-		expectError      bool
+		name                 string
+		currency             *rTypes.Currency
+		mockTokenRepoConfigs []mockTokenRepoConfig
+		updateOperations     updateOperationsFunc
+		validStartNanos      int64
+		expectError          bool
 	}{
+		{name: "SuccessFT", currency: tokenACurrency, mockTokenRepoConfigs: defaultMockTokenRepoConfigs[0:1]},
+		{name: "SuccessNFT", currency: tokenCCurrency, mockTokenRepoConfigs: defaultMockTokenRepoConfigs[2:]},
 		{
-			name: "Success",
+			name:                 "SuccessValidStartNanos",
+			currency:             tokenACurrency,
+			mockTokenRepoConfigs: defaultMockTokenRepoConfigs[0:1],
+			validStartNanos:      100,
 		},
-		{
-			name: "EmptyOperations",
-			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
-				return make([]*rTypes.Operation, 0)
-			},
-			expectError: true,
-		},
+		{name: "EmptyOperations", currency: tokenACurrency, updateOperations: getEmptyOperations, expectError: true},
 	}
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenDeleteOperations()
+			operations := getTokenDeleteOperations(tt.currency)
 			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenDeleteTransactionConstructor(mockTokenRepo)
-			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+			if len(tt.mockTokenRepoConfigs) != 0 {
+				configMockTokenRepo(mockTokenRepo, tt.mockTokenRepoConfigs...)
+			}
 
 			if tt.updateOperations != nil {
 				operations = tt.updateOperations(operations)
 			}
 
 			// when
-			tx, signers, err := h.Construct(nodeAccountId, operations)
+			tx, signers, err := h.Construct(nodeAccountId, operations, tt.validStartNanos)
 
 			// then
 			if tt.expectError {
@@ -99,6 +102,10 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 				assertTokenDeleteTransaction(t, operations[0], nodeAccountId, tx)
 				mockTokenRepo.AssertExpectations(t)
+
+				if tt.validStartNanos != 0 {
+					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
+				}
 			}
 		})
 	}
@@ -112,16 +119,13 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 			SetTokenID(tokenIdA)
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		name           string
 		tokenRepoErr   bool
 		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
-		{
-			name:           "Success",
-			getTransaction: defaultGetTransaction,
-		},
+		{name: "Success", getTransaction: defaultGetTransaction},
 		{
 			name:           "TokenNotFound",
 			tokenRepoErr:   true,
@@ -158,7 +162,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			expectedOperations := getTokenDeleteOperations()
+			expectedOperations := getTokenDeleteOperations(tokenACurrency)
 
 			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenDeleteTransactionConstructor(mockTokenRepo)
@@ -195,34 +199,21 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
+		{name: "Success"},
 		{
-			name:             "Success",
-			updateOperations: nil,
-			expectError:      false,
+			name:             "InvalidAccountAddress",
+			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account.Address = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidAmountValue",
+			updateOperations: updateAmountValue("10"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidAmountValue",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Value = "10"
-				return operations
-			},
-			expectError: true,
-		},
-		{
-			name: "TokenDecimalsMismatch",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Currency.Decimals = 1990
-				return operations
-			},
-			expectError: true,
+			name:             "TokenDecimalsMismatch",
+			updateOperations: updateTokenDecimals(1990),
+			expectError:      true,
 		},
 		{
 			name:         "TokenNotFound",
@@ -230,26 +221,21 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 			expectError:  true,
 		},
 		{
-			name: "MultipleOperations",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				return append(operations, &rTypes.Operation{})
-			},
-			expectError: true,
+			name:             "MultipleOperations",
+			updateOperations: addOperation,
+			expectError:      true,
 		},
 		{
-			name: "InvalidOperationType",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Type = config.OperationTypeCryptoTransfer
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidOperationType",
+			updateOperations: updateOperationType(config.OperationTypeCryptoTransfer),
+			expectError:      true,
 		},
 	}
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenDeleteOperations()
+			operations := getTokenDeleteOperations(tokenACurrency)
 
 			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenDeleteTransactionConstructor(mockTokenRepo)
@@ -297,16 +283,13 @@ func assertTokenDeleteTransaction(
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 }
 
-func getTokenDeleteOperations() []*rTypes.Operation {
+func getTokenDeleteOperations(currency *rTypes.Currency) []*rTypes.Operation {
 	return []*rTypes.Operation{
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                config.OperationTypeTokenDelete,
-			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-			Amount: &rTypes.Amount{
-				Value:    "0",
-				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
-			},
+			Account:             payerAccountIdentifier,
+			Amount:              &rTypes.Amount{Value: "0", Currency: currency},
 		},
 	}
 }

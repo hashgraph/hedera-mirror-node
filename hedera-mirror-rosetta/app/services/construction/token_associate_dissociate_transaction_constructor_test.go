@@ -40,8 +40,10 @@ const (
 	decimals = 9
 	nameA    = "teebar"
 	nameB    = "ueebar"
+	nameC    = "xffbar"
 	symbolA  = "foobar"
 	symbolB  = "goobar"
+	symbolC  = "fflbar"
 )
 
 // variables used in all token constructor tests
@@ -52,41 +54,44 @@ var (
 		Decimals: decimals,
 		Name:     nameA,
 		Symbol:   symbolA,
+		Type:     domain.TokenTypeFungibleCommon,
 	}
 	dbTokenB = domain.Token{
 		TokenId:  tokenEntityIdB,
 		Decimals: decimals,
 		Name:     nameB,
 		Symbol:   symbolB,
+		Type:     domain.TokenTypeFungibleCommon,
 	}
-	nodeAccountId     = hedera.AccountID{Account: 7}
-	payerId           = hedera.AccountID{Account: 100}
-	tokenEntityIdA, _ = domain.DecodeEntityId(212)
-	tokenEntityIdB, _ = domain.DecodeEntityId(252)
-	tokenIdA          = hedera.TokenID{Token: 212}
-	tokenIdB          = hedera.TokenID{Token: 252}
+	dbTokenC = domain.Token{
+		TokenId:  tokenEntityIdC,
+		Decimals: 0,
+		Name:     nameC,
+		Symbol:   symbolC,
+		Type:     domain.TokenTypeNonFungibleUnique,
+	}
+	nodeAccountId          = hedera.AccountID{Account: 7}
+	payerAccountIdentifier = &rTypes.AccountIdentifier{Address: payerId.String()}
+	payerId                = hedera.AccountID{Account: 100}
+	tokenEntityIdA         = domain.MustDecodeEntityId(212)
+	tokenEntityIdB         = domain.MustDecodeEntityId(252)
+	tokenEntityIdC         = domain.MustDecodeEntityId(282)
+	tokenACurrency         = types.Token{Token: dbTokenA}.ToRosettaCurrency()
+	tokenBCurrency         = types.Token{Token: dbTokenB}.ToRosettaCurrency()
+	tokenCCurrency         = types.Token{Token: dbTokenC}.ToRosettaCurrency()
+	tokenIdA               = hedera.TokenID{Token: 212}
+	tokenIdB               = hedera.TokenID{Token: 252}
+	tokenIdC               = hedera.TokenID{Token: 282}
 
 	defaultMockTokenRepoConfigs = []mockTokenRepoConfig{
-		{
-			dbToken: dbTokenA,
-			tokenId: tokenIdA,
-		},
-		{
-			dbToken: dbTokenB,
-			tokenId: tokenIdB,
-		},
+		{dbToken: dbTokenA, tokenId: tokenIdA},
+		{dbToken: dbTokenB, tokenId: tokenIdB},
+		{dbToken: dbTokenC, tokenId: tokenIdC},
 	}
 	mockTokenRepoNotFoundConfigs = []mockTokenRepoConfig{
-		{
-			dbToken: dbTokenA,
-			tokenId: tokenIdA,
-			err:     hErrors.ErrTokenNotFound,
-		},
-		{
-			dbToken: dbTokenB,
-			tokenId: tokenIdB,
-			err:     hErrors.ErrTokenNotFound,
-		},
+		{dbToken: dbTokenA, tokenId: tokenIdA, err: hErrors.ErrTokenNotFound},
+		{dbToken: dbTokenB, tokenId: tokenIdB, err: hErrors.ErrTokenNotFound},
+		{dbToken: dbTokenC, tokenId: tokenIdC, err: hErrors.ErrTokenNotFound},
 	}
 )
 
@@ -112,33 +117,33 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestNewTokenDi
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestGetOperationType() {
-	var tests = []struct {
+	tests := []struct {
 		name           string
-		newConsturctor newConstructorFunc
+		newConstructor newConstructorFunc
 		expected       string
 	}{
 		{
 			name:           "TokenAssociateTransactionConstructor",
-			newConsturctor: newTokenAssociateTransactionConstructor,
+			newConstructor: newTokenAssociateTransactionConstructor,
 			expected:       config.OperationTypeTokenAssociate,
 		},
 		{
 			name:           "TokenDissociateTransactionConstructor",
-			newConsturctor: newTokenDissociateTransactionConstructor,
+			newConstructor: newTokenDissociateTransactionConstructor,
 			expected:       config.OperationTypeTokenDissociate,
 		},
 	}
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newConsturctor(&mocks.MockTokenRepository{})
+			h := tt.newConstructor(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestGetSdkTransactionType() {
-	var tests = []struct {
+	tests := []struct {
 		name       string
 		newHandler newConstructorFunc
 		expected   string
@@ -164,31 +169,16 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestGetSdkTran
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct() {
-	mockTokenRepoConfigA := mockTokenRepoConfig{
-		dbToken: dbTokenA,
-		tokenId: tokenIdA,
-	}
-	mockTokenRepoConfigB := mockTokenRepoConfig{
-		dbToken: dbTokenB,
-		tokenId: tokenIdB,
-	}
-
-	var tests = []struct {
+	tests := []struct {
 		name                 string
 		mockTokenRepoConfigs []mockTokenRepoConfig
 		updateOperations     updateOperationsFunc
+		validStartNanos      int64
 		expectError          bool
 	}{
-		{
-			name: "Success",
-		},
-		{
-			name: "EmptyOperations",
-			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
-				return make([]*rTypes.Operation, 0)
-			},
-			expectError: true,
-		},
+		{name: "Success"},
+		{name: "SuccessValidStartNanos", validStartNanos: 100},
+		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
 	runTests := func(t *testing.T, operationType string, newHandler newConstructorFunc) {
@@ -199,15 +189,14 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoConfigA)
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoConfigB)
+				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs...)
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
 				}
 
 				// when
-				tx, signers, err := h.Construct(nodeAccountId, operations)
+				tx, signers, err := h.Construct(nodeAccountId, operations, tt.validStartNanos)
 
 				// then
 				if tt.expectError {
@@ -219,6 +208,10 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assertTokenAssociateDissociateTransaction(t, operations, nodeAccountId, tx)
 					mockTokenRepo.AssertExpectations(t)
+
+					if tt.validStartNanos != 0 {
+						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
+					}
 				}
 			})
 		}
@@ -239,18 +232,18 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			return hedera.NewTokenAssociateTransaction().
 				SetAccountID(payerId).
 				SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-				SetTokenIDs(tokenIdA, tokenIdB).
+				SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
 				SetTransactionID(hedera.TransactionIDGenerate(payerId))
 		}
 
 		return hedera.NewTokenDissociateTransaction().
 			SetAccountID(payerId).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenIDs(tokenIdA, tokenIdB).
+			SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
 			SetTransactionID(hedera.TransactionIDGenerate(payerId))
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		name                 string
 		getTransaction       func(operationType string) interfaces.Transaction
 		mockTokenRepoConfigs []mockTokenRepoConfig
@@ -267,11 +260,9 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			expectError:          true,
 		},
 		{
-			name: "InvalidTransaction",
-			getTransaction: func(operationType string) interfaces.Transaction {
-				return hedera.NewTransferTransaction()
-			},
-			expectError: true,
+			name:           "InvalidTransaction",
+			getTransaction: getTransferTransaction,
+			expectError:    true,
 		},
 		{
 			name: "TransactionMismatch",
@@ -401,42 +392,30 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess() {
-	var tests = []struct {
+	tests := []struct {
 		name                 string
 		mockTokenRepoConfigs []mockTokenRepoConfig
 		updateOperations     updateOperationsFunc
 		expectError          bool
 	}{
+		{name: "Success"},
 		{
-			name: "Success",
-		},
-		{
-			name: "InvalidAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				for _, operation := range operations {
-					operation.Account.Address = "x.y.z"
-				}
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidAccountAddress",
+			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
 		},
 		{
 			name: "DifferentAccountAddress",
 			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account.Address = "0.1.7"
+				operations[0].Account = &rTypes.AccountIdentifier{Address: "0.1.7"}
 				return operations
 			},
 			expectError: true,
 		},
 		{
-			name: "TokenDecimalsMismatch",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				for _, operation := range operations {
-					operation.Amount.Currency.Decimals = 1990
-				}
-				return operations
-			},
-			expectError: true,
+			name:             "TokenDecimalsMismatch",
+			updateOperations: updateTokenDecimals(1990),
+			expectError:      true,
 		},
 		{
 			name:                 "TokenNotFound",
@@ -444,12 +423,9 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess
 			expectError:          true,
 		},
 		{
-			name: "InvalidOperationType",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Type = config.OperationTypeCryptoTransfer
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidOperationType",
+			updateOperations: updateOperationType(config.OperationTypeCryptoTransfer),
+			expectError:      true,
 		},
 	}
 
@@ -502,20 +478,20 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) getOperations(
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                operationType,
-			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-			Amount: &rTypes.Amount{
-				Value:    "0",
-				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
-			},
+			Account:             payerAccountIdentifier,
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenACurrency},
 		},
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
 			Type:                operationType,
-			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-			Amount: &rTypes.Amount{
-				Value:    "0",
-				Currency: types.Token{Token: dbTokenB}.ToRosettaCurrency(),
-			},
+			Account:             payerAccountIdentifier,
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenBCurrency},
+		},
+		{
+			OperationIdentifier: &rTypes.OperationIdentifier{Index: 2},
+			Type:                operationType,
+			Account:             payerAccountIdentifier,
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenCCurrency},
 		},
 	}
 }
@@ -569,7 +545,131 @@ func configMockTokenRepo(
 	mock *mocks.MockTokenRepository,
 	configs ...mockTokenRepoConfig,
 ) {
-	for _, config := range configs {
-		mock.On("Find", config.tokenId.String()).Return(config.dbToken, config.err)
+	for _, c := range configs {
+		mock.On("Find", c.tokenId.String()).Return(c.dbToken, c.err)
+	}
+}
+
+func addOperation(operations []*rTypes.Operation) []*rTypes.Operation {
+	return append(operations, &rTypes.Operation{})
+}
+
+func getEmptyOperations([]*rTypes.Operation) []*rTypes.Operation {
+	return make([]*rTypes.Operation, 0)
+}
+
+func getEmptyOperationMetadata(operations []*rTypes.Operation) []*rTypes.Operation {
+	for _, operation := range operations {
+		operation.Metadata = nil
+	}
+	return operations
+}
+
+func getTransferTransaction(string) interfaces.Transaction {
+	return hedera.NewTransferTransaction()
+}
+
+func deleteOperationMetadata(key string) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			delete(operation.Metadata, key)
+		}
+		return operations
+	}
+}
+
+func negateAmountValue(operations []*rTypes.Operation) []*rTypes.Operation {
+	for _, operation := range operations {
+		amount := *operation.Amount
+		if amount.Value[0] == uint8('-') {
+			amount.Value = amount.Value[1:]
+		} else {
+			amount.Value = "-" + amount.Value
+		}
+		operation.Amount = &amount
+	}
+	return operations
+}
+
+func updateAmount(amount *rTypes.Amount) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			operation.Amount = amount
+		}
+		return operations
+	}
+}
+
+func updateAmountValue(value string) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			amount := *operation.Amount
+			amount.Value = value
+			operation.Amount = &amount
+		}
+		return operations
+	}
+}
+
+func updateCurrency(currency *rTypes.Currency) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			amount := *operation.Amount
+			amount.Currency = currency
+			operation.Amount = &amount
+		}
+		return operations
+	}
+}
+
+func updateOperationAccount(account string) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			operation.Account = &rTypes.AccountIdentifier{Address: account}
+		}
+		return operations
+	}
+}
+
+func updateOperationMetadata(key string, value interface{}) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			operation.Metadata[key] = value
+		}
+		return operations
+	}
+}
+
+func updateOperationType(operationType string) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		result := make([]*rTypes.Operation, 0, len(operations))
+		for idx := range operations {
+			operation := *operations[idx]
+			operation.Type = operationType
+			result = append(result, &operation)
+		}
+		return result
+	}
+}
+
+func updateTokenDecimals(decimals int32) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			currency := *operation.Amount.Currency
+			currency.Decimals = decimals
+			operation.Amount.Currency = &currency
+		}
+		return operations
+	}
+}
+
+func updateTokenSymbol(symbol string) updateOperationsFunc {
+	return func(operations []*rTypes.Operation) []*rTypes.Operation {
+		for _, operation := range operations {
+			currency := *operation.Amount.Currency
+			currency.Symbol = symbol
+			operation.Amount.Currency = &currency
+		}
+		return operations
 	}
 }

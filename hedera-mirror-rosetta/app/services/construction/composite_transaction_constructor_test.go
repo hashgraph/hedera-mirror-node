@@ -79,11 +79,11 @@ func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructor
 func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 	// given
 	suite.mockConstructor.
-		On("Construct", nodeAccountId, cryptoTransferOperations).
+		On("Construct", nodeAccountId, cryptoTransferOperations, int64(0)).
 		Return(cryptoTransferTransaction, signers, mocks.NilError)
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations)
+	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations, 0)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -95,11 +95,11 @@ func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 func (suite *compositeTransactionConstructorSuite) TestConstructFail() {
 	// given
 	suite.mockConstructor.
-		On("Construct", nodeAccountId, cryptoTransferOperations).
+		On("Construct", nodeAccountId, cryptoTransferOperations, int64(0)).
 		Return(mocks.NilHederaTransaction, mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations)
+	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations, 0)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -112,7 +112,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstructEmptyOperations(
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, []*types.Operation{})
+	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, []*types.Operation{}, 0)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -125,7 +125,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstructUnsupportedOpera
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, unsupportedOperations)
+	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, unsupportedOperations, 0)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -138,7 +138,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstructMixedOperations(
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, mixedOperations)
+	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, mixedOperations, 0)
 
 	// then
 	assert.NotNil(suite.T(), err)

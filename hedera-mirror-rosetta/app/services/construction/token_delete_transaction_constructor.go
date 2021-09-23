@@ -39,6 +39,7 @@ type tokenDeleteTransactionConstructor struct {
 func (t *tokenDeleteTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
+	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	payerId, tokenId, rErr := t.preprocess(operations)
 	if rErr != nil {
@@ -48,7 +49,7 @@ func (t *tokenDeleteTransactionConstructor) Construct(
 	tx, err := hedera.NewTokenDeleteTransaction().
 		SetTokenID(*tokenId).
 		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.TransactionIDGenerate(*payerId)).
+		SetTransactionID(getTransactionId(*payerId, validStartNanos)).
 		Freeze()
 	if err != nil {
 		return nil, nil, hErrors.ErrTransactionFreezeFailed
@@ -80,10 +81,8 @@ func (t *tokenDeleteTransactionConstructor) Parse(transaction interfaces.Transac
 	}
 
 	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{
-			Index: 0,
-		},
-		Account: &rTypes.AccountIdentifier{Address: payerId.String()},
+		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
+		Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
 			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),

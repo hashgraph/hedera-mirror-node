@@ -32,8 +32,6 @@ import (
 )
 
 const (
-	tokenEntityType = 5
-
 	truncateAccountBalanceFileSql = "truncate account_balance_file"
 	truncateRecordFileSql         = "truncate record_file"
 )
@@ -49,15 +47,6 @@ func (*integrationTest) SetupTest() {
 	db.CleanupDb(dbResource.GetDb())
 }
 
-func addEntity(dbClient *gorm.DB, id domain.EntityId, entityType int) {
-	entity := &domain.Entity{
-		Id:   id.EncodedId,
-		Num:  id.EntityNum,
-		Type: entityType,
-	}
-	dbClient.Create(entity)
-}
-
 func addTransaction(
 	dbClient *gorm.DB,
 	consensusNs int64,
@@ -71,6 +60,7 @@ func addTransaction(
 	cryptoTransfers []domain.CryptoTransfer,
 	nonFeeTransfers []domain.NonFeeTransfer,
 	tokenTransfers []domain.TokenTransfer,
+	nftTransfers []domain.NftTransfer,
 ) {
 	tx := &domain.Transaction{
 		ConsensusNs:          consensusNs,
@@ -97,6 +87,10 @@ func addTransaction(
 	if len(tokenTransfers) != 0 {
 		dbClient.Create(tokenTransfers)
 	}
+
+	if len(nftTransfers) != 0 {
+		dbClient.Create(nftTransfers)
+	}
 }
 
 func setup() {
@@ -112,8 +106,13 @@ func teardown() {
 }
 
 func TestMain(m *testing.M) {
+	code := 0
+
 	setup()
-	code := m.Run()
-	teardown()
-	os.Exit(code)
+	defer func() {
+		teardown()
+		os.Exit(code)
+	}()
+
+	code = m.Run()
 }

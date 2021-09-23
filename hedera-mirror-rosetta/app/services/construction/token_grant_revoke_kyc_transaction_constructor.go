@@ -32,11 +32,6 @@ import (
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
-type tokenKyc struct {
-	Account *hedera.AccountID `json:"account" validate:"required"`
-	Token   hedera.TokenID
-}
-
 type tokenGrantRevokeKycTransactionConstructor struct {
 	operationType   string
 	tokenRepo       interfaces.TokenRepository
@@ -47,28 +42,29 @@ type tokenGrantRevokeKycTransactionConstructor struct {
 func (t *tokenGrantRevokeKycTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
+	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenKyc, rErr := t.preprocess(operations)
+	payer, account, token, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
 	var tx interfaces.Transaction
 	var err error
-
+	transactionId := getTransactionId(*payer, validStartNanos)
 	if t.operationType == config.OperationTypeTokenGrantKyc {
 		tx, err = hedera.NewTokenGrantKycTransaction().
-			SetAccountID(*tokenKyc.Account).
+			SetAccountID(*account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenID(tokenKyc.Token).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			SetTokenID(*token).
+			SetTransactionID(transactionId).
 			Freeze()
 	} else {
 		tx, err = hedera.NewTokenRevokeKycTransaction().
-			SetAccountID(*tokenKyc.Account).
+			SetAccountID(*account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenID(tokenKyc.Token).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			SetTokenID(*token).
+			SetTransactionID(transactionId).
 			Freeze()
 	}
 
@@ -121,14 +117,12 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Parse(transaction interfaces
 	operation := &rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 		Type:                t.operationType,
-		Account:             &rTypes.AccountIdentifier{Address: payer.String()},
+		Account:             &rTypes.AccountIdentifier{Address: account.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
 			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 		},
-		Metadata: map[string]interface{}{
-			"account": account.String(),
-		},
+		Metadata: map[string]interface{}{"payer": payer.String()},
 	}
 
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payer}, nil
@@ -138,7 +132,7 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Preprocess(operations []*rTy
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(operations)
+	payer, _, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
@@ -148,38 +142,11 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Preprocess(operations []*rTy
 
 func (t *tokenGrantRevokeKycTransactionConstructor) preprocess(operations []*rTypes.Operation) (
 	*hedera.AccountID,
-	*tokenKyc,
+	*hedera.AccountID,
+	*hedera.TokenID,
 	*rTypes.Error,
 ) {
-	if rErr := validateOperations(operations, 1, t.operationType, false); rErr != nil {
-		return nil, nil, rErr
-	}
-
-	operation := operations[0]
-	if operation.Amount.Value != "0" {
-		return nil, nil, hErrors.ErrInvalidOperationsAmount
-	}
-
-	tokenKyc := &tokenKyc{}
-	rErr := parseOperationMetadata(t.validate, tokenKyc, operation.Metadata)
-	if rErr != nil {
-		return nil, nil, rErr
-	} else if isZeroAccountId(*tokenKyc.Account) {
-		return nil, nil, hErrors.ErrInvalidAccount
-	}
-
-	payer, err := hedera.AccountIDFromString(operations[0].Account.Address)
-	if err != nil || isZeroAccountId(payer) {
-		return nil, nil, hErrors.ErrInvalidAccount
-	}
-
-	token, rErr := validateToken(t.tokenRepo, operation.Amount.Currency)
-	if rErr != nil {
-		return nil, nil, rErr
-	}
-	tokenKyc.Token = *token
-
-	return &payer, tokenKyc, nil
+	return preprocessTokenFreezeKyc(operations, t.GetOperationType(), t.tokenRepo, t.validate)
 }
 
 func (t *tokenGrantRevokeKycTransactionConstructor) GetOperationType() string {

@@ -31,7 +31,7 @@ import (
 func TestNewMempoolAPIService(t *testing.T) {
 	mempoolService := NewMempoolAPIService()
 
-	assert.IsType(t, &MempoolAPIService{}, mempoolService)
+	assert.IsType(t, &mempoolAPIService{}, mempoolService)
 }
 
 func TestMempool(t *testing.T) {

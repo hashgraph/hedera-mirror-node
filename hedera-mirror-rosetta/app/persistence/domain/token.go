@@ -23,41 +23,39 @@ package domain
 const tableNameToken = "token"
 
 const (
-	Finite   TokenSupplyType = "FINITE"
-	Infinite TokenSupplyType = "INFINITE"
+	TokenSupplyTypeUnknown  string = ""
+	TokenSupplyTypeFinite   string = "FINITE"
+	TokenSupplyTypeInfinite string = "INFINITE"
 
-	FungibleCommon    TokenType = "FUNGIBLE_COMMON"
-	NonFungibleUnique TokenType = "NON_FUNGIBLE_UNIQUE"
+	TokenTypeUnknown           string = ""
+	TokenTypeFungibleCommon    string = "FUNGIBLE_COMMON"
+	TokenTypeNonFungibleUnique string = "NON_FUNGIBLE_UNIQUE"
 )
 
-type TokenSupplyType string
-
-type TokenType string
-
 type Token struct {
-	CreatedTimestamp         int64
-	Decimals                 int64
-	FeeScheduleKey           []byte
-	FeeScheduleKeyEd25519Hex string
-	FreezeDefault            bool
-	FreezeKey                []byte
-	FreezeKeyEd25519Hex      string
-	InitialSupply            int64
-	KycKey                   []byte
-	KycKeyEd25519Hex         string
-	MaxSupply                int64
-	ModifiedTimestamp        int64
-	Name                     string
-	SupplyKey                []byte
-	SupplyKeyEd25519Hex      string
-	SupplyType               TokenSupplyType
-	Symbol                   string
-	TokenId                  EntityId `gorm:"primaryKey"`
-	TotalSupply              int64
-	TreasuryAccountId        EntityId
-	Type                     TokenType
-	WipeKey                  []byte
-	WipeKeyEd25519Hex        string
+	CreatedTimestamp         int64    `json:"created_timestamp"`
+	Decimals                 int64    `json:"decimals"`
+	FeeScheduleKey           []byte   `json:"fee_schedule_key"`
+	FeeScheduleKeyEd25519Hex string   `json:"fee_schedule_key_ed_25519_hex"`
+	FreezeDefault            bool     `json:"freeze_default"`
+	FreezeKey                []byte   `json:"freeze_key"`
+	FreezeKeyEd25519Hex      string   `json:"freeze_key_ed_25519_hex"`
+	InitialSupply            int64    `json:"initial_supply"`
+	KycKey                   []byte   `json:"kyc_key"`
+	KycKeyEd25519Hex         string   `json:"kyc_key_ed_25519_hex"`
+	MaxSupply                int64    `json:"max_supply"`
+	ModifiedTimestamp        int64    `json:"modified_timestamp"`
+	Name                     string   `json:"name"`
+	SupplyKey                []byte   `json:"supply_key"`
+	SupplyKeyEd25519Hex      string   `json:"supply_key_ed_25519_hex"`
+	SupplyType               string   `json:"supply_type"`
+	Symbol                   string   `json:"symbol"`
+	TokenId                  EntityId `gorm:"primaryKey" json:"token_id"`
+	TotalSupply              int64    `json:"total_supply"`
+	TreasuryAccountId        EntityId `json:"treasury_account_id"`
+	Type                     string   `json:"type"`
+	WipeKey                  []byte   `json:"wipe_key"`
+	WipeKeyEd25519Hex        string   `json:"wipe_key_ed_25519_hex"`
 }
 
 // TableName returns token table name

@@ -28,6 +28,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
@@ -45,7 +46,9 @@ type tokenCreate struct {
 	Memo             string           `json:"memo"`
 	Name             string           `json:"name" validate:"required"`
 	SupplyKey        publicKey        `json:"supply_key"`
+	SupplyType       string           `json:"supply_type"`
 	Symbol           string           `json:"symbol" validate:"required"`
+	Type             string           `json:"type"`
 	WipeKey          publicKey        `json:"wipe_key"`
 }
 
@@ -54,11 +57,11 @@ type tokenCreateTransactionConstructor struct {
 	validate        *validator.Validate
 }
 
-func (t *tokenCreateTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*rTypes.Operation) (
-	interfaces.Transaction,
-	[]hedera.AccountID,
-	*rTypes.Error,
-) {
+func (t *tokenCreateTransactionConstructor) Construct(
+	nodeAccountId hedera.AccountID,
+	operations []*rTypes.Operation,
+	validStartNanos int64,
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	treasury, signers, tokenCreate, err := t.preprocess(operations)
 	if err != nil {
 		return nil, nil, err
@@ -72,7 +75,7 @@ func (t *tokenCreateTransactionConstructor) Construct(nodeAccountId hedera.Accou
 		SetTokenMemo(tokenCreate.Memo).
 		SetTokenName(tokenCreate.Name).
 		SetTokenSymbol(tokenCreate.Symbol).
-		SetTransactionID(hedera.TransactionIDGenerate(treasury)).
+		SetTransactionID(getTransactionId(treasury, validStartNanos)).
 		SetTreasuryAccountID(treasury)
 
 	if !isEmptyPublicKey(tokenCreate.AdminKey) {
@@ -101,6 +104,16 @@ func (t *tokenCreateTransactionConstructor) Construct(nodeAccountId hedera.Accou
 
 	if !isEmptyPublicKey(tokenCreate.SupplyKey) {
 		tx.SetSupplyKey(tokenCreate.SupplyKey.PublicKey)
+	}
+
+	// default is INFINITE
+	if tokenCreate.SupplyType == domain.TokenSupplyTypeFinite {
+		tx.SetSupplyType(hedera.TokenSupplyTypeFinite)
+	}
+
+	// default is FUNGIBLE_COMMON
+	if tokenCreate.Type == domain.TokenTypeNonFungibleUnique {
+		tx.SetTokenType(hedera.TokenTypeNonFungibleUnique)
 	}
 
 	if !isEmptyPublicKey(tokenCreate.WipeKey) {
@@ -216,14 +229,28 @@ func (t *tokenCreateTransactionConstructor) preprocess(operations []*rTypes.Oper
 	*tokenCreate,
 	*rTypes.Error,
 ) {
+	treasury := hedera.AccountID{}
+
 	if rErr := validateOperations(operations, 1, t.GetOperationType(), true); rErr != nil {
-		return hedera.AccountID{}, nil, nil, rErr
+		return treasury, nil, nil, rErr
 	}
 
 	operation := operations[0]
 	tokenCreate := &tokenCreate{}
 	if rErr := parseOperationMetadata(t.validate, tokenCreate, operation.Metadata); rErr != nil {
-		return hedera.AccountID{}, nil, nil, rErr
+		return treasury, nil, nil, rErr
+	}
+
+	if tokenCreate.SupplyType != domain.TokenSupplyTypeUnknown &&
+		tokenCreate.SupplyType != domain.TokenSupplyTypeFinite &&
+		tokenCreate.SupplyType != domain.TokenSupplyTypeInfinite {
+		return treasury, nil, nil, hErrors.ErrInvalidOperations
+	}
+
+	if tokenCreate.Type != domain.TokenTypeUnknown &&
+		tokenCreate.Type != domain.TokenTypeFungibleCommon &&
+		tokenCreate.Type != domain.TokenTypeNonFungibleUnique {
+		return treasury, nil, nil, hErrors.ErrInvalidOperations
 	}
 
 	var signers []hedera.AccountID

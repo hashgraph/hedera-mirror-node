@@ -32,48 +32,396 @@ import (
 var (
 	hbarAmount        = &HbarAmount{Value: 400}
 	hbarRosettaAmount = &types.Amount{Value: "400", Currency: config.CurrencyHbar}
-	tokenAmount       = &TokenAmount{
-		TokenId:  domain.EntityId{EntityNum: 1580, EncodedId: 1580},
-		Decimals: 9,
-		Value:    6000,
-	}
-	tokenRosettaAmount = &types.Amount{
-		Value:    "6000",
-		Currency: &types.Currency{Symbol: "0.0.1580", Decimals: 9},
-	}
+	tokenId           = domain.MustDecodeEntityId(1580)
+	metadatasBytes    = [][]byte{[]byte("foo"), []byte("bar")}
+	metadatasBase64   = []string{"Zm9v", "YmFy"}
 )
 
+func TestHbarAmountGetValue(t *testing.T) {
+	assert.Equal(t, int64(400), hbarAmount.GetValue())
+}
+
 func TestHbarAmountToRosettaAmount(t *testing.T) {
-	// given
+	assert.Equal(t, hbarRosettaAmount, hbarAmount.ToRosetta())
+}
 
-	// when:
-	actual := hbarAmount.ToRosetta()
-
-	// then:
-	assert.Equal(t, hbarRosettaAmount, actual)
+func TestTokenAmountGetValue(t *testing.T) {
+	tokenAmount := TokenAmount{Value: 100}
+	assert.Equal(t, int64(100), tokenAmount.GetValue())
 }
 
 func TestTokenAmountToRosettaAmount(t *testing.T) {
-	// given
+	tests := []struct {
+		name        string
+		tokenAmount TokenAmount
+		expected    *types.Amount
+	}{
+		{
+			name: domain.TokenTypeFungibleCommon,
+			tokenAmount: TokenAmount{
+				Decimals: 8,
+				TokenId:  tokenId,
+				Type:     domain.TokenTypeFungibleCommon,
+				Value:    15,
+			},
+			expected: &types.Amount{
+				Value: "15",
+				Currency: &types.Currency{
+					Symbol:   tokenId.String(),
+					Decimals: 8,
+					Metadata: map[string]interface{}{"type": domain.TokenTypeFungibleCommon},
+				},
+			},
+		},
+		{
+			name: domain.TokenTypeNonFungibleUnique + "SerialNumbers",
+			tokenAmount: TokenAmount{
+				Decimals:      0,
+				SerialNumbers: []int64{1, 2, 3, 4, 5, 6},
+				TokenId:       tokenId,
+				Type:          domain.TokenTypeNonFungibleUnique,
+				Value:         6,
+			},
+			expected: &types.Amount{
+				Value: "6",
+				Currency: &types.Currency{
+					Symbol:   tokenId.String(),
+					Decimals: 0,
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{
+					"serial_numbers": []float64{1, 2, 3, 4, 5, 6},
+				},
+			},
+		},
+		{
+			name: domain.TokenTypeNonFungibleUnique + "Metadatas",
+			tokenAmount: TokenAmount{
+				Decimals:  0,
+				Metadatas: metadatasBytes,
+				TokenId:   tokenId,
+				Type:      domain.TokenTypeNonFungibleUnique,
+				Value:     2,
+			},
+			expected: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   tokenId.String(),
+					Decimals: 0,
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"metadatas": metadatasBase64},
+			},
+		},
+	}
 
-	// when:
-	actual := tokenAmount.ToRosetta()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.tokenAmount.ToRosetta())
+		})
+	}
+}
 
-	// then:
-	assert.Equal(t, tokenRosettaAmount, actual)
+func TestNewAmountSuccess(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    *types.Amount
+		expected Amount
+	}{
+		{
+			name: "HbarAmount",
+			input: &types.Amount{
+				Value:    "5",
+				Currency: config.CurrencyHbar,
+			},
+			expected: &HbarAmount{Value: 5},
+		},
+		{
+			name: domain.TokenTypeFungibleCommon,
+			input: &types.Amount{
+				Value: "6",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Decimals: 5,
+					Metadata: map[string]interface{}{"type": domain.TokenTypeFungibleCommon},
+				},
+			},
+			expected: &TokenAmount{
+				Decimals: 5,
+				TokenId:  tokenId,
+				Type:     domain.TokenTypeFungibleCommon,
+				Value:    6,
+			},
+		},
+		{
+			name: domain.TokenTypeNonFungibleUnique + "+ZeroValue",
+			input: &types.Amount{
+				Value: "0",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Decimals: 0,
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+			},
+			expected: &TokenAmount{
+				TokenId: tokenId,
+				Type:    domain.TokenTypeNonFungibleUnique,
+				Value:   0,
+			},
+		},
+		{
+			name: domain.TokenTypeNonFungibleUnique + "+SerialNumbers",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Decimals: 0,
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"serial_numbers": []float64{1, 2}},
+			},
+			expected: &TokenAmount{
+				SerialNumbers: []int64{1, 2},
+				TokenId:       tokenId,
+				Type:          domain.TokenTypeNonFungibleUnique,
+				Value:         2,
+			},
+		},
+		{
+			name: domain.TokenTypeNonFungibleUnique + "+Metadatas",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Decimals: 0,
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"metadatas": metadatasBase64},
+			},
+			expected: &TokenAmount{
+				Metadatas: metadatasBytes,
+				TokenId:   tokenId,
+				Type:      domain.TokenTypeNonFungibleUnique,
+				Value:     2,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := NewAmount(tt.input)
+
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestNewAmountFailure(t *testing.T) {
+	tests := []struct {
+		name  string
+		input *types.Amount
+	}{
+		{name: "InvalidAmount", input: &types.Amount{Value: "abc", Currency: config.CurrencyHbar}},
+		{name: "InvalidCurrencySymbol", input: &types.Amount{Value: "1", Currency: &types.Currency{Symbol: "foobar"}}},
+		{
+			name: "InvalidTypeForTokenType",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Decimals: 0,
+					Metadata: map[string]interface{}{"type": 100},
+				},
+			},
+		},
+		{
+			name: "InvalidCurrencyDecimals",
+			input: &types.Amount{
+				Value: "1",
+				Currency: &types.Currency{
+					Decimals: -1,
+					Symbol:   config.CurrencyHbar.Symbol,
+				},
+			},
+		},
+		{
+			name: "InvalidTokenType",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": "unknown"},
+				},
+			},
+		},
+		{
+			name: "NonZeroDecimalsForNFT",
+			input: &types.Amount{
+				Value: "0",
+				Currency: &types.Currency{
+					Decimals: 2,
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+			},
+		},
+		{
+			name: "NilMetadataForNFT",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+			},
+		},
+		{
+			name: "TooManyMetadataForNFT",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"m1": 1, "m2": 2},
+			},
+		},
+		{
+			name: "InvalidSerialNumbersTypeForNFT",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"serial_numbers": 1},
+			},
+		},
+		{
+			name: "SerialNumbersCountMismatchForNFT",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"serial_numbers": []float64{1}},
+			},
+		},
+		{
+			name: "InvalidNftMetadatasType",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"metadatas": 1},
+			},
+		},
+		{
+			name: "InvalidNftMetadatasEncoding",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"metadatas": []string{"0xabcd", "0xa0b0"}},
+			},
+		},
+		{
+			name: "NftMetadatasCountMismatch",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{"type": domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{"metadatas": []string{metadatasBase64[0]}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := NewAmount(tt.input)
+			assert.NotNil(t, err)
+			assert.Nil(t, actual)
+		})
+	}
 }
 
 func TestNewTokenAmount(t *testing.T) {
-	token := domain.Token{
-		TokenId:  domain.MustDecodeEntityId(1001),
-		Decimals: 5,
+	tests := []struct {
+		name          string
+		token         domain.Token
+		amount        int64
+		metadatas     [][]byte
+		serialNumbers []int64
+		expected      *TokenAmount
+	}{
+		{
+			name:   domain.TokenTypeFungibleCommon,
+			token:  newToken(5, domain.TokenTypeFungibleCommon),
+			amount: 20,
+			expected: &TokenAmount{
+				Decimals: 5,
+				TokenId:  tokenId,
+				Type:     domain.TokenTypeFungibleCommon,
+				Value:    20,
+			},
+		},
+		{
+			name:   domain.TokenTypeNonFungibleUnique,
+			token:  newToken(0, domain.TokenTypeNonFungibleUnique),
+			amount: 0,
+			expected: &TokenAmount{
+				TokenId: tokenId,
+				Type:    domain.TokenTypeNonFungibleUnique,
+			},
+		},
+		{
+			name:          domain.TokenTypeNonFungibleUnique + "+SerialNumbers",
+			token:         newToken(0, domain.TokenTypeNonFungibleUnique),
+			amount:        5,
+			serialNumbers: []int64{1, 2, 3, 4, 5},
+			expected: &TokenAmount{
+				SerialNumbers: []int64{1, 2, 3, 4, 5},
+				TokenId:       tokenId,
+				Type:          domain.TokenTypeNonFungibleUnique,
+				Value:         5,
+			},
+		},
+		{
+			name:      domain.TokenTypeNonFungibleUnique + "+Metadatas",
+			token:     newToken(0, domain.TokenTypeNonFungibleUnique),
+			amount:    2,
+			metadatas: metadatasBytes,
+			expected: &TokenAmount{
+				Metadatas: metadatasBytes,
+				TokenId:   tokenId,
+				Type:      domain.TokenTypeNonFungibleUnique,
+				Value:     2,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := NewTokenAmount(tt.token, tt.amount).SetSerialNumbers(tt.serialNumbers).SetMetadatas(tt.metadatas)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func newToken(decimals int64, tokenType string) domain.Token {
+	return domain.Token{
+		TokenId:  tokenId,
+		Decimals: decimals,
 		Name:     "foobar",
 		Symbol:   "xoobar",
+		Type:     tokenType,
 	}
-	expected := &TokenAmount{
-		Decimals: 5,
-		TokenId:  token.TokenId,
-		Value:    20,
-	}
-	assert.Equal(t, expected, NewTokenAmount(token, 20))
 }

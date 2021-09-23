@@ -23,11 +23,11 @@ package services
 import (
 	"context"
 
+	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 )
 
@@ -38,14 +38,12 @@ type AccountAPIService struct {
 }
 
 // NewAccountAPIService creates a new instance of a AccountAPIService.
-func NewAccountAPIService(base BaseService, accountRepo interfaces.AccountRepository) *AccountAPIService {
+func NewAccountAPIService(base BaseService, accountRepo interfaces.AccountRepository) server.AccountAPIServicer {
 	return &AccountAPIService{
 		BaseService: base,
 		accountRepo: accountRepo,
 	}
 }
-
-type getTokensFunc func(accountId int64, consensusEnd int64) ([]domain.Token, *rTypes.Error)
 
 // AccountBalance implements the /account/balance endpoint.
 func (a *AccountAPIService) AccountBalance(
@@ -86,24 +84,11 @@ func (a *AccountAPIService) AccountBalance(
 		}
 	}
 
-	// get 0 amount token balance for tokens have the first transfer for the account in the next block
-	// get 0 amount token balance for tokens which the account have dissociated with at the end of the current block
-	handlers := []getTokensFunc{
-		a.accountRepo.RetrieveTransferredTokensInBlockAfter,
-		a.accountRepo.RetrieveDissociatedTokens,
+	additionalTokenBalances, err := a.getAdditionalTokenBalances(account.EncodedId, block.ConsensusEndNanos, tokenSet)
+	if err != nil {
+		return nil, err
 	}
-	for _, handler := range handlers {
-		additionalTokenBalances, err := a.getAdditionalTokenBalances(
-			account.EncodedId,
-			block.ConsensusEndNanos,
-			handler,
-			tokenSet,
-		)
-		if err != nil {
-			return nil, err
-		}
-		balances = append(balances, additionalTokenBalances...)
-	}
+	balances = append(balances, additionalTokenBalances...)
 
 	return &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
@@ -121,15 +106,14 @@ func (a *AccountAPIService) AccountCoins(
 	return nil, errors.ErrNotImplemented
 }
 
-// getAdditionalTokenBalances get the additional token balances with 0 amount for tokens returned by the
-// getTokensFunc function
+// getAdditionalTokenBalances get the additional token balances with 0 amount for tokens the account has ever owned by
+// the end of the next block and not in the tokenSet
 func (a *AccountAPIService) getAdditionalTokenBalances(
 	accountId int64,
 	consensusEnd int64,
-	getTokensFunc getTokensFunc,
 	tokenSet map[int64]bool,
 ) ([]types.Amount, *rTypes.Error) {
-	tokens, err := getTokensFunc(accountId, consensusEnd)
+	tokens, err := a.accountRepo.RetrieveEverOwnedTokensByBlockAfter(accountId, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
@@ -138,15 +122,15 @@ func (a *AccountAPIService) getAdditionalTokenBalances(
 		return []types.Amount{}, nil
 	}
 
-	additionalTokenBalances := make([]types.Amount, 0)
+	tokenBalances := make([]types.Amount, 0)
 	for _, token := range tokens {
 		if !tokenSet[token.TokenId.EncodedId] {
-			additionalTokenBalances = append(additionalTokenBalances, types.NewTokenAmount(token, 0))
+			tokenBalances = append(tokenBalances, types.NewTokenAmount(token, 0))
 			tokenSet[token.TokenId.EncodedId] = true
 		}
 	}
 
-	return additionalTokenBalances, nil
+	return tokenBalances, nil
 }
 
 func (a *AccountAPIService) toRosettaBalances(balances []types.Amount) []*rTypes.Amount {

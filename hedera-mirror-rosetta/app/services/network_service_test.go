@@ -57,7 +57,7 @@ func dummySecondLatestBlock() *types.Block {
 	}
 }
 
-func networkAPIService(abr interfaces.AddressBookEntryRepository, base BaseService) server.NetworkAPIServicer {
+func getNetworkAPIService(abr interfaces.AddressBookEntryRepository, base BaseService) server.NetworkAPIServicer {
 	return NewNetworkAPIService(
 		base,
 		abr,
@@ -96,7 +96,7 @@ func (suite *networkServiceSuite) BeforeTest(suiteName string, testName string) 
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
 	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
-	suite.networkService = networkAPIService(suite.mockAddressBookEntryRepo, baseService)
+	suite.networkService = getNetworkAPIService(suite.mockAddressBookEntryRepo, baseService)
 }
 
 func (suite *networkServiceSuite) TestNetworkList() {

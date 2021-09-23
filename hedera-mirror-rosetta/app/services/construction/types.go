@@ -30,7 +30,7 @@ import (
 // TransactionConstructor defines the methods to construct a transaction
 type TransactionConstructor interface {
 	// Construct constructs a transaction from its operations
-	Construct(nodeAccountId hedera.AccountID, operations []*types.Operation) (
+	Construct(nodeAccountId hedera.AccountID, operations []*types.Operation, validStartNanos int64) (
 		interfaces.Transaction,
 		[]hedera.AccountID,
 		*types.Error,

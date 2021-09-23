@@ -29,11 +29,7 @@ import (
 // AccountRepository Interface that all AccountRepository structs must implement
 type AccountRepository interface {
 	RetrieveBalanceAtBlock(accountId int64, consensusEnd int64) ([]types.Amount, *rTypes.Error)
-	RetrieveDissociatedTokens(accountId int64, consensusEnd int64) ([]domain.Token, *rTypes.Error)
-	RetrieveTransferredTokensInBlockAfter(accountId int64, consensusTimestamp int64) (
-		[]domain.Token,
-		*rTypes.Error,
-	)
+	RetrieveEverOwnedTokensByBlockAfter(accountId int64, consensusEnd int64) ([]domain.Token, *rTypes.Error)
 }
 
 // AddressBookEntryRepository Interface that all AddressBookEntryRepository structs must implement

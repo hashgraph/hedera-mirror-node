@@ -29,12 +29,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var token = &Token{
+var token = Token{
 	Token: domain.Token{
 		TokenId:  domain.EntityId{EntityNum: 123, EncodedId: 123},
 		Decimals: 10,
 		Name:     "teebar",
 		Symbol:   "foobar",
+		Type:     domain.TokenTypeFungibleCommon,
 	},
 }
 
@@ -54,6 +55,7 @@ func TestTokenToRosettaCurrency(t *testing.T) {
 	expected := &types.Currency{
 		Symbol:   "0.0.123",
 		Decimals: 10,
+		Metadata: map[string]interface{}{"type": string(domain.TokenTypeFungibleCommon)},
 	}
 
 	// when

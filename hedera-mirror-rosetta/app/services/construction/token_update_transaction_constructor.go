@@ -53,11 +53,11 @@ type tokenUpdateTransactionConstructor struct {
 	tokenRepo       interfaces.TokenRepository
 }
 
-func (t *tokenUpdateTransactionConstructor) Construct(nodeAccountId hedera.AccountID, operations []*rTypes.Operation) (
-	interfaces.Transaction,
-	[]hedera.AccountID,
-	*rTypes.Error,
-) {
+func (t *tokenUpdateTransactionConstructor) Construct(
+	nodeAccountId hedera.AccountID,
+	operations []*rTypes.Operation,
+	validStartNanos int64,
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	payer, tokenUpdate, err := t.preprocess(operations)
 	if err != nil {
 		return nil, nil, err
@@ -66,7 +66,7 @@ func (t *tokenUpdateTransactionConstructor) Construct(nodeAccountId hedera.Accou
 	tx := hedera.NewTokenUpdateTransaction().
 		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 		SetTokenID(tokenUpdate.tokenId).
-		SetTransactionID(hedera.TransactionIDGenerate(*payer))
+		SetTransactionID(getTransactionId(*payer, validStartNanos))
 
 	if !tokenUpdate.AdminKey.isEmpty() {
 		tx.SetAdminKey(tokenUpdate.AdminKey.PublicKey)

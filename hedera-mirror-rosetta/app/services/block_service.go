@@ -28,20 +28,18 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 )
 
-// BlockAPIService implements the server.BlockAPIServicer interface.
-type BlockAPIService struct {
+// blockAPIService implements the server.BlockAPIServicer interface.
+type blockAPIService struct {
 	BaseService
 }
 
-// NewBlockAPIService creates a new instance of a BlockAPIService.
-func NewBlockAPIService(base BaseService) server.BlockAPIServicer {
-	return &BlockAPIService{
-		BaseService: base,
-	}
+// NewBlockAPIService creates a new instance of a blockAPIService.
+func NewBlockAPIService(baseService BaseService) server.BlockAPIServicer {
+	return &blockAPIService{BaseService: baseService}
 }
 
 // Block implements the /block endpoint.
-func (s *BlockAPIService) Block(
+func (s *blockAPIService) Block(
 	ctx context.Context,
 	request *rTypes.BlockRequest,
 ) (*rTypes.BlockResponse, *rTypes.Error) {
@@ -63,7 +61,7 @@ func (s *BlockAPIService) Block(
 }
 
 // BlockTransaction implements the /block/transaction endpoint.
-func (s *BlockAPIService) BlockTransaction(
+func (s *blockAPIService) BlockTransaction(
 	ctx context.Context,
 	request *rTypes.BlockTransactionRequest,
 ) (*rTypes.BlockTransactionResponse, *rTypes.Error) {

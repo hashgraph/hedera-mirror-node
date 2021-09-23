@@ -40,6 +40,7 @@ type tokenAssociateDissociateTransactionConstructor struct {
 func (t *tokenAssociateDissociateTransactionConstructor) Construct(
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
+	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	payer, tokenIds, rErr := t.preprocess(operations)
 	if rErr != nil {
@@ -48,19 +49,20 @@ func (t *tokenAssociateDissociateTransactionConstructor) Construct(
 
 	var tx interfaces.Transaction
 	var err error
+	transactionId := getTransactionId(*payer, validStartNanos)
 	if t.operationType == config.OperationTypeTokenAssociate {
 		tx, err = hedera.NewTokenAssociateTransaction().
 			SetAccountID(*payer).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenIDs(tokenIds...).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			SetTransactionID(transactionId).
 			Freeze()
 	} else {
 		tx, err = hedera.NewTokenDissociateTransaction().
 			SetAccountID(*payer).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenIDs(tokenIds...).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			SetTransactionID(transactionId).
 			Freeze()
 	}
 

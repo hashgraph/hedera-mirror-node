@@ -65,11 +65,11 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 		Name:                     randstr.Hex(6),
 		SupplyKey:                randstr.Bytes(12),
 		SupplyKeyEd25519Hex:      randstr.Hex(12),
-		SupplyType:               domain.Infinite,
+		SupplyType:               domain.TokenSupplyTypeInfinite,
 		Symbol:                   randstr.Hex(4),
 		TotalSupply:              200,
 		TreasuryAccountId:        domain.MustDecodeEntityId(1100),
-		Type:                     domain.FungibleCommon,
+		Type:                     domain.TokenTypeFungibleCommon,
 		WipeKey:                  randstr.Bytes(19),
 		WipeKeyEd25519Hex:        randstr.Hex(19),
 	}

@@ -31,6 +31,7 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -80,19 +81,32 @@ const (
                                                   'account_id', account_id,
                                                   'amount', amount,
                                                   'decimals', tk.decimals,
-                                                  'token_id', tkt.token_id
+                                                  'token_id', tkt.token_id,
+                                                  'type', tk.type
                                                 ))
                                               from token_transfer tkt
                                               join token tk on tk.token_id = tkt.token_id
                                               where tkt.consensus_timestamp = t.consensus_ns
                                             ), '[]') as token_transfers,
+                                            coalesce((
+                                              select json_agg(json_build_object(
+                                                  'receiver_account_id', receiver_account_id,
+                                                  'sender_account_id', sender_account_id,
+                                                  'serial_number', serial_number,
+                                                  'token_id', tk.token_id
+                                                ))
+                                              from nft_transfer nftt
+                                              join token tk on tk.token_id = nftt.token_id
+                                              where nftt.consensus_timestamp = t.consensus_ns and serial_number <> -1
+                                            ), '[]') as nft_transfers,
                                             case
                                               when t.type in (29, 35, 36) then coalesce((
                                                   select json_build_object(
-                                                    'token_id', token_id,
                                                     'decimals', decimals,
                                                     'freeze_default', freeze_default,
-                                                    'initial_supply', initial_supply
+                                                    'initial_supply', initial_supply,
+                                                    'token_id', token_id,
+                                                    'type', type
                                                   )
                                                   from token
                                                   where token_id = t.entity_id
@@ -134,6 +148,7 @@ type transaction struct {
 	Result          int16
 	Type            int16
 	CryptoTransfers string
+	NftTransfers    string
 	NonFeeTransfers string
 	TokenTransfers  string
 	Token           string
@@ -144,7 +159,7 @@ func (t transaction) getHashString() string {
 }
 
 type transfer interface {
-	getAccount() types.Account
+	getAccountId() domain.EntityId
 	getAmount() types.Amount
 }
 
@@ -153,12 +168,37 @@ type hbarTransfer struct {
 	Amount    int64           `json:"amount"`
 }
 
-func (t hbarTransfer) getAccount() types.Account {
-	return types.Account{EntityId: t.AccountId}
+func (t hbarTransfer) getAccountId() domain.EntityId {
+	return t.AccountId
 }
 
 func (t hbarTransfer) getAmount() types.Amount {
 	return &types.HbarAmount{Value: t.Amount}
+}
+
+type singleNftTransfer struct {
+	accountId    domain.EntityId
+	receiver     bool
+	serialNumber int64
+	tokenId      domain.EntityId
+}
+
+func (n singleNftTransfer) getAccountId() domain.EntityId {
+	return n.accountId
+}
+
+func (n singleNftTransfer) getAmount() types.Amount {
+	amount := int64(1)
+	if !n.receiver {
+		amount = -1
+	}
+
+	return &types.TokenAmount{
+		SerialNumbers: []int64{n.serialNumber},
+		TokenId:       n.tokenId,
+		Type:          domain.TokenTypeNonFungibleUnique,
+		Value:         amount,
+	}
 }
 
 type tokenTransfer struct {
@@ -166,32 +206,19 @@ type tokenTransfer struct {
 	Amount    int64           `json:"amount"`
 	Decimals  int64           `json:"decimals"`
 	TokenId   domain.EntityId `json:"token_id"`
+	Type      string          `json:"type"`
 }
 
-func (t tokenTransfer) getAccount() types.Account {
-	return types.Account{EntityId: t.AccountId}
+func (t tokenTransfer) getAccountId() domain.EntityId {
+	return t.AccountId
 }
 
 func (t tokenTransfer) getAmount() types.Amount {
 	return &types.TokenAmount{
 		Decimals: t.Decimals,
 		TokenId:  t.TokenId,
+		Type:     t.Type,
 		Value:    t.Amount,
-	}
-}
-
-type token struct {
-	Decimals      int64           `json:"decimals"`
-	FreezeDefault bool            `json:"freeze_default"`
-	InitialSupply int64           `json:"initial_supply"`
-	TokenId       domain.EntityId `json:"token_id"`
-}
-
-func (t token) getAmount() types.Amount {
-	return &types.TokenAmount{
-		TokenId:  t.TokenId,
-		Decimals: t.Decimals,
-		Value:    0,
 	}
 }
 
@@ -374,8 +401,13 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 			return nil, hErrors.ErrInternalServerError
 		}
 
-		token := &token{}
-		if err := json.Unmarshal([]byte(transaction.Token), token); err != nil {
+		nftTransfers := make([]domain.NftTransfer, 0)
+		if err := json.Unmarshal([]byte(transaction.NftTransfers), &nftTransfers); err != nil {
+			return nil, hErrors.ErrInternalServerError
+		}
+
+		token := domain.Token{}
+		if err := json.Unmarshal([]byte(transaction.Token), &token); err != nil {
 			return nil, hErrors.ErrInternalServerError
 		}
 
@@ -389,8 +421,10 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 		// crypto transfers are always successful regardless of the transaction result
 		operations = tr.appendHbarTransferOperations(success, transactionType, adjustedCryptoTransfers, operations)
 		operations = tr.appendTokenTransferOperations(transactionResult, transactionType, tokenTransfers, operations)
+		operations = tr.appendNftTransferOperations(transactionResult, transactionType, nftTransfers, operations)
 
 		if !token.TokenId.IsZero() {
+			// only for TokenCreate, TokenDeletion, and TokenUpdate, TokenId is non-zero
 			operation, err := getTokenOperation(len(operations), token, transaction, transactionResult, transactionType)
 			if err != nil {
 				return nil, err
@@ -417,6 +451,20 @@ func (tr *transactionRepository) appendHbarTransferOperations(
 	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
 }
 
+func (tr *transactionRepository) appendNftTransferOperations(
+	transactionResult string,
+	transactionType string,
+	nftTransfers []domain.NftTransfer,
+	operations []*types.Operation,
+) []*types.Operation {
+	transfers := make([]transfer, 0, 2*len(nftTransfers))
+	for _, nftTransfer := range nftTransfers {
+		transfers = append(transfers, getSingleNftTransfers(nftTransfer)...)
+	}
+
+	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
+}
+
 func (tr *transactionRepository) appendTokenTransferOperations(
 	transactionResult string,
 	transactionType string,
@@ -425,6 +473,12 @@ func (tr *transactionRepository) appendTokenTransferOperations(
 ) []*types.Operation {
 	transfers := make([]transfer, 0, len(tokenTransfers))
 	for _, tokenTransfer := range tokenTransfers {
+		// The wiped amount of a deleted NFT class by a TokenDissociate is presented as tokenTransferList and
+		// saved to token_transfer table, filter it
+		if tokenTransfer.Type != domain.TokenTypeFungibleCommon {
+			continue
+		}
+
 		transfers = append(transfers, tokenTransfer)
 	}
 
@@ -442,7 +496,7 @@ func (tr *transactionRepository) appendTransferOperations(
 			Index:   int64(len(operations)),
 			Type:    transactionType,
 			Status:  transactionResult,
-			Account: transfer.getAccount(),
+			Account: types.Account{EntityId: transfer.getAccountId()},
 			Amount:  transfer.getAmount(),
 		})
 	}
@@ -537,16 +591,37 @@ func aggregateNonFeeTransfers(nonFeeTransfers []hbarTransfer) map[int64]int64 {
 	return nonFeeTransferMap
 }
 
+func getSingleNftTransfers(nftTransfer domain.NftTransfer) []transfer {
+	transfers := make([]transfer, 0)
+	if nftTransfer.ReceiverAccountId != nil {
+		transfers = append(transfers, singleNftTransfer{
+			accountId:    *nftTransfer.ReceiverAccountId,
+			receiver:     true,
+			serialNumber: nftTransfer.SerialNumber,
+			tokenId:      nftTransfer.TokenId,
+		})
+	}
+
+	if nftTransfer.SenderAccountId != nil {
+		transfers = append(transfers, singleNftTransfer{
+			accountId:    *nftTransfer.SenderAccountId,
+			serialNumber: nftTransfer.SerialNumber,
+			tokenId:      nftTransfer.TokenId,
+		})
+	}
+	return transfers
+}
+
 func getTokenOperation(
 	index int,
-	token *token,
+	token domain.Token,
 	transaction *transaction,
 	transactionResult string,
 	transactionType string,
 ) (*types.Operation, *rTypes.Error) {
-	payerId, rErr := constructAccount(transaction.PayerAccountId)
-	if rErr != nil {
-		return nil, rErr
+	payerId, err := constructAccount(transaction.PayerAccountId)
+	if err != nil {
+		return nil, err
 	}
 
 	operation := &types.Operation{
@@ -556,15 +631,16 @@ func getTokenOperation(
 		Account: payerId,
 	}
 
-	// best effort for immutable fields
-	metadata := make(map[string]interface{})
-	metadata["currency"] = token.getAmount().ToRosetta().Currency
-	if transaction.Type == domain.TransactionTypeTokenCreation {
+	if transactionType == config.OperationTypeTokenCreate {
+		metadata := make(map[string]interface{})
+		metadata["currency"] = types.Token{Token: token}.ToRosettaCurrency()
 		metadata["freeze_default"] = token.FreezeDefault
 		metadata["initial_supply"] = token.InitialSupply
+		operation.Metadata = metadata
+	} else {
+		// TokenDeletion and TokenUpdate
+		operation.Amount = types.NewTokenAmount(token, 0)
 	}
-
-	operation.Metadata = metadata
 
 	return operation, nil
 }

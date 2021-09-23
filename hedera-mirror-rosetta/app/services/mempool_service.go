@@ -28,16 +28,16 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 )
 
-// MempoolAPIService implements the server.MempoolAPIServicer
-type MempoolAPIService struct{}
+// mempoolAPIService implements the server.MempoolAPIServicer
+type mempoolAPIService struct{}
 
-// NewMempoolAPIService creates a new instance of a MempoolAPIService
+// NewMempoolAPIService creates a new instance of a mempoolAPIService
 func NewMempoolAPIService() server.MempoolAPIServicer {
-	return &MempoolAPIService{}
+	return &mempoolAPIService{}
 }
 
 // Mempool implements the /mempool endpoint
-func (m *MempoolAPIService) Mempool(
+func (m *mempoolAPIService) Mempool(
 	ctx context.Context,
 	request *rTypes.NetworkRequest,
 ) (*rTypes.MempoolResponse, *rTypes.Error) {
@@ -47,7 +47,7 @@ func (m *MempoolAPIService) Mempool(
 }
 
 // MempoolTransaction implements the /mempool/transaction endpoint
-func (m *MempoolAPIService) MempoolTransaction(
+func (m *mempoolAPIService) MempoolTransaction(
 	ctx context.Context,
 	request *rTypes.MempoolTransactionRequest,
 ) (*rTypes.MempoolTransactionResponse, *rTypes.Error) {
