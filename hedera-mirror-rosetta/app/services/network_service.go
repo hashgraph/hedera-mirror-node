@@ -44,11 +44,7 @@ func (n *networkAPIService) NetworkList(
 	ctx context.Context,
 	request *types.MetadataRequest,
 ) (*types.NetworkListResponse, *types.Error) {
-	return &types.NetworkListResponse{
-		NetworkIdentifiers: []*types.NetworkIdentifier{
-			n.network,
-		},
-	}, nil
+	return &types.NetworkListResponse{NetworkIdentifiers: []*types.NetworkIdentifier{n.network}}, nil
 }
 
 // NetworkOptions implements the /network/options endpoint.
@@ -56,11 +52,11 @@ func (n *networkAPIService) NetworkOptions(
 	ctx context.Context,
 	request *types.NetworkRequest,
 ) (*types.NetworkOptionsResponse, *types.Error) {
-	operationTypes, err := n.TypesAsArray()
+	operationTypes, err := n.TypesAsArray(ctx)
 	if err != nil {
 		return nil, err
 	}
-	results, err := n.Results()
+	results, err := n.Results(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -89,17 +85,17 @@ func (n *networkAPIService) NetworkStatus(
 	ctx context.Context,
 	request *types.NetworkRequest,
 ) (*types.NetworkStatusResponse, *types.Error) {
-	genesisBlock, err := n.RetrieveGenesis()
+	genesisBlock, err := n.RetrieveGenesis(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	currentBlock, err := n.RetrieveLatest()
+	currentBlock, err := n.RetrieveLatest(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	peers, err := n.addressBookEntryRepo.Entries()
+	peers, err := n.addressBookEntryRepo.Entries(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -40,6 +40,8 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 )
 
+const MetadataKeyValidStartNanos = "valid_start_nanos"
+
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
 type constructionAPIService struct {
 	hederaClient       *hedera.Client
@@ -116,10 +118,7 @@ func (c *constructionAPIService) ConstructionHash(
 	}
 
 	return &rTypes.TransactionIdentifierResponse{
-		TransactionIdentifier: &rTypes.TransactionIdentifier{
-			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(hash[:])),
-		},
-		Metadata: nil,
+		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: tools.SafeAddHexPrefix(hex.EncodeToString(hash[:]))},
 	}, nil
 }
 
@@ -143,7 +142,7 @@ func (c *constructionAPIService) ConstructionParse(
 		return nil, err
 	}
 
-	operations, accounts, err := c.transactionHandler.Parse(transaction)
+	operations, accounts, err := c.transactionHandler.Parse(ctx, transaction)
 	if err != nil {
 		return nil, err
 	}
@@ -171,12 +170,8 @@ func (c *constructionAPIService) ConstructionPayloads(
 		return nil, rErr
 	}
 
-	// payer, rErr := c.getPayer(request.Metadata)
-	// if rErr != nil {
-	// 	return nil, rErr
-	// }
-
 	transaction, signers, rErr := c.transactionHandler.Construct(
+		ctx,
 		c.getRandomNodeAccountId(),
 		request.Operations,
 		validStartNanos,
@@ -215,7 +210,7 @@ func (c *constructionAPIService) ConstructionPreprocess(
 	ctx context.Context,
 	request *rTypes.ConstructionPreprocessRequest,
 ) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
-	signers, err := c.transactionHandler.Preprocess(request.Operations)
+	signers, err := c.transactionHandler.Preprocess(ctx, request.Operations)
 	if err != nil {
 		return nil, err
 	}
@@ -270,36 +265,16 @@ func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	return c.nodeAccountIds[index.Int64()]
 }
 
-// func (c *constructionAPIService) getPayer(metadata map[string]interface{}) (*hedera.AccountID, *rTypes.Error) {
-// 	var payer *hedera.AccountID
-// 	var rErr *rTypes.Error
-//
-// 	if metadata != nil && metadata["payer"] != nil {
-// 		rErr = errors.ErrInvalidAccount
-// 		if accountIdStr, ok := metadata["payer"].(string); ok {
-// 			if accountId, err := hedera.AccountIDFromString(accountIdStr); err == nil {
-// 				payer = &accountId
-// 				rErr = nil
-// 			}
-// 		}
-// 	}
-//
-// 	return payer, rErr
-// }
-
 func (c *constructionAPIService) getValidStartNanos(metadata map[string]interface{}) (int64, *rTypes.Error) {
 	var validStartNanos int64
+	if metadata != nil && metadata[MetadataKeyValidStartNanos] != nil {
+		nanos, ok := metadata[MetadataKeyValidStartNanos].(string)
+		if !ok {
+			return validStartNanos, errors.ErrInvalidArgument
+		}
 
-	if metadata != nil && metadata["valid_start_nanos"] != nil {
-		switch nanos := metadata["valid_start_nanos"].(type) {
-		case string:
-			var err error
-			if validStartNanos, err = tools.ToInt64(nanos); err != nil {
-				return 0, errors.ErrInvalidArgument
-			}
-		case float64:
-			validStartNanos = int64(nanos)
-		default:
+		var err error
+		if validStartNanos, err = tools.ToInt64(nanos); err != nil {
 			return validStartNanos, errors.ErrInvalidArgument
 		}
 	}

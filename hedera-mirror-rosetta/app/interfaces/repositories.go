@@ -21,6 +21,8 @@
 package interfaces
 
 import (
+	"context"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
@@ -28,34 +30,40 @@ import (
 
 // AccountRepository Interface that all AccountRepository structs must implement
 type AccountRepository interface {
-	RetrieveBalanceAtBlock(accountId int64, consensusEnd int64) ([]types.Amount, *rTypes.Error)
-	RetrieveEverOwnedTokensByBlockAfter(accountId int64, consensusEnd int64) ([]domain.Token, *rTypes.Error)
+	RetrieveBalanceAtBlock(ctx context.Context, accountId, consensusEnd int64) ([]types.Amount, *rTypes.Error)
+	RetrieveEverOwnedTokensByBlockAfter(ctx context.Context, accountId, consensusEnd int64) (
+		[]domain.Token,
+		*rTypes.Error,
+	)
 }
 
 // AddressBookEntryRepository Interface that all AddressBookEntryRepository structs must implement
 type AddressBookEntryRepository interface {
-	Entries() (*types.AddressBookEntries, *rTypes.Error)
+	Entries(ctx context.Context) (*types.AddressBookEntries, *rTypes.Error)
 }
 
 // BlockRepository Interface that all BlockRepository structs must implement
 type BlockRepository interface {
-	FindByHash(hash string) (*types.Block, *rTypes.Error)
-	FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error)
-	FindByIndex(index int64) (*types.Block, *rTypes.Error)
-	RetrieveGenesis() (*types.Block, *rTypes.Error)
-	RetrieveLatest() (*types.Block, *rTypes.Error)
+	FindByHash(ctx context.Context, hash string) (*types.Block, *rTypes.Error)
+	FindByIdentifier(ctx context.Context, index int64, hash string) (*types.Block, *rTypes.Error)
+	FindByIndex(ctx context.Context, index int64) (*types.Block, *rTypes.Error)
+	RetrieveGenesis(ctx context.Context) (*types.Block, *rTypes.Error)
+	RetrieveLatest(ctx context.Context) (*types.Block, *rTypes.Error)
 }
 
 // TokenRepository Interface that all TokenRepository structs must implement
 type TokenRepository interface {
-	Find(tokenIdStr string) (domain.Token, *rTypes.Error)
+	Find(ctx context.Context, tokenIdStr string) (domain.Token, *rTypes.Error)
 }
 
 // TransactionRepository Interface that all TransactionRepository structs must implement
 type TransactionRepository interface {
-	FindByHashInBlock(identifier string, consensusStart int64, consensusEnd int64) (*types.Transaction, *rTypes.Error)
-	FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error)
-	Results() (map[int]string, *rTypes.Error)
-	Types() (map[int]string, *rTypes.Error)
-	TypesAsArray() ([]string, *rTypes.Error)
+	FindByHashInBlock(ctx context.Context, hash string, consensusStart, consensusEnd int64) (
+		*types.Transaction,
+		*rTypes.Error,
+	)
+	FindBetween(ctx context.Context, start, end int64) ([]*types.Transaction, *rTypes.Error)
+	Results(ctx context.Context) (map[int]string, *rTypes.Error)
+	Types(ctx context.Context) (map[int]string, *rTypes.Error)
+	TypesAsArray(ctx context.Context) ([]string, *rTypes.Error)
 }

@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -40,11 +41,12 @@ type tokenFreezeUnfreezeTransactionConstructor struct {
 }
 
 func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, account, token, rErr := t.preprocess(operations)
+	payer, account, token, rErr := t.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -75,7 +77,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -105,7 +107,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(transaction interfaces
 		return nil, nil, hErrors.ErrTransactionInvalidType
 	}
 
-	dbToken, err := t.tokenRepo.Find(token.String())
+	dbToken, err := t.tokenRepo.Find(ctx, token.String())
 	if err != nil {
 		return nil, nil, hErrors.ErrTokenNotFound
 	}
@@ -124,11 +126,11 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(transaction interfaces
 	return []*rTypes.Operation{operation}, []hedera.AccountID{payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, _, err := t.preprocess(operations)
+	payer, _, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -136,13 +138,13 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(operations []*rTy
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*hedera.AccountID,
 	*hedera.TokenID,
 	*rTypes.Error,
 ) {
-	return preprocessTokenFreezeKyc(operations, t.GetOperationType(), t.tokenRepo, t.validate)
+	return preprocessTokenFreezeKyc(ctx, operations, t.GetOperationType(), t.tokenRepo, t.validate)
 }
 
 func (t *tokenFreezeUnfreezeTransactionConstructor) GetOperationType() string {

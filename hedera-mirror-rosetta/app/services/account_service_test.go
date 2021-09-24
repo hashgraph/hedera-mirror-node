@@ -63,12 +63,6 @@ var (
 		Symbol:   "foobar4",
 		Type:     domain.TokenTypeFungibleCommon,
 	}
-	token5 = domain.Token{
-		TokenId: domain.MustDecodeEntityId(2005),
-		Name:    "foobar5",
-		Symbol:  "foobar5",
-		Type:    domain.TokenTypeNonFungibleUnique,
-	}
 )
 
 func amount() []types.Amount {

@@ -21,6 +21,8 @@
 package mocks
 
 import (
+	"context"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/stretchr/testify/mock"
@@ -30,7 +32,7 @@ type MockTokenRepository struct {
 	mock.Mock
 }
 
-func (m *MockTokenRepository) Find(tokenIdStr string) (domain.Token, *rTypes.Error) {
-	args := m.Called(tokenIdStr)
+func (m *MockTokenRepository) Find(ctx context.Context, tokenIdStr string) (domain.Token, *rTypes.Error) {
+	args := m.Called(ctx, tokenIdStr)
 	return args.Get(0).(domain.Token), args.Get(1).(*rTypes.Error)
 }

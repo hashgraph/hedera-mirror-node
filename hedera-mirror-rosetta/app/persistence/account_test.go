@@ -21,6 +21,7 @@
 package persistence
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -38,6 +39,7 @@ var (
 	consensusTimestamp    int64 = 200
 	snapshotTimestamp     int64 = 100
 	cryptoTransferAmounts       = []int64{150, -178}
+	defaultContext              = context.Background()
 	token1                      = &domain.Token{
 		TokenId:           domain.MustDecodeEntityId(1001),
 		CreatedTimestamp:  10,
@@ -284,12 +286,11 @@ type accountRepositorySuite struct {
 
 func (suite *accountRepositorySuite) SetupTest() {
 	suite.integrationTest.SetupTest()
-	db.CreateDbRecords(dbResource.GetGormDb(), snapshotAccountBalanceFile)
+	db.CreateDbRecords(dbClient, snapshotAccountBalanceFile)
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, token1, token2, token3)
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
 	// transfers before or at the snapshot timestamp should not affect balance calculation
@@ -306,7 +307,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(account.EncodedId, consensusTimestamp)
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, consensusTimestamp)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -315,7 +316,6 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
 	// transfers before or at the snapshot timestamp should not affect balance calculation
 	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot)
@@ -328,7 +328,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 	expected := []types.Amount{hbarAmount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(account.EncodedId, consensusTimestamp)
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, consensusTimestamp)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -337,7 +337,6 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, token1, token2, token3)
 	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers, nftTransfers)
 
@@ -350,7 +349,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount}
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(account.EncodedId, consensusTimestamp)
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, consensusTimestamp)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -359,12 +358,11 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountBalanceFile() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(account.EncodedId, consensusTimestamp)
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, consensusTimestamp)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -376,7 +374,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError
 	repo := NewAccountRepository(invalidDbClient)
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(account.EncodedId, consensusTimestamp)
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, consensusTimestamp)
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
@@ -385,7 +383,6 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError
 
 func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfter() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	currentBlockEnd := nextRecordFile.ConsensusStart - 1
 	nextBlockStart := nextRecordFile.ConsensusStart
 	nextBlockEnd := nextRecordFile.ConsensusEnd
@@ -413,7 +410,7 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfter() {
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(account.EncodedId, currentBlockEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(defaultContext, account.EncodedId, currentBlockEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -422,7 +419,6 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfter() {
 
 func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfterNoTokenEntity() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	currentBlockEnd := nextRecordFile.ConsensusStart - 1
 	nextBlockStart := nextRecordFile.ConsensusStart
 	nextBlockEnd := nextRecordFile.ConsensusEnd
@@ -438,7 +434,7 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfterNoTo
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(account.EncodedId, currentBlockEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(defaultContext, account.EncodedId, currentBlockEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -450,7 +446,7 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfterDbCo
 	repo := NewAccountRepository(invalidDbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(account.EncodedId, consensusEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(defaultContext, account.EncodedId, consensusEnd)
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)

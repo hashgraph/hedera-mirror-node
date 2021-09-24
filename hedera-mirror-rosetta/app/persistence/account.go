@@ -21,6 +21,7 @@
 package persistence
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 
@@ -29,8 +30,8 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const (
@@ -138,11 +139,11 @@ type accountBalanceChange struct {
 
 // accountRepository struct that has connection to the Database
 type accountRepository struct {
-	dbClient *gorm.DB
+	dbClient *types2.DbClient
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
-func NewAccountRepository(dbClient *gorm.DB) interfaces.AccountRepository {
+func NewAccountRepository(dbClient *types2.DbClient) interfaces.AccountRepository {
 	return &accountRepository{dbClient}
 }
 
@@ -150,15 +151,16 @@ func NewAccountRepository(dbClient *gorm.DB) interfaces.AccountRepository {
 // provided by consensusEnd timestamp).
 // balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
 func (ar *accountRepository) RetrieveBalanceAtBlock(
+	ctx context.Context,
 	accountId int64,
 	consensusEnd int64,
 ) ([]types.Amount, *rTypes.Error) {
-	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(accountId, consensusEnd)
+	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(ctx, accountId, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
 
-	hbarValue, tokenValues, err := ar.getBalanceChange(accountId, snapshotTimestamp, consensusEnd)
+	hbarValue, tokenValues, err := ar.getBalanceChange(ctx, accountId, snapshotTimestamp, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
@@ -175,12 +177,18 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 
 // RetrieveEverOwnedTokensByBlockAfter returns the tokens the account has ever owned by the end of the block after
 // consensusEnd
-func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(accountId int64, consensusEnd int64) (
-	[]domain.Token,
-	*rTypes.Error,
-) {
+func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(
+	ctx context.Context,
+	accountId int64,
+	consensusEnd int64,
+) ([]domain.Token, *rTypes.Error) {
+	db, cancel := ar.dbClient.GetDbWithContext(ctx)
+	if cancel != nil {
+		defer cancel()
+	}
+
 	tokens := make([]domain.Token, 0)
-	if err := ar.dbClient.Raw(
+	if err := db.Raw(
 		selectEverOwnedTokensByBlockAfter,
 		sql.Named("account_id", accountId),
 		sql.Named("consensus_timestamp", consensusEnd),
@@ -192,15 +200,18 @@ func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(accountId int64
 	return tokens, nil
 }
 
-func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd int64) (
+func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accountId, consensusEnd int64) (
 	int64,
 	*types.HbarAmount,
 	map[int64]*types.TokenAmount,
 	*rTypes.Error,
 ) {
+	db, cancel := ar.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	// gets the most recent balance at or before consensusEnd
 	cb := &combinedAccountBalance{}
-	if err := ar.dbClient.Raw(
+	if err := db.Raw(
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", consensusEnd),
@@ -228,14 +239,17 @@ func (ar *accountRepository) getLatestBalanceSnapshot(accountId, consensusEnd in
 	return cb.ConsensusTimestamp, &hbarAmount, tokenAmountMap, nil
 }
 
-func (ar *accountRepository) getBalanceChange(accountId, consensusStart, consensusEnd int64) (
+func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, consensusStart, consensusEnd int64) (
 	int64,
 	[]*types.TokenAmount,
 	*rTypes.Error,
 ) {
+	db, cancel := ar.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	change := &accountBalanceChange{}
 	// gets the balance change from the Balance snapshot until the target block
-	if err := ar.dbClient.Raw(
+	if err := db.Raw(
 		balanceChangeBetween,
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),

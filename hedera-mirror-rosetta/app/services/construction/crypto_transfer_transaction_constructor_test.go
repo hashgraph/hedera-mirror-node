@@ -122,7 +122,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs...)
 
 			// when
-			tx, signers, err := h.Construct(nodeAccountId, operations, tt.validStartNanos)
+			tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
 
 			// then
 			if tt.expectError {
@@ -214,7 +214,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 			}
 
 			// when
-			operations, signers, err := h.Parse(tx)
+			operations, signers, err := h.Parse(defaultContext, tx)
 
 			// then
 			if tt.expectError {
@@ -401,7 +401,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			}
 
 			// when
-			signers, err := h.Preprocess(operations)
+			signers, err := h.Preprocess(defaultContext, operations)
 
 			// then
 			if tt.expectError {

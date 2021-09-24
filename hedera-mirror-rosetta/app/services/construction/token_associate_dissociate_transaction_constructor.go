@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -38,11 +39,12 @@ type tokenAssociateDissociateTransactionConstructor struct {
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenIds, rErr := t.preprocess(operations)
+	payer, tokenIds, rErr := t.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -73,11 +75,10 @@ func (t *tokenAssociateDissociateTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
-	*rTypes.Error,
-) {
+func (t *tokenAssociateDissociateTransactionConstructor) Parse(
+	ctx context.Context,
+	transaction interfaces.Transaction,
+) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
 	var accountId hedera.AccountID
 	var payerId *hedera.AccountID
 	var tokenIds []hedera.TokenID
@@ -119,7 +120,7 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction inter
 	operations := make([]*rTypes.Operation, 0, len(tokenIds))
 
 	for index, tokenId := range tokenIds {
-		dbToken, err := t.tokenRepo.Find(tokenId.String())
+		dbToken, err := t.tokenRepo.Find(ctx, tokenId.String())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -138,11 +139,11 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction inter
 	return operations, []hedera.AccountID{accountId}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
-	[]hedera.AccountID,
-	*rTypes.Error,
-) {
-	payer, _, err := t.preprocess(operations)
+func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(
+	ctx context.Context,
+	operations []*rTypes.Operation,
+) ([]hedera.AccountID, *rTypes.Error) {
+	payer, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -150,11 +151,10 @@ func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(operations [
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
-	[]hedera.TokenID,
-	*rTypes.Error,
-) {
+func (t *tokenAssociateDissociateTransactionConstructor) preprocess(
+	ctx context.Context,
+	operations []*rTypes.Operation,
+) (*hedera.AccountID, []hedera.TokenID, *rTypes.Error) {
 	if rErr := validateOperations(operations, 0, t.operationType, false); rErr != nil {
 		return nil, nil, rErr
 	}
@@ -167,7 +167,7 @@ func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations [
 		}
 
 		currency := operation.Amount.Currency
-		token, rErr := validateToken(t.tokenRepo, currency)
+		token, rErr := validateToken(ctx, t.tokenRepo, currency)
 		if rErr != nil {
 			return nil, nil, rErr
 		}

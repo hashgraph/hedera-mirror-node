@@ -24,7 +24,7 @@ import (
 	"context"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 )
 
@@ -39,17 +39,15 @@ func NewMempoolAPIService() server.MempoolAPIServicer {
 // Mempool implements the /mempool endpoint
 func (m *mempoolAPIService) Mempool(
 	ctx context.Context,
-	request *rTypes.NetworkRequest,
-) (*rTypes.MempoolResponse, *rTypes.Error) {
-	return &rTypes.MempoolResponse{
-		TransactionIdentifiers: []*rTypes.TransactionIdentifier{},
-	}, nil
+	request *types.NetworkRequest,
+) (*types.MempoolResponse, *types.Error) {
+	return &types.MempoolResponse{TransactionIdentifiers: []*types.TransactionIdentifier{}}, nil
 }
 
 // MempoolTransaction implements the /mempool/transaction endpoint
 func (m *mempoolAPIService) MempoolTransaction(
 	ctx context.Context,
-	request *rTypes.MempoolTransactionRequest,
-) (*rTypes.MempoolTransactionResponse, *rTypes.Error) {
+	request *types.MempoolTransactionRequest,
+) (*types.MempoolTransactionResponse, *types.Error) {
 	return nil, errors.ErrTransactionNotFound
 }

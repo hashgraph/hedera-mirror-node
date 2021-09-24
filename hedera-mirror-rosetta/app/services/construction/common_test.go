@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -33,6 +34,8 @@ import (
 )
 
 const accountAddress = "0.0.123"
+
+var defaultContext = context.Background()
 
 func TestCompareCurrency(t *testing.T) {
 	var tests = []struct {
@@ -496,7 +499,7 @@ func TestValidateToken(t *testing.T) {
 				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
 			}
 
-			token, err := validateToken(mockTokenRepo, tt.currency)
+			token, err := validateToken(defaultContext, mockTokenRepo, tt.currency)
 
 			if tt.expectError {
 				assert.NotNil(t, err)

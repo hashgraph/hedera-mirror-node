@@ -59,9 +59,9 @@ func (a *AccountAPIService) AccountBalance(
 	}
 
 	if request.BlockIdentifier != nil {
-		block, err = a.RetrieveBlock(request.BlockIdentifier)
+		block, err = a.RetrieveBlock(ctx, request.BlockIdentifier)
 	} else {
-		block, err = a.RetrieveLatest()
+		block, err = a.RetrieveLatest(ctx)
 	}
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (a *AccountAPIService) AccountBalance(
 		return nil, errors.ErrBlockNotFound
 	}
 
-	balances, err := a.accountRepo.RetrieveBalanceAtBlock(account.EncodedId, block.ConsensusEndNanos)
+	balances, err := a.accountRepo.RetrieveBalanceAtBlock(ctx, account.EncodedId, block.ConsensusEndNanos)
 	if err != nil {
 		return nil, err
 	}
@@ -84,11 +84,11 @@ func (a *AccountAPIService) AccountBalance(
 		}
 	}
 
-	additionalTokenBalances, err := a.getAdditionalTokenBalances(account.EncodedId, block.ConsensusEndNanos, tokenSet)
+	tokenBalances, err := a.getAdditionalTokenBalances(ctx, account.EncodedId, block.ConsensusEndNanos, tokenSet)
 	if err != nil {
 		return nil, err
 	}
-	balances = append(balances, additionalTokenBalances...)
+	balances = append(balances, tokenBalances...)
 
 	return &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
@@ -109,11 +109,12 @@ func (a *AccountAPIService) AccountCoins(
 // getAdditionalTokenBalances get the additional token balances with 0 amount for tokens the account has ever owned by
 // the end of the next block and not in the tokenSet
 func (a *AccountAPIService) getAdditionalTokenBalances(
+	ctx context.Context,
 	accountId int64,
 	consensusEnd int64,
 	tokenSet map[int64]bool,
 ) ([]types.Amount, *rTypes.Error) {
-	tokens, err := a.accountRepo.RetrieveEverOwnedTokensByBlockAfter(accountId, consensusEnd)
+	tokens, err := a.accountRepo.RetrieveEverOwnedTokensByBlockAfter(ctx, accountId, consensusEnd)
 	if err != nil {
 		return nil, err
 	}

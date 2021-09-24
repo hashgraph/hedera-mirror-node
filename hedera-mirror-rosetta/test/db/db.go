@@ -61,14 +61,14 @@ type DbResource struct {
 	network  *dockertest.Network
 }
 
-func CreateDbRecords(db *gorm.DB, records ...interface{}) {
+func CreateDbRecords(dbClient *types.DbClient, records ...interface{}) {
 	for _, record := range records {
-		db.Create(record)
+		dbClient.GetDb().Create(record)
 	}
 }
 
-func ExecSql(db *gorm.DB, sql string) {
-	db.Exec(sql)
+func ExecSql(dbClient *types.DbClient, sql string) {
+	dbClient.GetDb().Exec(sql)
 }
 
 // GetDbConfig returns the db config of the session

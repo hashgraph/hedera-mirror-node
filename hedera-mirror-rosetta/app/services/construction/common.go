@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"time"
@@ -127,6 +128,7 @@ func parsePayerMetadata(validate *validator.Validate, metadata map[string]interf
 }
 
 func preprocessTokenFreezeKyc(
+	ctx context.Context,
 	operations []*rTypes.Operation,
 	operationType string,
 	tokenRepo interfaces.TokenRepository,
@@ -147,7 +149,7 @@ func preprocessTokenFreezeKyc(
 		return nil, nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
-	token, rErr := validateToken(tokenRepo, amount.Currency)
+	token, rErr := validateToken(ctx, tokenRepo, amount.Currency)
 	if rErr != nil {
 		return nil, nil, nil, rErr
 	}
@@ -198,8 +200,12 @@ func validateOperations(operations []*rTypes.Operation, size int, opType string,
 	return nil
 }
 
-func validateToken(tokenRepo interfaces.TokenRepository, currency *rTypes.Currency) (*hedera.TokenID, *rTypes.Error) {
-	token, rErr := tokenRepo.Find(currency.Symbol)
+func validateToken(
+	ctx context.Context,
+	tokenRepo interfaces.TokenRepository,
+	currency *rTypes.Currency,
+) (*hedera.TokenID, *rTypes.Error) {
+	token, rErr := tokenRepo.Find(ctx, currency.Symbol)
 	if rErr != nil {
 		return nil, rErr
 	}

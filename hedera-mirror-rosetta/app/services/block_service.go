@@ -43,21 +43,16 @@ func (s *blockAPIService) Block(
 	ctx context.Context,
 	request *rTypes.BlockRequest,
 ) (*rTypes.BlockResponse, *rTypes.Error) {
-	block, err := s.RetrieveBlock(request.BlockIdentifier)
+	block, err := s.RetrieveBlock(ctx, request.BlockIdentifier)
 	if err != nil {
 		return nil, err
 	}
 
-	transactions, err := s.FindBetween(block.ConsensusStartNanos, block.ConsensusEndNanos)
-	if err != nil {
+	if block.Transactions, err = s.FindBetween(ctx, block.ConsensusStartNanos, block.ConsensusEndNanos); err != nil {
 		return nil, err
 	}
 
-	block.Transactions = transactions
-	rBlock := block.ToRosetta()
-	return &rTypes.BlockResponse{
-		Block: rBlock,
-	}, nil
+	return &rTypes.BlockResponse{Block: block.ToRosetta()}, nil
 }
 
 // BlockTransaction implements the /block/transaction endpoint.
@@ -66,12 +61,13 @@ func (s *blockAPIService) BlockTransaction(
 	request *rTypes.BlockTransactionRequest,
 ) (*rTypes.BlockTransactionResponse, *rTypes.Error) {
 	h := tools.SafeRemoveHexPrefix(request.BlockIdentifier.Hash)
-	block, err := s.FindByIdentifier(request.BlockIdentifier.Index, h)
+	block, err := s.FindByIdentifier(ctx, request.BlockIdentifier.Index, h)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction, err := s.FindByHashInBlock(
+		ctx,
 		request.TransactionIdentifier.Hash,
 		block.ConsensusStartNanos,
 		block.ConsensusEndNanos,
@@ -79,8 +75,6 @@ func (s *blockAPIService) BlockTransaction(
 	if err != nil {
 		return nil, err
 	}
-	rTransaction := transaction.ToRosetta()
-	return &rTypes.BlockTransactionResponse{
-		Transaction: rTransaction,
-	}, nil
+
+	return &rTypes.BlockTransactionResponse{Transaction: transaction.ToRosetta()}, nil
 }

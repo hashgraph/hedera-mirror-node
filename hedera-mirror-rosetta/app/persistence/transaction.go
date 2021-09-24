@@ -21,6 +21,7 @@
 package persistence
 
 import (
+	"context"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
@@ -33,8 +34,8 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
+	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const (
@@ -225,20 +226,20 @@ func (t tokenTransfer) getAmount() types.Amount {
 // transactionRepository struct that has connection to the Database
 type transactionRepository struct {
 	once     sync.Once
-	dbClient *gorm.DB
+	dbClient *types2.DbClient
 	results  map[int]string
 	types    map[int]string
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
-func NewTransactionRepository(dbClient *gorm.DB) interfaces.TransactionRepository {
+func NewTransactionRepository(dbClient *types2.DbClient) interfaces.TransactionRepository {
 	return &transactionRepository{dbClient: dbClient}
 }
 
 // Types returns map of all transaction types
-func (tr *transactionRepository) Types() (map[int]string, *rTypes.Error) {
+func (tr *transactionRepository) Types(ctx context.Context) (map[int]string, *rTypes.Error) {
 	if tr.types == nil {
-		if err := tr.retrieveTransactionTypesAndResults(); err != nil {
+		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -246,9 +247,9 @@ func (tr *transactionRepository) Types() (map[int]string, *rTypes.Error) {
 }
 
 // Results returns map of all transaction results
-func (tr *transactionRepository) Results() (map[int]string, *rTypes.Error) {
+func (tr *transactionRepository) Results(ctx context.Context) (map[int]string, *rTypes.Error) {
 	if tr.results == nil {
-		if err := tr.retrieveTransactionTypesAndResults(); err != nil {
+		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -256,8 +257,8 @@ func (tr *transactionRepository) Results() (map[int]string, *rTypes.Error) {
 }
 
 // TypesAsArray returns all Transaction type names as an array
-func (tr *transactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
-	transactionTypes, err := tr.Types()
+func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
+	transactionTypes, err := tr.Types(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -265,16 +266,21 @@ func (tr *transactionRepository) TypesAsArray() ([]string, *rTypes.Error) {
 }
 
 // FindBetween retrieves all Transactions between the provided start and end timestamp
-func (tr *transactionRepository) FindBetween(start, end int64) ([]*types.Transaction, *rTypes.Error) {
+func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int64) (
+	[]*types.Transaction,
+	*rTypes.Error,
+) {
 	if start > end {
 		return nil, hErrors.ErrStartMustNotBeAfterEnd
 	}
 
-	transactions := make([]*transaction, 0)
+	db, cancel := tr.dbClient.GetDbWithContext(ctx)
+	defer cancel()
 
+	transactions := make([]*transaction, 0)
 	for start <= end {
 		transactionsBatch := make([]*transaction, 0)
-		err := tr.dbClient.
+		err := db.
 			Raw(selectTransactionsInTimestampRangeOrdered, sql.Named("start", start), sql.Named("end", end)).
 			Limit(batchSize).
 			Find(&transactionsBatch).
@@ -308,7 +314,7 @@ func (tr *transactionRepository) FindBetween(start, end int64) ([]*types.Transac
 	res := make([]*types.Transaction, 0, len(sameHashMap))
 	for _, hash := range hashes {
 		sameHashTransactions := sameHashMap[hash]
-		transaction, err := tr.constructTransaction(sameHashTransactions)
+		transaction, err := tr.constructTransaction(ctx, sameHashTransactions)
 		if err != nil {
 			return nil, err
 		}
@@ -319,6 +325,7 @@ func (tr *transactionRepository) FindBetween(start, end int64) ([]*types.Transac
 
 // FindByHashInBlock retrieves a transaction by Hash
 func (tr *transactionRepository) FindByHashInBlock(
+	ctx context.Context,
 	hashStr string,
 	consensusStart int64,
 	consensusEnd int64,
@@ -329,16 +336,15 @@ func (tr *transactionRepository) FindByHashInBlock(
 		return nil, hErrors.ErrInvalidTransactionIdentifier
 	}
 
-	err = tr.dbClient.
-		Raw(
-			selectTransactionsByHashInTimestampRange,
-			sql.Named("hash", transactionHash),
-			sql.Named("start", consensusStart),
-			sql.Named("end", consensusEnd),
-		).
-		Find(&transactions).
-		Error
-	if err != nil {
+	db, cancel := tr.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
+	if err = db.Raw(
+		selectTransactionsByHashInTimestampRange,
+		sql.Named("hash", transactionHash),
+		sql.Named("start", consensusStart),
+		sql.Named("end", consensusEnd),
+	).Find(&transactions).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
 	}
@@ -347,7 +353,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 		return nil, hErrors.ErrTransactionNotFound
 	}
 
-	transaction, rErr := tr.constructTransaction(transactions)
+	transaction, rErr := tr.constructTransaction(ctx, transactions)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -355,29 +361,35 @@ func (tr *transactionRepository) FindByHashInBlock(
 	return transaction, nil
 }
 
-func (tr *transactionRepository) retrieveTransactionTypes() ([]transactionType, *rTypes.Error) {
+func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) ([]transactionType, *rTypes.Error) {
+	db, cancel := tr.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	var transactionTypes []transactionType
-	if err := tr.dbClient.Raw(selectTransactionTypes).Find(&transactionTypes).Error; err != nil {
+	if err := db.Raw(selectTransactionTypes).Find(&transactionTypes).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
 	}
 	return transactionTypes, nil
 }
 
-func (tr *transactionRepository) retrieveTransactionResults() ([]transactionResult, *rTypes.Error) {
+func (tr *transactionRepository) retrieveTransactionResults(ctx context.Context) ([]transactionResult, *rTypes.Error) {
+	db, cancel := tr.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	var tResults []transactionResult
-	if err := tr.dbClient.Raw(selectTransactionResults).Find(&tResults).Error; err != nil {
+	if err := db.Raw(selectTransactionResults).Find(&tResults).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
 	}
 	return tResults, nil
 }
 
-func (tr *transactionRepository) constructTransaction(sameHashTransactions []*transaction) (
+func (tr *transactionRepository) constructTransaction(ctx context.Context, sameHashTransactions []*transaction) (
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	if err := tr.retrieveTransactionTypesAndResults(); err != nil {
+	if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
 		return nil, err
 	}
 
@@ -503,13 +515,13 @@ func (tr *transactionRepository) appendTransferOperations(
 	return operations
 }
 
-func (tr *transactionRepository) retrieveTransactionTypesAndResults() *rTypes.Error {
-	typeArray, err := tr.retrieveTransactionTypes()
+func (tr *transactionRepository) retrieveTransactionTypesAndResults(ctx context.Context) *rTypes.Error {
+	typeArray, err := tr.retrieveTransactionTypes(ctx)
 	if err != nil {
 		return err
 	}
 
-	resultArray, err := tr.retrieveTransactionResults()
+	resultArray, err := tr.retrieveTransactionResults(ctx)
 	if err != nil {
 		return err
 	}

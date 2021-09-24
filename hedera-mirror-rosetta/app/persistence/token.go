@@ -21,34 +21,39 @@
 package persistence
 
 import (
+	"context"
 	"errors"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // tokenRepository struct that has connection to the Database
 type tokenRepository struct {
-	dbClient *gorm.DB
+	dbClient *types.DbClient
 }
 
 // NewTokenRepository creates an instance of a tokenRepository struct
-func NewTokenRepository(dbClient *gorm.DB) interfaces.TokenRepository {
+func NewTokenRepository(dbClient *types.DbClient) interfaces.TokenRepository {
 	return &tokenRepository{dbClient}
 }
 
-func (tr *tokenRepository) Find(tokenIdStr string) (domain.Token, *rTypes.Error) {
+func (tr *tokenRepository) Find(ctx context.Context, tokenIdStr string) (domain.Token, *rTypes.Error) {
 	var token domain.Token
 	entityId, err := domain.EntityIdFromString(tokenIdStr)
 	if err != nil {
 		return token, hErrors.ErrInvalidToken
 	}
 
-	if err = tr.dbClient.First(&token, entityId.EncodedId).Error; err != nil {
+	db, cancel := tr.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
+	if err = db.First(&token, entityId.EncodedId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return token, hErrors.ErrTokenNotFound
 		}

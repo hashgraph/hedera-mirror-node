@@ -465,12 +465,12 @@ func TestConstructionParse(t *testing.T) {
 			}
 			mockConstructor := &mocks.MockTransactionConstructor{}
 			mockConstructor.
-				On("Parse", mock.IsType(&hedera.TransferTransaction{})).
+				On("Parse", defaultContext, mock.IsType(&hedera.TransferTransaction{})).
 				Return(operations, []hedera.AccountID{defaultAccountId1}, mocks.NilError)
 			service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
 			// when:
-			res, e := service.ConstructionParse(nil, request)
+			res, e := service.ConstructionParse(defaultContext, request)
 
 			// then:
 			assert.Equal(t, expectedConstructionParseResponse, res)
@@ -484,12 +484,12 @@ func TestConstructionParseThrowsWhenConstructorParseFails(t *testing.T) {
 	// given
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Parse", mock.IsType(&hedera.TransferTransaction{})).
+		On("Parse", defaultContext, mock.IsType(&hedera.TransferTransaction{})).
 		Return(mocks.NilOperations, mocks.NilSigners, errors.ErrInternalServerError)
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
-	res, e := service.ConstructionParse(nil, dummyConstructionParseRequest(validSignedTransaction, false))
+	res, e := service.ConstructionParse(defaultContext, dummyConstructionParseRequest(validSignedTransaction, false))
 
 	// then
 	assert.Nil(t, res)
@@ -548,12 +548,18 @@ func TestConstructionPayloads(t *testing.T) {
 		Freeze()
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Construct", mock.IsType(hedera.AccountID{}), mock.IsType([]*types.Operation{}), mock.IsType(int64(0))).
+		On(
+			"Construct",
+			defaultContext,
+			mock.IsType(hedera.AccountID{}),
+			mock.IsType([]*types.Operation{}),
+			mock.IsType(int64(0)),
+		).
 		Return(transaction, []hedera.AccountID{defaultAccountId1}, mocks.NilError)
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
-	actual, e := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+	actual, e := service.ConstructionPayloads(defaultContext, dummyPayloadsRequest(operations))
 
 	// then
 	assert.Nil(t, e)
@@ -568,12 +574,18 @@ func TestConstructionPayloadsThrowsWithConstuctorConstructFailure(t *testing.T) 
 	}
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Construct", mock.IsType(hedera.AccountID{}), mock.IsType([]*types.Operation{}), mock.IsType(int64(0))).
+		On(
+			"Construct",
+			defaultContext,
+			mock.IsType(hedera.AccountID{}),
+			mock.IsType([]*types.Operation{}),
+			mock.IsType(int64(0)),
+		).
 		Return(mocks.NilHederaTransaction, mocks.NilSigners, errors.ErrInternalServerError)
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
-	actual, err := service.ConstructionPayloads(nil, dummyPayloadsRequest(operations))
+	actual, err := service.ConstructionPayloads(defaultContext, dummyPayloadsRequest(operations))
 
 	// then
 	assert.NotNil(t, err)
@@ -589,7 +601,7 @@ func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
-	res, e := service.ConstructionSubmit(nil, exampleConstructionSubmitRequest)
+	res, e := service.ConstructionSubmit(defaultContext, exampleConstructionSubmitRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -607,7 +619,7 @@ func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
-	res, e := service.ConstructionSubmit(nil, exampleConstructionSubmitRequest)
+	res, e := service.ConstructionSubmit(defaultContext, exampleConstructionSubmitRequest)
 
 	// then:
 	assert.Nil(t, res)
@@ -622,12 +634,12 @@ func TestConstructionPreprocess(t *testing.T) {
 	}
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Preprocess", mock.IsType([]*types.Operation{})).
+		On("Preprocess", defaultContext, mock.IsType([]*types.Operation{})).
 		Return([]hedera.AccountID{defaultAccountId1}, mocks.NilError)
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
 	// when:
-	actual, e := service.ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(true))
+	actual, e := service.ConstructionPreprocess(defaultContext, dummyConstructionPreprocessRequest(true))
 
 	// then:
 	assert.Equal(t, expected, actual)
@@ -638,12 +650,12 @@ func TestConstructionPreprocessThrowsWithConstructorPreprocessFailure(t *testing
 	// given:
 	mockConstructor := &mocks.MockTransactionConstructor{}
 	mockConstructor.
-		On("Preprocess", mock.IsType([]*types.Operation{})).
+		On("Preprocess", defaultContext, mock.IsType([]*types.Operation{})).
 		Return(mocks.NilSigners, errors.ErrInternalServerError)
 	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
 
 	// when:
-	actual, e := service.ConstructionPreprocess(nil, dummyConstructionPreprocessRequest(false))
+	actual, e := service.ConstructionPreprocess(defaultContext, dummyConstructionPreprocessRequest(false))
 
 	// then:
 	assert.Nil(t, actual)

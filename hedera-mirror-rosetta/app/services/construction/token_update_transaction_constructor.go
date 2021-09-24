@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 	"time"
 
@@ -54,11 +55,12 @@ type tokenUpdateTransactionConstructor struct {
 }
 
 func (t *tokenUpdateTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenUpdate, err := t.preprocess(operations)
+	payer, tokenUpdate, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +133,7 @@ func (t *tokenUpdateTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenUpdateTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -148,7 +150,7 @@ func (t *tokenUpdateTransactionConstructor) Parse(transaction interfaces.Transac
 		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
-	token, err := t.tokenRepo.Find(tokenId.String())
+	token, err := t.tokenRepo.Find(ctx, tokenId.String())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -222,11 +224,11 @@ func (t *tokenUpdateTransactionConstructor) Parse(transaction interfaces.Transac
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenUpdateTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (t *tokenUpdateTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(operations)
+	payer, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +236,7 @@ func (t *tokenUpdateTransactionConstructor) Preprocess(operations []*rTypes.Oper
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (t *tokenUpdateTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*tokenUpdate,
 	*rTypes.Error,
@@ -245,7 +247,7 @@ func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Oper
 
 	operation := operations[0]
 
-	tokenId, rErr := validateToken(t.tokenRepo, operation.Amount.Currency)
+	tokenId, rErr := validateToken(ctx, t.tokenRepo, operation.Amount.Currency)
 	if rErr != nil {
 		return nil, nil, rErr
 	}

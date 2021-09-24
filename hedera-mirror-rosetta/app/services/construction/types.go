@@ -21,6 +21,8 @@
 package construction
 
 import (
+	"context"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
@@ -30,17 +32,22 @@ import (
 // TransactionConstructor defines the methods to construct a transaction
 type TransactionConstructor interface {
 	// Construct constructs a transaction from its operations
-	Construct(nodeAccountId hedera.AccountID, operations []*types.Operation, validStartNanos int64) (
-		interfaces.Transaction,
+	Construct(
+		ctx context.Context,
+		nodeAccountId hedera.AccountID,
+		operations []*types.Operation,
+		validStartNanos int64,
+	) (interfaces.Transaction, []hedera.AccountID, *types.Error)
+
+	// Parse parses a signed or unsigned transaction to get its operations and required signers
+	Parse(ctx context.Context, transaction interfaces.Transaction) (
+		[]*types.Operation,
 		[]hedera.AccountID,
 		*types.Error,
 	)
 
-	// Parse parses a signed or unsigned transaction to get its operations and required signers
-	Parse(transaction interfaces.Transaction) ([]*types.Operation, []hedera.AccountID, *types.Error)
-
 	// Preprocess preprocesses the operations to get required signers
-	Preprocess(operations []*types.Operation) ([]hedera.AccountID, *types.Error)
+	Preprocess(ctx context.Context, operations []*types.Operation) ([]hedera.AccountID, *types.Error)
 }
 
 // embed SDK PublicKey and implement the Unmarshaler interface

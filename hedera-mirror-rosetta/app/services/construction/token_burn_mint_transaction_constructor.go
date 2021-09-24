@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -39,11 +40,12 @@ type tokenBurnMintTransactionConstructor struct {
 }
 
 func (t *tokenBurnMintTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenAmount, rErr := t.preprocess(operations)
+	payer, tokenAmount, rErr := t.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -85,7 +87,7 @@ func (t *tokenBurnMintTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (t *tokenBurnMintTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -123,7 +125,7 @@ func (t *tokenBurnMintTransactionConstructor) Parse(transaction interfaces.Trans
 		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
-	dbToken, err := t.tokeRepo.Find(tokenId.String())
+	dbToken, err := t.tokeRepo.Find(ctx, tokenId.String())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -141,11 +143,11 @@ func (t *tokenBurnMintTransactionConstructor) Parse(transaction interfaces.Trans
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (t *tokenBurnMintTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(operations)
+	payer, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +163,7 @@ func (t *tokenBurnMintTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenBurnMintTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (t *tokenBurnMintTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*types.TokenAmount,
 	*rTypes.Error,
@@ -171,7 +173,7 @@ func (t *tokenBurnMintTransactionConstructor) preprocess(operations []*rTypes.Op
 	}
 
 	operation := operations[0]
-	tokenAmount, rErr := t.preprocessOperationAmount(operation.Amount)
+	tokenAmount, rErr := t.preprocessOperationAmount(ctx, operation.Amount)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -184,9 +186,10 @@ func (t *tokenBurnMintTransactionConstructor) preprocess(operations []*rTypes.Op
 	return &payer, tokenAmount, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(operationAmount *rTypes.Amount) (
-	*types.TokenAmount, *rTypes.Error,
-) {
+func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(
+	ctx context.Context,
+	operationAmount *rTypes.Amount,
+) (*types.TokenAmount, *rTypes.Error) {
 	amount, err := types.NewAmount(operationAmount)
 	if err != nil {
 		return nil, err
@@ -208,7 +211,7 @@ func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(operatio
 		}
 	}
 
-	if _, err = validateToken(t.tokeRepo, operationAmount.Currency); err != nil {
+	if _, err = validateToken(ctx, t.tokeRepo, operationAmount.Currency); err != nil {
 		return nil, err
 	}
 

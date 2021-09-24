@@ -21,6 +21,7 @@
 package persistence
 
 import (
+	"context"
 	"database/sql"
 	"strings"
 
@@ -28,8 +29,8 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const (
@@ -57,15 +58,18 @@ type nodeServiceEndpoint struct {
 
 // addressBookEntryRepository struct that has connection to the Database
 type addressBookEntryRepository struct {
-	dbClient *gorm.DB
+	dbClient *types2.DbClient
 }
 
 // Entries return all found Address Book Entries
-func (aber *addressBookEntryRepository) Entries() (*types.AddressBookEntries, *rTypes.Error) {
+func (aber *addressBookEntryRepository) Entries(ctx context.Context) (*types.AddressBookEntries, *rTypes.Error) {
+	db, cancel := aber.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	nodes := make([]nodeServiceEndpoint, 0)
 	// address book file 101 has service endpoints for nodes, resort to file 102 if 101 doesn't exist
 	for _, fileId := range []int64{fileId101, fileId102} {
-		if err := aber.dbClient.Raw(
+		if err := db.Raw(
 			latestNodeServiceEndpoints,
 			sql.Named("file_id", fileId),
 		).Scan(&nodes).Error; err != nil {
@@ -100,6 +104,6 @@ func (aber *addressBookEntryRepository) Entries() (*types.AddressBookEntries, *r
 }
 
 // NewAddressBookEntryRepository creates an instance of a addressBookEntryRepository struct.
-func NewAddressBookEntryRepository(dbClient *gorm.DB) interfaces.AddressBookEntryRepository {
+func NewAddressBookEntryRepository(dbClient *types2.DbClient) interfaces.AddressBookEntryRepository {
 	return &addressBookEntryRepository{dbClient}
 }

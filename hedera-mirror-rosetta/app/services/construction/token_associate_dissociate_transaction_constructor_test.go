@@ -196,7 +196,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 				}
 
 				// when
-				tx, signers, err := h.Construct(nodeAccountId, operations, tt.validStartNanos)
+				tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
 
 				// then
 				if tt.expectError {
@@ -365,7 +365,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 				}
 
 				// when
-				operations, signers, err := h.Parse(tx)
+				operations, signers, err := h.Parse(defaultContext, tx)
 
 				// then
 				if tt.expectError {
@@ -449,7 +449,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess
 				}
 
 				// when
-				signers, err := h.Preprocess(operations)
+				signers, err := h.Preprocess(defaultContext, operations)
 
 				// then
 				if tt.expectError {
@@ -541,12 +541,9 @@ type mockTokenRepoConfig struct {
 	tokenId hedera.TokenID
 }
 
-func configMockTokenRepo(
-	mock *mocks.MockTokenRepository,
-	configs ...mockTokenRepoConfig,
-) {
+func configMockTokenRepo(mock *mocks.MockTokenRepository, configs ...mockTokenRepoConfig) {
 	for _, c := range configs {
-		mock.On("Find", c.tokenId.String()).Return(c.dbToken, c.err)
+		mock.On("Find", defaultContext, c.tokenId.String()).Return(c.dbToken, c.err)
 	}
 }
 

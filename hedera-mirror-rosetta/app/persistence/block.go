@@ -21,6 +21,7 @@
 package persistence
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"sync"
@@ -29,6 +30,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -120,40 +122,43 @@ func (rb *recordBlock) ToBlock(genesisConsensusStart int64, genesisIndex int64) 
 // blockRepository struct that has connection to the Database
 type blockRepository struct {
 	once                   sync.Once
-	dbClient               *gorm.DB
+	dbClient               *types2.DbClient
 	genesisConsensusStart  int64
 	genesisRecordFileIndex int64
 }
 
 // NewBlockRepository creates an instance of a blockRepository struct
-func NewBlockRepository(dbClient *gorm.DB) interfaces.BlockRepository {
+func NewBlockRepository(dbClient *types2.DbClient) interfaces.BlockRepository {
 	return &blockRepository{dbClient: dbClient, genesisConsensusStart: genesisConsensusStartUnset}
 }
 
 // FindByHash retrieves a block by a given Hash
-func (br *blockRepository) FindByHash(hash string) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) FindByHash(ctx context.Context, hash string) (*types.Block, *rTypes.Error) {
 	if hash == "" {
 		return nil, hErrors.ErrInvalidArgument
 	}
 
-	if err := br.initGenesisRecordFile(); err != nil {
+	if err := br.initGenesisRecordFile(ctx); err != nil {
 		return nil, err
 	}
 
-	return br.findBlockByHash(hash)
+	return br.findBlockByHash(ctx, hash)
 }
 
 // FindByIdentifier retrieves a block by Index && Hash
-func (br *blockRepository) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) FindByIdentifier(ctx context.Context, index int64, hash string) (
+	*types.Block,
+	*rTypes.Error,
+) {
 	if index < 0 || hash == "" {
 		return nil, hErrors.ErrInvalidArgument
 	}
 
-	if err := br.initGenesisRecordFile(); err != nil {
+	if err := br.initGenesisRecordFile(ctx); err != nil {
 		return nil, err
 	}
 
-	block, err := br.findBlockByHash(hash)
+	block, err := br.findBlockByHash(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -166,36 +171,39 @@ func (br *blockRepository) FindByIdentifier(index int64, hash string) (*types.Bl
 }
 
 // FindByIndex retrieves a block by given Index
-func (br *blockRepository) FindByIndex(index int64) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) FindByIndex(ctx context.Context, index int64) (*types.Block, *rTypes.Error) {
 	if index < 0 {
 		return nil, hErrors.ErrInvalidArgument
 	}
 
-	if err := br.initGenesisRecordFile(); err != nil {
+	if err := br.initGenesisRecordFile(ctx); err != nil {
 		return nil, err
 	}
 
-	return br.findBlockByIndex(index)
+	return br.findBlockByIndex(ctx, index)
 }
 
 // RetrieveGenesis retrieves the genesis block
-func (br *blockRepository) RetrieveGenesis() (*types.Block, *rTypes.Error) {
-	if err := br.initGenesisRecordFile(); err != nil {
+func (br *blockRepository) RetrieveGenesis(ctx context.Context) (*types.Block, *rTypes.Error) {
+	if err := br.initGenesisRecordFile(ctx); err != nil {
 		return nil, err
 	}
 
-	return br.findBlockByIndex(0)
+	return br.findBlockByIndex(ctx, 0)
 }
 
 // RetrieveLatest retrieves the second latest block. It's required to hide the latest block so account service can
 // add 0-amount genesis token balance to a block for tokens whose first transfer to the account is in the next block
-func (br *blockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
-	if err := br.initGenesisRecordFile(); err != nil {
+func (br *blockRepository) RetrieveLatest(ctx context.Context) (*types.Block, *rTypes.Error) {
+	if err := br.initGenesisRecordFile(ctx); err != nil {
 		return nil, err
 	}
 
+	db, cancel := br.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	rb := &recordBlock{}
-	if err := br.dbClient.Raw(selectSecondLatestWithIndex).First(rb).Error; err != nil {
+	if err := db.Raw(selectSecondLatestWithIndex).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
@@ -206,32 +214,41 @@ func (br *blockRepository) RetrieveLatest() (*types.Block, *rTypes.Error) {
 	return rb.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
 }
 
-func (br *blockRepository) findBlockByIndex(index int64) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) findBlockByIndex(ctx context.Context, index int64) (*types.Block, *rTypes.Error) {
+	db, cancel := br.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	rb := &recordBlock{}
 	index += br.genesisRecordFileIndex
-	if err := br.dbClient.Raw(selectRecordBlockByIndex, sql.Named("index", index)).First(rb).Error; err != nil {
+	if err := db.Raw(selectRecordBlockByIndex, sql.Named("index", index)).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
 	return rb.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
 }
 
-func (br *blockRepository) findBlockByHash(hash string) (*types.Block, *rTypes.Error) {
+func (br *blockRepository) findBlockByHash(ctx context.Context, hash string) (*types.Block, *rTypes.Error) {
+	db, cancel := br.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	rb := &recordBlock{}
-	if err := br.dbClient.Raw(selectByHashWithIndex, sql.Named("hash", hash)).First(rb).Error; err != nil {
+	if err := db.Raw(selectByHashWithIndex, sql.Named("hash", hash)).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 
 	return rb.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil
 }
 
-func (br *blockRepository) initGenesisRecordFile() *rTypes.Error {
+func (br *blockRepository) initGenesisRecordFile(ctx context.Context) *rTypes.Error {
 	if br.genesisConsensusStart != genesisConsensusStartUnset {
 		return nil
 	}
 
+	db, cancel := br.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
 	rb := &recordBlock{}
-	if err := br.dbClient.Raw(selectGenesis).First(rb).Error; err != nil {
+	if err := db.Raw(selectGenesis).First(rb).Error; err != nil {
 		return handleDatabaseError(err, hErrors.ErrNodeIsStarting)
 	}
 

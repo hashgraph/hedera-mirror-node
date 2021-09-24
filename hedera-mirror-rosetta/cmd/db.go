@@ -31,7 +31,7 @@ import (
 )
 
 // Establish connection to the Postgres Database
-func connectToDb(dbConfig types.Db) *gorm.DB {
+func connectToDb(dbConfig types.Db) *types.DbClient {
 	db, err := gorm.Open(postgres.Open(dbConfig.GetDsn()), &gorm.Config{Logger: gormlogrus.New()})
 	if err != nil {
 		log.Warn(err)
@@ -49,5 +49,5 @@ func connectToDb(dbConfig types.Db) *gorm.DB {
 	sqlDb.SetConnMaxLifetime(time.Duration(dbConfig.Pool.MaxLifetime) * time.Minute)
 	sqlDb.SetMaxOpenConns(dbConfig.Pool.MaxOpenConnections)
 
-	return db
+	return types.NewDbClient(db, dbConfig.StatementTimeout)
 }

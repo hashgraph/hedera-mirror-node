@@ -71,7 +71,6 @@ type addressBookEntryRepositorySuite struct {
 
 func (suite *addressBookEntryRepositorySuite) TestEntries() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	// persist addressbooks before addressbook entries due to foreign key constraint
 	db.CreateDbRecords(dbClient, addressBooks, addressBookEntries, addressBookServiceEndpoints)
 
@@ -84,7 +83,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntries() {
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Equal(suite.T(), expected, actual)
@@ -93,14 +92,13 @@ func (suite *addressBookEntryRepositorySuite) TestEntries() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesNoEntries() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, addressBooks, addressBookServiceEndpoints)
 
 	expected := &types.AddressBookEntries{Entries: []types.AddressBookEntry{}}
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Equal(suite.T(), expected, actual)
@@ -109,7 +107,6 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoEntries() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, addressBooks, addressBookEntries)
 
 	expected := &types.AddressBookEntries{
@@ -121,7 +118,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -130,7 +127,6 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.CreateDbRecords(
 		dbClient,
 		getAddressBook(10, 19, 102),
@@ -150,7 +146,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -159,13 +155,12 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesDbInvalidNodeAccountId() {
 	// given
-	dbClient := dbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, addressBooks, getAddressBookEntry(20, 0, domain.EntityId{EncodedId: -1}))
 
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -177,7 +172,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesDbConnectionError() {
 	repo := NewAddressBookEntryRepository(invalidDbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)

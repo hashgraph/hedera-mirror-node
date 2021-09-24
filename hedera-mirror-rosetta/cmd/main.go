@@ -36,7 +36,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func configLogger(level string) {
@@ -64,7 +63,7 @@ func newBlockchainOnlineRouter(
 	rosetta types.Rosetta,
 	asserter *asserter.Asserter,
 	version *rTypes.Version,
-	dbClient *gorm.DB,
+	dbClient *types.DbClient,
 ) (http.Handler, error) {
 	accountRepo := persistence.NewAccountRepository(dbClient)
 	addressBookEntryRepo := persistence.NewAddressBookEntryRepository(dbClient)

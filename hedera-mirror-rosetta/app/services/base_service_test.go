@@ -17,20 +17,22 @@
  * limitations under the License.
  * ‍
  */
+
 package services
 
 import (
+	"context"
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
+	defaultContext                   = context.Background()
 	exampleHash                      = "0x12345"
 	exampleIndex                     = int64(1)
 	exampleMap                       = map[int]string{1: "value", 2: "otherValue"}
@@ -85,237 +87,218 @@ func (suite *baseServiceSuite) SetupTest() {
 	suite.baseService = &baseService
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockThrowsNoIdentifiers() {
-	// given:
-
-	// when:
-	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(nil, nil))
-
-	// then:
-	assert.Nil(suite.T(), res)
-	assert.Equal(suite.T(), errors.ErrInternalServerError, e)
-}
-
 func (suite *baseServiceSuite) TestRetrieveBlockFindByIdentifier() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, &exampleHash))
+	res, e := suite.baseService.RetrieveBlock(
+		defaultContext,
+		examplePartialBlockIdentifier(&exampleIndex, &exampleHash),
+	)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), block(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
+}
+
+func (suite *baseServiceSuite) TestRetrieveBlockByEmptyIdentifier() {
+	// given
+	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
+
+	// when:
+	actual, err := suite.baseService.RetrieveBlock(defaultContext, examplePartialBlockIdentifier(nil, nil))
+
+	// then:
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), block(), actual)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIdentifier() {
 	// given:
-	suite.mockBlockRepo.On("FindByIdentifier").Return(
-		mocks.NilBlock,
-		&rTypes.Error{},
-	)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, &exampleHash))
+	res, e := suite.baseService.RetrieveBlock(
+		defaultContext,
+		examplePartialBlockIdentifier(&exampleIndex, &exampleHash),
+	)
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveBlockFindByIndex() {
 	// given:
-	suite.mockBlockRepo.On("FindByIndex").Return(
-		block(),
-		mocks.NilError,
-	)
+	suite.mockBlockRepo.On("FindByIndex").Return(block(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, nil))
+	res, e := suite.baseService.RetrieveBlock(defaultContext, examplePartialBlockIdentifier(&exampleIndex, nil))
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), block(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIndex() {
 	// given:
-	suite.mockBlockRepo.On("FindByIndex").Return(
-		mocks.NilBlock,
-		&rTypes.Error{},
-	)
+	suite.mockBlockRepo.On("FindByIndex").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(&exampleIndex, nil))
+	res, e := suite.baseService.RetrieveBlock(defaultContext, examplePartialBlockIdentifier(&exampleIndex, nil))
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveBlockFindByHash() {
 	// given:
-	suite.mockBlockRepo.On("FindByHash").Return(
-		block(),
-		mocks.NilError,
-	)
+	suite.mockBlockRepo.On("FindByHash").Return(block(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(nil, &exampleHash))
+	res, e := suite.baseService.RetrieveBlock(defaultContext, examplePartialBlockIdentifier(nil, &exampleHash))
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), block(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByHash() {
 	// given:
-	suite.mockBlockRepo.On("FindByHash").Return(
-		mocks.NilBlock,
-		&rTypes.Error{},
-	)
+	suite.mockBlockRepo.On("FindByHash").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.RetrieveBlock(examplePartialBlockIdentifier(nil, &exampleHash))
+	res, e := suite.baseService.RetrieveBlock(defaultContext, examplePartialBlockIdentifier(nil, &exampleHash))
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveSecondLatest() {
 	// given:
-	suite.mockBlockRepo.On("RetrieveLatest").Return(
-		block(),
-		mocks.NilError,
-	)
+	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.RetrieveLatest()
+	res, e := suite.baseService.RetrieveLatest(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), block(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveSecondLatestThrows() {
 	// given:
-	suite.mockBlockRepo.On("RetrieveLatest").Return(
-		mocks.NilBlock,
-		&rTypes.Error{},
-	)
+	suite.mockBlockRepo.On("RetrieveLatest").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.RetrieveLatest()
+	res, e := suite.baseService.RetrieveLatest(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveGenesis() {
 	// given:
-	suite.mockBlockRepo.On("RetrieveGenesis").Return(
-		block(),
-		mocks.NilError,
-	)
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(block(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.RetrieveGenesis()
+	res, e := suite.baseService.RetrieveGenesis(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), block(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestRetrieveGenesisThrows() {
 	// given:
-	suite.mockBlockRepo.On("RetrieveGenesis").Return(
-		mocks.NilBlock,
-		&rTypes.Error{},
-	)
+	suite.mockBlockRepo.On("RetrieveGenesis").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.RetrieveGenesis()
+	res, e := suite.baseService.RetrieveGenesis(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestFindByIdentifier() {
 	// given:
-	suite.mockBlockRepo.On("FindByIdentifier").Return(
-		block(),
-		mocks.NilError,
-	)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.FindByIdentifier(exampleIndex, exampleHash)
+	res, e := suite.baseService.FindByIdentifier(defaultContext, exampleIndex, exampleHash)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), block(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestFindByIdentifierThrows() {
 	// given:
-	suite.mockBlockRepo.On("FindByIdentifier").Return(
-		mocks.NilBlock,
-		&rTypes.Error{},
-	)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.FindByIdentifier(exampleIndex, exampleHash)
+	res, e := suite.baseService.FindByIdentifier(defaultContext, exampleIndex, exampleHash)
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestFindByHashInBlock() {
 	// given:
-	suite.mockTransactionRepo.On("FindByHashInBlock").Return(
-		transaction(),
-		mocks.NilError,
-	)
+	suite.mockTransactionRepo.On("FindByHashInBlock").Return(transaction(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.FindByHashInBlock(exampleHash, 1, 2)
+	res, e := suite.baseService.FindByHashInBlock(defaultContext, exampleHash, 1, 2)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), transaction(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestFindByHashInBlockThrows() {
 	// given:
-	suite.mockTransactionRepo.On("FindByHashInBlock").Return(
-		mocks.NilTransaction,
-		&rTypes.Error{},
-	)
+	suite.mockTransactionRepo.On("FindByHashInBlock").Return(mocks.NilTransaction, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.FindByHashInBlock(exampleHash, 1, 2)
+	res, e := suite.baseService.FindByHashInBlock(defaultContext, exampleHash, 1, 2)
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestFindBetween() {
 	// given:
-	suite.mockTransactionRepo.On("FindBetween").Return(
-		transactions(),
-		mocks.NilError,
-	)
+	suite.mockTransactionRepo.On("FindBetween").Return(transactions(), mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.FindBetween(1, 2)
+	res, e := suite.baseService.FindBetween(defaultContext, 1, 2)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), transactions(), res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestFindBetweenThrows() {
@@ -323,69 +306,62 @@ func (suite *baseServiceSuite) TestFindBetweenThrows() {
 	suite.mockTransactionRepo.On("FindBetween").Return([]*types.Transaction{}, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.FindBetween(1, 2)
+	res, e := suite.baseService.FindBetween(defaultContext, 1, 2)
 
 	// then:
 	assert.Equal(suite.T(), []*types.Transaction{}, res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestStatuses() {
 	// given:
-	suite.mockTransactionRepo.On("Results").Return(
-		exampleMap,
-		mocks.NilError,
-	)
+	suite.mockTransactionRepo.On("Results").Return(exampleMap, mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.Results()
+	res, e := suite.baseService.Results(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), exampleMap, res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestStatusesThrows() {
 	// given:
-	suite.mockTransactionRepo.On("Results").Return(
-		nilMap,
-		&rTypes.Error{},
-	)
+	suite.mockTransactionRepo.On("Results").Return(nilMap, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.Results()
+	res, e := suite.baseService.Results(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestTypesAsArray() {
 	// given:
-	suite.mockTransactionRepo.On("TypesAsArray").Return(
-		exampleTypesArray,
-		mocks.NilError,
-	)
+	suite.mockTransactionRepo.On("TypesAsArray").Return(exampleTypesArray, mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.TypesAsArray()
+	res, e := suite.baseService.TypesAsArray(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), exampleTypesArray, res)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *baseServiceSuite) TestTypesAsArrayThrows() {
 	// given:
-	suite.mockTransactionRepo.On("TypesAsArray").Return(
-		nilArray,
-		&rTypes.Error{},
-	)
+	suite.mockTransactionRepo.On("TypesAsArray").Return(nilArray, &rTypes.Error{})
 
 	// when:
-	res, e := suite.baseService.TypesAsArray()
+	res, e := suite.baseService.TypesAsArray(defaultContext)
 
 	// then:
 	assert.Nil(suite.T(), res)
 	assert.NotNil(suite.T(), e)
+	suite.mockBlockRepo.AssertExpectations(suite.T())
 }

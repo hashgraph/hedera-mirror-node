@@ -128,7 +128,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 				}
 
 				// when
-				tx, signers, err := h.Construct(nodeAccountId, operations, tt.validStartNanos)
+				tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
 
 				// then
 				if tt.expectError {
@@ -229,7 +229,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 				}
 
 				// when
-				operations, signers, err := h.Parse(tx)
+				operations, signers, err := h.Parse(defaultContext, tx)
 
 				// then
 				if tt.expectError {
@@ -326,7 +326,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 				}
 
 				// when
-				signers, err := h.Preprocess(operations)
+				signers, err := h.Preprocess(defaultContext, operations)
 
 				// then
 				if tt.expectError {

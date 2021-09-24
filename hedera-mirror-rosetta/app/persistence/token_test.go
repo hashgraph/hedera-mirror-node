@@ -25,6 +25,7 @@ import (
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/thanhpk/randstr"
@@ -47,8 +48,6 @@ type tokenRepositorySuite struct {
 
 func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 	// given
-	dbClient := dbResource.GetGormDb()
-
 	expected := domain.Token{
 		TokenId:                  tokenId,
 		CreatedTimestamp:         10001,
@@ -73,12 +72,11 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 		WipeKey:                  randstr.Bytes(19),
 		WipeKeyEd25519Hex:        randstr.Hex(19),
 	}
-	dbClient.Create(&expected)
-
+	db.CreateDbRecords(dbClient, &expected)
 	repo := NewTokenRepository(dbClient)
 
 	// when
-	actual, err := repo.Find(tokenId.String())
+	actual, err := repo.Find(defaultContext, tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), expected, actual)
@@ -87,10 +85,10 @@ func (suite *tokenRepositorySuite) TestFindShouldSucceed() {
 
 func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 	// given
-	repo := NewTokenRepository(dbResource.GetGormDb())
+	repo := NewTokenRepository(dbClient)
 
 	// when
-	actual, err := repo.Find(tokenId.String())
+	actual, err := repo.Find(defaultContext, tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), errors.ErrTokenNotFound, err)
@@ -99,10 +97,10 @@ func (suite *tokenRepositorySuite) TestFindTokenNotFound() {
 
 func (suite *tokenRepositorySuite) TestFindTokenInvalidToken() {
 	// given
-	repo := NewTokenRepository(dbResource.GetGormDb())
+	repo := NewTokenRepository(dbClient)
 
 	// when
-	actual, err := repo.Find("abc")
+	actual, err := repo.Find(defaultContext, "abc")
 
 	// then
 	assert.Equal(suite.T(), errors.ErrInvalidToken, err)
@@ -114,7 +112,7 @@ func (suite *tokenRepositorySuite) TestFindTokenDbConnectionError() {
 	repo := NewTokenRepository(invalidDbClient)
 
 	// when
-	actual, err := repo.Find(tokenId.String())
+	actual, err := repo.Find(defaultContext, tokenId.String())
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)

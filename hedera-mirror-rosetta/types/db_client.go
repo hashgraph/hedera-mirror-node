@@ -18,23 +18,39 @@
  * ‍
  */
 
-package mocks
+package types
 
 import (
 	"context"
+	"time"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/stretchr/testify/mock"
+	"gorm.io/gorm"
 )
 
-var NilEntries *types.AddressBookEntries
-
-type MockAddressBookEntryRepository struct {
-	mock.Mock
+type DbClient struct {
+	db               *gorm.DB
+	statementTimeout uint
 }
 
-func (m *MockAddressBookEntryRepository) Entries(ctx context.Context) (*types.AddressBookEntries, *rTypes.Error) {
-	args := m.Called()
-	return args.Get(0).(*types.AddressBookEntries), args.Get(1).(*rTypes.Error)
+func (d *DbClient) GetDb() *gorm.DB {
+	return d.db
 }
+
+func (d *DbClient) GetDbWithContext(ctx context.Context) (*gorm.DB, context.CancelFunc) {
+	if d.statementTimeout == 0 {
+		return d.db, noop
+	}
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	childCtx, cancel := context.WithTimeout(ctx, time.Duration(d.statementTimeout)*time.Second)
+	return d.db.WithContext(childCtx), cancel
+}
+
+func NewDbClient(db *gorm.DB, statementTimeout uint) *DbClient {
+	return &DbClient{db: db, statementTimeout: statementTimeout}
+}
+
+func noop() {}

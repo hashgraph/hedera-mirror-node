@@ -47,15 +47,15 @@ func (suite *dbSuite) TearDownSuite() {
 }
 
 func (suite *dbSuite) TestConnectToDb() {
-	client := connectToDb(suite.dbResource.GetDbConfig())
-	err := client.Exec("select 1").Error
+	dbClient := connectToDb(suite.dbResource.GetDbConfig())
+	err := dbClient.GetDb().Exec("select 1").Error
 	assert.Nil(suite.T(), err)
 }
 
 func (suite *dbSuite) TestConnectToDbInvalidPassword() {
 	dbConfig := suite.dbResource.GetDbConfig()
 	dbConfig.Password = "bad_password_dab"
-	client := connectToDb(dbConfig)
-	err := client.Exec("select 1").Error
+	dbClient := connectToDb(dbConfig)
+	err := dbClient.GetDb().Exec("select 1").Error
 	assert.NotNil(suite.T(), err)
 }

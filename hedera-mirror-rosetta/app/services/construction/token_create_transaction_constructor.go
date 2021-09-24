@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 	"time"
 
@@ -58,6 +59,7 @@ type tokenCreateTransactionConstructor struct {
 }
 
 func (t *tokenCreateTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
@@ -135,7 +137,7 @@ func (t *tokenCreateTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenCreateTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (t *tokenCreateTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -211,7 +213,7 @@ func (t *tokenCreateTransactionConstructor) Parse(transaction interfaces.Transac
 	return []*rTypes.Operation{operation}, signers, nil
 }
 
-func (t *tokenCreateTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (t *tokenCreateTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {

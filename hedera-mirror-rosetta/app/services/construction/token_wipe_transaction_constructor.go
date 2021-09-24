@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -41,11 +42,12 @@ type tokenWipeTransactionConstructor struct {
 }
 
 func (t *tokenWipeTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, account, tokenAmount, rErr := t.preprocess(operations)
+	payer, account, tokenAmount, rErr := t.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -69,7 +71,7 @@ func (t *tokenWipeTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (t *tokenWipeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -87,7 +89,7 @@ func (t *tokenWipeTransactionConstructor) Parse(transaction interfaces.Transacti
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	dbToken, err := t.tokenRepo.Find(token.String())
+	dbToken, err := t.tokenRepo.Find(ctx, token.String())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -106,11 +108,11 @@ func (t *tokenWipeTransactionConstructor) Parse(transaction interfaces.Transacti
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (t *tokenWipeTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, _, err := t.preprocess(operations)
+	payer, _, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +120,7 @@ func (t *tokenWipeTransactionConstructor) Preprocess(operations []*rTypes.Operat
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (t *tokenWipeTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	payer *hedera.AccountID,
 	account *hedera.AccountID,
 	tokenAmount *types.TokenAmount,
@@ -153,7 +155,7 @@ func (t *tokenWipeTransactionConstructor) preprocess(operations []*rTypes.Operat
 		return
 	}
 
-	if _, err = validateToken(t.tokenRepo, operation.Amount.Currency); err != nil {
+	if _, err = validateToken(ctx, t.tokenRepo, operation.Amount.Currency); err != nil {
 		return
 	}
 

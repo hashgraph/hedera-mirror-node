@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -42,6 +43,7 @@ type compositeTransactionConstructor struct {
 }
 
 func (c *compositeTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
@@ -51,10 +53,10 @@ func (c *compositeTransactionConstructor) Construct(
 		return nil, nil, err
 	}
 
-	return h.Construct(nodeAccountId, operations, validStartNanos)
+	return h.Construct(ctx, nodeAccountId, operations, validStartNanos)
 }
 
-func (c *compositeTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (c *compositeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -66,16 +68,19 @@ func (c *compositeTransactionConstructor) Parse(transaction interfaces.Transacti
 		return nil, nil, errors.ErrInternalServerError
 	}
 
-	return h.Parse(transaction)
+	return h.Parse(ctx, transaction)
 }
 
-func (c *compositeTransactionConstructor) Preprocess(operations []*rTypes.Operation) ([]hedera.AccountID, *rTypes.Error) {
+func (c *compositeTransactionConstructor) Preprocess(
+	ctx context.Context,
+	operations []*rTypes.Operation,
+) ([]hedera.AccountID, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, err
 	}
 
-	return h.Preprocess(operations)
+	return h.Preprocess(ctx, operations)
 }
 
 func (c *compositeTransactionConstructor) addConstructor(constructor transactionConstructorWithType) {

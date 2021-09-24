@@ -53,12 +53,13 @@ type Rosetta struct {
 }
 
 type Db struct {
-	Host     string
-	Name     string
-	Password string
-	Pool     Pool
-	Port     uint16
-	Username string
+	Host             string
+	Name             string
+	Password         string
+	Pool             Pool
+	Port             uint16
+	StatementTimeout uint
+	Username         string
 }
 
 func (db Db) GetDsn() string {

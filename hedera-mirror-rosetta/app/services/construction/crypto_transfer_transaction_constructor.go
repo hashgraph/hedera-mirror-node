@@ -21,6 +21,7 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 
@@ -61,11 +62,12 @@ type nftTransfer struct {
 }
 
 func (c *cryptoTransferTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	transfers, senders, rErr := c.preprocess(operations)
+	transfers, senders, rErr := c.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -121,7 +123,7 @@ func (c *cryptoTransferTransactionConstructor) GetSdkTransactionType() string {
 	return c.transactionType
 }
 
-func (c *cryptoTransferTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (c *cryptoTransferTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -158,7 +160,7 @@ func (c *cryptoTransferTransactionConstructor) Parse(transaction interfaces.Tran
 	}
 
 	for token, tokenTransfers := range tokenTransferMap {
-		currency, err := c.getCurrency(token)
+		currency, err := c.getCurrency(ctx, token)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -169,7 +171,7 @@ func (c *cryptoTransferTransactionConstructor) Parse(transaction interfaces.Tran
 	}
 
 	for token, nftTransfers := range nftTransferMap {
-		currency, err := c.getCurrency(token)
+		currency, err := c.getCurrency(ctx, token)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -183,11 +185,11 @@ func (c *cryptoTransferTransactionConstructor) Parse(transaction interfaces.Tran
 	return operations, senderMap.toSenders(), nil
 }
 
-func (c *cryptoTransferTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (c *cryptoTransferTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	_, senders, err := c.preprocess(operations)
+	_, senders, err := c.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -221,8 +223,11 @@ func (c *cryptoTransferTransactionConstructor) addOperation(
 	return append(operations, operation)
 }
 
-func (c *cryptoTransferTransactionConstructor) getCurrency(token hedera.TokenID) (*rTypes.Currency, *rTypes.Error) {
-	dbToken, err := c.tokenRepo.Find(token.String())
+func (c *cryptoTransferTransactionConstructor) getCurrency(
+	ctx context.Context,
+	token hedera.TokenID,
+) (*rTypes.Currency, *rTypes.Error) {
+	dbToken, err := c.tokenRepo.Find(ctx, token.String())
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +235,7 @@ func (c *cryptoTransferTransactionConstructor) getCurrency(token hedera.TokenID)
 	return types.Token{Token: dbToken}.ToRosettaCurrency(), nil
 }
 
-func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (c *cryptoTransferTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]transfer,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -252,7 +257,7 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.O
 		}
 
 		currency := operation.Amount.Currency
-		if !c.validateCurrency(currency, currencies) {
+		if !c.validateCurrency(ctx, currency, currencies) {
 			return nil, nil, errors.ErrInvalidCurrency
 		}
 
@@ -300,6 +305,7 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.O
 }
 
 func (c *cryptoTransferTransactionConstructor) validateCurrency(
+	ctx context.Context,
 	currency *rTypes.Currency,
 	currencies map[string]rTypes.Currency,
 ) bool {
@@ -318,7 +324,7 @@ func (c *cryptoTransferTransactionConstructor) validateCurrency(
 		return false
 	}
 
-	if _, err := validateToken(c.tokenRepo, currency); err != nil {
+	if _, err := validateToken(ctx, c.tokenRepo, currency); err != nil {
 		return false
 	}
 

@@ -79,11 +79,16 @@ func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructor
 func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 	// given
 	suite.mockConstructor.
-		On("Construct", nodeAccountId, cryptoTransferOperations, int64(0)).
+		On("Construct", defaultContext, nodeAccountId, cryptoTransferOperations, int64(0)).
 		Return(cryptoTransferTransaction, signers, mocks.NilError)
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations, 0)
+	actualTx, actualSigners, err := suite.constructor.Construct(
+		defaultContext,
+		nodeAccountId,
+		cryptoTransferOperations,
+		0,
+	)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -95,11 +100,16 @@ func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 func (suite *compositeTransactionConstructorSuite) TestConstructFail() {
 	// given
 	suite.mockConstructor.
-		On("Construct", nodeAccountId, cryptoTransferOperations, int64(0)).
+		On("Construct", defaultContext, nodeAccountId, cryptoTransferOperations, int64(0)).
 		Return(mocks.NilHederaTransaction, mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, cryptoTransferOperations, 0)
+	actualTx, actualSigners, err := suite.constructor.Construct(
+		defaultContext,
+		nodeAccountId,
+		cryptoTransferOperations,
+		0,
+	)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -112,7 +122,12 @@ func (suite *compositeTransactionConstructorSuite) TestConstructEmptyOperations(
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, []*types.Operation{}, 0)
+	actualTx, actualSigners, err := suite.constructor.Construct(
+		defaultContext,
+		nodeAccountId,
+		[]*types.Operation{},
+		0,
+	)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -125,7 +140,12 @@ func (suite *compositeTransactionConstructorSuite) TestConstructUnsupportedOpera
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, unsupportedOperations, 0)
+	actualTx, actualSigners, err := suite.constructor.Construct(
+		defaultContext,
+		nodeAccountId,
+		unsupportedOperations,
+		0,
+	)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -138,7 +158,12 @@ func (suite *compositeTransactionConstructorSuite) TestConstructMixedOperations(
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(nodeAccountId, mixedOperations, 0)
+	actualTx, actualSigners, err := suite.constructor.Construct(
+		defaultContext,
+		nodeAccountId,
+		mixedOperations,
+		0,
+	)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -150,11 +175,11 @@ func (suite *compositeTransactionConstructorSuite) TestConstructMixedOperations(
 func (suite *compositeTransactionConstructorSuite) TestParse() {
 	// given
 	suite.mockConstructor.
-		On("Parse", cryptoTransferTransaction).
+		On("Parse", defaultContext, cryptoTransferTransaction).
 		Return(cryptoTransferOperations, signers, mocks.NilError)
 
 	// when
-	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction)
+	actualOperations, actualSigner, err := suite.constructor.Parse(defaultContext, cryptoTransferTransaction)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -166,11 +191,11 @@ func (suite *compositeTransactionConstructorSuite) TestParse() {
 func (suite *compositeTransactionConstructorSuite) TestParseFail() {
 	// given
 	suite.mockConstructor.
-		On("Parse", cryptoTransferTransaction).
+		On("Parse", defaultContext, cryptoTransferTransaction).
 		Return(mocks.NilOperations, mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
-	actualOperations, actualSigner, err := suite.constructor.Parse(cryptoTransferTransaction)
+	actualOperations, actualSigner, err := suite.constructor.Parse(defaultContext, cryptoTransferTransaction)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -183,7 +208,7 @@ func (suite *compositeTransactionConstructorSuite) TestParseUnsupportedTransacti
 	// given
 
 	// when
-	actualOperations, actualSigner, err := suite.constructor.Parse(tokenCreateTransaction)
+	actualOperations, actualSigner, err := suite.constructor.Parse(defaultContext, tokenCreateTransaction)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -195,11 +220,11 @@ func (suite *compositeTransactionConstructorSuite) TestParseUnsupportedTransacti
 func (suite *compositeTransactionConstructorSuite) TestPreprocess() {
 	// given
 	suite.mockConstructor.
-		On("Preprocess", cryptoTransferOperations).
+		On("Preprocess", defaultContext, cryptoTransferOperations).
 		Return(signers, mocks.NilError)
 
 	// when
-	actualSigner, err := suite.constructor.Preprocess(cryptoTransferOperations)
+	actualSigner, err := suite.constructor.Preprocess(defaultContext, cryptoTransferOperations)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -210,11 +235,11 @@ func (suite *compositeTransactionConstructorSuite) TestPreprocess() {
 func (suite *compositeTransactionConstructorSuite) TestPreprocessFail() {
 	// given
 	suite.mockConstructor.
-		On("Preprocess", cryptoTransferOperations).
+		On("Preprocess", defaultContext, cryptoTransferOperations).
 		Return(mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
-	actualSigner, err := suite.constructor.Preprocess(cryptoTransferOperations)
+	actualSigner, err := suite.constructor.Preprocess(defaultContext, cryptoTransferOperations)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -226,7 +251,7 @@ func (suite *compositeTransactionConstructorSuite) TestPreprocessUnsupportedOper
 	// given
 
 	// when
-	actualSigner, err := suite.constructor.Preprocess(unsupportedOperations)
+	actualSigner, err := suite.constructor.Preprocess(defaultContext, unsupportedOperations)
 
 	// then
 	assert.NotNil(suite.T(), err)

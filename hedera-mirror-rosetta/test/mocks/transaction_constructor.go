@@ -21,6 +21,8 @@
 package mocks
 
 import (
+	"context"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
@@ -39,26 +41,30 @@ type MockTransactionConstructor struct {
 }
 
 func (m *MockTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*types.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *types.Error) {
-	args := m.Called(nodeAccountId, operations, validStartNanos)
+	args := m.Called(ctx, nodeAccountId, operations, validStartNanos)
 	return args.Get(0).(interfaces.Transaction), args.Get(1).([]hedera.AccountID),
 		args.Get(2).(*types.Error)
 }
 
-func (m *MockTransactionConstructor) Parse(transaction interfaces.Transaction) (
+func (m *MockTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*types.Operation,
 	[]hedera.AccountID,
 	*types.Error,
 ) {
-	args := m.Called(transaction)
+	args := m.Called(ctx, transaction)
 	return args.Get(0).([]*types.Operation), args.Get(1).([]hedera.AccountID), args.Get(2).(*types.Error)
 }
 
-func (m *MockTransactionConstructor) Preprocess(operations []*types.Operation) ([]hedera.AccountID, *types.Error) {
-	args := m.Called(operations)
+func (m *MockTransactionConstructor) Preprocess(ctx context.Context, operations []*types.Operation) (
+	[]hedera.AccountID,
+	*types.Error,
+) {
+	args := m.Called(ctx, operations)
 	return args.Get(0).([]hedera.AccountID), args.Get(1).(*types.Error)
 }
 

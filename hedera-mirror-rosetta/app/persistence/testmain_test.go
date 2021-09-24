@@ -26,6 +26,7 @@ import (
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -38,7 +39,8 @@ const (
 
 var (
 	dbResource      db.DbResource
-	invalidDbClient *gorm.DB
+	dbClient        *types.DbClient
+	invalidDbClient *types.DbClient
 )
 
 type integrationTest struct{}
@@ -48,7 +50,7 @@ func (*integrationTest) SetupTest() {
 }
 
 func addTransaction(
-	dbClient *gorm.DB,
+	dbClient *types.DbClient,
 	consensusNs int64,
 	entityId *domain.EntityId,
 	nodeAccountId *domain.EntityId,
@@ -74,31 +76,33 @@ func addTransaction(
 		ValidDurationSeconds: 120,
 		ValidStartNs:         validStartNs,
 	}
-	dbClient.Create(tx)
+	db.CreateDbRecords(dbClient, tx)
 
 	if len(cryptoTransfers) != 0 {
-		dbClient.Create(cryptoTransfers)
+		db.CreateDbRecords(dbClient, cryptoTransfers)
 	}
 
 	if len(nonFeeTransfers) != 0 {
-		dbClient.Create(nonFeeTransfers)
+		db.CreateDbRecords(dbClient, nonFeeTransfers)
 	}
 
 	if len(tokenTransfers) != 0 {
-		dbClient.Create(tokenTransfers)
+		db.CreateDbRecords(dbClient, tokenTransfers)
 	}
 
 	if len(nftTransfers) != 0 {
-		dbClient.Create(nftTransfers)
+		db.CreateDbRecords(dbClient, nftTransfers)
 	}
 }
 
 func setup() {
 	dbResource = db.SetupDb(true)
+	dbClient = types.NewDbClient(dbResource.GetGormDb(), 0)
 
 	config := dbResource.GetDbConfig()
 	config.Password = "bad_password"
-	invalidDbClient, _ = gorm.Open(postgres.Open(config.GetDsn()), &gorm.Config{Logger: logger.Discard})
+	invalid, _ := gorm.Open(postgres.Open(config.GetDsn()), &gorm.Config{Logger: logger.Discard})
+	invalidDbClient = types.NewDbClient(invalid, 0)
 }
 
 func teardown() {

@@ -21,12 +21,12 @@
 package services
 
 import (
+	"context"
+
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
-	log "github.com/sirupsen/logrus"
 )
 
 // BaseService - Struct implementing common functionalities used by more than 1 service
@@ -47,53 +47,52 @@ func NewBaseService(
 }
 
 // RetrieveBlock - Retrieves Block by a given PartialBlockIdentifier
-func (c *BaseService) RetrieveBlock(bIdentifier *rTypes.PartialBlockIdentifier) (*types.Block, *rTypes.Error) {
+func (c *BaseService) RetrieveBlock(ctx context.Context, bIdentifier *rTypes.PartialBlockIdentifier) (
+	*types.Block,
+	*rTypes.Error,
+) {
 	if bIdentifier.Hash != nil && bIdentifier.Index != nil {
 		h := tools.SafeRemoveHexPrefix(*bIdentifier.Hash)
-		return c.blockRepo.FindByIdentifier(*bIdentifier.Index, h)
+		return c.blockRepo.FindByIdentifier(ctx, *bIdentifier.Index, h)
 	} else if bIdentifier.Hash == nil && bIdentifier.Index != nil {
-		return c.blockRepo.FindByIndex(*bIdentifier.Index)
+		return c.blockRepo.FindByIndex(ctx, *bIdentifier.Index)
 	} else if bIdentifier.Index == nil && bIdentifier.Hash != nil {
 		h := tools.SafeRemoveHexPrefix(*bIdentifier.Hash)
-		return c.blockRepo.FindByHash(h)
+		return c.blockRepo.FindByHash(ctx, h)
 	} else {
-		log.Errorf(
-			"An error occurred while retrieving Block with Index [%d] and Hash [%v]. Should not happen.",
-			bIdentifier.Index,
-			bIdentifier.Hash,
-		)
-		return nil, errors.ErrInternalServerError
+		return c.blockRepo.RetrieveLatest(ctx)
 	}
 }
 
-func (c *BaseService) RetrieveGenesis() (*types.Block, *rTypes.Error) {
-	return c.blockRepo.RetrieveGenesis()
+func (c *BaseService) RetrieveGenesis(ctx context.Context) (*types.Block, *rTypes.Error) {
+	return c.blockRepo.RetrieveGenesis(ctx)
 }
 
-func (c *BaseService) RetrieveLatest() (*types.Block, *rTypes.Error) {
-	return c.blockRepo.RetrieveLatest()
+func (c *BaseService) RetrieveLatest(ctx context.Context) (*types.Block, *rTypes.Error) {
+	return c.blockRepo.RetrieveLatest(ctx)
 }
 
-func (c *BaseService) FindByIdentifier(index int64, hash string) (*types.Block, *rTypes.Error) {
-	return c.blockRepo.FindByIdentifier(index, hash)
+func (c *BaseService) FindByIdentifier(ctx context.Context, index int64, hash string) (*types.Block, *rTypes.Error) {
+	return c.blockRepo.FindByIdentifier(ctx, index, hash)
 }
 
 func (c *BaseService) FindByHashInBlock(
+	ctx context.Context,
 	identifier string,
 	consensusStart int64,
 	consensusEnd int64,
 ) (*types.Transaction, *rTypes.Error) {
-	return c.transactionRepo.FindByHashInBlock(identifier, consensusStart, consensusEnd)
+	return c.transactionRepo.FindByHashInBlock(ctx, identifier, consensusStart, consensusEnd)
 }
 
-func (c *BaseService) FindBetween(start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
-	return c.transactionRepo.FindBetween(start, end)
+func (c *BaseService) FindBetween(ctx context.Context, start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
+	return c.transactionRepo.FindBetween(ctx, start, end)
 }
 
-func (c *BaseService) Results() (map[int]string, *rTypes.Error) {
-	return c.transactionRepo.Results()
+func (c *BaseService) Results(ctx context.Context) (map[int]string, *rTypes.Error) {
+	return c.transactionRepo.Results(ctx)
 }
 
-func (c *BaseService) TypesAsArray() ([]string, *rTypes.Error) {
-	return c.transactionRepo.TypesAsArray()
+func (c *BaseService) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
+	return c.transactionRepo.TypesAsArray(ctx)
 }
