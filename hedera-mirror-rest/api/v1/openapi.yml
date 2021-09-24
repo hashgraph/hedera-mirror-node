@@ -557,7 +557,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.41.0-SNAPSHOT
+  version: 0.42.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1098,6 +1098,9 @@ components:
         decimals:
           type: string
           example: 1000
+        deleted:
+          type: boolean
+          example: true
         expiry_timestamp:
           example: null
           nullable: true
@@ -1122,6 +1125,9 @@ components:
         name:
           type: string
           example: Token name
+        memo:
+          type: string
+          example: "token memo"
         supply_key:
           $ref: '#/components/schemas/Key'
         supply_type:

@@ -1460,8 +1460,8 @@
         {
           "current": {
             "selected": true,
-            "text": "Loki",
-            "value": "Loki"
+            "text": "",
+            "value": ""
           },
           "description": "Name of the Loki datasource to use",
           "error": null,
@@ -1481,8 +1481,8 @@
         {
           "current": {
             "selected": false,
-            "text": "Prometheus",
-            "value": "Prometheus"
+            "text": "",
+            "value": ""
           },
           "description": "Name of the Prometheus datasource to use",
           "error": null,
@@ -1524,7 +1524,7 @@
             "query": "label_values(traefik_config_reloads_total, cluster)",
             "refId": "StandardVariableQuery"
           },
-          "refresh": 1,
+          "refresh": 2,
           "regex": "",
           "skipUrlSync": false,
           "sort": 5,
@@ -1550,7 +1550,7 @@
           "name": "namespace",
           "options": [],
           "query": "label_values(traefik_config_reloads_total{cluster=~\"$cluster\"}, namespace)",
-          "refresh": 1,
+          "refresh": 2,
           "regex": "",
           "skipUrlSync": false,
           "sort": 5,

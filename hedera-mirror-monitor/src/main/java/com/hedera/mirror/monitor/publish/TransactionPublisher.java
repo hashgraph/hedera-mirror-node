@@ -27,14 +27,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
@@ -48,6 +50,7 @@ import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
+import com.hedera.mirror.monitor.NodeValidationProperties;
 
 @Log4j2
 @Named
@@ -56,12 +59,17 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final List<AccountId> nodeAccountIds = new CopyOnWriteArrayList<>();
+    private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
     private final SecureRandom secureRandom = new SecureRandom();
+    private final AtomicReference<Disposable> nodeValidator = new AtomicReference<>();
 
     @Override
     public void close() {
+        if (nodeValidator.get() != null) {
+            nodeValidator.get().dispose();
+        }
+
         if (publishProperties.isEnabled()) {
             log.warn("Closing {} clients", publishProperties.getClients());
             clients.subscribe(client -> {
@@ -105,8 +113,13 @@ public class TransactionPublisher implements AutoCloseable {
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            int nodeIndex = secureRandom.nextInt(nodeAccountIds.size());
-            List<AccountId> nodeAccountId = List.of(nodeAccountIds.get(nodeIndex));
+            List<AccountId> nodes = nodeAccountIds.get();
+            if (nodes.isEmpty()) {
+                throw new PublishException(request, new IllegalArgumentException("No valid nodes available to publish" +
+                        " to"));
+            }
+            int nodeIndex = secureRandom.nextInt(nodes.size());
+            List<AccountId> nodeAccountId = List.of(nodes.get(nodeIndex));
             transaction.setNodeAccountIds(nodeAccountId);
         }
 
@@ -137,26 +150,33 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private Flux<Client> getClients() {
-        List<NodeProperties> validNodes = validateNodes();
+        validateNodes();
 
-        if (validNodes.isEmpty()) {
-            throw new IllegalArgumentException("No valid nodes found");
-        }
-
-        validNodes.forEach(n -> nodeAccountIds.add(AccountId.fromString(n.getAccountId())));
-        Map<String, AccountId> nodeMap = validNodes.stream()
+        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), monitorProperties.getNodes()
+                .size());
+        Map<String, AccountId> nodes = monitorProperties.getNodes().stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
-        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), validNodes.size());
 
+        NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
+        if (validationProperties.isEnabled()) {
+
+            nodeValidator.compareAndSet(null, Flux.interval(validationProperties.getFrequency())
+                    .subscribeOn(Schedulers.parallel())
+                    .doOnNext(i -> validateNodes())
+                    .onErrorContinue((e, i) -> log.error("Exception validating nodes: ", e))
+                    .subscribe());
+        }
         return Flux.range(0, publishProperties.getClients())
-                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodeMap))));
+                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodes))));
     }
 
-    private List<NodeProperties> validateNodes() {
+    protected void validateNodes() {
+        log.info("Validating nodes");
         Set<NodeProperties> nodes = monitorProperties.getNodes();
 
-        if (!monitorProperties.isValidateNodes()) {
-            return new ArrayList<>(nodes);
+        if (!monitorProperties.getNodeValidation().isEnabled()) {
+            setNodeAccountIds(new ArrayList<>(nodes));
+            return;
         }
 
         List<NodeProperties> validNodes = new ArrayList<>();
@@ -174,12 +194,26 @@ public class TransactionPublisher implements AutoCloseable {
         }
 
         log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
-        return validNodes;
+
+        setNodeAccountIds(validNodes);
+
+        if (nodeAccountIds.get().isEmpty()) {
+            throw new IllegalArgumentException("No valid nodes found");
+        }
+    }
+
+    private void setNodeAccountIds(List<NodeProperties> validNodes) {
+        List<AccountId> newNodeAccountIds = new ArrayList<>();
+        validNodes.forEach(n -> newNodeAccountIds.add(AccountId.fromString(n.getAccountId())));
+        nodeAccountIds.set(newNodeAccountIds);
     }
 
     private boolean validateNode(Client client, NodeProperties node) {
         boolean valid = false;
-
+        NodeValidationProperties nodeValidationProperties = monitorProperties.getNodeValidation();
+        client.setMinBackoff(nodeValidationProperties.getMinBackoff());
+        client.setMaxBackoff(nodeValidationProperties.getMaxBackoff());
+        client.setMaxAttempts(nodeValidationProperties.getMaxAttempts());
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);

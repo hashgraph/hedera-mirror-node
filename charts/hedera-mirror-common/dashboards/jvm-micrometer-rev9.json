@@ -4583,8 +4583,8 @@
       {
         "current": {
           "selected": false,
-          "text": "Prometheus",
-          "value": "Prometheus"
+          "text": "",
+          "value": ""
         },
         "description": "Name of the Prometheus datasource to use",
         "error": null,
@@ -4652,7 +4652,7 @@
           "query": "label_values(jvm_memory_used_bytes{application=\"$application\"}, cluster)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 5,
@@ -4729,7 +4729,7 @@
         "name": "jvm_memory_pool_heap",
         "options": [],
         "query": "label_values(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"heap\"},id)",
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
@@ -4757,7 +4757,7 @@
         "name": "jvm_memory_pool_nonheap",
         "options": [],
         "query": "label_values(jvm_memory_used_bytes{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\", area=\"nonheap\"},id)",
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 2,

@@ -238,6 +238,11 @@ Name                                                            | Default    | D
 `hedera.mirror.monitor.nodes[].accountId`                       | ""         | The main node's account ID
 `hedera.mirror.monitor.nodes[].host`                            | ""         | The main node's hostname
 `hedera.mirror.monitor.nodes[].port`                            | 50211      | The main node's port
+`hedera.mirror.monitor.nodeValidation.enabled`                  | true       | Whether to validate and remove invalid or down nodes permanently before publishing
+`hedera.mirror.monitor.nodeValidation.frequency`                | 5m         | The amount of time between validations of the network.
+`hedera.mirror.monitor.nodeValidation.maxAttempts`              | 20         | The number of times the monitor should attempt to receive a healthy response from a node before marking it as unhealthy.
+`hedera.mirror.monitor.nodeValidation.maxBackoff`               | 2s         | The maximum amount of time to wait in between attempts when trying to validate a node
+`hedera.mirror.monitor.nodeValidation.minBackoff`               | 500ms      | The minimum amount of time to wait in between attempts when trying to validate a node
 `hedera.mirror.monitor.operator.accountId`                      | ""         | Operator account ID used to pay for transactions
 `hedera.mirror.monitor.operator.privateKey`                     | ""         | Operator ED25519 private key used to sign transactions in hex encoded DER format
 `hedera.mirror.monitor.publish.batchDivisor`                    | 100        | The divisor used to calculate batch size when generating transactions
@@ -281,7 +286,6 @@ Name                                                            | Default    | D
 `hedera.mirror.monitor.subscribe.rest.<name>.samplePercent`     | 1.0        | The percentage of transactions to verify against the API. Accepts values between 0-1
 `hedera.mirror.monitor.subscribe.rest.<name>.timeout`           | 5s         | Maximum amount of time to wait for a API call to retrieve data
 `hedera.mirror.monitor.subscribe.statusFrequency`               | 10s        | How often to log subscription statistics
-`hedera.mirror.monitor.validateNodes`                           | true       | Whether to validate and remove invalid or down nodes permanently before publishing
 
 ## REST API
 

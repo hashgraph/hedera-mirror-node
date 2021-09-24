@@ -29,12 +29,14 @@ import org.apache.commons.codec.binary.Hex;
 
 @Named
 public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
+
     public static final ByteArrayToHexSerializer INSTANCE = new ByteArrayToHexSerializer();
+    static final String PREFIX = "\\x";
 
     @Override
-    public void serialize(byte[] value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(byte[] value, JsonGenerator jsonGenerator, SerializerProvider serializers) throws IOException {
         if (value != null) {
-            gen.writeString("\\x" + Hex.encodeHexString(value));
+            jsonGenerator.writeString(PREFIX + Hex.encodeHexString(value));
         }
     }
 }

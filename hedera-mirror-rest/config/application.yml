@@ -26,7 +26,10 @@ hedera:
         enabled: true
         config:
           authentication: true
+          durationBuckets: [ 100, 250, 500, 1000, 2500, 5000 ]
           password: password
+          requestSizeBuckets: [ 64, 256, 1024 ]
+          responseSizeBuckets: [ 512, 1024, 10240, 25600, 51200 ]
           swaggerOnly: true,
           username: metrics
           uriPath: '/swagger'

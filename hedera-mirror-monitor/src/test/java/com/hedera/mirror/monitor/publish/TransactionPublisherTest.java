@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.publish;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import io.grpc.Server;
 import io.grpc.Status;
@@ -76,18 +77,16 @@ class TransactionPublisherTest {
 
     @BeforeEach
     void setup() throws IOException {
-        OperatorProperties operatorProperties = new OperatorProperties();
-        operatorProperties.setAccountId("0.0.100");
-        operatorProperties.setPrivateKey(PrivateKey.generate().toString());
         publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName("test");
         publishScenarioProperties.setType(TransactionType.CRYPTO_TRANSFER);
         monitorProperties = new MonitorProperties();
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
-        monitorProperties.setOperator(operatorProperties);
+        OperatorProperties operatorProperties = monitorProperties.getOperator();
+        operatorProperties.setAccountId("0.0.100");
+        operatorProperties.setPrivateKey(PrivateKey.generate().toString());
         publishProperties = new PublishProperties();
         transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties);
-
         cryptoServiceStub = new CryptoServiceStub();
         server = InProcessServerBuilder.forName("test")
                 .addService(cryptoServiceStub)
@@ -211,6 +210,44 @@ class TransactionPublisherTest {
 
     @Test
     @Timeout(3)
+    void publishWithRevalidate() {
+        //Disable validation and do it manually for this test
+        monitorProperties.getNodeValidation().setFrequency(Duration.ofSeconds(60));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+
+        //Set node to unhealthy and confirm message can't be published
+        monitorProperties.setNodes(Set.of(
+                new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK retry
+
+        assertThrows(IllegalArgumentException.class, transactionPublisher::validateNodes);
+
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectError(PublishException.class)
+                .verify(Duration.ofSeconds(1L));
+
+        //Set node back to healthy, confirm publishing resumes.
+        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        transactionPublisher.validateNodes();
+
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+    }
+
+    @Test
+    @Timeout(3)
     void publishRetryError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
@@ -258,7 +295,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void skipNodeValidation() {
-        monitorProperties.setValidateNodes(false);
+        monitorProperties.getNodeValidation().setEnabled(false);
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())
