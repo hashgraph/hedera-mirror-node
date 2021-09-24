@@ -45,5 +45,5 @@ hedera:
       port: 5700
       realm: 0
       shard: 0
-      version: 0.41.0-SNAPSHOT
+      version: 0.42.0-SNAPSHOT
 `
