@@ -41,7 +41,6 @@ import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -456,6 +455,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertEquals(2, nftRepository.count());
 
         // nft w transfers
+        sqlEntityListener.onStart();
         sqlEntityListener.onNft(getNft(tokenId1, 1L, accountId3, null, null, null, 5L)); // transfer
         sqlEntityListener.onNft(getNft(tokenId2, 1L, accountId4, null, null, null, 6L)); // transfer
         completeFileAndCommit();
@@ -491,6 +491,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onNft(nft2Combined);
 
         completeFileAndCommit();
+        sqlEntityListener.onStart();
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(2, nftRepository.count());
 
@@ -505,6 +506,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onNft(nft2BurnTransfer);
 
         completeFileAndCommit();
+        sqlEntityListener.onStart();
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(2, nftRepository.count());
 
@@ -679,7 +681,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(
                 associate,
-                getTokenAccount(tokenId1, accountId1, 5L, 10L, false, false, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE)
+                getTokenAccount(tokenId1, accountId1, 5L, 10L, false, false, TokenFreezeStatusEnum.NOT_APPLICABLE,
+                        TokenKycStatusEnum.NOT_APPLICABLE)
         );
     }
 
@@ -722,7 +725,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // token account was associated before this record file
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false, TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED);
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
+                TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED);
         tokenAccountRepository.save(associate);
         expected.add(associate);
 
@@ -825,6 +829,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         completeFileAndCommit(recordFile1);
 
+        sqlEntityListener.onStart();
         // when in the next record file we have freeze, kycGrant, dissociate, associate, kycGrant
         TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, 10L, null, null, TokenFreezeStatusEnum.FROZEN,
                 null);

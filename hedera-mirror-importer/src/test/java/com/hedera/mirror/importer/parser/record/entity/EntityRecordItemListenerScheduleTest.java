@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -66,7 +67,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     private static final long EXECUTE_TIMESTAMP = 500L;
     private static final String SCHEDULE_CREATE_MEMO = "ScheduleCreate memo";
     private static final SchedulableTransactionBody SCHEDULED_TRANSACTION_BODY = SchedulableTransactionBody
-            .getDefaultInstance();
+            .newBuilder().setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.newBuilder().build()).build();
     private static final ScheduleID SCHEDULE_ID = ScheduleID.newBuilder().setShardNum(0).setRealmNum(0)
             .setScheduleNum(2).build();
     private static final Key SCHEDULE_REF_KEY = keyFromString(KEY);

@@ -56,7 +56,7 @@ public class CustomFee implements Persistable<UUID> {
     @GeneratedValue(generator = "UUID")
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(updatable = false, nullable = false)
-    private UUID id = UUID.randomUUID();
+    private UUID id;
 
     private Long maximumAmount;
 

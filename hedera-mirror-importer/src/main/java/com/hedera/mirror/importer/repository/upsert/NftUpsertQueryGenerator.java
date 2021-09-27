@@ -35,17 +35,13 @@ import com.hedera.mirror.importer.domain.TokenId_;
 @Named
 @Value
 public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> {
+    private static final String RESERVED_ENTITY_ID = EntityId.EMPTY.getId().toString();
     private final String finalTableName = "nft";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> v1ConflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER);
-    // createdTimestamp is needed for v2 schema compliance as it's used in index
-    private final List<String> v2ConflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER,
-            Nft_.CREATED_TIMESTAMP);
     private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID);
     private final Set<String> nonUpdatableColumns = Set.of(Nft_.CREATED_TIMESTAMP, Nft_.ID, Nft_.METADATA,
             NftId_.SERIAL_NUMBER, NftId_.TOKEN_ID);
-    private static final String RESERVED_ENTITY_ID = EntityId.EMPTY.getId().toString();
-
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
     private final Set<SingularAttribute> selectableColumns = Set.of(Nft_.accountId, Nft_.createdTimestamp, Nft_.deleted,

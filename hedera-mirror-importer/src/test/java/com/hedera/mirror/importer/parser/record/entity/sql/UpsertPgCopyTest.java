@@ -88,6 +88,16 @@ class UpsertPgCopyTest extends IntegrationTest {
     private TokenAccountRepository tokenAccountRepository;
     @Resource
     private ScheduleRepository scheduleRepository;
+    @Resource
+    private EntityUpsertQueryGenerator entityUpsertQueryGenerator;
+    @Resource
+    private NftUpsertQueryGenerator nftUpsertQueryGenerator;
+    @Resource
+    private ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
+    @Resource
+    private TokenUpsertQueryGenerator tokenUpsertQueryGenerator;
+    @Resource
+    private TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator;
     private UpsertPgCopy<Entity> entityPgCopy;
     private UpsertPgCopy<Nft> nftPgCopy;
     private UpsertPgCopy<Schedule> schedulePgCopy;

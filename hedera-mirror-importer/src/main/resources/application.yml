@@ -39,6 +39,8 @@ management:
         step: 30s
       prometheus:
         step: 30s
+    database:
+      enabled: false
     tags:
       application: ${spring.application.name}
   endpoint:
@@ -67,7 +69,7 @@ spring:
   datasource:
     name: ${hedera.mirror.importer.db.name}
     password: ${hedera.mirror.importer.db.password}
-    url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}?sslmode=require
+    url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}?sslmode=verify-full&sslrootcert=/cockroach/certs/ca.crt
     username: ${hedera.mirror.importer.db.username}
     hikari:
       data-source-properties:
@@ -79,6 +81,7 @@ spring:
     baselineOnMigrate: true
     connectRetries: 20
     ignoreMissingMigrations: true
+    password: ${hedera.mirror.importer.db.ownerPassword}
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}
       api-user: ${hedera.mirror.importer.db.restUsername}
@@ -91,6 +94,7 @@ spring:
       compressionAge: 604800000000000
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
+    user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:
       hibernate:

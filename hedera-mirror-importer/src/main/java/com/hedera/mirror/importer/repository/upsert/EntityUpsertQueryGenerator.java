@@ -33,7 +33,6 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
     private final String finalTableName = "entity";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> v1ConflictIdColumns = List.of(Entity_.ID);
-    private final List<String> v2ConflictIdColumns = List.of(Entity_.ID);
     private final Set<String> nullableColumns = Set.of(Entity_.AUTO_RENEW_ACCOUNT_ID,
             Entity_.AUTO_RENEW_PERIOD, Entity_.CREATED_TIMESTAMP, Entity_.DELETED, Entity_.EXPIRATION_TIMESTAMP,
             Entity_.KEY, Entity_.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS, Entity_.MODIFIED_TIMESTAMP, Entity_.PUBLIC_KEY,

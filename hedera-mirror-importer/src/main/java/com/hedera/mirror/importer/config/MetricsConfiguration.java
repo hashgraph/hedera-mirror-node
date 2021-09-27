@@ -66,12 +66,14 @@ public class MetricsConfiguration {
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "management.metrics.database", name = "enabled", havingValue = "true",
+            matchIfMissing = true)
     MeterBinder postgreSQLDatabaseMetrics() {
         return new PostgreSQLDatabaseMetrics(dataSource, dataSourceProperties.getName());
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "management.metrics.table", name = "enabled", havingValue = "true",
+    @ConditionalOnProperty(prefix = "management.metrics.database", name = "enabled", havingValue = "true",
             matchIfMissing = true)
     MeterBinder tableMetrics(DBProperties dbProperties) {
         // select count(*) is very slow on large tables, so we use the stats table to provide an estimate

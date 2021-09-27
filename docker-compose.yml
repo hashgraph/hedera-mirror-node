@@ -28,7 +28,7 @@ services:
       - 5432:5432
 
   db:
-    image: cockroachdb/cockroach:v21.1.7
+    image: cockroachdb/cockroach:v21.1.9
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM
@@ -40,7 +40,7 @@ services:
   db-init:
     depends_on:
       - db
-    image: cockroachdb/cockroach:v21.1.7
+    image: cockroachdb/cockroach:v21.1.9
     restart: on-failure
     entrypoint: /init.sh
     volumes:

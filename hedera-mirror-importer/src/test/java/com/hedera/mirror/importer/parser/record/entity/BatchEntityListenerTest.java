@@ -20,19 +20,20 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.time.Duration;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.TopicMessage;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.TopicMessage;
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor
 public abstract class BatchEntityListenerTest extends IntegrationTest {
@@ -42,10 +43,17 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
 
     private long consensusTimestamp = 1;
     private long sequenceNumber = 1;
+    private boolean previousEnabled;
 
     @BeforeEach
     void setup() {
+        previousEnabled = properties.isEnabled();
         properties.setEnabled(true);
+    }
+
+    @AfterEach
+    void teardown() {
+        properties.setEnabled(previousEnabled);
     }
 
     @Test

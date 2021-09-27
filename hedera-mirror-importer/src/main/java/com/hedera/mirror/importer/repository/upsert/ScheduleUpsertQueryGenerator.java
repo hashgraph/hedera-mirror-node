@@ -34,7 +34,6 @@ public class ScheduleUpsertQueryGenerator extends AbstractUpsertQueryGenerator<S
     private final String temporaryTableName = getFinalTableName() + "_temp";
     // scheduleId is used for completeness
     private final List<String> v1ConflictIdColumns = List.of(Schedule_.SCHEDULE_ID);
-    private final List<String> v2ConflictIdColumns = v1ConflictIdColumns;
     private final Set<String> nullableColumns = Set.of(Schedule_.EXECUTED_TIMESTAMP);
     private final Set<String> nonUpdatableColumns = Set.of(Schedule_.CONSENSUS_TIMESTAMP,
             Schedule_.CREATOR_ACCOUNT_ID, Schedule_.PAYER_ACCOUNT_ID, Schedule_.SCHEDULE_ID,

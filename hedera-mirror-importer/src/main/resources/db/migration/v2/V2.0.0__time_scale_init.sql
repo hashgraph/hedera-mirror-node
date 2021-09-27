@@ -274,8 +274,8 @@ comment on table t_transaction_types is 'Transaction types';
 -- token
 create table if not exists token
 (
-    token_id                     bigint,
-    created_timestamp            bigint                 not null primary key,
+    token_id                     bigint primary key,
+    created_timestamp            bigint                 not null,
     decimals                     bigint                 not null,
     fee_schedule_key             bytea,
     fee_schedule_key_ed25519_hex varchar                null,
