@@ -272,4 +272,7 @@ values (7, 'CONTRACTCALL', 2),
        (42, 'SCHEDULECREATE', 6),
        (43, 'SCHEDULEDELETE', 6),
        (44, 'SCHEDULESIGN', 6),
-       (45, 'TOKENFEESCHEDULEUPDATE', 5);
+       (45, 'TOKENFEESCHEDULEUPDATE', 5),
+       (46, 'TOKENPAUSE', 5),
+       (47, 'TOKENUNPAUSE', 5);
+

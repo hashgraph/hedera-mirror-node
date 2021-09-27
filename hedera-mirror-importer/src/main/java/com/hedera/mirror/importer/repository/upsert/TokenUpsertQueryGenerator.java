@@ -41,6 +41,7 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     private final Set<String> nullableColumns = Set.of(Token_.FEE_SCHEDULE_KEY, Token_.FEE_SCHEDULE_KEY_ED25519_HEX,
             Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX,
+            Token_.PAUSE_KEY, Token_.PAUSE_KEY_ED25519_HEX, Token_.PAUSE_STATUS,
             Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
             Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
     private final Set<String> nonUpdatableColumns = Set.of(Token_.CREATED_TIMESTAMP, Token_.DECIMALS,
@@ -52,9 +53,9 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     private final Set<SingularAttribute> selectableColumns = Set.of(Token_.createdTimestamp, Token_.decimals,
             Token_.feeScheduleKey, Token_.feeScheduleKeyEd25519Hex, Token_.freezeDefault, Token_.freezeKey,
             Token_.freezeKeyEd25519Hex, Token_.initialSupply, Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.maxSupply,
-            Token_.modifiedTimestamp, Token_.name, Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.supplyType,
-            Token_.symbol, Token_.tokenId, Token_.totalSupply, Token_.treasuryAccountId, Token_.type, Token_.wipeKey,
-            Token_.wipeKeyEd25519Hex);
+            Token_.modifiedTimestamp, Token_.name, Token_.pauseKey, Token_.pauseKeyEd25519Hex, Token_.supplyKey,
+            Token_.supplyKeyEd25519Hex, Token_.supplyType, Token_.symbol, Token_.tokenId, Token_.totalSupply,
+            Token_.treasuryAccountId, Token_.type, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
 
     @Override
     public String getFinalTableName() {

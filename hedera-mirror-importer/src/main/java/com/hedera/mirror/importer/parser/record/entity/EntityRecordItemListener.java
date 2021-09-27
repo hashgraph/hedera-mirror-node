@@ -79,6 +79,7 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
@@ -234,10 +235,14 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenAccountGrantKyc(recordItem);
             } else if (body.hasTokenMint()) {
                 insertTokenMint(recordItem);
+            } else if (body.hasTokenPause()) {
+                insertTokenPause(recordItem);
             } else if (body.hasTokenRevokeKyc()) {
                 insertTokenAccountRevokeKyc(recordItem);
             } else if (body.hasTokenUnfreeze()) {
                 insertTokenAccountUnfreeze(recordItem);
+            } else if (body.hasTokenUnpause()) {
+                insertTokenUnpause(recordItem);
             } else if (body.hasTokenUpdate()) {
                 insertTokenUpdate(recordItem);
             } else if (body.hasTokenWipe()) {
@@ -525,6 +530,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setKycKey(tokenCreateTransactionBody.getKycKey().toByteArray());
         }
 
+        if (tokenCreateTransactionBody.hasPauseKey()) {
+            token.setPauseKey(tokenCreateTransactionBody.getPauseKey().toByteArray());
+            token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
+        } else {
+            token.setPauseStatus(TokenPauseStatusEnum.NOT_APPLICABLE);
+        }
+
         if (tokenCreateTransactionBody.hasSupplyKey()) {
             token.setSupplyKey(tokenCreateTransactionBody.getSupplyKey().toByteArray());
         }
@@ -742,6 +754,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                 token.setKycKey(tokenUpdateTransactionBody.getKycKey().toByteArray());
             }
 
+            if (tokenUpdateTransactionBody.hasPauseKey()) {
+                token.setPauseKey(tokenUpdateTransactionBody.getPauseKey().toByteArray());
+            }
+
             if (tokenUpdateTransactionBody.hasSupplyKey()) {
                 token.setSupplyKey(tokenUpdateTransactionBody.getSupplyKey().toByteArray());
             }
@@ -808,6 +824,30 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
 
             insertCustomFees(transactionBody.getCustomFeesList(), consensusTimestamp, false, tokenId);
+        }
+    }
+
+    private void insertTokenPause(RecordItem recordItem) {
+        if (entityProperties.getPersist().isTokens()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            TokenPauseTransactionBody transactionBody = recordItem.getTransactionBody().getTokenPause();
+
+            Token token = Token.of(EntityId.of(transactionBody.getToken()));
+            token.setPauseStatus(TokenPauseStatusEnum.PAUSED);
+
+            updateToken(token, consensusTimestamp);
+        }
+    }
+
+    private void insertTokenUnpause(RecordItem recordItem) {
+        if (entityProperties.getPersist().isTokens()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            TokenUnpauseTransactionBody transactionBody = recordItem.getTransactionBody().getTokenUnpause();
+
+            Token token = Token.of(EntityId.of(transactionBody.getToken()));
+            token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
+
+            updateToken(token, consensusTimestamp);
         }
     }
 
