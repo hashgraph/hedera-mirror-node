@@ -7,7 +7,7 @@ require (
 	github.com/caarlos0/env/v6 v6.7.1
 	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/hashgraph/hedera-sdk-go/v2 v2.1.15
+	github.com/hashgraph/hedera-sdk-go/v2 v2.2.0
 	github.com/hellofresh/health-go/v4 v4.4.3
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lib/pq v1.10.3
@@ -86,10 +86,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63 // indirect
-	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
-	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
+	golang.org/x/net v0.0.0-20210907225631-ff17edfbf26d // indirect
+	golang.org/x/sys v0.0.0-20210906170528-6f6e22806c34 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20210324141432-3032e8ff099e // indirect
+	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83 // indirect
 	google.golang.org/grpc v1.40.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
