@@ -53,4 +53,6 @@ func NewDbClient(db *gorm.DB, statementTimeout uint) *DbClient {
 	return &DbClient{db: db, statementTimeout: statementTimeout}
 }
 
-func noop() {}
+func noop() {
+	// empty cancel function
+}

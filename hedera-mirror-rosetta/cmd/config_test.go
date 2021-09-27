@@ -48,6 +48,7 @@ hedera:
       db:
         port: 5431
         username: foobar`
+	serviceEndpoint = "192.168.0.1:50211"
 )
 
 func TestLoadDefaultConfig(t *testing.T) {
@@ -133,8 +134,8 @@ func TestNodeMapDecodeHookFunc(t *testing.T) {
 		{
 			name:     "valid data",
 			from:     reflect.TypeOf(map[string]interface{}{}),
-			data:     map[string]interface{}{"192.168.0.1:50211": "0.0.3"},
-			expected: types.NodeMap{"192.168.0.1:50211": hedera.AccountID{Account: 3}},
+			data:     map[string]interface{}{serviceEndpoint: "0.0.3"},
+			expected: types.NodeMap{serviceEndpoint: hedera.AccountID{Account: 3}},
 		},
 		{
 			name:        "invalid data type",
@@ -145,7 +146,7 @@ func TestNodeMapDecodeHookFunc(t *testing.T) {
 		{
 			name:        "invalid node account id",
 			from:        reflect.TypeOf(map[string]interface{}{}),
-			data:        map[string]interface{}{"192.168.0.1:50211": "3"},
+			data:        map[string]interface{}{serviceEndpoint: "3"},
 			expectError: true,
 		},
 	}
