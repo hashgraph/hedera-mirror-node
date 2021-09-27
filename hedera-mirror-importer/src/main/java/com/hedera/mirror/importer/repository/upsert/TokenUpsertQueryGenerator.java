@@ -57,6 +57,21 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
             Token_.wipeKeyEd25519Hex);
 
     @Override
+    protected String getAttributeUpdateQuery(String attributeName) {
+        if (attributeName.equalsIgnoreCase(Token_.TOTAL_SUPPLY)) {
+            return String.format("%s = case when %s >= 0 then %s else %s + coalesce(%s, 0) end",
+                    getFormattedColumnName(Token_.TOTAL_SUPPLY),
+                    getFullTempTableColumnName(Token_.TOTAL_SUPPLY),
+                    getFullTempTableColumnName(Token_.TOTAL_SUPPLY),
+                    getFullFinalTableColumnName(Token_.TOTAL_SUPPLY),
+                    getFullTempTableColumnName(Token_.TOTAL_SUPPLY)
+            );
+        }
+
+        return super.getAttributeUpdateQuery(attributeName);
+    }
+
+    @Override
     public String getFinalTableName() {
         return TABLE;
     }

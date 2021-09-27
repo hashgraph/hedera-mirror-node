@@ -117,7 +117,12 @@ public class AbstractEntityListener implements EntityListener {
         }
 
         if (newToken.getTotalSupply() != null) {
-            cachedToken.setTotalSupply(newToken.getTotalSupply());
+            Long newTotalSupply = newToken.getTotalSupply();
+            if (cachedToken.getTotalSupply() != null && newTotalSupply < 0) {
+                cachedToken.setTotalSupply(cachedToken.getTotalSupply() + newTotalSupply);
+            } else {
+                cachedToken.setTotalSupply(newToken.getTotalSupply());
+            }
         }
 
         if (newToken.getTreasuryAccountId() != null) {

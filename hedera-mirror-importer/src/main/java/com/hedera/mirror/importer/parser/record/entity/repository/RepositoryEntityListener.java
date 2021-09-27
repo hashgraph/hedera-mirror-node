@@ -181,6 +181,13 @@ public class RepositoryEntityListener extends AbstractEntityListener {
 
     @Override
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
+        if (tokenTransfer.isTokenDissociate()) {
+            TokenTransfer.Id id = tokenTransfer.getId();
+            tokenTransferRepository.insertTransferForTokenDissociate(id.getAccountId().getId(),
+                    tokenTransfer.getAmount(), id.getConsensusTimestamp(), id.getTokenId().getId());
+            return;
+        }
+
         tokenTransferRepository.save(tokenTransfer);
     }
 

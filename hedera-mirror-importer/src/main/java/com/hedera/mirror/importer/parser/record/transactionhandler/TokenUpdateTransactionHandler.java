@@ -34,7 +34,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    static final long WILDCARD_SERIAL_NUMBER = -1;
+    public static final long WILDCARD_SERIAL_NUMBER = -1;
     private final NftRepository nftRepository;
 
     public TokenUpdateTransactionHandler(NftRepository nftRepository) {

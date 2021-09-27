@@ -94,6 +94,7 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
+import com.hedera.mirror.importer.parser.record.transactionhandler.TokenUpdateTransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -660,27 +661,42 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertTokenTransfers(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            boolean isTokenDissociate = recordItem.getTransactionBody().hasTokenDissociate();
+
             recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
                 EntityId tokenId = EntityId.of(tokenTransferList.getToken());
                 entityListener.onEntityId(tokenId);
 
-                long consensusTimestamp = recordItem.getConsensusTimestamp();
                 tokenTransferList.getTransfersList().forEach(accountAmount -> {
                     EntityId accountId = EntityId.of(accountAmount.getAccountID());
                     entityListener.onEntityId(accountId);
 
-                    entityListener.onTokenTransfer(new TokenTransfer(consensusTimestamp, accountAmount
-                            .getAmount(), tokenId, accountId));
+                    long amount = accountAmount.getAmount();
+                    entityListener.onTokenTransfer(new TokenTransfer(consensusTimestamp, amount, tokenId, accountId,
+                            isTokenDissociate));
+
+                    if (isTokenDissociate) {
+                        Token token = Token.of(tokenId);
+                        token.setTotalSupply(accountAmount.getAmount());
+                        entityListener.onToken(token);
+                    }
                 });
 
                 tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
+                    long serialNumber = nftTransfer.getSerialNumber();
+                    if (serialNumber == TokenUpdateTransactionHandler.WILDCARD_SERIAL_NUMBER) {
+                        // do not persist nft transfers with the wildcard serial number (-1) which signify an nft token
+                        // treasury change
+                        return;
+                    }
+
                     EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
                     entityListener.onEntityId(receiverId);
 
                     EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
                     entityListener.onEntityId(senderId);
 
-                    long serialNumber = nftTransfer.getSerialNumber();
                     NftTransfer nftTransferDomain = new NftTransfer();
                     nftTransferDomain.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
                     nftTransferDomain.setReceiverAccountId(receiverId);
