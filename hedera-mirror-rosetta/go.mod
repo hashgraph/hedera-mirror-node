@@ -8,7 +8,7 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/hashgraph/hedera-sdk-go/v2 v2.1.15
-	github.com/hellofresh/health-go/v4 v4.4.2
+	github.com/hellofresh/health-go/v4 v4.4.3
 	github.com/iancoleman/strcase v0.2.0
 	github.com/lib/pq v1.10.3
 	github.com/onrik/gorm-logrus v0.3.0
@@ -31,7 +31,7 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.0 // indirect
-	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v20.10.7+incompatible // indirect
@@ -82,11 +82,11 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
-	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
-	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
+	go.opentelemetry.io/otel v1.0.0 // indirect
+	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210324205630-d1beb07c2056 // indirect
+	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63 // indirect
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
 	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210324141432-3032e8ff099e // indirect
