@@ -32,7 +32,6 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
 	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
@@ -643,16 +642,11 @@ func getTokenOperation(
 		Account: payerId,
 	}
 
-	if transactionType == config.OperationTypeTokenCreate {
-		metadata := make(map[string]interface{})
-		metadata["currency"] = types.Token{Token: token}.ToRosettaCurrency()
-		metadata["freeze_default"] = token.FreezeDefault
-		metadata["initial_supply"] = token.InitialSupply
-		operation.Metadata = metadata
-	} else {
-		// TokenDeletion and TokenUpdate
-		operation.Amount = types.NewTokenAmount(token, 0)
-	}
+	metadata := make(map[string]interface{})
+	metadata["currency"] = types.Token{Token: token}.ToRosettaCurrency()
+	metadata["freeze_default"] = token.FreezeDefault
+	metadata["initial_supply"] = token.InitialSupply
+	operation.Metadata = metadata
 
 	return operation, nil
 }
