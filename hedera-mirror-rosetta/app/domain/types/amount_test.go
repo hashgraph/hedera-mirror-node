@@ -74,7 +74,7 @@ func TestTokenAmountToRosettaAmount(t *testing.T) {
 			},
 		},
 		{
-			name: domain.TokenTypeNonFungibleUnique + "SerialNumbers",
+			name: domain.TokenTypeNonFungibleUnique + "+SerialNumbers",
 			tokenAmount: TokenAmount{
 				Decimals:      0,
 				SerialNumbers: []int64{1, 2, 3, 4, 5, 6},
@@ -90,12 +90,12 @@ func TestTokenAmountToRosettaAmount(t *testing.T) {
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
 				Metadata: map[string]interface{}{
-					MetadataKeySerialNumbers: []float64{1, 2, 3, 4, 5, 6},
+					MetadataKeySerialNumbers: []string{"1", "2", "3", "4", "5", "6"},
 				},
 			},
 		},
 		{
-			name: domain.TokenTypeNonFungibleUnique + "Metadatas",
+			name: domain.TokenTypeNonFungibleUnique + "+Metadatas",
 			tokenAmount: TokenAmount{
 				Decimals:  0,
 				Metadatas: metadatasBytes,
@@ -178,7 +178,7 @@ func TestNewAmountSuccess(t *testing.T) {
 					Decimals: 0,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []float64{1, 2}},
+				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []string{"1", "2"}},
 			},
 			expected: &TokenAmount{
 				SerialNumbers: []int64{1, 2},
@@ -293,6 +293,17 @@ func TestNewAmountFailure(t *testing.T) {
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
 				Metadata: map[string]interface{}{MetadataKeySerialNumbers: 1},
+			},
+		},
+		{
+			name: "InvalidSerialNumbersFormatForNFT",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   "0.0.1580",
+					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []string{"abc", "def"}},
 			},
 		},
 		{

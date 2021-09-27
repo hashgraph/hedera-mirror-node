@@ -44,7 +44,7 @@ var (
 	accountIdA = hedera.AccountID{Account: 9500}
 	accountIdB = hedera.AccountID{Account: 9505}
 
-	defaultSerialNumbers = []float64{1}
+	defaultSerialNumbers = []string{"1"}
 	defaultSigners       = []hedera.AccountID{accountIdA, accountIdB}
 	defaultTransfers     = []transferOperation{
 		{account: accountIdAStr, amount: -15, currency: config.CurrencyHbar},
@@ -62,7 +62,7 @@ type transferOperation struct {
 	account       string
 	amount        int64
 	currency      *rTypes.Currency
-	serialNumbers []float64
+	serialNumbers []string
 }
 
 func TestCryptoTransferTransactionConstructorSuite(t *testing.T) {
@@ -340,8 +340,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "InvalidNftAmount",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -2, currency: tokenCCurrency, serialNumbers: []float64{1, 2}},
-				{account: accountIdBStr, amount: 2, currency: tokenCCurrency, serialNumbers: []float64{1, 2}},
+				{account: accountIdAStr, amount: -2, currency: tokenCCurrency, serialNumbers: []string{"1", "2"}},
+				{account: accountIdBStr, amount: 2, currency: tokenCCurrency, serialNumbers: []string{"1", "2"}},
 			},
 			expectError: true,
 		},
@@ -490,17 +490,15 @@ func assertCryptoTransferTransaction(
 }
 
 func operationTransferStringify(operation *rTypes.Operation) string {
-	var serialNumber int64
+	serialNumber := "0"
 	amount := operation.Amount
 	if amount.Metadata[types.MetadataKeySerialNumbers] != nil {
-		if serialNumbers, ok := amount.Metadata[types.MetadataKeySerialNumbers].([]float64); ok {
-			serialNumber = int64(serialNumbers[0])
-		} else if serialNumbers, ok := amount.Metadata[types.MetadataKeySerialNumbers].([]int64); ok {
+		if serialNumbers, ok := amount.Metadata[types.MetadataKeySerialNumbers].([]string); ok {
 			serialNumber = serialNumbers[0]
 		}
 	}
 
-	return fmt.Sprintf("%s_%s_%s_%d", operation.Account.Address, amount.Value, amount.Currency.Symbol,
+	return fmt.Sprintf("%s_%s_%s_%s", operation.Account.Address, amount.Value, amount.Currency.Symbol,
 		serialNumber)
 }
 

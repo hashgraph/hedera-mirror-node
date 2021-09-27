@@ -156,29 +156,31 @@ func (c *cryptoTransferTransactionConstructor) Parse(ctx context.Context, transa
 	senderMap := senderMap{}
 
 	for accountId, hbarAmount := range hbarTransferMap {
-		operations = c.addOperation(accountId, hbarAmount.AsTinybar(), config.CurrencyHbar, nil, operations, senderMap)
+
+		operations = c.addOperation(accountId, &types.HbarAmount{Value: hbarAmount.AsTinybar()}, operations, senderMap)
 	}
 
 	for token, tokenTransfers := range tokenTransferMap {
-		currency, err := c.getCurrency(ctx, token)
+		dbToken, err := c.tokenRepo.Find(ctx, token.String())
 		if err != nil {
 			return nil, nil, err
 		}
 		for _, tokenTransfer := range tokenTransfers {
-			operations = c.addOperation(tokenTransfer.AccountID, tokenTransfer.Amount, currency, nil,
-				operations, senderMap)
+			tokenAmount := types.NewTokenAmount(dbToken, tokenTransfer.Amount)
+			operations = c.addOperation(tokenTransfer.AccountID, tokenAmount, operations, senderMap)
 		}
 	}
 
 	for token, nftTransfers := range nftTransferMap {
-		currency, err := c.getCurrency(ctx, token)
+		dbToken, err := c.tokenRepo.Find(ctx, token.String())
 		if err != nil {
 			return nil, nil, err
 		}
 		for _, nftTransfer := range nftTransfers {
-			metadata := map[string]interface{}{types.MetadataKeySerialNumbers: []int64{nftTransfer.SerialNumber}}
-			operations = c.addOperation(nftTransfer.ReceiverAccountID, 1, currency, metadata, operations, senderMap)
-			operations = c.addOperation(nftTransfer.SenderAccountID, -1, currency, metadata, operations, senderMap)
+			tokenAmount := types.NewTokenAmount(dbToken, 1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
+			operations = c.addOperation(nftTransfer.ReceiverAccountID, tokenAmount, operations, senderMap)
+			tokenAmount = types.NewTokenAmount(dbToken, -1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
+			operations = c.addOperation(nftTransfer.SenderAccountID, tokenAmount, operations, senderMap)
 		}
 	}
 
@@ -199,9 +201,7 @@ func (c *cryptoTransferTransactionConstructor) Preprocess(ctx context.Context, o
 
 func (c *cryptoTransferTransactionConstructor) addOperation(
 	accountId hedera.AccountID,
-	amount int64,
-	currency *rTypes.Currency,
-	metadata map[string]interface{},
+	amount types.Amount,
 	operations []*rTypes.Operation,
 	senderMap senderMap,
 ) []*rTypes.Operation {
@@ -209,30 +209,14 @@ func (c *cryptoTransferTransactionConstructor) addOperation(
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: int64(len(operations))},
 		Type:                c.GetOperationType(),
 		Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-		Amount: &rTypes.Amount{
-			Value:    strconv.FormatInt(amount, 10),
-			Currency: currency,
-			Metadata: metadata,
-		},
+		Amount:              amount.ToRosetta(),
 	}
 
-	if amount < 0 {
+	if amount.GetValue() < 0 {
 		senderMap[accountId] = 1
 	}
 
 	return append(operations, operation)
-}
-
-func (c *cryptoTransferTransactionConstructor) getCurrency(
-	ctx context.Context,
-	token hedera.TokenID,
-) (*rTypes.Currency, *rTypes.Error) {
-	dbToken, err := c.tokenRepo.Find(ctx, token.String())
-	if err != nil {
-		return nil, err
-	}
-
-	return types.Token{Token: dbToken}.ToRosettaCurrency(), nil
 }
 
 func (c *cryptoTransferTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (

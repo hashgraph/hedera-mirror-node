@@ -464,7 +464,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(
 
 	if token.Type == domain.TokenTypeNonFungibleUnique {
 		if operationType == config.OperationTypeTokenBurn {
-			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeySerialNumbers: []float64{1, 2}}
+			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeySerialNumbers: []string{"1", "2"}}
 		} else {
 			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeyMetadatas: metadatasBase64}
 		}

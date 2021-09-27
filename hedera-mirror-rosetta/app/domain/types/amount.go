@@ -95,9 +95,9 @@ func (t *TokenAmount) ToRosetta() *types.Amount {
 	if t.Type == domain.TokenTypeNonFungibleUnique {
 		metadata := make(map[string]interface{})
 		if len(t.SerialNumbers) > 0 {
-			serialNumbers := make([]float64, 0, len(t.SerialNumbers))
+			serialNumbers := make([]string, 0, len(t.SerialNumbers))
 			for _, serialNumber := range t.SerialNumbers {
-				serialNumbers = append(serialNumbers, float64(serialNumber))
+				serialNumbers = append(serialNumbers, strconv.FormatInt(serialNumber, 10))
 			}
 			metadata[MetadataKeySerialNumbers] = serialNumbers
 		}
@@ -182,11 +182,14 @@ func parseNftMetadata(metadata map[string]interface{}, tokenAmount *TokenAmount)
 		return errors.ErrInvalidOperationsAmount
 	}
 
-	if serialNumbers, ok := metadata[MetadataKeySerialNumbers].([]float64); ok {
-		// numbers are unmarshalled as float64 without a concrete type
+	if serialNumbers, ok := metadata[MetadataKeySerialNumbers].([]string); ok {
 		tokenAmount.SerialNumbers = make([]int64, 0, len(serialNumbers))
 		for _, serialNumber := range serialNumbers {
-			tokenAmount.SerialNumbers = append(tokenAmount.SerialNumbers, int64(serialNumber))
+			number, err := strconv.ParseInt(serialNumber, 10, 64)
+			if err != nil {
+				return errors.ErrInvalidOperationsTotalAmount
+			}
+			tokenAmount.SerialNumbers = append(tokenAmount.SerialNumbers, number)
 		}
 	} else if metadatas, ok := metadata[MetadataKeyMetadatas].([]string); ok {
 		tokenAmount.Metadatas = make([][]byte, 0, len(metadatas))
