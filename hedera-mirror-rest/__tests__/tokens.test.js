@@ -675,6 +675,7 @@ describe('token formatTokenInfoRow tests', () => {
     wipe_key: [5, 5, 5],
     created_timestamp: 10,
     decimals: 10,
+    deleted: true,
     initial_supply: 1000000,
     total_supply: 2000000,
     expiration_timestamp: 1594431063696143000,
@@ -685,6 +686,7 @@ describe('token formatTokenInfoRow tests', () => {
     type: 'FUNGIBLE_COMMON',
     max_supply: '9000000',
     supply_type: 'FINITE',
+    memo: 'token.memo',
     custom_fees: [
       {
         amount: 55,
@@ -728,6 +730,7 @@ describe('token formatTokenInfoRow tests', () => {
     auto_renew_period: 7890000,
     created_timestamp: '0.000000010',
     decimals: 10,
+    deleted: true,
     expiry_timestamp: 1594431063696143000,
     fee_schedule_key: {
       _type: 'ProtobufEncoded',
@@ -744,6 +747,7 @@ describe('token formatTokenInfoRow tests', () => {
       key: '020202',
     },
     max_supply: '9000000',
+    memo: 'token.memo',
     modified_timestamp: '1603394416.676293000',
     name: 'Token name',
     supply_key: {
@@ -1337,6 +1341,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    e.auto_renew_period,
                    t.created_timestamp,
                    decimals,
+                   e.deleted,
                    e.expiration_timestamp,
                    fee_schedule_key,
                    freeze_default,
@@ -1345,6 +1350,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    e.key,
                    kyc_key,
                    max_supply,
+                   e.memo,
                    t.modified_timestamp,
                    name,
                    supply_key,

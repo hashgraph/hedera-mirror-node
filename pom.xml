@@ -48,7 +48,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.4</version>
+        <version>2.5.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -62,19 +62,19 @@
         <embedded.testcontainers.version>2.0.14</embedded.testcontainers.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
-        <grpc.version>1.40.1</grpc.version>
-        <guava.version>30.1.1-jre</guava.version>
-        <hedera-protobuf.version>0.18.0-alpha.3</hedera-protobuf.version>
-        <hedera-sdk.version>2.0.14</hedera-sdk.version>
+        <grpc.version>1.41.0</grpc.version>
+        <guava.version>31.0-jre</guava.version>
+        <hedera-protobuf.version>0.18.1</hedera-protobuf.version>
+        <hedera-sdk.version>2.1.0</hedera-sdk.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
         <jib.version>3.1.4</jib.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.0</msgpack.version>
-        <protobuf.version>3.17.3</protobuf.version>
-        <release.version>0.41.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.28.0-SNAPSHOT</release.chartVersion>
+        <protobuf.version>3.18.0</protobuf.version>
+        <release.version>0.42.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.29.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -236,7 +236,7 @@
                         <container>
                             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
                             <jvmFlags>
-                                <jvmFlag>-XX:MaxRAMPercentage=70</jvmFlag>
+                                <jvmFlag>-XX:MaxRAMPercentage=80</jvmFlag>
                             </jvmFlags>
                         </container>
                         <extraDirectories>

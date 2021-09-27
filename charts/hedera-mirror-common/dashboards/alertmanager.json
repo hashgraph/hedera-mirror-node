@@ -963,8 +963,8 @@
       {
         "current": {
           "selected": false,
-          "text": "Prometheus",
-          "value": "Prometheus"
+          "text": "",
+          "value": ""
         },
         "description": "Name of the Prometheus datasource to use",
         "error": null,
@@ -1006,7 +1006,7 @@
           "query": "label_values(ALERTS, cluster)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 5,
@@ -1037,7 +1037,7 @@
           "query": "label_values(ALERTS{cluster=~\"$cluster\"}, namespace)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
         "sort": 5,

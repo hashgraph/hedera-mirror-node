@@ -24,14 +24,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Internal;
+import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -227,6 +231,26 @@ class UtilityTest {
         assertThat(Utility.sanitize("")).isEmpty();
         assertThat(Utility.sanitize("abc")).isEqualTo("abc");
         assertThat(Utility.sanitize("abc" + (char) 0 + "123" + (char) 0)).isEqualTo("abc�123�");
+    }
+
+    @Test
+    void toBytes() {
+        byte[] smallArray = RandomUtils.nextBytes(Utility.UnsafeByteOutput.SIZE);
+        byte[] largeArray = RandomUtils.nextBytes(256);
+
+        assertThat(Utility.toBytes(null)).isNull();
+        assertThat(Utility.toBytes(ByteString.EMPTY)).isEqualTo(new byte[0]).isSameAs(Internal.EMPTY_BYTE_ARRAY);
+        assertThat(Utility.toBytes(UnsafeByteOperations.unsafeWrap(smallArray)))
+                .isEqualTo(smallArray)
+                .isNotSameAs(smallArray);
+
+        assertThat(Utility.toBytes(UnsafeByteOperations.unsafeWrap(largeArray)))
+                .isEqualTo(largeArray)
+                .isSameAs(largeArray);
+
+        assertThat(Utility.toBytes(UnsafeByteOperations.unsafeWrap(ByteBuffer.wrap(largeArray))))
+                .isEqualTo(largeArray)
+                .isNotSameAs(largeArray);
     }
 }
 
