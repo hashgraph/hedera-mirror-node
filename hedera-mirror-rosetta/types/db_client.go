@@ -38,7 +38,11 @@ func (d *DbClient) GetDb() *gorm.DB {
 
 func (d *DbClient) GetDbWithContext(ctx context.Context) (*gorm.DB, context.CancelFunc) {
 	if d.statementTimeout == 0 {
-		return d.db, noop
+		db := d.db
+		if ctx != nil {
+			db = db.WithContext(ctx)
+		}
+		return db, noop
 	}
 
 	if ctx == nil {
