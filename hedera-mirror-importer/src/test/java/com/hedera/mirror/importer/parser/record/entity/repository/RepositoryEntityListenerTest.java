@@ -457,6 +457,15 @@ class RepositoryEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onTokenTransferFromDissociate() throws ImporterException {
+        TokenTransfer tokenTransfer = new TokenTransfer(10L, -2, TOKEN_ID, ENTITY_ID, true);
+        repositoryEntityListener.onTokenTransfer(tokenTransfer);
+        assertThat(tokenTransferRepository.findAll())
+                .usingElementComparatorIgnoringFields("tokenDissociate")
+                .containsOnly(tokenTransfer);
+    }
+
+    @Test
     void onTopicMessage() {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(1L);
