@@ -335,11 +335,10 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         StringBuilder updateQueryBuilder = new StringBuilder();
 
         List<String> updateQueries = new ArrayList<>();
-        // sort fields alphabetically
         List<DomainField> updatableAttributes = getAttributes().stream()
                 .filter(x -> !getNonUpdatableColumns().contains(x.getName())) // filter out non-updatable fields
                 .map(a -> new DomainField(extractJavaType(a), a.getName()))
-                .sorted(DOMAIN_FIELD_COMPARATOR)
+                .sorted(DOMAIN_FIELD_COMPARATOR) // sort fields alphabetically
                 .collect(Collectors.toList());
         updatableAttributes.forEach(d -> {
             String attributeUpdateQuery;

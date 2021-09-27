@@ -20,13 +20,12 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import javax.transaction.Transactional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.TokenTransfer;
-
-import javax.transaction.Transactional;
 
 @Transactional
 public interface TokenTransferRepository extends CrudRepository<TokenTransfer, TokenTransfer.Id> {
