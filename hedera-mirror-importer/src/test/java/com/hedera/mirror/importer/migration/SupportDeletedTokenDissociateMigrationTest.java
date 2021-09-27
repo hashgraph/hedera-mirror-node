@@ -188,7 +188,9 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         ));
 
         // nft transfers from nft class treasury update
-        nftTransferRepository.save(nftTransfer(40L, NEW_TREASURY, TREASURY, -1, nftId3));
+        nftTransferRepository.save(
+                nftTransfer(40L, NEW_TREASURY, TREASURY, NftTransferId.WILDCARD_SERIAL_NUMBER,nftId3)
+        );
 
         // expected token changes
         ftClass1.setTotalSupply(ftClass1.getTotalSupply() - 10);

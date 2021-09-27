@@ -678,6 +678,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     if (isTokenDissociate) {
                         Token token = Token.of(tokenId);
+                        token.setModifiedTimestamp(consensusTimestamp);
                         token.setTotalSupply(accountAmount.getAmount());
                         entityListener.onToken(token);
                     }
@@ -685,7 +686,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                 tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
                     long serialNumber = nftTransfer.getSerialNumber();
-                    if (serialNumber == TokenUpdateTransactionHandler.WILDCARD_SERIAL_NUMBER) {
+                    if (serialNumber == NftTransferId.WILDCARD_SERIAL_NUMBER) {
                         // do not persist nft transfers with the wildcard serial number (-1) which signify an nft token
                         // treasury change
                         return;
