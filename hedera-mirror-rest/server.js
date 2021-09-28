@@ -36,6 +36,7 @@ const balances = require('./balances');
 const config = require('./config');
 const constants = require('./constants');
 const health = require('./health');
+const network = require('./network');
 const schedules = require('./schedules');
 const stateproof = require('./stateproof');
 const tokens = require('./tokens');
@@ -151,6 +152,13 @@ app.getAsync(`${apiPrefix}/accounts/:accountId`, accounts.getOneAccount);
 // balances routes
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
+// network routes
+app.getAsync(`${apiPrefix}/network/supply`, network.getSupply);
+
+// schedules routes
+app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
+app.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
+
 // stateproof route
 if (config.stateproof.enabled || isTestEnv()) {
   logger.info('stateproof REST API is enabled, install handler');
@@ -171,10 +179,6 @@ app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber/transactions`, tok
 app.getAsync(`${apiPrefix}/topics/:topicId/messages`, topicmessage.getTopicMessages);
 app.getAsync(`${apiPrefix}/topics/:topicId/messages/:sequenceNumber`, topicmessage.getMessageByTopicAndSequenceRequest);
 app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
-
-// schedules routes
-app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
-app.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
 
 // transactions routes
 app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
