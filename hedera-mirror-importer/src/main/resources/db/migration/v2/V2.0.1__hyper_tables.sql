@@ -55,6 +55,10 @@ select create_hypertable('live_hash', 'consensus_timestamp', chunk_time_interval
 select create_hypertable('nft', 'created_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
+-- nft_balance
+select create_hypertable('nft_balance', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
+                         create_default_indexes => false, if_not_exists => true);
+
 -- nft_transfer
 select create_hypertable('nft_transfer', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);

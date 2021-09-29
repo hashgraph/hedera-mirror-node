@@ -24,15 +24,10 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
+import com.hedera.mirror.importer.domain.NftBalance;
 
-public interface NftTransferRepository extends CrudRepository<NftTransfer, NftTransferId> {
+public interface NftBalanceRepository extends CrudRepository<NftBalance, NftBalance.Id> {
 
-    @Query(value = "select consensus_timestamp " +
-            "from nft_transfer " +
-            "where consensus_timestamp > ?1 " +
-            "order by consensus_timestamp " +
-            "limit 1 offset ?2", nativeQuery = true)
-    Optional<Long> getTimestampAtOffsetAfter(long startTimestampExclusive, long offset);
+    @Query(value = "select max(consensus_timestamp) from nft_balance", nativeQuery = true)
+    Optional<Long> getLastTimestamp();
 }

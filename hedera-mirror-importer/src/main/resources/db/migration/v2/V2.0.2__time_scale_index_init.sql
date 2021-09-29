@@ -79,6 +79,10 @@ alter table live_hash
 alter table nft
     add primary key (token_id, serial_number, created_timestamp);
 
+-- nft_balance
+create index if not exists nft_balance__timestamp_account
+    on nft_balance(consensus_timestamp, account_id);
+
 -- nft_transfer
 create unique index if not exists nft_transfer__timestamp_token_id_serial_num
     on nft_transfer (consensus_timestamp desc, token_id desc, serial_number desc);

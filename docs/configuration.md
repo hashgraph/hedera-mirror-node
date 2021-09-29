@@ -83,7 +83,10 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.balance.bufferSize`                   | 32768                   | The size of the byte buffer to allocate for each batch                                         |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
 | `hedera.mirror.importer.parser.balance.fileBufferSize`               | 200000                  | The size of the buffer to use when reading in the balance file                                 |
-| `hedera.mirror.importer.parser.balance.frequency`                    | 100ms                   | How often to poll for new messages. Can accept duration units like `10s`, `2m` etc.            |
+| `hedera.mirror.importer.parser.balance.nft.enabled`                  | false                   | Whether to build nft balance snapshot                                                          |
+| `hedera.mirror.importer.parser.balance.nft.frequency`                | 60s                     | How often to run the nft balance snapshot building task. Can accept duration units like `10s`, `2m` etc. |
+| `hedera.mirror.importer.parser.balance.nft.interval`                 | 30m                     | The minimum interval between nft balance snapshots. Can accept duration units like `10s`, `2m` etc. |
+| `hedera.mirror.importer.parser.balance.nft.transferSize`             | 20_000                  | The minimum number of nft transfers between nft balance snapshots                              |
 | `hedera.mirror.importer.parser.balance.processingTimeout`            | 10s                     | The additional timeout to allow after the last balance stream file health check to verify that files are still being processed. |
 | `hedera.mirror.importer.parser.balance.queueCapacity`                | 0                       | How many balance files to queue in memory while waiting to be persisted by the parser          |
 | `hedera.mirror.importer.parser.balance.retry.maxAttempts`            | 3                       | How many attempts should be made to retry file parsing errors                                  |

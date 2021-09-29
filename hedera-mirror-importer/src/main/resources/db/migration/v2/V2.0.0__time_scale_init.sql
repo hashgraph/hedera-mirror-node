@@ -184,6 +184,14 @@ create table if not exists nft
 );
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
+create table if not exists nft_balance (
+    account_id          bigint not null,
+    consensus_timestamp bigint not null,
+    serial_number       bigint not null,
+    token_id            bigint not null
+);
+comment on table nft_balance is 'Non-Fungible Tokens (NFTs) balance snapshot';
+
 -- nft_transfer
 create table if not exists nft_transfer
 (
