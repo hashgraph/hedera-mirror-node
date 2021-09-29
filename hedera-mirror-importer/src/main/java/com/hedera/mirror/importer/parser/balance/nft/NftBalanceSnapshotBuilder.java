@@ -94,7 +94,6 @@ public class NftBalanceSnapshotBuilder {
         }
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        boolean success = false;
 
         try {
             long lastSnapshotTimestamp = nftBalanceRepository.getLastTimestamp().orElse(0L);
@@ -113,14 +112,12 @@ public class NftBalanceSnapshotBuilder {
                     .addValue("last_snapshot_timestamp", lastSnapshotTimestamp)
                     .addValue("end_transfer_timestamp", endTransferTimestamp);
             namedParameterJdbcTemplate.update(sqlScript, parameters);
-            success = true;
             log.info("Successfully built nft balance snapshot at consensus timestamp {} in {}",
                     endTransferTimestamp, stopwatch);
+            buildDurationMetricSuccess.record(stopwatch.elapsed());
         } catch (Exception ex){
             log.error("Failed to build nft balance snapshot after {}", stopwatch, ex);
-        } finally {
-            Timer timer = success ? buildDurationMetricSuccess : buildDurationMetricFailure;
-            timer.record(stopwatch.elapsed());
+            buildDurationMetricFailure.record(stopwatch.elapsed());
         }
     }
 }
