@@ -677,6 +677,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                             isTokenDissociate));
 
                     if (isTokenDissociate) {
+                        // token transfers in token dissociate are for deleted tokens and the amount is negative to
+                        // bring the account's balance of the token to 0. Set the totalSupply of the token object to the
+                        // negative amount, later in the pipeline the token total supply will be reduced accordingly
                         Token token = Token.of(tokenId);
                         token.setModifiedTimestamp(consensusTimestamp);
                         token.setTotalSupply(accountAmount.getAmount());
