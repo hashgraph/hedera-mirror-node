@@ -148,8 +148,8 @@ class NftBalanceSnapshotBuilderTest extends IntegrationTest {
     private static Stream<Arguments> provideBuildArguments() {
         Stream.Builder<Arguments> builder = Stream.builder();
 
-        builder.add(Arguments.of(21, 1, initialSnapshot)); // not old enough, the oldest transfer is 20ns later
-        builder.add(Arguments.of(10, 13, initialSnapshot)); // not enough transfers, need 13, there are 12
+        builder.add(Arguments.of(21, 1, initialSnapshot)); // not old enough, the latest transfer is 20ns later
+        builder.add(Arguments.of(10, 13, initialSnapshot)); // not enough transfers, need 13, got 12
 
         // result of applying all new transfers to the initial snapshot
         List<NftBalance> expected = Lists.newArrayList(initialSnapshot);

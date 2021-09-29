@@ -20,11 +20,11 @@ package com.hedera.mirror.importer.parser.balance.nft;
  * ‍
  */
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -60,7 +60,7 @@ public class NftBalanceSnapshotBuilder {
     private final NftBalanceSnapshotProperties properties;
 
     @Value("classpath:db/scripts/build_nft_balance_snapshot.sql")
-    private File sqlScript;
+    private File sqlFile;
 
     public NftBalanceSnapshotBuilder(MeterRegistry meterRegistry, NamedParameterJdbcTemplate namedParameterJdbcTemplate,
                                      NftBalanceRepository nftBalanceRepository,
@@ -107,7 +107,7 @@ public class NftBalanceSnapshotBuilder {
             SqlParameterSource parameters = new MapSqlParameterSource()
                     .addValue("last_snapshot_timestamp", lastSnapshotTimestamp)
                     .addValue("end_transfer_timestamp", endTransferTimestamp);
-            namedParameterJdbcTemplate.update(FileUtils.readFileToString(sqlScript, Charsets.UTF_8), parameters);
+            namedParameterJdbcTemplate.update(FileUtils.readFileToString(sqlFile, StandardCharsets.UTF_8), parameters);
             success = true;
             log.info("Successfully built nft balance snapshot at consensus timestamp {} in {}",
                     endTransferTimestamp, stopwatch);
