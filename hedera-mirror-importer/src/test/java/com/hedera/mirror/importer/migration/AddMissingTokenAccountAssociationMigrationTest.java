@@ -49,6 +49,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.EnabledIfV1;
@@ -79,6 +80,8 @@ import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.45.0.sql")
+@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.45.0.sql")
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.43.1")
 class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
