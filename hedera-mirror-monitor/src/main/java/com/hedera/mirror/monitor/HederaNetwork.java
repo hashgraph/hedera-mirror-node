@@ -71,7 +71,8 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.20", "34.82.78.255"),
                 new NodeProperties("0.0.21", "34.76.140.109"),
                 new NodeProperties("0.0.22", "34.64.141.166"),
-                new NodeProperties("0.0.23", "35.232.244.145")
+                new NodeProperties("0.0.23", "35.232.244.145"),
+                new NodeProperties("0.0.24", "34.89.103.38")
         );
     }
 
@@ -81,7 +82,9 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.4", "1.previewnet.hedera.com"),
                 new NodeProperties("0.0.5", "2.previewnet.hedera.com"),
                 new NodeProperties("0.0.6", "3.previewnet.hedera.com"),
-                new NodeProperties("0.0.7", "4.previewnet.hedera.com")
+                new NodeProperties("0.0.7", "4.previewnet.hedera.com"),
+                new NodeProperties("0.0.8", "5.previewnet.hedera.com"),
+                new NodeProperties("0.0.9", "6.previewnet.hedera.com")
         );
     }
 
@@ -91,7 +94,9 @@ public enum HederaNetwork {
                 new NodeProperties("0.0.4", "1.testnet.hedera.com"),
                 new NodeProperties("0.0.5", "2.testnet.hedera.com"),
                 new NodeProperties("0.0.6", "3.testnet.hedera.com"),
-                new NodeProperties("0.0.7", "4.testnet.hedera.com")
+                new NodeProperties("0.0.7", "4.testnet.hedera.com"),
+                new NodeProperties("0.0.8", "5.testnet.hedera.com"),
+                new NodeProperties("0.0.9", "6.testnet.hedera.com")
         );
     }
 }
