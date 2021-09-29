@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
+@SuppressWarnings({"java:S1192", "java:S1313"}) // Ignore duplicate strings and hardcoded IP rules
 public enum HederaNetwork {
 
     MAINNET(mainnet(), mirrorNode("mainnet-public")),
