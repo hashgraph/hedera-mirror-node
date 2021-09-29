@@ -1,5 +1,5 @@
 {
-  "description": "Network supply API with timestamp filter",
+  "description": "Network supply API with invalid parameters",
   "setup": {
     "accounts": [],
     "balances": [
