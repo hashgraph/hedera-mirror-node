@@ -23,17 +23,17 @@ package com.hedera.mirror.importer.parser.balance.nft;
 import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.util.ResourceUtils;
 
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.repository.NftBalanceRepository;
@@ -49,6 +49,8 @@ import com.hedera.mirror.importer.util.ShutdownHelper;
 @Named
 public class NftBalanceSnapshotBuilder {
 
+    private static final String SQL_SCRIPT_URI = "classpath:db/scripts/build_nft_balance_snapshot.sql";
+
     private final Timer buildDurationMetricFailure;
     private final Timer buildDurationMetricSuccess;
 
@@ -59,17 +61,20 @@ public class NftBalanceSnapshotBuilder {
 
     private final NftBalanceSnapshotProperties properties;
 
-    @Value("classpath:db/scripts/build_nft_balance_snapshot.sql")
-    private File sqlFile;
+    private final String sqlScript;
 
     public NftBalanceSnapshotBuilder(MeterRegistry meterRegistry, NamedParameterJdbcTemplate namedParameterJdbcTemplate,
                                      NftBalanceRepository nftBalanceRepository,
                                      NftTransferRepository nftTransferRepository,
-                                     NftBalanceSnapshotProperties properties) {
+                                     NftBalanceSnapshotProperties properties) throws IOException {
         this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
         this.nftBalanceRepository = nftBalanceRepository;
         this.nftTransferRepository = nftTransferRepository;
         this.properties = properties;
+
+        try (InputStream is = ResourceUtils.getURL(SQL_SCRIPT_URI).openStream()) {
+            this.sqlScript = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
 
         Timer.Builder buildDurationTimerBuilder = Timer.builder("hedera.mirror.nft.balance.duration")
                 .description("The duration in seconds it took to build a nft snapshot");
@@ -107,7 +112,7 @@ public class NftBalanceSnapshotBuilder {
             SqlParameterSource parameters = new MapSqlParameterSource()
                     .addValue("last_snapshot_timestamp", lastSnapshotTimestamp)
                     .addValue("end_transfer_timestamp", endTransferTimestamp);
-            namedParameterJdbcTemplate.update(FileUtils.readFileToString(sqlFile, StandardCharsets.UTF_8), parameters);
+            namedParameterJdbcTemplate.update(sqlScript, parameters);
             success = true;
             log.info("Successfully built nft balance snapshot at consensus timestamp {} in {}",
                     endTransferTimestamp, stopwatch);
