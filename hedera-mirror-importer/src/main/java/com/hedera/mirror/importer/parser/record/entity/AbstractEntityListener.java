@@ -119,8 +119,13 @@ public class AbstractEntityListener implements EntityListener {
         if (newToken.getTotalSupply() != null) {
             Long newTotalSupply = newToken.getTotalSupply();
             if (cachedToken.getTotalSupply() != null && newTotalSupply < 0) {
+                // if the cached token has total supply set, and the new total supply is negative because it's an update
+                // from the token transfer of a token dissociate of a deleted token, aggregate the change
                 cachedToken.setTotalSupply(cachedToken.getTotalSupply() + newTotalSupply);
             } else {
+                // if the cached token doesn't have total supply or the new total supply is non-negative, set it to the
+                // new token's total supply. Later step should apply the change on the current total supply in db if
+                // the value is negative.
                 cachedToken.setTotalSupply(newToken.getTotalSupply());
             }
         }
