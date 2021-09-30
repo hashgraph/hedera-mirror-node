@@ -57,7 +57,9 @@ const formatResponse = (result) => {
  */
 const getSupply = async (req, res) => {
   utils.validateReq(req);
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'abf.consensus_timestamp');
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'abf.consensus_timestamp', {
+    [utils.opsMap.eq]: utils.opsMap.lte,
+  });
 
   const sqlQuery = `
     select sum(balance) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
