@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
@@ -32,9 +33,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import org.apache.commons.codec.DecoderException;
+import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,8 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Nft;
 import com.hedera.mirror.importer.domain.NftId;
+import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.Schedule;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
@@ -54,18 +58,22 @@ import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.NftUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.TokenAccountUpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
 class UpsertPgCopyTest extends IntegrationTest {
@@ -83,9 +91,13 @@ class UpsertPgCopyTest extends IntegrationTest {
     @Resource
     private NftRepository nftRepository;
     @Resource
+    private NftTransferRepository nftTransferRepository;
+    @Resource
     private TokenRepository tokenRepository;
     @Resource
     private TokenAccountRepository tokenAccountRepository;
+    @Resource
+    private TokenTransferRepository tokenTransferRepository;
     @Resource
     private ScheduleRepository scheduleRepository;
     @Resource
@@ -104,6 +116,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     private UpsertPgCopy<Schedule> schedulePgCopy;
     private UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
     private UpsertPgCopy<Token> tokenPgCopy;
+    private UpsertPgCopy<TokenTransfer> tokenDissociateTransferPgCopy;
 
     @Resource
     private RecordParserProperties recordParserProperties;
@@ -120,6 +133,8 @@ class UpsertPgCopyTest extends IntegrationTest {
                 tokenAccountUpsertQueryGenerator);
         tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
                 tokenUpsertQueryGenerator);
+        tokenDissociateTransferPgCopy = new UpsertPgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties,
+                new TokenDissociateTransferUpsertQueryGenerator());
     }
 
     @Test
@@ -202,7 +217,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenInsertOnly() throws SQLException, DecoderException {
+    void tokenInsertOnly() throws SQLException {
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
         tokens.add(getToken("0.0.3000", "0.0.1001", 2L));
@@ -214,7 +229,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenInsertAndUpdate() throws SQLException, DecoderException {
+    void tokenInsertAndUpdate() throws SQLException {
         // insert
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -244,7 +259,26 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertOnly() throws SQLException, DecoderException {
+    void tokenUpdateNegativeTotalSupply() throws SQLException {
+        // given
+        Token token = getToken("0.0.2000", "0.0.1001", 3L);
+        tokenRepository.save(token);
+
+        // when
+        Token update = new Token();
+        update.setModifiedTimestamp(8L);
+        update.setTokenId(token.getTokenId());
+        update.setTotalSupply(-50L);
+        copyWithTransactionSupport(tokenPgCopy, List.of(update));
+
+        // then
+        token.setTotalSupply(token.getTotalSupply() - 50L);
+        token.setModifiedTimestamp(8L);
+        assertThat(tokenRepository.findAll()).containsOnly(token);
+    }
+
+    @Test
+    void tokenAccountInsertOnly() throws SQLException {
         // inserts token first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -276,7 +310,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertFreezeStatus() throws SQLException, DecoderException {
+    void tokenAccountInsertFreezeStatus() throws SQLException {
         // inserts token first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
@@ -324,7 +358,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertKycStatus() throws SQLException, DecoderException {
+    void tokenAccountInsertKycStatus() throws SQLException {
         // inserts token first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
@@ -376,7 +410,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertAndUpdate() throws SQLException, DecoderException {
+    void tokenAccountInsertAndUpdate() throws SQLException {
         // inserts token first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -459,7 +493,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertMissingToken() throws SQLException, DecoderException {
+    void nftInsertMissingToken() throws SQLException {
         // mint
         var nfts = new HashSet<Nft>();
         nfts.add(getNft("0.0.2000", 1, null, 1L, 1L, "nft1", false));
@@ -472,7 +506,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftMint() throws SQLException, DecoderException {
+    void nftMint() throws SQLException {
         // inserts tokens first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -502,7 +536,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertAndUpdate() throws SQLException, DecoderException {
+    void nftInsertAndUpdate() throws SQLException {
         // inserts tokens first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -544,7 +578,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertTransferBurnWipe() throws SQLException, DecoderException {
+    void nftInsertTransferBurnWipe() throws SQLException {
         // inserts tokens first
         var tokens = new HashSet<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -595,6 +629,51 @@ class UpsertPgCopyTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(false, true, false, true);
     }
 
+    @Test
+    void tokenDissociateTransfer() throws SQLException {
+        // given
+        EntityId accountId = EntityId.of("0.0.215", ACCOUNT);
+        EntityId accountId2 = EntityId.of("0.0.216", ACCOUNT);
+        Token nftClass1 = getDeletedNftClass(10L, 25L, EntityId.of("0.0.100", TOKEN));
+        Token nftClass2 = getDeletedNftClass(11L, 24L, EntityId.of("0.0.101", TOKEN));
+
+        EntityId tokenId1 = nftClass1.getTokenId().getTokenId();
+        Nft nft1 = getNft(tokenId1, accountId, 1L, 11L, 16L, true); // already deleted, result of wipe
+        Nft nft2 = getNft(tokenId1, accountId, 2L, 11L, 11L, false);
+        Nft nft3 = getNft(tokenId1, accountId, 3L, 12L, 12L, false);
+        Nft nft4 = getNft(tokenId1, accountId2, 4L, 18L, 18L, false); // different account
+
+        Nft nft5 = getNft(nftClass2.getTokenId().getTokenId(), accountId, 1L, 15L, 15L, false);
+
+        nftRepository.saveAll(List.of(nft1, nft2, nft3, nft4, nft5));
+        tokenRepository.saveAll(List.of(nftClass1, nftClass2));
+
+        long consensusTimestamp = 30L;
+        EntityId ftId = EntityId.of("0.0.217", TOKEN);
+        TokenTransfer fungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -10, ftId, accountId, true);
+        TokenTransfer nonFungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -2, tokenId1, accountId, true);
+        List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
+
+        // when
+        copyWithTransactionSupport(tokenDissociateTransferPgCopy, tokenTransfers);
+
+        // then
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(
+                nft1,
+                getNft(tokenId1, accountId, 2L, 11L, 30L, true),
+                getNft(tokenId1, accountId, 3L, 12L, 30L, true),
+                nft4,
+                nft5
+        );
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(
+                getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp),
+                getNftTransfer(tokenId1, accountId, 3L, consensusTimestamp)
+        );
+        assertThat(tokenTransferRepository.findAll())
+                .usingElementComparatorIgnoringFields("tokenDissociate")
+                .containsOnly(fungibleTokenTransfer);
+    }
+
     private void copyWithTransactionSupport(UpsertPgCopy upsertPgCopy, Collection... items) throws SQLException {
         try (Connection connection = DataSourceUtils.getConnection(dataSource)) {
             connection.setAutoCommit(false); // for tests have to set auto commit to false or temp table gets lost
@@ -620,12 +699,13 @@ class UpsertPgCopyTest extends IntegrationTest {
         return entity;
     }
 
-    private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp) throws DecoderException {
+    private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp) {
         return getToken(tokenId, treasuryAccountId, createdTimestamp, false, null, null);
     }
 
+    @SneakyThrows
     private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp,
-                           Boolean freezeDefault, Key freezeKey, Key kycKey) throws DecoderException {
+                           Boolean freezeDefault, Key freezeKey, Key kycKey) {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build().toByteArray();
         Token token = new Token();
@@ -641,7 +721,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         token.setSupplyKey(hexKey);
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK" + tokenId);
-        token.setTokenId(new TokenId(EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        token.setTokenId(new TokenId(EntityId.of(tokenId, TOKEN)));
         token.setTreasuryAccountId(EntityId.of(treasuryAccountId, ACCOUNT));
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(hexKey);
@@ -656,7 +736,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
                                          Long modifiedTimestamp, TokenFreezeStatusEnum freezeStatus,
                                          TokenKycStatusEnum kycStatus) {
-        TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenId, EntityTypeEnum.TOKEN),
+        TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenId, TOKEN),
                 EntityId.of(accountId, ACCOUNT), modifiedTimestamp);
         tokenAccount.setAssociated(associated);
         tokenAccount.setAutomaticAssociation(false);
@@ -678,15 +758,45 @@ class UpsertPgCopyTest extends IntegrationTest {
         return schedule;
     }
 
+    private Nft getNft(EntityId tokenId, EntityId accountId, long serialNumber, long createdTimestamp,
+            long modifiedTimestamp, boolean deleted) {
+        return getNft(tokenId.entityIdToString(), serialNumber, accountId.entityIdToString(), createdTimestamp,
+                modifiedTimestamp,"meta", deleted);
+    }
+
     private Nft getNft(String tokenId, long serialNumber, String accountId, Long createdTimestamp,
                        long modifiedTimeStamp, String metadata, Boolean deleted) {
         Nft nft = new Nft();
         nft.setAccountId(accountId == null ? null : EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(deleted);
-        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, TOKEN)));
         nft.setMetadata(metadata == null ? null : metadata.getBytes(StandardCharsets.UTF_8));
         nft.setModifiedTimestamp(modifiedTimeStamp);
         return nft;
+    }
+
+    private NftTransfer getNftTransfer(EntityId tokenId, EntityId senderAccountId, long serialNumber,
+            long consensusTimestamp) {
+        NftTransfer nftTransfer = new NftTransfer();
+        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
+        nftTransfer.setSenderAccountId(senderAccountId);
+        return nftTransfer;
+    }
+
+    private Token getDeletedNftClass(long createdTimestamp, long deletedTimestamp, EntityId tokenId) {
+        Token token = Token.of(tokenId);
+        token.setCreatedTimestamp(createdTimestamp);
+        token.setDecimals(0);
+        token.setFreezeDefault(false);
+        token.setInitialSupply(0L);
+        token.setModifiedTimestamp(deletedTimestamp);
+        token.setName("foo");
+        token.setSupplyType(TokenSupplyTypeEnum.FINITE);
+        token.setSymbol("bar");
+        token.setTotalSupply(200L);
+        token.setTreasuryAccountId(EntityId.of("0.0.200", EntityTypeEnum.ACCOUNT));
+        token.setType(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        return token;
     }
 }
