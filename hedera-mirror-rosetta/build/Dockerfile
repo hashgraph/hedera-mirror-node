@@ -27,9 +27,8 @@ FROM ubuntu:20.04 as runner
 RUN apt-get update && apt-get install -y gnupg lsb-release
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
 
-# Add PostgreSQL's repository. It contains the most recent stable release
-#  of PostgreSQL.
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+# Add PostgreSQL's repository. It contains the most recent stable release of PostgreSQL.
+RUN echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 
 # Install PostgreSQL 9.6, supervisor, git and openjdk-11
 ARG DEBIAN_FRONTEND=noninteractive
