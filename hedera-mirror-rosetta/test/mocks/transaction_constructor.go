@@ -23,16 +23,16 @@ package mocks
 import (
 	"context"
 
-	"github.com/coinbase/rosetta-sdk-go/types"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/mock"
 )
 
 var (
 	NilHederaTransaction *hedera.TransferTransaction
-	NilOperations        []*types.Operation
+	NilOperations        []*rTypes.Operation
 	NilSigners           []hedera.AccountID
 )
 
@@ -43,33 +43,33 @@ type MockTransactionConstructor struct {
 func (m *MockTransactionConstructor) Construct(
 	ctx context.Context,
 	nodeAccountId hedera.AccountID,
-	operations []*types.Operation,
+	operations []*rTypes.Operation,
 	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *types.Error) {
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	args := m.Called(ctx, nodeAccountId, operations, validStartNanos)
 	return args.Get(0).(interfaces.Transaction), args.Get(1).([]hedera.AccountID),
-		args.Get(2).(*types.Error)
+		args.Get(2).(*rTypes.Error)
 }
 
 func (m *MockTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
-	[]*types.Operation,
+	[]*rTypes.Operation,
 	[]hedera.AccountID,
-	*types.Error,
+	*rTypes.Error,
 ) {
 	args := m.Called(ctx, transaction)
-	return args.Get(0).([]*types.Operation), args.Get(1).([]hedera.AccountID), args.Get(2).(*types.Error)
+	return args.Get(0).([]*rTypes.Operation), args.Get(1).([]hedera.AccountID), args.Get(2).(*rTypes.Error)
 }
 
-func (m *MockTransactionConstructor) Preprocess(ctx context.Context, operations []*types.Operation) (
+func (m *MockTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
-	*types.Error,
+	*rTypes.Error,
 ) {
 	args := m.Called(ctx, operations)
-	return args.Get(0).([]hedera.AccountID), args.Get(1).(*types.Error)
+	return args.Get(0).([]hedera.AccountID), args.Get(1).(*rTypes.Error)
 }
 
 func (m *MockTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeCryptoTransfer
+	return types.OperationTypeCryptoTransfer
 }
 
 func (m *MockTransactionConstructor) GetSdkTransactionType() string {

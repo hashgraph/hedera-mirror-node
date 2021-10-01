@@ -28,7 +28,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -47,8 +46,8 @@ var (
 	defaultSerialNumbers = []string{"1"}
 	defaultSigners       = []hedera.AccountID{accountIdA, accountIdB}
 	defaultTransfers     = []transferOperation{
-		{account: accountIdAStr, amount: -15, currency: config.CurrencyHbar},
-		{account: accountIdBStr, amount: 15, currency: config.CurrencyHbar},
+		{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
+		{account: accountIdBStr, amount: 15, currency: types.CurrencyHbar},
 		{account: accountIdBStr, amount: -25, currency: tokenACurrency},
 		{account: accountIdAStr, amount: 25, currency: tokenACurrency},
 		{account: accountIdAStr, amount: -30, currency: tokenBCurrency},
@@ -80,7 +79,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestNewTransactionConstr
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestGetOperationType() {
 	h := newCryptoTransferTransactionConstructor(&mocks.MockTokenRepository{})
-	assert.Equal(suite.T(), config.OperationTypeCryptoTransfer, h.GetOperationType())
+	assert.Equal(suite.T(), types.OperationTypeCryptoTransfer, h.GetOperationType())
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestGetSdkTransactionType() {
@@ -158,8 +157,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 	}
 
 	expectedTransfers := []string{
-		transferStringify(accountIdA, -15, config.CurrencyHbar.Symbol, 0),
-		transferStringify(accountIdB, 15, config.CurrencyHbar.Symbol, 0),
+		transferStringify(accountIdA, -15, types.CurrencyHbar.Symbol, 0),
+		transferStringify(accountIdB, 15, types.CurrencyHbar.Symbol, 0),
 		transferStringify(accountIdA, -25, tokenIdA.String(), 0),
 		transferStringify(accountIdB, 25, tokenIdA.String(), 0),
 		transferStringify(accountIdB, -35, tokenIdB.String(), 0),
@@ -256,8 +255,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "InvalidAccountAddress",
 			transfers: []transferOperation{
-				{account: "x.y.z", amount: -15, currency: config.CurrencyHbar},
-				{account: accountIdBStr, amount: 15, currency: config.CurrencyHbar},
+				{account: "x.y.z", amount: -15, currency: types.CurrencyHbar},
+				{account: accountIdBStr, amount: 15, currency: types.CurrencyHbar},
 				{account: accountIdBStr, amount: -25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: 25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: -30, currency: tokenBCurrency},
@@ -268,8 +267,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "InvalidTokenAddress",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -15, currency: config.CurrencyHbar},
-				{account: accountIdBStr, amount: 15, currency: config.CurrencyHbar},
+				{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
+				{account: accountIdBStr, amount: 15, currency: types.CurrencyHbar},
 				{account: accountIdBStr, amount: -25, currency: &rTypes.Currency{Symbol: "x.y.z", Decimals: 6}},
 				{account: accountIdAStr, amount: 25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: -30, currency: tokenBCurrency},
@@ -280,8 +279,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "ZeroAmount",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: 0, currency: config.CurrencyHbar},
-				{account: accountIdBStr, amount: 15, currency: config.CurrencyHbar},
+				{account: accountIdAStr, amount: 0, currency: types.CurrencyHbar},
+				{account: accountIdBStr, amount: 15, currency: types.CurrencyHbar},
 				{account: accountIdBStr, amount: -25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: 25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: -30, currency: tokenBCurrency},
@@ -293,8 +292,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "InvalidHbarSum",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -15, currency: config.CurrencyHbar},
-				{account: accountIdBStr, amount: 10, currency: config.CurrencyHbar},
+				{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
+				{account: accountIdBStr, amount: 10, currency: types.CurrencyHbar},
 				{account: accountIdBStr, amount: -25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: 25, currency: tokenACurrency},
 			},
@@ -303,8 +302,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "InvalidTokenSum",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -15, currency: config.CurrencyHbar},
-				{account: accountIdBStr, amount: 10, currency: config.CurrencyHbar},
+				{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
+				{account: accountIdBStr, amount: 10, currency: types.CurrencyHbar},
 				{account: accountIdBStr, amount: -25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: 20, currency: tokenACurrency},
 			},
@@ -313,8 +312,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "TokenDecimalsMismatch",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -15, currency: config.CurrencyHbar},
-				{account: accountIdBStr, amount: 10, currency: config.CurrencyHbar},
+				{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
+				{account: accountIdBStr, amount: 10, currency: types.CurrencyHbar},
 				{
 					account:  accountIdBStr,
 					amount:   -25,
@@ -327,8 +326,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "TokenNotFound",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -15, currency: config.CurrencyHbar},
-				{account: accountIdBStr, amount: 15, currency: config.CurrencyHbar},
+				{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
+				{account: accountIdBStr, amount: 15, currency: types.CurrencyHbar},
 				{account: accountIdBStr, amount: -25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: 25, currency: tokenACurrency},
 				{account: accountIdAStr, amount: -30, currency: tokenBCurrency},
@@ -374,9 +373,9 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			operations: []*rTypes.Operation{
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Type:                config.OperationTypeTokenWipe,
+					Type:                types.OperationTypeTokenWipe,
 					Account:             &rTypes.AccountIdentifier{Address: "0.0.158"},
-					Amount:              &rTypes.Amount{Value: "100", Currency: config.CurrencyHbar},
+					Amount:              &rTypes.Amount{Value: "100", Currency: types.CurrencyHbar},
 				},
 			},
 			expectError: true,
@@ -421,7 +420,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) makeOperations(transfers
 	for _, transfer := range transfers {
 		operation := rTypes.Operation{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: int64(len(operations))},
-			Type:                config.OperationTypeCryptoTransfer,
+			Type:                types.OperationTypeCryptoTransfer,
 			Account:             &rTypes.AccountIdentifier{Address: transfer.account},
 			Amount: &rTypes.Amount{
 				Value:    strconv.FormatInt(transfer.amount, 10),
@@ -462,7 +461,7 @@ func assertCryptoTransferTransaction(
 	for accountId, amount := range actualHbarTransfers {
 		actualTransfers = append(
 			actualTransfers,
-			transferStringify(accountId, amount.AsTinybar(), config.CurrencyHbar.Symbol, 0),
+			transferStringify(accountId, amount.AsTinybar(), types.CurrencyHbar.Symbol, 0),
 		)
 	}
 

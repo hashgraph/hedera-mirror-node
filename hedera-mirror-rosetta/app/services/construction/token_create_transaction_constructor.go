@@ -27,10 +27,10 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -123,14 +123,14 @@ func (t *tokenCreateTransactionConstructor) Construct(
 	}
 
 	if _, err := tx.Freeze(); err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
+		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, signers, nil
 }
 
 func (t *tokenCreateTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeTokenCreate
+	return types.OperationTypeTokenCreate
 }
 
 func (t *tokenCreateTransactionConstructor) GetSdkTransactionType() string {
@@ -144,16 +144,16 @@ func (t *tokenCreateTransactionConstructor) Parse(ctx context.Context, transacti
 ) {
 	tokenCreateTransaction, ok := transaction.(*hedera.TokenCreateTransaction)
 	if !ok {
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	if tokenCreateTransaction.GetTransactionID().AccountID == nil {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
 	if tokenCreateTransaction.GetTokenName() == "" ||
 		tokenCreateTransaction.GetTokenSymbol() == "" {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
 	treasury := *tokenCreateTransaction.GetTransactionID().AccountID
@@ -246,20 +246,20 @@ func (t *tokenCreateTransactionConstructor) preprocess(operations []*rTypes.Oper
 	if tokenCreate.SupplyType != domain.TokenSupplyTypeUnknown &&
 		tokenCreate.SupplyType != domain.TokenSupplyTypeFinite &&
 		tokenCreate.SupplyType != domain.TokenSupplyTypeInfinite {
-		return treasury, nil, nil, hErrors.ErrInvalidOperations
+		return treasury, nil, nil, errors.ErrInvalidOperations
 	}
 
 	if tokenCreate.Type != domain.TokenTypeUnknown &&
 		tokenCreate.Type != domain.TokenTypeFungibleCommon &&
 		tokenCreate.Type != domain.TokenTypeNonFungibleUnique {
-		return treasury, nil, nil, hErrors.ErrInvalidOperations
+		return treasury, nil, nil, errors.ErrInvalidOperations
 	}
 
 	var signers []hedera.AccountID
 
 	treasury, err := hedera.AccountIDFromString(operation.Account.Address)
 	if err != nil {
-		return hedera.AccountID{}, nil, nil, hErrors.ErrInvalidAccount
+		return hedera.AccountID{}, nil, nil, errors.ErrInvalidAccount
 	}
 	signers = append(signers, treasury)
 

@@ -18,7 +18,7 @@
  * ‍
  */
 
-package main
+package db
 
 import (
 	"testing"
@@ -47,7 +47,7 @@ func (suite *dbSuite) TearDownSuite() {
 }
 
 func (suite *dbSuite) TestConnectToDb() {
-	dbClient := connectToDb(suite.dbResource.GetDbConfig())
+	dbClient := ConnectToDb(suite.dbResource.GetDbConfig())
 	err := dbClient.GetDb().Exec("select 1").Error
 	assert.Nil(suite.T(), err)
 }
@@ -55,7 +55,7 @@ func (suite *dbSuite) TestConnectToDb() {
 func (suite *dbSuite) TestConnectToDbInvalidPassword() {
 	dbConfig := suite.dbResource.GetDbConfig()
 	dbConfig.Password = "bad_password_dab"
-	dbClient := connectToDb(dbConfig)
+	dbClient := ConnectToDb(dbConfig)
 	err := dbClient.GetDb().Exec("select 1").Error
 	assert.NotNil(suite.T(), err)
 }

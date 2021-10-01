@@ -18,7 +18,7 @@
  * ‍
  */
 
-package config
+package types
 
 import "github.com/coinbase/rosetta-sdk-go/types"
 

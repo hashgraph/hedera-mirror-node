@@ -29,7 +29,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,7 +57,7 @@ type nodeServiceEndpoint struct {
 
 // addressBookEntryRepository struct that has connection to the Database
 type addressBookEntryRepository struct {
-	dbClient *types2.DbClient
+	dbClient interfaces.DbClient
 }
 
 func (aber *addressBookEntryRepository) Entries(ctx context.Context) (*types.AddressBookEntries, *rTypes.Error) {
@@ -103,6 +102,6 @@ func (aber *addressBookEntryRepository) Entries(ctx context.Context) (*types.Add
 }
 
 // NewAddressBookEntryRepository creates an instance of a addressBookEntryRepository struct.
-func NewAddressBookEntryRepository(dbClient *types2.DbClient) interfaces.AddressBookEntryRepository {
+func NewAddressBookEntryRepository(dbClient interfaces.DbClient) interfaces.AddressBookEntryRepository {
 	return &addressBookEntryRepository{dbClient}
 }

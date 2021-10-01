@@ -29,11 +29,11 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/hashgraph/hedera-sdk-go/v2/proto"
 	log "github.com/sirupsen/logrus"
@@ -285,7 +285,7 @@ func (c *constructionAPIService) getValidStartNanos(metadata map[string]interfac
 // NewConstructionAPIService creates a new instance of a constructionAPIService.
 func NewConstructionAPIService(
 	network string,
-	nodes types.NodeMap,
+	nodes config.NodeMap,
 	transactionConstructor construction.TransactionConstructor,
 ) (server.ConstructionAPIServicer, error) {
 	var err error

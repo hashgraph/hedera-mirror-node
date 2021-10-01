@@ -18,7 +18,7 @@
  * ‍
  */
 
-package main
+package config
 
 import (
 	"io/ioutil"
@@ -27,7 +27,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -52,50 +51,45 @@ hedera:
 )
 
 func TestLoadDefaultConfig(t *testing.T) {
-	config, err := loadConfig()
+	config, err := LoadConfig()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
-	assert.Equal(t, uint16(5432), config.Hedera.Mirror.Rosetta.Db.Port)
-	assert.Equal(t, config.Hedera.Mirror.Rosetta.Db.Username, "mirror_rosetta")
+	assert.Equal(t, uint16(5432), config.Db.Port)
+	assert.Equal(t, config.Db.Username, "mirror_rosetta")
 }
 
 func TestLoadCustomConfig(t *testing.T) {
 	tests := []struct {
-		name   string
-		useEnv bool
+		name                 string
+		useEnvLocationOrFile bool
 	}{
-		{
-			"from search path",
-			false,
-		},
-		{
-			"from env variable",
-			true,
-		},
+		{name: "from search path", useEnvLocationOrFile: true},
+		{name: "from env variable"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tempDir, filePath := createYamlConfigFile(yml, !tt.useEnv, t)
+			tempDir, filePath := createYamlConfigFile(yml, t)
 			defer os.RemoveAll(tempDir)
 
-			if tt.useEnv {
-				os.Setenv("HEDERA_MIRROR_ROSETTA_API_CONFIG", filePath)
+			if tt.useEnvLocationOrFile {
+				os.Setenv(apiConfigLocationEnvKey, tempDir)
+			} else {
+				os.Setenv(apiConfigEnvKey, filePath)
 			}
 
-			config, err := loadConfig()
+			config, err := LoadConfig()
 
 			assert.NoError(t, err)
 			assert.NotNil(t, config)
-			assert.True(t, config.Hedera.Mirror.Rosetta.Online)
-			assert.Equal(t, uint16(5431), config.Hedera.Mirror.Rosetta.Db.Port)
-			assert.Equal(t, "foobar", config.Hedera.Mirror.Rosetta.Db.Username)
+			assert.True(t, config.Online)
+			assert.Equal(t, uint16(5431), config.Db.Port)
+			assert.Equal(t, "foobar", config.Db.Username)
 
 			// reset env
-			if tt.useEnv {
-				os.Unsetenv("HEDERA_MIRROR_ROSETTA_API_CONFIG")
-			}
+			os.Unsetenv(apiConfigEnvKey)
+			os.Unsetenv(apiConfigLocationEnvKey)
 		})
 	}
 }
@@ -111,10 +105,11 @@ func TestLoadCustomConfigInvalidYaml(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tempDir, _ := createYamlConfigFile(tt.content, true, t)
+			tempDir, _ := createYamlConfigFile(tt.content, t)
 			defer os.RemoveAll(tempDir)
+			os.Setenv(apiConfigLocationEnvKey, tempDir)
 
-			config, err := loadConfig()
+			config, err := LoadConfig()
 
 			assert.Error(t, err)
 			assert.Nil(t, config)
@@ -123,19 +118,19 @@ func TestLoadCustomConfigInvalidYaml(t *testing.T) {
 }
 
 func TestNodeMapDecodeHookFunc(t *testing.T) {
-	nodeMapTye := reflect.TypeOf(types.NodeMap{})
+	nodeMapTye := reflect.TypeOf(NodeMap{})
 	tests := []struct {
 		name        string
 		from        reflect.Type
 		data        interface{}
-		expected    types.NodeMap
+		expected    NodeMap
 		expectError bool
 	}{
 		{
 			name:     "valid data",
 			from:     reflect.TypeOf(map[string]interface{}{}),
 			data:     map[string]interface{}{serviceEndpoint: "0.0.3"},
-			expected: types.NodeMap{serviceEndpoint: hedera.AccountID{Account: 3}},
+			expected: NodeMap{serviceEndpoint: hedera.AccountID{Account: 3}},
 		},
 		{
 			name:        "invalid data type",
@@ -166,13 +161,10 @@ func TestNodeMapDecodeHookFunc(t *testing.T) {
 	}
 }
 
-func createYamlConfigFile(content string, chdir bool, t *testing.T) (string, string) {
+func createYamlConfigFile(content string, t *testing.T) (string, string) {
 	tempDir, err := ioutil.TempDir("", "rosetta")
 	if err != nil {
 		assert.Fail(t, "Unable to create temp dir", err)
-	}
-	if chdir && os.Chdir(tempDir) != nil {
-		assert.Fail(t, "Unable to change directory")
 	}
 
 	customConfig := filepath.Join(tempDir, testConfigFilename)

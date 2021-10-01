@@ -26,9 +26,8 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -54,7 +53,7 @@ func (t *tokenDeleteTransactionConstructor) Construct(
 		SetTransactionID(getTransactionId(*payerId, validStartNanos)).
 		Freeze()
 	if err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
+		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payerId}, nil
@@ -67,14 +66,14 @@ func (t *tokenDeleteTransactionConstructor) Parse(ctx context.Context, transacti
 ) {
 	tokenDeleteTransaction, ok := transaction.(*hedera.TokenDeleteTransaction)
 	if !ok {
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	payerId := tokenDeleteTransaction.GetTransactionID().AccountID
 	tokenId := tokenDeleteTransaction.GetTokenID()
 
 	if payerId == nil || isZeroAccountId(*payerId) || isZeroTokenId(tokenId) {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
 	dbToken, err := t.tokenRepo.Find(ctx, tokenId.String())
@@ -119,11 +118,11 @@ func (t *tokenDeleteTransactionConstructor) preprocess(ctx context.Context, oper
 	operation := operations[0]
 	payerId, err := hedera.AccountIDFromString(operation.Account.Address)
 	if err != nil || isZeroAccountId(payerId) {
-		return nil, nil, hErrors.ErrInvalidAccount
+		return nil, nil, errors.ErrInvalidAccount
 	}
 
 	if operation.Amount.Value != "0" {
-		return nil, nil, hErrors.ErrInvalidOperationsAmount
+		return nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
 	tokenId, rErr := validateToken(ctx, t.tokenRepo, operation.Amount.Currency)
@@ -135,7 +134,7 @@ func (t *tokenDeleteTransactionConstructor) preprocess(ctx context.Context, oper
 }
 
 func (t *tokenDeleteTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeTokenDelete
+	return types.OperationTypeTokenDelete
 }
 
 func (t *tokenDeleteTransactionConstructor) GetSdkTransactionType() string {

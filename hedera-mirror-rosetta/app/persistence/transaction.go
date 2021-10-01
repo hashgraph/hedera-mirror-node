@@ -32,8 +32,7 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
-	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -225,13 +224,13 @@ func (t tokenTransfer) getAmount() types.Amount {
 // transactionRepository struct that has connection to the Database
 type transactionRepository struct {
 	once     sync.Once
-	dbClient *types2.DbClient
+	dbClient interfaces.DbClient
 	results  map[int]string
 	types    map[int]string
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
-func NewTransactionRepository(dbClient *types2.DbClient) interfaces.TransactionRepository {
+func NewTransactionRepository(dbClient interfaces.DbClient) interfaces.TransactionRepository {
 	return &transactionRepository{dbClient: dbClient}
 }
 

@@ -1,8 +1,7 @@
 FROM golang:1.17.1 as build
 WORKDIR /app
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o hedera-mirror-rosetta ./cmd
-CMD ["./hedera-mirror-rosetta"]
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o hedera-mirror-rosetta
 
 FROM scratch
 WORKDIR /app

@@ -29,12 +29,14 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/middleware"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,10 +62,10 @@ func configLogger(level string) {
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#online-mode-endpoints
 func newBlockchainOnlineRouter(
 	network *rTypes.NetworkIdentifier,
-	rosetta types.Rosetta,
+	rosetta config.Rosetta,
 	asserter *asserter.Asserter,
 	version *rTypes.Version,
-	dbClient *types.DbClient,
+	dbClient interfaces.DbClient,
 ) (http.Handler, error) {
 	accountRepo := persistence.NewAccountRepository(dbClient)
 	addressBookEntryRepo := persistence.NewAddressBookEntryRepository(dbClient)
@@ -116,7 +118,7 @@ func newBlockchainOnlineRouter(
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#offline-mode-endpoints
 func newBlockchainOfflineRouter(
 	network string,
-	rosetta types.Rosetta,
+	rosetta config.Rosetta,
 	asserter *asserter.Asserter,
 ) (http.Handler, error) {
 	constructionAPIService, err := services.NewConstructionAPIService(
@@ -140,16 +142,15 @@ func newBlockchainOfflineRouter(
 func main() {
 	configLogger("info")
 
-	configuration, err := loadConfig()
+	rosettaConfig, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %s", err)
 	}
 
-	rosettaConfig := &configuration.Hedera.Mirror.Rosetta
 	configLogger(rosettaConfig.Log.Level)
 
 	network := &rTypes.NetworkIdentifier{
-		Blockchain: config.Blockchain,
+		Blockchain: types.Blockchain,
 		Network:    strings.ToLower(rosettaConfig.Network),
 		SubNetworkIdentifier: &rTypes.SubNetworkIdentifier{
 			Network: fmt.Sprintf("shard %s realm %s", rosettaConfig.Shard, rosettaConfig.Realm),
@@ -163,7 +164,7 @@ func main() {
 	}
 
 	asserter, err := asserter.NewServer(
-		config.SupportedOperationTypes,
+		types.SupportedOperationTypes,
 		true,
 		[]*rTypes.NetworkIdentifier{network},
 		nil,
@@ -177,7 +178,7 @@ func main() {
 	var router http.Handler
 
 	if rosettaConfig.Online {
-		dbClient := connectToDb(rosettaConfig.Db)
+		dbClient := db.ConnectToDb(rosettaConfig.Db)
 
 		router, err = newBlockchainOnlineRouter(network, *rosettaConfig, asserter, version, dbClient)
 		if err != nil {

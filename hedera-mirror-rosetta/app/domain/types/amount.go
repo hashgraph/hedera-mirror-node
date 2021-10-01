@@ -27,8 +27,7 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 )
 
 const (
@@ -54,7 +53,7 @@ func (h *HbarAmount) GetValue() int64 {
 func (h *HbarAmount) ToRosetta() *types.Amount {
 	return &types.Amount{
 		Value:    strconv.FormatInt(h.Value, 10),
-		Currency: config.CurrencyHbar,
+		Currency: CurrencyHbar,
 	}
 }
 
@@ -136,7 +135,7 @@ func NewAmount(amount *types.Amount) (Amount, *types.Error) {
 		return nil, errors.ErrInvalidCurrency
 	}
 
-	if currency.Symbol == config.CurrencyHbar.Symbol {
+	if currency.Symbol == CurrencyHbar.Symbol {
 		return &HbarAmount{Value: value}, nil
 	}
 

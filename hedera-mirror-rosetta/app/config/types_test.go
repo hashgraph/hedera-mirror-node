@@ -18,7 +18,7 @@
  * ‍
  */
 
-package types
+package config
 
 import (
 	"testing"

@@ -18,25 +18,26 @@
  * ‍
  */
 
-package types
+package db
 
 import (
 	"context"
 	"time"
 
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"gorm.io/gorm"
 )
 
-type DbClient struct {
+type client struct {
 	db               *gorm.DB
 	statementTimeout uint
 }
 
-func (d *DbClient) GetDb() *gorm.DB {
+func (d *client) GetDb() *gorm.DB {
 	return d.db
 }
 
-func (d *DbClient) GetDbWithContext(ctx context.Context) (*gorm.DB, context.CancelFunc) {
+func (d *client) GetDbWithContext(ctx context.Context) (*gorm.DB, context.CancelFunc) {
 	if d.statementTimeout == 0 {
 		db := d.db
 		if ctx != nil {
@@ -53,8 +54,8 @@ func (d *DbClient) GetDbWithContext(ctx context.Context) (*gorm.DB, context.Canc
 	return d.db.WithContext(childCtx), cancel
 }
 
-func NewDbClient(db *gorm.DB, statementTimeout uint) *DbClient {
-	return &DbClient{db: db, statementTimeout: statementTimeout}
+func NewDbClient(db *gorm.DB, statementTimeout uint) interfaces.DbClient {
+	return &client{db: db, statementTimeout: statementTimeout}
 }
 
 func noop() {

@@ -28,7 +28,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -73,12 +72,12 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetOperationType
 		{
 			name:       "TokenBurnTransactionConstructor",
 			newHandler: newTokenBurnTransactionConstructor,
-			expected:   config.OperationTypeTokenBurn,
+			expected:   types.OperationTypeTokenBurn,
 		},
 		{
 			name:       "TokenMintTransactionConstructor",
 			newHandler: newTokenMintTransactionConstructor,
-			expected:   config.OperationTypeTokenMint,
+			expected:   types.OperationTypeTokenMint,
 		},
 	}
 
@@ -168,18 +167,18 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 	}
 
 	suite.T().Run("TokenBurnTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenBurn, newTokenBurnTransactionConstructor)
+		runTests(t, types.OperationTypeTokenBurn, newTokenBurnTransactionConstructor)
 	})
 
 	suite.T().Run("TokenDissociateTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenMint, newTokenMintTransactionConstructor)
+		runTests(t, types.OperationTypeTokenMint, newTokenMintTransactionConstructor)
 	})
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 	defaultGetTransaction := func(operationType string, token domain.Token) interfaces.Transaction {
 		tokenId, _ := hedera.TokenIDFromString(token.TokenId.String())
-		if operationType == config.OperationTypeTokenBurn {
+		if operationType == types.OperationTypeTokenBurn {
 			tx := hedera.NewTokenBurnTransaction().
 				SetAmount(-burnAmount).
 				SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -229,7 +228,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionMismatch",
 			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
-				if operationType == config.OperationTypeTokenBurn {
+				if operationType == types.OperationTypeTokenBurn {
 					return hedera.NewTokenMintTransaction()
 				}
 				return hedera.NewTokenBurnTransaction()
@@ -240,7 +239,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionTokenIDNotSet",
 			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
-				if operationType == config.OperationTypeTokenBurn {
+				if operationType == types.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
 						SetAmount(-burnAmount).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -257,7 +256,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionTransactionIDNotSet",
 			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
-				if operationType == config.OperationTypeTokenBurn {
+				if operationType == types.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
 						SetAmount(-burnAmount).
 						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -308,11 +307,11 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 	}
 
 	suite.T().Run("TokenBurnTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenBurn, newTokenBurnTransactionConstructor)
+		runTests(t, types.OperationTypeTokenBurn, newTokenBurnTransactionConstructor)
 	})
 
 	suite.T().Run("TokenDissociateTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenMint, newTokenMintTransactionConstructor)
+		runTests(t, types.OperationTypeTokenMint, newTokenMintTransactionConstructor)
 	})
 }
 
@@ -345,7 +344,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 			name:                 "InvalidCurrency",
 			token:                dbTokenA,
 			tokenRepoConfigIndex: 0,
-			updateOperations:     updateCurrency(config.CurrencyHbar),
+			updateOperations:     updateCurrency(types.CurrencyHbar),
 			expectError:          true,
 		},
 		{
@@ -394,7 +393,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 			name:                 "InvalidOperationType",
 			token:                dbTokenA,
 			tokenRepoConfigIndex: 0,
-			updateOperations:     updateOperationType(config.OperationTypeCryptoTransfer),
+			updateOperations:     updateOperationType(types.OperationTypeCryptoTransfer),
 			expectError:          true,
 		},
 	}
@@ -435,11 +434,11 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 	}
 
 	suite.T().Run("TokenBurnTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenBurn, newTokenBurnTransactionConstructor)
+		runTests(t, types.OperationTypeTokenBurn, newTokenBurnTransactionConstructor)
 	})
 
 	suite.T().Run("TokenDissociateTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenMint, newTokenMintTransactionConstructor)
+		runTests(t, types.OperationTypeTokenMint, newTokenMintTransactionConstructor)
 	})
 }
 
@@ -448,7 +447,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(
 	token domain.Token,
 ) []*rTypes.Operation {
 	amount := burnAmount
-	if operationType == config.OperationTypeTokenMint {
+	if operationType == types.OperationTypeTokenMint {
 		amount = mintAmount
 	}
 
@@ -463,7 +462,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(
 	}
 
 	if token.Type == domain.TokenTypeNonFungibleUnique {
-		if operationType == config.OperationTypeTokenBurn {
+		if operationType == types.OperationTypeTokenBurn {
 			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeySerialNumbers: []string{"1", "2"}}
 		} else {
 			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeyMetadatas: metadatasBase64}
@@ -479,7 +478,7 @@ func assertTokenBurnMintTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
-	if operations[0].Type == config.OperationTypeTokenBurn {
+	if operations[0].Type == types.OperationTypeTokenBurn {
 		assert.IsType(t, &hedera.TokenBurnTransaction{}, actual)
 	} else {
 		assert.IsType(t, &hedera.TokenMintTransaction{}, actual)

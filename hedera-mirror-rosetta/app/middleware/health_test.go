@@ -22,17 +22,18 @@ package middleware
 
 import (
 	"encoding/json"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
-	"github.com/hellofresh/health-go/v4"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
+	"github.com/hellofresh/health-go/v4"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestLiveness(t *testing.T) {
-	healthController, err := NewHealthController(types.Db{})
+	healthController, err := NewHealthController(config.Db{})
 	require.NoError(t, err)
 
 	req := httptest.NewRequest("GET", "http://localhost"+livenessPath, nil)
@@ -55,7 +56,7 @@ func TestReadiness(t *testing.T) {
 	}{{
 		status: health.StatusUnavailable,
 	}} {
-		healthController, err := NewHealthController(types.Db{})
+		healthController, err := NewHealthController(config.Db{})
 		require.NoError(t, err)
 
 		req := httptest.NewRequest("GET", "http://localhost"+readinessPath, nil)

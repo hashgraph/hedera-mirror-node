@@ -28,7 +28,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -110,7 +109,7 @@ func expectedAccountBalanceResponse() *rTypes.AccountBalanceResponse {
 		Balances: []*rTypes.Amount{
 			{
 				Value:    "1000",
-				Currency: config.CurrencyHbar,
+				Currency: types.CurrencyHbar,
 			},
 			types.NewTokenAmount(token1, 100).ToRosetta(),
 			types.NewTokenAmount(token2, 200).ToRosetta(),

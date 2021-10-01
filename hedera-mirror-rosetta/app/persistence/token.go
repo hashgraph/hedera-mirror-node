@@ -28,18 +28,17 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // tokenRepository struct that has connection to the Database
 type tokenRepository struct {
-	dbClient *types.DbClient
+	dbClient interfaces.DbClient
 }
 
 // NewTokenRepository creates an instance of a tokenRepository struct
-func NewTokenRepository(dbClient *types.DbClient) interfaces.TokenRepository {
+func NewTokenRepository(dbClient interfaces.DbClient) interfaces.TokenRepository {
 	return &tokenRepository{dbClient}
 }
 

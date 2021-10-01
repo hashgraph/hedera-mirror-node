@@ -27,9 +27,8 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -119,14 +118,14 @@ func (t *tokenUpdateTransactionConstructor) Construct(
 	}
 
 	if _, err := tx.Freeze(); err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
+		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
 func (t *tokenUpdateTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeTokenUpdate
+	return types.OperationTypeTokenUpdate
 }
 
 func (t *tokenUpdateTransactionConstructor) GetSdkTransactionType() string {
@@ -140,14 +139,14 @@ func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transacti
 ) {
 	tokenUpdateTransaction, ok := transaction.(*hedera.TokenUpdateTransaction)
 	if !ok {
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	payerId := tokenUpdateTransaction.GetTransactionID().AccountID
 	tokenId := tokenUpdateTransaction.GetTokenID()
 
 	if payerId == nil || isZeroAccountId(*payerId) || isZeroTokenId(tokenId) {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
 	token, err := t.tokenRepo.Find(ctx, tokenId.String())
@@ -259,7 +258,7 @@ func (t *tokenUpdateTransactionConstructor) preprocess(ctx context.Context, oper
 
 	payer, err := hedera.AccountIDFromString(operation.Account.Address)
 	if err != nil {
-		return nil, nil, hErrors.ErrInvalidAccount
+		return nil, nil, errors.ErrInvalidAccount
 	}
 
 	return &payer, tokenUpdate, nil

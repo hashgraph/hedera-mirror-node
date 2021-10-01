@@ -30,7 +30,6 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -139,11 +138,11 @@ type accountBalanceChange struct {
 
 // accountRepository struct that has connection to the Database
 type accountRepository struct {
-	dbClient *types2.DbClient
+	dbClient interfaces.DbClient
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
-func NewAccountRepository(dbClient *types2.DbClient) interfaces.AccountRepository {
+func NewAccountRepository(dbClient interfaces.DbClient) interfaces.AccountRepository {
 	return &accountRepository{dbClient}
 }
 

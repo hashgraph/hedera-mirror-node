@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestNewTransactionConstruct
 
 func (suite *tokenDeleteTransactionConstructorSuite) TestGetOperationType() {
 	h := newTokenDeleteTransactionConstructor(&mocks.MockTokenRepository{})
-	assert.Equal(suite.T(), config.OperationTypeTokenDelete, h.GetOperationType())
+	assert.Equal(suite.T(), types.OperationTypeTokenDelete, h.GetOperationType())
 }
 
 func (suite *tokenDeleteTransactionConstructorSuite) TestGetSdkTransactionType() {
@@ -227,7 +227,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 		},
 		{
 			name:             "InvalidOperationType",
-			updateOperations: updateOperationType(config.OperationTypeCryptoTransfer),
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
 			expectError:      true,
 		},
 	}
@@ -287,7 +287,7 @@ func getTokenDeleteOperations(currency *rTypes.Currency) []*rTypes.Operation {
 	return []*rTypes.Operation{
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                config.OperationTypeTokenDelete,
+			Type:                types.OperationTypeTokenDelete,
 			Account:             payerAccountIdentifier,
 			Amount:              &rTypes.Amount{Value: "0", Currency: currency},
 		},

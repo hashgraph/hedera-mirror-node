@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -59,12 +59,12 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetOperationTyp
 		{
 			name:       "TokenFreezeTransactionConstructor",
 			newHandler: newTokenFreezeTransactionConstructor,
-			expected:   config.OperationTypeTokenFreeze,
+			expected:   types.OperationTypeTokenFreeze,
 		},
 		{
 			name:       "TokenUnfreezeTransactionConstructor",
 			newHandler: newTokenUnfreezeTransactionConstructor,
-			expected:   config.OperationTypeTokenUnfreeze,
+			expected:   types.OperationTypeTokenUnfreeze,
 		},
 	}
 
@@ -150,11 +150,11 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 	}
 
 	suite.T().Run("TokenFreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
 	})
 
 	suite.T().Run("TokenUnfreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
 	})
 }
 
@@ -171,7 +171,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 		SetTransactionID(hedera.TransactionIDGenerate(payerId))
 
 	defaultGetTransaction := func(operationType string) interfaces.Transaction {
-		if operationType == config.OperationTypeTokenFreeze {
+		if operationType == types.OperationTypeTokenFreeze {
 			return tokenFreezeTransaction
 		}
 		return tokenUnfreezeTransaction
@@ -203,7 +203,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionMismatch",
 			getTransaction: func(operationType string) interfaces.Transaction {
-				if operationType == config.OperationTypeTokenFreeze {
+				if operationType == types.OperationTypeTokenFreeze {
 					return tokenUnfreezeTransaction
 				}
 				return tokenFreezeTransaction
@@ -247,11 +247,11 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 	}
 
 	suite.T().Run("TokenFreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
 	})
 
 	suite.T().Run("TokenUnfreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
 	})
 }
 
@@ -301,7 +301,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 		},
 		{
 			name:             "InvalidOperationType",
-			updateOperations: updateOperationType(config.OperationTypeCryptoTransfer),
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
 			expectError:      true,
 		},
 	}
@@ -342,11 +342,11 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 	}
 
 	suite.T().Run("TokenFreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
 	})
 
 	suite.T().Run("TokenUnfreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
 	})
 }
 
@@ -356,7 +356,7 @@ func assertTokenFreezeUnfreezeTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
-	if operation.Type == config.OperationTypeTokenFreeze {
+	if operation.Type == types.OperationTypeTokenFreeze {
 		assert.IsType(t, &hedera.TokenFreezeTransaction{}, actual)
 	} else {
 		assert.IsType(t, &hedera.TokenUnfreezeTransaction{}, actual)

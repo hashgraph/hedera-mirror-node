@@ -66,13 +66,6 @@
                                 <flag>-i</flag>
                                 <flag>-race</flag>
                             </buildFlags>
-                            <sources>${project.basedir}/cmd</sources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>default-install</id>
-                        <configuration>
-                            <sources>${project.basedir}/cmd</sources>
                         </configuration>
                     </execution>
                 </executions>

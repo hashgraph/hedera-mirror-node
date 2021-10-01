@@ -27,7 +27,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -46,8 +45,8 @@ func TestCompareCurrency(t *testing.T) {
 	}{
 		{
 			name:      "SamePointer",
-			currencyA: config.CurrencyHbar,
-			currencyB: config.CurrencyHbar,
+			currencyA: types.CurrencyHbar,
+			currencyB: types.CurrencyHbar,
 			expected:  true,
 		},
 		{
@@ -312,18 +311,18 @@ func TestValidateOperationsWithType(t *testing.T) {
 	}{
 		{
 			name:          "SuccessSingleOperation",
-			operations:    []*rTypes.Operation{getOperation(0, config.OperationTypeCryptoTransfer)},
+			operations:    []*rTypes.Operation{getOperation(0, types.OperationTypeCryptoTransfer)},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 		},
 		{
 			name: "SuccessMultipleOperations",
 			operations: []*rTypes.Operation{
-				getOperation(0, config.OperationTypeCryptoTransfer),
-				getOperation(1, config.OperationTypeCryptoTransfer),
+				getOperation(0, types.OperationTypeCryptoTransfer),
+				getOperation(1, types.OperationTypeCryptoTransfer),
 			},
 			size:          0,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 		},
 		{
 			name: "SuccessExpectNilAmount",
@@ -331,11 +330,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:            0,
-			operationType:   config.OperationTypeCryptoTransfer,
+			operationType:   types.OperationTypeCryptoTransfer,
 			expectNilAmount: true,
 		},
 		{
@@ -344,45 +343,45 @@ func TestValidateOperationsWithType(t *testing.T) {
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 					Amount:              &rTypes.Amount{},
 				},
 			},
 			size:            0,
-			operationType:   config.OperationTypeCryptoTransfer,
+			operationType:   types.OperationTypeCryptoTransfer,
 			expectNilAmount: true,
 			expectError:     true,
 		},
 		{
 			name:          "EmptyOperations",
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
 			name: "OperationsSizeMismatch",
 			operations: []*rTypes.Operation{
-				getOperation(0, config.OperationTypeCryptoTransfer),
-				getOperation(1, config.OperationTypeCryptoTransfer),
+				getOperation(0, types.OperationTypeCryptoTransfer),
+				getOperation(1, types.OperationTypeCryptoTransfer),
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
 			name:          "OperationTypeMismatch",
-			operations:    []*rTypes.Operation{getOperation(0, config.OperationTypeCryptoTransfer)},
+			operations:    []*rTypes.Operation{getOperation(0, types.OperationTypeCryptoTransfer)},
 			size:          1,
-			operationType: config.OperationTypeTokenCreate,
+			operationType: types.OperationTypeTokenCreate,
 			expectError:   true,
 		},
 		{
 			name: "MultipleOperationTypes",
 			operations: []*rTypes.Operation{
-				getOperation(0, config.OperationTypeCryptoTransfer),
-				getOperation(0, config.OperationTypeTokenCreate),
+				getOperation(0, types.OperationTypeCryptoTransfer),
+				getOperation(0, types.OperationTypeTokenCreate),
 			},
 			size:          0,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -397,11 +396,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 							Decimals: 10,
 						},
 					},
-					Type: config.OperationTypeCryptoTransfer,
+					Type: types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -416,11 +415,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 							Decimals: 10,
 						},
 					},
-					Type: config.OperationTypeCryptoTransfer,
+					Type: types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -429,11 +428,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -443,11 +442,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
 					Amount:              &rTypes.Amount{Value: "0"},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 	}

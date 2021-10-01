@@ -18,7 +18,7 @@
  * ‍
  */
 
-package main
+package config
 
 const defaultConfig = `
 hedera:

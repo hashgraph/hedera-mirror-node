@@ -3,6 +3,7 @@ After=syslog.target
 Description=Hedera Mirror Rosetta API
 
 [Service]
+Environment="HEDERA_MIRROR_ROSETTA_API_CONFIG_LOCATION=/usr/etc/hedera-mirror-rosetta"
 ExecStart=/usr/bin/hedera-mirror-rosetta
 LimitNOFILE=65536
 Restart=on-failure

@@ -18,7 +18,7 @@
  * ‍
  */
 
-package main
+package config
 
 import (
 	"bytes"
@@ -26,7 +26,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -34,28 +33,29 @@ import (
 )
 
 const (
-	configName      = "application"
-	configTypeYaml  = "yml"
-	envKeyDelimiter = "_"
-	keyDelimiter    = "::"
+	apiConfigEnvKey         = "HEDERA_MIRROR_ROSETTA_API_CONFIG"
+	apiConfigLocationEnvKey = "HEDERA_MIRROR_ROSETTA_API_CONFIG_LOCATION"
+	configName              = "application"
+	configTypeYaml          = "yml"
+	envKeyDelimiter         = "_"
+	keyDelimiter            = "::"
 )
 
-var configPaths = []string{"/usr/etc/hedera-mirror-rosetta", "."}
-
-// loadConfig loads configuration from yaml files and env variables
-func loadConfig() (*types.Config, error) {
+// LoadConfig loads configuration from yaml files and env variables
+func LoadConfig() (*Rosetta, error) {
 	// NodeMap's key has '.', set viper key delimiter to avoid parsing it as a nested key
 	v := viper.NewWithOptions(viper.KeyDelimiter(keyDelimiter))
 	v.SetConfigType(configTypeYaml)
 
-	if envConfigFile, ok := os.LookupEnv("HEDERA_MIRROR_ROSETTA_API_CONFIG"); ok {
+	if envConfigFile, ok := os.LookupEnv(apiConfigEnvKey); ok {
 		v.SetConfigFile(envConfigFile)
 	} else {
 		// only set config name and config paths when no config file env variable is set
 		v.SetConfigName(configName)
-		for _, configPath := range configPaths {
-			v.AddConfigPath(configPath)
+		if envConfigLocation, ok := os.LookupEnv(apiConfigLocationEnvKey); ok {
+			v.AddConfigPath(envConfigLocation)
 		}
+		v.AddConfigPath(".")
 	}
 
 	// read the default
@@ -80,7 +80,7 @@ func loadConfig() (*types.Config, error) {
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(keyDelimiter, envKeyDelimiter))
 
-	var config types.Config
+	var config Config
 	if err := v.Unmarshal(&config, viper.DecodeHook(nodeMapDecodeHookFunc)); err != nil {
 		return nil, err
 	}
@@ -90,11 +90,11 @@ func loadConfig() (*types.Config, error) {
 	log.Infof("Using configuration: %+v", config.Hedera.Mirror.Rosetta)
 	config.Hedera.Mirror.Rosetta.Db.Password = password
 
-	return &config, nil
+	return &config.Hedera.Mirror.Rosetta, nil
 }
 
 func nodeMapDecodeHookFunc(from, to reflect.Type, data interface{}) (interface{}, error) {
-	if to != reflect.TypeOf(types.NodeMap{}) {
+	if to != reflect.TypeOf(NodeMap{}) {
 		return data, nil
 	}
 
@@ -103,7 +103,7 @@ func nodeMapDecodeHookFunc(from, to reflect.Type, data interface{}) (interface{}
 		return nil, errors.Errorf("Invalid data type for NodeMap")
 	}
 
-	nodeMap := make(types.NodeMap)
+	nodeMap := make(NodeMap)
 	for key, nodeAccountId := range input {
 		nodeAccountIdStr, ok := nodeAccountId.(string)
 		if !ok {

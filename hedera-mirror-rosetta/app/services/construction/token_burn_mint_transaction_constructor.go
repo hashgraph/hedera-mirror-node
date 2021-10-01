@@ -26,10 +26,9 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -54,7 +53,7 @@ func (t *tokenBurnMintTransactionConstructor) Construct(
 	var err error
 	tokenId, _ := hedera.TokenIDFromString(tokenAmount.TokenId.String())
 	transactionId := getTransactionId(*payer, validStartNanos)
-	if t.operationType == config.OperationTypeTokenBurn {
+	if t.operationType == types.OperationTypeTokenBurn {
 		tokenBurnTx := hedera.NewTokenBurnTransaction().
 			SetTokenID(tokenId).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -81,7 +80,7 @@ func (t *tokenBurnMintTransactionConstructor) Construct(
 	}
 
 	if err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
+		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
@@ -100,8 +99,8 @@ func (t *tokenBurnMintTransactionConstructor) Parse(ctx context.Context, transac
 
 	switch tx := transaction.(type) {
 	case *hedera.TokenBurnTransaction:
-		if t.operationType != config.OperationTypeTokenBurn {
-			return nil, nil, hErrors.ErrTransactionInvalidType
+		if t.operationType != types.OperationTypeTokenBurn {
+			return nil, nil, errors.ErrTransactionInvalidType
 		}
 
 		amount = -int64(tx.GetAmount())
@@ -109,8 +108,8 @@ func (t *tokenBurnMintTransactionConstructor) Parse(ctx context.Context, transac
 		tokenId = tx.GetTokenID()
 		serialNumbers = tx.GetSerialNumbers()
 	case *hedera.TokenMintTransaction:
-		if t.operationType != config.OperationTypeTokenMint {
-			return nil, nil, hErrors.ErrTransactionInvalidType
+		if t.operationType != types.OperationTypeTokenMint {
+			return nil, nil, errors.ErrTransactionInvalidType
 		}
 
 		amount = int64(tx.GetAmount())
@@ -118,11 +117,11 @@ func (t *tokenBurnMintTransactionConstructor) Parse(ctx context.Context, transac
 		tokenId = tx.GetTokenID()
 		metadatas = tx.GetMetadatas()
 	default:
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	if isZeroTokenId(tokenId) || payer == nil || isZeroAccountId(*payer) {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
 	dbToken, err := t.tokeRepo.Find(ctx, tokenId.String())
@@ -180,7 +179,7 @@ func (t *tokenBurnMintTransactionConstructor) preprocess(ctx context.Context, op
 
 	payer, err := hedera.AccountIDFromString(operation.Account.Address)
 	if err != nil || isZeroAccountId(payer) {
-		return nil, nil, hErrors.ErrInvalidAccount
+		return nil, nil, errors.ErrInvalidAccount
 	}
 
 	return &payer, tokenAmount, nil
@@ -197,17 +196,17 @@ func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(
 
 	tokenAmount, ok := amount.(*types.TokenAmount)
 	if !ok {
-		return nil, hErrors.ErrInvalidCurrency
+		return nil, errors.ErrInvalidCurrency
 	}
 
 	isNft := tokenAmount.Type == domain.TokenTypeNonFungibleUnique
-	if t.operationType == config.OperationTypeTokenBurn {
+	if t.operationType == types.OperationTypeTokenBurn {
 		if tokenAmount.Value >= 0 || (isNft && len(tokenAmount.SerialNumbers) == 0) {
-			return nil, hErrors.ErrInvalidOperationsAmount
+			return nil, errors.ErrInvalidOperationsAmount
 		}
 	} else {
 		if tokenAmount.Value <= 0 || (isNft && len(tokenAmount.Metadatas) == 0) {
-			return nil, hErrors.ErrInvalidOperationsAmount
+			return nil, errors.ErrInvalidOperationsAmount
 		}
 	}
 
@@ -221,7 +220,7 @@ func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(
 func newTokenBurnTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenBurnTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
-		operationType:   config.OperationTypeTokenBurn,
+		operationType:   types.OperationTypeTokenBurn,
 		tokeRepo:        tokenRepo,
 		transactionType: transactionType,
 	}
@@ -230,7 +229,7 @@ func newTokenBurnTransactionConstructor(tokenRepo interfaces.TokenRepository) tr
 func newTokenMintTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenMintTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
-		operationType:   config.OperationTypeTokenMint,
+		operationType:   types.OperationTypeTokenMint,
 		tokeRepo:        tokenRepo,
 		transactionType: transactionType,
 	}

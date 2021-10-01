@@ -23,9 +23,9 @@ package construction
 import (
 	"testing"
 
-	"github.com/coinbase/rosetta-sdk-go/types"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -35,12 +35,12 @@ import (
 var (
 	cryptoTransferTransaction = hedera.NewTransferTransaction()
 	tokenCreateTransaction    = hedera.NewTokenCreateTransaction()
-	cryptoTransferOperations  = []*types.Operation{{Type: config.OperationTypeCryptoTransfer}}
-	mixedOperations           = []*types.Operation{
-		{Type: config.OperationTypeCryptoTransfer},
-		{Type: config.OperationTypeTokenCreate},
+	cryptoTransferOperations  = []*rTypes.Operation{{Type: types.OperationTypeCryptoTransfer}}
+	mixedOperations           = []*rTypes.Operation{
+		{Type: types.OperationTypeCryptoTransfer},
+		{Type: types.OperationTypeTokenCreate},
 	}
-	unsupportedOperations = []*types.Operation{{Type: config.OperationTypeTokenCreate}}
+	unsupportedOperations = []*rTypes.Operation{{Type: types.OperationTypeTokenCreate}}
 	signers               = []hedera.AccountID{payerId}
 )
 
@@ -125,7 +125,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstructEmptyOperations(
 	actualTx, actualSigners, err := suite.constructor.Construct(
 		defaultContext,
 		nodeAccountId,
-		[]*types.Operation{},
+		[]*rTypes.Operation{},
 		0,
 	)
 

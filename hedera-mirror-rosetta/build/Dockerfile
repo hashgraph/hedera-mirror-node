@@ -6,7 +6,7 @@
 FROM golang:1.17.1 as rosetta-builder
 COPY hedera-mirror-rosetta /hedera-mirror-rosetta
 WORKDIR /hedera-mirror-rosetta
-RUN go build -o rosetta-executable ./cmd
+RUN go build -o rosetta-executable
 
 # ---------------------------- Importer ----------------------------- #
 FROM openjdk:11.0 as java-builder

@@ -30,7 +30,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -122,13 +121,13 @@ func (rb *recordBlock) ToBlock(genesisConsensusStart int64, genesisIndex int64) 
 // blockRepository struct that has connection to the Database
 type blockRepository struct {
 	once                   sync.Once
-	dbClient               *types2.DbClient
+	dbClient               interfaces.DbClient
 	genesisConsensusStart  int64
 	genesisRecordFileIndex int64
 }
 
 // NewBlockRepository creates an instance of a blockRepository struct
-func NewBlockRepository(dbClient *types2.DbClient) interfaces.BlockRepository {
+func NewBlockRepository(dbClient interfaces.DbClient) interfaces.BlockRepository {
 	return &blockRepository{dbClient: dbClient, genesisConsensusStart: genesisConsensusStartUnset}
 }
 

@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +48,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestNewTransactionConstructor
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetOperationType() {
 	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
-	assert.Equal(suite.T(), config.OperationTypeTokenWipe, h.GetOperationType())
+	assert.Equal(suite.T(), types.OperationTypeTokenWipe, h.GetOperationType())
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetSdkTransactionType() {
@@ -251,7 +251,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 		},
 		{
 			name:             "InvalidOperationType",
-			updateOperations: updateOperationType(config.OperationTypeCryptoTransfer),
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
 			expectError:      true,
 		},
 		{
@@ -262,7 +262,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 		},
 		{
 			name:             "InvalidCurrency",
-			updateOperations: updateCurrency(config.CurrencyHbar),
+			updateOperations: updateCurrency(types.CurrencyHbar),
 			expectError:      true,
 		},
 	}
@@ -326,7 +326,7 @@ func getTokenWipeOperations() []*rTypes.Operation {
 	return []*rTypes.Operation{
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                config.OperationTypeTokenWipe,
+			Type:                types.OperationTypeTokenWipe,
 			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
 			Amount: &rTypes.Amount{
 				Value:    fmt.Sprintf("%d", -defaultAmount),

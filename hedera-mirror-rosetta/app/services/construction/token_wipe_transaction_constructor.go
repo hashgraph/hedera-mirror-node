@@ -31,7 +31,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -173,7 +172,7 @@ func (t *tokenWipeTransactionConstructor) preprocess(ctx context.Context, operat
 }
 
 func (t *tokenWipeTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeTokenWipe
+	return types.OperationTypeTokenWipe
 }
 
 func (t *tokenWipeTransactionConstructor) GetSdkTransactionType() string {

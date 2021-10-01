@@ -18,20 +18,21 @@
  * ‍
  */
 
-package main
+package db
 
 import (
 	"time"
 
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	gormlogrus "github.com/onrik/gorm-logrus"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// Establish connection to the Postgres Database
-func connectToDb(dbConfig types.Db) *types.DbClient {
+// ConnectToDb establishes connection to the Postgres Database
+func ConnectToDb(dbConfig config.Db) interfaces.DbClient {
 	db, err := gorm.Open(postgres.Open(dbConfig.GetDsn()), &gorm.Config{Logger: gormlogrus.New()})
 	if err != nil {
 		log.Warn(err)
@@ -49,5 +50,5 @@ func connectToDb(dbConfig types.Db) *types.DbClient {
 	sqlDb.SetConnMaxLifetime(time.Duration(dbConfig.Pool.MaxLifetime) * time.Minute)
 	sqlDb.SetMaxOpenConns(dbConfig.Pool.MaxOpenConnections)
 
-	return types.NewDbClient(db, dbConfig.StatementTimeout)
+	return NewDbClient(db, dbConfig.StatementTimeout)
 }

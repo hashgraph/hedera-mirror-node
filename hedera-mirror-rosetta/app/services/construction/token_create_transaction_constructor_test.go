@@ -28,7 +28,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -51,7 +50,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestNewTransactionConstruct
 
 func (suite *tokenCreateTransactionConstructorSuite) TestGetOperationType() {
 	h := newTokenCreateTransactionConstructor()
-	assert.Equal(suite.T(), config.OperationTypeTokenCreate, h.GetOperationType())
+	assert.Equal(suite.T(), types.OperationTypeTokenCreate, h.GetOperationType())
 }
 
 func (suite *tokenCreateTransactionConstructorSuite) TestGetSdkTransactionType() {
@@ -325,7 +324,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 		},
 		{
 			name:             "InvalidOperationType",
-			updateOperations: updateOperationType(config.OperationTypeCryptoTransfer),
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
 			expectError:      true,
 		},
 	}
@@ -396,7 +395,7 @@ func assertTokenCreateTransaction(
 func getTokenCreateOperations(tokenType string) []*rTypes.Operation {
 	operation := &rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Type:                config.OperationTypeTokenCreate,
+		Type:                types.OperationTypeTokenCreate,
 		Account:             &rTypes.AccountIdentifier{Address: treasury.String()},
 		Metadata: map[string]interface{}{
 			"admin_key":          adminKeyStr,

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
 	"github.com/hellofresh/health-go/v4"
 	"github.com/hellofresh/health-go/v4/checks/postgres"
 )
@@ -41,7 +41,7 @@ type healthController struct {
 }
 
 // NewHealthController creates a new HealthController object
-func NewHealthController(dbConfig types.Db) (server.Router, error) {
+func NewHealthController(dbConfig config.Db) (server.Router, error) {
 	livenessHealth, err := health.New()
 	if err != nil {
 		return nil, err

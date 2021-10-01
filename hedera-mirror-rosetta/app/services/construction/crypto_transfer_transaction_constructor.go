@@ -30,7 +30,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
@@ -116,7 +115,7 @@ func (c *cryptoTransferTransactionConstructor) Construct(
 }
 
 func (c *cryptoTransferTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeCryptoTransfer
+	return types.OperationTypeCryptoTransfer
 }
 
 func (c *cryptoTransferTransactionConstructor) GetSdkTransactionType() string {
@@ -228,7 +227,7 @@ func (c *cryptoTransferTransactionConstructor) preprocess(ctx context.Context, o
 		return nil, nil, rErr
 	}
 
-	currencies := map[string]rTypes.Currency{config.CurrencyHbar.Symbol: *config.CurrencyHbar}
+	currencies := map[string]rTypes.Currency{types.CurrencyHbar.Symbol: *types.CurrencyHbar}
 	transfers := make([]transfer, 0, len(operations))
 	senderMap := senderMap{}
 	sums := make(map[string]int64)

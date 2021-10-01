@@ -27,7 +27,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -398,7 +397,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeAccount.EntityId, firstAccount.EntityId, 11,
 		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil)
-	operationType := config.OperationTypeCryptoTransfer
+	operationType := types.OperationTypeCryptoTransfer
 	operations1 := []*types.Operation{
 		{Account: firstAccount, Amount: &types.HbarAmount{Value: -135}, Type: operationType, Status: resultSuccess},
 		{Account: secondAccount, Amount: &types.HbarAmount{Value: 135}, Type: operationType, Status: resultSuccess},
@@ -500,7 +499,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		"freeze_default": false,
 		"initial_supply": tokenInitialSupply,
 	}
-	operationType = config.OperationTypeTokenCreate
+	operationType = types.OperationTypeTokenCreate
 	expectedTransaction3 := &types.Transaction{
 		Hash: "0xaaccdd",
 		Operations: []*types.Operation{
@@ -568,7 +567,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	addTransaction(dbClient, consensusTimestamp, &tokenId3, &nodeAccount.EntityId, firstAccount.EntityId, 22,
 		[]byte{0xaa, 0x11, 0x33}, domain.TransactionTypeTokenMint, validStartNs, cryptoTransfers, nil, nil,
 		nftTransfers)
-	operationType = config.OperationTypeTokenMint
+	operationType = types.OperationTypeTokenMint
 	expectedTransaction5 := &types.Transaction{
 		Hash: "0xaa1133",
 		Operations: []*types.Operation{
@@ -595,7 +594,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	addTransaction(dbClient, consensusTimestamp, &firstAccount.EntityId, &nodeAccount.EntityId, firstAccount.EntityId,
 		22, []byte{0xaa, 0x11, 0x66}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil,
 		nil, nftTransfers)
-	operationType = config.OperationTypeCryptoTransfer
+	operationType = types.OperationTypeCryptoTransfer
 	expectedTransaction6 := &types.Transaction{
 		Hash: "0xaa1166",
 		Operations: []*types.Operation{

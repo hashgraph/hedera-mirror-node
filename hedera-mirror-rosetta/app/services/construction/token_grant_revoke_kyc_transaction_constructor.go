@@ -27,9 +27,8 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -54,7 +53,7 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Construct(
 	var tx interfaces.Transaction
 	var err error
 	transactionId := getTransactionId(*payer, validStartNanos)
-	if t.operationType == config.OperationTypeTokenGrantKyc {
+	if t.operationType == types.OperationTypeTokenGrantKyc {
 		tx, err = hedera.NewTokenGrantKycTransaction().
 			SetAccountID(*account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -71,7 +70,7 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Construct(
 	}
 
 	if err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
+		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
@@ -88,27 +87,27 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Parse(ctx context.Context, t
 
 	switch tx := transaction.(type) {
 	case *hedera.TokenGrantKycTransaction:
-		if t.operationType != config.OperationTypeTokenGrantKyc {
-			return nil, nil, hErrors.ErrTransactionInvalidType
+		if t.operationType != types.OperationTypeTokenGrantKyc {
+			return nil, nil, errors.ErrTransactionInvalidType
 		}
 
 		account = tx.GetAccountID()
 		payer = tx.GetTransactionID().AccountID
 		tokenId = tx.GetTokenID()
 	case *hedera.TokenRevokeKycTransaction:
-		if t.operationType != config.OperationTypeTokenRevokeKyc {
-			return nil, nil, hErrors.ErrTransactionInvalidType
+		if t.operationType != types.OperationTypeTokenRevokeKyc {
+			return nil, nil, errors.ErrTransactionInvalidType
 		}
 
 		account = tx.GetAccountID()
 		payer = tx.GetTransactionID().AccountID
 		tokenId = tx.GetTokenID()
 	default:
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	if isZeroAccountId(account) || isZeroTokenId(tokenId) || payer == nil || isZeroAccountId(*payer) {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
 	dbToken, err := t.tokenRepo.Find(ctx, tokenId.String())
@@ -162,7 +161,7 @@ func (t *tokenGrantRevokeKycTransactionConstructor) GetSdkTransactionType() stri
 func newTokenGrantKycTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenGrantKycTransaction{}).Name()
 	return &tokenGrantRevokeKycTransactionConstructor{
-		operationType:   config.OperationTypeTokenGrantKyc,
+		operationType:   types.OperationTypeTokenGrantKyc,
 		tokenRepo:       tokenRepo,
 		transactionType: transactionType,
 		validate:        validator.New(),
@@ -172,7 +171,7 @@ func newTokenGrantKycTransactionConstructor(tokenRepo interfaces.TokenRepository
 func newTokenRevokeKycTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenRevokeKycTransaction{}).Name()
 	return &tokenGrantRevokeKycTransactionConstructor{
-		operationType:   config.OperationTypeTokenRevokeKyc,
+		operationType:   types.OperationTypeTokenRevokeKyc,
 		tokenRepo:       tokenRepo,
 		transactionType: transactionType,
 		validate:        validator.New(),

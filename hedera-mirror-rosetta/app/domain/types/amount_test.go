@@ -25,13 +25,12 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
 	hbarAmount        = &HbarAmount{Value: 400}
-	hbarRosettaAmount = &types.Amount{Value: "400", Currency: config.CurrencyHbar}
+	hbarRosettaAmount = &types.Amount{Value: "400", Currency: CurrencyHbar}
 	tokenId           = domain.MustDecodeEntityId(1580)
 	tokenIdStr        = tokenId.String()
 	metadatasBytes    = [][]byte{[]byte("foo"), []byte("bar")}
@@ -133,7 +132,7 @@ func TestNewAmountSuccess(t *testing.T) {
 			name: "HbarAmount",
 			input: &types.Amount{
 				Value:    "5",
-				Currency: config.CurrencyHbar,
+				Currency: CurrencyHbar,
 			},
 			expected: &HbarAmount{Value: 5},
 		},
@@ -223,7 +222,7 @@ func TestNewAmountFailure(t *testing.T) {
 		name  string
 		input *types.Amount
 	}{
-		{name: "InvalidAmount", input: &types.Amount{Value: "abc", Currency: config.CurrencyHbar}},
+		{name: "InvalidAmount", input: &types.Amount{Value: "abc", Currency: CurrencyHbar}},
 		{name: "InvalidCurrencySymbol", input: &types.Amount{Value: "1", Currency: &types.Currency{Symbol: "foobar"}}},
 		{
 			name: "InvalidTypeForTokenType",
@@ -240,7 +239,7 @@ func TestNewAmountFailure(t *testing.T) {
 			name: "InvalidCurrencyDecimals",
 			input: &types.Amount{
 				Value:    "1",
-				Currency: &types.Currency{Decimals: -1, Symbol: config.CurrencyHbar.Symbol},
+				Currency: &types.Currency{Decimals: -1, Symbol: CurrencyHbar.Symbol},
 			},
 		},
 		{

@@ -25,7 +25,6 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,7 +53,7 @@ func expectedTransaction() *types.Transaction {
 				Type:                "transfer",
 				Status:              &status,
 				Account:             &types.AccountIdentifier{Address: "0.0.0"},
-				Amount:              &types.Amount{Value: "400", Currency: config.CurrencyHbar},
+				Amount:              &types.Amount{Value: "400", Currency: CurrencyHbar},
 			},
 		},
 	}

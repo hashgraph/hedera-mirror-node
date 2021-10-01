@@ -24,9 +24,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	tdb "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -38,19 +39,19 @@ const (
 )
 
 var (
-	dbResource      db.DbResource
-	dbClient        *types.DbClient
-	invalidDbClient *types.DbClient
+	dbResource      tdb.DbResource
+	dbClient        interfaces.DbClient
+	invalidDbClient interfaces.DbClient
 )
 
 type integrationTest struct{}
 
 func (*integrationTest) SetupTest() {
-	db.CleanupDb(dbResource.GetDb())
+	tdb.CleanupDb(dbResource.GetDb())
 }
 
 func addTransaction(
-	dbClient *types.DbClient,
+	dbClient interfaces.DbClient,
 	consensusNs int64,
 	entityId *domain.EntityId,
 	nodeAccountId *domain.EntityId,
@@ -76,37 +77,37 @@ func addTransaction(
 		ValidDurationSeconds: 120,
 		ValidStartNs:         validStartNs,
 	}
-	db.CreateDbRecords(dbClient, tx)
+	tdb.CreateDbRecords(dbClient, tx)
 
 	if len(cryptoTransfers) != 0 {
-		db.CreateDbRecords(dbClient, cryptoTransfers)
+		tdb.CreateDbRecords(dbClient, cryptoTransfers)
 	}
 
 	if len(nonFeeTransfers) != 0 {
-		db.CreateDbRecords(dbClient, nonFeeTransfers)
+		tdb.CreateDbRecords(dbClient, nonFeeTransfers)
 	}
 
 	if len(tokenTransfers) != 0 {
-		db.CreateDbRecords(dbClient, tokenTransfers)
+		tdb.CreateDbRecords(dbClient, tokenTransfers)
 	}
 
 	if len(nftTransfers) != 0 {
-		db.CreateDbRecords(dbClient, nftTransfers)
+		tdb.CreateDbRecords(dbClient, nftTransfers)
 	}
 }
 
 func setup() {
-	dbResource = db.SetupDb(true)
-	dbClient = types.NewDbClient(dbResource.GetGormDb(), 0)
+	dbResource = tdb.SetupDb(true)
+	dbClient = db.NewDbClient(dbResource.GetGormDb(), 0)
 
 	config := dbResource.GetDbConfig()
 	config.Password = "bad_password"
 	invalid, _ := gorm.Open(postgres.Open(config.GetDsn()), &gorm.Config{Logger: logger.Discard})
-	invalidDbClient = types.NewDbClient(invalid, 0)
+	invalidDbClient = db.NewDbClient(invalid, 0)
 }
 
 func teardown() {
-	db.TearDownDb(dbResource)
+	tdb.TearDownDb(dbResource)
 }
 
 func TestMain(m *testing.M) {

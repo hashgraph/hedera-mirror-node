@@ -28,11 +28,11 @@ import (
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools"
-	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -51,7 +51,7 @@ var (
 	adminKey, _          = hedera.PublicKeyFromString(adminKeyStr)
 	corruptedTransaction = "0x6767"
 	defaultAccountId1    = hedera.AccountID{Account: 123352}
-	defaultNodes         = types2.NodeMap{
+	defaultNodes         = config.NodeMap{
 		"10.0.0.1:50211": hedera.AccountID{Account: 3},
 		"10.0.0.2:50211": hedera.AccountID{Account: 4},
 		"10.0.0.3:50211": hedera.AccountID{Account: 5},
@@ -209,35 +209,35 @@ func TestNewConstructionAPIService(t *testing.T) {
 	var tests = []struct {
 		name                  string
 		network               string
-		nodes                 types2.NodeMap
+		nodes                 config.NodeMap
 		expectedHederaNetwork map[string]hedera.AccountID
 		wantErr               bool
 	}{
 		{
 			name:                  "Testnet",
 			network:               "testnet",
-			nodes:                 types2.NodeMap{},
+			nodes:                 config.NodeMap{},
 			expectedHederaNetwork: getHederaNetworkByName("testnet"),
 			wantErr:               false,
 		},
 		{
 			name:                  "Previewnet",
 			network:               "previewnet",
-			nodes:                 types2.NodeMap{},
+			nodes:                 config.NodeMap{},
 			expectedHederaNetwork: getHederaNetworkByName("previewnet"),
 			wantErr:               false,
 		},
 		{
 			name:                  "Mainnet",
 			network:               "mainnet",
-			nodes:                 types2.NodeMap{},
+			nodes:                 config.NodeMap{},
 			expectedHederaNetwork: getHederaNetworkByName("mainnet"),
 			wantErr:               false,
 		},
 		{
 			name:                  "Demo",
 			network:               "demo",
-			nodes:                 types2.NodeMap{},
+			nodes:                 config.NodeMap{},
 			expectedHederaNetwork: getHederaNetworkByName("testnet"),
 			wantErr:               false,
 		},
@@ -251,7 +251,7 @@ func TestNewConstructionAPIService(t *testing.T) {
 		{
 			name:                  "OtherWithEmptyNodes",
 			network:               "other",
-			nodes:                 types2.NodeMap{},
+			nodes:                 config.NodeMap{},
 			expectedHederaNetwork: nil,
 			wantErr:               true,
 		},

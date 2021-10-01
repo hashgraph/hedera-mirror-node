@@ -27,9 +27,8 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -54,7 +53,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	var tx interfaces.Transaction
 	var err error
 	transactionId := getTransactionId(*payer, validStartNanos)
-	if t.operationType == config.OperationTypeTokenFreeze {
+	if t.operationType == types.OperationTypeTokenFreeze {
 		tx, err = hedera.NewTokenFreezeTransaction().
 			SetAccountID(*account).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
@@ -71,7 +70,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	}
 
 	if err != nil {
-		return nil, nil, hErrors.ErrInternalServerError
+		return nil, nil, errors.ErrInternalServerError
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
@@ -88,28 +87,28 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(ctx context.Context, t
 
 	switch tx := transaction.(type) {
 	case *hedera.TokenFreezeTransaction:
-		if t.operationType != config.OperationTypeTokenFreeze {
-			return nil, nil, hErrors.ErrTransactionInvalidType
+		if t.operationType != types.OperationTypeTokenFreeze {
+			return nil, nil, errors.ErrTransactionInvalidType
 		}
 
 		account = tx.GetAccountID()
 		payer = *tx.GetTransactionID().AccountID
 		token = tx.GetTokenID()
 	case *hedera.TokenUnfreezeTransaction:
-		if t.operationType != config.OperationTypeTokenUnfreeze {
-			return nil, nil, hErrors.ErrTransactionInvalidType
+		if t.operationType != types.OperationTypeTokenUnfreeze {
+			return nil, nil, errors.ErrTransactionInvalidType
 		}
 
 		account = tx.GetAccountID()
 		payer = *tx.GetTransactionID().AccountID
 		token = tx.GetTokenID()
 	default:
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	dbToken, err := t.tokenRepo.Find(ctx, token.String())
 	if err != nil {
-		return nil, nil, hErrors.ErrTokenNotFound
+		return nil, nil, errors.ErrTokenNotFound
 	}
 
 	operation := &rTypes.Operation{
@@ -158,7 +157,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) GetSdkTransactionType() stri
 func newTokenFreezeTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenFreezeTransaction{}).Name()
 	return &tokenFreezeUnfreezeTransactionConstructor{
-		operationType:   config.OperationTypeTokenFreeze,
+		operationType:   types.OperationTypeTokenFreeze,
 		tokenRepo:       tokenRepo,
 		transactionType: transactionType,
 		validate:        validator.New(),
@@ -168,7 +167,7 @@ func newTokenFreezeTransactionConstructor(tokenRepo interfaces.TokenRepository) 
 func newTokenUnfreezeTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenUnfreezeTransaction{}).Name()
 	return &tokenFreezeUnfreezeTransactionConstructor{
-		operationType:   config.OperationTypeTokenUnfreeze,
+		operationType:   types.OperationTypeTokenUnfreeze,
 		tokenRepo:       tokenRepo,
 		transactionType: transactionType,
 		validate:        validator.New(),
