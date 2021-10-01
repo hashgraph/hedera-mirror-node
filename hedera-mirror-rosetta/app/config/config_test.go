@@ -60,38 +60,20 @@ func TestLoadDefaultConfig(t *testing.T) {
 }
 
 func TestLoadCustomConfig(t *testing.T) {
-	tests := []struct {
-		name                 string
-		useEnvLocationOrFile bool
-	}{
-		{name: "from search path", useEnvLocationOrFile: true},
-		{name: "from env variable"},
-	}
+	tempDir, filePath := createYamlConfigFile(yml, t)
+	defer os.RemoveAll(tempDir)
+	os.Setenv(apiConfigEnvKey, filePath)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tempDir, filePath := createYamlConfigFile(yml, t)
-			defer os.RemoveAll(tempDir)
+	config, err := LoadConfig()
 
-			if tt.useEnvLocationOrFile {
-				os.Setenv(apiConfigLocationEnvKey, tempDir)
-			} else {
-				os.Setenv(apiConfigEnvKey, filePath)
-			}
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	assert.True(t, config.Online)
+	assert.Equal(t, uint16(5431), config.Db.Port)
+	assert.Equal(t, "foobar", config.Db.Username)
 
-			config, err := LoadConfig()
-
-			assert.NoError(t, err)
-			assert.NotNil(t, config)
-			assert.True(t, config.Online)
-			assert.Equal(t, uint16(5431), config.Db.Port)
-			assert.Equal(t, "foobar", config.Db.Username)
-
-			// reset env
-			os.Unsetenv(apiConfigEnvKey)
-			os.Unsetenv(apiConfigLocationEnvKey)
-		})
-	}
+	// reset env
+	os.Unsetenv(apiConfigEnvKey)
 }
 
 func TestLoadCustomConfigInvalidYaml(t *testing.T) {
@@ -105,14 +87,17 @@ func TestLoadCustomConfigInvalidYaml(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tempDir, _ := createYamlConfigFile(tt.content, t)
+			tempDir, filePath := createYamlConfigFile(tt.content, t)
 			defer os.RemoveAll(tempDir)
-			os.Setenv(apiConfigLocationEnvKey, tempDir)
+			os.Setenv(apiConfigEnvKey, filePath)
 
 			config, err := LoadConfig()
 
 			assert.Error(t, err)
 			assert.Nil(t, config)
+
+			// reset env
+			os.Unsetenv(apiConfigEnvKey)
 		})
 	}
 }

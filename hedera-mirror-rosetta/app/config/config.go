@@ -33,12 +33,11 @@ import (
 )
 
 const (
-	apiConfigEnvKey         = "HEDERA_MIRROR_ROSETTA_API_CONFIG"
-	apiConfigLocationEnvKey = "HEDERA_MIRROR_ROSETTA_API_CONFIG_LOCATION"
-	configName              = "application"
-	configTypeYaml          = "yml"
-	envKeyDelimiter         = "_"
-	keyDelimiter            = "::"
+	apiConfigEnvKey = "HEDERA_MIRROR_ROSETTA_API_CONFIG"
+	configName      = "application"
+	configTypeYaml  = "yml"
+	envKeyDelimiter = "_"
+	keyDelimiter    = "::"
 )
 
 // LoadConfig loads configuration from yaml files and env variables
@@ -52,9 +51,6 @@ func LoadConfig() (*Rosetta, error) {
 	} else {
 		// only set config name and config paths when no config file env variable is set
 		v.SetConfigName(configName)
-		if envConfigLocation, ok := os.LookupEnv(apiConfigLocationEnvKey); ok {
-			v.AddConfigPath(envConfigLocation)
-		}
 		v.AddConfigPath(".")
 	}
 
