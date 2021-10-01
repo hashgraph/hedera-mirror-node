@@ -391,7 +391,7 @@ Name                                                    | Default               
 `hedera.mirror.rosetta.db.username`                     | mirror_rosetta          | The username the processor uses to connect to the database
 `hedera.mirror.rosetta.log.level`                       | info                    | The log level
 `hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
-`hedera.mirror.rosetta.nodes`                           | {}                      | A map of main nodes with its service endpoint and node account id
+`hedera.mirror.rosetta.nodes`                           | {}                      | A map of main nodes with its service endpoint as the key and the node account id as its value
 `hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime
 `hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface
 `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port
