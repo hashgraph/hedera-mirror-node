@@ -95,6 +95,8 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         }
 
         try {
+            init(connection);
+
             // copy items to temp table
             copyItems(items, connection);
 

@@ -31,6 +31,8 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.sql")
 public class SqlProperties {
 
+    private boolean asynchronous = true;
+
     @Min(1)
     private int batchSize = 20_000;
 

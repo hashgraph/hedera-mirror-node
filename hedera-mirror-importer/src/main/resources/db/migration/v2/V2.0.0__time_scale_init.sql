@@ -3,6 +3,8 @@
 -- Supports mirror nodes migrated from v1.0
 -------------------
 
+set experimental_enable_hash_sharded_indexes = on;
+
 -- Create enums for tables
 CREATE TYPE token_supply_type AS ENUM ('INFINITE', 'FINITE');
 CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');

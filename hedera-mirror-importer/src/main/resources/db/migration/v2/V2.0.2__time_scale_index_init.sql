@@ -2,13 +2,15 @@
 -- Add constraints and indexes to tables
 -------------------
 
+set experimental_enable_hash_sharded_indexes = on;
+
 -- assessed_custom_fee
 create index if not exists assessed_custom_fee__consensus_timestamp
     on assessed_custom_fee (consensus_timestamp);
 
 -- account_balance
 create index if not exists account_balance__account_timestamp
-    on account_balance (account_id desc, consensus_timestamp desc);
+    on account_balance (account_id desc, consensus_timestamp desc) using hash with bucket_count = 8;
 
 -- account_balance_file
 create unique index if not exists account_balance_file__name
@@ -23,9 +25,9 @@ create unique index if not exists account_balance_file__name
 -- contract_result
 
 -- crypto_transfer
--- create index if not exists crypto_transfer__entity_id_consensus_timestamp
---     on crypto_transfer (entity_id, consensus_timestamp)
---     where entity_id != 98;
+create index if not exists crypto_transfer__entity_id_consensus_timestamp
+    on crypto_transfer (entity_id, consensus_timestamp) using hash with bucket_count = 8
+    where entity_id != 98;
 -- id corresponding to treasury address 0.0.98
 
 -- custom_fee
@@ -50,6 +52,7 @@ create unique index if not exists event_file__hash
     on event_file (hash, consensus_end);
 
 -- file_data
+create index if not exists file_data__entity_id on file_data (entity_id) using hash with bucket_count = 8;
 
 -- live_hash
 
@@ -91,17 +94,17 @@ create unique index if not exists t_transaction_types_name
 
 -- token_transfer
 create index if not exists token_transfer__account_timestamp
-    on token_transfer (account_id, consensus_timestamp desc);
+    on token_transfer (account_id, consensus_timestamp desc) using hash with bucket_count = 8;
 
 -- topic_message
 create index if not exists topic_message__realm_num_timestamp
-    on topic_message (realm_num, topic_num, consensus_timestamp);
+    on topic_message (topic_num, consensus_timestamp) using hash with bucket_count = 8;
 create index if not exists topic_message__topic_num_realm_num_seqnum
-    on topic_message (realm_num, topic_num, sequence_number, consensus_timestamp);
+    on topic_message (topic_num, sequence_number, consensus_timestamp);
 
 -- transaction
 create index if not exists transaction__transaction_id
-    on transaction (valid_start_ns, payer_account_id);
+    on transaction (valid_start_ns, payer_account_id) using hash with bucket_count = 8;
 create index if not exists transaction__payer_account_id
     on transaction (payer_account_id, consensus_ns);
 create index if not exists transaction_type

@@ -21,13 +21,16 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import com.google.common.base.Stopwatch;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -131,6 +134,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     // during upsert pgcopy, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
+    private final ExecutorService executorService;
 
     public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
                              DataSource dataSource,
@@ -145,6 +149,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
         this.eventPublisher = eventPublisher;
+        this.executorService = Executors.newFixedThreadPool(17);
 
         // insert only tables
         assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, recordParserProperties);
@@ -253,39 +258,64 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     }
 
     private void executeBatches() {
-        Connection connection = null;
+        final Connection connection = DataSourceUtils.getConnection(dataSource);
 
         try {
             // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
 
-            connection = DataSourceUtils.getConnection(dataSource);
             Stopwatch stopwatch = Stopwatch.createStarted();
 
-            // insert only operations
-            assessedCustomFeePgCopy.copy(assessedCustomFees, connection);
-            contractResultPgCopy.copy(contractResults, connection);
-            cryptoTransferPgCopy.copy(cryptoTransfers, connection);
-            customFeePgCopy.copy(customFees, connection);
-            fileDataPgCopy.copy(fileData, connection);
-            liveHashPgCopy.copy(liveHashes, connection);
-            topicMessagePgCopy.copy(topicMessages, connection);
-            transactionPgCopy.copy(transactions, connection);
-            transactionSignaturePgCopy.copy(transactionSignatures, connection);
+            if (sqlProperties.isAsynchronous()) {
+                List<Callable<Object>> tasks = new ArrayList<>(15);
+                tasks.add(Executors.callable(() -> copy(assessedCustomFeePgCopy, assessedCustomFees, connection)));
+                tasks.add(Executors.callable(() -> copy(contractResultPgCopy, contractResults, connection)));
+                tasks.add(Executors.callable(() -> copy(cryptoTransferPgCopy, cryptoTransfers, connection)));
+                tasks.add(Executors.callable(() -> copy(customFeePgCopy, customFees, connection)));
+                tasks.add(Executors.callable(() -> copy(entityPgCopy, entities.values(), connection)));
+                tasks.add(Executors.callable(() -> copy(fileDataPgCopy, fileData, connection)));
+                tasks.add(Executors.callable(() -> copy(liveHashPgCopy, liveHashes, connection)));
+                tasks.add(Executors.callable(() -> copy(nftTransferPgCopy, nftTransfers, connection)));
+                tasks.add(Executors.callable(() -> copy(nonFeeTransferPgCopy, nonFeeTransfers, connection)));
+                tasks.add(Executors.callable(() -> copy(schedulePgCopy, schedules.values(), connection)));
+                tasks.add(Executors.callable(() -> copy(tokenPgCopy, tokens.values(), connection)));
+                tasks.add(Executors.callable(() -> copy(tokenTransferPgCopy, tokenTransfers, connection)));
+                tasks.add(Executors.callable(() -> copy(topicMessagePgCopy, topicMessages, connection)));
+                tasks.add(Executors.callable(() -> copy(transactionPgCopy, transactions, connection)));
+                tasks.add(Executors.callable(() -> copy(transactionSignaturePgCopy, transactionSignatures,
+                        connection)));
+                executorService.invokeAll(tasks);
 
-            // insert operations with conflict management
-            entityPgCopy.copy(entities.values(), connection);
-            tokenPgCopy.copy(tokens.values(), connection);
-            // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            tokenAccountPgCopy.copy(tokenAccounts, connection);
-            nftPgCopy.copy(nfts.values(), connection); // persist nft after token entity
-            schedulePgCopy.copy(schedules.values(), connection);
+                List<Callable<Object>> dependentTasks = new ArrayList<>(15);
+                dependentTasks.add(Executors.callable(() -> copy(nftPgCopy, nfts.values(), connection)));
+                dependentTasks.add(Executors.callable(() -> copy(tokenAccountPgCopy, tokenAccounts, connection)));
+                executorService.invokeAll(dependentTasks);
+            } else {
+                // insert only operations
+                assessedCustomFeePgCopy.copy(assessedCustomFees, connection);
+                contractResultPgCopy.copy(contractResults, connection);
+                cryptoTransferPgCopy.copy(cryptoTransfers, connection);
+                customFeePgCopy.copy(customFees, connection);
+                fileDataPgCopy.copy(fileData, connection);
+                liveHashPgCopy.copy(liveHashes, connection);
+                topicMessagePgCopy.copy(topicMessages, connection);
+                transactionPgCopy.copy(transactions, connection);
+                transactionSignaturePgCopy.copy(transactionSignatures, connection);
 
-            // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
-            nftTransferPgCopy.copy(nftTransfers, connection);
-            tokenTransferPgCopy.copy(tokenTransfers, connection);
+                // insert operations with conflict management
+                entityPgCopy.copy(entities.values(), connection);
+                tokenPgCopy.copy(tokens.values(), connection);
+                // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
+                tokenAccountPgCopy.copy(tokenAccounts, connection);
+                nftPgCopy.copy(nfts.values(), connection); // persist nft after token entity
+                schedulePgCopy.copy(schedules.values(), connection);
 
+                // transfers operations should be last to ensure insert logic completeness, entities should already
+                // exist
+                nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
+                nftTransferPgCopy.copy(nftTransfers, connection);
+                tokenTransferPgCopy.copy(tokenTransfers, connection);
+            }
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
@@ -294,6 +324,19 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
         } finally {
             cleanup();
             DataSourceUtils.releaseConnection(connection, dataSource);
+        }
+    }
+
+    private void copy(PgCopy pgCopy, Collection<?> collection, Connection connection) {
+        if (collection == null || collection.isEmpty()) {
+            return;
+        }
+
+        try {
+            pgCopy.copy(collection, connection);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+            throw e;
         }
     }
 
