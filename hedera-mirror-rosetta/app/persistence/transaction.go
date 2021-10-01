@@ -235,36 +235,6 @@ func NewTransactionRepository(dbClient *types2.DbClient) interfaces.TransactionR
 	return &transactionRepository{dbClient: dbClient}
 }
 
-// Types returns map of all transaction types
-func (tr *transactionRepository) Types(ctx context.Context) (map[int]string, *rTypes.Error) {
-	if tr.types == nil {
-		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
-			return nil, err
-		}
-	}
-	return tr.types, nil
-}
-
-// Results returns map of all transaction results
-func (tr *transactionRepository) Results(ctx context.Context) (map[int]string, *rTypes.Error) {
-	if tr.results == nil {
-		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
-			return nil, err
-		}
-	}
-	return tr.results, nil
-}
-
-// TypesAsArray returns all Transaction type names as an array
-func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
-	transactionTypes, err := tr.Types(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return tools.GetStringValuesFromIntStringMap(transactionTypes), nil
-}
-
-// FindBetween retrieves all Transactions between the provided start and end timestamp
 func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int64) (
 	[]*types.Transaction,
 	*rTypes.Error,
@@ -322,7 +292,6 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 	return res, nil
 }
 
-// FindByHashInBlock retrieves a transaction by Hash
 func (tr *transactionRepository) FindByHashInBlock(
 	ctx context.Context,
 	hashStr string,
@@ -358,6 +327,32 @@ func (tr *transactionRepository) FindByHashInBlock(
 	}
 
 	return transaction, nil
+}
+
+func (tr *transactionRepository) Results(ctx context.Context) (map[int]string, *rTypes.Error) {
+	if tr.results == nil {
+		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
+			return nil, err
+		}
+	}
+	return tr.results, nil
+}
+
+func (tr *transactionRepository) Types(ctx context.Context) (map[int]string, *rTypes.Error) {
+	if tr.types == nil {
+		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
+			return nil, err
+		}
+	}
+	return tr.types, nil
+}
+
+func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
+	transactionTypes, err := tr.Types(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return tools.GetStringValuesFromIntStringMap(transactionTypes), nil
 }
 
 func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) ([]transactionType, *rTypes.Error) {

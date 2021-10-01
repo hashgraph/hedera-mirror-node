@@ -24,11 +24,25 @@ import "github.com/hashgraph/hedera-sdk-go/v2"
 
 // Transaction defines the transaction methods used by constructor service
 type Transaction interface {
+
+	// Execute submits the Transaction to the network using client
 	Execute(client *hedera.Client) (hedera.TransactionResponse, error)
+
+	// GetNodeAccountIDs returns the node accounts ids set for the Transaction
 	GetNodeAccountIDs() []hedera.AccountID
+
+	// GetSignatures returns the signatures of the Transaction
 	GetSignatures() (map[hedera.AccountID]map[*hedera.PublicKey][]byte, error)
+
+	// GetTransactionHash returns the transaction hash
 	GetTransactionHash() ([]byte, error)
+
+	// GetTransactionID returns the transaction id
 	GetTransactionID() hedera.TransactionID
+
+	// ToBytes serializes the Transaction to a byte slice
 	ToBytes() ([]byte, error)
+
+	// String encodes the Transaction to a string
 	String() string
 }

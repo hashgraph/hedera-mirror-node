@@ -532,10 +532,6 @@
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>
-                                            <token><![CDATA[(?<=\sVersion:     ")[0-9a-zA-Z.-]+]]></token>
-                                            <value>${release.version}</value>
-                                        </replacement>
-                                        <replacement>
                                             <token>
                                                 <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
                                             <value>${docker.tag.version}</value>

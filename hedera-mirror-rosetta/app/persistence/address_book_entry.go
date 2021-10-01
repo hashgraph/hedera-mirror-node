@@ -61,7 +61,6 @@ type addressBookEntryRepository struct {
 	dbClient *types2.DbClient
 }
 
-// Entries return all found Address Book Entries
 func (aber *addressBookEntryRepository) Entries(ctx context.Context) (*types.AddressBookEntries, *rTypes.Error) {
 	db, cancel := aber.dbClient.GetDbWithContext(ctx)
 	defer cancel()

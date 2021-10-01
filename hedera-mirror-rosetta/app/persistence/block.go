@@ -132,7 +132,6 @@ func NewBlockRepository(dbClient *types2.DbClient) interfaces.BlockRepository {
 	return &blockRepository{dbClient: dbClient, genesisConsensusStart: genesisConsensusStartUnset}
 }
 
-// FindByHash retrieves a block by a given Hash
 func (br *blockRepository) FindByHash(ctx context.Context, hash string) (*types.Block, *rTypes.Error) {
 	if hash == "" {
 		return nil, hErrors.ErrInvalidArgument
@@ -145,7 +144,6 @@ func (br *blockRepository) FindByHash(ctx context.Context, hash string) (*types.
 	return br.findBlockByHash(ctx, hash)
 }
 
-// FindByIdentifier retrieves a block by Index && Hash
 func (br *blockRepository) FindByIdentifier(ctx context.Context, index int64, hash string) (
 	*types.Block,
 	*rTypes.Error,
@@ -170,7 +168,6 @@ func (br *blockRepository) FindByIdentifier(ctx context.Context, index int64, ha
 	return block, nil
 }
 
-// FindByIndex retrieves a block by given Index
 func (br *blockRepository) FindByIndex(ctx context.Context, index int64) (*types.Block, *rTypes.Error) {
 	if index < 0 {
 		return nil, hErrors.ErrInvalidArgument
@@ -183,7 +180,6 @@ func (br *blockRepository) FindByIndex(ctx context.Context, index int64) (*types
 	return br.findBlockByIndex(ctx, index)
 }
 
-// RetrieveGenesis retrieves the genesis block
 func (br *blockRepository) RetrieveGenesis(ctx context.Context) (*types.Block, *rTypes.Error) {
 	if err := br.initGenesisRecordFile(ctx); err != nil {
 		return nil, err
@@ -192,8 +188,6 @@ func (br *blockRepository) RetrieveGenesis(ctx context.Context) (*types.Block, *
 	return br.findBlockByIndex(ctx, 0)
 }
 
-// RetrieveLatest retrieves the second latest block. It's required to hide the latest block so account service can
-// add 0-amount genesis token balance to a block for tokens whose first transfer to the account is in the next block
 func (br *blockRepository) RetrieveLatest(ctx context.Context) (*types.Block, *rTypes.Error) {
 	if err := br.initGenesisRecordFile(ctx); err != nil {
 		return nil, err

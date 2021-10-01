@@ -147,9 +147,6 @@ func NewAccountRepository(dbClient *types2.DbClient) interfaces.AccountRepositor
 	return &accountRepository{dbClient}
 }
 
-// RetrieveBalanceAtBlock returns the hbar balance and token balances of the account at a given block (
-// provided by consensusEnd timestamp).
-// balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
 func (ar *accountRepository) RetrieveBalanceAtBlock(
 	ctx context.Context,
 	accountId int64,
@@ -175,8 +172,6 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	return amounts, nil
 }
 
-// RetrieveEverOwnedTokensByBlockAfter returns the tokens the account has ever owned by the end of the block after
-// consensusEnd
 func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(
 	ctx context.Context,
 	accountId int64,
