@@ -6,7 +6,8 @@
 FROM golang:1.17.1 as rosetta-builder
 COPY hedera-mirror-rosetta /hedera-mirror-rosetta
 WORKDIR /hedera-mirror-rosetta
-RUN go build -o rosetta-executable
+ARG VERSION=development
+RUN go build -ldflags="-w -s -X main.Version=${VERSION}" -o hedera-mirror-rosetta
 
 # ---------------------------- Importer ----------------------------- #
 FROM openjdk:11.0 as java-builder
@@ -62,7 +63,7 @@ USER root
 
 # Copy the Rosetta Executable from the Rosetta Builder stage
 WORKDIR /var/rosetta
-COPY --from=rosetta-builder /hedera-mirror-rosetta/rosetta-executable .
+COPY --from=rosetta-builder /hedera-mirror-rosetta/hedera-mirror-rosetta .
 
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer

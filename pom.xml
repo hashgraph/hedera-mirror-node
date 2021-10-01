@@ -519,7 +519,6 @@
                                         <include>hedera-mirror-rest/**/openapi.yml</include>
                                         <include>hedera-mirror-rest/package*.json</include>
                                         <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
-                                        <include>hedera-mirror-rosetta/cmd/default_config.go</include>
                                     </includes>
                                     <replacements>
                                         <replacement>

@@ -40,6 +40,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const moduleName = "hedera-mirror-rosetta"
+
+var Version = "development"
+
 func configLogger(level string) {
 	var err error
 	var logLevel log.Level
@@ -147,6 +151,8 @@ func main() {
 		log.Fatalf("Failed to load config: %s", err)
 	}
 
+	log.Infof("%s version %s, rosetta api version %s", moduleName, Version, rosettaConfig.ApiVersion)
+
 	configLogger(rosettaConfig.Log.Level)
 
 	network := &rTypes.NetworkIdentifier{
@@ -160,7 +166,7 @@ func main() {
 	version := &rTypes.Version{
 		RosettaVersion:    rosettaConfig.ApiVersion,
 		NodeVersion:       rosettaConfig.NodeVersion,
-		MiddlewareVersion: &rosettaConfig.Version,
+		MiddlewareVersion: &Version,
 	}
 
 	asserter, err := asserter.NewServer(

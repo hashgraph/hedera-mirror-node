@@ -49,7 +49,6 @@ type Rosetta struct {
 	Port        uint16
 	Realm       string
 	Shard       string
-	Version     string
 }
 
 type Db struct {
