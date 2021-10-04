@@ -321,6 +321,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.maxLimit`                            | 1000                    | The maximum size the limit parameter can be that controls the REST API response size           |
 | `hedera.mirror.rest.maxRepeatedQueryParameters`          | 100                     | The maximum number of times any query parameter can be repeated in the uri                     |
 | `hedera.mirror.rest.log.level`                           | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
+| `hedera.mirror.rest.network.unreleasedSupplyAccounts`    | [0.0.2, 0.0.42, ...]    | An array of account IDs whose aggregated balance subtracted from the total supply is the released supply |
 | `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
 | `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
 | `hedera.mirror.rest.metrics.config.authentication`       | true                    | Whether access to metrics for the REST API is authenticated                                    |

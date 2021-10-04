@@ -95,7 +95,7 @@ class MonitorConfiguration {
                 .doOnNext(mirrorSubscriber::onPublish)
                 .onErrorContinue(PublishException.class, (t, r) -> publishMetrics.onError((PublishException) t))
                 .onErrorContinue((t, r) -> log.error("Unexpected error during publish flow: ", t))
-                .doFinally(s -> log.warn("Stopped after {} signal", s))
+                .doFinally(s -> log.warn("Stopped publisher after {} signal", s))
                 .doOnSubscribe(s -> log.info("Starting publisher flow"))
                 .subscribeOn(Schedulers.single())
                 .subscribe(publishMetrics::onSuccess);
@@ -115,7 +115,7 @@ class MonitorConfiguration {
                 .name("subscribe")
                 .metrics()
                 .onErrorContinue((t, r) -> log.error("Unexpected error during subscribe: ", t))
-                .doFinally(s -> log.warn("Stopped after {} signal", s))
+                .doFinally(s -> log.warn("Stopped subscribe after {} signal", s))
                 .doOnSubscribe(s -> log.info("Starting subscribe flow"))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(subscribeMetrics::onNext);

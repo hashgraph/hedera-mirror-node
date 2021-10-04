@@ -37,6 +37,8 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class NftTransferId implements Serializable {
 
+    public static final long WILDCARD_SERIAL_NUMBER = -1;
+
     private static final long serialVersionUID = -5289483288889859240L;
 
     private long consensusTimestamp;

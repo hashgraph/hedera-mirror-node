@@ -72,6 +72,26 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - balances
+  /api/v1/network/supply:
+    get:
+      summary: Get the network supply
+      description: Returns the network's released supply of hbars
+      operationId: getNetworkSupply
+      parameters:
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkSupplyResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - network
   /api/v1/schedules:
     get:
       summary: List schedules entities
@@ -604,6 +624,20 @@ components:
             $ref: '#/components/schemas/AccountBalance'
         links:
           $ref: '#/components/schemas/Links'
+    NetworkSupplyResponse:
+      type: object
+      properties:
+        released_supply:
+          description: The network's released supply of hbars in tinybars
+          example: "3999999999999999949"
+          type: string
+        timestamp:
+          description: The consensus timestamp at which the released supply was valid
+          $ref: '#/components/schemas/Timestamp'
+        total_supply:
+          description: The network's total supply of hbars in tinybars
+          example: "5000000000000000000"
+          type: string
     SchedulesResponse:
       type: object
       properties:
@@ -759,7 +793,7 @@ components:
         - tokens
       properties:
         timestamp:
-          type: string
+          $ref: '#/components/schemas/Timestamp'
         balance:
           type: number
         tokens:
@@ -781,8 +815,7 @@ components:
       type: object
       properties:
         created_timestamp:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/Timestamp'
         fixed_fees:
           type: array
           items:
@@ -894,8 +927,7 @@ components:
         account_id:
           $ref: '#/components/schemas/EntityId'
         created_timestamp:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/Timestamp'
         deleted:
           type: boolean
         metadata:
@@ -903,8 +935,7 @@ components:
           type: string
           format: byte
         modified_timestamp:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/Timestamp'
         serial_number:
           type: number
         token_id:
@@ -925,7 +956,7 @@ components:
       type: object
       properties:
         consensus_timestamp:
-          type: string
+          $ref: '#/components/schemas/Timestamp'
         transaction_id:
           type: string
         receiver_account_id:
@@ -953,14 +984,12 @@ components:
         admin_key:
           $ref: '#/components/schemas/Key'
         consensus_timestamp:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/Timestamp'
         creator_account_id:
           $ref: '#/components/schemas/EntityId'
         executed_timestamp:
-          type: string
+          $ref: '#/components/schemas/Timestamp'
           nullable: true
-          example: "1234567890.000000100"
         memo:
           type: string
           example: 'created on 02/10/2021'
@@ -984,8 +1013,7 @@ components:
       type: object
       properties:
         consensus_timestmap:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/Timestamp'
         public_key_prefix:
           type: string
           format: byte
@@ -1033,6 +1061,7 @@ components:
     Timestamp:
       type: string
       example: "1586567700.453054000"
+      pattern: '/^\d{1,10}(\.\d{1,9})?$'
     Token:
       type: object
       properties:
@@ -1093,8 +1122,7 @@ components:
           example: null
           nullable: true
         created_timestamp:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/Timestamp'
         decimals:
           type: string
           example: 1000
@@ -1120,8 +1148,7 @@ components:
           type: string
           example: "9223372036854775807"
         modified_timestamp:
-          type: string
-          example: "1234567890.000000001"
+          $ref: '#/components/schemas/Timestamp'
         name:
           type: string
           example: Token name
@@ -1184,6 +1211,7 @@ components:
         - TOKENCREATION
         - TOKENDELETION
         - TOKENDISSOCIATE
+        - TOKENFEESCHEDULEUPDATE
         - TOKENFREEZE
         - TOKENGRANTKYC
         - TOKENMINT
@@ -1200,7 +1228,7 @@ components:
       type: object
       properties:
         consensus_timestamp:
-          type: string
+          $ref: '#/components/schemas/Timestamp'
         topic_id:
           $ref: '#/components/schemas/EntityId'
         message:
@@ -1235,7 +1263,7 @@ components:
       type: object
       properties:
         consensus_timestamp:
-          type: string
+          $ref: '#/components/schemas/Timestamp'
         entity_id:
           $ref: '#/components/schemas/EntityId'
         bytes:
@@ -1245,7 +1273,7 @@ components:
           type: string
           format: byte
         valid_start_timestamp:
-          type: string
+          $ref: '#/components/schemas/Timestamp'
         charged_tx_fee:
           type: number
         memo_base64:
@@ -1253,7 +1281,7 @@ components:
         result:
           type: string
         name:
-          type: string
+          $ref: '#/components/schemas/TransactionTypes'
         nft_transfers:
           type: array
           items:
@@ -1631,8 +1659,7 @@ components:
         type: array
         items:
           type: string
-          format: >
-            ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
+          format: ^((eq|gt|gte|lt|lte|ne):)?\d{1,10}(.\d{1,9})?$
     tokenInfoTimestampQueryParam:
       name: timestamp
       in: query
@@ -1664,14 +1691,13 @@ components:
           value: lte:1234567890.000000700
       schema:
         type: string
-        format: >
-          ^(\d{1,10}.\d{1,9}|gte?:\d{1,10}.\d{1,9}|lte?:\d{1,10}.\d{1,9}|eq:\d{1,10}.\d{1,9}|ne:\d{1,10}.\d{1,9})$
+        format: ^((eq|lt|lte):)?\d{1,10}(.\d{1,9})?$
     transactionTypeQueryParam:
       name: transactiontype
       in: query
       example: cryptotransfer
       schema:
-        type: string
+        $ref: '#/components/schemas/TransactionTypes'
     transactionIdPathParam:
       name: transactionId
       in: path

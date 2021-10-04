@@ -153,16 +153,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
             return EMPTY_CLAUSE;
         }
 
-        StringBuilder updateQueryBuilder = new StringBuilder("update " + getFinalTableName() + " set ");
-
-        updateQueryBuilder.append(getUpdateClause());
-
-        updateQueryBuilder.append(" from " + getTemporaryTableName());
-
-        // insertable query
-        updateQueryBuilder.append(getUpdateWhereClause());
-
-        return updateQueryBuilder.toString();
+        return StringUtils.joinWith(
+                " ",
+                "update", getFinalTableName(), "set",
+                getUpdateClause(),
+                "from", getTemporaryTableName(),
+                getUpdateWhereClause()
+        );
     }
 
     private boolean isNullableColumn(String columnName) {
@@ -341,10 +338,10 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         List<DomainField> updatableAttributes = getAttributes().stream()
                 .filter(x -> !getNonUpdatableColumns().contains(x.getName())) // filter out non-updatable fields
                 .map(a -> new DomainField(extractJavaType(a), a.getName()))
+                .sorted(DOMAIN_FIELD_COMPARATOR) // sort fields alphabetically
                 .collect(Collectors.toList());
-        Collections.sort(updatableAttributes, DOMAIN_FIELD_COMPARATOR); // sort fields alphabetically
         updatableAttributes.forEach(d -> {
-            String attributeUpdateQuery = "";
+            String attributeUpdateQuery;
             // get column custom update implementations
             String columnSelectQuery = getAttributeUpdateQuery(d.getName());
             if (!StringUtils.isEmpty(columnSelectQuery)) {

@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import com.google.common.base.Stopwatch;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -72,6 +71,7 @@ import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.NftUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.TokenAccountUpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
 @Log4j2
@@ -103,6 +103,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     private final UpsertPgCopy<Nft> nftPgCopy;
     private final UpsertPgCopy<Schedule> schedulePgCopy;
     private final UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
+    private final UpsertPgCopy<TokenTransfer> tokenDissociateTransferPgCopy;
     private final UpsertPgCopy<Token> tokenPgCopy;
 
     // lists of insert only domains
@@ -115,6 +116,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
     private final Collection<NftTransfer> nftTransfers;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<TokenAccount> tokenAccounts;
+    private final Collection<TokenTransfer> tokenDissociateTransfers;
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
@@ -169,6 +171,8 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
                 scheduleUpsertQueryGenerator);
         tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
                 tokenAccountUpsertQueryGenerator);
+        tokenDissociateTransferPgCopy = new UpsertPgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties,
+                new TokenDissociateTransferUpsertQueryGenerator());
         tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
                 tokenUpsertQueryGenerator);
 
@@ -180,6 +184,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
         liveHashes = new ArrayList<>();
         nftTransfers = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
+        tokenDissociateTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
         topicMessages = new ArrayList<>();
@@ -232,6 +237,7 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
             tokenAccounts.clear();
             tokenAccountState.clear();
             tokens.clear();
+            tokenDissociateTransfers.clear();
             tokenTransfers.clear();
             transactions.clear();
             transactionSignatures.clear();
@@ -274,6 +280,9 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
             nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
             nftTransferPgCopy.copy(nftTransfers, connection);
             tokenTransferPgCopy.copy(tokenTransfers, connection);
+
+            // handle the transfers from token dissociate transactions after nft is processed
+            tokenDissociateTransferPgCopy.copy(tokenDissociateTransfers, connection);
 
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
@@ -363,6 +372,11 @@ public class SqlEntityListener extends AbstractEntityListener implements RecordS
 
     @Override
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
+        if (tokenTransfer.isTokenDissociate()) {
+            tokenDissociateTransfers.add(tokenTransfer);
+            return;
+        }
+
         tokenTransfers.add(tokenTransfer);
     }
 

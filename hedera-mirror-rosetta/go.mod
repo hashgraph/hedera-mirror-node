@@ -6,7 +6,7 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/hashgraph/hedera-sdk-go/v2 v2.2.0
-	github.com/hellofresh/health-go/v4 v4.4.3
+	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/lib/pq v1.10.3
 	github.com/onrik/gorm-logrus v0.3.0
 	github.com/ory/dockertest/v3 v3.8.0
@@ -18,7 +18,7 @@ require (
 	github.com/thanhpk/randstr v1.0.4
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.27.1
-	gorm.io/driver/postgres v1.1.1
+	gorm.io/driver/postgres v1.1.2
 	gorm.io/gorm v1.21.15
 )
 
@@ -91,7 +91,7 @@ require (
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63 // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20210907225631-ff17edfbf26d // indirect
 	golang.org/x/sys v0.0.0-20210906170528-6f6e22806c34 // indirect
 	golang.org/x/text v0.3.7 // indirect

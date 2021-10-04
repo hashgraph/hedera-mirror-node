@@ -35,13 +35,12 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.DecoderException;
+import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -141,7 +140,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onCryptoTransferList() throws Exception {
+    void onCryptoTransferList() {
         // given
         CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
         CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
@@ -159,7 +158,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNonFeeTransfer() throws Exception {
+    void onNonFeeTransfer() {
         // given
         NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
                 .of(0L, 0L, 1L, ACCOUNT)));
@@ -179,7 +178,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTopicMessage() throws Exception {
+    void onTopicMessage() {
         // given
         TopicMessage topicMessage = getTopicMessage();
 
@@ -194,7 +193,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onFileData() throws Exception {
+    void onFileData() {
         // given
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
                 .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
@@ -210,7 +209,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onContractResult() throws Exception {
+    void onContractResult() {
         // given
         ContractResult expectedContractResult = new ContractResult(15L, "function parameters".getBytes(),
                 10000L, "call result".getBytes(), 10000L);
@@ -226,7 +225,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onLiveHash() throws Exception {
+    void onLiveHash() {
         // given
         LiveHash expectedLiveHash = new LiveHash(20L, "live hash".getBytes());
 
@@ -241,7 +240,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTransaction() throws Exception {
+    void onTransaction() {
         // given
         var expectedTransaction = makeTransaction();
 
@@ -257,7 +256,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     @Transactional
-    void onEntityId() throws Exception {
+    void onEntityId() {
         // given
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
 
@@ -272,7 +271,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onEntityIdDuplicates() throws Exception {
+    void onEntityIdDuplicates() {
         // given
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
 
@@ -293,7 +292,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onEntityMerge() throws Exception {
+    void onEntityMerge() {
         // given
         Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
                 null, null, false, null, null);
@@ -327,7 +326,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onEntityEntityIdMerge() throws Exception {
+    void onEntityEntityIdMerge() {
         // given
         Entity entity = getEntity(1, 1L, 1L, "memo-updated", keyFromString(KEY),
                 EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, keyFromString(KEY2));
@@ -354,7 +353,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNft() throws Exception {
+    void onNft() {
         // create token first
         EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.3", TOKEN);
@@ -391,7 +390,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNftMintOutOfOrder() throws Exception {
+    void onNftMintOutOfOrder() {
         // create token first
         EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.3", TOKEN);
@@ -428,7 +427,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNftDomainTransfer() throws Exception {
+    void onNftDomainTransfer() {
         // create token first
         EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.3", TOKEN);
@@ -470,7 +469,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNftTransferOwnershipAndDelete() throws Exception {
+    void onNftTransferOwnershipAndDelete() {
         // create token first
         EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
         EntityId accountId1 = EntityId.of("0.0.2", ACCOUNT);
@@ -517,7 +516,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNftTransferOwnershipAndDeleteOutOfOrder() throws Exception {
+    void onNftTransferOwnershipAndDeleteOutOfOrder() {
         // create token first
         EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
         EntityId accountId1 = EntityId.of("0.0.2", ACCOUNT);
@@ -563,7 +562,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNftTransfer() throws Exception {
+    void onNftTransfer() {
         NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
         NftTransfer nftTransfer2 = getNftTransfer(2L, "0.0.1", 2L, "0.0.2", "0.0.3");
         NftTransfer nftTransfer3 = getNftTransfer(3L, "0.0.2", 1L, "0.0.2", "0.0.3");
@@ -585,7 +584,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onToken() throws Exception {
+    void onToken() {
         Token token1 = getToken(EntityId.of("0.0.3", TOKEN), EntityId.of("0.0.5", ACCOUNT), 1L, 1L);
         Token token2 = getToken(EntityId.of("0.0.7", TOKEN), EntityId.of("0.0.11", ACCOUNT), 2L, 2L);
 
@@ -602,7 +601,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTokenMerge() throws Exception {
+    void onTokenMerge() {
         EntityId tokenId = EntityId.of("0.0.3", TOKEN);
         EntityId accountId = EntityId.of("0.0.500", ACCOUNT);
 
@@ -625,7 +624,62 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTokenAccount() throws Exception {
+    void onTokenConsecutiveNegativeTotalSupply() {
+        // given
+        EntityId tokenId = EntityId.of("0.0.3", TOKEN);
+        EntityId accountId = EntityId.of("0.0.500", ACCOUNT);
+
+        // save token
+        Token token = getToken(tokenId, accountId, 1L, 1L);
+        sqlEntityListener.onToken(token);
+        completeFileAndCommit();
+
+        // when
+        // two dissociate of the deleted token, both with negative amount
+        Token update = getTokenUpdate(tokenId, 5);
+        update.setTotalSupply(-10L);
+        sqlEntityListener.onToken(update);
+
+        update = getTokenUpdate(tokenId, 6);
+        update.setTotalSupply(-15L);
+        sqlEntityListener.onToken(update);
+
+        completeFileAndCommit(recordFile2);
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactlyInAnyOrder(recordFile1, recordFile2);
+        token.setTotalSupply(token.getTotalSupply() - 25);
+        token.setModifiedTimestamp(6);
+        assertExistsAndEquals(tokenRepository, token, new TokenId(tokenId));
+    }
+
+    @Test
+    void onTokenMergeNegativeTotalSupply() {
+        // given
+        EntityId tokenId = EntityId.of("0.0.3", TOKEN);
+        EntityId accountId = EntityId.of("0.0.500", ACCOUNT);
+
+        // when
+        // create token
+        Token token = getToken(tokenId, accountId, 1L, 1L);
+        sqlEntityListener.onToken(token);
+
+        // token dissociate of the deleted token
+        Token update = getTokenUpdate(tokenId, 5);
+        update.setTotalSupply(-10L);
+        sqlEntityListener.onToken(update);
+
+        completeFileAndCommit();
+
+        // then
+        Token expected = getToken(tokenId, accountId, 1L, 5L);
+        expected.setTotalSupply(expected.getTotalSupply() - 10);
+        assertThat(recordFileRepository.findAll()).containsOnly(recordFile1);
+        assertExistsAndEquals(tokenRepository, expected, new TokenId(tokenId));
+    }
+
+    @Test
+    void onTokenAccount() {
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.5", TOKEN);
 
@@ -656,7 +710,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTokenAccountDissociate() throws Exception {
+    void onTokenAccountDissociate() {
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
 
         // save token entities first
@@ -667,24 +721,24 @@ class SqlEntityListenerTest extends IntegrationTest {
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
-        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, 10L, false, null,
-                null, null);
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, 10L, false, null, null, null);
 
         // when
         sqlEntityListener.onTokenAccount(associate);
         sqlEntityListener.onTokenAccount(dissociate);
-        completeFileAndCommit();
+        completeFileAndCommit(recordFile2);
 
         // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(recordFileRepository.findAll()).containsExactlyInAnyOrder(recordFile1, recordFile2);
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(
                 associate,
-                getTokenAccount(tokenId1, accountId1, 5L, 10L, false, false, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE)
+                getTokenAccount(tokenId1, accountId1, 5L, 10L, false, false, TokenFreezeStatusEnum.NOT_APPLICABLE,
+                        TokenKycStatusEnum.NOT_APPLICABLE)
         );
     }
 
     @Test
-    void onTokenAccountMerge() throws Exception {
+    void onTokenAccountMerge() {
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
 
         // save token entities first
@@ -693,12 +747,11 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
-                null, null);
+        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false, null, null);
         sqlEntityListener.onTokenAccount(tokenAccountAssociate);
 
-        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, 15L, null, null,
-                null, TokenKycStatusEnum.GRANTED);
+        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, 15L, null, null, null,
+                TokenKycStatusEnum.GRANTED);
         sqlEntityListener.onTokenAccount(tokenAccountKyc);
 
         completeFileAndCommit();
@@ -712,7 +765,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTokenAccountReassociate() throws Exception {
+    void onTokenAccountReassociate() {
         List<TokenAccount> expected = new ArrayList<>();
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
 
@@ -722,7 +775,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // token account was associated before this record file
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false, TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED);
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
+                TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED);
         tokenAccountRepository.save(associate);
         expected.add(associate);
 
@@ -733,22 +787,20 @@ class SqlEntityListenerTest extends IntegrationTest {
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, 10L, true, false, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.REVOKED));
 
-        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, 15L, null, null,
-                null, TokenKycStatusEnum.GRANTED);
+        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, 15L, null, null, null,
+                TokenKycStatusEnum.GRANTED);
         sqlEntityListener.onTokenAccount(kycGrant);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, 15L, true, false, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED));
 
-        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, 16L, false, null,
-                null, null);
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, 16L, false, null, null, null);
         sqlEntityListener.onTokenAccount(dissociate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, 16L, false, false, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED));
 
         // associate after dissociate, the token has freeze key with freezeDefault = false, the token also has kyc key,
         // so the new relationship should have UNFROZEN, REVOKED
-        TokenAccount reassociate = getTokenAccount(tokenId1, accountId1, 20L, 20L, true, false,
-                null, null);
+        TokenAccount reassociate = getTokenAccount(tokenId1, accountId1, 20L, 20L, true, false, null, null);
         sqlEntityListener.onTokenAccount(reassociate);
         expected.add(getTokenAccount(tokenId1, accountId1, 20L, 20L, true, false, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED));
@@ -783,7 +835,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTokenAccountMissingLastAssociation() throws Exception {
+    void onTokenAccountMissingLastAssociation() {
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
 
@@ -808,7 +860,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTokenAccountSpanningRecordFiles() throws Exception {
+    void onTokenAccountSpanningRecordFiles() {
         List<TokenAccount> expected = new ArrayList<>();
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
@@ -862,7 +914,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTokenTransfer() throws Exception {
+    void onTokenTransfer() {
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.7", TOKEN);
         EntityId accountId1 = EntityId.of("0.0.5", ACCOUNT);
@@ -887,7 +939,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onSchedule() throws Exception {
+    void onSchedule() {
         EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
         EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
 
@@ -907,7 +959,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onScheduleSignature() throws Exception {
+    void onScheduleSignature() {
         EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
         EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
         EntityId entityId3 = EntityId.of("0.0.300", EntityTypeEnum.SCHEDULE);
@@ -940,7 +992,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onScheduleMerge() throws Exception {
+    void onScheduleMerge() {
         String scheduleId = "0.0.100";
         EntityId entityId = EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE);
 
@@ -963,7 +1015,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertExistsAndEquals(scheduleRepository, scheduleMerged, entityId.getId());
     }
 
-    private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) throws Exception {
+    private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
         assertEquals(expected, actual.get());
@@ -1066,7 +1118,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         return topicMessage;
     }
 
-    private Token getToken(EntityId tokenId, EntityId accountId, Long createdTimestamp, long modifiedTimestamp) throws DecoderException {
+    @SneakyThrows
+    private Token getToken(EntityId tokenId, EntityId accountId, Long createdTimestamp, long modifiedTimestamp) {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
         return getToken(tokenId, accountId, createdTimestamp, modifiedTimestamp, 1000, false, hexKey,
@@ -1094,6 +1147,12 @@ class SqlEntityListenerTest extends IntegrationTest {
         token.setTreasuryAccountId(accountId);
         token.setWipeKey(wipeKey != null ? wipeKey.toByteArray() : null);
 
+        return token;
+    }
+
+    private Token getTokenUpdate(EntityId tokenId, long modifiedTimestamp) {
+        Token token = Token.of(tokenId);
+        token.setModifiedTimestamp(modifiedTimestamp);
         return token;
     }
 
