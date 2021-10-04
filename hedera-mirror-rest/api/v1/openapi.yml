@@ -368,6 +368,10 @@ paths:
                     max_supply: 9223372036854776000
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
+                    pause_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    pause_status: UNPAUSED
                     supply_key:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
@@ -416,6 +420,10 @@ paths:
                     max_supply: 9223372036854776000
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
+                    pause_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    pause_status: UNPAUSED
                     supply_key:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
@@ -1155,6 +1163,12 @@ components:
         memo:
           type: string
           example: "token memo"
+        pause_key:
+          $ref: '#/components/schemas/Key'
+        pause_status:
+          type: string
+          enum: [ NOT_APPLICABLE, PAUSED, UNPAUSED ]
+          example: UNPAUSED
         supply_key:
           $ref: '#/components/schemas/Key'
         supply_type:

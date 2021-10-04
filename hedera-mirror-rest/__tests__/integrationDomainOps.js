@@ -569,6 +569,9 @@ const addToken = async (token) => {
     kyc_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
     name: 'Token name',
+    pause_key: null,
+    pause_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    pause_status: 'UNPAUSED',
     supply_key: null,
     supply_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     supply_type: 'INFINITE',
