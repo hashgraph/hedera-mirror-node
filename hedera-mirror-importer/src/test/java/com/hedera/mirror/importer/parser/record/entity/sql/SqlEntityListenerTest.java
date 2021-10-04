@@ -609,19 +609,19 @@ class SqlEntityListenerTest extends IntegrationTest {
         // save token entities first
         Token token = getToken(tokenId, accountId, 1L, 1L, 1000, false, keyFromString(KEY),
                 1_000_000_000L, null, "FOO COIN TOKEN", null, "FOOTOK", null, null,
-                TokenPauseStatusEnum.NOT_APPLICABLE);
+                TokenPauseStatusEnum.UNPAUSED);
         sqlEntityListener.onToken(token);
 
         Token tokenUpdated = getToken(tokenId, accountId, null, 5L, null, null, null,
                 null, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK", keyFromString(KEY2),
-                keyFromString(KEY2), TokenPauseStatusEnum.NOT_APPLICABLE);
+                keyFromString(KEY2), TokenPauseStatusEnum.UNPAUSED);
         sqlEntityListener.onToken(tokenUpdated);
         completeFileAndCommit();
 
         // then
         Token tokenMerged = getToken(tokenId, accountId, 1L, 5L, 1000, false, keyFromString(KEY),
                 1_000_000_000L, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK",
-                keyFromString(KEY2), keyFromString(KEY2), TokenPauseStatusEnum.NOT_APPLICABLE);
+                keyFromString(KEY2), keyFromString(KEY2), TokenPauseStatusEnum.UNPAUSED);
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertExistsAndEquals(tokenRepository, tokenMerged, new TokenId(tokenId));
     }

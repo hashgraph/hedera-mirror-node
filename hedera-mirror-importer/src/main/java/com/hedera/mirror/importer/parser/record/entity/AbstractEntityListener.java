@@ -108,6 +108,14 @@ public class AbstractEntityListener implements EntityListener {
             cachedToken.setName(newToken.getName());
         }
 
+        if (newToken.getPauseKey() != null) {
+            cachedToken.setPauseKey(newToken.getPauseKey());
+        }
+
+        if (newToken.getPauseStatus() != null) {
+            cachedToken.setPauseStatus(newToken.getPauseStatus());
+        }
+
         if (newToken.getSupplyKey() != null) {
             cachedToken.setSupplyKey(newToken.getSupplyKey());
         }
