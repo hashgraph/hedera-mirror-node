@@ -65,6 +65,7 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
@@ -607,18 +608,20 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // save token entities first
         Token token = getToken(tokenId, accountId, 1L, 1L, 1000, false, keyFromString(KEY),
-                1_000_000_000L, null, "FOO COIN TOKEN", null, "FOOTOK", null);
+                1_000_000_000L, null, "FOO COIN TOKEN", null, "FOOTOK", null, null,
+                TokenPauseStatusEnum.NOT_APPLICABLE);
         sqlEntityListener.onToken(token);
 
         Token tokenUpdated = getToken(tokenId, accountId, null, 5L, null, null, null,
-                null, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK", keyFromString(KEY2));
+                null, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK", keyFromString(KEY2),
+                keyFromString(KEY2), TokenPauseStatusEnum.NOT_APPLICABLE);
         sqlEntityListener.onToken(tokenUpdated);
         completeFileAndCommit();
 
         // then
         Token tokenMerged = getToken(tokenId, accountId, 1L, 5L, 1000, false, keyFromString(KEY),
                 1_000_000_000L, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK",
-                keyFromString(KEY2));
+                keyFromString(KEY2), keyFromString(KEY2), TokenPauseStatusEnum.NOT_APPLICABLE);
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertExistsAndEquals(tokenRepository, tokenMerged, new TokenId(tokenId));
     }
@@ -1123,12 +1126,14 @@ class SqlEntityListenerTest extends IntegrationTest {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build();
         return getToken(tokenId, accountId, createdTimestamp, modifiedTimestamp, 1000, false, hexKey,
-                1_000_000_000L, hexKey, "FOO COIN TOKEN", hexKey, "FOOTOK", hexKey);
+                1_000_000_000L, hexKey, "FOO COIN TOKEN", hexKey, "FOOTOK", hexKey, hexKey,
+                TokenPauseStatusEnum.UNPAUSED);
     }
 
     private Token getToken(EntityId tokenId, EntityId accountId, Long createdTimestamp, long modifiedTimestamp,
                            Integer decimals, Boolean freezeDefault, Key freezeKey, Long initialSupply, Key kycKey,
-                           String name, Key supplyKey, String symbol, Key wipeKey) {
+                           String name, Key supplyKey, String symbol, Key wipeKey, Key pauseKey,
+                           TokenPauseStatusEnum pauseStatus) {
         Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(decimals);
@@ -1139,6 +1144,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         token.setMaxSupply(0L);
         token.setModifiedTimestamp(modifiedTimestamp);
         token.setName(name);
+        token.setPauseKey(pauseKey != null ? pauseKey.toByteArray() : null);
+        token.setPauseStatus(pauseStatus);
         token.setSupplyKey(supplyKey != null ? supplyKey.toByteArray() : null);
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol(symbol);
