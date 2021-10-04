@@ -115,7 +115,6 @@ type combinedAccountBalance struct {
 type accountBalanceChange struct {
 	Value       int64
 	TokenValues string
-	NftValues   string
 }
 
 type nftId struct {
