@@ -33,6 +33,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenId;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 
@@ -73,6 +74,8 @@ class TokenRepositoryTest extends AbstractRepositoryTest {
         token.setKycKey(hexKey);
         token.setModifiedTimestamp(consensusTimestamp);
         token.setName("FOO COIN TOKEN");
+        token.setPauseKey(hexKey);
+        token.setPauseStatus(TokenPauseStatusEnum.PAUSED);
         token.setSupplyKey(hexKey);
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK");
