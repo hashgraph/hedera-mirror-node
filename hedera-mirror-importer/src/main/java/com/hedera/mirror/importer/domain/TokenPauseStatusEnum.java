@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TokenPauseStatusEnum {
 
-    //TODO Check that we need this value.
     NOT_APPLICABLE(0),
 
     PAUSED(1),

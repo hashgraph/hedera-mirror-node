@@ -86,7 +86,7 @@ public class Token {
 
     private byte[] pauseKey;
 
-    @Column(name = "kyc_key_ed25519_hex")
+    @Column(name = "pause_key_ed25519_hex")
     @JsonSerialize(using = NullableStringSerializer.class)
     private String pauseKeyEd25519Hex;
 
