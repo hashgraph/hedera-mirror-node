@@ -39,7 +39,6 @@ type Mirror struct {
 }
 
 type Rosetta struct {
-	ApiVersion  string
 	Db          Db
 	Log         Log
 	Network     string

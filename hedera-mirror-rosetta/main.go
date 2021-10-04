@@ -40,7 +40,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const moduleName = "hedera-mirror-rosetta"
+const (
+	moduleName     = "hedera-mirror-rosetta"
+	rosettaVersion = "1.4.10"
+)
 
 var Version = "development"
 
@@ -151,7 +154,7 @@ func main() {
 		log.Fatalf("Failed to load config: %s", err)
 	}
 
-	log.Infof("%s version %s, rosetta api version %s", moduleName, Version, rosettaConfig.ApiVersion)
+	log.Infof("%s version %s, rosetta api version %s", moduleName, Version, rosettaVersion)
 
 	configLogger(rosettaConfig.Log.Level)
 
@@ -164,7 +167,7 @@ func main() {
 	}
 
 	version := &rTypes.Version{
-		RosettaVersion:    rosettaConfig.ApiVersion,
+		RosettaVersion:    rosettaVersion,
 		NodeVersion:       rosettaConfig.NodeVersion,
 		MiddlewareVersion: &Version,
 	}

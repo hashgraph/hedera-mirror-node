@@ -62,6 +62,13 @@ var (
 		Symbol:   "foobar4",
 		Type:     domain.TokenTypeFungibleCommon,
 	}
+	token5 = domain.Token{
+		TokenId:  domain.MustDecodeEntityId(2005),
+		Decimals: 0,
+		Name:     "foobar5",
+		Symbol:   "foobar5",
+		Type:     domain.TokenTypeNonFungibleUnique,
+	}
 )
 
 func amount() []types.Amount {
@@ -69,6 +76,7 @@ func amount() []types.Amount {
 		&types.HbarAmount{Value: int64(1000)},
 		types.NewTokenAmount(token1, 100),
 		types.NewTokenAmount(token2, 200),
+		types.NewTokenAmount(token5, 2).SetSerialNumbers([]int64{1, 5}),
 	}
 }
 
@@ -113,6 +121,7 @@ func expectedAccountBalanceResponse() *rTypes.AccountBalanceResponse {
 			},
 			types.NewTokenAmount(token1, 100).ToRosetta(),
 			types.NewTokenAmount(token2, 200).ToRosetta(),
+			types.NewTokenAmount(token5, 2).SetSerialNumbers([]int64{1, 5}).ToRosetta(),
 		},
 	}
 }

@@ -379,7 +379,6 @@ The following table lists the available properties along with their default valu
 
 Name                                                    | Default                 | Description
 ------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------
-`hedera.mirror.rosetta.apiVersion`                      | 1.4.10                  | The version of the Rosetta interface the implementation adheres to
 `hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database
 `hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database
 `hedera.mirror.rosetta.db.password`                     | mirror_rosetta_pass     | The database password the processor uses to connect
@@ -397,4 +396,3 @@ Name                                                    | Default               
 `hedera.mirror.rosetta.port`                            | 5700                    | The REST API port
 `hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in
 `hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard
-`hedera.mirror.rosetta.version`                         | Varies per release      | The version of the Hedera Mirror Node used to adhere to the Rosetta interface

@@ -37,7 +37,6 @@ const (
 hedera:
   mirror:
     rosetta:
-      apiVersion: 1.4.10
       db:
         host: 127.0.0.1
         name: mirror_node
@@ -52,7 +51,7 @@ hedera:
       log:
         level: info
       network: DEMO
-      nodes:
+      nodes: {}
       nodeVersion: 0
       online: true
       port: 5700

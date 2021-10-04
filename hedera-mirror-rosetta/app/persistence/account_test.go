@@ -79,6 +79,19 @@ var (
 		TreasuryAccountId: treasury,
 		Type:              domain.TokenTypeNonFungibleUnique,
 	}
+	token4 = &domain.Token{
+		TokenId:           domain.MustDecodeEntityId(1004),
+		CreatedTimestamp:  16,
+		Decimals:          0,
+		InitialSupply:     0,
+		ModifiedTimestamp: 16,
+		Name:              "token4",
+		SupplyType:        domain.TokenSupplyTypeFinite,
+		Symbol:            "token4",
+		TotalSupply:       500,
+		TreasuryAccountId: treasury,
+		Type:              domain.TokenTypeNonFungibleUnique,
+	}
 	token1TransferAmounts      = []int64{10, -5}
 	token2TransferAmounts      = []int64{20, -7}
 	snapshotAccountBalanceFile = &domain.AccountBalanceFile{
@@ -212,7 +225,7 @@ var (
 			TokenId:            token2.TokenId,
 		},
 	}
-	// the net change for account is 2 (received 3, and sent 1)
+	// the net change for account is 2 (received 3 [5, 4, 3], and sent 1 [5])
 	nftTransfers = []domain.NftTransfer{
 		{
 			ConsensusTimestamp: snapshotTimestamp + 1,
@@ -241,6 +254,58 @@ var (
 			SenderAccountId:    &account,
 			SerialNumber:       5,
 			TokenId:            token3.TokenId,
+		},
+		// nft transfers for token4 between account2 and treasury which should not affect query for account
+		{
+			ConsensusTimestamp: snapshotTimestamp + 5,
+			ReceiverAccountId:  &treasury,
+			SerialNumber:       1,
+			TokenId:            token4.TokenId,
+		},
+		{
+			ConsensusTimestamp: snapshotTimestamp + 5,
+			ReceiverAccountId:  &treasury,
+			SerialNumber:       2,
+			TokenId:            token4.TokenId,
+		},
+		{
+			ConsensusTimestamp: snapshotTimestamp + 5,
+			ReceiverAccountId:  &treasury,
+			SerialNumber:       3,
+			TokenId:            token4.TokenId,
+		},
+		{
+			ConsensusTimestamp: snapshotTimestamp + 5,
+			ReceiverAccountId:  &treasury,
+			SerialNumber:       4,
+			TokenId:            token4.TokenId,
+		},
+		{
+			ConsensusTimestamp: snapshotTimestamp + 5,
+			ReceiverAccountId:  &treasury,
+			SerialNumber:       5,
+			TokenId:            token4.TokenId,
+		},
+		{
+			ConsensusTimestamp: snapshotTimestamp + 6,
+			ReceiverAccountId:  &account2,
+			SenderAccountId:    &treasury,
+			SerialNumber:       1,
+			TokenId:            token4.TokenId,
+		},
+		{
+			ConsensusTimestamp: snapshotTimestamp + 6,
+			ReceiverAccountId:  &account2,
+			SenderAccountId:    &treasury,
+			SerialNumber:       2,
+			TokenId:            token4.TokenId,
+		},
+		{
+			ConsensusTimestamp: snapshotTimestamp + 7,
+			ReceiverAccountId:  &treasury,
+			SenderAccountId:    &account2,
+			SerialNumber:       1,
+			TokenId:            token4.TokenId,
 		},
 	}
 	// nft transfers at or before snapshot timestamp
@@ -302,7 +367,8 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance.Balance + sum(cryptoTransferAmounts)}
 	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts))
 	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts))
-	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2)
+	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2).
+		SetSerialNumbers([]int64{1, 2, 3, 4})
 
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount}
 
@@ -345,7 +411,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 	hbarAmount := &types.HbarAmount{Value: sum(cryptoTransferAmounts)}
 	token1Amount := types.NewTokenAmount(*token1, sum(token1TransferAmounts))
 	token2Amount := types.NewTokenAmount(*token2, sum(token2TransferAmounts))
-	token3Amount := types.NewTokenAmount(*token3, 2)
+	token3Amount := types.NewTokenAmount(*token3, 2).SetSerialNumbers([]int64{3, 4})
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount}
 
 	// when
@@ -394,6 +460,7 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfter() {
 		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token2.TokenId),
 		getTokenAccount(account, true, nextBlockEnd+1, nextBlockEnd+1, token3.TokenId),
 		getTokenAccount(account2, true, currentBlockEnd-6, currentBlockEnd-6, token3.TokenId),
+		getTokenAccount(account2, true, currentBlockEnd-5, currentBlockEnd-5, token4.TokenId),
 	)
 	expected := []domain.Token{
 		{
@@ -430,6 +497,7 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfterNoTo
 		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token2.TokenId),
 		getTokenAccount(account, true, nextBlockEnd+1, nextBlockEnd+1, token3.TokenId),
 		getTokenAccount(account2, true, currentBlockEnd-6, currentBlockEnd-6, token3.TokenId),
+		getTokenAccount(account2, true, currentBlockEnd-5, currentBlockEnd-5, token4.TokenId),
 	)
 	repo := NewAccountRepository(dbClient)
 
