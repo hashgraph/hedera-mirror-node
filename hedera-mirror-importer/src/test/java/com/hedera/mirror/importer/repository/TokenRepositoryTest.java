@@ -21,23 +21,23 @@ package com.hedera.mirror.importer.repository;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.from;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import javax.annotation.Resource;
-import org.apache.commons.codec.DecoderException;
+import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
-import com.hedera.mirror.importer.domain.TokenId;
 
 class TokenRepositoryTest extends AbstractRepositoryTest {
+
     @Resource
     protected TokenRepository tokenRepository;
 
@@ -47,14 +47,13 @@ class TokenRepositoryTest extends AbstractRepositoryTest {
     private static final long INITIAL_SUPPLY = 1_000_000L;
 
     @Test
-    void save() throws DecoderException {
+    void save() {
         Token token = tokenRepository.save(token(1));
-        assertThat(tokenRepository.findById(token.getTokenId())
-                .get()).isEqualTo(token);
+        assertThat(tokenRepository.findById(token.getTokenId())).get().isEqualTo(token);
     }
 
     @Test
-    void nullCharacter() throws DecoderException {
+    void nullCharacter() {
         Token token = token(1);
         token.setName("abc" + (char) 0);
         token.setSymbol("abc" + (char) 0);
@@ -62,31 +61,8 @@ class TokenRepositoryTest extends AbstractRepositoryTest {
         assertThat(tokenRepository.findById(token.getTokenId())).get().isEqualTo(token);
     }
 
-    @Test
-    void updateSupply() throws DecoderException {
-        Token token = tokenRepository.save(token(1));
-        long newTotalSupply = INITIAL_SUPPLY - 1000;
-        long modifiedTimestamp = 5L;
-        tokenRepository.updateTokenSupply(token.getTokenId(), newTotalSupply, modifiedTimestamp);
-        assertThat(tokenRepository.findById(token.getTokenId()).get())
-                .returns(modifiedTimestamp, from(Token::getModifiedTimestamp))
-                .returns(newTotalSupply, from(Token::getTotalSupply));
-    }
-
-    @Test
-    void updateSupplyOnMissingToken() throws DecoderException {
-        long createdTimestamp = 1L;
-        Token token = tokenRepository.save(token(createdTimestamp));
-        long newTotalSupply = INITIAL_SUPPLY - 1000;
-        long modifiedTimestamp = 5L;
-        TokenId missingTokenId = new TokenId(EntityId.of("0.0.555", EntityTypeEnum.TOKEN));
-        tokenRepository.updateTokenSupply(missingTokenId, newTotalSupply, modifiedTimestamp);
-        assertThat(tokenRepository.findById(token.getTokenId()).get())
-                .returns(createdTimestamp, from(Token::getModifiedTimestamp))
-                .returns(INITIAL_SUPPLY, from(Token::getTotalSupply));
-    }
-
-    private Token token(long consensusTimestamp) throws DecoderException {
+    @SneakyThrows
+    private Token token(long consensusTimestamp) {
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(key))).build().toByteArray();
         Token token = new Token();
         token.setCreatedTimestamp(consensusTimestamp);

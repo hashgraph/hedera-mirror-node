@@ -27,6 +27,7 @@ import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -34,7 +35,6 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    static final long WILDCARD_SERIAL_NUMBER = -1;
     private final NftRepository nftRepository;
 
     public TokenUpdateTransactionHandler(NftRepository nftRepository) {
@@ -77,7 +77,7 @@ public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransaction
     private void updateTreasury(RecordItem recordItem) {
         for (TokenTransferList tokenTransferList : recordItem.getRecord().getTokenTransferListsList()) {
             for (NftTransfer nftTransfer : tokenTransferList.getNftTransfersList()) {
-                if (nftTransfer.getSerialNumber() == WILDCARD_SERIAL_NUMBER) {
+                if (nftTransfer.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
                     EntityId newTreasury = EntityId.of(nftTransfer.getReceiverAccountID());
                     EntityId previousTreasury = EntityId.of(nftTransfer.getSenderAccountID());
                     EntityId tokenId = EntityId.of(tokenTransferList.getToken());

@@ -96,6 +96,6 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
                     getFullFinalTableColumnName(Nft_.DELETED));
         }
 
-        return null;
+        return super.getAttributeUpdateQuery(attributeName);
     }
 }

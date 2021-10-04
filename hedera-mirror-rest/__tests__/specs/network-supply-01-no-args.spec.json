@@ -1,0 +1,42 @@
+{
+  "description": "Network supply API with no args",
+  "setup": {
+    "accounts": [],
+    "balances": [
+      {
+        "timestamp": 1000000000,
+        "id": 2,
+        "balance": 3900000000000000000
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 1,
+        "balance": 10
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 2,
+        "balance": 4000000000000000000
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 42,
+        "balance": 50
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 100,
+        "balance": 1
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/network/supply",
+  "responseStatus": 200,
+  "responseJson": {
+    "released_supply": "999999999999999949",
+    "timestamp": "1.000000001",
+    "total_supply": "5000000000000000000"
+  }
+}

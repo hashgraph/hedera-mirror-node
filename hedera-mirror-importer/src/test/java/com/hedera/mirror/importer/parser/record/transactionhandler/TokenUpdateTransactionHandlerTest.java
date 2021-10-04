@@ -37,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -88,7 +89,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .addNftTransfers(NftTransfer.newBuilder()
                         .setReceiverAccountID(newAccountId)
                         .setSenderAccountID(previousAccountId)
-                        .setSerialNumber(TokenUpdateTransactionHandler.WILDCARD_SERIAL_NUMBER)
+                        .setSerialNumber(NftTransferId.WILDCARD_SERIAL_NUMBER)
                         .build())
                 .build();
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();

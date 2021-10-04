@@ -28,6 +28,7 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -43,8 +44,14 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 public class TokenTransfer implements Persistable<TokenTransfer.Id> {
 
     public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
+        this(consensusTimestamp, amount, tokenId, accountId, false);
+    }
+
+    public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId,
+            boolean tokenDissociate) {
         id = new TokenTransfer.Id(consensusTimestamp, tokenId, accountId);
         this.amount = amount;
+        this.tokenDissociate = tokenDissociate;
     }
 
     @EmbeddedId
@@ -52,6 +59,10 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
     private Id id;
 
     private long amount;
+
+    @JsonIgnore
+    @Transient
+    private boolean tokenDissociate;
 
     @JsonIgnore
     @Override

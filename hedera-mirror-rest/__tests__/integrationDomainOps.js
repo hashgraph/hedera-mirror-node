@@ -243,9 +243,9 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
   ].join('');
 
   await sqlConnection.query(
-    `insert into
-         assessed_custom_fee (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id)
-         values ($1, $2, $3, $4, $5);`,
+    `insert into assessed_custom_fee
+     (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id)
+     values ($1, $2, $3, $4, $5);`,
     [
       amount,
       EntityId.fromString(collector_account_id).getEncodedId(),
@@ -264,19 +264,17 @@ const addCustomFee = async (customFee) => {
   }
 
   await sqlConnection.query(
-    `insert into custom_fee (
-                        amount,
-                        amount_denominator,
-                        collector_account_id,
-                        created_timestamp,
-                        denominating_token_id,
-                        maximum_amount,
-                        minimum_amount,
-                        net_of_transfers,
-                        royalty_denominator,
-                        royalty_numerator,
-                        token_id
-                        )
+    `insert into custom_fee (amount,
+                             amount_denominator,
+                             collector_account_id,
+                             created_timestamp,
+                             denominating_token_id,
+                             maximum_amount,
+                             minimum_amount,
+                             net_of_transfers,
+                             royalty_denominator,
+                             royalty_numerator,
+                             token_id)
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
     [
       customFee.amount || null,
@@ -301,6 +299,14 @@ const setAccountBalance = async (balance) => {
     `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
      VALUES ($1, $2, $3);`,
     [balance.timestamp, accountId, balance.balance]
+  );
+
+  await sqlConnection.query(
+    `INSERT INTO account_balance_file
+     (consensus_timestamp, count, load_start, load_end, name, node_account_id)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT DO NOTHING;`,
+    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 3]
   );
 
   if (balance.tokens) {

@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
@@ -85,6 +87,7 @@ import com.hedera.mirror.importer.domain.TokenAccountId;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
@@ -172,7 +175,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenCreateWithoutPersistence() {
         entityProperties.getPersist().setTokens(false);
 
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertThat(tokenTransferRepository.count()).isZero();
@@ -194,7 +197,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .collect(Collectors.toList());;
 
         // when
-        createTokenEntity(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
+        createTokenEntity(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
                 kycKey, customFees, autoAssociatedAccounts);
 
         // then
@@ -210,7 +213,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAssociate() {
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true);
 
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
         insertAndParseTransaction(ASSOCIATE_TIMESTAMP, associateTransaction);
@@ -230,7 +233,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenDissociate() {
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
 
         Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER2);
@@ -251,8 +254,81 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void tokenDissociateDeletedFungibleToken() {
+        // given
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER2,
+                false, false, INITIAL_SUPPLY);
+
+        long tokenDeleteTimestamp = 15L;
+        Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
+        insertAndParseTransaction(tokenDeleteTimestamp, deleteTransaction);
+
+        // when
+        Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER2);
+        long dissociateTimeStamp = 20L;
+        TokenTransferList dissociateTransfer = tokenTransfer(TOKEN_ID, PAYER2, -10);
+        insertAndParseTransaction(dissociateTimeStamp, dissociateTransaction, builder ->
+                builder.addTokenTransferLists(dissociateTransfer));
+
+        // then
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, dissociateTimeStamp, SYMBOL, INITIAL_SUPPLY - 10);
+        var expected = new TokenTransfer(dissociateTimeStamp, -10, EntityId.of(TOKEN_ID), EntityId.of(PAYER2));
+        assertThat(tokenTransferRepository.findById(expected.getId())).get().isEqualTo(expected);
+    }
+
+    @Test
+    void tokenDissociateDeletedNonFungibleToken() {
+        // given
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER2,
+                false, false, 0);
+
+        // mint
+        long mintTimestamp = 10L;
+        TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
+        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
+                SERIAL_NUMBER_LIST);
+        insertAndParseTransaction(mintTimestamp, mintTransaction, builder -> {
+            builder.getReceiptBuilder().
+                    setNewTotalSupply(SERIAL_NUMBER_LIST.size())
+                    .addAllSerialNumbers(SERIAL_NUMBER_LIST);
+            builder.addTokenTransferLists(mintTransfer);
+        });
+
+        // transfer
+        long transferTimestamp = 15L;
+        TokenTransferList nftTransfer = nftTransfer(TOKEN_ID, PAYER2, PAYER, List.of(1L));
+        insertAndParseTransaction(transferTimestamp, tokenTransferTransaction(),
+                builder -> builder.addTokenTransferLists(nftTransfer));
+
+        // delete
+        long tokenDeleteTimestamp = 20L;
+        Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
+        insertAndParseTransaction(tokenDeleteTimestamp, deleteTransaction);
+
+        // when
+        // dissociate
+        Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER2);
+        long dissociateTimeStamp = 25L;
+        TokenTransferList dissociateTransfer = tokenTransfer(TOKEN_ID, PAYER2, -1);
+        insertAndParseTransaction(dissociateTimeStamp, dissociateTransaction, builder ->
+                builder.addTokenTransferLists(dissociateTransfer));
+
+        // then
+        assertNftInRepository(TOKEN_ID, 1L, true, mintTimestamp, dissociateTimeStamp, PAYER2, true);
+        assertNftInRepository(TOKEN_ID, 2L, true, mintTimestamp, mintTimestamp, PAYER, false);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, dissociateTimeStamp, SYMBOL, 1);
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(
+                domainNftTransfer(mintTimestamp, PAYER, DEFAULT_ACCOUNT_ID, 1L, TOKEN_ID),
+                domainNftTransfer(mintTimestamp, PAYER, DEFAULT_ACCOUNT_ID, 2L, TOKEN_ID),
+                domainNftTransfer(transferTimestamp, PAYER2, PAYER, 1L, TOKEN_ID),
+                domainNftTransfer(dissociateTimeStamp, DEFAULT_ACCOUNT_ID, PAYER2, 1L, TOKEN_ID)
+        );
+        assertThat(tokenTransferRepository.findAll()).isEmpty();
+    }
+
+    @Test
     void tokenDelete() {
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
 
         // delete token
@@ -281,7 +357,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         List<CustomFee> newCustomFees = nonEmptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
         List<CustomFee> expectedCustomFees = Lists.newArrayList(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID));
         expectedCustomFees.addAll(newCustomFees);
-        long expectedSupply = tokenType == TokenType.FUNGIBLE_COMMON ? INITIAL_SUPPLY : 0;
+        long expectedSupply = tokenType == FUNGIBLE_COMMON ? INITIAL_SUPPLY : 0;
 
         // when
         updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, newCustomFees);
@@ -294,7 +370,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenUpdate() {
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
 
         String newSymbol = "NEWSYMBOL";
@@ -334,8 +410,46 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void nftUpdateTreasury() {
+        // given
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER2, false, false, 0);
+
+        long mintTimestamp = 10L;
+        List<Long> serialNumbers = List.of(1L);
+        TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, serialNumbers);
+        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
+                serialNumbers);
+
+        insertAndParseTransaction(mintTimestamp, mintTransaction, builder -> {
+            builder.getReceiptBuilder().
+                    setNewTotalSupply(serialNumbers.size())
+                    .addAllSerialNumbers(serialNumbers);
+            builder.addTokenTransferLists(mintTransfer);
+        });
+
+        // when
+        long updateTimestamp = 15L;
+        TokenTransferList treasuryUpdateTransfer = nftTransfer(TOKEN_ID, PAYER2, PAYER,
+                List.of(NftTransferId.WILDCARD_SERIAL_NUMBER));
+        insertAndParseTransaction(
+                updateTimestamp,
+                buildTransaction(builder -> builder.getTokenUpdateBuilder()
+                        .setToken(TOKEN_ID)
+                        .setTreasury(PAYER2)),
+                builder -> builder.addTokenTransferLists(treasuryUpdateTransfer)
+        );
+
+        // then
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(
+                domainNftTransfer(mintTimestamp, PAYER, DEFAULT_ACCOUNT_ID, 1L, TOKEN_ID),
+                domainNftTransfer(updateTimestamp, PAYER2, PAYER, 1L, TOKEN_ID)
+        );
+    }
+
+    @Test
     void tokenAccountFreeze() {
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, true, false, INITIAL_SUPPLY);
 
         Transaction transaction = tokenFreezeTransaction(TOKEN_ID, true);
@@ -349,7 +463,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenAccountUnfreeze() {
         // create token with freeze default
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, false);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, false);
 
         // associate account
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
@@ -371,7 +485,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAccountGrantKyc() {
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, true, INITIAL_SUPPLY);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
@@ -385,7 +499,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAccountGrantKycWithMissingTokenAccount() {
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
@@ -398,7 +512,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenAccountRevokeKyc() {
         // create token with kyc revoked
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
 
         // associate account
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
@@ -420,13 +534,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenBurn() {
         // given
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
 
         long amount = -1000;
         long burnTimestamp = 10L;
         TokenTransferList tokenTransfer = tokenTransfer(TOKEN_ID, PAYER, amount);
-        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, false, amount, null);
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, FUNGIBLE_COMMON, false, amount, null);
 
         // when
         insertAndParseTransaction(burnTimestamp, transaction, builder -> {
@@ -443,12 +557,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenBurnNft() {
-        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, 0L);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
-        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
+        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
                 SERIAL_NUMBER_LIST);
 
         insertAndParseTransaction(mintTimestamp, mintTransaction, builder -> {
@@ -461,7 +575,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long burnTimestamp = 15L;
         TokenTransferList burnTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, PAYER, Arrays
                 .asList(SERIAL_NUMBER_1));
-        Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, false, 0, Arrays
+        Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, false, 0, Arrays
                 .asList(SERIAL_NUMBER_1));
         insertAndParseTransaction(burnTimestamp, burnTransaction, builder -> {
             builder.getReceiptBuilder().setNewTotalSupply(0L);
@@ -481,13 +595,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenBurnNftMissingNft() {
-        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, 0L);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, Arrays
                 .asList(SERIAL_NUMBER_2));
-        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
+        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
                 Arrays.asList(SERIAL_NUMBER_2));
 
         insertAndParseTransaction(mintTimestamp, mintTransaction, builder -> {
@@ -500,7 +614,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long burnTimestamp = 15L;
         TokenTransferList burnTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, PAYER,
                 Arrays.asList(SERIAL_NUMBER_1));
-        Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, false, 0, Arrays
+        Transaction burnTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, false, 0, Arrays
                 .asList(SERIAL_NUMBER_1));
         insertAndParseTransaction(burnTimestamp, burnTransaction, builder -> {
             builder.getReceiptBuilder().setNewTotalSupply(0);
@@ -520,13 +634,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenMint() {
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
 
         long amount = 1000;
         long mintTimestamp = 10L;
         TokenTransferList tokenTransfer = tokenTransfer(TOKEN_ID, PAYER, amount);
-        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, true, amount, null);
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, FUNGIBLE_COMMON, true, amount, null);
         insertAndParseTransaction(mintTimestamp, transaction, builder -> {
             builder.getReceiptBuilder().setNewTotalSupply(INITIAL_SUPPLY + amount);
             builder.addTokenTransferLists(tokenTransfer);
@@ -542,12 +656,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenMintNfts() {
         // given
-        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP, PAYER2, false, false, 0);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
-        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
                 SERIAL_NUMBER_LIST);
 
         // when
@@ -574,7 +688,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // given
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
-        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 2,
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 2,
                 SERIAL_NUMBER_LIST);
 
         // when
@@ -612,13 +726,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void nftTransfer() {
-        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, 0);
 
         long mintTimestamp1 = 20L;
         TokenTransferList mintTransfer1 = nftTransfer(TOKEN_ID, RECEIVER, DEFAULT_ACCOUNT_ID, Arrays
                 .asList(SERIAL_NUMBER_1));
-        Transaction mintTransaction1 = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0, Arrays
+        Transaction mintTransaction1 = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0, Arrays
                 .asList(SERIAL_NUMBER_1));
 
         insertAndParseTransaction(mintTimestamp1, mintTransaction1, builder -> {
@@ -631,7 +745,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long mintTimestamp2 = 30L;
         TokenTransferList mintTransfer2 = nftTransfer(TOKEN_ID, RECEIVER, DEFAULT_ACCOUNT_ID, Arrays
                 .asList(SERIAL_NUMBER_2));
-        Transaction mintTransaction2 = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0, Arrays
+        Transaction mintTransaction2 = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0, Arrays
                 .asList(SERIAL_NUMBER_2));
 
         // Verify
@@ -674,12 +788,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void nftTransferMissingNft() {
-        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, 0);
 
         TokenID tokenID2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
-        createTokenEntity(tokenID2, TokenType.FUNGIBLE_COMMON, symbol2, 15L, false, false);
+        createTokenEntity(tokenID2, FUNGIBLE_COMMON, symbol2, 15L, false, false);
 
         // token transfer
         Transaction transaction = tokenTransferTransaction();
@@ -711,14 +825,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenWipe() {
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
 
         long transferAmount = -1000L;
         long wipeAmount = 100L;
         long wipeTimestamp = 10L;
         TokenTransferList tokenTransfer = tokenTransfer(TOKEN_ID, PAYER, transferAmount);
-        Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, wipeAmount,
+        Transaction transaction = tokenWipeTransaction(TOKEN_ID, FUNGIBLE_COMMON, wipeAmount,
                 Lists.emptyList());
         insertAndParseTransaction(wipeTimestamp, transaction, builder -> {
             builder.getReceiptBuilder().setNewTotalSupply(INITIAL_SUPPLY - wipeAmount);
@@ -734,12 +848,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenWipeNft() {
-        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, 0);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
-        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, true, 0,
+        Transaction mintTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
                 SERIAL_NUMBER_LIST);
 
         insertAndParseTransaction(mintTimestamp, mintTransaction, builder -> {
@@ -752,7 +866,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long wipeTimestamp = 15L;
         TokenTransferList wipeTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, PAYER, Arrays
                 .asList(SERIAL_NUMBER_1));
-        Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, 0, Arrays
+        Transaction transaction = tokenWipeTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, 0, Arrays
                 .asList(SERIAL_NUMBER_1));
         insertAndParseTransaction(wipeTimestamp, transaction, builder -> {
             builder.getReceiptBuilder().setNewTotalSupply(1L);
@@ -772,7 +886,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenWipeWithMissingToken() {
-        Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, 100L, null);
+        Transaction transaction = tokenWipeTransaction(TOKEN_ID, FUNGIBLE_COMMON, 100L, null);
         insertAndParseTransaction(10L, transaction);
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
@@ -780,13 +894,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenWipeNftMissingNft() {
-        createAndAssociateToken(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, 0);
 
         long wipeTimestamp = 15L;
         TokenTransferList wipeTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, RECEIVER, Arrays
                 .asList(SERIAL_NUMBER_1));
-        Transaction transaction = tokenWipeTransaction(TOKEN_ID, TokenType.NON_FUNGIBLE_UNIQUE, 0, Arrays
+        Transaction transaction = tokenWipeTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, 0, Arrays
                 .asList(SERIAL_NUMBER_1));
         insertAndParseTransaction(wipeTimestamp, transaction, builder -> {
             builder.addTokenTransferLists(wipeTransfer);
@@ -808,7 +922,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long newTotalSupply = INITIAL_SUPPLY - wipeAmount;
 
         // create token with a transfer
-        Transaction createTransaction = tokenCreateTransaction(TokenType.FUNGIBLE_COMMON, false, false, SYMBOL);
+        Transaction createTransaction = tokenCreateTransaction(FUNGIBLE_COMMON, false, false, SYMBOL);
         TokenTransferList createTokenTransfer = tokenTransfer(TOKEN_ID, PAYER2, INITIAL_SUPPLY);
         RecordItem createTokenRecordItem = getRecordItem(CREATE_TIMESTAMP, createTransaction, builder -> {
             builder.getReceiptBuilder()
@@ -823,7 +937,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // wipe amount from token with a transfer
         TokenTransferList wipeTokenTransfer = tokenTransfer(TOKEN_ID, PAYER2, transferAmount);
-        Transaction wipeTransaction = tokenWipeTransaction(TOKEN_ID, TokenType.FUNGIBLE_COMMON, wipeAmount, null);
+        Transaction wipeTransaction = tokenWipeTransaction(TOKEN_ID, FUNGIBLE_COMMON, wipeAmount, null);
         RecordItem wipeRecordItem = getRecordItem(wipeTimestamp, wipeTransaction, builder -> {
             builder.getReceiptBuilder().setNewTotalSupply(newTotalSupply);
             builder.addTokenTransferLists(wipeTokenTransfer);
@@ -850,7 +964,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long expectedEntityCount = 3 + expectedTokenAccounts.size();
 
         // when
-        createTokenEntity(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
                 kycKey, customFees, autoAssociatedAccounts);
 
         // then
@@ -869,11 +983,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees,
             boolean hasAutoTokenAssociations) {
         // given
-        createAndAssociateToken(TOKEN_ID, TokenType.FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, INITIAL_SUPPLY);
         TokenID tokenId2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
-        createTokenEntity(tokenId2, TokenType.FUNGIBLE_COMMON, symbol2, 10L, false, false);
+        createTokenEntity(tokenId2, FUNGIBLE_COMMON, symbol2, 10L, false, false);
 
         AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
 
@@ -952,6 +1066,20 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTransactionInRepository(ResponseCodeEnum.SUCCESS, consensusTimestamp, null);
     }
 
+    private com.hedera.mirror.importer.domain.NftTransfer domainNftTransfer(long consensusTimestamp, AccountID receiver,
+                                                                            AccountID sender, long serialNumber,
+                                                                            TokenID token) {
+        var nftTransfer = new com.hedera.mirror.importer.domain.NftTransfer();
+        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(token)));
+        if (!receiver.equals(DEFAULT_ACCOUNT_ID)) {
+            nftTransfer.setReceiverAccountId(EntityId.of(receiver));
+        }
+        if (!sender.equals(DEFAULT_ACCOUNT_ID)) {
+            nftTransfer.setSenderAccountId(EntityId.of(sender));
+        }
+        return nftTransfer;
+    }
+
     private Transaction tokenCreateTransaction(TokenType tokenType, boolean freezeDefault, boolean setFreezeKey,
                                                boolean setKycKey, String symbol, List<CustomFee> customFees) {
         return buildTransaction(builder -> {
@@ -972,7 +1100,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     .setWipeKey(TOKEN_REF_KEY)
                     .addAllCustomFees(convertCustomFees(customFees));
 
-            if (tokenType == TokenType.FUNGIBLE_COMMON) {
+            if (tokenType == FUNGIBLE_COMMON) {
                 builder.getTokenCreationBuilder().setInitialSupply(INITIAL_SUPPLY);
             }
 
@@ -1065,7 +1193,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             transaction = buildTransaction(builder -> {
                 builder.getTokenMintBuilder()
                         .setToken(tokenID);
-                if (tokenType == TokenType.FUNGIBLE_COMMON) {
+                if (tokenType == FUNGIBLE_COMMON) {
                     builder.getTokenMintBuilder().setAmount(amount);
                 } else {
                     builder.getTokenMintBuilder().addAllMetadata(Collections
@@ -1076,7 +1204,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             transaction = buildTransaction(builder -> {
                 builder.getTokenBurnBuilder()
                         .setToken(tokenID);
-                if (tokenType == TokenType.FUNGIBLE_COMMON) {
+                if (tokenType == FUNGIBLE_COMMON) {
                     builder.getTokenBurnBuilder().setAmount(amount);
                 } else {
                     builder.getTokenBurnBuilder()
@@ -1095,7 +1223,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     .setToken(tokenID)
                     .setAccount(PAYER)
                     .build();
-            if (tokenType == TokenType.FUNGIBLE_COMMON) {
+            if (tokenType == FUNGIBLE_COMMON) {
                 builder.getTokenWipeBuilder().setAmount(amount);
             } else {
                 builder.getTokenWipeBuilder().addAllSerialNumbers(serialNumbers);
@@ -1138,6 +1266,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
                                          long modifiedTimestamp, String symbol, long totalSupply) {
         assertTokenInRepository(tokenID, present, createdTimestamp, modifiedTimestamp, symbol, totalSupply, null);
+    }
+
+    private void assertNftInRepository(TokenID tokenID, long serialNumber, boolean present, long createdTimestamp,
+                                       long modifiedTimestamp, AccountID accountId, boolean deleted) {
+        EntityId accountEntityId = accountId.equals(DEFAULT_ACCOUNT_ID) ? null : EntityId.of(accountId);
+        assertNftInRepository(tokenID, serialNumber, present, createdTimestamp, modifiedTimestamp, METADATA.getBytes(),
+                accountEntityId, deleted);
     }
 
     private void assertNftInRepository(TokenID tokenID, long serialNumber, boolean present, long createdTimestamp,
@@ -1240,7 +1375,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .setAccountId(convertAccountId(account))
                             .build())
                     .collect(Collectors.toList()));
-            if (tokenType == TokenType.FUNGIBLE_COMMON) {
+            if (tokenType == FUNGIBLE_COMMON) {
                 builder.addTokenTransferLists(tokenTransfer(tokenId, PAYER, INITIAL_SUPPLY));
             }
 
@@ -1335,7 +1470,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         fixedFee3.setId(id);
         customFees.add(fixedFee3);
 
-        if (tokenType == TokenType.FUNGIBLE_COMMON) {
+        if (tokenType == FUNGIBLE_COMMON) {
             // fractional fees only apply for fungible tokens
             CustomFee fractionalFee1 = new CustomFee();
             fractionalFee1.setAmount(14L);
@@ -1379,11 +1514,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private static Stream<Arguments> provideTokenCreateFtArguments() {
-        return provideTokenCreateArguments(TokenType.FUNGIBLE_COMMON);
+        return provideTokenCreateArguments(FUNGIBLE_COMMON);
     }
 
     private static Stream<Arguments> provideTokenCreateNftArguments() {
-        return provideTokenCreateArguments(TokenType.NON_FUNGIBLE_UNIQUE);
+        return provideTokenCreateArguments(NON_FUNGIBLE_UNIQUE);
     }
 
     private static Stream<Arguments> provideTokenCreateArguments(TokenType tokenType) {
@@ -1391,7 +1526,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         EntityId treasury = EntityId.of(PAYER);
         // fractional fees only apply for FT, thus FEE_COLLECTOR_ACCOUNT_ID_3 (collector of a fractional fee for FT, and
         // a royalty fee in case of NFT) will be auto enabled only for FT custom fees
-        List<EntityId> autoEnabledAccounts = tokenType == TokenType.FUNGIBLE_COMMON ?
+        List<EntityId> autoEnabledAccounts = tokenType == FUNGIBLE_COMMON ?
                 List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3) :
                 List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2);
 

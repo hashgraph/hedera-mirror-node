@@ -1,0 +1,55 @@
+{
+  "description": "Network supply API with invalid parameters",
+  "setup": {
+    "accounts": [],
+    "balances": [
+      {
+        "timestamp": 1000000000,
+        "id": 2,
+        "balance": 1
+      },
+      {
+        "timestamp": 1000000000,
+        "id": 42,
+        "balance": 1
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 1,
+        "balance": 10
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 2,
+        "balance": 4000000000000000000
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 42,
+        "balance": 50
+      },
+      {
+        "timestamp": 1000000001,
+        "id": 100,
+        "balance": 1
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "urls": [
+    "/api/v1/network/supply?timestamp=foo",
+    "/api/v1/network/supply?timestamp=equal:1",
+    "/api/v1/network/supply?timestamp=lte:1.2.3"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: timestamp"
+        }
+      ]
+    }
+  }
+}

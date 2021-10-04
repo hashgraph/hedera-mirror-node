@@ -74,8 +74,6 @@ public class Token {
 
     private Long initialSupply;
 
-    private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
-
     private byte[] kycKey;
 
     @Column(name = "kyc_key_ed25519_hex")
@@ -109,6 +107,8 @@ public class Token {
     private TokenSupplyTypeEnum supplyType;
 
     private String symbol;
+
+    private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId treasuryAccountId;
