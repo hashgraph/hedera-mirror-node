@@ -519,7 +519,6 @@
                                         <include>hedera-mirror-rest/**/openapi.yml</include>
                                         <include>hedera-mirror-rest/package*.json</include>
                                         <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
-                                        <include>hedera-mirror-rosetta/cmd/config.go</include>
                                     </includes>
                                     <replacements>
                                         <replacement>
@@ -529,10 +528,6 @@
                                         </replacement>
                                         <replacement>
                                             <token><![CDATA[(?<=(\s{3})version: )[0-9a-zA-Z.-]+]]></token>
-                                            <value>${release.version}</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token><![CDATA[(?<=\sVersion:     ")[0-9a-zA-Z.-]+]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>

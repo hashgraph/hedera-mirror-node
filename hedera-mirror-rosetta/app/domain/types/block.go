@@ -23,8 +23,8 @@ package types
 import (
 	"time"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/tools/hex"
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 )
 
 // Block is domain level struct used to represent Block conceptual mapping in Hedera
@@ -40,20 +40,20 @@ type Block struct {
 }
 
 // ToRosetta returns Rosetta type Block from the current domain type Block
-func (b *Block) ToRosetta() *rTypes.Block {
-	transactions := make([]*rTypes.Transaction, len(b.Transactions))
+func (b *Block) ToRosetta() *types.Block {
+	transactions := make([]*types.Transaction, len(b.Transactions))
 	for i, t := range b.Transactions {
 		transactions[i] = t.ToRosetta()
 	}
 
-	return &rTypes.Block{
-		BlockIdentifier: &rTypes.BlockIdentifier{
+	return &types.Block{
+		BlockIdentifier: &types.BlockIdentifier{
 			Index: b.Index,
-			Hash:  hex.SafeAddHexPrefix(b.Hash),
+			Hash:  tools.SafeAddHexPrefix(b.Hash),
 		},
-		ParentBlockIdentifier: &rTypes.BlockIdentifier{
+		ParentBlockIdentifier: &types.BlockIdentifier{
 			Index: b.ParentIndex,
-			Hash:  hex.SafeAddHexPrefix(b.ParentHash),
+			Hash:  tools.SafeAddHexPrefix(b.ParentHash),
 		},
 		Timestamp:    b.GetTimestampMillis(),
 		Transactions: transactions,

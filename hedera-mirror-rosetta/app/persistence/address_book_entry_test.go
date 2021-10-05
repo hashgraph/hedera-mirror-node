@@ -25,8 +25,7 @@ import (
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	pTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -37,20 +36,20 @@ var (
 	accountId4, _  = types.NewAccountFromEncodedID(4)
 	accountId80, _ = types.NewAccountFromEncodedID(80)
 	accountId70, _ = types.NewAccountFromEncodedID(70)
-	addressBooks   = []*pTypes.AddressBook{
+	addressBooks   = []*domain.AddressBook{
 		getAddressBook(9, 0, 102),
 		getAddressBook(10, 19, 101),
 		getAddressBook(20, 0, 101),
 	}
-	addressBookEntries = []*pTypes.AddressBookEntry{
-		getAddressBookEntry(9, 0, accountId3.EncodedId),
-		getAddressBookEntry(9, 1, accountId4.EncodedId),
-		getAddressBookEntry(10, 0, accountId3.EncodedId),
-		getAddressBookEntry(10, 1, accountId4.EncodedId),
-		getAddressBookEntry(20, 0, accountId80.EncodedId),
-		getAddressBookEntry(20, 1, accountId70.EncodedId),
+	addressBookEntries = []*domain.AddressBookEntry{
+		getAddressBookEntry(9, 0, accountId3.EntityId),
+		getAddressBookEntry(9, 1, accountId4.EntityId),
+		getAddressBookEntry(10, 0, accountId3.EntityId),
+		getAddressBookEntry(10, 1, accountId4.EntityId),
+		getAddressBookEntry(20, 0, accountId80.EntityId),
+		getAddressBookEntry(20, 1, accountId70.EntityId),
 	}
-	addressBookServiceEndpoints = []*pTypes.AddressBookServiceEndpoint{
+	addressBookServiceEndpoints = []*domain.AddressBookServiceEndpoint{
 		{10, "192.168.0.10", 0, 50211},
 		{10, "192.168.1.10", 1, 50211},
 		{20, "192.168.0.10", 0, 50211},
@@ -66,25 +65,12 @@ func TestAddressBookEntryRepositorySuite(t *testing.T) {
 }
 
 type addressBookEntryRepositorySuite struct {
-	test.IntegrationTest
+	integrationTest
 	suite.Suite
-}
-
-func (suite *addressBookEntryRepositorySuite) SetupSuite() {
-	suite.Setup()
-}
-
-func (suite *addressBookEntryRepositorySuite) TearDownSuite() {
-	suite.TearDown()
-}
-
-func (suite *addressBookEntryRepositorySuite) SetupTest() {
-	suite.CleanupDb()
 }
 
 func (suite *addressBookEntryRepositorySuite) TestEntries() {
 	// given
-	dbClient := suite.DbResource.GetGormDb()
 	// persist addressbooks before addressbook entries due to foreign key constraint
 	db.CreateDbRecords(dbClient, addressBooks, addressBookEntries, addressBookServiceEndpoints)
 
@@ -97,7 +83,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntries() {
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Equal(suite.T(), expected, actual)
@@ -106,14 +92,13 @@ func (suite *addressBookEntryRepositorySuite) TestEntries() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesNoEntries() {
 	// given
-	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, addressBooks, addressBookServiceEndpoints)
 
 	expected := &types.AddressBookEntries{Entries: []types.AddressBookEntry{}}
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Equal(suite.T(), expected, actual)
@@ -122,7 +107,6 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoEntries() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 	// given
-	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(dbClient, addressBooks, addressBookEntries)
 
 	expected := &types.AddressBookEntries{
@@ -134,7 +118,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -143,15 +127,14 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoServiceEndpoints() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 	// given
-	dbClient := suite.DbResource.GetGormDb()
 	db.CreateDbRecords(
 		dbClient,
 		getAddressBook(10, 19, 102),
 		getAddressBook(20, 0, 102),
-		getAddressBookEntry(10, 0, accountId4.EncodedId),
-		getAddressBookEntry(10, 1, accountId3.EncodedId),
-		getAddressBookEntry(20, 0, accountId70.EncodedId),
-		getAddressBookEntry(20, 1, accountId80.EncodedId),
+		getAddressBookEntry(10, 0, accountId4.EntityId),
+		getAddressBookEntry(10, 1, accountId3.EntityId),
+		getAddressBookEntry(20, 0, accountId70.EntityId),
+		getAddressBookEntry(20, 1, accountId80.EntityId),
 	)
 
 	expected := &types.AddressBookEntries{
@@ -163,7 +146,7 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -172,13 +155,12 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesDbInvalidNodeAccountId() {
 	// given
-	dbClient := suite.DbResource.GetGormDb()
-	db.CreateDbRecords(dbClient, addressBooks, getAddressBookEntry(20, 0, -1))
+	db.CreateDbRecords(dbClient, addressBooks, getAddressBookEntry(20, 0, domain.EntityId{EncodedId: -1}))
 
 	repo := NewAddressBookEntryRepository(dbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -187,26 +169,26 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesDbInvalidNodeAccountId(
 
 func (suite *addressBookEntryRepositorySuite) TestEntriesDbConnectionError() {
 	// given
-	repo := NewAddressBookEntryRepository(suite.InvalidDbClient)
+	repo := NewAddressBookEntryRepository(invalidDbClient)
 
 	// when
-	actual, err := repo.Entries()
+	actual, err := repo.Entries(defaultContext)
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
 }
 
-func getAddressBook(start, end int64, fileId int64) *pTypes.AddressBook {
-	addressBook := pTypes.AddressBook{StartConsensusTimestamp: start, FileId: fileId}
+func getAddressBook(start, end int64, fileId int64) *domain.AddressBook {
+	addressBook := domain.AddressBook{StartConsensusTimestamp: start, FileId: domain.MustDecodeEntityId(fileId)}
 	if end != 0 {
 		addressBook.EndConsensusTimestamp = &end
 	}
 	return &addressBook
 }
 
-func getAddressBookEntry(consensusTimestamp int64, nodeId int64, nodeAccountId int64) *pTypes.AddressBookEntry {
-	return &pTypes.AddressBookEntry{
+func getAddressBookEntry(consensusTimestamp int64, nodeId int64, nodeAccountId domain.EntityId) *domain.AddressBookEntry {
+	return &domain.AddressBookEntry{
 		ConsensusTimestamp: consensusTimestamp,
 		NodeId:             nodeId,
 		NodeAccountId:      nodeAccountId,

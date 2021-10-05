@@ -21,61 +21,63 @@
 package construction
 
 import (
+	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
-type tokenWipe struct {
-	Account *hedera.AccountID `json:"account" validate:"required"`
-	Amount  uint64
-	Token   hedera.TokenID
-}
-
 type tokenWipeTransactionConstructor struct {
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 	transactionType string
 	validate        *validator.Validate
 }
 
 func (t *tokenWipeTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenWipe, rErr := t.preprocess(operations)
+	validStartNanos int64,
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	payer, account, tokenAmount, rErr := t.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
-	tx, err := hedera.NewTokenWipeTransaction().
-		SetAccountID(*tokenWipe.Account).
-		SetAmount(tokenWipe.Amount).
-		SetTokenID(tokenWipe.Token).
+	tokenId, _ := hedera.TokenIDFromString(tokenAmount.TokenId.String())
+	tx := hedera.NewTokenWipeTransaction().
+		SetAccountID(*account).
+		SetTokenID(tokenId).
 		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.TransactionIDGenerate(*payer)).
-		Freeze()
-	if err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
+		SetTransactionID(getTransactionId(*payer, validStartNanos))
+	if len(tokenAmount.SerialNumbers) != 0 {
+		tx.SetSerialNumbers(tokenAmount.SerialNumbers)
+	} else {
+		tx.SetAmount(uint64(-tokenAmount.Value))
+	}
+
+	if _, err := tx.Freeze(); err != nil {
+		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenWipeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
 	tx, ok := transaction.(*hedera.TokenWipeTransaction)
 	if !ok {
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	account := tx.GetAccountID()
@@ -83,37 +85,33 @@ func (t *tokenWipeTransactionConstructor) Parse(transaction ITransaction) (
 	token := tx.GetTokenID()
 
 	if isZeroAccountId(account) || payer == nil || isZeroAccountId(*payer) || isZeroTokenId(token) {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	dbToken, err := t.tokenRepo.Find(token.String())
+	dbToken, err := t.tokenRepo.Find(ctx, token.String())
 	if err != nil {
 		return nil, nil, err
 	}
 
 	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{
-			Index: 0,
-		},
-		Account: &rTypes.AccountIdentifier{Address: payer.String()},
+		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
+		Account:             &rTypes.AccountIdentifier{Address: account.String()},
 		Amount: &rTypes.Amount{
-			Value:    fmt.Sprintf("%d", tx.GetAmount()),
-			Currency: dbToken.ToRosettaCurrency(),
+			Value:    fmt.Sprintf("%d", -int64(tx.GetAmount())),
+			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 		},
-		Type: t.GetOperationType(),
-		Metadata: map[string]interface{}{
-			"account": account.String(),
-		},
+		Type:     t.GetOperationType(),
+		Metadata: map[string]interface{}{"payer": payer.String()},
 	}
 
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (t *tokenWipeTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(operations)
+	payer, _, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -121,54 +119,67 @@ func (t *tokenWipeTransactionConstructor) Preprocess(operations []*rTypes.Operat
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
-	*tokenWipe,
-	*rTypes.Error,
+func (t *tokenWipeTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
+	payer *hedera.AccountID,
+	account *hedera.AccountID,
+	tokenAmount *types.TokenAmount,
+	err *rTypes.Error,
 ) {
-	if rErr := validateOperations(operations, 1, t.GetOperationType(), false); rErr != nil {
-		return nil, nil, rErr
+	if err = validateOperations(operations, 1, t.GetOperationType(), false); err != nil {
+		return
 	}
 
 	operation := operations[0]
-	tokenWipe := &tokenWipe{}
-	if rErr := parseOperationMetadata(t.validate, tokenWipe, operation.Metadata); rErr != nil {
-		return nil, nil, rErr
+	// operation.Account is the account with balance changes, the payer for token wipe is normally the account who owns
+	// the token wipe key and different than operation.Account; so the payer account is in set in operation.Metadata
+	payerAccountId, err := parsePayerMetadata(t.validate, operation.Metadata)
+	if err != nil {
+		return
 	}
 
-	if isZeroAccountId(*tokenWipe.Account) {
-		return nil, nil, hErrors.ErrInvalidAccount
+	var amount types.Amount
+	if amount, err = types.NewAmount(operation.Amount); err != nil {
+		return
 	}
 
-	value, err := strconv.ParseInt(operation.Amount.Value, 10, 64)
-	if err != nil || value <= 0 {
-		return nil, nil, hErrors.ErrInvalidAmount
-	}
-	tokenWipe.Amount = uint64(value)
-
-	token, rErr := validateToken(t.tokenRepo, operation.Amount.Currency)
-	if rErr != nil {
-		return nil, nil, rErr
-	}
-	tokenWipe.Token = *token
-
-	payer, err := hedera.AccountIDFromString(operations[0].Account.Address)
-	if err != nil || isZeroAccountId(payer) {
-		return nil, nil, hErrors.ErrInvalidAccount
+	var ok bool
+	var tmpTokenAmount *types.TokenAmount
+	err = errors.ErrInvalidOperationsAmount
+	if tmpTokenAmount, ok = amount.(*types.TokenAmount); !ok {
+		return
 	}
 
-	return &payer, tokenWipe, nil
+	if tmpTokenAmount.Value >= 0 ||
+		(tmpTokenAmount.Type == domain.TokenTypeNonFungibleUnique && len(tmpTokenAmount.SerialNumbers) == 0) {
+		return
+	}
+
+	if _, err = validateToken(ctx, t.tokenRepo, operation.Amount.Currency); err != nil {
+		return
+	}
+
+	accountId, _ := hedera.AccountIDFromString(operation.Account.Address)
+	err = errors.ErrInvalidAccount
+	if isZeroAccountId(*payerAccountId) || isZeroAccountId(accountId) {
+		return
+	}
+
+	payer = payerAccountId
+	account = &accountId
+	tokenAmount = tmpTokenAmount
+	err = nil
+	return
 }
 
 func (t *tokenWipeTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeTokenWipe
+	return types.OperationTypeTokenWipe
 }
 
 func (t *tokenWipeTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func newTokenWipeTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenWipeTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	return &tokenWipeTransactionConstructor{
 		tokenRepo:       tokenRepo,
 		transactionType: reflect.TypeOf(hedera.TokenWipeTransaction{}).Name(),

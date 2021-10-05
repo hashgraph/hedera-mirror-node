@@ -21,18 +21,25 @@
 package construction
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
+	"time"
 
-	"github.com/coinbase/rosetta-sdk-go/types"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
-func compareCurrency(currencyA *types.Currency, currencyB *types.Currency) bool {
+type payerMetadata struct {
+	Payer *hedera.AccountID `json:"payer" validate:"required"`
+}
+
+func compareCurrency(currencyA *rTypes.Currency, currencyB *rTypes.Currency) bool {
 	if currencyA == currencyB {
 		return true
 	}
@@ -48,6 +55,14 @@ func compareCurrency(currencyA *types.Currency, currencyB *types.Currency) bool 
 	}
 
 	return true
+}
+
+func getTransactionId(payer hedera.AccountID, validStartNanos int64) hedera.TransactionID {
+	if validStartNanos == 0 {
+		return hedera.TransactionIDGenerate(payer)
+	}
+
+	return hedera.NewTransactionIDWithValidStart(payer, time.Unix(0, validStartNanos))
 }
 
 func isEmptyPublicKey(key hedera.Key) bool {
@@ -71,7 +86,7 @@ func parseOperationMetadata(
 	validate *validator.Validate,
 	out interface{},
 	metadatas ...map[string]interface{},
-) *types.Error {
+) *rTypes.Error {
 	metadata := make(map[string]interface{})
 
 	for _, m := range metadatas {
@@ -100,7 +115,58 @@ func parseOperationMetadata(
 	return nil
 }
 
-func validateOperations(operations []*types.Operation, size int, opType string, expectNilAmount bool) *types.Error {
+func parsePayerMetadata(validate *validator.Validate, metadata map[string]interface{}) (
+	*hedera.AccountID,
+	*rTypes.Error,
+) {
+	payerMetadata := payerMetadata{}
+	if err := parseOperationMetadata(validate, &payerMetadata, metadata); err != nil {
+		return nil, err
+	}
+
+	return payerMetadata.Payer, nil
+}
+
+func preprocessTokenFreezeKyc(
+	ctx context.Context,
+	operations []*rTypes.Operation,
+	operationType string,
+	tokenRepo interfaces.TokenRepository,
+	validate *validator.Validate,
+) (*hedera.AccountID, *hedera.AccountID, *hedera.TokenID, *rTypes.Error) {
+	if rErr := validateOperations(operations, 1, operationType, false); rErr != nil {
+		return nil, nil, nil, rErr
+	}
+
+	operation := operations[0]
+	payer, rErr := parsePayerMetadata(validate, operation.Metadata)
+	if rErr != nil {
+		return nil, nil, nil, rErr
+	}
+
+	amount := operation.Amount
+	if amount.Value != "0" {
+		return nil, nil, nil, errors.ErrInvalidOperationsAmount
+	}
+
+	token, rErr := validateToken(ctx, tokenRepo, amount.Currency)
+	if rErr != nil {
+		return nil, nil, nil, rErr
+	}
+
+	account, err := hedera.AccountIDFromString(operation.Account.Address)
+	if err != nil {
+		return nil, nil, nil, errors.ErrInvalidAccount
+	}
+
+	if isZeroAccountId(*payer) || isZeroAccountId(account) {
+		return nil, nil, nil, errors.ErrInvalidAccount
+	}
+
+	return payer, &account, token, nil
+}
+
+func validateOperations(operations []*rTypes.Operation, size int, opType string, expectNilAmount bool) *rTypes.Error {
 	if len(operations) == 0 {
 		return errors.ErrEmptyOperations
 	}
@@ -134,16 +200,27 @@ func validateOperations(operations []*types.Operation, size int, opType string, 
 	return nil
 }
 
-func validateToken(tokenRepo repositories.TokenRepository, currency *types.Currency) (*hedera.TokenID, *types.Error) {
-	token, rErr := tokenRepo.Find(currency.Symbol)
+func validateToken(
+	ctx context.Context,
+	tokenRepo interfaces.TokenRepository,
+	currency *rTypes.Currency,
+) (*hedera.TokenID, *rTypes.Error) {
+	token, rErr := tokenRepo.Find(ctx, currency.Symbol)
 	if rErr != nil {
 		return nil, rErr
 	}
 
 	if token.Decimals != int64(currency.Decimals) {
-		log.Errorf("token decimals mismatch: provided - %d, actual - %d", currency.Decimals, token.Decimals)
 		return nil, errors.ErrInvalidToken
 	}
 
-	return token.ToHederaTokenId(), nil
+	if len(currency.Metadata) != 1 {
+		return nil, errors.ErrInvalidCurrency
+	}
+
+	if tokenType, ok := currency.Metadata[types.MetadataKeyType].(string); !ok || tokenType != token.Type {
+		return nil, errors.ErrInvalidCurrency
+	}
+
+	return types.Token{Token: token}.ToHederaTokenId(), nil
 }

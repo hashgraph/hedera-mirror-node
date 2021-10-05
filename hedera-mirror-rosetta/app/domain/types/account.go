@@ -21,34 +21,30 @@
 package types
 
 import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/services/encoding"
+	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 )
 
 // Account is domain level struct used to represent Rosetta Account
 type Account struct {
-	entityid.EntityId
+	domain.EntityId
 }
 
 // NewAccountFromEncodedID - creates new instance of Account struct
 func NewAccountFromEncodedID(encodedID int64) (Account, error) {
-	entityId, err := entityid.Decode(encodedID)
-	if err != nil {
-		return Account{}, err
-	}
-
+	entityId, err := domain.DecodeEntityId(encodedID)
 	return Account{entityId}, err
 }
 
 // ToRosetta returns Rosetta type Account from the current domain type Account
-func (a Account) ToRosetta() *rTypes.AccountIdentifier {
-	return &rTypes.AccountIdentifier{Address: a.String()}
+func (a Account) ToRosetta() *types.AccountIdentifier {
+	return &types.AccountIdentifier{Address: a.String()}
 }
 
 // AccountFromString populates domain type Account from String Account
-func AccountFromString(account string) (Account, *rTypes.Error) {
-	entityId, err := entityid.FromString(account)
+func AccountFromString(account string) (Account, *types.Error) {
+	entityId, err := domain.EntityIdFromString(account)
 	if err != nil {
 		return Account{}, errors.ErrInvalidAccount
 	}

@@ -21,25 +21,28 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
-	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 type tokenDeleteTransactionConstructor struct {
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 	transactionType string
 }
 
 func (t *tokenDeleteTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payerId, tokenId, rErr := t.preprocess(operations)
+	validStartNanos int64,
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	payerId, tokenId, rErr := t.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -47,45 +50,43 @@ func (t *tokenDeleteTransactionConstructor) Construct(
 	tx, err := hedera.NewTokenDeleteTransaction().
 		SetTokenID(*tokenId).
 		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.TransactionIDGenerate(*payerId)).
+		SetTransactionID(getTransactionId(*payerId, validStartNanos)).
 		Freeze()
 	if err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
+		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) Parse(transaction ITransaction) (
+func (t *tokenDeleteTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
 	tokenDeleteTransaction, ok := transaction.(*hedera.TokenDeleteTransaction)
 	if !ok {
-		return nil, nil, hErrors.ErrTransactionInvalidType
+		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
 	payerId := tokenDeleteTransaction.GetTransactionID().AccountID
 	tokenId := tokenDeleteTransaction.GetTokenID()
 
 	if payerId == nil || isZeroAccountId(*payerId) || isZeroTokenId(tokenId) {
-		return nil, nil, hErrors.ErrInvalidTransaction
+		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	dbToken, err := t.tokenRepo.Find(tokenId.String())
+	dbToken, err := t.tokenRepo.Find(ctx, tokenId.String())
 	if err != nil {
 		return nil, nil, err
 	}
 
 	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{
-			Index: 0,
-		},
-		Account: &rTypes.AccountIdentifier{Address: payerId.String()},
+		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
+		Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
-			Currency: dbToken.ToRosettaCurrency(),
+			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 		},
 		Type: t.GetOperationType(),
 	}
@@ -93,11 +94,11 @@ func (t *tokenDeleteTransactionConstructor) Parse(transaction ITransaction) (
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
+func (t *tokenDeleteTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(operations)
+	payer, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func (t *tokenDeleteTransactionConstructor) Preprocess(operations []*rTypes.Oper
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (t *tokenDeleteTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*hedera.TokenID,
 	*rTypes.Error,
@@ -117,14 +118,14 @@ func (t *tokenDeleteTransactionConstructor) preprocess(operations []*rTypes.Oper
 	operation := operations[0]
 	payerId, err := hedera.AccountIDFromString(operation.Account.Address)
 	if err != nil || isZeroAccountId(payerId) {
-		return nil, nil, hErrors.ErrInvalidAccount
+		return nil, nil, errors.ErrInvalidAccount
 	}
 
 	if operation.Amount.Value != "0" {
-		return nil, nil, hErrors.ErrInvalidOperationsAmount
+		return nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
-	tokenId, rErr := validateToken(t.tokenRepo, operation.Amount.Currency)
+	tokenId, rErr := validateToken(ctx, t.tokenRepo, operation.Amount.Currency)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -133,14 +134,14 @@ func (t *tokenDeleteTransactionConstructor) preprocess(operations []*rTypes.Oper
 }
 
 func (t *tokenDeleteTransactionConstructor) GetOperationType() string {
-	return config.OperationTypeTokenDelete
+	return types.OperationTypeTokenDelete
 }
 
 func (t *tokenDeleteTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func newTokenDeleteTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenDeleteTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	return &tokenDeleteTransactionConstructor{
 		tokenRepo:       tokenRepo,
 		transactionType: reflect.TypeOf(hedera.TokenDeleteTransaction{}).Name(),

@@ -21,11 +21,12 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
@@ -42,18 +43,20 @@ type compositeTransactionConstructor struct {
 }
 
 func (c *compositeTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
+	validStartNanos int64,
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return h.Construct(nodeAccountId, operations)
+	return h.Construct(ctx, nodeAccountId, operations, validStartNanos)
 }
 
-func (c *compositeTransactionConstructor) Parse(transaction ITransaction) (
+func (c *compositeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -65,16 +68,19 @@ func (c *compositeTransactionConstructor) Parse(transaction ITransaction) (
 		return nil, nil, errors.ErrInternalServerError
 	}
 
-	return h.Parse(transaction)
+	return h.Parse(ctx, transaction)
 }
 
-func (c *compositeTransactionConstructor) Preprocess(operations []*rTypes.Operation) ([]hedera.AccountID, *rTypes.Error) {
+func (c *compositeTransactionConstructor) Preprocess(
+	ctx context.Context,
+	operations []*rTypes.Operation,
+) ([]hedera.AccountID, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, err
 	}
 
-	return h.Preprocess(operations)
+	return h.Preprocess(ctx, operations)
 }
 
 func (c *compositeTransactionConstructor) addConstructor(constructor transactionConstructorWithType) {
@@ -103,7 +109,7 @@ func (c *compositeTransactionConstructor) validate(operations []*rTypes.Operatio
 	return h, nil
 }
 
-func NewTransactionConstructor(tokenRepo repositories.TokenRepository) TransactionConstructor {
+func NewTransactionConstructor(tokenRepo interfaces.TokenRepository) TransactionConstructor {
 	c := &compositeTransactionConstructor{
 		constructorsByOperationType:   make(map[string]transactionConstructorWithType),
 		constructorsByTransactionType: make(map[string]transactionConstructorWithType),

@@ -21,17 +21,20 @@
 package construction
 
 import (
+	"context"
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 const accountAddress = "0.0.123"
+
+var defaultContext = context.Background()
 
 func TestCompareCurrency(t *testing.T) {
 	var tests = []struct {
@@ -42,8 +45,8 @@ func TestCompareCurrency(t *testing.T) {
 	}{
 		{
 			name:      "SamePointer",
-			currencyA: config.CurrencyHbar,
-			currencyB: config.CurrencyHbar,
+			currencyA: types.CurrencyHbar,
+			currencyB: types.CurrencyHbar,
 			expected:  true,
 		},
 		{
@@ -308,18 +311,18 @@ func TestValidateOperationsWithType(t *testing.T) {
 	}{
 		{
 			name:          "SuccessSingleOperation",
-			operations:    []*rTypes.Operation{getOperation(0, config.OperationTypeCryptoTransfer)},
+			operations:    []*rTypes.Operation{getOperation(0, types.OperationTypeCryptoTransfer)},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 		},
 		{
 			name: "SuccessMultipleOperations",
 			operations: []*rTypes.Operation{
-				getOperation(0, config.OperationTypeCryptoTransfer),
-				getOperation(1, config.OperationTypeCryptoTransfer),
+				getOperation(0, types.OperationTypeCryptoTransfer),
+				getOperation(1, types.OperationTypeCryptoTransfer),
 			},
 			size:          0,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 		},
 		{
 			name: "SuccessExpectNilAmount",
@@ -327,11 +330,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:            0,
-			operationType:   config.OperationTypeCryptoTransfer,
+			operationType:   types.OperationTypeCryptoTransfer,
 			expectNilAmount: true,
 		},
 		{
@@ -340,45 +343,45 @@ func TestValidateOperationsWithType(t *testing.T) {
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 					Amount:              &rTypes.Amount{},
 				},
 			},
 			size:            0,
-			operationType:   config.OperationTypeCryptoTransfer,
+			operationType:   types.OperationTypeCryptoTransfer,
 			expectNilAmount: true,
 			expectError:     true,
 		},
 		{
 			name:          "EmptyOperations",
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
 			name: "OperationsSizeMismatch",
 			operations: []*rTypes.Operation{
-				getOperation(0, config.OperationTypeCryptoTransfer),
-				getOperation(1, config.OperationTypeCryptoTransfer),
+				getOperation(0, types.OperationTypeCryptoTransfer),
+				getOperation(1, types.OperationTypeCryptoTransfer),
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
 			name:          "OperationTypeMismatch",
-			operations:    []*rTypes.Operation{getOperation(0, config.OperationTypeCryptoTransfer)},
+			operations:    []*rTypes.Operation{getOperation(0, types.OperationTypeCryptoTransfer)},
 			size:          1,
-			operationType: config.OperationTypeTokenCreate,
+			operationType: types.OperationTypeTokenCreate,
 			expectError:   true,
 		},
 		{
 			name: "MultipleOperationTypes",
 			operations: []*rTypes.Operation{
-				getOperation(0, config.OperationTypeCryptoTransfer),
-				getOperation(0, config.OperationTypeTokenCreate),
+				getOperation(0, types.OperationTypeCryptoTransfer),
+				getOperation(0, types.OperationTypeTokenCreate),
 			},
 			size:          0,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -393,11 +396,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 							Decimals: 10,
 						},
 					},
-					Type: config.OperationTypeCryptoTransfer,
+					Type: types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -412,11 +415,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 							Decimals: 10,
 						},
 					},
-					Type: config.OperationTypeCryptoTransfer,
+					Type: types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -425,11 +428,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 				{
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 		{
@@ -439,11 +442,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
 					Amount:              &rTypes.Amount{Value: "0"},
-					Type:                config.OperationTypeCryptoTransfer,
+					Type:                types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:          1,
-			operationType: config.OperationTypeCryptoTransfer,
+			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
 		},
 	}
@@ -470,11 +473,11 @@ func TestValidateToken(t *testing.T) {
 	}{
 		{
 			name:     "Success",
-			currency: dbTokenA.ToRosettaCurrency(),
+			currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 		},
 		{
 			name:         "TokenNotFound",
-			currency:     dbTokenA.ToRosettaCurrency(),
+			currency:     types.Token{Token: dbTokenA}.ToRosettaCurrency(),
 			tokenRepoErr: true,
 			expectError:  true,
 		},
@@ -487,7 +490,7 @@ func TestValidateToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 
 			if tt.tokenRepoErr {
 				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
@@ -495,13 +498,13 @@ func TestValidateToken(t *testing.T) {
 				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
 			}
 
-			token, err := validateToken(mockTokenRepo, tt.currency)
+			token, err := validateToken(defaultContext, mockTokenRepo, tt.currency)
 
 			if tt.expectError {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, dbTokenA.ToHederaTokenId(), token)
+				assert.Equal(t, types.Token{Token: dbTokenA}.ToHederaTokenId(), token)
 				mockTokenRepo.AssertExpectations(t)
 			}
 		})

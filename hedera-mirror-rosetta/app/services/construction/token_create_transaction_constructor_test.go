@@ -25,15 +25,15 @@ import (
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	initialSupply uint64 = 20000
-)
+const initialSupply uint64 = 20000
 
 func TestTokenCreateTransactionConstructorSuite(t *testing.T) {
 	suite.Run(t, new(tokenCreateTransactionConstructorSuite))
@@ -50,7 +50,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestNewTransactionConstruct
 
 func (suite *tokenCreateTransactionConstructorSuite) TestGetOperationType() {
 	h := newTokenCreateTransactionConstructor()
-	assert.Equal(suite.T(), config.OperationTypeTokenCreate, h.GetOperationType())
+	assert.Equal(suite.T(), types.OperationTypeTokenCreate, h.GetOperationType())
 }
 
 func (suite *tokenCreateTransactionConstructorSuite) TestGetSdkTransactionType() {
@@ -61,12 +61,15 @@ func (suite *tokenCreateTransactionConstructorSuite) TestGetSdkTransactionType()
 func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 	var tests = []struct {
 		name             string
+		tokenType        string
 		updateOperations updateOperationsFunc
+		validStartNanos  int64
 		expectError      bool
 	}{
-		{
-			name: "Success",
-		},
+		{name: "SuccessFT"},
+		{name: "SuccessFTExplicit", tokenType: domain.TokenTypeFungibleCommon},
+		{name: "SuccessNFT", tokenType: domain.TokenTypeNonFungibleUnique},
+		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{
 			name: "EmptyOperations",
 			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
@@ -79,7 +82,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenCreateOperations()
+			operations := getTokenCreateOperations(tt.tokenType)
 			h := newTokenCreateTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -87,7 +90,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 			}
 
 			// when
-			tx, signers, err := h.Construct(nodeAccountId, operations)
+			tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
 
 			// then
 			if tt.expectError {
@@ -98,13 +101,17 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{treasury, autoRenewAccount}, signers)
 				assertTokenCreateTransaction(t, operations[0], nodeAccountId, tx)
+
+				if tt.validStartNanos != 0 {
+					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
+				}
 			}
 		})
 	}
 }
 
 func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() ITransaction {
+	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTokenCreateTransaction().
 			SetAdminKey(adminKey).
 			SetAutoRenewAccount(autoRenewAccount).
@@ -126,7 +133,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 
 	var tests = []struct {
 		name           string
-		getTransaction func() ITransaction
+		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -135,14 +142,14 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TokenNameNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenSymbol(symbol).
@@ -152,7 +159,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TokenSymboolNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenName(name).
@@ -162,7 +169,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenName(name).
@@ -175,13 +182,13 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			expectedOperations := getTokenCreateOperations()
+			expectedOperations := getTokenCreateOperations("")
 
 			h := newTokenCreateTransactionConstructor()
 			tx := tt.getTransaction()
 
 			// when
-			operations, signers, err := h.Parse(tx)
+			operations, signers, err := h.Parse(defaultContext, tx)
 
 			// then
 			if tt.expectError {
@@ -203,158 +210,129 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
+		{name: "Success"},
 		{
-			name: "Success",
+			name:             "SuccessFT",
+			updateOperations: updateOperationMetadata(types.MetadataKeyType, domain.TokenTypeFungibleCommon),
 		},
 		{
-			name: "MissingMetadataName",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				delete(operations[0].Metadata, "name")
-				return operations
-			},
-			expectError: true,
+			name:             "SuccessNFT",
+			updateOperations: updateOperationMetadata(types.MetadataKeyType, domain.TokenTypeNonFungibleUnique),
 		},
 		{
-			name: "MissingMetadataSymbol",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				delete(operations[0].Metadata, "symbol")
-				return operations
-			},
-			expectError: true,
+			name:             "SuccessInfinite",
+			updateOperations: updateOperationMetadata("supply_type", domain.TokenSupplyTypeInfinite),
 		},
 		{
-			name: "InvalidAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account.Address = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:             "SuccessFinite",
+			updateOperations: updateOperationMetadata("supply_type", domain.TokenSupplyTypeFinite),
 		},
 		{
-			name: "InvalidMetadataAdminKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["admin_key"] = "admin key"
-				return operations
-			},
-			expectError: true,
+			name:             "MissingMetadataName",
+			updateOperations: deleteOperationMetadata("name"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoRenewAccount",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["auto_renew_account"] = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:             "MissingMetadataSymbol",
+			updateOperations: deleteOperationMetadata("symbol"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoRenewPeriod",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["auto_renew_period"] = "x"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidAccountAddress",
+			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataExpiry",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["expiry"] = "x"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataAdminKey",
+			updateOperations: updateOperationMetadata("admin_key", "admin_key"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataFreezeDefault",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["freeze_default"] = "xyz"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataAutoRenewAccount",
+			updateOperations: updateOperationMetadata("auto_renew_account", "x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoFreezeKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["freeze_key"] = "freeze key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataAutoRenewPeriod",
+			updateOperations: updateOperationMetadata("auto_renew_period", "x"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataAutoKycKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["kyc_key"] = "kyc key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataExpiry",
+			updateOperations: updateOperationMetadata("expiry", "x"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataMemo",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["memo"] = 156
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataFreezeDefault",
+			updateOperations: updateOperationMetadata("freeze_default", "xyz"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataName",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["name"] = 156
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataFreezeKey",
+			updateOperations: updateOperationMetadata("freeze_key", "freeze_key"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataSupplyKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["supply_key"] = "supply key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataKycKey",
+			updateOperations: updateOperationMetadata("kyc_key", "kyc_key"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataSymbol",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["symbol"] = 156
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataMemo",
+			updateOperations: updateOperationMetadata("memo", 156),
+			expectError:      true,
 		},
 		{
-			name: "InvalidMetadataWipeKey",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["wipe_key"] = "wipe key"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataName",
+			updateOperations: updateOperationMetadata("name", 156),
+			expectError:      true,
 		},
 		{
-			name: "MissingMetadata",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata = nil
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataSupplyKey",
+			updateOperations: updateOperationMetadata("supply_key", "supply_key"),
+			expectError:      true,
 		},
 		{
-			name: "MultipleOperations",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				return append(operations, &rTypes.Operation{})
-			},
-			expectError: true,
+			name:             "InvalidMetadataSymbol",
+			updateOperations: updateOperationMetadata("symbol", 156),
+			expectError:      true,
 		},
 		{
-			name: "InvalidOperationType",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Type = config.OperationTypeCryptoTransfer
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataSupplyType",
+			updateOperations: updateOperationMetadata("supply_type", "unknown"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidTokenType",
+			updateOperations: updateOperationMetadata(types.MetadataKeyType, "unknown"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidMetadataWipeKey",
+			updateOperations: updateOperationMetadata("wipe_key", "wipe_key"),
+			expectError:      true,
+		},
+		{
+			name:             "MissingMetadata",
+			updateOperations: getEmptyOperationMetadata,
+			expectError:      true,
+		},
+		{
+			name:             "MultipleOperations",
+			updateOperations: addOperation,
+			expectError:      true,
+		},
+		{
+			name:             "InvalidOperationType",
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
+			expectError:      true,
 		},
 	}
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenCreateOperations()
+			operations := getTokenCreateOperations("")
 			h := newTokenCreateTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -362,7 +340,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 			}
 
 			// when
-			signers, err := h.Preprocess(operations)
+			signers, err := h.Preprocess(defaultContext, operations)
 
 			// then
 			if tt.expectError {
@@ -380,7 +358,7 @@ func assertTokenCreateTransaction(
 	t *testing.T,
 	operation *rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.TokenCreateTransaction{}, actual)
 
@@ -404,29 +382,40 @@ func assertTokenCreateTransaction(
 	assert.Equal(t, operation.Metadata["supply_key"], tx.GetSupplyKey().String())
 	assert.Equal(t, operation.Metadata["symbol"], tx.GetTokenSymbol())
 	assert.Equal(t, operation.Metadata["wipe_key"], tx.GetWipeKey().String())
+
+	tokenType, _ := operation.Metadata[types.MetadataKeyType].(string)
+	sdkTokenType := hedera.TokenTypeNonFungibleUnique
+	if tokenType == "" || tokenType == domain.TokenTypeFungibleCommon {
+		sdkTokenType = hedera.TokenTypeFungibleCommon
+	}
+
+	assert.Equal(t, sdkTokenType, tx.GetTokenType())
 }
 
-func getTokenCreateOperations() []*rTypes.Operation {
-	return []*rTypes.Operation{
-		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                config.OperationTypeTokenCreate,
-			Account:             &rTypes.AccountIdentifier{Address: treasury.String()},
-			Metadata: map[string]interface{}{
-				"admin_key":          adminKeyStr,
-				"auto_renew_account": autoRenewAccount.String(),
-				"decimals":           uint(decimals),
-				"expiry":             expiry.Unix(),
-				"freeze_default":     false,
-				"freeze_key":         freezeKeyStr,
-				"initial_supply":     initialSupply,
-				"kyc_key":            kycKeyStr,
-				"memo":               memo,
-				"name":               name,
-				"supply_key":         supplyKeyStr,
-				"symbol":             symbol,
-				"wipe_key":           wipeKeyStr,
-			},
+func getTokenCreateOperations(tokenType string) []*rTypes.Operation {
+	operation := &rTypes.Operation{
+		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
+		Type:                types.OperationTypeTokenCreate,
+		Account:             &rTypes.AccountIdentifier{Address: treasury.String()},
+		Metadata: map[string]interface{}{
+			"admin_key":          adminKeyStr,
+			"auto_renew_account": autoRenewAccount.String(),
+			"decimals":           uint(decimals),
+			"expiry":             expiry.Unix(),
+			"freeze_default":     false,
+			"freeze_key":         freezeKeyStr,
+			"initial_supply":     initialSupply,
+			"kyc_key":            kycKeyStr,
+			"memo":               memo,
+			"name":               name,
+			"supply_key":         supplyKeyStr,
+			"symbol":             symbol,
+			"wipe_key":           wipeKeyStr,
 		},
 	}
+	if tokenType != "" {
+		operation.Metadata[types.MetadataKeyType] = tokenType
+	}
+
+	return []*rTypes.Operation{operation}
 }

@@ -32,7 +32,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -61,18 +62,18 @@ type DbResource struct {
 	network  *dockertest.Network
 }
 
-func CreateDbRecords(db *gorm.DB, records ...interface{}) {
+func CreateDbRecords(dbClient interfaces.DbClient, records ...interface{}) {
 	for _, record := range records {
-		db.Create(record)
+		dbClient.GetDb().Create(record)
 	}
 }
 
-func ExecSql(db *gorm.DB, sql string) {
-	db.Exec(sql)
+func ExecSql(dbClient interfaces.DbClient, sql string) {
+	dbClient.GetDb().Exec(sql)
 }
 
 // GetDbConfig returns the db config of the session
-func (d DbResource) GetDbConfig() types.Db {
+func (d DbResource) GetDbConfig() config.Db {
 	return d.params.toConfig()
 }
 
@@ -106,14 +107,14 @@ func (d dbParams) toJdbcUrl(endpoint string) string {
 	return fmt.Sprintf("jdbc:postgresql://%s/%s", endpoint, d.name)
 }
 
-func (d dbParams) toConfig() types.Db {
+func (d dbParams) toConfig() config.Db {
 	hostPort := strings.Split(d.endpoint, ":")
 	port, _ := strconv.ParseInt(hostPort[1], 10, 32)
-	return types.Db{
+	return config.Db{
 		Host:     hostPort[0],
 		Name:     d.name,
 		Password: d.password,
-		Pool: types.Pool{
+		Pool: config.Pool{
 			MaxIdleConnections: 20,
 			MaxLifetime:        30,
 			MaxOpenConnections: 100,
@@ -137,7 +138,7 @@ func CleanupDb(db *sql.DB) {
 	}
 }
 
-func SetupDb() DbResource {
+func SetupDb(migrate bool) DbResource {
 	var db *sql.DB
 
 	pool, err := dockertest.NewPool("")
@@ -171,8 +172,10 @@ func SetupDb() DbResource {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	log.Info("Run flyway migration")
-	runFlywayMigration(pool, network, dbParams)
+	if migrate {
+		log.Info("Run flyway migration")
+		runFlywayMigration(pool, network, dbParams)
+	}
 
 	return DbResource{
 		db:       db,

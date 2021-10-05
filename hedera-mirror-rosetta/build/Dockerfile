@@ -6,7 +6,8 @@
 FROM golang:1.17.1 as rosetta-builder
 COPY hedera-mirror-rosetta /hedera-mirror-rosetta
 WORKDIR /hedera-mirror-rosetta
-RUN go build -o rosetta-executable ./cmd
+ARG VERSION=development
+RUN go build -ldflags="-w -s -X main.Version=${VERSION}" -o hedera-mirror-rosetta
 
 # ---------------------------- Importer ----------------------------- #
 FROM openjdk:11.0 as java-builder
@@ -24,12 +25,11 @@ FROM ubuntu:20.04 as runner
 # ---------------------- Install Deps & PosgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
-RUN apt-get update && apt-get install -y gnupg lsb-release
+RUN apt-get update && apt-get install -y ca-certificates gnupg lsb-release
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
 
-# Add PostgreSQL's repository. It contains the most recent stable release
-#  of PostgreSQL.
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+# Add PostgreSQL's repository. It contains the most recent stable release of PostgreSQL.
+RUN echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
 
 # Install PostgreSQL 9.6, supervisor, git and openjdk-11
 ARG DEBIAN_FRONTEND=noninteractive
@@ -63,7 +63,7 @@ USER root
 
 # Copy the Rosetta Executable from the Rosetta Builder stage
 WORKDIR /var/rosetta
-COPY --from=rosetta-builder /hedera-mirror-rosetta/rosetta-executable .
+COPY --from=rosetta-builder /hedera-mirror-rosetta/hedera-mirror-rosetta .
 
 # Copy the Importer Jar and Config from the Java-Builder stage
 WORKDIR /var/importer

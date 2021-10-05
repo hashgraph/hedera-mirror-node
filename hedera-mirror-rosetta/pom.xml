@@ -31,6 +31,11 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
+                <configuration>
+                    <buildArgs>
+                        <VERSION>${release.version}</VERSION>
+                    </buildArgs>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.igormaznitsa</groupId>
@@ -63,16 +68,12 @@
                         <configuration>
                             <buildFlags>
                                 <flag>-a</flag>
-                                <flag>-i</flag>
                                 <flag>-race</flag>
                             </buildFlags>
-                            <sources>${project.basedir}/cmd</sources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>default-install</id>
-                        <configuration>
-                            <sources>${project.basedir}/cmd</sources>
+                            <ldFlags>
+                                <flag>-X</flag>
+                                <flag>main.Version=${release.version}</flag>
+                            </ldFlags>
                         </configuration>
                     </execution>
                 </executions>

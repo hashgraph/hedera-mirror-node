@@ -21,45 +21,49 @@
 package construction
 
 import (
+	"context"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/repositories"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 type tokenAssociateDissociateTransactionConstructor struct {
 	operationType   string
-	tokenRepo       repositories.TokenRepository
+	tokenRepo       interfaces.TokenRepository
 	transactionType string
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Construct(
+	ctx context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
-) (ITransaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenIds, rErr := t.preprocess(operations)
+	validStartNanos int64,
+) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	payer, tokenIds, rErr := t.preprocess(ctx, operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
-	var tx ITransaction
+	var tx interfaces.Transaction
 	var err error
-	if t.operationType == config.OperationTypeTokenAssociate {
+	transactionId := getTransactionId(*payer, validStartNanos)
+	if t.operationType == types.OperationTypeTokenAssociate {
 		tx, err = hedera.NewTokenAssociateTransaction().
 			SetAccountID(*payer).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenIDs(tokenIds...).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			SetTransactionID(transactionId).
 			Freeze()
 	} else {
 		tx, err = hedera.NewTokenDissociateTransaction().
 			SetAccountID(*payer).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTokenIDs(tokenIds...).
-			SetTransactionID(hedera.TransactionIDGenerate(*payer)).
+			SetTransactionID(transactionId).
 			Freeze()
 	}
 
@@ -70,18 +74,17 @@ func (t *tokenAssociateDissociateTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction ITransaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
-	*rTypes.Error,
-) {
+func (t *tokenAssociateDissociateTransactionConstructor) Parse(
+	ctx context.Context,
+	transaction interfaces.Transaction,
+) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
 	var accountId hedera.AccountID
 	var payerId *hedera.AccountID
 	var tokenIds []hedera.TokenID
 
 	switch tx := transaction.(type) {
 	case *hedera.TokenAssociateTransaction:
-		if t.operationType != config.OperationTypeTokenAssociate {
+		if t.operationType != types.OperationTypeTokenAssociate {
 			return nil, nil, hErrors.ErrTransactionInvalidType
 		}
 
@@ -89,7 +92,7 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction ITran
 		payerId = tx.GetTransactionID().AccountID
 		tokenIds = tx.GetTokenIDs()
 	case *hedera.TokenDissociateTransaction:
-		if t.operationType != config.OperationTypeTokenDissociate {
+		if t.operationType != types.OperationTypeTokenDissociate {
 			return nil, nil, hErrors.ErrTransactionInvalidType
 		}
 
@@ -116,7 +119,7 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction ITran
 	operations := make([]*rTypes.Operation, 0, len(tokenIds))
 
 	for index, tokenId := range tokenIds {
-		dbToken, err := t.tokenRepo.Find(tokenId.String())
+		dbToken, err := t.tokenRepo.Find(ctx, tokenId.String())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -127,7 +130,7 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction ITran
 			Account:             account,
 			Amount: &rTypes.Amount{
 				Value:    "0",
-				Currency: dbToken.ToRosettaCurrency(),
+				Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
 			},
 		})
 	}
@@ -135,11 +138,11 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(transaction ITran
 	return operations, []hedera.AccountID{accountId}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(operations []*rTypes.Operation) (
-	[]hedera.AccountID,
-	*rTypes.Error,
-) {
-	payer, _, err := t.preprocess(operations)
+func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(
+	ctx context.Context,
+	operations []*rTypes.Operation,
+) ([]hedera.AccountID, *rTypes.Error) {
+	payer, _, err := t.preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -147,11 +150,10 @@ func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(operations [
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
-	[]hedera.TokenID,
-	*rTypes.Error,
-) {
+func (t *tokenAssociateDissociateTransactionConstructor) preprocess(
+	ctx context.Context,
+	operations []*rTypes.Operation,
+) (*hedera.AccountID, []hedera.TokenID, *rTypes.Error) {
 	if rErr := validateOperations(operations, 0, t.operationType, false); rErr != nil {
 		return nil, nil, rErr
 	}
@@ -164,7 +166,7 @@ func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations [
 		}
 
 		currency := operation.Amount.Currency
-		token, rErr := validateToken(t.tokenRepo, currency)
+		token, rErr := validateToken(ctx, t.tokenRepo, currency)
 		if rErr != nil {
 			return nil, nil, rErr
 		}
@@ -188,19 +190,19 @@ func (t *tokenAssociateDissociateTransactionConstructor) GetSdkTransactionType()
 	return t.transactionType
 }
 
-func newTokenAssociateTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenAssociateTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenAssociateTransaction{}).Name()
 	return &tokenAssociateDissociateTransactionConstructor{
-		operationType:   config.OperationTypeTokenAssociate,
+		operationType:   types.OperationTypeTokenAssociate,
 		tokenRepo:       tokenRepo,
 		transactionType: transactionType,
 	}
 }
 
-func newTokenDissociateTransactionConstructor(tokenRepo repositories.TokenRepository) transactionConstructorWithType {
+func newTokenDissociateTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenDissociateTransaction{}).Name()
 	return &tokenAssociateDissociateTransactionConstructor{
-		operationType:   config.OperationTypeTokenDissociate,
+		operationType:   types.OperationTypeTokenDissociate,
 		tokenRepo:       tokenRepo,
 		transactionType: transactionType}
 }

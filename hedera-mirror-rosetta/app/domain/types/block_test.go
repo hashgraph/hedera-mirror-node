@@ -21,9 +21,10 @@
 package types
 
 import (
+	"testing"
+
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func exampleBlock() *Block {

@@ -20,9 +20,7 @@
 
 package types
 
-import (
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-)
+import "github.com/coinbase/rosetta-sdk-go/types"
 
 // Operation is domain level struct used to represent Operation within Transaction
 type Operation struct {
@@ -35,22 +33,18 @@ type Operation struct {
 }
 
 // ToRosetta returns Rosetta type Operation from the current domain type Operation
-func (o *Operation) ToRosetta() *rTypes.Operation {
-	var amount *rTypes.Amount
+func (o *Operation) ToRosetta() *types.Operation {
+	var amount *types.Amount
 	if o.Amount != nil {
 		amount = o.Amount.ToRosetta()
 	}
 
-	rOperation := rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{
-			Index: o.Index,
-		},
-		RelatedOperations: []*rTypes.OperationIdentifier{},
-		Type:              o.Type,
-		Status:            &o.Status,
-		Account:           o.Account.ToRosetta(),
-		Amount:            amount,
-		Metadata:          o.Metadata,
+	return &types.Operation{
+		OperationIdentifier: &types.OperationIdentifier{Index: o.Index},
+		Type:                o.Type,
+		Status:              &o.Status,
+		Account:             o.Account.ToRosetta(),
+		Amount:              amount,
+		Metadata:            o.Metadata,
 	}
-	return &rOperation
 }

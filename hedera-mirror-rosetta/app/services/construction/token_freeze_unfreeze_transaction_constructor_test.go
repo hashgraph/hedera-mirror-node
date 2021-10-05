@@ -24,8 +24,9 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -40,17 +41,17 @@ type tokenFreezeUnfreezeTransactionConstructorSuite struct {
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestNewTokenFreezeTransactionConstructor() {
-	h := newTokenFreezeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenFreezeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestNewTokenUnfreezeTransactionConstructor() {
-	h := newTokenUnfreezeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenUnfreezeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetOperationType() {
-	var tests = []struct {
+	tests := []struct {
 		name       string
 		newHandler newConstructorFunc
 		expected   string
@@ -58,25 +59,25 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetOperationTyp
 		{
 			name:       "TokenFreezeTransactionConstructor",
 			newHandler: newTokenFreezeTransactionConstructor,
-			expected:   config.OperationTypeTokenFreeze,
+			expected:   types.OperationTypeTokenFreeze,
 		},
 		{
 			name:       "TokenUnfreezeTransactionConstructor",
 			newHandler: newTokenUnfreezeTransactionConstructor,
-			expected:   config.OperationTypeTokenUnfreeze,
+			expected:   types.OperationTypeTokenUnfreeze,
 		},
 	}
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&repository.MockTokenRepository{})
+			h := tt.newHandler(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetSdkTransactionType() {
-	var tests = []struct {
+	tests := []struct {
 		name       string
 		newHandler newConstructorFunc
 		expected   string
@@ -95,7 +96,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetSdkTransacti
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&repository.MockTokenRepository{})
+			h := tt.newHandler(&mocks.MockTokenRepository{})
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -105,18 +106,12 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 	var tests = []struct {
 		name             string
 		updateOperations updateOperationsFunc
+		validStartNanos  int64
 		expectError      bool
 	}{
-		{
-			name: "Success",
-		},
-		{
-			name: "EmptyOperations",
-			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
-				return make([]*rTypes.Operation, 0)
-			},
-			expectError: true,
-		},
+		{name: "Success"},
+		{name: "SuccessValidStartNanos", validStartNanos: 100},
+		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
 	runTests := func(t *testing.T, operationType string, newHandler newConstructorFunc) {
@@ -124,7 +119,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := getFreezeUnfreezeOperations(operationType)
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
 
@@ -133,7 +128,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 				}
 
 				// when
-				tx, signers, err := h.Construct(nodeAccountId, operations)
+				tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
 
 				// then
 				if tt.expectError {
@@ -145,17 +140,21 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assertTokenFreezeUnfreezeTransaction(t, operations[0], nodeAccountId, tx)
 					mockTokenRepo.AssertExpectations(t)
+
+					if tt.validStartNanos != 0 {
+						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
+					}
 				}
 			})
 		}
 	}
 
 	suite.T().Run("TokenFreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
 	})
 
 	suite.T().Run("TokenUnfreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
 	})
 }
 
@@ -171,18 +170,17 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 		SetTokenID(tokenIdA).
 		SetTransactionID(hedera.TransactionIDGenerate(payerId))
 
-	defaultGetTransaction := func(operationType string) ITransaction {
-		if operationType == config.OperationTypeTokenFreeze {
+	defaultGetTransaction := func(operationType string) interfaces.Transaction {
+		if operationType == types.OperationTypeTokenFreeze {
 			return tokenFreezeTransaction
 		}
-
 		return tokenUnfreezeTransaction
 	}
 
 	var tests = []struct {
 		name           string
 		tokenRepoErr   bool
-		getTransaction func(operationType string) ITransaction
+		getTransaction func(operationType string) interfaces.Transaction
 		expectError    bool
 	}{
 		{
@@ -197,18 +195,17 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func(operationType string) ITransaction {
+			getTransaction: func(operationType string) interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionMismatch",
-			getTransaction: func(operationType string) ITransaction {
-				if operationType == config.OperationTypeTokenFreeze {
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenFreeze {
 					return tokenUnfreezeTransaction
 				}
-
 				return tokenFreezeTransaction
 			},
 			expectError: true,
@@ -221,7 +218,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 				// given
 				expectedOperations := getFreezeUnfreezeOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 				tx := tt.getTransaction(operationType)
 
@@ -232,7 +229,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 				}
 
 				// when
-				operations, signers, err := h.Parse(tx)
+				operations, signers, err := h.Parse(defaultContext, tx)
 
 				// then
 				if tt.expectError {
@@ -250,11 +247,11 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 	}
 
 	suite.T().Run("TokenFreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
 	})
 
 	suite.T().Run("TokenUnfreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
 	})
 }
 
@@ -265,52 +262,32 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
+		{name: "Success"},
 		{
-			name:             "Success",
-			updateOperations: nil,
-			expectError:      false,
+			name:             "NoOperationMetadata",
+			updateOperations: getEmptyOperationMetadata,
+			expectError:      true,
 		},
 		{
-			name: "NoOperationMetadata",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata = nil
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidOperationMetadata",
+			updateOperations: updateOperationMetadata("payer", "x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "ZeroAccountId",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["account"] = "0.0.0"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidAccountAddress",
+			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidOperationMetadata",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata = map[string]interface{}{
-					"account": "x.y.z",
-				}
-				return operations
-			},
-			expectError: true,
+			name:             "ZeroAccountId",
+			updateOperations: updateOperationAccount("0.0.0"),
+			expectError:      true,
 		},
+
 		{
-			name: "InvalidAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account.Address = "x.y.z"
-				return operations
-			},
-			expectError: true,
-		},
-		{
-			name: "TokenDecimalsMismatch",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Currency.Decimals = 1990
-				return operations
-			},
-			expectError: true,
+			name:             "TokenDecimalsMismatch",
+			updateOperations: updateTokenDecimals(1990),
+			expectError:      true,
 		},
 		{
 			name:         "TokenNotFound",
@@ -318,19 +295,14 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 			expectError:  true,
 		},
 		{
-			name: "MultipleOperations",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				return append(operations, &rTypes.Operation{})
-			},
-			expectError: true,
+			name:             "MultipleOperations",
+			updateOperations: addOperation,
+			expectError:      true,
 		},
 		{
-			name: "InvalidOperationType",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Type = config.OperationTypeCryptoTransfer
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidOperationType",
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
+			expectError:      true,
 		},
 	}
 
@@ -340,7 +312,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 				// given
 				operations := getFreezeUnfreezeOperations(operationType)
 
-				mockTokenRepo := &repository.MockTokenRepository{}
+				mockTokenRepo := &mocks.MockTokenRepository{}
 				h := newHandler(mockTokenRepo)
 
 				if tt.tokenRepoErr {
@@ -354,7 +326,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 				}
 
 				// when
-				signers, err := h.Preprocess(operations)
+				signers, err := h.Preprocess(defaultContext, operations)
 
 				// then
 				if tt.expectError {
@@ -370,11 +342,11 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 	}
 
 	suite.T().Run("TokenFreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenFreeze, newTokenFreezeTransactionConstructor)
 	})
 
 	suite.T().Run("TokenUnfreezeTransactionConstructor", func(t *testing.T) {
-		runTests(t, config.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
+		runTests(t, types.OperationTypeTokenUnfreeze, newTokenUnfreezeTransactionConstructor)
 	})
 }
 
@@ -382,9 +354,9 @@ func assertTokenFreezeUnfreezeTransaction(
 	t *testing.T,
 	operation *rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
-	if operation.Type == config.OperationTypeTokenFreeze {
+	if operation.Type == types.OperationTypeTokenFreeze {
 		assert.IsType(t, &hedera.TokenFreezeTransaction{}, actual)
 	} else {
 		assert.IsType(t, &hedera.TokenUnfreezeTransaction{}, actual)
@@ -405,8 +377,8 @@ func assertTokenFreezeUnfreezeTransaction(
 		token = tx.GetTokenID().String()
 	}
 
-	assert.Equal(t, operation.Metadata["account"], account)
-	assert.Equal(t, operation.Account.Address, payer)
+	assert.Equal(t, operation.Metadata["payer"], payer)
+	assert.Equal(t, operation.Account.Address, account)
 	assert.Equal(t, operation.Amount.Currency.Symbol, token)
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 }
@@ -416,14 +388,9 @@ func getFreezeUnfreezeOperations(operationType string) []*rTypes.Operation {
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                operationType,
-			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-			Amount: &rTypes.Amount{
-				Value:    "0",
-				Currency: dbTokenA.ToRosettaCurrency(),
-			},
-			Metadata: map[string]interface{}{
-				"account": accountId.String(),
-			},
+			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenACurrency},
+			Metadata:            map[string]interface{}{"payer": payerId.String()},
 		},
 	}
 }

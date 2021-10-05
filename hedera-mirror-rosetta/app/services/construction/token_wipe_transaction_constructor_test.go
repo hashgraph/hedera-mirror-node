@@ -25,8 +25,9 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/config"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks/repository"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -41,17 +42,17 @@ type tokenWipeTransactionConstructorSuite struct {
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := newTokenWipeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetOperationType() {
-	h := newTokenWipeTransactionConstructor(&repository.MockTokenRepository{})
-	assert.Equal(suite.T(), config.OperationTypeTokenWipe, h.GetOperationType())
+	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
+	assert.Equal(suite.T(), types.OperationTypeTokenWipe, h.GetOperationType())
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetSdkTransactionType() {
-	h := newTokenWipeTransactionConstructor(&repository.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
 	assert.Equal(suite.T(), "TokenWipeTransaction", h.GetSdkTransactionType())
 }
 
@@ -59,25 +60,19 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 	var tests = []struct {
 		name             string
 		updateOperations updateOperationsFunc
+		validStartNanos  int64
 		expectError      bool
 	}{
-		{
-			name: "Success",
-		},
-		{
-			name: "EmptyOperations",
-			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
-				return make([]*rTypes.Operation, 0)
-			},
-			expectError: true,
-		},
+		{name: "Success"},
+		{name: "SuccessValidStartNanos", validStartNanos: 100},
+		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := getTokenWipeOperations()
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenWipeTransactionConstructor(mockTokenRepo)
 			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
 
@@ -86,7 +81,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 			}
 
 			// when
-			tx, signers, err := h.Construct(nodeAccountId, operations)
+			tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
 
 			// then
 			if tt.expectError {
@@ -98,16 +93,20 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 				assertTokenWipeTransaction(t, operations[0], nodeAccountId, tx)
 				mockTokenRepo.AssertExpectations(t)
+
+				if tt.validStartNanos != 0 {
+					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
+				}
 			}
 		})
 	}
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
-	defaultGetTransaction := func() ITransaction {
+	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTokenWipeTransaction().
 			SetAccountID(accountId).
-			SetAmount(amount).
+			SetAmount(defaultAmount).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetTransactionID(hedera.TransactionIDGenerate(payerId)).
 			SetTokenID(tokenIdA)
@@ -116,13 +115,10 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 	var tests = []struct {
 		name           string
 		tokenRepoErr   bool
-		getTransaction func() ITransaction
+		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
-		{
-			name:           "Success",
-			getTransaction: defaultGetTransaction,
-		},
+		{name: "Success", getTransaction: defaultGetTransaction},
 		{
 			name:           "TokenNotFound",
 			tokenRepoErr:   true,
@@ -131,16 +127,16 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "InvalidTransaction",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
 		},
 		{
 			name: "AccountIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
-					SetAmount(amount).
+					SetAmount(defaultAmount).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId)).
 					SetTokenID(tokenIdA)
@@ -149,10 +145,10 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TransactionIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
 					SetAccountID(accountId).
-					SetAmount(amount).
+					SetAmount(defaultAmount).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenID(tokenIdA)
 			},
@@ -160,10 +156,10 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 		},
 		{
 			name: "TokenIDNotSet",
-			getTransaction: func() ITransaction {
+			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
 					SetAccountID(accountId).
-					SetAmount(amount).
+					SetAmount(defaultAmount).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTransactionID(hedera.TransactionIDGenerate(payerId))
 			},
@@ -176,7 +172,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 			// given
 			expectedOperations := getTokenWipeOperations()
 
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenWipeTransactionConstructor(mockTokenRepo)
 			tx := tt.getTransaction()
 
@@ -187,7 +183,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 			}
 
 			// when
-			operations, signers, err := h.Parse(tx)
+			operations, signers, err := h.Parse(defaultContext, tx)
 
 			// then
 			if tt.expectError {
@@ -206,39 +202,27 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 
 func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 	var tests = []struct {
-		name             string
-		tokenRepoErr     bool
-		updateOperations updateOperationsFunc
-		expectError      bool
+		name                     string
+		mockTokenRepoConfigIndex int
+		tokenRepoErr             bool
+		updateOperations         updateOperationsFunc
+		expectError              bool
 	}{
+		{name: "Success"},
 		{
-			name:             "Success",
-			updateOperations: nil,
-			expectError:      false,
+			name:             "InvalidAccountAddress",
+			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account.Address = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidAmountValue",
+			updateOperations: updateAmountValue("0"),
+			expectError:      true,
 		},
 		{
-			name: "InvalidAmountValue",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Value = "0"
-				return operations
-			},
-			expectError: true,
-		},
-		{
-			name: "TokenDecimalsMismatch",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Amount.Currency.Decimals = 1990
-				return operations
-			},
-			expectError: true,
+			name:             "TokenDecimalsMismatch",
+			updateOperations: updateTokenDecimals(1990),
+			expectError:      true,
 		},
 		{
 			name:         "TokenNotFound",
@@ -246,43 +230,40 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			expectError:  true,
 		},
 		{
-			name: "InvalidMetadataAccount",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["account"] = "x.y.z"
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidMetadataPayer",
+			updateOperations: updateOperationMetadata("payer", "x.y.z"),
+			expectError:      true,
 		},
 		{
-			name: "ZeroMetadataAccount",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata["account"] = "0.0.0"
-				return operations
-			},
-			expectError: true,
+			name:             "ZeroMetadataPayer",
+			updateOperations: updateOperationMetadata("payer", "0.0.0"),
+			expectError:      true,
 		},
 		{
-			name: "MissingMetadata",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Metadata = nil
-				return operations
-			},
-			expectError: true,
+			name:             "MissingMetadata",
+			updateOperations: getEmptyOperationMetadata,
+			expectError:      true,
 		},
 		{
-			name: "MultipleOperations",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				return append(operations, &rTypes.Operation{})
-			},
-			expectError: true,
+			name:             "MultipleOperations",
+			updateOperations: addOperation,
+			expectError:      true,
 		},
 		{
-			name: "InvalidOperationType",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Type = config.OperationTypeCryptoTransfer
-				return operations
-			},
-			expectError: true,
+			name:             "InvalidOperationType",
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
+			expectError:      true,
+		},
+		{
+			name:                     "NFTSerialNumbersCountMismatch",
+			mockTokenRepoConfigIndex: 2,
+			updateOperations:         updateAmount(&rTypes.Amount{Value: "-2", Currency: tokenCCurrency}),
+			expectError:              true,
+		},
+		{
+			name:             "InvalidCurrency",
+			updateOperations: updateCurrency(types.CurrencyHbar),
+			expectError:      true,
 		},
 	}
 
@@ -291,13 +272,13 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			// given
 			operations := getTokenWipeOperations()
 
-			mockTokenRepo := &repository.MockTokenRepository{}
+			mockTokenRepo := &mocks.MockTokenRepository{}
 			h := newTokenWipeTransactionConstructor(mockTokenRepo)
 
 			if tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
+				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[tt.mockTokenRepoConfigIndex])
 			} else {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.mockTokenRepoConfigIndex])
 			}
 
 			if tt.updateOperations != nil {
@@ -305,7 +286,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			}
 
 			// when
-			signers, err := h.Preprocess(operations)
+			signers, err := h.Preprocess(defaultContext, operations)
 
 			// then
 			if tt.expectError {
@@ -324,19 +305,19 @@ func assertTokenWipeTransaction(
 	t *testing.T,
 	operation *rTypes.Operation,
 	nodeAccountId hedera.AccountID,
-	actual ITransaction,
+	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.TokenWipeTransaction{}, actual)
 
 	tx, _ := actual.(*hedera.TokenWipeTransaction)
 	account := tx.GetAccountID().String()
-	amount := fmt.Sprintf("%d", tx.GetAmount())
+	amount := fmt.Sprintf("%d", -int64(tx.GetAmount()))
 	payer := tx.GetTransactionID().AccountID.String()
 	token := tx.GetTokenID().String()
 
-	assert.Equal(t, operation.Metadata["account"], account)
+	assert.Equal(t, operation.Metadata["payer"], payer)
 	assert.Equal(t, operation.Amount.Value, amount)
-	assert.Equal(t, operation.Account.Address, payer)
+	assert.Equal(t, operation.Account.Address, account)
 	assert.Equal(t, operation.Amount.Currency.Symbol, token)
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 }
@@ -345,15 +326,13 @@ func getTokenWipeOperations() []*rTypes.Operation {
 	return []*rTypes.Operation{
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                config.OperationTypeTokenWipe,
-			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
+			Type:                types.OperationTypeTokenWipe,
+			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
 			Amount: &rTypes.Amount{
-				Value:    fmt.Sprintf("%d", amount),
-				Currency: dbTokenA.ToRosettaCurrency(),
+				Value:    fmt.Sprintf("%d", -defaultAmount),
+				Currency: tokenACurrency,
 			},
-			Metadata: map[string]interface{}{
-				"account": accountId.String(),
-			},
+			Metadata: map[string]interface{}{"payer": payerId.String()},
 		},
 	}
 }
