@@ -136,7 +136,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         Entity nft3Entity = entity(nftClass3);
 
         entityRepository.saveAll(List.of(ft1Entity, ft2Entity, nft1Entity, nft2Entity, nft3Entity));
-//        tokenRepository.saveAll(List.of(ftClass1, ftClass2, nftClass1, nftClass2, nftClass3));
 
         long account1Ft1DissociateTimestamp = 70;
         long account1Nft1DissociateTimestamp = 75;
