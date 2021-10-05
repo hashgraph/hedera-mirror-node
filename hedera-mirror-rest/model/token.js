@@ -26,6 +26,7 @@ class Token {
    */
   constructor(token) {
     this.createdTimestamp = BigInt(token.created_timestamp);
+    this.deleted = token.deleted;
     this.decimals = BigInt(token.decimals);
     this.feeScheduleKey = token.fee_schedule_key;
     this.feeScheduleKeyEd25519Hex = token.fee_schedule_key_ed25519_hex;

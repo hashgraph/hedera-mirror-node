@@ -355,6 +355,7 @@ paths:
                     auto_renew_account: 0.1.2
                     auto_renew_period:
                     created_timestamp: '1234567890.000000001'
+                    deleted: false
                     decimals: 1000
                     expiry_timestamp:
                     freeze_default: false
@@ -366,6 +367,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
                     max_supply: 9223372036854776000
+                    memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
                     supply_key:
@@ -403,6 +405,7 @@ paths:
                     auto_renew_account: 0.1.2
                     auto_renew_period:
                     created_timestamp: '1234567890.000000001'
+                    deleted: false
                     decimals: 0
                     expiry_timestamp:
                     freeze_default: false
@@ -414,6 +417,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
                     max_supply: 9223372036854776000
+                    memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
                     supply_key:

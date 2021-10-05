@@ -621,10 +621,7 @@ const getTokenBalances = async (req, res) => {
 const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.DESC;
-  const conditions = [
-    `${nftQueryColumns.TOKEN_ID} = $1`,
-    `${nftQueryColumns.DELETED} = false and ${sqlQueryColumns.DELETED} != true`,
-  ];
+  const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`];
   const params = [tokenId];
 
   for (const filter of filters) {
