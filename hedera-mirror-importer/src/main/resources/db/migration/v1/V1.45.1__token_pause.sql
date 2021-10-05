@@ -1,5 +1,5 @@
 -------------------
--- Add support for automatic token associations
+-- Add support for token pause
 -------------------
 
 

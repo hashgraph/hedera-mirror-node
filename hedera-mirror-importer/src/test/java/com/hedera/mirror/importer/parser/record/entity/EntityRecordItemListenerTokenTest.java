@@ -1824,8 +1824,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     customFeesDescription,
                     freezeDefault ? "freezeDefault false" : "freezeDefault true",
                     freezeKey ? "has freezeKey" : "no freezeKey",
-                    kycKey ? "has kycKey" : "no kycKey",
-                    pauseKey ? "has pauseKey" : "no pauseKey"
+                    kycKey ? "has kycKey" : "no kycKey"
             );
             List<TokenAccount> tokenAccounts = autoEnabledAccounts.stream()
                     .map(account -> {

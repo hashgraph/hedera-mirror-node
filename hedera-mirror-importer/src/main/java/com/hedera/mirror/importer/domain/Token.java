@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.util.Utility;
         typeClass = PostgreSQLEnumType.class
 )
 @ToString(exclude = {"feeScheduleKey", "feeScheduleKeyEd25519Hex", "freezeKey", "freezeKeyEd25519Hex",
-        "kycKey", "kycKeyEd25519Hex", "pauseKey25519Hex", "pauseKey", "supplyKey", "supplyKeyEd25519Hex", "wipeKey",
+        "kycKey", "kycKeyEd25519Hex", "pauseKey", "supplyKey", "supplyKeyEd25519Hex", "wipeKey",
         "wipeKeyEd25519Hex"})
 public class Token {
     @EmbeddedId

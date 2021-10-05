@@ -81,7 +81,7 @@
     "modified_timestamp": "1234567890.000000002",
     "name": "Token name",
     "pause_key": null,
-    "pause_status": "UNPAUSED",
+    "pause_status": "NOT_APPLICABLE",
     "supply_key": null,
     "supply_type": "INFINITE",
     "total_supply": "1000000",
