@@ -188,6 +188,50 @@ For mirror node operators running the v1 database schema, the following steps ca
            username: mirror_importer
    ```
 
+### Configuration for Faster Ingestion of Historical Data
+
+The following resource allocation and configuration is recommended to speed up historical data ingestion:
+
+1. Importer
+
+   - Resource allocation
+
+       A dedicated Google Cloud n1-standard-4 (4 vCPUs, 15 GB memory) VM instance.
+
+   - Configuration:
+
+      ```yaml
+        hedera:
+          mirror:
+            importer:
+              downloader:
+                record:
+                  batchSize: 600
+                  frequency: 1
+              parser:
+                record:
+                  entity:
+                    redis:
+                      enabled: false
+                  frequency: 10
+                  queueCapacity: 40
+      ```
+
+      Note once the importer has caught up all data, please change the configuration to the default where applicable.
+
+2. PostgreSQL Database
+
+   - Resource allocation
+
+       A Google CloudSql PostgreSQL 13 instance with at least 4 vCPUs and 26 GB memory.
+
+   - Configuration:
+
+       Set the following flags. Note the unit is kilobytes.
+
+       - max_wal_size = 8388608
+       - work_mem = 262144
+
 ## Monitor
 
 The monitor is a Java-based application and should be able to run on any platform that Java supports. That said, we
