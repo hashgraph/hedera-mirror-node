@@ -15,5 +15,5 @@ values ('TOKEN_IS_PAUSED', 265),
        ('INVALID_PAUSE_KEY', 267);
 
 alter table if exists token
-    add column pause_status token_pause_status not null default 'NOT_APPLICABLE',
-    add column pause_key bytea;
+    add column pause_key bytea,
+    add column pause_status token_pause_status not null default 'NOT_APPLICABLE';
