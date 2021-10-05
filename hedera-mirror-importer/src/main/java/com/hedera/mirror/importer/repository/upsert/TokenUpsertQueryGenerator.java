@@ -41,7 +41,7 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     private final Set<String> nullableColumns = Set.of(Token_.FEE_SCHEDULE_KEY, Token_.FEE_SCHEDULE_KEY_ED25519_HEX,
             Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX,
-            Token_.PAUSE_KEY, Token_.PAUSE_KEY_ED25519_HEX, Token_.PAUSE_STATUS,
+            Token_.PAUSE_KEY, Token_.PAUSE_STATUS,
             Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
             Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
     private final Set<String> nonUpdatableColumns = Set.of(Token_.CREATED_TIMESTAMP, Token_.DECIMALS,

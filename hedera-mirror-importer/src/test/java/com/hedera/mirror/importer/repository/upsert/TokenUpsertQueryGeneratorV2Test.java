@@ -27,7 +27,6 @@ class TokenUpsertQueryGeneratorV2Test extends TokenUpsertQueryGeneratorTest {
         return "insert into token (created_timestamp, decimals, fee_schedule_key, fee_schedule_key_ed25519_hex, " +
                 "freeze_default, freeze_key, freeze_key_ed25519_hex, " +
                 "initial_supply, kyc_key, kyc_key_ed25519_hex, max_supply, modified_timestamp, name, pause_key, " +
-                "pause_key_ed25519_hex, " +
                 "pause_status, supply_key, supply_key_ed25519_hex, supply_type, symbol, token_id, total_supply, " +
                 "treasury_account_id, type, wipe_key, wipe_key_ed25519_hex) select token_temp.created_timestamp, " +
                 "token_temp.decimals, token_temp.fee_schedule_key, case when token_temp.fee_schedule_key_ed25519_hex " +
@@ -37,9 +36,7 @@ class TokenUpsertQueryGeneratorV2Test extends TokenUpsertQueryGeneratorTest {
                 ".kyc_key, case when token_temp.kyc_key_ed25519_hex = '<uuid>' then '' else coalesce(token_temp" +
                 ".kyc_key_ed25519_hex, null) end, token_temp.max_supply, token_temp.modified_timestamp, case when " +
                 "token_temp.name = '<uuid>' then '' else coalesce(token_temp.name, '') end, token_temp.pause_key, " +
-                "case when token_temp.pause_key_ed25519_hex = '<uuid>' then '' else coalesce(token_temp" +
-                ".pause_key_ed25519_hex, null) end, token_temp.pause_status," +
-                "token_temp.supply_key, " +
+                "token_temp.pause_status, token_temp.supply_key, " +
                 "case when token_temp.supply_key_ed25519_hex = '<uuid>' then '' else coalesce(token_temp" +
                 ".supply_key_ed25519_hex, null) end, token_temp.supply_type, case when token_temp.symbol = '<uuid>' " +
                 "then '' else coalesce(token_temp.symbol, '') end, token_temp.token_id, token_temp.total_supply, " +

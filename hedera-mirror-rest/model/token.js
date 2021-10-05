@@ -40,7 +40,6 @@ class Token {
     this.modifiedTimestamp = BigInt(token.modified_timestamp);
     this.name = token.name;
     this.pauseKey = token.pause_key;
-    this.pauseKeyEd25519Hex = token.pause_key_ed25519_hex;
     this.pauseStatus = token.pause_status;
     this.supplyKey = token.supply_key;
     this.supplyKeyEd25519Hex = token.supply_key_ed25519_hex;

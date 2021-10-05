@@ -86,10 +86,6 @@ public class Token {
 
     private byte[] pauseKey;
 
-    @Column(name = "pause_key_ed25519_hex")
-    @JsonSerialize(using = NullableStringSerializer.class)
-    private String pauseKeyEd25519Hex;
-
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     private TokenPauseStatusEnum pauseStatus;

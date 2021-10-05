@@ -294,7 +294,6 @@ create table if not exists token
     name                         character varying(100) not null,
     pause_status                 token_pause_status     not null default 'NOT_APPLICABLE',
     pause_key                    bytea,
-    pause_key_ed25519_hex        varchar null,
     supply_key                   bytea,
     supply_key_ed25519_hex       varchar                null,
     supply_type                  token_supply_type      not null default 'INFINITE',
