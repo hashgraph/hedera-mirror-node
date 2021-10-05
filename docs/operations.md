@@ -197,7 +197,7 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
 
    - Resource allocation
 
-       A dedicated Google Cloud n1-standard-4 (4 vCPUs, 15 GB memory) VM instance.
+       Run the importer with 4 vCPUs and 10 GB of heap.
 
    - Configuration:
 
@@ -224,11 +224,11 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
 
    - Resource allocation
 
-       A Google CloudSql PostgreSQL 13 instance with at least 4 vCPUs and 26 GB memory.
+       Run a PostgreSQL 13 instance with at least 4 vCPUs and 16 GB memory.
 
    - Configuration:
 
-       Set the following flags. Note the unit is kilobytes.
+       Set the following parameters. Note the unit is kilobytes.
 
        - max_wal_size = 8388608
        - work_mem = 262144
