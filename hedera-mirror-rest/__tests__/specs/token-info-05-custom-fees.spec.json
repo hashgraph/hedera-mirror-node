@@ -46,7 +46,8 @@
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
         "fee_schedule_key": [1, 2, 3],
-        "type": "FUNGIBLE_COMMON"
+        "type": "FUNGIBLE_COMMON",
+        "pause_status": "NOT_APPLICABLE"
       },
       {
         "token_id": "0.7.25301",
@@ -137,7 +138,7 @@
     "modified_timestamp": "1234567890.000000002",
     "name": "Token name",
     "pause_key": null,
-    "pause_status": "UNPAUSED",
+    "pause_status": "NOT_APPLICABLE",
     "supply_key": null,
     "supply_type": "INFINITE",
     "total_supply": "1000000",
