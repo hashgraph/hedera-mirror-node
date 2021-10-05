@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -167,10 +168,8 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
                 fixedFee(15, COLLECTOR_2, NEW_TOKEN_CREATE_TIMESTAMP, null, NEW_TOKEN),
                 fractionalFee(2, COLLECTOR_3, NEW_TOKEN_CREATE_TIMESTAMP, 7, null, 0, NEW_TOKEN)
         ), DataSourceUtils.getConnection(dataSource));
-        tokenRepository.saveAll(List.of(
-                token(EXISTING_TOKEN_CREATE_TIMESTAMP, false, false, false, EXISTING_TOKEN),
-                token(NEW_TOKEN_CREATE_TIMESTAMP, freezeDefault, freezeKey, kycKey, NEW_TOKEN)
-        ));
+        insertToken(EXISTING_TOKEN_CREATE_TIMESTAMP, false, false, false, EXISTING_TOKEN);
+        insertToken(NEW_TOKEN_CREATE_TIMESTAMP, freezeDefault, freezeKey, kycKey, NEW_TOKEN);
         List<TokenAccount> tokenAccountList = Lists.newArrayList(
                 tokenAccount(COLLECTOR_1, true, EXISTING_TOKEN_CREATE_TIMESTAMP + 1, EXISTING_TOKEN)
         );
@@ -253,7 +252,7 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
     }
 
     private List<TokenAccount> retrieveTokenAccounts() {
-        return jdbcOperations.query("select * from token_account", new RowMapper<TokenAccount>() {
+        return jdbcOperations.query("select * from token_account", new RowMapper<>() {
 
             @Override
             public TokenAccount mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -280,8 +279,8 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
                 ps.setLong(2, tokenAccount.getId().getAccountId().getId());
                 ps.setBoolean(3, tokenAccount.getAssociated());
                 ps.setLong(4, tokenAccount.getCreatedTimestamp());
-                ps.setShort(5, (short)tokenAccount.getFreezeStatus().ordinal());
-                ps.setShort(6, (short)tokenAccount.getKycStatus().ordinal());
+                ps.setShort(5, (short) tokenAccount.getFreezeStatus().ordinal());
+                ps.setShort(6, (short) tokenAccount.getKycStatus().ordinal());
                 ps.setLong(7, tokenAccount.getId().getModifiedTimestamp());
             }
 
@@ -315,8 +314,8 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
                 .build();
     }
 
-    private Token token(long createdTimestamp, boolean freezeDefault, boolean freezeKey, boolean kycKey,
-                        EntityId tokenId) {
+    private void insertToken(long createdTimestamp, boolean freezeDefault, boolean freezeKey, boolean kycKey,
+                             EntityId tokenId) {
         Token token = new Token();
         token.setCreatedTimestamp(createdTimestamp);
         token.setDecimals(5);
@@ -339,7 +338,31 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
             token.setKycKey(KEY);
         }
 
-        return token;
+        String sql = "insert into token (created_timestamp, decimals, freeze_default, freeze_key, initial_supply, " +
+                "kyc_key, max_supply, modified_timestamp, name, supply_type, symbol, treasury_account_id, token_id, " +
+                "type) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        Object[] arguments = new Object[] {
+                token.getCreatedTimestamp(),
+                token.getDecimals(),
+                token.getFreezeDefault(),
+                token.getFreezeKey(),
+                token.getInitialSupply(),
+                token.getKycKey(),
+                token.getMaxSupply(),
+                token.getModifiedTimestamp(),
+                token.getName(),
+                token.getSupplyType(),
+                token.getSymbol(),
+                token.getTreasuryAccountId().getId(),
+                token.getTokenId().getTokenId().getId(),
+                token.getType()};
+
+        int[] argumentTypes = new int[] {Types.BIGINT, Types.INTEGER, Types.BOOLEAN, Types.BINARY, Types.BIGINT,
+                Types.BINARY, Types.BIGINT, Types.BIGINT, Types.VARCHAR, Types.OTHER, Types.VARCHAR, Types.BIGINT,
+                Types.BIGINT, Types.OTHER};
+
+        jdbcOperations
+                .update(sql, arguments, argumentTypes);
     }
 
     private TokenAccount tokenAccount(EntityId accountId, boolean associated, long createdTimestamp, EntityId tokenId) {

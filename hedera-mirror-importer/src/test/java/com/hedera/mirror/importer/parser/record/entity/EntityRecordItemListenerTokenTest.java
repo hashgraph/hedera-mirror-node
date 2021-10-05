@@ -87,6 +87,7 @@ import com.hedera.mirror.importer.domain.TokenAccountId;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.NftRepository;
@@ -154,28 +155,29 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideTokenCreateFtArguments")
     void tokenCreateWithAutoTokenAssociations(String name, List<CustomFee> customFees, boolean freezeDefault,
-                                              boolean freezeKey, boolean kycKey,
+                                              boolean freezeKey, boolean kycKey, boolean pauseKey,
                                               List<TokenAccount> expectedTokenAccounts) {
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(TokenAccount::getId)
                 .map(TokenAccountId::getAccountId)
                 .collect(Collectors.toList());
-        tokenCreate(customFees, freezeDefault, freezeKey, kycKey, expectedTokenAccounts, autoAssociatedAccounts);
+        tokenCreate(customFees, freezeDefault, freezeKey, kycKey, pauseKey, expectedTokenAccounts,
+                autoAssociatedAccounts);
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideTokenCreateFtArguments")
     void tokenCreateWithoutAutoTokenAssociations(String name, List<CustomFee> customFees, boolean freezeDefault,
-                                                 boolean freezeKey, boolean kycKey,
+                                                 boolean freezeKey, boolean kycKey, boolean pauseKey,
                                                  List<TokenAccount> expectedTokenAccounts) {
-        tokenCreate(customFees, freezeDefault, freezeKey, kycKey, expectedTokenAccounts, Lists.emptyList());
+        tokenCreate(customFees, freezeDefault, freezeKey, kycKey, pauseKey, expectedTokenAccounts, Lists.emptyList());
     }
 
     @Test
     void tokenCreateWithoutPersistence() {
         entityProperties.getPersist().setTokens(false);
 
-        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false, false);
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertThat(tokenTransferRepository.count()).isZero();
@@ -185,7 +187,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideTokenCreateNftArguments")
     void tokenCreateWithNfts(String name, List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey,
-                             boolean kycKey, List<TokenAccount> expectedTokenAccounts) {
+                             boolean kycKey, boolean pauseKey, List<TokenAccount> expectedTokenAccounts) {
         // given
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
@@ -194,18 +196,20 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(TokenAccount::getId)
                 .map(TokenAccountId::getAccountId)
-                .collect(Collectors.toList());;
+                .collect(Collectors.toList());
 
         // when
         createTokenEntity(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
-                kycKey, customFees, autoAssociatedAccounts);
+                kycKey, pauseKey, customFees, autoAssociatedAccounts);
 
         // then
         assertEquals(expectedEntityCount, entityRepository.count());
         assertEntity(expected);
 
         // verify token
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, 0);
+        TokenPauseStatusEnum pauseStatus = pauseKey ? TokenPauseStatusEnum.UNPAUSED :
+                TokenPauseStatusEnum.NOT_APPLICABLE;
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, 0, pauseStatus);
         assertTokenAccountsInRepository(expectedTokenAccounts);
         assertCustomFeesInDb(customFees);
         assertThat(tokenTransferRepository.count()).isZero();
@@ -213,7 +217,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAssociate() {
-        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true, true);
 
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
         insertAndParseTransaction(ASSOCIATE_TIMESTAMP, associateTransaction);
@@ -234,7 +238,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenDissociate() {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, INITIAL_SUPPLY);
+                PAYER2, false, false, false, INITIAL_SUPPLY);
 
         Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER2);
         long dissociateTimeStamp = 10L;
@@ -257,7 +261,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenDissociateDeletedFungibleToken() {
         // given
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER2,
-                false, false, INITIAL_SUPPLY);
+                false, false, false, INITIAL_SUPPLY);
 
         long tokenDeleteTimestamp = 15L;
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
@@ -280,7 +284,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenDissociateDeletedNonFungibleToken() {
         // given
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, PAYER2,
-                false, false, 0);
+                false, false, false, 0);
 
         // mint
         long mintTimestamp = 10L;
@@ -329,7 +333,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenDelete() {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, INITIAL_SUPPLY);
+                PAYER2, false, false, false, INITIAL_SUPPLY);
 
         // delete token
         Transaction deleteTransaction = tokenDeleteTransaction(TOKEN_ID);
@@ -349,7 +353,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenFeeScheduleUpdate(TokenType tokenType) {
         // given
         // create the token entity with empty custom fees
-        createTokenEntity(TOKEN_ID, tokenType, SYMBOL, CREATE_TIMESTAMP, false, false);
+        createTokenEntity(TOKEN_ID, tokenType, SYMBOL, CREATE_TIMESTAMP, false, false, false);
         // update fee schedule
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
         Entity expectedEntity = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
@@ -371,7 +375,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenUpdate() {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, INITIAL_SUPPLY);
+                PAYER2, false, false, false, INITIAL_SUPPLY);
 
         String newSymbol = "NEWSYMBOL";
         Transaction transaction = tokenUpdateTransaction(
@@ -390,7 +394,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertEntity(expected);
 
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimeStamp, newSymbol, INITIAL_SUPPLY,
-                TOKEN_UPDATE_REF_KEY.toByteArray(), "feeScheduleKey", "freezeKey", "kycKey", "supplyKey",
+                TOKEN_UPDATE_REF_KEY.toByteArray(), TokenPauseStatusEnum.NOT_APPLICABLE, "feeScheduleKey", "freezeKey",
+                "kycKey", "supplyKey",
                 "wipeKey");
     }
 
@@ -410,10 +415,39 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void tokenPause() {
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER2, false, false, true, INITIAL_SUPPLY);
+
+        Transaction transaction = tokenPauseTransaction(TOKEN_ID, true);
+        long pauseTimeStamp = 15L;
+        insertAndParseTransaction(pauseTimeStamp, transaction);
+
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, pauseTimeStamp, SYMBOL, INITIAL_SUPPLY,
+                TokenPauseStatusEnum.PAUSED);
+    }
+
+    @Test
+    void tokenUnpause() {
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER2, false, false, true, INITIAL_SUPPLY);
+
+        Transaction transaction = tokenPauseTransaction(TOKEN_ID, true);
+        insertAndParseTransaction(15L, transaction);
+
+        transaction = tokenPauseTransaction(TOKEN_ID, false);
+        long unpauseTimeStamp = 20L;
+        insertAndParseTransaction(unpauseTimeStamp, transaction);
+
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, unpauseTimeStamp, SYMBOL, INITIAL_SUPPLY,
+                TokenPauseStatusEnum.UNPAUSED);
+    }
+
+    @Test
     void nftUpdateTreasury() {
         // given
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, 0);
+                PAYER2, false, false, false, 0);
 
         long mintTimestamp = 10L;
         List<Long> serialNumbers = List.of(1L);
@@ -450,7 +484,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenAccountFreeze() {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, true, false, INITIAL_SUPPLY);
+                PAYER2, true, false, false, INITIAL_SUPPLY);
 
         Transaction transaction = tokenFreezeTransaction(TOKEN_ID, true);
         long freezeTimeStamp = 15L;
@@ -463,7 +497,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenAccountUnfreeze() {
         // create token with freeze default
-        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, false);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, false, false);
 
         // associate account
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
@@ -486,7 +520,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenAccountGrantKyc() {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, true, INITIAL_SUPPLY);
+                PAYER2, false, true, false, INITIAL_SUPPLY);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
@@ -499,7 +533,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAccountGrantKycWithMissingTokenAccount() {
-        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true, false);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
@@ -512,7 +546,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenAccountRevokeKyc() {
         // create token with kyc revoked
-        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true);
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true, false);
 
         // associate account
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
@@ -535,7 +569,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenBurn() {
         // given
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, INITIAL_SUPPLY);
+                PAYER2, false, false, false, INITIAL_SUPPLY);
 
         long amount = -1000;
         long burnTimestamp = 10L;
@@ -558,7 +592,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenBurnNft() {
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, 0L);
+                PAYER2, false, false, false, 0L);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
@@ -596,7 +630,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenBurnNftMissingNft() {
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, 0L);
+                PAYER2, false, false, false, 0L);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, Arrays
@@ -635,7 +669,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenMint() {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, INITIAL_SUPPLY);
+                PAYER2, false, false, false, INITIAL_SUPPLY);
 
         long amount = 1000;
         long mintTimestamp = 10L;
@@ -657,7 +691,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenMintNfts() {
         // given
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
-                ASSOCIATE_TIMESTAMP, PAYER2, false, false, 0);
+                ASSOCIATE_TIMESTAMP, PAYER2, false, false, false, 0);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
@@ -713,21 +747,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferWithoutAutoTokenAssociations(String name, List<AssessedCustomFee> assessedCustomFees,
-                       List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
+                                                   List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
         tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false);
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferWithAutoTokenAssociations(String name, List<AssessedCustomFee> assessedCustomFees,
-            List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
+                                                List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
         tokenTransfer(assessedCustomFees, protoAssessedCustomFees, true);
     }
 
     @Test
     void nftTransfer() {
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, 0);
+                PAYER2, false, false, false, 0);
 
         long mintTimestamp1 = 20L;
         TokenTransferList mintTransfer1 = nftTransfer(TOKEN_ID, RECEIVER, DEFAULT_ACCOUNT_ID, Arrays
@@ -789,11 +823,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void nftTransferMissingNft() {
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, 0);
+                PAYER2, false, false, false, 0);
 
         TokenID tokenID2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
-        createTokenEntity(tokenID2, FUNGIBLE_COMMON, symbol2, 15L, false, false);
+        createTokenEntity(tokenID2, FUNGIBLE_COMMON, symbol2, 15L, false, false, false);
 
         // token transfer
         Transaction transaction = tokenTransferTransaction();
@@ -826,7 +860,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenWipe() {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, INITIAL_SUPPLY);
+                PAYER2, false, false, false, INITIAL_SUPPLY);
 
         long transferAmount = -1000L;
         long wipeAmount = 100L;
@@ -849,7 +883,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenWipeNft() {
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, 0);
+                PAYER2, false, false, false, 0);
 
         long mintTimestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
@@ -895,7 +929,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Test
     void tokenWipeNftMissingNft() {
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, 0);
+                PAYER2, false, false, false, 0);
 
         long wipeTimestamp = 15L;
         TokenTransferList wipeTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, RECEIVER, Arrays
@@ -922,7 +956,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long newTotalSupply = INITIAL_SUPPLY - wipeAmount;
 
         // create token with a transfer
-        Transaction createTransaction = tokenCreateTransaction(FUNGIBLE_COMMON, false, false, SYMBOL);
+        Transaction createTransaction = tokenCreateTransaction(FUNGIBLE_COMMON, false, false, false, SYMBOL);
         TokenTransferList createTokenTransfer = tokenTransfer(TOKEN_ID, PAYER2, INITIAL_SUPPLY);
         RecordItem createTokenRecordItem = getRecordItem(CREATE_TIMESTAMP, createTransaction, builder -> {
             builder.getReceiptBuilder()
@@ -956,7 +990,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     void tokenCreate(List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey, boolean kycKey,
-            List<TokenAccount> expectedTokenAccounts, List<EntityId> autoAssociatedAccounts) {
+                     boolean pauseKey, List<TokenAccount> expectedTokenAccounts,
+                     List<EntityId> autoAssociatedAccounts) {
         // given
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
@@ -965,14 +1000,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // when
         createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
-                kycKey, customFees, autoAssociatedAccounts);
+                kycKey, pauseKey, customFees, autoAssociatedAccounts);
 
         // then
         assertEquals(expectedEntityCount, entityRepository.count());
         assertEntity(expected);
 
         // verify token
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        TokenPauseStatusEnum pauseStatus = pauseKey ? TokenPauseStatusEnum.UNPAUSED :
+                TokenPauseStatusEnum.NOT_APPLICABLE;
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY,
+                pauseStatus);
         assertTokenAccountsInRepository(expectedTokenAccounts);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertCustomFeesInDb(customFees);
@@ -980,14 +1018,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     void tokenTransfer(List<AssessedCustomFee> assessedCustomFees,
-            List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees,
-            boolean hasAutoTokenAssociations) {
+                       List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees,
+                       boolean hasAutoTokenAssociations) {
         // given
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
-                PAYER2, false, false, INITIAL_SUPPLY);
+                PAYER2, false, false, false, INITIAL_SUPPLY);
         TokenID tokenId2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
-        createTokenEntity(tokenId2, FUNGIBLE_COMMON, symbol2, 10L, false, false);
+        createTokenEntity(tokenId2, FUNGIBLE_COMMON, symbol2, 10L, false, false, false);
 
         AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
 
@@ -1042,7 +1080,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction) {
-        return getRecordItem(consensusTimestamp, transaction, builder -> {});
+        return getRecordItem(consensusTimestamp, transaction, builder -> {
+        });
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction,
@@ -1057,7 +1096,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
-        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {});
+        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {
+        });
     }
 
     private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction,
@@ -1081,7 +1121,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private Transaction tokenCreateTransaction(TokenType tokenType, boolean freezeDefault, boolean setFreezeKey,
-                                               boolean setKycKey, String symbol, List<CustomFee> customFees) {
+                                               boolean setKycKey, boolean setPauseKey, String symbol,
+                                               List<CustomFee> customFees) {
         return buildTransaction(builder -> {
             builder.getTokenCreationBuilder()
                     .setAdminKey(TOKEN_REF_KEY)
@@ -1111,12 +1152,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             if (setKycKey) {
                 builder.getTokenCreationBuilder().setKycKey(TOKEN_REF_KEY);
             }
+
+            if (setPauseKey) {
+                builder.getTokenCreationBuilder().setPauseKey(TOKEN_REF_KEY);
+            }
         });
     }
 
     private Transaction tokenCreateTransaction(TokenType tokenType, boolean setFreezeKey, boolean setKycKey,
-                                               String symbol) {
-        return tokenCreateTransaction(tokenType, false, setFreezeKey, setKycKey, symbol, Lists.emptyList());
+                                               boolean setPauseKey, String symbol) {
+        return tokenCreateTransaction(tokenType, false, setFreezeKey, setKycKey, setPauseKey, symbol,
+                Lists.emptyList());
     }
 
     private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey,
@@ -1131,6 +1177,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .setKycKey(newKey)
                 .setMemo(StringValue.of(memo))
                 .setName(symbol + "_update_name")
+                .setPauseKey(newKey)
                 .setSupplyKey(newKey)
                 .setSymbol(symbol)
                 .setToken(tokenID)
@@ -1166,6 +1213,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             transaction = buildTransaction(builder -> builder.getTokenUnfreezeBuilder()
                     .setToken(tokenID)
                     .setAccount(PAYER2));
+        }
+
+        return transaction;
+    }
+
+    private Transaction tokenPauseTransaction(TokenID tokenID, boolean pause) {
+        Transaction transaction = null;
+        if (pause) {
+            transaction = buildTransaction(builder -> builder.getTokenPauseBuilder()
+                    .setToken(tokenID));
+        } else {
+            transaction = buildTransaction(builder -> builder.getTokenUnpauseBuilder()
+                    .setToken(tokenID));
         }
 
         return transaction;
@@ -1237,7 +1297,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
                                          long modifiedTimestamp, String symbol, long totalSupply,
-                                         byte[] keyData, String... keyFields) {
+                                         byte[] keyData, TokenPauseStatusEnum pauseStatus, String... keyFields) {
         // clear cache for PgCopy scenarios which don't utilize it
         cacheManager.getCache("tokens").clear();
 
@@ -1248,6 +1308,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     .returns(createdTimestamp, from(Token::getCreatedTimestamp))
                     .returns(modifiedTimestamp, from(Token::getModifiedTimestamp))
                     .returns(symbol, from(Token::getSymbol))
+                    .returns(pauseStatus, from(Token::getPauseStatus))
                     .returns(totalSupply, from(Token::getTotalSupply));
             if (keyFields.length != 0) {
                 assertThat(tokenOptional)
@@ -1265,7 +1326,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
                                          long modifiedTimestamp, String symbol, long totalSupply) {
-        assertTokenInRepository(tokenID, present, createdTimestamp, modifiedTimestamp, symbol, totalSupply, null);
+        assertTokenInRepository(tokenID, present, createdTimestamp, modifiedTimestamp, symbol, totalSupply, null,
+                TokenPauseStatusEnum.NOT_APPLICABLE);
+    }
+
+    private void assertTokenInRepository(TokenID tokenID, boolean present, long createdTimestamp,
+                                         long modifiedTimestamp, String symbol, long totalSupply,
+                                         TokenPauseStatusEnum pauseStatus) {
+        assertTokenInRepository(tokenID, present, createdTimestamp, modifiedTimestamp, symbol, totalSupply, null,
+                pauseStatus);
     }
 
     private void assertNftInRepository(TokenID tokenID, long serialNumber, boolean present, long createdTimestamp,
@@ -1362,9 +1431,10 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void createTokenEntity(TokenID tokenId, TokenType tokenType, String symbol, long consensusTimestamp,
-                                   boolean freezeDefault, boolean setFreezeKey, boolean setKycKey,
+                                   boolean freezeDefault, boolean setFreezeKey, boolean setKycKey, boolean setPauseKey,
                                    List<CustomFee> customFees, List<EntityId> autoAssociatedAccounts) {
-        var transaction = tokenCreateTransaction(tokenType, freezeDefault, setFreezeKey, setKycKey, symbol, customFees);
+        var transaction = tokenCreateTransaction(tokenType, freezeDefault, setFreezeKey, setKycKey, setPauseKey,
+                symbol, customFees);
         insertAndParseTransaction(consensusTimestamp, transaction, builder -> {
             builder.getReceiptBuilder()
                     .setTokenID(tokenId)
@@ -1378,21 +1448,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             if (tokenType == FUNGIBLE_COMMON) {
                 builder.addTokenTransferLists(tokenTransfer(tokenId, PAYER, INITIAL_SUPPLY));
             }
-
         });
     }
 
     private void createTokenEntity(TokenID tokenID, TokenType tokenType, String symbol, long consensusTimestamp,
-                                   boolean setFreezeKey, boolean setKycKey) {
-        createTokenEntity(tokenID, tokenType, symbol, consensusTimestamp, false, setFreezeKey, setKycKey,
+                                   boolean setFreezeKey, boolean setKycKey, boolean setPauseKey) {
+        createTokenEntity(tokenID, tokenType, symbol, consensusTimestamp, false, setFreezeKey, setKycKey, setPauseKey,
                 Lists.emptyList(), Lists.emptyList());
     }
 
     private void createAndAssociateToken(TokenID tokenID, TokenType tokenType, String symbol, long createTimestamp,
                                          long associateTimestamp, AccountID accountID, boolean setFreezeKey,
-                                         boolean setKycKey, long initialSupply) {
-        createTokenEntity(tokenID, tokenType, symbol, createTimestamp, setFreezeKey, setKycKey);
-        assertTokenInRepository(tokenID, true, createTimestamp, createTimestamp, symbol, initialSupply);
+                                         boolean setKycKey, boolean setPauseKey, long initialSupply) {
+        createTokenEntity(tokenID, tokenType, symbol, createTimestamp, setFreezeKey, setKycKey, setPauseKey);
+        assertTokenInRepository(tokenID, true, createTimestamp, createTimestamp, symbol, initialSupply, setPauseKey ?
+                TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE);
 
         Transaction associateTransaction = tokenAssociate(List.of(tokenID), accountID);
         insertAndParseTransaction(associateTimestamp, associateTransaction);
@@ -1494,7 +1564,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             CustomFee royaltyFee1 = new CustomFee();
             royaltyFee1.setRoyaltyNumerator(14L);
             royaltyFee1.setRoyaltyDenominator(31L);
-            royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);;
+            royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
             royaltyFee1.setId(id);
             customFees.add(royaltyFee1);
 
@@ -1575,6 +1645,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
+                        .tokenId(DOMAIN_TOKEN_ID)
+                        .build()
+                        .toArguments(),
+                TokenCreateArguments.builder()
+                        .autoEnabledAccounts(autoEnabledAccounts)
+                        .createdTimestamp(CREATE_TIMESTAMP)
+                        .customFees(nonEmptyCustomFees)
+                        .customFeesDescription("non-empty custom fees")
+                        .pauseKey(true)
                         .tokenId(DOMAIN_TOKEN_ID)
                         .build()
                         .toArguments()
@@ -1658,8 +1737,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     FractionalFee.newBuilder()
                             .setFractionalAmount(
                                     Fraction.newBuilder()
-                                    .setNumerator(customFee.getAmount())
-                                    .setDenominator(customFee.getAmountDenominator())
+                                            .setNumerator(customFee.getAmount())
+                                            .setDenominator(customFee.getAmountDenominator())
                             )
                             .setMaximumAmount(maximumAmount)
                             .setMinimumAmount(customFee.getMinimumAmount())
@@ -1736,6 +1815,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         boolean kycKey;
         @Builder.Default
         TokenKycStatusEnum kycStatus = TokenKycStatusEnum.NOT_APPLICABLE;
+        boolean pauseKey;
         EntityId tokenId;
 
         public Arguments toArguments() {
@@ -1758,7 +1838,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     })
                     .collect(Collectors.toList());
 
-            return Arguments.of(description, customFees, freezeDefault, freezeKey, kycKey, tokenAccounts);
+            return Arguments.of(description, customFees, freezeDefault, freezeKey, kycKey, pauseKey, tokenAccounts);
         }
     }
 }

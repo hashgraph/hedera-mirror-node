@@ -27,6 +27,9 @@ import static com.hedera.mirror.importer.domain.TokenTypeEnum.NON_FUNGIBLE_UNIQU
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 import javax.annotation.Resource;
 import lombok.SneakyThrows;
@@ -35,18 +38,21 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Nft;
 import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
+import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
@@ -59,6 +65,7 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
 @Tag("migration")
@@ -116,7 +123,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         EntityId nftId2 = EntityId.of("0.0.503", TOKEN);
         EntityId nftId3 = EntityId.of("0.0.504", TOKEN);
 
-        Token ftClass1 = token( 10L, ftId1, FUNGIBLE_COMMON);
+        Token ftClass1 = token(10L, ftId1, FUNGIBLE_COMMON);
         Token ftClass2 = token(15L, ftId2, FUNGIBLE_COMMON);
         Token nftClass1 = token(20L, nftId1, NON_FUNGIBLE_UNIQUE);
         Token nftClass2 = token(25L, nftId2, NON_FUNGIBLE_UNIQUE);
@@ -129,7 +136,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         Entity nft3Entity = entity(nftClass3);
 
         entityRepository.saveAll(List.of(ft1Entity, ft2Entity, nft1Entity, nft2Entity, nft3Entity));
-        tokenRepository.saveAll(List.of(ftClass1, ftClass2, nftClass1, nftClass2, nftClass3));
 
         long account1Ft1DissociateTimestamp = 70;
         long account1Nft1DissociateTimestamp = 75;
@@ -189,7 +195,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
         // nft transfers from nft class treasury update
         nftTransferRepository.save(
-                nftTransfer(40L, NEW_TREASURY, TREASURY, NftTransferId.WILDCARD_SERIAL_NUMBER,nftId3)
+                nftTransfer(40L, NEW_TREASURY, TREASURY, NftTransferId.WILDCARD_SERIAL_NUMBER, nftId3)
         );
 
         // expected token changes
@@ -225,8 +231,9 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 nftTransfer(account2Nft1DissociateTimestamp, null, account2, 4L, nftId1)
         );
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(ftClass1, ftClass2, nftClass1, nftClass2,
-                nftClass3);
+        assertThat(findAllTokens()).usingElementComparatorIgnoringFields("pause_key", "pause_status")
+                .containsExactlyInAnyOrder(ftClass1, ftClass2, nftClass1, nftClass2,
+                        nftClass3);
         // the token transfer for nft should have been removed
         assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrder(
                 new TokenTransfer(account1Ft1DissociateTimestamp, -10, ftId1, account1)
@@ -253,18 +260,18 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     }
 
     private Nft nft(EntityId accountId, long createdTimestamp, boolean deleted, long modifiedTimestamp,
-            long serialNumber, EntityId tokenId) {
+                    long serialNumber, EntityId tokenId) {
         Nft nft = new Nft(serialNumber, tokenId);
         nft.setAccountId(accountId);
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(deleted);
-        nft.setMetadata(new byte[]{1});
+        nft.setMetadata(new byte[] {1});
         nft.setModifiedTimestamp(modifiedTimestamp);
         return nft;
     }
 
     private NftTransfer nftTransfer(long consensusTimestamp, EntityId receiver, EntityId sender, long serialNumber,
-            EntityId tokenId) {
+                                    EntityId tokenId) {
         NftTransfer nftTransfer = new NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
         nftTransfer.setReceiverAccountId(receiver);
@@ -280,16 +287,64 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         token.setInitialSupply(0L);
         token.setModifiedTimestamp(createdTimestamp);
         token.setName("foo");
-        token.setTotalSupply(1_000_000L);
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("bar");
+        token.setTotalSupply(1_000_000L);
         token.setTreasuryAccountId(TREASURY);
         token.setType(tokenType);
+
+        String sql = "insert into token (created_timestamp, decimals, freeze_default, initial_supply, " +
+                "modified_timestamp, name, supply_type, symbol, token_id, total_supply, treasury_account_id, type) " +
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        Object[] arguments = new Object[] {
+                token.getCreatedTimestamp(),
+                token.getDecimals(),
+                token.getFreezeDefault(),
+                token.getInitialSupply(),
+                token.getModifiedTimestamp(),
+                token.getName(),
+                token.getSupplyType(),
+                token.getSymbol(),
+                token.getTokenId().getTokenId().getId(),
+                token.getTotalSupply(),
+                token.getTreasuryAccountId().getId(),
+                token.getType()};
+
+        int[] argumentTypes = new int[] {Types.BIGINT, Types.BIGINT, Types.BOOLEAN, Types.BIGINT, Types.BIGINT,
+                Types.VARCHAR, Types.OTHER, Types.VARCHAR, Types.BIGINT, Types.BIGINT, Types.BIGINT, Types.OTHER};
+
+        jdbcOperations
+                .update(sql, arguments, argumentTypes);
+
         return token;
     }
 
+    private List<Token> findAllTokens() {
+        return jdbcOperations.query("select * from token", new RowMapper<>() {
+
+            @Override
+            public Token mapRow(ResultSet rs, int rowNum) throws SQLException {
+                Token token = new Token();
+                token.setCreatedTimestamp(rs.getLong("created_timestamp"));
+                token.setDecimals(rs.getInt("decimals"));
+                token.setFreezeDefault(rs.getBoolean("freeze_default"));
+                token.setInitialSupply(rs.getLong("initial_supply"));
+                token.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+                token.setName(rs.getString("name"));
+                token.setSupplyType(TokenSupplyTypeEnum.valueOf(rs.getString("supply_type")));
+                token.setSymbol(rs.getString("symbol"));
+                token.setTokenId(new TokenId(EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
+                token.setTotalSupply(rs.getLong("total_supply"));
+                token.setTreasuryAccountId(EntityIdEndec.decode(rs.getLong("treasury_account_id"),
+                        EntityTypeEnum.TOKEN));
+                token.setType(TokenTypeEnum.valueOf(rs.getString("type")));
+                return token;
+            }
+        });
+    }
+
     private TokenAccount tokenAccount(EntityId accountId, boolean associated, long createdTimestamp,
-            long modifiedTimestamp, EntityId tokenId) {
+                                      long modifiedTimestamp, EntityId tokenId) {
         TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, modifiedTimestamp);
         tokenAccount.setAssociated(associated);
         tokenAccount.setAutomaticAssociation(false);

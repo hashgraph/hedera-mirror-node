@@ -44,8 +44,10 @@ import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -79,6 +81,7 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
@@ -94,7 +97,6 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
-import com.hedera.mirror.importer.parser.record.transactionhandler.TokenUpdateTransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -235,10 +237,14 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenAccountGrantKyc(recordItem);
             } else if (body.hasTokenMint()) {
                 insertTokenMint(recordItem);
+            } else if (body.hasTokenPause()) {
+                insertTokenPause(recordItem);
             } else if (body.hasTokenRevokeKyc()) {
                 insertTokenAccountRevokeKyc(recordItem);
             } else if (body.hasTokenUnfreeze()) {
                 insertTokenAccountUnfreeze(recordItem);
+            } else if (body.hasTokenUnpause()) {
+                insertTokenUnpause(recordItem);
             } else if (body.hasTokenUpdate()) {
                 insertTokenUpdate(recordItem);
             } else if (body.hasTokenWipe()) {
@@ -526,6 +532,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             token.setKycKey(tokenCreateTransactionBody.getKycKey().toByteArray());
         }
 
+        if (tokenCreateTransactionBody.hasPauseKey()) {
+            token.setPauseKey(tokenCreateTransactionBody.getPauseKey().toByteArray());
+            token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
+        } else {
+            token.setPauseStatus(TokenPauseStatusEnum.NOT_APPLICABLE);
+        }
+
         if (tokenCreateTransactionBody.hasSupplyKey()) {
             token.setSupplyKey(tokenCreateTransactionBody.getSupplyKey().toByteArray());
         }
@@ -762,6 +775,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                 token.setKycKey(tokenUpdateTransactionBody.getKycKey().toByteArray());
             }
 
+            if (tokenUpdateTransactionBody.hasPauseKey()) {
+                token.setPauseKey(tokenUpdateTransactionBody.getPauseKey().toByteArray());
+            }
+
             if (tokenUpdateTransactionBody.hasSupplyKey()) {
                 token.setSupplyKey(tokenUpdateTransactionBody.getSupplyKey().toByteArray());
             }
@@ -828,6 +845,30 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
 
             insertCustomFees(transactionBody.getCustomFeesList(), consensusTimestamp, false, tokenId);
+        }
+    }
+
+    private void insertTokenPause(RecordItem recordItem) {
+        if (entityProperties.getPersist().isTokens()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            TokenPauseTransactionBody transactionBody = recordItem.getTransactionBody().getTokenPause();
+
+            Token token = Token.of(EntityId.of(transactionBody.getToken()));
+            token.setPauseStatus(TokenPauseStatusEnum.PAUSED);
+
+            updateToken(token, consensusTimestamp);
+        }
+    }
+
+    private void insertTokenUnpause(RecordItem recordItem) {
+        if (entityProperties.getPersist().isTokens()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+            TokenUnpauseTransactionBody transactionBody = recordItem.getTransactionBody().getTokenUnpause();
+
+            Token token = Token.of(EntityId.of(transactionBody.getToken()));
+            token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
+
+            updateToken(token, consensusTimestamp);
         }
     }
 

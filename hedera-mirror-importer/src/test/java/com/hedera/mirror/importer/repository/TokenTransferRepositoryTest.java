@@ -34,6 +34,7 @@ import com.hedera.mirror.importer.domain.Nft;
 import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.Token;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
@@ -123,6 +124,7 @@ class TokenTransferRepositoryTest extends AbstractRepositoryTest {
         token.setInitialSupply(0L);
         token.setModifiedTimestamp(deletedTimestamp);
         token.setName("foo");
+        token.setPauseStatus(TokenPauseStatusEnum.NOT_APPLICABLE);
         token.setSupplyType(TokenSupplyTypeEnum.FINITE);
         token.setSymbol("bar");
         token.setTotalSupply(200L);
@@ -136,7 +138,7 @@ class TokenTransferRepositoryTest extends AbstractRepositoryTest {
     }
 
     private Nft nft(EntityId tokenId, EntityId accountId, long serialNumber, long consensusTimestamp,
-            long modifiedTimestamp, boolean deleted) {
+                    long modifiedTimestamp, boolean deleted) {
         Nft nft = new Nft(serialNumber, tokenId);
         nft.setAccountId(accountId);
         nft.setCreatedTimestamp(consensusTimestamp);
@@ -147,7 +149,7 @@ class TokenTransferRepositoryTest extends AbstractRepositoryTest {
     }
 
     private NftTransfer nftTransfer(EntityId tokenId, EntityId senderAccountId, long serialNumber,
-            long consensusTimestamp) {
+                                    long consensusTimestamp) {
         NftTransfer nftTransfer = new NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
         nftTransfer.setSenderAccountId(senderAccountId);

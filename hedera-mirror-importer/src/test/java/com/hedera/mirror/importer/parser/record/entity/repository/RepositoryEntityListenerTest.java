@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
@@ -357,6 +358,8 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         token.setMaxSupply(1_000_000_000L);
         token.setModifiedTimestamp(1L);
         token.setName("FOO COIN TOKEN");
+        token.setPauseKey(input.toByteArray());
+        token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
         token.setSupplyKey(input.toByteArray());
         token.setSupplyType(TokenSupplyTypeEnum.FINITE);
         token.setSymbol("FOOTOK");
@@ -381,6 +384,8 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         Token tokenUpdated = new Token();
         tokenUpdated.setFreezeKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("abc")).build().toByteArray());
         tokenUpdated.setKycKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("def")).build().toByteArray());
+        tokenUpdated.setPauseKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("xyz")).build().toByteArray());
+        tokenUpdated.setPauseStatus(TokenPauseStatusEnum.PAUSED);
         tokenUpdated.setModifiedTimestamp(2L);
         tokenUpdated.setName("test");
         tokenUpdated.setSupplyKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("ghi")).build().toByteArray());
