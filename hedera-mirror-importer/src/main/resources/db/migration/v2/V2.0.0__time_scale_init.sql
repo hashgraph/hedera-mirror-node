@@ -4,9 +4,9 @@
 -------------------
 
 -- Create enums for tables
-CREATE TYPE token_pause_status AS ENUM ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
-CREATE TYPE token_supply_type AS ENUM ('INFINITE', 'FINITE');
-CREATE TYPE token_type AS ENUM ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
+create type token_pause_status as enum ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
+create type token_supply_type as enum ('INFINITE', 'FINITE');
+create type token_type as enum ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
 
 -- assessed_custom_fee
 create table if not exists assessed_custom_fee
@@ -292,7 +292,7 @@ create table if not exists token
     max_supply                   bigint                 not null default 9223372036854775807, -- max long
     modified_timestamp           bigint                 not null,
     name                         character varying(100) not null,
-    pause_key                    bytea,
+    pause_key                    bytea                  null,
     pause_status                 token_pause_status     not null default 'NOT_APPLICABLE',
     supply_key                   bytea,
     supply_key_ed25519_hex       varchar                null,

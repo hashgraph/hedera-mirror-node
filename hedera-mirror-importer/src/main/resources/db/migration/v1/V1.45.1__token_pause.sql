@@ -3,7 +3,7 @@
 -------------------
 
 
-CREATE TYPE token_pause_status AS ENUM ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
+create type token_pause_status as enum ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
 
 insert into t_transaction_types (proto_id, name, entity_type) values
 (46, 'TOKENPAUSE', 5),
