@@ -43,7 +43,7 @@ type Rosetta struct {
 	Log         Log
 	Network     string
 	Nodes       NodeMap
-	NodeVersion string
+	NodeVersion string `yaml:"nodeVersion"`
 	Online      bool
 	Port        uint16
 	Realm       string
@@ -56,7 +56,7 @@ type Db struct {
 	Password         string
 	Pool             Pool
 	Port             uint16
-	StatementTimeout uint
+	StatementTimeout uint `yaml:"statementTimeout"`
 	Username         string
 }
 
@@ -78,7 +78,7 @@ type Log struct {
 type NodeMap map[string]hedera.AccountID
 
 type Pool struct {
-	MaxIdleConnections int
-	MaxLifetime        int
-	MaxOpenConnections int
+	MaxIdleConnections int `yaml:"maxIdleConnections"`
+	MaxLifetime        int `yaml:"maxLifetime"`
+	MaxOpenConnections int `yaml:"maxOpenConnections"`
 }

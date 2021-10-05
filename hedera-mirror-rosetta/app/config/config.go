@@ -51,7 +51,7 @@ hedera:
       log:
         level: info
       network: DEMO
-      nodes: {}
+      nodes:
       nodeVersion: 0
       online: true
       port: 5700
@@ -72,29 +72,23 @@ func LoadConfig() (*Rosetta, error) {
 	v := viper.NewWithOptions(viper.KeyDelimiter(keyDelimiter))
 	v.SetConfigType(configTypeYaml)
 
-	if envConfigFile, ok := os.LookupEnv(apiConfigEnvKey); ok {
-		v.SetConfigFile(envConfigFile)
-	} else {
-		// only set config name and config paths when no config file env variable is set
-		v.SetConfigName(configName)
-		v.AddConfigPath(".")
-	}
-
 	// read the default
 	if err := v.ReadConfig(bytes.NewBuffer([]byte(defaultConfig))); err != nil {
 		return nil, err
 	}
 
-	if err := v.MergeInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, err
-		}
-
-		log.Info("External configuration file not found, load the default")
+	// load configuration file from current directory
+	v.SetConfigName(configName)
+	v.AddConfigPath(".")
+	if err := mergeExternalConfigFile(v); err != nil {
+		return nil, err
 	}
 
-	if v.ConfigFileUsed() != "" {
-		log.Infof("Loaded external config file: %s", v.ConfigFileUsed())
+	if envConfigFile, ok := os.LookupEnv(apiConfigEnvKey); ok {
+		v.SetConfigFile(envConfigFile)
+		if err := mergeExternalConfigFile(v); err != nil {
+			return nil, err
+		}
 	}
 
 	// enable parsing env variables after the configuration files are loaded so viper knows all configuration keys
@@ -113,6 +107,20 @@ func LoadConfig() (*Rosetta, error) {
 	config.Hedera.Mirror.Rosetta.Db.Password = password
 
 	return &config.Hedera.Mirror.Rosetta, nil
+}
+
+func mergeExternalConfigFile(v *viper.Viper) error {
+	if err := v.MergeInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return err
+		}
+
+		log.Info("External configuration file not found")
+		return nil
+	}
+
+	log.Infof("Loaded external config file: %s", v.ConfigFileUsed())
+	return nil
 }
 
 func nodeMapDecodeHookFunc(from, to reflect.Type, data interface{}) (interface{}, error) {

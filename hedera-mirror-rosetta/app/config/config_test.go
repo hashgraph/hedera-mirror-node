@@ -29,6 +29,7 @@ import (
 
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -40,13 +41,20 @@ hedera:
       nodes:
         "192.168.0.1:50211": 0.3`
 	testConfigFilename = "application.yml"
-	yml                = `
+	yml1               = `
 hedera:
   mirror:
     rosetta:
       db:
         port: 5431
         username: foobar`
+	yml2 = `
+hedera:
+  mirror:
+    rosetta:
+      db:
+        host: 192.168.120.51
+        port: 12000`
 	serviceEndpoint = "192.168.0.1:50211"
 )
 
@@ -54,26 +62,63 @@ func TestLoadDefaultConfig(t *testing.T) {
 	config, err := LoadConfig()
 
 	assert.NoError(t, err)
-	assert.NotNil(t, config)
-	assert.Equal(t, uint16(5432), config.Db.Port)
-	assert.Equal(t, config.Db.Username, "mirror_rosetta")
+	assert.Equal(t, getDefaultConfig(), config)
 }
 
 func TestLoadCustomConfig(t *testing.T) {
-	tempDir, filePath := createYamlConfigFile(yml, t)
-	defer os.RemoveAll(tempDir)
-	os.Setenv(apiConfigEnvKey, filePath)
+	tests := []struct {
+		name         string
+		fromCwdOrEnv bool
+	}{
+		{name: "from current directory", fromCwdOrEnv: true},
+		{name: "from env var"},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir, filePath := createYamlConfigFile(yml1, t)
+			defer os.RemoveAll(tempDir)
+
+			if tt.fromCwdOrEnv {
+				os.Chdir(tempDir)
+			} else {
+				os.Setenv(apiConfigEnvKey, filePath)
+			}
+
+			config, err := LoadConfig()
+
+			assert.NoError(t, err)
+			assert.NotNil(t, config)
+			assert.True(t, config.Online)
+			assert.Equal(t, uint16(5431), config.Db.Port)
+			assert.Equal(t, "foobar", config.Db.Username)
+
+			// reset env
+			os.Unsetenv(apiConfigEnvKey)
+		})
+	}
+}
+
+func TestLoadCustomConfigFromCwdAndEnvVar(t *testing.T) {
+	// given
+	tempDir1, _ := createYamlConfigFile(yml1, t)
+	defer os.RemoveAll(tempDir1)
+	os.Chdir(tempDir1)
+
+	tempDir2, filePath2 := createYamlConfigFile(yml2, t)
+	defer os.RemoveAll(tempDir2)
+	os.Setenv(apiConfigEnvKey, filePath2)
+
+	// when
 	config, err := LoadConfig()
 
+	// then
+	expected := getDefaultConfig()
+	expected.Db.Host = "192.168.120.51"
+	expected.Db.Port = 12000
+	expected.Db.Username = "foobar"
 	assert.NoError(t, err)
-	assert.NotNil(t, config)
-	assert.True(t, config.Online)
-	assert.Equal(t, uint16(5431), config.Db.Port)
-	assert.Equal(t, "foobar", config.Db.Username)
-
-	// reset env
-	os.Unsetenv(apiConfigEnvKey)
+	assert.Equal(t, expected, config)
 }
 
 func TestLoadCustomConfigInvalidYaml(t *testing.T) {
@@ -100,6 +145,18 @@ func TestLoadCustomConfigInvalidYaml(t *testing.T) {
 			os.Unsetenv(apiConfigEnvKey)
 		})
 	}
+}
+
+func TestLoadCustomConfigByEnvVarFileNotFound(t *testing.T) {
+	// given
+	os.Setenv(apiConfigEnvKey, "/foo/bar/not_found.yml")
+
+	// when
+	config, err := LoadConfig()
+
+	// then
+	assert.Error(t, err)
+	assert.Nil(t, config)
 }
 
 func TestNodeMapDecodeHookFunc(t *testing.T) {
@@ -159,4 +216,10 @@ func createYamlConfigFile(content string, t *testing.T) (string, string) {
 	}
 
 	return tempDir, customConfig
+}
+
+func getDefaultConfig() *Rosetta {
+	config := Config{}
+	yaml.Unmarshal([]byte(defaultConfig), &config)
+	return &config.Hedera.Mirror.Rosetta
 }
