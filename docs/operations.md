@@ -188,9 +188,10 @@ For mirror node operators running the v1 database schema, the following steps ca
            username: mirror_importer
    ```
 
-### Configuration for Faster Ingestion of Historical Data
+### Historical Data Ingestion
 
-The following resource allocation and configuration is recommended to speed up historical data ingestion:
+The following resource allocation and configuration is recommended to speed up historical data ingestion. The importer
+should be able to ingest one month's worth of mainnet data in less than 1.5 days.
 
 1. Importer
 
