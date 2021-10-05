@@ -53,7 +53,7 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     private final Set<SingularAttribute> selectableColumns = Set.of(Token_.createdTimestamp, Token_.decimals,
             Token_.feeScheduleKey, Token_.feeScheduleKeyEd25519Hex, Token_.freezeDefault, Token_.freezeKey,
             Token_.freezeKeyEd25519Hex, Token_.initialSupply, Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.maxSupply,
-            Token_.modifiedTimestamp, Token_.name, Token_.pauseKey, Token_.pauseKeyEd25519Hex, Token_.pauseStatus,
+            Token_.modifiedTimestamp, Token_.name, Token_.pauseKey, Token_.pauseStatus,
             Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.supplyType, Token_.symbol, Token_.tokenId,
             Token_.totalSupply, Token_.treasuryAccountId, Token_.type, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
 
