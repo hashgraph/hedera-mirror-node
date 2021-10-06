@@ -49,4 +49,7 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rosetta:
+      env:
+        HEDERA_MIRROR_ROSETTA_NETWORK: performance
 

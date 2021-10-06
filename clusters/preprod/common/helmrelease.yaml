@@ -39,7 +39,7 @@ spec:
               url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
               writeRelabelConfigs:
                 - action: keep
-                  regex: .*(grpc|importer|monitor|rest|traefik)$
+                  regex: .*(grpc|importer|monitor|rest|rosetta|traefik)$
                   sourceLabels: [job]
                 - action: drop
                   regex: (api_request_size_bytes_bucket|executor.*)
