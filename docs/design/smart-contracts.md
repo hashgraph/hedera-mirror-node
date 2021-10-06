@@ -12,7 +12,8 @@ is storing the appropriate smart contract information and making it retrievable 
 
 - Enhance the database schema to store all contract-related information from transactions and transaction records
 - Enhance the REST API to retrieve smart contracts and the execution results
-- Explore alternative smart contract APIs including compatability with Ethereum JSON RPC APIs
+- Explore alternative smart contract APIs including compatibility
+  with [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) APIs
 
 ## Non-Goals
 
@@ -26,17 +27,17 @@ is storing the appropriate smart contract information and making it retrievable 
 #### Contract
 
 Create a contract table that inherits from the entity table. A database migration should move entries in `entity` into
-`contract` if they are of type contract or have had create or update contract transactions.
+`contract` if they are of type contract or have contract create or update transactions.
 
 ```sql
 create table if not exists contract
 (
-  constructor_parameters bytea            not null,
-  file_id                bigint           null, -- null needed for migrating old data where we didn't capture it
-  initial_balance        bigint default 0 not null,
-  new_realm_admin_key    bytea            null, -- Might always be null. Remove?
-  valid_range            int8range        not null
+  file_id         bigint           null, -- null needed for migrating old data where we didn't capture it
+  initial_balance bigint default 0 not null
 ) inherits (entity);
+
+alter table if exists contract
+  add primary key (id);
 ```
 
 #### Contract History
@@ -50,31 +51,42 @@ create table if not exists contract_history
 (
   like contract
 );
+
+create index if not exists contract_history__valid_range on contract_history using gist (valid_range);
+
+create or replace function contract_history() returns trigger as
+$contract_history$
+begin
+  OLD.valid_range := int8range(lower(OLD.valid_range), lower(NEW.valid_range));
+  insert into contract_history select OLD.*;
+  return NEW;
+end;
+$contract_history$ language plpgsql;
+
+create trigger contract_history
+  before update
+  on contract
+  for each row
+execute function contract_history();
 ```
 
 #### Contract Result
 
-Update the existing `contract_result` to capture all fields present in the protobuf.
-
-- Add `bloom`
-- Add `contract_id`
-- Add `created_contract_ids`
-- Add `error_message`
-- Add `gas` to track the max gas allowed to use for contract construction or function calls.
-- Change `gas_used` to not null
-- Replace `consensus_timestamp` index with `consensus_timestamp` primary key
--
+Update the existing `contract_result` to capture all fields present in the protobuf (see below).
+Replace `consensus_timestamp` index with `consensus_timestamp` primary key. Migrate data in `call_result` to parse it
+using the protobuf and normalize it into the other fields.
 
 ```sql
 create table if not exists contract_result
 (
-  bloom                bytea                       null,
-  call_result          bytea                       null,
+  amount               bigint default 0            not null,
+  bloom                bytea                       not null,
+  call_result          bytea                       not null,
   consensus_timestamp  nanos_timestamp primary key not null,
   contract_id          bigint                      not null,
   created_contract_ids bigint array                not null,
-  error_message        text default ''             not null,
-  function_parameters  bytea                       null,
+  error_message        text   default ''           not null,
+  function_parameters  bytea                       not null,
   gas                  bigint                      not null,
   gas_used             bigint                      not null
 );
@@ -87,11 +99,11 @@ Create a new table to store the results of the contract's log output
 ```sql
 create table if not exists contract_log
 (
-  bloom               bytea                    null,
+  bloom               bytea                    not null,
   consensus_timestamp nanos_timestamp          not null,
   contract_id         bigint                   not null,
-  index               smallint                 not null,
-  data                bytea                    null,
+  index               int                      not null,
+  data                bytea                    not null,
   topics              bytea array default '{}' not null,
   primary key (consensus_timestamp, index)
 );
@@ -108,12 +120,10 @@ create table if not exists contract_log
   via `EntityListener.onContract(contract)`
 - Add logic to create a `ContractResult` and `ContractLog` domain objects in the contract create and contract call
   transaction handlers and notify via `EntityListener.onContractResult(contractResult)`.
+- Add logic to `SqlEntityListener` to batch insert `Contract` and `ContractLog`.
+- Implement a generic custom `UpsertQueryGenerator` that generates the insert query entirely from annotations on
+  the `Contract` domain object.
 - Remove logic specific to contracts in `EntityRecordItemListener`
-
-### Upsert
-
-Implement a generic custom `UpsertQueryGenerator` that generates the insert query entirely from annotations on
-the `Contract` domain object.
 
 ## REST API
 
@@ -131,7 +141,6 @@ the `Contract` domain object.
       },
       "auto_renew_account_id": "0.0.10001",
       "auto_renew_period": 7776000,
-      "constructor_parameters": "eb896db302d70cc2504d40f5ead67013989602c1",
       "contract_id": "0.0.10001",
       "deleted": false,
       "expiration_timestamp": null,
@@ -168,11 +177,10 @@ Optional filters
   },
   "auto_renew_account_id": "0.0.10001",
   "auto_renew_period": 7776000,
-  "code": "c896c66db6d98784cc03807640f3dfd41ac3a48c",
+  "bytecode": "c896c66db6d98784cc03807640f3dfd41ac3a48c",
   "constructor_parameters": "eb896db302d70cc2504d40f5ead67013989602c1",
   "contract_id": "0.0.10001",
   "file_id": "0.0.1000",
-  "gas": 250000,
   "initial_balance": 100,
   "memo": "First contract",
   "proxy_account_id": "0.0.100",
@@ -192,14 +200,18 @@ Optional filters
 
 ```json
 {
-  "contract": "0.0.1001",
+  "contract_id": "0.0.1001",
   "results": [
     {
+      "amount": 10,
       "bloom": "549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
+      "call_result": "2b048531b38d2882e86044bc972e940ee0a01938",
       "created_contract_ids": [
         "0.0.1003"
       ],
       "error_message": "",
+      "function_parameters": "bb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
+      "gas": 2500,
       "gas_used": 1000,
       "log_info": [
         {
@@ -228,16 +240,16 @@ Optional filters
 
 ## Non-Functional Requirements
 
-- Support peak smart contract call TPS (100-1000)
+- Support peak smart contract call TPS (400+)
+- Support peak smart contract call gas per second (15 million)
+- Support max smart contract call size (6K)
+- Support max smart contract call state and output size (~4M gas or 500KiB)
 - Latency remains under 10s end to end at peak contract TPS
 
 ## Open Questions
 
-1. Is `new_realm_admin_key` ever non-null?
-2. Is there a way to figure out which file belongs to which contract to back-fill data?
-3. Should there be a `GET /api/v1/contracts/{id}/results/{id}`?
-4. What are the average and max sizes for the different smart contract bytea fields?
-5. How many logs can a single contract call have?
-6. What will externalization of the contract state in the transaction record look like?
-7. Should we implicitly populate the auto-renew account for contracts?
-8. Should we use hex or base64 for bloom, data, code, etc?
+1. Is there a way to figure out which file belongs to which contract to back-fill data?
+2. Should there be a `GET /api/v1/contracts/{id}/results/{timestamp}`? Or should we limit results to a small amount?
+3. What will externalization of the contract state in the transaction record look like?
+4. Should we implicitly populate the auto-renew account for contracts?
+5. Should we use hex or base64 for bloom, data, code, etc?
