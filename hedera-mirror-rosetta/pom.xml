@@ -71,6 +71,8 @@
                                 <flag>-race</flag>
                             </buildFlags>
                             <ldFlags>
+                                <flag>-w</flag>
+                                <flag>-s</flag>
                                 <flag>-X</flag>
                                 <flag>main.Version=${release.version}</flag>
                             </ldFlags>

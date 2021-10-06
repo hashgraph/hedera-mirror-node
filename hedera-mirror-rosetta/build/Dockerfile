@@ -2,19 +2,15 @@
 # Importer, Rosetta and PostgreSQL into one image
 # and run the services using supervisord
 
-# ------------------------------  Rosetta  ------------------------------- #
-FROM golang:1.17.1 as rosetta-builder
-COPY hedera-mirror-rosetta /hedera-mirror-rosetta
-WORKDIR /hedera-mirror-rosetta
-ARG VERSION=development
-RUN go build -ldflags="-w -s -X main.Version=${VERSION}" -o hedera-mirror-rosetta
-
-# ---------------------------- Importer ----------------------------- #
-FROM openjdk:11.0 as java-builder
-
-RUN apt-get update
-COPY . ./hedera-mirror-node
-RUN cd hedera-mirror-node && ./mvnw --batch-mode --no-transfer-progress --show-version clean package -DskipTests -pl hedera-mirror-importer
+FROM ubuntu:20.04 as builder
+ARG DEBIAN_FRONTEND=noninteractive
+ARG GIT_REF=main
+RUN apt-get update && apt-get install -y gcc git openjdk-11-jdk-headless
+RUN git clone https://github.com/hashgraph/hedera-mirror-node
+WORKDIR /hedera-mirror-node
+RUN git checkout ${GIT_REF}
+RUN ./mvnw --batch-mode --no-transfer-progress --show-version clean package -DskipTests \
+    -pl hedera-mirror-importer,hedera-mirror-rosetta
 
 # ######################################################################## #
 # --------------------------- Runner Container --------------------------- #
@@ -25,55 +21,50 @@ FROM ubuntu:20.04 as runner
 # ---------------------- Install Deps & PosgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
-RUN apt-get update && apt-get install -y ca-certificates gnupg lsb-release
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
-
-# Add PostgreSQL's repository. It contains the most recent stable release of PostgreSQL.
-RUN echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-
-# Install PostgreSQL 9.6, supervisor, git and openjdk-11
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6 supervisor openjdk-11-jdk-headless curl
+ENV PG_VERSION=13
+RUN apt-get update \
+    && apt-get install -y ca-certificates gnupg lsb-release \
+    && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 \
+    && echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y postgresql-${PG_VERSION} supervisor openjdk-11-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
 
 USER root
 
-# Create Volume PostgreSQL directory and Change default PostgreSQL directory
-RUN mkdir -p /data/db
-RUN chown postgres /data/db
-RUN chmod 700 /data/db
-RUN mv /var/lib/postgresql/9.6/main /data/db/main
-RUN ln -s /data/db/main /var/lib/postgresql/9.6/main
-
 # ---------------------------  Supervisord  --------------------------- #
 
-COPY hedera-mirror-importer/src/main/resources/db/scripts/init.sh /scripts/init.sh
+COPY --from=builder /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh /scripts/init.sh
 USER postgres
-ENV PATH="/usr/lib/postgresql/9.6/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ENV PGCONF="/etc/postgresql/9.6/main"
-ENV PGDATA="/var/lib/postgresql/9.6/main"
+ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PGCONF="/etc/postgresql/${PG_VERSION}/main"
+ENV PGDATA="/var/lib/postgresql/${PG_VERSION}/main"
 
 # Init db script
-RUN /etc/init.d/postgresql start && /scripts/init.sh
+RUN /etc/init.d/postgresql start && /scripts/init.sh && /etc/init.d/postgresql stop
 
-RUN echo "listen_addresses='*'" >> "${PGCONF}/postgresql.conf"
+RUN echo "listen_addresses = '*'\nmax_wal_size = 8GB\nwork_mem = 256MB" >> "${PGCONF}/postgresql.conf"
+
 # Allow PG Admin access
-RUN echo "host    all             all             172.17.0.1/16           trust" >> "${PGCONF}/pg_hba.conf"
+# RUN echo "host    all             all             172.17.0.1/16           trust" >> "${PGCONF}/pg_hba.conf"
 
 USER root
 
 # Copy the Rosetta Executable from the Rosetta Builder stage
-WORKDIR /var/rosetta
-COPY --from=rosetta-builder /hedera-mirror-rosetta/hedera-mirror-rosetta .
+COPY --from=builder /hedera-mirror-node/hedera-mirror-rosetta/bin/hedera-mirror-rosetta /var/rosetta/
 
 # Copy the Importer Jar and Config from the Java-Builder stage
-WORKDIR /var/importer
-COPY --from=java-builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-*exec.jar ./hedera-mirror-importer.jar
+COPY --from=builder /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-*exec.jar /var/importer/hedera-mirror-importer.jar
 # Enable persisting non-fee transfers to reconstruct the original transfer list
 ENV HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_NONFEETRANSFERS=true
 # Disable Redis because gRPC process is not run within this execution
 ENV HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_REDIS_ENABLED=false
 
-COPY hedera-mirror-rosetta/build /build
+# Create users for impoter and rosetta
+RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
+
+COPY --from=builder /hedera-mirror-node/hedera-mirror-rosetta/build /build
 WORKDIR /build
 
 # Expose the ports (DB)(Rosetta)
