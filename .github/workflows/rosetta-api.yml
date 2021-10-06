@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build Mirror Node All-in-One
-        run: docker build --tag="${MODULE}" -f build/Dockerfile ..
+        run: docker build --build-args GIT_BRANCH_OR_TAG=${GITHUB_REF#refs/*/} --tag="${MODULE}" -f build/Dockerfile ..
 
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application.yml
@@ -67,6 +67,7 @@ jobs:
           jq --slurpfile accounts /tmp/accounts.json '.construction.prefunded_accounts=$accounts[0]' \
             validate-construction.json > /tmp/validate-construction.json
           mv /tmp/validate-construction.json validate-construction.json
+
       - name: Set Importer StartDate
         run: |
           startdate=$(date --date='15 minutes ago' -Iseconds -u)
@@ -78,7 +79,7 @@ jobs:
         run: |
           CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
             -e NETWORK=testnet \
-            -v /tmp/application.yml:/var/importer/application.yml \
+            -v /tmp/application.yml:/app/importer/application.yml \
             -p 5432:5432 -p 5700:5700 "${MODULE}")
           echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
 
@@ -110,7 +111,6 @@ jobs:
       - name: Show Container Log
         if: ${{ failure() && env.CONTAINER_ID != '' }}
         run: docker logs $CONTAINER_ID
-
 
   gosec:
     runs-on: ubuntu-latest
