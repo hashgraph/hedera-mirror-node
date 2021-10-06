@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build Mirror Node All-in-One
-        run: docker build --build-arg GIT_BRANCH_OR_TAG=${GITHUB_REF#refs/*/} --tag="${MODULE}" -f build/Dockerfile ..
+        run: docker build --build-arg GIT_REF=${GITHUB_SHA} --tag="${MODULE}" -f build/Dockerfile ..
 
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application.yml

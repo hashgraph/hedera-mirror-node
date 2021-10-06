@@ -4,9 +4,10 @@
 
 FROM ubuntu:20.04 as builder
 ARG DEBIAN_FRONTEND=noninteractive
-ARG GIT_BRANCH_OR_TAG=main
+# GIT_REF can be a branch, a commit SHA, or a tag
+ARG GIT_REF=main
 RUN apt-get update && apt-get install -y gcc git openjdk-11-jdk-headless
-RUN git clone --depth 1 -b ${GIT_BRANCH_OR_TAG} https://github.com/hashgraph/hedera-mirror-node
+RUN git clone https://github.com/hashgraph/hedera-mirror-node && cd hedera-mirror-node && git checkout ${GIT_REF}
 WORKDIR /hedera-mirror-node
 RUN ./mvnw --batch-mode --no-transfer-progress --show-version clean package -Dmaven.test.skip \
     -pl hedera-mirror-importer,hedera-mirror-rosetta
