@@ -38,7 +38,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app /app
-# Create users for impoter and rosetta
+# Create users for importer and rosetta
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
@@ -46,9 +46,9 @@ ENV PGCONF="/etc/postgresql/${PG_VERSION}/main"
 ENV PGDATA="/var/lib/postgresql/${PG_VERSION}/main"
 
 USER postgres
+RUN cp /app/build/pg_hba.conf ${PGCONF}/ && cp /app/build/postgresql.conf ${PGCONF}/conf.d
 # Init db script
 RUN /etc/init.d/postgresql start && /app/scripts/init.sh && /etc/init.d/postgresql stop
-RUN echo "listen_addresses = '*'\nmax_wal_size = 8GB\nwork_mem = 256MB" >> "${PGCONF}/postgresql.conf"
 
 USER root
 WORKDIR /app/build
