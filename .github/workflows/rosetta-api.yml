@@ -57,7 +57,8 @@ jobs:
       - name: Build Mirror Node All-in-One
         run: |
           GIT_REF=${GITHUB_HEAD_REF:-$GITHUB_REF}
-          docker build --build-arg GIT_REF=${GIT_REF#refs/*/} --tag="${MODULE}" -f build/Dockerfile ..
+          docker build --build-arg GIT_REF=${GIT_REF#refs/*/} --tag="${MODULE}" .
+        working-directory: ./hedera-mirror-rosetta/build
 
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application.yml
