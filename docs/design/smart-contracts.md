@@ -11,7 +11,8 @@ is storing the appropriate smart contract information and making it retrievable 
 ## Goals
 
 - Enhance the database schema to store all contract-related information from transactions and transaction records
-- Enhance the REST API to retrieve smart contracts and the execution results
+- Enhance the REST API to retrieve smart contracts and its execution results
+- Enhance the REST API to search by smart contract log topics
 - Explore alternative smart contract APIs including compatibility
   with [Ethereum JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) APIs
 
@@ -64,7 +65,7 @@ end;
 $contract_history$ language plpgsql;
 
 create trigger contract_history
-  before update
+  after update
   on contract
   for each row
 execute function contract_history();
@@ -178,7 +179,6 @@ Optional filters
   "auto_renew_account_id": "0.0.10001",
   "auto_renew_period": 7776000,
   "bytecode": "c896c66db6d98784cc03807640f3dfd41ac3a48c",
-  "constructor_parameters": "eb896db302d70cc2504d40f5ead67013989602c1",
   "contract_id": "0.0.10001",
   "file_id": "0.0.1000",
   "initial_balance": 100,
@@ -192,7 +192,8 @@ Optional filters
 
 Optional filters
 
-- `timestamp` Return the historical state of the contract
+- `timestamp` Return the historical state of the contract. Supports all the operators but returns the latest version of
+  that contract within that time range.
 
 ### List Contract Results
 
@@ -200,7 +201,6 @@ Optional filters
 
 ```json
 {
-  "contract_id": "0.0.1001",
   "results": [
     {
       "amount": 10,
@@ -234,9 +234,9 @@ Optional filters
 
 Optional filters
 
-- `timestamp`
 - `order`
 - `limit`
+- `timestamp`
 
 ## Non-Functional Requirements
 
@@ -249,7 +249,8 @@ Optional filters
 ## Open Questions
 
 1. Is there a way to figure out which file belongs to which contract to back-fill data?
-2. Should there be a `GET /api/v1/contracts/{id}/results/{timestamp}`? Or should we limit results to a small amount?
+2. Should there be a `/api/v1/contracts/{id}/results/{timestamp}`? Or should we limit results to a small amount?
 3. What will externalization of the contract state in the transaction record look like?
 4. Should we implicitly populate the auto-renew account for contracts?
 5. Should we use hex or base64 for bloom, data, code, etc?
+6. How should we allow searching by topics?
