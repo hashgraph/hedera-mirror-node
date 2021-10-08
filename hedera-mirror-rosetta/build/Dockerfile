@@ -4,16 +4,16 @@
 
 FROM ubuntu:20.04 as builder
 ARG DEBIAN_FRONTEND=noninteractive
-# GIT_REF can be a branch, a commit SHA, or a tag
+# GIT_REF can be a branch or a tag
 ARG GIT_REF=main
 RUN apt-get update && apt-get install -y gcc git openjdk-11-jdk-headless
-RUN git clone https://github.com/hashgraph/hedera-mirror-node && cd hedera-mirror-node && git checkout ${GIT_REF}
+RUN git clone -b ${GIT_REF} --depth 1 https://github.com/hashgraph/hedera-mirror-node
 WORKDIR /hedera-mirror-node
 RUN ./mvnw --batch-mode --no-transfer-progress --show-version clean package -Dmaven.test.skip \
     -pl hedera-mirror-importer,hedera-mirror-rosetta
 WORKDIR /app
 RUN mkdir importer rosetta scripts \
-    && cp -r /hedera-mirror-node/hedera-mirror-rosetta/build . \
+    && cp /hedera-mirror-node/hedera-mirror-rosetta/build/* . \
     && cp /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer-*exec.jar ./importer/hedera-mirror-importer.jar \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/bin/hedera-mirror-rosetta ./rosetta \
     && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh ./scripts
@@ -42,16 +42,20 @@ COPY --from=builder /app /app
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
-ENV PGCONF="/etc/postgresql/${PG_VERSION}/main"
-ENV PGDATA="/var/lib/postgresql/${PG_VERSION}/main"
+ENV PGCONF="/var/lib/postgresql/${PG_VERSION}/main"
+ENV PGDATA=${PGCONF}
 
 USER postgres
-RUN cp /app/build/pg_hba.conf ${PGCONF}/ && cp /app/build/postgresql.conf ${PGCONF}/conf.d
+RUN cp -r /etc/postgresql/${PG_VERSION}/main/* ${PGCONF} \
+    && rm -fr /etc/postgresql/${PG_VERSION}/main \
+    && ln -s ${PGCONF} /etc/postgresql/${PG_VERSION}/main \
+    && cp /app/pg_hba.conf ${PGCONF}/ \
+    && cp /app/postgresql.conf ${PGCONF}/conf.d
 # Init db script
 RUN /etc/init.d/postgresql start && /app/scripts/init.sh && /etc/init.d/postgresql stop
 
 USER root
-WORKDIR /app/build
+WORKDIR /app
 
 # Expose the ports (DB)(Rosetta)
 EXPOSE 5432 5700

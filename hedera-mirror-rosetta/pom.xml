@@ -66,10 +66,9 @@
                     <execution>
                         <id>default-build</id>
                         <configuration>
-                            <buildFlags>
-                                <flag>-a</flag>
-                                <flag>-race</flag>
-                            </buildFlags>
+                            <env>
+                                <CGO_ENABLED>0</CGO_ENABLED>
+                            </env>
                             <ldFlags>
                                 <flag>-w</flag>
                                 <flag>-s</flag>
