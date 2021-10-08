@@ -60,8 +60,7 @@ import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
-    private static final AccountID accountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1001)
-            .build();
+    private static final AccountID accountId = AccountID.newBuilder().setAccountNum(1001).build();
     private static final long[] additionalTransfers = {5000, 6000};
     private static final long[] additionalTransferAmounts = {1001, 1002};
 
@@ -72,7 +71,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
-    void cryptoCreate() throws Exception {
+    void cryptoCreate() {
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
@@ -80,14 +79,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
+        var accountEntityId = EntityId.of(accountId);
+        var consensusTimestamp = Utility.timeStampInNanos(record.getConsensusTimestamp());
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-
         Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                INITIAL_BALANCE, Utility.timeStampInNanos(record.getConsensusTimestamp()), EntityId.of(accountId)));
+                INITIAL_BALANCE, consensusTimestamp, accountEntityId));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
+                , () -> assertEntities(accountEntityId, EntityId.of(PROXY), EntityId.of(PAYER), EntityId
                         .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(5, cryptoTransferRepository.count())
                 , () -> assertEquals(0, contractResultRepository.count())
@@ -97,6 +97,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 , () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp())
                 , () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
                 , () -> assertThat(initialBalanceTransfer).isPresent()
+                , () -> assertThat(entityRepository.findById(accountEntityId.getId()))
+                        .get()
+                        .returns(consensusTimestamp, Entity::getCreatedTimestamp)
+                        .returns(consensusTimestamp, Entity::getModifiedTimestamp)
         );
     }
 
@@ -200,7 +204,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
-
         Entity dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
         Entity dbProxyAccountId = getEntity(dbAccountEntity.getProxyAccountId());
 
@@ -224,6 +227,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 , () -> assertEquals(cryptoUpdateTransactionBody.getMemo().getValue(), dbAccountEntity.getMemo())
                 , () -> assertEquals(Utility.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpirationTimestamp())
+                , () -> assertEquals(Utility.timestampInNanosMax(record.getConsensusTimestamp()),
+                        dbAccountEntity.getModifiedTimestamp())
         );
     }
 
