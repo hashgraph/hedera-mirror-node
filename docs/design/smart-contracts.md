@@ -70,7 +70,7 @@ create trigger contract_history
   after update
   on contract
   for each row
-execute function contract_history();
+execute procedure contract_history();
 ```
 
 #### Contract Result
@@ -167,7 +167,7 @@ Optional filters
 
 - `contract.id` Supports all comparison operators and repeated equality parameters to generate an `IN` clause
 - `order`
-- `limit`
+- `limit` Maximum limit will be configurable and lower than current global max limit
 
 ### Get Contract
 
@@ -252,7 +252,7 @@ Optional filters
     {
       "bloom": "1513001083c899b1996ec7fa33621e2c340203f0",
       "data": "8f705727c88764031b98fc32c314f8f9e463fb62",
-      "topic": [
+      "topics": [
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
         "0x59d088293f09d5119d5b55858b989ffce4d398dc"
       ]
