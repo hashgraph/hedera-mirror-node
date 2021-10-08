@@ -53,7 +53,8 @@ consensus timestamp.
 ```sql
 create table if not exists contract_history
 (
-) inherits (contract);
+  like contract
+);
 
 create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
 
@@ -167,7 +168,7 @@ Optional filters
 
 - `contract.id` Supports all comparison operators and repeated equality parameters to generate an `IN` clause
 - `order`
-- `limit` Maximum limit will be configurable and lower than current global max limit
+- `limit`
 
 ### Get Contract
 
@@ -180,7 +181,7 @@ Optional filters
     "key": "7b2233222c2233222c2233227d"
   },
   "auto_renew_period": 7776000,
-  "bytecode": "c896c66db6d98784cc03807640f3dfd41ac3a48c",
+  "bytecode": "0xc896c66db6d98784cc03807640f3dfd41ac3a48c",
   "contract_id": "0.0.10001",
   "file_id": "0.0.1000",
   "initial_balance": 100,
@@ -208,13 +209,13 @@ Optional filters
   "results": [
     {
       "amount": 10,
-      "bloom": "549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
-      "call_result": "2b048531b38d2882e86044bc972e940ee0a01938",
+      "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
+      "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
       "created_contract_ids": [
         "0.0.1003"
       ],
       "error_message": "",
-      "function_parameters": "bb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
+      "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
       "gas_limit": 2500,
       "gas_used": 1000,
       "timestamp": "12345.10001"
@@ -229,7 +230,7 @@ Optional filters
 Optional filters
 
 - `order`
-- `limit`
+- `limit` Maximum limit will be configurable and lower than current global max limit
 - `timestamp`
 
 ### Get Contract Result
@@ -237,21 +238,21 @@ Optional filters
 `GET /api/v1/contracts/{id}/results/{timestamp}`
 
 ```json
-    {
+{
   "amount": 10,
-  "bloom": "549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
-  "call_result": "2b048531b38d2882e86044bc972e940ee0a01938",
+  "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
+  "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
   "created_contract_ids": [
     "0.0.1003"
   ],
   "error_message": "",
-  "function_parameters": "bb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
+  "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
   "gas_limit": 2500,
   "gas_used": 1000,
-  "log_info": [
+  "logs": [
     {
-      "bloom": "1513001083c899b1996ec7fa33621e2c340203f0",
-      "data": "8f705727c88764031b98fc32c314f8f9e463fb62",
+      "bloom": "0x1513001083c899b1996ec7fa33621e2c340203f0",
+      "data": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "topics": [
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
         "0x59d088293f09d5119d5b55858b989ffce4d398dc"
@@ -267,12 +268,11 @@ Optional filters
 - Support peak smart contract call TPS (400+)
 - Support peak smart contract call gas per second (15 million)
 - Support max smart contract call size (6K)
-- Support max smart contract call state and output size (~4M gas or 500KiB)
+- Support max smart contract call state and output size (~4M gas or 900 KiB)
 - Latency remains under 10s end to end at peak contract TPS
 
 ## Open Questions
 
 1. Is there a way to figure out which file belongs to which contract to back-fill data? No
 2. What will externalization of the contract state in the transaction record look like? Still being designed.
-3. Should we use hex or base64 for bloom, data, code, etc?
-4. How should we allow searching by topics?
+3. How should we allow searching by topics?
