@@ -7,11 +7,11 @@ with entity_timestamp as (
     from transaction
     where result = 22
       and entity_id is not null
-      and type in (8, 9, 11, 12, 15, 17, 18, 19, 22, 24, 25, 26, 29, 35, 36, 42)
+      and type in (8, 9, 11, 12, 15, 17, 18, 19, 22, 24, 25, 26, 29, 35, 36, 42, 44)
     group by entity_id
 )
 update entity
-set created_timestamp = entity_timestamp.created_timestamp,
+set created_timestamp = coalesce(entity.created_timestamp, entity_timestamp.created_timestamp),
     modified_timestamp = entity_timestamp.modified_timestamp
 from entity_timestamp
 where entity.id = entity_timestamp.entity_id;
