@@ -82,16 +82,16 @@ using the protobuf and normalize it into the other fields.
 ```sql
 create table if not exists contract_result
 (
-  amount               bigint default 0            not null,
-  bloom                bytea                       not null,
-  call_result          bytea                       not null,
-  consensus_timestamp  nanos_timestamp primary key not null,
-  contract_id          bigint                      not null,
-  created_contract_ids bigint array                not null,
-  error_message        text   default ''           not null,
-  function_parameters  bytea                       not null,
-  gas_limit            bigint                      not null,
-  gas_used             bigint                      not null
+  amount               bigint default 0   not null,
+  bloom                bytea              not null,
+  call_result          bytea              not null,
+  consensus_timestamp  bigint primary key not null,
+  contract_id          bigint             not null,
+  created_contract_ids bigint array       not null,
+  error_message        text   default ''  not null,
+  function_parameters  bytea              not null,
+  gas_limit            bigint             not null,
+  gas_used             bigint             not null
 );
 ```
 
@@ -103,7 +103,7 @@ Create a new table to store the results of the contract's log output
 create table if not exists contract_log
 (
   bloom               bytea                    not null,
-  consensus_timestamp nanos_timestamp          not null,
+  consensus_timestamp bigint                   not null,
   contract_id         bigint                   not null,
   index               int                      not null,
   data                bytea                    not null,
@@ -165,7 +165,7 @@ create table if not exists contract_log
 
 Optional filters
 
-- `contract.id`
+- `contract.id` Supports all comparison operators and repeated equality parameters to generate an `IN` clause
 - `order`
 - `limit`
 
@@ -197,7 +197,7 @@ Optional filters
 Optional filters
 
 - `timestamp` Return the historical state of the contract. Supports all the operators but returns the latest version of
-  that contract within that time range.
+  the contract within that time range.
 
 ### List Contract Results
 
@@ -217,16 +217,6 @@ Optional filters
       "function_parameters": "bb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
       "gas_limit": 2500,
       "gas_used": 1000,
-      "log_info": [
-        {
-          "bloom": "1513001083c899b1996ec7fa33621e2c340203f0",
-          "data": "8f705727c88764031b98fc32c314f8f9e463fb62",
-          "topic": [
-            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-            "0x59d088293f09d5119d5b55858b989ffce4d398dc"
-          ]
-        }
-      ],
       "timestamp": "12345.10001"
     }
   ],
@@ -242,6 +232,36 @@ Optional filters
 - `limit`
 - `timestamp`
 
+### Get Contract Result
+
+`GET /api/v1/contracts/{id}/results/{timestamp}`
+
+```json
+    {
+  "amount": 10,
+  "bloom": "549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
+  "call_result": "2b048531b38d2882e86044bc972e940ee0a01938",
+  "created_contract_ids": [
+    "0.0.1003"
+  ],
+  "error_message": "",
+  "function_parameters": "bb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
+  "gas_limit": 2500,
+  "gas_used": 1000,
+  "log_info": [
+    {
+      "bloom": "1513001083c899b1996ec7fa33621e2c340203f0",
+      "data": "8f705727c88764031b98fc32c314f8f9e463fb62",
+      "topic": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x59d088293f09d5119d5b55858b989ffce4d398dc"
+      ]
+    }
+  ],
+  "timestamp": "12345.10001"
+}
+```
+
 ## Non-Functional Requirements
 
 - Support peak smart contract call TPS (400+)
@@ -252,9 +272,7 @@ Optional filters
 
 ## Open Questions
 
-1. Is there a way to figure out which file belongs to which contract to back-fill data?
-2. Should there be a `/api/v1/contracts/{id}/results/{timestamp}`? Or should we limit results to a small amount?
-3. What will externalization of the contract state in the transaction record look like?
-4. Should we implicitly populate the auto-renew account for contracts?
-5. Should we use hex or base64 for bloom, data, code, etc?
-6. How should we allow searching by topics?
+1. Is there a way to figure out which file belongs to which contract to back-fill data? No
+2. What will externalization of the contract state in the transaction record look like? Still being designed.
+3. Should we use hex or base64 for bloom, data, code, etc?
+4. How should we allow searching by topics?
