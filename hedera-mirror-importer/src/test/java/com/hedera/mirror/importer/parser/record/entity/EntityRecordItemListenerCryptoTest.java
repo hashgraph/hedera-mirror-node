@@ -97,10 +97,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 , () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp())
                 , () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
                 , () -> assertThat(initialBalanceTransfer).isPresent()
-                , () -> assertThat(entityRepository.findById(accountEntityId.getId()))
-                        .get()
-                        .returns(consensusTimestamp, Entity::getCreatedTimestamp)
-                        .returns(consensusTimestamp, Entity::getModifiedTimestamp)
         );
     }
 
@@ -619,6 +615,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         Entity actualProxyAccountId = getEntity(actualAccount.getProxyAccountId());
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualAccount.getAutoRenewPeriod()),
+                () -> assertNotNull(actualAccount.getCreatedTimestamp()),
                 () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
                         actualAccount.getPublicKey()),
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),

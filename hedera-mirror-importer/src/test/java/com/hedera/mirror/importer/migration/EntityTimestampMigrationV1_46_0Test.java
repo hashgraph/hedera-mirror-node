@@ -112,8 +112,8 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 entity(9002, EntityTypeEnum.CONTRACT, 103L, 103L), // update transaction failed at 104L
                 entity(9003, EntityTypeEnum.FILE, 105L, 107L), // created at 105L, deleted at 107L
                 entity(9004, EntityTypeEnum.TOPIC, 108L, 111L), // last update at 111L
-                entity(9005, EntityTypeEnum.TOKEN, 112L, 113L), //
-                entity(9006, EntityTypeEnum.SCHEDULE, 114L, true, 116L)
+                entity(9005, EntityTypeEnum.TOKEN, 112L, 113L), // last update at 113L
+                entity(9006, EntityTypeEnum.SCHEDULE, 114L, true, 116L) // schedule was deleted at 116L
         );
 
         // when
