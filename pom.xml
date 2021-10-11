@@ -66,14 +66,14 @@
         <guava.version>31.0.1-jre</guava.version>
         <hedera-protobuf.version>0.19.0-alpha.2</hedera-protobuf.version>
         <hedera-sdk.version>2.1.0</hedera-sdk.version>
-        <hibernate-types.version>2.12.1</hibernate-types.version>
+        <hibernate-types.version>2.13.0</hibernate-types.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
         <jib.version>3.1.4</jib.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.0</msgpack.version>
-        <protobuf.version>3.18.0</protobuf.version>
+        <protobuf.version>3.18.1</protobuf.version>
         <release.version>0.43.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.30.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>

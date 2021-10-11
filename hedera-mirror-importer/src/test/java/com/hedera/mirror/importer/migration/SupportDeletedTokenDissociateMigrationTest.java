@@ -382,7 +382,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         }
     }
 
-    // Use a custom class for Entity table since its name and columns have changed from the current domain object
+    // Use a custom class for Entity table since its columns have changed from the current domain object
     @Data
     @NoArgsConstructor
     private static class MigrationEntity {

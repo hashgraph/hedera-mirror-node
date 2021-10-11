@@ -995,6 +995,9 @@ components:
           $ref: '#/components/schemas/Timestamp'
         creator_account_id:
           $ref: '#/components/schemas/EntityId'
+        deleted:
+          type: boolean
+          example: false
         executed_timestamp:
           $ref: '#/components/schemas/Timestamp'
           nullable: true
