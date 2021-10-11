@@ -48,7 +48,7 @@ class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
 
     @Override
     protected String getUpdateQuery() {
-        return "update only schedule set executed_timestamp = coalesce(schedule_temp.executed_timestamp, schedule" +
+        return "update schedule set executed_timestamp = coalesce(schedule_temp.executed_timestamp, schedule" +
                 ".executed_timestamp) from schedule_temp where schedule.schedule_id = schedule_temp.schedule_id and " +
                 "schedule_temp.executed_timestamp is not null";
     }

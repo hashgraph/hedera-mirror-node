@@ -278,4 +278,6 @@ Optional filters
 3. How will Hedera transactions triggered from a smart contract be externalized in the record stream? Still being
    designed. Tentatively, each contract triggered transaction will show up as a separate transaction and record with an
    incremented consensus timestamp and a parent timestamp populated.
-4. Extract individual function parameters?
+4. Should we show individual function parameters in a normalized form? We decided against it at this time as it might be
+   a performance concern or require parsing the solidity contract. Can revisit in the future by adding a new field with
+   the normalized structure.

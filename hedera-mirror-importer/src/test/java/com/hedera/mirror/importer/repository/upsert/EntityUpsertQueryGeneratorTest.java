@@ -51,7 +51,7 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Override
     protected String getUpdateQuery() {
-        return "update only entity set " +
+        return "update entity set " +
                 "auto_renew_account_id = coalesce(entity_temp.auto_renew_account_id, entity.auto_renew_account_id), " +
                 "auto_renew_period = coalesce(entity_temp.auto_renew_period, entity.auto_renew_period), " +
                 "deleted = coalesce(entity_temp.deleted, entity.deleted), " +

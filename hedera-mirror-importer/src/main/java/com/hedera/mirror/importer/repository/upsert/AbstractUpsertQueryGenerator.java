@@ -55,16 +55,20 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
-    protected final Logger log = LogManager.getLogger(getClass());
-    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
-    }.getRawType();
-    @Getter(lazy = true)
-    private final String insertQuery = generateInsertQuery();
     private Set<Field> attributes = null;
-    @Getter(lazy = true)
-    private final String updateQuery = generateUpdateQuery();
+
     @Value("${spring.flyway.locations:v1}")
     private String version;
+
+    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
+
+    @Getter(lazy = true)
+    private final String insertQuery = generateInsertQuery();
+
+    @Getter(lazy = true)
+    private final String updateQuery = generateUpdateQuery();
+
+    protected final Logger log = LogManager.getLogger(getClass());
 
     protected boolean isInsertOnly() {
         return false;
@@ -151,7 +155,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
         return StringUtils.joinWith(
                 " ",
-                "update", "only", getFinalTableName(), "set",
+                "update", getFinalTableName(), "set",
                 getUpdateClause(),
                 "from", getTemporaryTableName(),
                 getUpdateWhereClause()

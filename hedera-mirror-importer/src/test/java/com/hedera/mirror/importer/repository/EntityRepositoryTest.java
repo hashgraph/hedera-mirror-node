@@ -37,6 +37,8 @@ import org.springframework.jdbc.core.RowMapper;
 
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class EntityRepositoryTest extends AbstractRepositoryTest {
 
@@ -46,6 +48,8 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         DefaultConversionService defaultConversionService = new DefaultConversionService();
         defaultConversionService.addConverter(PGobject.class, Range.class,
                 source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
+        defaultConversionService.addConverter(Long.class, EntityId.class,
+                id -> EntityId.of(0L, 0L, id, EntityTypeEnum.ACCOUNT));
         DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(Entity.class);
         dataClassRowMapper.setConversionService(defaultConversionService);
         ROW_MAPPER = dataClassRowMapper;
@@ -68,7 +72,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void entityPublicKeyUpdates() {
-        Entity entity = domainBuilder.entity().persist();
+        Entity entity = domainBuilder.entity().customize(b -> b.key(null)).persist();
 
         // unset key should result in null public key
         assertThat(entityRepository.findById(entity.getId())).get()

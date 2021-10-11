@@ -20,7 +20,12 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+
 import com.google.common.collect.Range;
+import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
@@ -36,22 +41,41 @@ import com.hedera.mirror.importer.util.Utility;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
 
-    private final AtomicLong entityId = new AtomicLong(0L);
     private final EntityRepository entityRepository;
+    private final AtomicLong id = new AtomicLong(0L);
     private final Instant now = Instant.now();
 
+    private EntityId entityId(EntityTypeEnum type) {
+        return EntityId.of(0L, 0L, id(), type);
+    }
+
+    private long id() {
+        return id.incrementAndGet();
+    }
+
     public DomainPersister<Entity, Entity.EntityBuilder> entity() {
-        long timestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano());
+        long id = id();
+        byte[] key = Key.newBuilder().setEd25519(ByteString.copyFrom(Longs.toByteArray(id))).build().toByteArray();
+        long timestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id;
+
         Entity.EntityBuilder builder = Entity.builder()
+                .autoRenewAccountId(entityId(ACCOUNT))
+                .autoRenewPeriod(1800L)
                 .createdTimestamp(timestamp)
                 .deleted(false)
-                .id(entityId.incrementAndGet())
+                .expirationTimestamp(timestamp + 30_000_000L)
+                .id(id)
+                .key(key)
+                .maxAutomaticTokenAssociations(0)
                 .memo("test")
-                .num(0L)
+                .proxyAccountId(entityId(ACCOUNT))
+                .num(id)
                 .realm(0L)
+                .receiverSigRequired(false)
                 .shard(0L)
+                .submitKey(key)
                 .timestampRange(Range.atLeast(timestamp + 1))
-                .type(EntityTypeEnum.ACCOUNT.getId());
+                .type(ACCOUNT.getId());
 
         return new DomainPersister<>(entityRepository, builder, builder::build);
     }
