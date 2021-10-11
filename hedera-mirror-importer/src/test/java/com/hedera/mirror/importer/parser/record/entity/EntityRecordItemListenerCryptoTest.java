@@ -162,34 +162,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
-    void cryptoCreateTwice() {
-        Transaction firstTransaction = cryptoCreateTransaction();
-        TransactionBody firstTransactionBody = getTransactionBody(firstTransaction);
-        TransactionRecord firstRecord = transactionRecordSuccess(firstTransactionBody);
-
-        parseRecordItemAndCommit(new RecordItem(firstTransaction, firstRecord));
-
-        Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
-
-        assertAll(
-                () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEntities(EntityId.of(accountId), EntityId.of(PROXY), EntityId.of(PAYER), EntityId
-                        .of(NODE), EntityId.of(TREASURY))
-                , () -> assertEquals(10, cryptoTransferRepository.count())
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(0, fileDataRepository.count())
-                , () -> assertCryptoTransaction(transactionBody, record, false)
-                , () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp())
-        );
-    }
-
-    @Test
     void cryptoUpdateSuccessfulTransaction() {
         createAccount();
 
@@ -613,16 +585,17 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private void assertCryptoEntity(CryptoCreateTransactionBody expected, Timestamp consensusTimestamp) {
         Entity actualAccount = getTransactionEntity(consensusTimestamp);
         Entity actualProxyAccountId = getEntity(actualAccount.getProxyAccountId());
+        long timestamp = Utility.timestampInNanosMax(consensusTimestamp);
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualAccount.getAutoRenewPeriod()),
-                () -> assertNotNull(actualAccount.getCreatedTimestamp()),
+                () -> assertEquals(timestamp, actualAccount.getCreatedTimestamp()),
                 () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
                         actualAccount.getPublicKey()),
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
                 () -> assertNull(actualAccount.getExpirationTimestamp()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccountId),
-                () -> assertNotNull(actualAccount.getModifiedTimestamp())
+                () -> assertEquals(timestamp, actualAccount.getModifiedTimestamp())
         );
     }
 
@@ -658,9 +631,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setProxyAccountID(PROXY)
                 .setRealmID(RealmID.newBuilder().setShardNum(0).setRealmNum(0).build())
                 .setShardID(ShardID.newBuilder().setShardNum(0))
-                .setReceiveRecordThreshold(2000L)
-                .setReceiverSigRequired(true)
-                .setSendRecordThreshold(3000L));
+                .setReceiverSigRequired(true));
     }
 
     private Transaction cryptoUpdateTransaction(AccountID accountNum) {
@@ -670,10 +641,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
                 .setMemo(StringValue.of("CryptoUpdateAccount memo"))
-                .setProxyAccountID(PROXY_UPDATE)
-                .setReceiveRecordThreshold(5001L)
-                .setReceiverSigRequired(false)
-                .setSendRecordThreshold(6001L));
+                .setProxyAccountID(PROXY_UPDATE));
     }
 
     private Transaction cryptoDeleteTransaction() {

@@ -30,6 +30,7 @@ const scheduleSelectFields = [
   'e.key',
   's.consensus_timestamp',
   's.creator_account_id',
+  'e.deleted',
   's.executed_timestamp',
   'e.memo',
   's.payer_account_id',
@@ -98,6 +99,7 @@ const formatScheduleRow = (row) => {
 
   return {
     admin_key: utils.encodeKey(row.key),
+    deleted: row.deleted,
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
     creator_account_id: EntityId.fromEncodedId(row.creator_account_id).toString(),
     executed_timestamp: row.executed_timestamp === null ? null : utils.nsToSecNs(row.executed_timestamp),

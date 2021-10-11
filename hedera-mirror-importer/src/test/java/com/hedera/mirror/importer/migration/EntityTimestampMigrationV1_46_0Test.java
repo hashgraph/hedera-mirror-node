@@ -121,7 +121,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
 
         // then
         assertThat(entityRepository.findAll())
-                .usingElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
+                .usingElementComparatorOnFields("id", "createdTimestamp", "deleted", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 

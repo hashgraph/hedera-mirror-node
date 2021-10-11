@@ -42,6 +42,7 @@
     "admin_key": null,
     "consensus_timestamp": "1234567890.000000001",
     "creator_account_id": "0.0.1024",
+    "deleted": false,
     "executed_timestamp": null,
     "memo": "Created per council decision dated 02/01/21",
     "payer_account_id": "0.0.1024",
