@@ -240,6 +240,7 @@ Add optional filters
   - This endpoint should return a 409 for tokens that are not of type `NON_FUNGIBLE_UNIQUE` with a message that
     indicates that this endpoint is not valid for this token type.
   - `metadata` should be base64 encoded before returning.
+  - `deleted` should be true if either the nft or the token is deleted
 
 ```json
 {
@@ -271,6 +272,7 @@ Optional Filters
 
 - GET `/api/v1/tokens/{id}/nfts/{serialNumber}` will show information about an individual NFT.
   - `metadata` should be base64 encoded before returning.
+  - `deleted` should be true if either the nft or the token is deleted
 
 ```json
 {
