@@ -113,7 +113,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(retrieveAllEntity())
+        assertThat(retrieveEntities())
                 .usingElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
@@ -166,7 +166,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         }
     }
 
-    private List<MigrationEntity> retrieveAllEntity() {
+    private List<MigrationEntity> retrieveEntities() {
         return jdbcOperations.query("select * from entity", new BeanPropertyRowMapper<>(MigrationEntity.class));
     }
 
