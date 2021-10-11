@@ -37,21 +37,21 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Override
     protected String getInsertQuery() {
         return "insert into entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, " +
-                "expiration_timestamp, id, key, max_automatic_token_associations, memo, modified_timestamp, num, " +
-                "proxy_account_id, public_key, realm, receiver_sig_required, shard, submit_key, type) select " +
+                "expiration_timestamp, id, key, max_automatic_token_associations, memo, num, proxy_account_id, " +
+                "public_key, realm, receiver_sig_required, shard, submit_key, timestamp_range, type) select " +
                 "entity_temp.auto_renew_account_id, entity_temp.auto_renew_period, entity_temp.created_timestamp, " +
                 "entity_temp.deleted, entity_temp.expiration_timestamp, entity_temp.id, entity_temp.key, " +
                 "entity_temp.max_automatic_token_associations, " +
                 "case when entity_temp.memo = '<uuid>' then '' else coalesce(entity_temp.memo, '') " +
-                "end, entity_temp.modified_timestamp, entity_temp.num, entity_temp.proxy_account_id, case when " +
+                "end, entity_temp.num, entity_temp.proxy_account_id, case when " +
                 "entity_temp.public_key = '<uuid>' then '' else coalesce(entity_temp.public_key, null) end, " +
                 "entity_temp.realm, entity_temp.receiver_sig_required, entity_temp.shard, entity_temp.submit_key, " +
-                "entity_temp.type from entity_temp on conflict (id) do nothing";
+                "entity_temp.timestamp_range, entity_temp.type from entity_temp on conflict (id) do nothing";
     }
 
     @Override
     protected String getUpdateQuery() {
-        return "update entity set " +
+        return "update only entity set " +
                 "auto_renew_account_id = coalesce(entity_temp.auto_renew_account_id, entity.auto_renew_account_id), " +
                 "auto_renew_period = coalesce(entity_temp.auto_renew_period, entity.auto_renew_period), " +
                 "deleted = coalesce(entity_temp.deleted, entity.deleted), " +
@@ -61,13 +61,14 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "entity.max_automatic_token_associations), " +
                 "memo = case when entity_temp.memo = '<uuid>' then '' else " +
                 "coalesce(entity_temp.memo, entity.memo) end, " +
-                "modified_timestamp = coalesce(entity_temp.modified_timestamp, entity.modified_timestamp), " +
                 "proxy_account_id = coalesce(entity_temp.proxy_account_id, entity.proxy_account_id), " +
                 "public_key = case when entity_temp.public_key = '<uuid>' then '' else " +
                 "coalesce(entity_temp.public_key, entity.public_key) end, " +
                 "receiver_sig_required = coalesce(entity_temp.receiver_sig_required, entity.receiver_sig_required), " +
-                "submit_key = coalesce(entity_temp.submit_key, entity.submit_key) " +
-                "from entity_temp where entity.id = entity_temp.id and entity_temp.created_timestamp is null";
+                "submit_key = coalesce(entity_temp.submit_key, entity.submit_key), " +
+                "timestamp_range = coalesce(entity_temp.timestamp_range, entity.timestamp_range) " +
+                "from entity_temp where entity.id = entity_temp.id and entity_temp.created_timestamp is null and " +
+                "lower(entity_temp.timestamp_range) > 0";
     }
 
     @Test

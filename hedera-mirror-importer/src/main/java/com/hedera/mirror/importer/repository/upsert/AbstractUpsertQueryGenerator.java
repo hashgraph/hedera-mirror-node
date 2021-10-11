@@ -49,26 +49,22 @@ import com.hedera.mirror.importer.converter.NullableStringSerializer;
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
     private static final String EMPTY_CLAUSE = "";
-    private static final String EMPTY_STRING = "\'\'";
+    private static final String EMPTY_STRING = "''";
     private static final String NULL_STRING = "null";
-    private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
+    private static final String RESERVED_CHAR = "'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "'";
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
-    private Set<Field> attributes = null;
-
-    @Value("${spring.flyway.locations:v1}")
-    private String version;
-
-    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
-
+    protected final Logger log = LogManager.getLogger(getClass());
+    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
+    }.getRawType();
     @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
-
+    private Set<Field> attributes = null;
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
-
-    protected final Logger log = LogManager.getLogger(getClass());
+    @Value("${spring.flyway.locations:v1}")
+    private String version;
 
     protected boolean isInsertOnly() {
         return false;
@@ -155,7 +151,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
         return StringUtils.joinWith(
                 " ",
-                "update", getFinalTableName(), "set",
+                "update", "only", getFinalTableName(), "set",
                 getUpdateClause(),
                 "from", getTemporaryTableName(),
                 getUpdateWhereClause()

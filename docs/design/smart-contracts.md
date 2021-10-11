@@ -167,8 +167,8 @@ create table if not exists contract_log
 Optional filters
 
 - `contract.id` Supports all comparison operators and repeated equality parameters to generate an `IN` clause
-- `order`
 - `limit`
+- `order`
 
 ### Get Contract
 
@@ -229,8 +229,8 @@ Optional filters
 
 Optional filters
 
-- `order`
 - `limit` Maximum limit will be configurable and lower than current global max limit
+- `order`
 - `timestamp`
 
 ### Get Contract Result
@@ -273,6 +273,9 @@ Optional filters
 
 ## Open Questions
 
-1. Is there a way to figure out which file belongs to which contract to back-fill data? No
-2. What will externalization of the contract state in the transaction record look like? Still being designed.
-3. How should we allow searching by topics?
+1. What will externalization of the contract state in the transaction record look like? Still being designed.
+2. How should we allow searching by topics or logs?
+3. How will Hedera transactions triggered from a smart contract be externalized in the record stream? Still being
+   designed. Tentatively, each contract triggered transaction will show up as a separate transaction and record with an
+   incremented consensus timestamp and a parent timestamp populated.
+4. Extract individual function parameters?

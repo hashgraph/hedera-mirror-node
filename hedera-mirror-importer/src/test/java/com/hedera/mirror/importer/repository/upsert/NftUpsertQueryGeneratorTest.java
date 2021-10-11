@@ -50,7 +50,7 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Override
     protected String getUpdateQuery() {
-        return "update nft set account_id = case when nft_temp.deleted = true then null " +
+        return "update only nft set account_id = case when nft_temp.deleted = true then null " +
                 "else coalesce(nft_temp.account_id, nft.account_id) end, " +
                 "deleted = coalesce(nft_temp.deleted, nft.deleted), " +
                 "modified_timestamp = coalesce(nft_temp.modified_timestamp, nft.modified_timestamp) " +

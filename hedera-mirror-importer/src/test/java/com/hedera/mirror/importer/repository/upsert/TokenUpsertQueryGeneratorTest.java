@@ -62,7 +62,7 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Override
     protected String getUpdateQuery() {
-        return "update token set " +
+        return "update only token set " +
                 "  fee_schedule_key = coalesce(token_temp.fee_schedule_key, token.fee_schedule_key), " +
                 "  fee_schedule_key_ed25519_hex =" +
                 "    case when token_temp.fee_schedule_key_ed25519_hex = '<uuid>' then ''" +

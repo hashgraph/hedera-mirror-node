@@ -76,7 +76,6 @@ import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
@@ -121,9 +120,6 @@ class AddMissingTokenAccountAssociationMigrationTest extends IntegrationTest {
 
     @Resource
     private RecordFileRepository recordFileRepository;
-
-    @Resource
-    private TokenRepository tokenRepository;
 
     @Value("classpath:db/scripts/undo_v1.43.2.sql")
     private File undoSql;

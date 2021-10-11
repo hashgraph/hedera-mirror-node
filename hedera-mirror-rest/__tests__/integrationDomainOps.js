@@ -192,6 +192,7 @@ const addEntity = async (defaults, entity) => {
     realm: 0,
     receiver_sig_required: false,
     shard: 0,
+    timestamp_range: '[0,)',
     type: 1,
     ...defaults,
     ...entity,
@@ -199,8 +200,9 @@ const addEntity = async (defaults, entity) => {
 
   await sqlConnection.query(
     `INSERT INTO entity (id, type, shard, realm, num, expiration_timestamp, deleted, public_key,
-                         auto_renew_period, key, max_automatic_token_associations, memo, receiver_sig_required)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
+                         auto_renew_period, key, max_automatic_token_associations, memo, receiver_sig_required,
+                         timestamp_range)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);`,
     [
       EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId(),
       entity.type,
@@ -215,6 +217,7 @@ const addEntity = async (defaults, entity) => {
       entity.max_automatic_token_associations,
       entity.memo,
       entity.receiver_sig_required,
+      entity.timestamp_range,
     ]
   );
 };
@@ -616,7 +619,8 @@ const addToken = async (token) => {
                         type,
                         wipe_key,
                         wipe_key_ed25519_hex)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24);`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23,
+             $24);`,
     [
       EntityId.fromString(token.token_id).getEncodedId(),
       token.created_timestamp,

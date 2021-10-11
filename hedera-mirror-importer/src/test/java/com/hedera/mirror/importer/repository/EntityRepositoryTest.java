@@ -22,45 +22,53 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.postgresql.util.PGobject;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.RowMapper;
 
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class EntityRepositoryTest extends AbstractRepositoryTest {
+
+    private static final RowMapper<Entity> ROW_MAPPER;
+
+    static {
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        defaultConversionService.addConverter(PGobject.class, Range.class,
+                source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
+        DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(Entity.class);
+        dataClassRowMapper.setConversionService(defaultConversionService);
+        ROW_MAPPER = dataClassRowMapper;
+    }
+
+    @Resource
+    private DomainBuilder domainBuilder;
 
     @Resource
     private EntityRepository entityRepository;
 
+    @Resource
+    private JdbcOperations jdbcOperations;
+
     @Test
     void nullCharacter() {
-        Entity entity = new Entity();
-        entity.setId(1L);
-        entity.setNum(1L);
-        entity.setRealm(0L);
-        entity.setShard(0L);
-        entity.setType(1);
-        entity.setMemo("abc" + (char) 0);
-        entity.setDeleted(false);
-        entityRepository.save(entity);
+        Entity entity = domainBuilder.entity().customize(e -> e.memo("abc" + (char) 0)).persist();
         assertThat(entityRepository.findById(entity.getId())).get().isEqualTo(entity);
     }
 
     @Test
     void entityPublicKeyUpdates() {
-        Entity entity = new Entity();
-        entity.setId(1L);
-        entity.setNum(1L);
-        entity.setRealm(0L);
-        entity.setShard(0L);
-        entity.setType(1);
-        entity.setMemo("abc" + (char) 0);
-        entity.setDeleted(false);
-        entityRepository.save(entity);
+        Entity entity = domainBuilder.entity().persist();
 
         // unset key should result in null public key
         assertThat(entityRepository.findById(entity.getId())).get()
@@ -92,23 +100,25 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void insertEntityId() {
-        // given
-        EntityId entityId = EntityId.of(10L, 20L, 30L, EntityTypeEnum.ACCOUNT);
-        entityRepository.insertEntityId(entityId);
-        assertThat(entityRepository.findById(entityId.getId())).get()
-                .isEqualTo(getEntityWithDefaultMemo(entityId));
+    void entityHistory() {
+        Entity entityInitial = domainBuilder.entity().persist();
 
-        // when
-        entityRepository.insertEntityId(entityId); // insert again to test for conflict
+        assertThat(entityRepository.findAll()).containsExactly(entityInitial);
+        assertThat(jdbcOperations.queryForObject("select count(*) from entity_history", Integer.class)).isZero();
 
-        assertThat(entityRepository.count()).isEqualTo(1);
-        assertThat(entityRepository.findById(entityId.getId())).get().isEqualTo(getEntityWithDefaultMemo(entityId));
-    }
+        var range = Range.atLeast(entityInitial.getModifiedTimestamp() + 1L);
+        Entity entityUpdated = entityInitial.toBuilder().memo("Updated").timestampRange(range).build();
+        entityRepository.save(entityUpdated);
 
-    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
-        Entity entity = entityId.toEntity();
-        entity.setMemo("");
-        return entity;
+        assertThat(entityRepository.findAll()).containsExactly(entityUpdated);
+        List<Entity> entityHistory = jdbcOperations.query("select * from entity_history", ROW_MAPPER);
+        assertThat(entityHistory)
+                .hasSize(1)
+                .first()
+                .returns(Range.closedOpen(entityInitial.getModifiedTimestamp(), entityUpdated.getModifiedTimestamp()),
+                        Entity::getTimestampRange)
+                .usingRecursiveComparison()
+                .ignoringFieldsOfTypes(Range.class)
+                .isEqualTo(entityInitial);
     }
 }
