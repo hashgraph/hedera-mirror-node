@@ -24,7 +24,7 @@
     "log4js": "^6.3.0",
     "mathjs": "^9.5.0",
     "node-fetch": "^2.6.1",
-    "parse-duration": "^1.0.0",
+    "parse-duration": "^1.0.1",
     "pretty-ms": "^7.0.1"
   },
   "devDependencies": {
