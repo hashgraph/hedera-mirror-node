@@ -937,7 +937,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted OR e.deleted AS deleted,
+                                  nft.deleted or e.deleted as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -976,7 +976,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted OR e.deleted AS deleted,
+                                  nft.deleted or e.deleted as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -1015,7 +1015,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted OR e.deleted AS deleted,
+                                  nft.deleted or e.deleted as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -1064,7 +1064,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted OR e.deleted AS deleted,
+                                  nft.deleted or e.deleted as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -1115,7 +1115,7 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted OR e.deleted AS deleted,
+                                  nft.deleted or e.deleted as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
