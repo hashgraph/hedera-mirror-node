@@ -22,6 +22,8 @@
 
 \copy entity to entity.csv delimiter ',' csv;
 
+\copy entity_history to entity.csv delimiter ',' csv;
+
 \copy event_file to event_file.csv delimiter ',' csv;
 
 \copy file_data to file_data.csv delimiter ',' csv;
