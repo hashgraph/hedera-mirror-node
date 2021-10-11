@@ -933,6 +933,7 @@ components:
         created_timestamp:
           $ref: '#/components/schemas/Timestamp'
         deleted:
+          description: whether the nft or the token it belonds to has been deleted
           type: boolean
         metadata:
           description: base64 encoded binary data
