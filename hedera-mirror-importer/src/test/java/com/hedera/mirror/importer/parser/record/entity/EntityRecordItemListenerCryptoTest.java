@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -197,6 +198,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         dbAccountEntity.getExpirationTimestamp())
                 , () -> assertEquals(Utility.timestampInNanosMax(record.getConsensusTimestamp()),
                         dbAccountEntity.getModifiedTimestamp())
+                , () -> assertFalse(dbAccountEntity.getReceiverSigRequired())
         );
     }
 
@@ -641,7 +643,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
                 .setMemo(StringValue.of("CryptoUpdateAccount memo"))
-                .setProxyAccountID(PROXY_UPDATE));
+                .setProxyAccountID(PROXY_UPDATE)
+                .setReceiverSigRequiredWrapper(BoolValue.of(false)));
     }
 
     private Transaction cryptoDeleteTransaction() {
