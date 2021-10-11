@@ -1,5 +1,5 @@
 {
-  "description": "Token nfts api call for all nfts under a given token where the token class was deleted",
+  "description": "Token nft info api call for single nft under a given token",
   "setup": {
     "entities": [
       {
@@ -9,7 +9,6 @@
         "num": 2001
       },
       {
-        "deleted": true,
         "num": 1500,
         "type": 5
       },
@@ -46,6 +45,7 @@
       {
         "account_id": "0.0.2001",
         "created_timestamp": "1234567890000000006",
+        "deleted": true,
         "metadata": "m2",
         "serial_number": 2,
         "token_id": "0.0.1500"
@@ -66,40 +66,15 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/1500/nfts", "/api/v1/tokens/0.1500/nfts", "/api/v1/tokens/0.0.1500/nfts"],
+  "urls": ["/api/v1/tokens/1500/nfts/2", "/api/v1/tokens/0.1500/nfts/2", "/api/v1/tokens/0.0.1500/nfts/2"],
   "responseStatus": 200,
   "responseJson": {
-    "nfts": [
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000008",
-        "deleted": true,
-        "metadata": "bTM=",
-        "modified_timestamp": "1234567890.000000008",
-        "serial_number": 3,
-        "token_id": "0.0.1500"
-      },
-      {
-        "account_id": "0.0.2001",
-        "created_timestamp": "1234567890.000000006",
-        "deleted": true,
-        "metadata": "bTI=",
-        "modified_timestamp": "1234567890.000000006",
-        "serial_number": 2,
-        "token_id": "0.0.1500"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000005",
-        "deleted": true,
-        "metadata": "bTE=",
-        "modified_timestamp": "1234567890.000000005",
-        "serial_number": 1,
-        "token_id": "0.0.1500"
-      }
-    ],
-    "links": {
-      "next": null
-    }
+    "account_id": "0.0.2001",
+    "created_timestamp": "1234567890.000000006",
+    "deleted": true,
+    "metadata": "bTI=",
+    "modified_timestamp": "1234567890.000000006",
+    "serial_number": 2,
+    "token_id": "0.0.1500"
   }
 }

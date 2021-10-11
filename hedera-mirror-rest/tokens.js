@@ -78,7 +78,7 @@ const nftFilterColumnMap = {
 const nftSelectFields = [
   'nft.account_id',
   'nft.created_timestamp',
-  'nft.deleted',
+  'nft.deleted OR e.deleted AS deleted',
   'nft.metadata',
   'nft.modified_timestamp',
   'nft.serial_number',
@@ -665,7 +665,7 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
   const params = [tokenId, serialNumber];
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
-  query = [query, whereQuery].filter((q) => q !== '').join('\n');
+  query = [query, entityNftsJoinQuery, whereQuery].filter((q) => q !== '').join('\n');
 
   return utils.buildPgSqlObject(query, params, '', '');
 };

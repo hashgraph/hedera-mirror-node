@@ -937,7 +937,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted,
+                                  nft.deleted OR e.deleted AS deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -976,7 +976,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted,
+                                  nft.deleted OR e.deleted AS deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -1015,7 +1015,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted,
+                                  nft.deleted OR e.deleted AS deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -1064,7 +1064,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted,
+                                  nft.deleted OR e.deleted AS deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
@@ -1115,12 +1115,13 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
-                                  nft.deleted,
+                                  nft.deleted OR e.deleted AS deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
                                   nft.token_id
                            from nft
+                           join entity e on e.id = nft.token_id
                            where nft.token_id = $1
                              and nft.serial_number = $2`;
     const expectedParams = [tokenId, serialNumber];
