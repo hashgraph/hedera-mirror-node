@@ -2,6 +2,7 @@
 -- Fill missing entity created_timestamp and modified_timestamp
 -------------------
 
+-- get entity's created timestamp and modified timestamp from entity CRUD transactions
 with entity_timestamp as (
     select entity_id, min(consensus_ns) created_timestamp, max(consensus_ns) modified_timestamp
     from transaction
@@ -15,3 +16,13 @@ set created_timestamp = coalesce(entity.created_timestamp, entity_timestamp.crea
     modified_timestamp = entity_timestamp.modified_timestamp
 from entity_timestamp
 where entity.id = entity_timestamp.entity_id;
+
+-- mark schedule entity as deleted and set modified timestamp to the consensus_ns of the schedule delete transaction
+update entity
+set deleted = true,
+    modified_timestamp = consensus_ns
+from transaction
+where result = 22
+  and transaction.type = 43
+  and entity_id is not null
+  and id = entity_id;

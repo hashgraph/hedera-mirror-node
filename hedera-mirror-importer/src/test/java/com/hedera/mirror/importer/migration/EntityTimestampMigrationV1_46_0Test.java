@@ -102,7 +102,8 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 transaction(111L, 9004, SUCCESS, TransactionTypeEnum.CONSENSUSUPDATETOPIC),
                 transaction(112L, 9005, SUCCESS, TransactionTypeEnum.TOKENCREATION),
                 transaction(113L, 9005, SUCCESS, TransactionTypeEnum.TOKENUPDATE),
-                transaction(114L, 9006, SUCCESS, TransactionTypeEnum.SCHEDULECREATE)
+                transaction(114L, 9006, SUCCESS, TransactionTypeEnum.SCHEDULECREATE),
+                transaction(116L, 9006, SUCCESS, TransactionTypeEnum.SCHEDULEDELETE)
         ));
 
         List<Entity> expected = List.of(
@@ -112,7 +113,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 entity(9003, EntityTypeEnum.FILE, 105L, 107L), // created at 105L, deleted at 107L
                 entity(9004, EntityTypeEnum.TOPIC, 108L, 111L), // last update at 111L
                 entity(9005, EntityTypeEnum.TOKEN, 112L, 113L), //
-                entity(9006, EntityTypeEnum.SCHEDULE, 114L, 114L)
+                entity(9006, EntityTypeEnum.SCHEDULE, 114L, true, 116L)
         );
 
         // when
@@ -125,13 +126,18 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
     }
 
     private Entity entity(long id, EntityTypeEnum entityTypeEnum) {
-        return entity(id, entityTypeEnum, null, null);
+        return entity(id, entityTypeEnum, null, false, null);
     }
 
     private Entity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp, Long modifiedTimestamp) {
+        return entity(id, entityTypeEnum, createdTimestamp, false, modifiedTimestamp);
+    }
+
+    private Entity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp, boolean deleted,
+                          Long modifiedTimestamp) {
         Entity entity = EntityIdEndec.decode(id, entityTypeEnum).toEntity();
         entity.setCreatedTimestamp(createdTimestamp);
-        entity.setDeleted(false);
+        entity.setDeleted(deleted);
         entity.setMemo("foobar");
         entity.setModifiedTimestamp(modifiedTimestamp);
         return entity;

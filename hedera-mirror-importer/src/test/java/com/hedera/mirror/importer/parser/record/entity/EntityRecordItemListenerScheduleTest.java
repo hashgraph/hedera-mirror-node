@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,6 +31,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -118,7 +120,30 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertTransactionSignatureInRepository(defaultSignatureList);
 
         // verify transaction
-        assertTransactionInRepository(CREATE_TIMESTAMP, false, ResponseCodeEnum.SUCCESS);
+        assertTransactionInRepository(CREATE_TIMESTAMP, false, SUCCESS);
+    }
+
+    @Test
+    void scheduleDelete() {
+        // given
+        insertScheduleCreateTransaction(CREATE_TIMESTAMP, null, SCHEDULE_ID);
+
+        // when
+        long deletedTimestamp = CREATE_TIMESTAMP + 10;
+        insertScheduleDeleteTransaction(deletedTimestamp, SCHEDULE_ID);
+
+        // then
+        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
+                true, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, deletedTimestamp);
+        assertEquals(4, entityRepository.count()); // Node, payer, schedule and autorenew
+        assertEntity(expected);
+
+        // verify schedule
+        assertThat(scheduleRepository.count()).isEqualTo(1L);
+        assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, PAYER, null);
+
+        // verify transaction
+        assertTransactionInRepository(deletedTimestamp, false, SUCCESS);
     }
 
     @Test
@@ -145,7 +170,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertTransactionSignatureInRepository(expectedTransactionSignatureList);
 
         // verify transaction
-        assertTransactionInRepository(SIGN_TIMESTAMP, false, ResponseCodeEnum.SUCCESS);
+        assertTransactionInRepository(SIGN_TIMESTAMP, false, SUCCESS);
     }
 
     @Test
@@ -181,7 +206,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, PAYER, null);
 
         // verify transaction
-        assertTransactionInRepository(SIGN_TIMESTAMP, false, ResponseCodeEnum.SUCCESS);
+        assertTransactionInRepository(SIGN_TIMESTAMP, false, SUCCESS);
     }
 
     @Test
@@ -214,7 +239,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
 
     @Test
     void scheduleExecuteOnSuccess() {
-        scheduleExecute(ResponseCodeEnum.SUCCESS);
+        scheduleExecute(SUCCESS);
     }
 
     @Test
@@ -263,6 +288,11 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 scheduleCreateBuilder.clearPayerAccountID();
             }
         });
+    }
+
+    private Transaction scheduleDeleteTransaction(ScheduleID scheduleId) {
+        return buildTransaction(builder -> builder.setScheduleDelete(
+                ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleId)));
     }
 
     private Transaction scheduleSignTransaction(ScheduleID scheduleID, SignatureMap signatureMap) {
@@ -321,16 +351,24 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         Transaction createTransaction = scheduleCreateTransaction(payer);
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         var createTransactionRecord = createTransactionRecord(createdTimestamp, scheduleID, createTransactionBody,
-                ResponseCodeEnum.SUCCESS, false);
+                SUCCESS, false);
 
         parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
+    }
+
+    private void insertScheduleDeleteTransaction(long timestamp, ScheduleID scheduleId) {
+        var transaction = scheduleDeleteTransaction(scheduleId);
+        var transactionBody = getTransactionBody(transaction);
+        var transactionRecord = createTransactionRecord(timestamp, scheduleId, transactionBody, SUCCESS, false);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
     }
 
     private void insertScheduleSign(long signTimestamp, SignatureMap signatureMap, ScheduleID scheduleID) {
         Transaction signTransaction = scheduleSignTransaction(scheduleID, signatureMap);
         TransactionBody signTransactionBody = getTransactionBody(signTransaction);
         var signTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, signTransactionBody,
-                ResponseCodeEnum.SUCCESS, false);
+                SUCCESS, false);
 
         parseRecordItemAndCommit(new RecordItem(signTransaction, signTransactionRecord));
     }

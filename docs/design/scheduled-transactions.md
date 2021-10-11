@@ -86,6 +86,7 @@ Add a `ScheduleIdConverter`.
 ### Transaction Handler
 
 - Add `ScheduleCreateTransactionHandler` that updates the entity to set the admin key.
+- Add `ScheduleDeleteTransactionHandler` that marks the entity as deleted and sets the modified timestamp.
 - Add `ScheduleSignTransactionHandler` that doesn't update the entity.
 
 ### Entity Record Item Listener
