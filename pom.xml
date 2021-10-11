@@ -53,7 +53,7 @@
     </parent>
 
     <properties>
-        <dependency-check.version>6.3.1</dependency-check.version>
+        <dependency-check.version>6.4.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.37.0</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
