@@ -237,12 +237,10 @@ Add optional filters
 #### List NFTs
 
 - GET `/api/v1/tokens/{id}/nfts` will list basic information of all NFTs for a given token.
-  - NFTs should only display if the token has not been deleted (e.g. `token.deleted` is false) Otherwise, display empty
-    list.
-  - `account_id` should not display when the NFT has been deleted.
   - This endpoint should return a 409 for tokens that are not of type `NON_FUNGIBLE_UNIQUE` with a message that
     indicates that this endpoint is not valid for this token type.
   - `metadata` should be base64 encoded before returning.
+  - `deleted` should be true if either the nft or the token is deleted
 
 ```json
 {
@@ -273,8 +271,8 @@ Optional Filters
 #### Get NFT by id
 
 - GET `/api/v1/tokens/{id}/nfts/{serialNumber}` will show information about an individual NFT.
-  - `account_id` should not display when the NFT or Token has been deleted.
   - `metadata` should be base64 encoded before returning.
+  - `deleted` should be true if either the nft or the token is deleted
 
 ```json
 {

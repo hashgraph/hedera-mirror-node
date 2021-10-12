@@ -355,6 +355,7 @@ paths:
                     auto_renew_account: 0.1.2
                     auto_renew_period:
                     created_timestamp: '1234567890.000000001'
+                    deleted: false
                     decimals: 1000
                     expiry_timestamp:
                     freeze_default: false
@@ -366,6 +367,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
                     max_supply: 9223372036854776000
+                    memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
                     pause_key:
@@ -407,6 +409,7 @@ paths:
                     auto_renew_account: 0.1.2
                     auto_renew_period:
                     created_timestamp: '1234567890.000000001'
+                    deleted: false
                     decimals: 0
                     expiry_timestamp:
                     freeze_default: false
@@ -418,6 +421,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
                     max_supply: 9223372036854776000
+                    memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
                     pause_key:
@@ -937,6 +941,7 @@ components:
         created_timestamp:
           $ref: '#/components/schemas/Timestamp'
         deleted:
+          description: whether the nft or the token it belongs to has been deleted
           type: boolean
         metadata:
           description: base64 encoded binary data

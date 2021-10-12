@@ -78,7 +78,7 @@ const nftFilterColumnMap = {
 const nftSelectFields = [
   'nft.account_id',
   'nft.created_timestamp',
-  'nft.deleted',
+  'nft.deleted or e.deleted as deleted',
   'nft.metadata',
   'nft.modified_timestamp',
   'nft.serial_number',
@@ -625,10 +625,7 @@ const getTokenBalances = async (req, res) => {
 const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   let limit = config.maxLimit;
   let order = constants.orderFilterValues.DESC;
-  const conditions = [
-    `${nftQueryColumns.TOKEN_ID} = $1`,
-    `${nftQueryColumns.DELETED} = false and ${sqlQueryColumns.DELETED} != true`,
-  ];
+  const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`];
   const params = [tokenId];
 
   for (const filter of filters) {
@@ -672,7 +669,7 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
   const params = [tokenId, serialNumber];
 
   const whereQuery = `where ${conditions.join('\nand ')}`;
-  query = [query, whereQuery].filter((q) => q !== '').join('\n');
+  query = [query, entityNftsJoinQuery, whereQuery].filter((q) => q !== '').join('\n');
 
   return utils.buildPgSqlObject(query, params, '', '');
 };
