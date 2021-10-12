@@ -57,6 +57,7 @@ import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
+import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
@@ -313,9 +314,9 @@ class UpsertPgCopyTest extends IntegrationTest {
     void tokenAccountInsertFreezeStatus() throws SQLException {
         // inserts token first
         var tokens = new HashSet<Token>();
-        tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
-        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, true, KEY, null));
-        tokens.add(getToken("0.0.4000", "0.0.1001", 3L, false, KEY, null));
+        tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null, null));
+        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, true, KEY, null, null));
+        tokens.add(getToken("0.0.4000", "0.0.1001", 3L, false, KEY, null, null));
 
         copyWithTransactionSupport(tokenPgCopy, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
@@ -361,8 +362,8 @@ class UpsertPgCopyTest extends IntegrationTest {
     void tokenAccountInsertKycStatus() throws SQLException {
         // inserts token first
         var tokens = new HashSet<Token>();
-        tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null));
-        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, false, null, KEY));
+        tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null, null));
+        tokens.add(getToken("0.0.3000", "0.0.1001", 2L, false, null, KEY, null));
 
         copyWithTransactionSupport(tokenPgCopy, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
@@ -700,12 +701,12 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp) {
-        return getToken(tokenId, treasuryAccountId, createdTimestamp, false, null, null);
+        return getToken(tokenId, treasuryAccountId, createdTimestamp, false, null, null, null);
     }
 
     @SneakyThrows
     private Token getToken(String tokenId, String treasuryAccountId, Long createdTimestamp,
-                           Boolean freezeDefault, Key freezeKey, Key kycKey) {
+                           Boolean freezeDefault, Key freezeKey, Key kycKey, Key pauseKey) {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
         var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(instr))).build().toByteArray();
         Token token = new Token();
@@ -715,6 +716,8 @@ class UpsertPgCopyTest extends IntegrationTest {
         token.setFreezeKey(freezeKey != null ? freezeKey.toByteArray() : null);
         token.setInitialSupply(1_000_000_000L);
         token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
+        token.setPauseKey(pauseKey != null ? pauseKey.toByteArray() : null);
+        token.setPauseStatus(pauseKey != null ? TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE);
         token.setMaxSupply(1_000_000_000L);
         token.setModifiedTimestamp(3L);
         token.setName("FOO COIN TOKEN" + tokenId);
@@ -759,9 +762,9 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     private Nft getNft(EntityId tokenId, EntityId accountId, long serialNumber, long createdTimestamp,
-            long modifiedTimestamp, boolean deleted) {
+                       long modifiedTimestamp, boolean deleted) {
         return getNft(tokenId.entityIdToString(), serialNumber, accountId.entityIdToString(), createdTimestamp,
-                modifiedTimestamp,"meta", deleted);
+                modifiedTimestamp, "meta", deleted);
     }
 
     private Nft getNft(String tokenId, long serialNumber, String accountId, Long createdTimestamp,
@@ -777,7 +780,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     private NftTransfer getNftTransfer(EntityId tokenId, EntityId senderAccountId, long serialNumber,
-            long consensusTimestamp) {
+                                       long consensusTimestamp) {
         NftTransfer nftTransfer = new NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
         nftTransfer.setSenderAccountId(senderAccountId);
@@ -792,6 +795,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         token.setInitialSupply(0L);
         token.setModifiedTimestamp(deletedTimestamp);
         token.setName("foo");
+        token.setPauseStatus(TokenPauseStatusEnum.NOT_APPLICABLE);
         token.setSupplyType(TokenSupplyTypeEnum.FINITE);
         token.setSymbol("bar");
         token.setTotalSupply(200L);

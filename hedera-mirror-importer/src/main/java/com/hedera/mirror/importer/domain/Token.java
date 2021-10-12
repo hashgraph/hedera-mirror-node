@@ -47,7 +47,8 @@ import com.hedera.mirror.importer.util.Utility;
         typeClass = PostgreSQLEnumType.class
 )
 @ToString(exclude = {"feeScheduleKey", "feeScheduleKeyEd25519Hex", "freezeKey", "freezeKeyEd25519Hex",
-        "kycKey", "kycKeyEd25519Hex", "supplyKey", "supplyKeyEd25519Hex", "wipeKey", "wipeKeyEd25519Hex"})
+        "kycKey", "kycKeyEd25519Hex", "pauseKey", "supplyKey", "supplyKeyEd25519Hex", "wipeKey",
+        "wipeKeyEd25519Hex"})
 public class Token {
     @EmbeddedId
     @JsonUnwrapped
@@ -82,6 +83,12 @@ public class Token {
     private long maxSupply;
 
     private long modifiedTimestamp;
+
+    private byte[] pauseKey;
+
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private TokenPauseStatusEnum pauseStatus;
 
     private String name;
 

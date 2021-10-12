@@ -370,6 +370,10 @@ paths:
                     memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
+                    pause_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    pause_status: UNPAUSED
                     supply_key:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
@@ -420,6 +424,10 @@ paths:
                     memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
+                    pause_key:
+                      _type: ProtobufEncoded
+                      key: 7b2231222c2231222c2231227d
+                    pause_status: UNPAUSED
                     supply_key:
                       _type: ProtobufEncoded
                       key: 7b2231222c2231222c2231227d
@@ -581,7 +589,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.42.0-SNAPSHOT
+  version: 0.43.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -992,6 +1000,9 @@ components:
           $ref: '#/components/schemas/Timestamp'
         creator_account_id:
           $ref: '#/components/schemas/EntityId'
+        deleted:
+          type: boolean
+          example: false
         executed_timestamp:
           $ref: '#/components/schemas/Timestamp'
           nullable: true
@@ -1160,6 +1171,12 @@ components:
         memo:
           type: string
           example: "token memo"
+        pause_key:
+          $ref: '#/components/schemas/Key'
+        pause_status:
+          type: string
+          enum: [ NOT_APPLICABLE, PAUSED, UNPAUSED ]
+          example: UNPAUSED
         supply_key:
           $ref: '#/components/schemas/Key'
         supply_type:

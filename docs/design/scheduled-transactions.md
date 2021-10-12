@@ -86,6 +86,7 @@ Add a `ScheduleIdConverter`.
 ### Transaction Handler
 
 - Add `ScheduleCreateTransactionHandler` that updates the entity to set the admin key.
+- Add `ScheduleDeleteTransactionHandler` that marks the entity as deleted and sets the modified timestamp.
 - Add `ScheduleSignTransactionHandler` that doesn't update the entity.
 
 ### Entity Record Item Listener
@@ -217,6 +218,7 @@ GET `/api/v1/schedules`
       },
       "consensus_timestamp": "1234567890.000000001",
       "creator_account_id": "0.0.100",
+      "deleted": false,
       "executed_timestamp": "1234567890.000000002",
       "memo": "Created per council decision dated 1/21/21",
       "payer_account_id": "0.0.101",
@@ -263,6 +265,7 @@ GET `/api/v1/schedules/{scheduleId}`
   },
   "consensus_timestamp": "1234567890.000000001",
   "creator_account_id": "0.0.100",
+  "deleted": false,
   "executed_timestamp": "1234567890.000000002",
   "memo": "Created per council decision dated 1/21/21",
   "payer_account_id": "0.0.101",

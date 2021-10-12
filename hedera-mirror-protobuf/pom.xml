@@ -16,7 +16,7 @@
 
     <properties>
         <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
-        <reactor-grpc.version>1.2.2</reactor-grpc.version>
+        <reactor-grpc.version>1.2.3</reactor-grpc.version>
     </properties>
 
     <dependencies>

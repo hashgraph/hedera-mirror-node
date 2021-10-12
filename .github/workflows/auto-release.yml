@@ -43,7 +43,7 @@ jobs:
         if: ${{ steps.version_parser.outputs.pre-release == '' }}
         uses: julb/action-manage-milestone@v1
         with:
-          title: Mirror ${{ steps.version_parser.outputs.version }}
+          title: ${{ steps.version_parser.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -138,7 +138,7 @@ jobs:
         if: ${{ steps.milestone.outputs.number != '' }}
         uses: julb/action-manage-milestone@v1
         with:
-          title: Mirror ${{ steps.version_parser.outputs.version }}
+          title: ${{ steps.version_parser.outputs.version }}
           state: closed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

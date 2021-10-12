@@ -30,6 +30,7 @@ describe('schedule formatScheduleRow tests', () => {
     key: [3, 3, 3],
     consensus_timestamp: '1234567890000000001',
     creator_account_id: '100',
+    deleted: false,
     executed_timestamp: '1234567890000000002',
     memo: 'Created per council decision dated 1/21/21',
     payer_account_id: '101',
@@ -55,6 +56,7 @@ describe('schedule formatScheduleRow tests', () => {
     },
     consensus_timestamp: '1234567890.000000001',
     creator_account_id: '0.0.100',
+    deleted: false,
     executed_timestamp: '1234567890.000000002',
     memo: 'Created per council decision dated 1/21/21',
     payer_account_id: '0.0.101',
@@ -112,6 +114,32 @@ describe('schedule formatScheduleRow tests', () => {
       },
       expected: {
         ...defaultExpected,
+        signatures: [],
+      },
+    },
+    {
+      description: 'null deleted',
+      input: {
+        ...defaultInput,
+        deleted: null,
+      },
+      expected: {
+        ...defaultExpected,
+        deleted: null,
+      },
+    },
+    {
+      description: 'deleted true',
+      input: {
+        ...defaultInput,
+        deleted: true,
+        executed_timestamp: null,
+        signatures: [],
+      },
+      expected: {
+        ...defaultExpected,
+        deleted: true,
+        executed_timestamp: null,
         signatures: [],
       },
     },

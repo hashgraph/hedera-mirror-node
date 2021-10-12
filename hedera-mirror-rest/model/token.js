@@ -40,6 +40,8 @@ class Token {
     this.memo = token.memo;
     this.modifiedTimestamp = BigInt(token.modified_timestamp);
     this.name = token.name;
+    this.pauseKey = token.pause_key;
+    this.pauseStatus = token.pause_status;
     this.supplyKey = token.supply_key;
     this.supplyKeyEd25519Hex = token.supply_key_ed25519_hex;
     this.supplyType = token.supply_type;

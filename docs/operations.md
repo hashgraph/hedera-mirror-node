@@ -188,6 +188,51 @@ For mirror node operators running the v1 database schema, the following steps ca
            username: mirror_importer
    ```
 
+### Historical Data Ingestion
+
+The following resource allocation and configuration is recommended to speed up historical data ingestion. The importer
+should be able to ingest one month's worth of mainnet data in less than 1.5 days.
+
+1. Importer
+
+   - Resource allocation
+
+       Run the importer with 4 vCPUs and 10 GB of heap.
+
+   - Configuration:
+
+      ```yaml
+        hedera:
+          mirror:
+            importer:
+              downloader:
+                record:
+                  batchSize: 600
+                  frequency: 1
+              parser:
+                record:
+                  entity:
+                    redis:
+                      enabled: false
+                  frequency: 10
+                  queueCapacity: 40
+      ```
+
+      Note once the importer has caught up all data, please change the configuration to the default where applicable.
+
+2. PostgreSQL Database
+
+   - Resource allocation
+
+       Run a PostgreSQL 13 instance with at least 4 vCPUs and 16 GB memory.
+
+   - Configuration:
+
+       Set the following parameters. Note the unit is kilobytes.
+
+       - max_wal_size = 8388608
+       - work_mem = 262144
+
 ## Monitor
 
 The monitor is a Java-based application and should be able to run on any platform that Java supports. That said, we

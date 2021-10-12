@@ -569,6 +569,8 @@ const addToken = async (token) => {
     kyc_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
     name: 'Token name',
+    pause_key: null,
+    pause_status: 'NOT_APPLICABLE',
     supply_key: null,
     supply_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     supply_type: 'INFINITE',
@@ -603,6 +605,8 @@ const addToken = async (token) => {
                         max_supply,
                         modified_timestamp,
                         name,
+                        pause_key,
+                        pause_status,
                         supply_key,
                         supply_key_ed25519_hex,
                         supply_type,
@@ -612,7 +616,7 @@ const addToken = async (token) => {
                         type,
                         wipe_key,
                         wipe_key_ed25519_hex)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22);`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24);`,
     [
       EntityId.fromString(token.token_id).getEncodedId(),
       token.created_timestamp,
@@ -627,6 +631,8 @@ const addToken = async (token) => {
       token.max_supply,
       token.modified_timestamp,
       token.name,
+      token.pause_key,
+      token.pause_status,
       token.supply_key,
       token.supply_key_ed25519_hex,
       token.supply_type,

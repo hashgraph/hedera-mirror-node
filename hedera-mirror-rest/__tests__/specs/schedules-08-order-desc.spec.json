@@ -27,6 +27,14 @@
         "memo": "Created per product team decision dated 02/03/21",
         "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [3, 3, 3]
+      },
+      {
+        "num": 4001,
+        "deleted": true,
+        "type": 6,
+        "memo": "Created per product team decision dated 02/03/21",
+        "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
+        "key": [3, 3, 3]
       }
     ],
     "schedules": [
@@ -50,6 +58,12 @@
         "executed_timestamp": "1234967890000003103",
         "payer_account_id": "0.0.1024",
         "schedule_id": "0.0.4000"
+      },
+      {
+        "consensus_timestamp": "1234567890000030004",
+        "creator_account_id": "0.0.1024",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.4001"
       }
     ],
     "transactionsignatures": [
@@ -94,8 +108,24 @@
           "_type": "ProtobufEncoded",
           "key": "7b2233222c2233222c2233227d"
         },
+        "consensus_timestamp": "1234567890.000030004",
+        "creator_account_id": "0.0.1024",
+        "deleted": true,
+        "executed_timestamp": null,
+        "memo": "Created per product team decision dated 02/03/21",
+        "payer_account_id": "0.0.1024",
+        "schedule_id": "0.0.4001",
+        "signatures": [],
+        "transaction_body": "AQECAgMD"
+      },
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "7b2233222c2233222c2233227d"
+        },
         "consensus_timestamp": "1234567890.000030003",
         "creator_account_id": "0.0.1024",
+        "deleted": false,
         "executed_timestamp": "1234967890.000003103",
         "memo": "Created per product team decision dated 02/03/21",
         "payer_account_id": "0.0.1024",
@@ -116,6 +146,7 @@
         },
         "consensus_timestamp": "1234567890.000020002",
         "creator_account_id": "0.0.1024",
+        "deleted": false,
         "executed_timestamp": "1234767890.000002102",
         "memo": "Created per mirror team decision dated 02/02/21",
         "payer_account_id": "0.0.1024",
@@ -141,6 +172,7 @@
         },
         "consensus_timestamp": "1234567890.000010001",
         "creator_account_id": "0.0.1024",
+        "deleted": false,
         "executed_timestamp": "1234567890.000001100",
         "memo": "Created per council decision dated 02/01/21",
         "payer_account_id": "0.0.1024",

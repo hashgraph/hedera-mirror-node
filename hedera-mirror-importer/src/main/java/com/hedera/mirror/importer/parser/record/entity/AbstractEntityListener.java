@@ -37,6 +37,13 @@ public class AbstractEntityListener implements EntityListener {
             cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
         }
 
+        if (newEntity.getCreatedTimestamp() != null) {
+            // it's possible when processing transactions, an entity is populated with the minimum amount of info and
+            // gets inserted to the cache before a later fully populated entity object of the same id. So set the
+            // created timestamp if the new entity object has it set.
+            cachedEntity.setCreatedTimestamp(newEntity.getCreatedTimestamp());
+        }
+
         if (newEntity.getDeleted() != null) {
             cachedEntity.setDeleted(newEntity.getDeleted());
         }
@@ -106,6 +113,14 @@ public class AbstractEntityListener implements EntityListener {
 
         if (newToken.getName() != null) {
             cachedToken.setName(newToken.getName());
+        }
+
+        if (newToken.getPauseKey() != null) {
+            cachedToken.setPauseKey(newToken.getPauseKey());
+        }
+
+        if (newToken.getPauseStatus() != null) {
+            cachedToken.setPauseStatus(newToken.getPauseStatus());
         }
 
         if (newToken.getSupplyKey() != null) {

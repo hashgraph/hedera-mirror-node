@@ -1,5 +1,5 @@
 {
-  "description": "Schedule api calls for a specific schedule without signatures using schedule id",
+  "description": "Schedule api calls for a specific deleted schedule",
   "setup": {
     "accounts": [
       {
@@ -9,6 +9,7 @@
     "entities": [
       {
         "num": 2000,
+        "deleted": true,
         "type": 6,
         "memo": "Created per council decision dated 02/01/21",
         "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
@@ -19,7 +20,6 @@
       {
         "consensus_timestamp": "1234567890000000001",
         "creator_account_id": "0.0.1024",
-        "executed_timestamp": "1234567890000000100",
         "payer_account_id": "0.0.1024",
         "schedule_id": "0.0.2000"
       }
@@ -34,8 +34,8 @@
     },
     "consensus_timestamp": "1234567890.000000001",
     "creator_account_id": "0.0.1024",
-    "deleted": false,
-    "executed_timestamp": "1234567890.000000100",
+    "deleted": true,
+    "executed_timestamp": null,
     "memo": "Created per council decision dated 02/01/21",
     "payer_account_id": "0.0.1024",
     "schedule_id": "0.0.2000",

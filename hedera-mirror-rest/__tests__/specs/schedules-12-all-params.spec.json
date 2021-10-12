@@ -96,6 +96,7 @@
         },
         "consensus_timestamp": "1234567890.000030003",
         "creator_account_id": "0.0.1024",
+        "deleted": false,
         "executed_timestamp": null,
         "memo": "Created per product team decision dated 02/03/21",
         "payer_account_id": "0.0.1024",
