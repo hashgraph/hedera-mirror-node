@@ -83,13 +83,13 @@ using the protobuf and normalize it into the other fields.
 ```sql
 create table if not exists contract_result
 (
-  amount               bigint default 0   not null,
+  amount               bigint             null,
   bloom                bytea              not null,
   call_result          bytea              not null,
   consensus_timestamp  bigint primary key not null,
   contract_id          bigint             not null,
   created_contract_ids bigint array       not null,
-  error_message        text   default ''  not null,
+  error_message        text default ''    not null,
   function_parameters  bytea              not null,
   gas_limit            bigint             not null,
   gas_used             bigint             not null

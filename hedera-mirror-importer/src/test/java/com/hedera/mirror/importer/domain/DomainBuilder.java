@@ -74,7 +74,7 @@ public class DomainBuilder {
                 .receiverSigRequired(false)
                 .shard(0L)
                 .submitKey(key)
-                .timestampRange(Range.atLeast(timestamp + 1))
+                .timestampRange(Range.atLeast(timestamp))
                 .type(ACCOUNT.getId());
 
         return new DomainPersister<>(entityRepository, builder, builder::build);
