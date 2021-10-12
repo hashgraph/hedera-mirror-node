@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
@@ -31,7 +30,6 @@ import org.springframework.data.domain.Persistable;
 @Data
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
 public class ContractResult implements Persistable<Long> {
 
     @Id
@@ -39,9 +37,11 @@ public class ContractResult implements Persistable<Long> {
 
     private byte[] functionParameters;
 
-    private Long gasSupplied;
+    private Long gasLimit;
 
     private byte[] callResult;
+
+    private byte[] functionResult; // Temporary field to be removed with Java migration
 
     private Long gasUsed;
 

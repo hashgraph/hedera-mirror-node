@@ -139,7 +139,12 @@ class RepositoryEntityListenerTest extends IntegrationTest {
     @Test
     void onContractResult() {
         ContractResult contractResult = new ContractResult();
+        contractResult.setCallResult(new byte[] {'c'});
         contractResult.setConsensusTimestamp(1L);
+        contractResult.setFunctionParameters(new byte[] {'p'});
+        contractResult.setFunctionResult(new byte[] {'r'});
+        contractResult.setGasLimit(200L);
+        contractResult.setGasUsed(100L);
         repositoryEntityListener.onContractResult(contractResult);
         assertThat(contractResultRepository.findAll()).containsExactly(contractResult);
     }

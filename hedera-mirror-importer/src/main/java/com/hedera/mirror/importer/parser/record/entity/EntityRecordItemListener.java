@@ -386,11 +386,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     ContractCallTransactionBody transactionBody,
                                     TransactionRecord transactionRecord) {
         if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
-            byte[] functionParams = Utility.toBytes(transactionBody.getFunctionParameters());
-            long gasSupplied = transactionBody.getGas();
-            byte[] callResult = transactionRecord.getContractCallResult().toByteArray();
-            long gasUsed = transactionRecord.getContractCallResult().getGasUsed();
-            insertContractResults(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed);
+            ContractResult contractResult = new ContractResult();
+            contractResult.setConsensusTimestamp(consensusTimestamp);
+            contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getFunctionParameters()));
+            contractResult.setFunctionResult(transactionRecord.getContractCallResult().toByteArray());
+            contractResult.setGasLimit(transactionBody.getGas());
+            contractResult.setGasUsed(transactionRecord.getContractCallResult().getGasUsed());
+            entityListener.onContractResult(contractResult);
         }
     }
 
@@ -398,11 +400,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                                               ContractCreateTransactionBody transactionBody,
                                               TransactionRecord transactionRecord) {
         if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
-            byte[] functionParams = Utility.toBytes(transactionBody.getConstructorParameters());
-            long gasSupplied = transactionBody.getGas();
-            byte[] callResult = transactionRecord.getContractCreateResult().toByteArray();
-            long gasUsed = transactionRecord.getContractCreateResult().getGasUsed();
-            insertContractResults(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed);
+            ContractResult contractResult = new ContractResult();
+            contractResult.setConsensusTimestamp(consensusTimestamp);
+            contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getConstructorParameters()));
+            contractResult.setFunctionResult(transactionRecord.getContractCreateResult().toByteArray());
+            contractResult.setGasLimit(transactionBody.getGas());
+            contractResult.setGasUsed(transactionRecord.getContractCreateResult().getGasUsed());
+            entityListener.onContractResult(contractResult);
         }
     }
 
@@ -442,12 +446,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
-    }
-
-    private void insertContractResults(
-            long consensusTimestamp, byte[] functionParams, long gasSupplied, byte[] callResult, long gasUsed) {
-        entityListener.onContractResult(
-                new ContractResult(consensusTimestamp, functionParams, gasSupplied, callResult, gasUsed));
     }
 
     /**

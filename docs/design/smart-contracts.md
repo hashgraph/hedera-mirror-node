@@ -27,17 +27,17 @@ node is storing the appropriate smart contract information and making it retriev
 
 #### Contract
 
-Create a contract table that inherits from the entity table. A database migration should move entries in `entity` into
-`contract` if they are of type contract or have contract create or update transactions. The contract-specific fields
-will need to be marked as nullable since we didn't store them on any existing tables.
+Create a contract table that has the same fields as the entity table. A database migration should move entries
+in `entity` into `contract` if they are of type contract or have contract create or update transactions. The
+contract-specific fields will need to be marked as nullable since we didn't store them on any existing tables.
 
 ```sql
 create table if not exists contract
 (
-  file_id         bigint null,
-  initial_balance bigint null,
-  obtainer_id     bigint null
-) inherits (entity);
+  like entity,
+  file_id     bigint null,
+  obtainer_id bigint null
+);
 
 alter table if exists contract
   add primary key (id);
@@ -69,7 +69,7 @@ using the protobuf and normalize it into the other fields.
 ```sql
 create table if not exists contract_result
 (
-  amount               bigint             null,
+  amount               bigint             not null,
   bloom                bytea              not null,
   call_result          bytea              not null,
   consensus_timestamp  bigint primary key not null,
@@ -134,7 +134,6 @@ create table if not exists contract_log
       "deleted": false,
       "expiration_timestamp": null,
       "file_id": 1000,
-      "initial_balance": 100,
       "memo": "First contract",
       "obtainer_id": null,
       "proxy_account_id": "0.0.100",
@@ -172,7 +171,6 @@ Optional filters
   "contract_id": "0.0.10001",
   "deleted": false,
   "file_id": "0.0.1000",
-  "initial_balance": 100,
   "memo": "First contract",
   "obtainer_id": "0.0.101",
   "proxy_account_id": "0.0.100",
