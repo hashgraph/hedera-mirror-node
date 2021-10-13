@@ -20,11 +20,7 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_30M;
-
 import java.util.Optional;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -33,12 +29,9 @@ import com.hedera.mirror.importer.domain.TokenAccountId;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, TokenAccountId> {
 
-    @Cacheable(cacheNames = "tokenaccounts", cacheManager = EXPIRE_AFTER_30M, key = "{#p0, #p1}")
-    @Query(value = "select * from token_account where token_id = ?1 and account_id = ?2 order by modified_timestamp desc limit 1", nativeQuery = true)
+    @Query(value = "select * from token_account " +
+            "where token_id = ?1 and account_id = ?2 " +
+            "order by modified_timestamp desc " +
+            "limit 1", nativeQuery = true)
     Optional<TokenAccount> findLastByTokenIdAndAccountId(long encodedTokenId, long encodedAccountId);
-
-    @CachePut(cacheNames = "tokenaccounts", cacheManager = EXPIRE_AFTER_30M, key = "{#p0.id.tokenId.id, #p0.id" +
-            ".accountId.id}")
-    @Override
-    <S extends TokenAccount> S save(S entity);
 }
