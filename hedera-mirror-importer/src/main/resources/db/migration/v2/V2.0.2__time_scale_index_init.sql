@@ -62,20 +62,9 @@ create unique index if not exists entity__shard_realm_num
 -- have to add id when creating unique indexes due to partitioning
 
 -- entity_history
+alter table if exists entity_history
+    add primary key (id, timestamp_range);
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
-create or replace function entity_history() returns trigger as
-$entity_history$
-begin
-    OLD.timestamp_range := int8range(lower(OLD.timestamp_range), lower(NEW.timestamp_range));
-    insert into entity_history select OLD.*;
-    return NEW;
-end;
-$entity_history$ language plpgsql;
-create trigger entity_history
-    after update
-    on entity
-    for each row
-execute procedure entity_history();
 
 -- event_file
 alter table event_file

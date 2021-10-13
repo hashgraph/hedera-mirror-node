@@ -1,4 +1,4 @@
--- Enhances the entity table to track the historical state of the entity over time and the period for which it is valid for.
+-- Enhances the entity table to track the historical state of the entity over time including the period for which it is valid
 
 alter table if exists entity
     add column if not exists timestamp_range int8range;
@@ -12,24 +12,8 @@ alter table if exists entity
 
 create table if not exists entity_history
 (
-    like entity
+    like entity,
+    primary key (id, timestamp_range)
 );
 
-alter table if exists entity_history
-    add primary key (id, timestamp_range);
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
-
-create or replace function entity_history() returns trigger as
-$entity_history$
-begin
-    OLD.timestamp_range := int8range(lower(OLD.timestamp_range), lower(NEW.timestamp_range));
-    insert into entity_history select OLD.*;
-    return NEW;
-end;
-$entity_history$ language plpgsql;
-
-create trigger entity_history
-    after update
-    on entity
-    for each row
-execute procedure entity_history();

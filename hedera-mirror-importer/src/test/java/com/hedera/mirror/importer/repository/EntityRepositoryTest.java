@@ -103,26 +103,17 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
                 .extracting(Entity::getPublicKey).isNull();
     }
 
+    /**
+     * This test verifies that the Entity domain object and table definition are in sync with the entity_history table.
+     */
     @Test
     void entityHistory() {
-        Entity entityInitial = domainBuilder.entity().persist();
+        Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findAll()).containsExactly(entityInitial);
-        assertThat(jdbcOperations.queryForObject("select count(*) from entity_history", Integer.class)).isZero();
-
-        var range = Range.atLeast(entityInitial.getModifiedTimestamp() + 1L);
-        Entity entityUpdated = entityInitial.toBuilder().memo("Updated").timestampRange(range).build();
-        entityRepository.save(entityUpdated);
-
-        assertThat(entityRepository.findAll()).containsExactly(entityUpdated);
+        jdbcOperations.update("insert into entity_history select * from entity");
         List<Entity> entityHistory = jdbcOperations.query("select * from entity_history", ROW_MAPPER);
-        assertThat(entityHistory)
-                .hasSize(1)
-                .first()
-                .returns(Range.closedOpen(entityInitial.getModifiedTimestamp(), entityUpdated.getModifiedTimestamp()),
-                        Entity::getTimestampRange)
-                .usingRecursiveComparison()
-                .ignoringFieldsOfTypes(Range.class)
-                .isEqualTo(entityInitial);
+
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(entityHistory).containsExactly(entity);
     }
 }

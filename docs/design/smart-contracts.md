@@ -35,7 +35,8 @@ will need to be marked as nullable since we didn't store them on any existing ta
 create table if not exists contract
 (
   file_id         bigint null,
-  initial_balance bigint null
+  initial_balance bigint null,
+  obtainer_id     bigint null
 ) inherits (entity);
 
 alter table if exists contract
@@ -46,32 +47,17 @@ alter table if exists contract
 
 #### Contract History
 
-Create a contract history table that is populated by a trigger that runs after the update of every contract. It should
-insert the old row to the history table after setting its timestamp range to end (exclusively) at the new row's start
-consensus timestamp.
+Create a contract history table that is populated by application upsert logic. It should insert the old row to the
+history table after setting its timestamp range to end (exclusively) at the new row's start consensus timestamp.
 
 ```sql
 create table if not exists contract_history
 (
-  like contract
+  like contract,
+  primary key (id, timestamp_range)
 );
 
 create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
-
-create or replace function contract_history() returns trigger as
-$contract_history$
-begin
-  OLD.timestamp_range := int8range(lower(OLD.timestamp_range), lower(NEW.timestamp_range));
-  insert into contract_history select OLD.*;
-  return NEW;
-end;
-$contract_history$ language plpgsql;
-
-create trigger contract_history
-  after update
-  on contract
-  for each row
-execute procedure contract_history();
 ```
 
 #### Contract Result
@@ -150,6 +136,7 @@ create table if not exists contract_log
       "file_id": 1000,
       "initial_balance": 100,
       "memo": "First contract",
+      "obtainer_id": null,
       "proxy_account_id": "0.0.100",
       "solidity_address": "0x0000000000000000000000000000000000001001",
       "timestamp": {
@@ -183,9 +170,11 @@ Optional filters
   "auto_renew_period": 7776000,
   "bytecode": "0xc896c66db6d98784cc03807640f3dfd41ac3a48c",
   "contract_id": "0.0.10001",
+  "deleted": false,
   "file_id": "0.0.1000",
   "initial_balance": 100,
   "memo": "First contract",
+  "obtainer_id": "0.0.101",
   "proxy_account_id": "0.0.100",
   "solidity_address": "0x0000000000000000000000000000000000001001",
   "timestamp": {
