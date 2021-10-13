@@ -57,6 +57,10 @@ public class AbstractEntityListener implements EntityListener {
             cachedEntity.setPublicKey(newEntity.getPublicKey());
         }
 
+        if (newEntity.getMaxAutomaticTokenAssociations() != null) {
+            cachedEntity.setMaxAutomaticTokenAssociations(newEntity.getMaxAutomaticTokenAssociations());
+        }
+
         if (newEntity.getMemo() != null) {
             cachedEntity.setMemo(newEntity.getMemo());
         }

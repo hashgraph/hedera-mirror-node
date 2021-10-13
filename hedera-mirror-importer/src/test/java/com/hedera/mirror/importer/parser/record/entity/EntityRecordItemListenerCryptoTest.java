@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -193,6 +194,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         cryptoUpdateTransactionBody.getKey().toByteArray()), dbAccountEntity.getPublicKey())
                 , () -> assertAccount(cryptoUpdateTransactionBody.getProxyAccountID(), dbProxyAccountId)
                 , () -> assertArrayEquals(cryptoUpdateTransactionBody.getKey().toByteArray(), dbAccountEntity.getKey())
+                , () -> assertEquals(cryptoUpdateTransactionBody.getMaxAutomaticTokenAssociations().getValue(),
+                        dbAccountEntity.getMaxAutomaticTokenAssociations())
                 , () -> assertEquals(cryptoUpdateTransactionBody.getMemo().getValue(), dbAccountEntity.getMemo())
                 , () -> assertEquals(Utility.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpirationTimestamp())
@@ -594,6 +597,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
                         actualAccount.getPublicKey()),
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
+                () -> assertEquals(0, actualAccount.getMaxAutomaticTokenAssociations()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
                 () -> assertNull(actualAccount.getExpirationTimestamp()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccountId),
@@ -612,15 +616,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private TransactionRecord transactionRecord(TransactionBody transactionBody, int status) {
         return buildTransactionRecord(recordBuilder -> recordBuilder.getReceiptBuilder().setAccountID(accountId),
                 transactionBody, status);
-    }
-
-    private TransactionRecord transactionRecord(TransactionBody transactionBody, int status, int accountNum) {
-        return buildTransactionRecord(
-                recordBuilder -> recordBuilder
-                        .getReceiptBuilder()
-                        .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(accountNum)),
-                transactionBody,
-                status);
     }
 
     private Transaction cryptoCreateTransaction() {
@@ -642,6 +637,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
                 .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
                 .setKey(keyFromString(KEY))
+                .setMaxAutomaticTokenAssociations(Int32Value.of(10))
                 .setMemo(StringValue.of("CryptoUpdateAccount memo"))
                 .setProxyAccountID(PROXY_UPDATE)
                 .setReceiverSigRequiredWrapper(BoolValue.of(false)));
