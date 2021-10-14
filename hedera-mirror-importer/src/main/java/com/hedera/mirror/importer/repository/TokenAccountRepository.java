@@ -20,18 +20,10 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenAccountId;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, TokenAccountId> {
-
-    @Query(value = "select * from token_account " +
-            "where token_id = ?1 and account_id = ?2 " +
-            "order by modified_timestamp desc " +
-            "limit 1", nativeQuery = true)
-    Optional<TokenAccount> findLastByTokenIdAndAccountId(long encodedTokenId, long encodedAccountId);
 }

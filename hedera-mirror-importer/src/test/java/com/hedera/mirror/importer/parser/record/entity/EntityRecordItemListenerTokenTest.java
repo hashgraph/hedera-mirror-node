@@ -51,6 +51,7 @@ import com.vladmihalcea.hibernate.type.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -245,9 +246,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         expected.setAutomaticAssociation(false);
         expected.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         expected.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
-        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId.getId(), accountId.getId()))
-                .get()
-                .isEqualTo(expected);
+        assertThat(latestTokenAccount(TOKEN_ID, PAYER2)).get().isEqualTo(expected);
     }
 
     @Test
@@ -1353,8 +1352,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertTokenAccountNotInRepository(TokenID tokenId, AccountID accountId) {
-        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(EntityId.of(tokenId).getId(),
-                EntityId.of(accountId).getId())).isNotPresent();
+        assertThat(latestTokenAccount(tokenId, accountId)).isNotPresent();
     }
 
     private void assertTokenAccountNotInRepository(TokenID tokenId, AccountID accountId, long modifiedTimestamp) {
@@ -1471,6 +1469,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addNftTransfers(nftTransferBuilder);
         }
         return builder.build();
+    }
+
+    private Optional<TokenAccount> latestTokenAccount(TokenID tokenId, AccountID accountId) {
+        return Lists.newArrayList(tokenAccountRepository.findAll())
+                .stream()
+                .filter(ta -> ta.getId().getTokenId().equals(EntityId.of(tokenId))
+                        && ta.getId().getAccountId().equals(EntityId.of(accountId)))
+                .max(Comparator.comparing(ta -> ta.getId().getModifiedTimestamp()));
     }
 
     private static List<CustomFee> deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
