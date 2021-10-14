@@ -61,6 +61,11 @@ create unique index if not exists entity__shard_realm_num
     on entity (shard, realm, num, id);
 -- have to add id when creating unique indexes due to partitioning
 
+-- entity_history
+alter table if exists entity_history
+    add primary key (id, timestamp_range);
+create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
+
 -- event_file
 alter table event_file
     add primary key (consensus_end);

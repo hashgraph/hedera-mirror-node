@@ -35,7 +35,8 @@ will need to be marked as nullable since we didn't store them on any existing ta
 create table if not exists contract
 (
   file_id         bigint null,
-  initial_balance bigint null
+  initial_balance bigint null,
+  obtainer_id     bigint null
 ) inherits (entity);
 
 alter table if exists contract
@@ -46,32 +47,17 @@ alter table if exists contract
 
 #### Contract History
 
-Create a contract history table that is populated by a trigger that runs after the update of every contract. It should
-insert the old row to the history table after setting its timestamp range to end (exclusively) at the new row's start
-consensus timestamp.
+Create a contract history table that is populated by application upsert logic. It should insert the old row to the
+history table after setting its timestamp range to end (exclusively) at the new row's start consensus timestamp.
 
 ```sql
 create table if not exists contract_history
 (
-  like contract
+  like contract,
+  primary key (id, timestamp_range)
 );
 
 create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
-
-create or replace function contract_history() returns trigger as
-$contract_history$
-begin
-  OLD.timestamp_range := int8range(lower(OLD.timestamp_range), lower(NEW.timestamp_range));
-  insert into contract_history select OLD.*;
-  return NEW;
-end;
-$contract_history$ language plpgsql;
-
-create trigger contract_history
-  after update
-  on contract
-  for each row
-execute procedure contract_history();
 ```
 
 #### Contract Result
@@ -83,13 +69,13 @@ using the protobuf and normalize it into the other fields.
 ```sql
 create table if not exists contract_result
 (
-  amount               bigint default 0   not null,
+  amount               bigint             null,
   bloom                bytea              not null,
   call_result          bytea              not null,
   consensus_timestamp  bigint primary key not null,
   contract_id          bigint             not null,
   created_contract_ids bigint array       not null,
-  error_message        text   default ''  not null,
+  error_message        text default ''    not null,
   function_parameters  bytea              not null,
   gas_limit            bigint             not null,
   gas_used             bigint             not null
@@ -150,6 +136,7 @@ create table if not exists contract_log
       "file_id": 1000,
       "initial_balance": 100,
       "memo": "First contract",
+      "obtainer_id": null,
       "proxy_account_id": "0.0.100",
       "solidity_address": "0x0000000000000000000000000000000000001001",
       "timestamp": {
@@ -167,8 +154,8 @@ create table if not exists contract_log
 Optional filters
 
 - `contract.id` Supports all comparison operators and repeated equality parameters to generate an `IN` clause
-- `order`
 - `limit`
+- `order`
 
 ### Get Contract
 
@@ -183,9 +170,11 @@ Optional filters
   "auto_renew_period": 7776000,
   "bytecode": "0xc896c66db6d98784cc03807640f3dfd41ac3a48c",
   "contract_id": "0.0.10001",
+  "deleted": false,
   "file_id": "0.0.1000",
   "initial_balance": 100,
   "memo": "First contract",
+  "obtainer_id": "0.0.101",
   "proxy_account_id": "0.0.100",
   "solidity_address": "0x0000000000000000000000000000000000001001",
   "timestamp": {
@@ -229,8 +218,8 @@ Optional filters
 
 Optional filters
 
-- `order`
 - `limit` Maximum limit will be configurable and lower than current global max limit
+- `order`
 - `timestamp`
 
 ### Get Contract Result
@@ -273,6 +262,11 @@ Optional filters
 
 ## Open Questions
 
-1. Is there a way to figure out which file belongs to which contract to back-fill data? No
-2. What will externalization of the contract state in the transaction record look like? Still being designed.
-3. How should we allow searching by topics?
+1. What will externalization of the contract state in the transaction record look like? Still being designed.
+2. How should we allow searching by topics or logs?
+3. How will Hedera transactions triggered from a smart contract be externalized in the record stream? Still being
+   designed. Tentatively, each contract triggered transaction will show up as a separate transaction and record with an
+   incremented consensus timestamp and a parent timestamp populated.
+4. Should we show individual function parameters in a normalized form? We decided against it at this time as it might be
+   a performance concern or require parsing the solidity contract. Can revisit in the future by adding a new field with
+   the normalized structure.

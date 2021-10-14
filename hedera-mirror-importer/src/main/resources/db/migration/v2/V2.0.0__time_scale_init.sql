@@ -125,7 +125,6 @@ create table if not exists entity
     key                              bytea,
     max_automatic_token_associations integer,
     memo                             text default '' not null,
-    modified_timestamp               bigint,
     num                              bigint          not null,
     proxy_account_id                 bigint,
     public_key                       character varying,
@@ -133,9 +132,16 @@ create table if not exists entity
     receiver_sig_required            boolean         null,
     shard                            bigint          not null,
     submit_key                       bytea,
+    timestamp_range                  int8range       not null,
     type                             integer         not null
 );
 comment on table entity is 'Network entity with state';
+
+create table if not exists entity_history
+(
+    like entity
+);
+comment on table entity_history is 'Network entity historical state';
 
 -- event_file
 create table if not exists event_file

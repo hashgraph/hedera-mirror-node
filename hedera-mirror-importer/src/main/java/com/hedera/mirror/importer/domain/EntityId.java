@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -48,10 +49,11 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @Value
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EntityId implements Serializable, Comparable<EntityId> {
+
+    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT.getId());
     private static final Comparator<EntityId> COMPARATOR = Comparator
             .nullsFirst(Comparator.comparingLong(EntityId::getId));
-    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT.getId());
-
+    private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
     private static final long serialVersionUID = 1427649605832330197L;
 
@@ -133,6 +135,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         entity.setShard(shardNum);
         entity.setRealm(realmNum);
         entity.setNum(entityNum);
+        entity.setTimestampRange(DEFAULT_RANGE);
         entity.setType(type);
         return entity;
     }

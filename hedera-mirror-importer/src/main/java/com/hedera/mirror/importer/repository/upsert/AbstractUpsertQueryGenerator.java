@@ -49,9 +49,9 @@ import com.hedera.mirror.importer.converter.NullableStringSerializer;
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
     private static final String EMPTY_CLAUSE = "";
-    private static final String EMPTY_STRING = "\'\'";
+    private static final String EMPTY_STRING = "''";
     private static final String NULL_STRING = "null";
-    private static final String RESERVED_CHAR = "\'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "\'";
+    private static final String RESERVED_CHAR = "'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "'";
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);

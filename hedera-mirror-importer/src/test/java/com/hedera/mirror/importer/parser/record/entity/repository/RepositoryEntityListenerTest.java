@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
@@ -186,15 +187,20 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         entity.setExpirationTimestamp(2L);
         entity.setKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("abc")).build().toByteArray());
         entity.setMemo("test");
-        entity.setModifiedTimestamp(1L);
+        entity.setTimestampRange(Range.atLeast(1L));
         entity.setProxyAccountId(EntityId.of("0.0.101", EntityTypeEnum.ACCOUNT));
         entity.setSubmitKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("abc")).build().toByteArray());
         repositoryEntityListener.onEntity(entity);
         assertThat(entityRepository.findAll()).containsExactly(entity);
 
         Entity entityNotUpdated = ENTITY_ID.toEntity();
+        entityNotUpdated.setTimestampRange(Range.atLeast(2L));
         repositoryEntityListener.onEntity(entityNotUpdated);
-        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(entityRepository.findAll())
+                .first()
+                .usingRecursiveComparison()
+                .ignoringFieldsOfTypes(Range.class)
+                .isEqualTo(entity);
 
         Entity entityUpdated = ENTITY_ID.toEntity();
         entityUpdated.setAutoRenewAccountId(EntityId.of("0.0.200", EntityTypeEnum.ACCOUNT));
@@ -203,7 +209,7 @@ class RepositoryEntityListenerTest extends IntegrationTest {
         entityUpdated.setExpirationTimestamp(2L);
         entityUpdated.setKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("xyz")).build().toByteArray());
         entityUpdated.setMemo("test2");
-        entityUpdated.setModifiedTimestamp(2L);
+        entityUpdated.setTimestampRange(Range.atLeast(3L));
         entityUpdated.setProxyAccountId(EntityId.of("0.0.201", EntityTypeEnum.ACCOUNT));
         entityUpdated.setSubmitKey(Key.newBuilder().setEd25519(ByteString.copyFromUtf8("xyz")).build().toByteArray());
         repositoryEntityListener.onEntity(entityUpdated);

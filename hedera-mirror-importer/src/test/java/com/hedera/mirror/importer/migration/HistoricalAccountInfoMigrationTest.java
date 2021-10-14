@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
@@ -140,14 +141,14 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void startDateBefore() throws Exception {
-        mirrorProperties.setStartDate(historicalAccountInfoMigration.EXPORT_DATE.minusNanos(1));
+        mirrorProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE.minusNanos(1));
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isEqualTo(COUNT);
     }
 
     @Test
     void startDateEquals() throws Exception {
-        mirrorProperties.setStartDate(historicalAccountInfoMigration.EXPORT_DATE);
+        mirrorProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isEqualTo(COUNT);
     }
@@ -271,6 +272,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         entity.setId(num);
         entity.setDeleted(false);
         entity.setMemo("");
+        entity.setTimestampRange(Range.atLeast(0L));
 
         if (afterReset) {
             Key key = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("123")).build();

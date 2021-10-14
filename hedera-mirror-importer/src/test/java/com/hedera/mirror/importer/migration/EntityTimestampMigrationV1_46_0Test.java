@@ -28,32 +28,32 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.List;
 import javax.annotation.Resource;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
-import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
 @TestPropertySource(properties = "spring.flyway.target=1.45.1")
 @Tag("migration")
 class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
 
-    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityTypeEnum.ACCOUNT);
-
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
+    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityTypeEnum.ACCOUNT);
 
     @Resource
     private JdbcOperations jdbcOperations;
@@ -79,7 +79,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
     @Test
     void verifyEntityTimestampMigration() throws Exception {
         // given
-        entityRepository.saveAll(List.of(
+        persistEntities(List.of(
                 entity(9000, EntityTypeEnum.ACCOUNT, 99L, 99L),
                 entity(9001, EntityTypeEnum.ACCOUNT, 100L, 101L),
                 entity(9002, EntityTypeEnum.CONTRACT),
@@ -106,7 +106,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 transaction(116L, 9006, SUCCESS, TransactionTypeEnum.SCHEDULEDELETE)
         ));
 
-        List<Entity> expected = List.of(
+        List<MigrationEntity> expected = List.of(
                 entity(9000, EntityTypeEnum.ACCOUNT, 99L, 99L), // no change
                 entity(9001, EntityTypeEnum.ACCOUNT, 100L, 102L), // updated at 102L
                 entity(9002, EntityTypeEnum.CONTRACT, 103L, 103L), // update transaction failed at 104L
@@ -120,26 +120,29 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(entityRepository.findAll())
+        assertThat(retrieveEntities())
                 .usingElementComparatorOnFields("id", "createdTimestamp", "deleted", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private Entity entity(long id, EntityTypeEnum entityTypeEnum) {
+    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum) {
         return entity(id, entityTypeEnum, null, false, null);
     }
 
-    private Entity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp, Long modifiedTimestamp) {
+    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp,
+                                   Long modifiedTimestamp) {
         return entity(id, entityTypeEnum, createdTimestamp, false, modifiedTimestamp);
     }
 
-    private Entity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp, boolean deleted,
-                          Long modifiedTimestamp) {
-        Entity entity = EntityIdEndec.decode(id, entityTypeEnum).toEntity();
-        entity.setCreatedTimestamp(createdTimestamp);
+    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp, boolean deleted,
+                                   Long modifiedTimestamp) {
+        MigrationEntity entity = new MigrationEntity();
         entity.setDeleted(deleted);
-        entity.setMemo("foobar");
+        entity.setCreatedTimestamp(createdTimestamp);
+        entity.setId(id);
         entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setNum(id);
+        entity.setType(entityTypeEnum.getId());
         return entity;
     }
 
@@ -156,7 +159,42 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         return transaction;
     }
 
+    private void persistEntities(List<MigrationEntity> entities) {
+        for (MigrationEntity entity : entities) {
+            jdbcOperations.update(
+                    "insert into entity (created_timestamp, deleted, id, modified_timestamp, num, realm, shard, type)" +
+                            " values (?,?,?,?,?,?,?,?)",
+                    entity.getCreatedTimestamp(),
+                    entity.getDeleted(),
+                    entity.getId(),
+                    entity.getModifiedTimestamp(),
+                    entity.getNum(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    entity.getType()
+            );
+        }
+    }
+
+    private List<MigrationEntity> retrieveEntities() {
+        return jdbcOperations.query("select * from entity", new BeanPropertyRowMapper<>(MigrationEntity.class));
+    }
+
     private void migrate() throws Exception {
         jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
+    }
+
+    // Use a custom class for MigrationEntity table since its columns have changed from the current domain object
+    @Data
+    @NoArgsConstructor
+    private static class MigrationEntity {
+        private Long createdTimestamp;
+        private Boolean deleted;
+        private long id;
+        private Long modifiedTimestamp;
+        private long num;
+        private long realm = 0;
+        private long shard = 0;
+        private int type;
     }
 }

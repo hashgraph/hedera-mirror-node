@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import com.google.common.collect.Range;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ public class DomainBuilder {
                 .realm(0L)
                 .shard(0L)
                 .id(0L)
+                .timestampRange(Range.atLeast(0L))
                 .type(EntityType.TOPIC);
 
         customizer.accept(builder);
