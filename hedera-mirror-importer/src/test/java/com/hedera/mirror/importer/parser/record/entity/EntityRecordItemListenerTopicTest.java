@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,16 +44,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.converter.KeyConverter;
 import com.hedera.mirror.importer.converter.TopicIdConverter;
 import com.hedera.mirror.importer.domain.Entity;
@@ -68,10 +66,6 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
 
-    @Qualifier(CacheConfiguration.EXPIRE_AFTER_30M)
-    @Resource
-    private CacheManager cacheManager;
-
     @ParameterizedTest
     @CsvSource({
             "0.0.65537, 10, 20, admin-key, submit-key, '', 1000000, 1, 30",
@@ -82,8 +76,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     void createTopicTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, long expirationTimeSeconds,
                          int expirationTimeNanos, @ConvertWith(KeyConverter.class) Key adminKey,
                          @ConvertWith(KeyConverter.class) Key submitKey, String memo, long consensusTimestamp,
-                         Long autoRenewAccountNum, Long autoRenewPeriod) throws Exception {
-        var responseCode = ResponseCodeEnum.SUCCESS;
+                         Long autoRenewAccountNum, Long autoRenewPeriod) {
+        var responseCode = SUCCESS;
         var transaction = createCreateTopicTransaction(adminKey, submitKey, memo, autoRenewAccountNum, autoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
@@ -104,9 +98,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void createTopicTestNulls() throws Exception {
+    void createTopicTestNulls() {
         var consensusTimestamp = 2_000_000L;
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, "", null, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 2, consensusTimestamp, responseCode);
 
@@ -125,10 +119,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     // https://github.com/hashgraph/hedera-mirror-node/issues/501
     @Test
-    void createTopicTestExistingAutoRenewAccount() throws Exception {
+    void createTopicTestExistingAutoRenewAccount() {
         Long autoRenewAccountId = 100L;
         var consensusTimestamp = 2_000_000L;
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, "", autoRenewAccountId, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 1, consensusTimestamp, responseCode);
 
@@ -148,10 +142,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void createTopicTestFiltered() throws Exception {
+    void createTopicTestFiltered() {
         var topicId = 999L;
         var consensusTimestamp = 2_000_000L;
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
         var transaction = createCreateTopicTransaction(null, null, null, null, null);
         var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
                 .build(), null, null, 1, consensusTimestamp, responseCode);
@@ -163,9 +157,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void createTopicTestError() throws Exception {
+    void createTopicTestError() {
         var consensusTimestamp = 3_000_000L;
-        var responseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+        var responseCode = INSUFFICIENT_ACCOUNT_BALANCE;
         var transaction = createCreateTopicTransaction(null, null, "memo", null, null);
         var transactionRecord = createTransactionRecord(null, consensusTimestamp, responseCode);
 
@@ -194,7 +188,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 autoRenewAccountId, autoRenewPeriod);
         entityRepository.save(topic);
 
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
         var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
                 updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccountId,
                 autoRenewPeriod);
@@ -213,7 +207,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void updateTopicTestError() throws Exception {
+    void updateTopicTestError() {
         var topicId = TopicID.newBuilder().setTopicNum(1600).build();
         var adminKey = keyFromString("admin-key");
         var submitKey = keyFromString("submit-key");
@@ -238,11 +232,11 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void updateTopicTestTopicNotFound() throws Exception {
+    void updateTopicTestTopicNotFound() {
         var adminKey = keyFromString("updated-admin-key");
         var submitKey = keyFromString("updated-submit-key");
         var consensusTimestamp = 6_000_000L;
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
         var memo = "updated-memo";
         var autoRenewAccount = EntityId.of(0L, 0L, 1L, EntityTypeEnum.ACCOUNT);
         // Topic does not get stored in the repository beforehand.
@@ -306,7 +300,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             topic.setMemo(updatedMemo);
         }
 
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
         var transaction = createUpdateTopicTransaction(topicId, updatedExpirationTimeSeconds,
                 updatedExpirationTimeNanos, updatedAdminKey, updatedSubmitKey, updatedMemo, updatedAutoRenewAccountNum,
                 updatedAutoRenewPeriod);
@@ -331,9 +325,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void deleteTopicTest() throws Exception {
+    void deleteTopicTest() {
         var consensusTimestamp = 7_000_000L;
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
 
         // Store topic to be deleted.
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
@@ -349,15 +343,15 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
         var entity = getTopicEntity(TOPIC_ID);
-        assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
+        assertTransactionInRepository(SUCCESS, consensusTimestamp, entity.getId());
         assertEquals(3L, entityRepository.count()); // Node, payer, topic
         assertThat(entity).isEqualTo(topic);
     }
 
     @Test
-    void deleteTopicTestTopicNotFound() throws Exception {
+    void deleteTopicTestTopicNotFound() {
         var consensusTimestamp = 10_000_000L;
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
 
         // Setup expected data
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
@@ -377,9 +371,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void deleteTopicTestError() throws Exception {
+    void deleteTopicTestError() {
         var consensusTimestamp = 9_000_000L;
-        var responseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+        var responseCode = INSUFFICIENT_ACCOUNT_BALANCE;
 
         // Store topic to be deleted.
         var topic = createTopicEntity(TOPIC_ID, 10L, 20, null, null, "", null, null);
@@ -405,8 +399,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     })
     void submitMessageTest(@ConvertWith(TopicIdConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash, long sequenceNumber, int runningHashVersion,
-                           Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) throws Exception {
-        var responseCode = ResponseCodeEnum.SUCCESS;
+                           Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) {
+        var responseCode = SUCCESS;
 
         var topic = createTopicEntity(topicId, 10L, 20, null, null, "", null, null);
         entityRepository.save(topic);
@@ -429,8 +423,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void submitMessageTestTopicNotFound() throws Exception {
-        var responseCode = ResponseCodeEnum.SUCCESS;
+    void submitMessageTestTopicNotFound() {
+        var responseCode = SUCCESS;
         var consensusTimestamp = 10_000_000L;
         var message = "message";
         var sequenceNumber = 10_000L;
@@ -463,9 +457,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void submitMessageTestFiltered() throws Exception {
+    void submitMessageTestFiltered() {
         // given
-        var responseCode = ResponseCodeEnum.SUCCESS;
+        var responseCode = SUCCESS;
         var topicId = (TopicID) new TopicIdConverter().convert("0.0.999", null); // excluded in application-default.yml
         var consensusTimestamp = 10_000_000L;
         var message = "message";
@@ -492,14 +486,14 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void submitMessageTestInvalidChunkInfo() throws Exception {
+    void submitMessageTestInvalidChunkInfo() {
         // given
         var id = 10_000_000L;
         var topicId = TopicID.newBuilder().setTopicNum(9000).build();
         var transaction = createSubmitMessageTransaction(topicId, "message", 3, 5, null,
                 TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE));
         var transactionRecord = createTransactionRecord(topicId, 10_000L, "running-hash"
-                .getBytes(), 2, id, ResponseCodeEnum.SUCCESS);
+                .getBytes(), 2, id, SUCCESS);
 
         // when
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
@@ -514,7 +508,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void submitMessageTestTopicError() throws Exception {
+    void submitMessageTestTopicError() {
         var responseCode = ResponseCodeEnum.INVALID_TOPIC_ID;
         var consensusTimestamp = 11_000_000L;
         var message = "message";
@@ -754,7 +748,6 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     private Entity getTopicEntity(TopicID topicId) {
-        cacheManager.getCache("entity").clear();
         return getEntity(EntityId.of(topicId).getId());
     }
 }

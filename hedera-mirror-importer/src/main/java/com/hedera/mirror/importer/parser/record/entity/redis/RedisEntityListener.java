@@ -53,7 +53,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @ConditionOnEntityRecordParser
 @Log4j2
 @Named
-@Order(3)
+@Order(1)
 @RequiredArgsConstructor
 public class RedisEntityListener implements BatchEntityListener {
 

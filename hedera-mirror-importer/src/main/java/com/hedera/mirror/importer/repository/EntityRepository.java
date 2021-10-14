@@ -20,24 +20,9 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_30M;
-
-import java.util.Optional;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.importer.domain.Entity;
 
-@Transactional
-public interface EntityRepository extends PagingAndSortingRepository<Entity, Long> {
-
-    @Cacheable(cacheNames = "entity", cacheManager = EXPIRE_AFTER_30M, key = "{#p0}")
-    @Override
-    Optional<Entity> findById(Long id);
-
-    @CachePut(cacheNames = "entity", cacheManager = EXPIRE_AFTER_30M, key = "{#p0.id}")
-    @Override
-    <S extends Entity> S save(S entity);
+public interface EntityRepository extends CrudRepository<Entity, Long> {
 }
