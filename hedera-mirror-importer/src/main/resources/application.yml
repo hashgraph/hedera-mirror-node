@@ -96,6 +96,8 @@ spring:
   jpa:
     properties:
       hibernate:
+        hbm2ddl:
+          import_files_sql_extractor: org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor
         generate_statistics: true
         jdbc:
           batch_size: 250

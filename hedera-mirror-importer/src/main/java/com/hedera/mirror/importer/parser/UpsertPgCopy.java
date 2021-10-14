@@ -96,10 +96,10 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
             int insertCount = insertItems(connection);
 
             // update items in final table from temp table
-            updateItems(connection);
+            int updateCount = updateItems(connection);
 
-            log.debug("Inserted {} and updated from a total of {} rows to {}", insertCount, items.size(),
-                    finalTableName);
+            log.debug("Inserted {} and updated {} from a total of {} rows to {}",
+                    insertCount, updateCount, items.size(), finalTableName);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
         }
@@ -113,10 +113,11 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         }
     }
 
-    private void updateFinalTable(Connection connection) throws SQLException {
+    private int updateFinalTable(Connection connection) throws SQLException {
         try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
-            preparedStatement.execute();
-            log.trace("Updated rows from {} table to {} table", tableName, finalTableName);
+            int count = preparedStatement.executeUpdate();
+            log.trace("Updated {} rows from {} table to {} table", count, tableName, finalTableName);
+            return count;
         }
     }
 
@@ -146,14 +147,15 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         return insertCount;
     }
 
-    private void updateItems(Connection connection) throws SQLException {
+    private int updateItems(Connection connection) throws SQLException {
         if (StringUtils.isEmpty(updateSql)) {
-            return;
+            return 0;
         }
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        updateFinalTable(connection);
+        int count = updateFinalTable(connection);
         recordMetric(updateDurationMetric, stopwatch);
+        return count;
     }
 
     private void recordMetric(Timer timer, Stopwatch stopwatch) {

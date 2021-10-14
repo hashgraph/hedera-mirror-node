@@ -431,16 +431,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cachedEntity.setMemo(newEntity.getMemo());
         }
 
-        if (newEntity.getModifiedTimestamp() != null) {
-            cachedEntity.setModifiedTimestamp(newEntity.getModifiedTimestamp());
-        }
-
         if (newEntity.getProxyAccountId() != null) {
             cachedEntity.setProxyAccountId(newEntity.getProxyAccountId());
         }
 
         if (newEntity.getSubmitKey() != null) {
             cachedEntity.setSubmitKey(newEntity.getSubmitKey());
+        }
+
+        if (newEntity.getTimestampRange() != null && (cachedEntity.getTimestampRange() == null ||
+                newEntity.getModifiedTimestamp() >= cachedEntity.getModifiedTimestamp())) {
+            cachedEntity.setTimestampRange(newEntity.getTimestampRange());
         }
 
         return cachedEntity;

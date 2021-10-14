@@ -27,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -83,8 +82,18 @@ class UpsertPgCopyTest extends IntegrationTest {
             .setEd25519(ByteString.copyFromUtf8("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c"))
             .build();
 
-    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-
+    @Resource
+    private MeterRegistry meterRegistry;
+    @Resource
+    private EntityUpsertQueryGenerator entityUpsertQueryGenerator;
+    @Resource
+    private NftUpsertQueryGenerator nftUpsertQueryGenerator;
+    @Resource
+    private ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
+    @Resource
+    private TokenUpsertQueryGenerator tokenUpsertQueryGenerator;
+    @Resource
+    private TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator;
     @Resource
     private DataSource dataSource;
     @Resource
@@ -101,17 +110,6 @@ class UpsertPgCopyTest extends IntegrationTest {
     private TokenTransferRepository tokenTransferRepository;
     @Resource
     private ScheduleRepository scheduleRepository;
-    @Resource
-    EntityUpsertQueryGenerator entityUpsertQueryGenerator;
-    @Resource
-    NftUpsertQueryGenerator nftUpsertQueryGenerator;
-    @Resource
-    ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
-    @Resource
-    TokenUpsertQueryGenerator tokenUpsertQueryGenerator;
-    @Resource
-    TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator;
-
     private UpsertPgCopy<Entity> entityPgCopy;
     private UpsertPgCopy<Nft> nftPgCopy;
     private UpsertPgCopy<Schedule> schedulePgCopy;
@@ -682,8 +680,6 @@ class UpsertPgCopyTest extends IntegrationTest {
                 upsertPgCopy.copy(batch, connection);
             }
             connection.commit();
-        } finally {
-
         }
     }
 
