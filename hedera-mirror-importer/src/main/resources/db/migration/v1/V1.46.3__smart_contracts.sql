@@ -18,7 +18,7 @@ with contract_transaction as (
     where entity_id is not null
       and type in (7, 8, 9, 22)
 )
-update only entity e
+update entity e
 set type = 2
 from contract_transaction t
 where e.id = t.entity_id
@@ -26,7 +26,7 @@ where e.id = t.entity_id
 
 -- Move contract entities into contract and delete from entity
 with contract_entity as (
-    delete from only entity where type = 2 returning *
+    delete from entity where type = 2 returning *
 )
 insert
 into contract
@@ -49,6 +49,14 @@ set obtainer_id = cd.obtainer_id
 from contract_delete cd
 where c.id = cd.contract_id;
 
+-- Remove columns that don't apply to contracts
+alter table contract
+    drop column auto_renew_account_id,
+    drop column max_automatic_token_associations,
+    drop column receiver_sig_required,
+    drop column submit_key,
+    alter column type set default 2;
+
 
 -- contract_history
 create table if not exists contract_history
@@ -63,12 +71,15 @@ create index if not exists contract_history__timestamp_range on contract_history
 -- contract_log
 create table if not exists contract_log
 (
-    bloom               bytea                    not null,
-    consensus_timestamp bigint                   not null,
-    contract_id         bigint                   not null,
-    index               int                      not null,
-    data                bytea                    not null,
-    topics              bytea array default '{}' not null,
+    bloom               bytea  not null,
+    consensus_timestamp bigint not null,
+    contract_id         bigint not null,
+    data                bytea  not null,
+    index               int    not null,
+    topic0              text   null,
+    topic1              text   null,
+    topic2              text   null,
+    topic3              text   null,
     primary key (consensus_timestamp, index)
 );
 

@@ -76,15 +76,47 @@ create table if not exists address_book_service_endpoint
 );
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
+-- contract
+create table if not exists contract
+(
+    auto_renew_period    bigint             null,
+    created_timestamp    bigint             null,
+    deleted              boolean            null,
+    expiration_timestamp bigint             null,
+    file_id              bigint             null,
+    id                   bigint             not null,
+    key                  bytea              null,
+    memo                 text    default '' not null,
+    num                  bigint             not null,
+    obtainer_id          bigint             null,
+    proxy_account_id     bigint             null,
+    public_key           character varying  null,
+    realm                bigint             not null,
+    shard                bigint             not null,
+    timestamp_range      int8range          not null,
+    type                 integer default 2  not null
+);
+comment on table contract is 'Contract entity';
+
+-- contract_history
+create table if not exists contract_history
+(
+    like contract
+);
+comment on table contract_history is 'Contract entity historical state';
+
 -- contract_log
 create table if not exists contract_log
 (
-    bloom               bytea                    not null,
-    consensus_timestamp bigint                   not null,
-    contract_id         bigint                   not null,
-    index               int                      not null,
-    data                bytea                    not null,
-    topics              bytea array default '{}' not null
+    bloom               bytea  not null,
+    consensus_timestamp bigint not null,
+    contract_id         bigint not null,
+    data                bytea  not null,
+    index               int    not null,
+    topic0              text   null,
+    topic1              text   null,
+    topic2              text   null,
+    topic3              text   null
 );
 comment on table contract_log is 'Contract execution result logs';
 
@@ -134,24 +166,24 @@ comment on table custom_fee is 'HTS Custom fees';
 -- entity
 create table if not exists entity
 (
-    auto_renew_account_id            bigint,
-    auto_renew_period                bigint,
-    created_timestamp                bigint,
-    deleted                          boolean,
-    expiration_timestamp             bigint,
-    id                               bigint          not null,
-    key                              bytea,
-    max_automatic_token_associations integer,
-    memo                             text default '' not null,
-    num                              bigint          not null,
-    proxy_account_id                 bigint,
-    public_key                       character varying,
-    realm                            bigint          not null,
-    receiver_sig_required            boolean         null,
-    shard                            bigint          not null,
-    submit_key                       bytea,
-    timestamp_range                  int8range       not null,
-    type                             integer         not null
+    auto_renew_account_id            bigint            null,
+    auto_renew_period                bigint            null,
+    created_timestamp                bigint            null,
+    deleted                          boolean           null,
+    expiration_timestamp             bigint            null,
+    id                               bigint            not null,
+    key                              bytea             null,
+    max_automatic_token_associations integer           null,
+    memo                             text default ''   not null,
+    num                              bigint            not null,
+    proxy_account_id                 bigint            null,
+    public_key                       character varying null,
+    realm                            bigint            not null,
+    receiver_sig_required            boolean           null,
+    shard                            bigint            not null,
+    submit_key                       bytea             null,
+    timestamp_range                  int8range         not null,
+    type                             integer           not null
 );
 comment on table entity is 'Network entity with state';
 
@@ -401,21 +433,3 @@ create table if not exists transaction
     transaction_bytes      bytea
 );
 comment on table transaction is 'Submitted network transactions';
-
-
--- Tables that depend upon other tables existing first
-
--- contract
-create table if not exists contract
-(
-    like entity,
-    file_id     bigint null,
-    obtainer_id bigint null
-);
-comment on table contract_log is 'Contract entity';
-
--- contract_history
-create table if not exists contract_history
-(
-    like contract
-);
