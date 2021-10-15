@@ -1,0 +1,101 @@
+{
+  "description": "Contracts api calls with limit",
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654000123456",
+        "file_id": "5001",
+        "id": "8001",
+        "key": [1, 1, 1],
+        "timestamp_range": "[987654000123456, 997654000123456]"
+      },
+      {
+        "created_timestamp": "987654000123456",
+        "file_id": "5001",
+        "id": "8001",
+        "key": [1, 1, 1],
+        "timestamp_range": "[997654000123457,)"
+      },
+      {
+        "created_timestamp": "987654111123456",
+        "file_id": "5001",
+        "id": "8002",
+        "key": [2, 2, 2],
+        "timestamp_range": "[987654111123456,)"
+      },
+      {
+        "auto_renew_period": 1500,
+        "created_timestamp": "987654222123456",
+        "expiration_timestamp": "1236987654000000123",
+        "file_id": "5001",
+        "id": "8003",
+        "key": [3, 3, 3],
+        "obtainer_id": "7001",
+        "proxy_account_id": "7005",
+        "timestamp_range": "[987654222123456,)"
+      }
+    ],
+    "filedata": [
+      {
+        "file_data": [12, 11, 10, 9, 8, 7, 255],
+        "consensus_timestamp": "987654000123000",
+        "entity_id": "5001"
+      },
+      {
+        "file_data": [12, 11, 10, 9, 8, 7, 255, 1, 2, 3, 4],
+        "consensus_timestamp": "987654999123000",
+        "entity_id": "5001",
+        "transaction_type": 16
+      }
+    ]
+  },
+  "urls": ["/api/v1/contracts?limit=2"],
+  "responseStatus": 200,
+  "responseJson": {
+    "contracts": [
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "010101"
+        },
+        "auto_renew_period": null,
+        "contract_id": "0.0.8001",
+        "created_timestamp": "987654.000123456",
+        "deleted": false,
+        "expiration_timestamp": null,
+        "file_id": "0.0.5001",
+        "memo": "contract memo",
+        "obtainer_id": null,
+        "proxy_account_id": null,
+        "solidity_address": "0x00000000000000000000000000001f4100000000",
+        "timestamp": {
+          "from": "997654.000123457",
+          "to": null
+        }
+      },
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "020202"
+        },
+        "auto_renew_period": null,
+        "contract_id": "0.0.8002",
+        "created_timestamp": "987654.111123456",
+        "deleted": false,
+        "expiration_timestamp": null,
+        "file_id": "0.0.5001",
+        "memo": "contract memo",
+        "obtainer_id": null,
+        "proxy_account_id": null,
+        "solidity_address": "0x00000000000000000000000000001f4200000000",
+        "timestamp": {
+          "from": "987654.111123456",
+          "to": null
+        }
+      }
+    ],
+    "links": {
+      "next": "/api/v1/contracts?limit=2&contract.id=gt:0.0.8002"
+    }
+  }
+}

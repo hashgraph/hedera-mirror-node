@@ -20,6 +20,7 @@
 
 'use strict';
 
+const _ = require('lodash');
 const math = require('mathjs');
 const pgformat = require('pg-format');
 const config = require('../config');
@@ -39,8 +40,10 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadAssessedCustomFees(testDataJson.assessedcustomfees);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
+  await loadContracts(testDataJson.contracts);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
+  await loadFileData(testDataJson.filedata);
   await loadNfts(testDataJson.nfts);
   await loadSchedules(testDataJson.schedules);
   await loadTopicMessages(testDataJson.topicmessages);
@@ -80,6 +83,16 @@ const loadBalances = async (balances) => {
   }
 };
 
+const loadContracts = async (contracts) => {
+  if (contracts == null) {
+    return;
+  }
+
+  for (let i = 0; i < contracts.length; ++i) {
+    await addContract(contracts[i]);
+  }
+};
+
 const loadCryptoTransfers = async (cryptoTransfers) => {
   if (cryptoTransfers == null) {
     return;
@@ -107,6 +120,16 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadFileData = async (fileData) => {
+  if (fileData == null) {
+    return;
+  }
+
+  for (const data of fileData) {
+    await addFileData(data);
   }
 };
 
@@ -219,6 +242,19 @@ const addEntity = async (defaults, entity) => {
       entity.receiver_sig_required,
       entity.timestamp_range,
     ]
+  );
+};
+
+const addFileData = async (fileData) => {
+  fileData = {
+    transaction_type: 17,
+    ...fileData,
+  };
+
+  await sqlConnection.query(
+    `insert into file_data (file_data, consensus_timestamp, entity_id, transaction_type)
+     values ($1, $2, $3, $4)`,
+    [Buffer.from(fileData.file_data), fileData.consensus_timestamp, fileData.entity_id, fileData.transaction_type]
   );
 };
 
@@ -465,6 +501,50 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList) => {
       'INSERT INTO nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id) VALUES %L',
       nftTransfers
     )
+  );
+};
+
+const addContract = async (contract) => {
+  const insertFields = [
+    'auto_renew_period',
+    'created_timestamp',
+    'deleted',
+    'expiration_timestamp',
+    'file_id',
+    'id',
+    'key',
+    'memo',
+    'num',
+    'obtainer_id',
+    'proxy_account_id',
+    'realm',
+    'shard',
+    'type',
+    'timestamp_range',
+  ];
+  const positions = _.range(1, insertFields.length + 1)
+    .map((position) => `$${position}`)
+    .join(',');
+  contract = {
+    auto_renew_period: null,
+    deleted: false,
+    expiration_timestamp: null,
+    key: null,
+    memo: 'contract memo',
+    num: contract.id,
+    public_key: null,
+    realm: 0,
+    shard: 0,
+    type: 2,
+    ...contract,
+  };
+  contract.key = contract.key != null ? Buffer.from(contract.key) : null;
+
+  // use 'contract' table if the range is open-ended, otherwise use 'contract_history'
+  const table = contract.timestamp_range.endsWith(',)') ? 'contract' : 'contract_history';
+  await sqlConnection.query(
+    `insert into ${table} (${insertFields.join(',')}) values (${positions})`,
+    insertFields.map((name) => contract[name])
   );
 };
 

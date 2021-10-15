@@ -27,11 +27,12 @@ const path = require('path');
 const {GenericContainer} = require('testcontainers');
 const {db: dbConfig} = require('../config');
 const {isDockerInstalled} = require('./integrationUtils');
-const {getPoolClass, randomString} = require('../utils');
+const {getPoolClass, loadPgRange, randomString} = require('../utils');
 
 const logger = log4js.getLogger();
 
 const Pool = getPoolClass();
+loadPgRange();
 
 let oldPool;
 let dockerDb;

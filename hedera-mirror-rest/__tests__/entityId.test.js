@@ -154,6 +154,18 @@ describe('EntityId fromString', () => {
   }
 });
 
+describe('EntityId toSolidityAddress', () => {
+  test('0.0.7', () => {
+    expect(EntityId.of(1n, 2n, 7n).toSolidityAddress()).toEqual('0x0000000100000002000000000000000700000000');
+  });
+
+  test('32767.65535.4294967295', () => {
+    expect(EntityId.of(32767n, 65535n, 4294967295n).toSolidityAddress()).toEqual(
+      '0x00007fff0000ffff00000000ffffffff00000000'
+    );
+  });
+});
+
 describe('EntityId toString', () => {
   test('0.0.0', () => {
     expect(EntityId.of(0n, 0n, 0n).toString()).toEqual('0.0.0');

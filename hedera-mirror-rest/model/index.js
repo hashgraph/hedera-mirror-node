@@ -22,6 +22,7 @@
 
 module.exports = {
   AssessedCustomFee: require('./assessedCustomFee'),
+  Contract: require('./contract'),
   CustomFee: require('./customFee'),
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),

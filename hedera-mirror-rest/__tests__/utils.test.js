@@ -756,3 +756,30 @@ describe('Utils ipMask tests', () => {
     expect(maskedIp).toStrictEqual('2001:db8:3333::0.0.0.0');
   });
 });
+
+describe('Utils toHexString tests', () => {
+  const specs = [
+    {
+      input: [1, 2, 3],
+      expected: '010203',
+    },
+    {
+      input: [0x1a, 0x1b, 0x1c],
+      expected: '1a1b1c',
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`explicit addPrefix false - ${spec.input}`, () => {
+      expect(utils.toHexString(spec.input, false)).toEqual(spec.expected);
+    });
+
+    test(`implicit addPrefix false - ${spec.input}`, () => {
+      expect(utils.toHexString(spec.input, false)).toEqual(spec.expected);
+    });
+
+    test(`addPrefix true - ${spec.input}`, () => {
+      expect(utils.toHexString(spec.input, true)).toEqual(`0x${spec.expected}`);
+    });
+  });
+});

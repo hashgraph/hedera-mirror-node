@@ -165,6 +165,9 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.CONTRACT_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
     case constants.filterKeys.CREDIT_TYPE:
       // Acceptable words: credit or debit
       ret = isValidValueIgnoreCase(val, Object.values(constants.cryptoTransferType));
@@ -633,10 +636,16 @@ const returnEntriesLimit = (type) => {
 /**
  * Converts the byte array returned by SQL queries into hex string
  * @param {Array} byteArray Array of bytes to be converted to hex string
- * @return {hexString} Converted hex string
+ * @param {boolean} addPrefix Whether to add the '0x' prefix to the hex string
+ * @return {String} Converted hex string
  */
-const toHexString = (byteArray) => {
-  return byteArray === null ? null : byteArray.reduce((output, elem) => output + `0${elem.toString(16)}`.slice(-2), '');
+const toHexString = (byteArray, addPrefix = false) => {
+  if (byteArray === null) {
+    return null;
+  }
+
+  const encoded = Buffer.from(byteArray, 'utf8').toString('hex');
+  return addPrefix ? `0x${encoded}` : encoded;
 };
 
 /**
@@ -821,6 +830,9 @@ const formatComparator = (comparator) => {
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
         break;
+      case constants.filterKeys.CONTRACT_ID:
+        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
@@ -924,6 +936,15 @@ const getPoolClass = (mock = false) => {
   return Pool;
 };
 
+/**
+ * Loads and installs pg-range for pg
+ */
+const loadPgRange = () => {
+  const pg = require('pg');
+  const pgRange = require('pg-range');
+  pgRange.install(pg);
+};
+
 module.exports = {
   buildAndValidateFilters,
   buildComparatorFilter,
@@ -951,6 +972,7 @@ module.exports = {
   isValidNum,
   isValidTimestampParam,
   isValidTransactionType,
+  loadPgRange,
   parseCreditDebitParams,
   parseLimitAndOrderParams,
   parseBalanceQueryParam,
