@@ -44,10 +44,10 @@ const (
 )
 
 const (
-	andTransactionHashFilter = " and transaction_hash = @hash"
-	orderByConsensusNs       = " order by consensus_timestamp"
-	selectTransactionResults = "select * from " + tableNameTransactionResults
-	selectTransactionTypes   = "select * from " + tableNameTransactionTypes
+	andTransactionHashFilter  = " and transaction_hash = @hash"
+	orderByConsensusTimestamp = " order by consensus_timestamp"
+	selectTransactionResults  = "select * from " + tableNameTransactionResults
+	selectTransactionTypes    = "select * from " + tableNameTransactionTypes
 	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json, non-fee transfers
 	// in json, token transfers in json, and optionally the token information when the transaction is token create,
 	// token delete, or token update. Note the three token transactions are the ones the entity_id in the transaction
@@ -115,7 +115,7 @@ const (
                                           from transaction t
                                           where consensus_timestamp >= @start and consensus_timestamp <= @end`
 	selectTransactionsByHashInTimestampRange  = selectTransactionsInTimestampRange + andTransactionHashFilter
-	selectTransactionsInTimestampRangeOrdered = selectTransactionsInTimestampRange + orderByConsensusNs
+	selectTransactionsInTimestampRangeOrdered = selectTransactionsInTimestampRange + orderByConsensusTimestamp
 )
 
 type transactionType struct {
@@ -141,16 +141,16 @@ func (transactionResult) TableName() string {
 // transaction maps to the transaction query which returns the required transaction fields, CryptoTransfers json string,
 // NonFeeTransfers json string, TokenTransfers json string, and Token definition json string
 type transaction struct {
-	ConsensusNs     int64
-	Hash            []byte
-	PayerAccountId  int64
-	Result          int16
-	Type            int16
-	CryptoTransfers string
-	NftTransfers    string
-	NonFeeTransfers string
-	TokenTransfers  string
-	Token           string
+	ConsensusTimestamp int64
+	Hash               []byte
+	PayerAccountId     int64
+	Result             int16
+	Type               int16
+	CryptoTransfers    string
+	NftTransfers       string
+	NonFeeTransfers    string
+	TokenTransfers     string
+	Token              string
 }
 
 func (t transaction) getHashString() string {
@@ -264,7 +264,7 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 			break
 		}
 
-		start = transactionsBatch[len(transactionsBatch)-1].ConsensusNs + 1
+		start = transactionsBatch[len(transactionsBatch)-1].ConsensusTimestamp + 1
 	}
 
 	hashes := make([]string, 0)

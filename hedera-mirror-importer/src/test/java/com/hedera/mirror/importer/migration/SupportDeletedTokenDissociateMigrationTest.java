@@ -415,10 +415,8 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
             @Override
             public Transaction mapRow(ResultSet rs, int rowNum) throws SQLException {
                 Transaction transaction = new Transaction();
-//                transaction.setChargedTxFee(rs.getLong("charged_tx_fee"));
                 transaction.setConsensusTimestamp(rs.getLong("consensus_ns"));
                 transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT));
-//                transaction.setInitialBalance(rs.getLong("initial_balance"));
                 transaction.setMemo(rs.getBytes("transaction_bytes"));
                 transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityTypeEnum.ACCOUNT));
                 transaction
@@ -426,8 +424,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 transaction.setResult(rs.getInt("result"));
                 transaction.setType(rs.getInt("type"));
                 transaction.setValidStartNs(rs.getLong("valid_start_ns"));
-//                transaction.setValidDurationSeconds(rs.getLong("valid_duration_seconds"));
-//                transaction.setMaxFee(rs.getLong("max_fee"));
                 return transaction;
             }
         });
