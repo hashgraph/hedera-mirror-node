@@ -356,7 +356,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     private Transaction tokenDissociateTransaction(long consensusNs, EntityId payer) {
         Transaction transaction = new Transaction();
-        transaction.setConsensusNs(consensusNs);
+        transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(payer);
         transaction.setPayerAccountId(payer);
         transaction.setResult(22);

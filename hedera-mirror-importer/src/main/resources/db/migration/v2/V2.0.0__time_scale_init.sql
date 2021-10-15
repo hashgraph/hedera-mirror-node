@@ -366,7 +366,7 @@ comment on table topic_message is 'Topic entity sequenced messages';
 -- transaction
 create table if not exists transaction
 (
-    consensus_ns           bigint   not null,
+    consensus_timestamp    bigint   not null,
     type                   smallint not null,
     result                 smallint not null,
     payer_account_id       bigint   not null,

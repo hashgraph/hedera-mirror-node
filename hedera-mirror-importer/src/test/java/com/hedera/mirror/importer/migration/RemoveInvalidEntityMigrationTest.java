@@ -251,7 +251,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                                     TransactionTypeEnum transactionTypeEnum) {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
-        transaction.setConsensusNs(consensusNs);
+        transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(EntityId.of(0, 1, id, entityType));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
@@ -282,7 +282,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         jdbcOperations
                 .update("insert into transaction (charged_tx_fee, entity_id, initial_balance, max_fee, memo, " +
                                 "node_account_id, payer_account_id, result, transaction_bytes, " +
-                                "transaction_hash, type, valid_duration_seconds, valid_start_ns, consensus_ns) values" +
+                                "transaction_hash, type, valid_duration_seconds, valid_start_ns, consensus_timestamp)" +
+                                " values" +
                                 " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         transaction.getChargedTxFee(),
                         transaction.getEntityId().getId(),
@@ -297,7 +298,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                         transaction.getType(),
                         transaction.getValidDurationSeconds(),
                         transaction.getValidStartNs(),
-                        transaction.getConsensusNs());
+                        transaction.getConsensusTimestamp());
     }
 
     /**
@@ -342,8 +343,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 new Object[] {id},
                 (rs, rowNum) -> {
                     Entity entity = EntityIdEndec.decode(
-                                    rs.getLong("id"),
-                                    getEntityTypeEnumFromInt(rs.getInt("fk_entity_type_id")))
+                            rs.getLong("id"),
+                            getEntityTypeEnumFromInt(rs.getInt("fk_entity_type_id")))
                             .toEntity();
                     entity.setAutoRenewAccountId(EntityIdEndec
                             .decode(rs.getLong("auto_renew_account_id"), EntityTypeEnum.ACCOUNT));

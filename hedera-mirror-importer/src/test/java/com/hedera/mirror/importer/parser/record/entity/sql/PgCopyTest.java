@@ -177,7 +177,7 @@ class PgCopyTest extends IntegrationTest {
     private Transaction transaction(long consensusNs) {
         EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
         Transaction transaction = new Transaction();
-        transaction.setConsensusNs(consensusNs);
+        transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(entityId);
         transaction.setNodeAccountId(entityId);
         transaction.setMemo("memo".getBytes());
