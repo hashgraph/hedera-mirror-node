@@ -28,7 +28,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const {AssessedCustomFee, NftTransfer, Transaction} = require('./model');
+const {AssessedCustomFee, CryptoTransfer, NftTransfer, TokenTransfer, Transaction} = require('./model');
 const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
 
 /**
@@ -76,60 +76,56 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery) => {
   // aggregate crypto transfers, token transfers, and nft transfers
   const cryptoTransferListCte = `c_list as (
       select jsonb_agg(jsonb_build_object(
-              'amount', ctr.amount,
-              'entity_id', ctr.entity_id
-          ) order by ctr.entity_id, ctr.amount
+              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT_FULL_NAME},
+              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.ENTITY_ID_FULL_NAME}
+          ) order by ${CryptoTransfer.ENTITY_ID_FULL_NAME}, ${CryptoTransfer.AMOUNT_FULL_NAME}
         ) as ctr_list,
-        ctr.consensus_timestamp,
-        tlist.payer_account_id
-      from crypto_transfer ctr
-      join tlist on ctr.consensus_timestamp = tlist.consensus_timestamp
-      group by ctr.consensus_timestamp, payer_account_id
+        ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+      from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
+      join tlist on ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
+      group by ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
   )`;
 
   const tokenTransferListCte = `t_list as (
     select jsonb_agg(jsonb_build_object(
-          'account_id', ttr.account_id,
-          'amount', ttr.amount,
-          'token_id', ttr.token_id
-        ) order by ttr.token_id, ttr.account_id
+          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID_FULL_NAME},
+          '${TokenTransfer.AMOUNT}', ${TokenTransfer.AMOUNT_FULL_NAME},
+          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID_FULL_NAME}
+        ) order by ${TokenTransfer.TOKEN_ID_FULL_NAME}, ${TokenTransfer.ACCOUNT_ID_FULL_NAME}
       ) as ttr_list,
-      ttr.consensus_timestamp,
-      tlist.payer_account_id
-    from token_transfer ttr
-    join tlist on ttr.consensus_timestamp = tlist.consensus_timestamp
-    group by ttr.consensus_timestamp, payer_account_id
+      ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+    from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
+    join tlist on ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
+    group by ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
   )`;
 
   const nftTransferListCte = `nft_list as (
     select jsonb_agg(jsonb_build_object(
-          'receiver_account_id', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-          'sender_account_id', ${NftTransfer.SENDER_ACCOUNT_ID},
-          'serial_number', ${NftTransfer.SERIAL_NUMBER},
-          'token_id', ${NftTransfer.TOKEN_ID}
+          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID_FULL_NAME},
+          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME},
+          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER_FULL_NAME},
+          '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID_FULL_NAME}
         ) order by ${NftTransfer.TOKEN_ID_FULL_NAME}, ${NftTransfer.SERIAL_NUMBER_FULL_NAME}
       ) as ntr_list,
-      ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME},
-      tlist.payer_account_id
+      ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
     join tlist on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}, payer_account_id
+    group by ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
   )`;
 
   const assessedFeeListCte = `fee_list as (
     select jsonb_agg(jsonb_build_object(
-          'amount', ${AssessedCustomFee.AMOUNT},
-          'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
-          'effective_payer_account_ids', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
+          '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
+          '${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+          '${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS}', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
           'payer_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
-          'token_id', ${AssessedCustomFee.TOKEN_ID}
+          '${AssessedCustomFee.TOKEN_ID}', ${AssessedCustomFee.TOKEN_ID}
         ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT}
       ) as ftr_list,
-      ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME},
-      tlist.payer_account_id
+      ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}
     from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
     join tlist on ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}, payer_account_id
+    group by ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}
   )`;
 
   const transfersListCte = (includeExtraInfo) => {
@@ -140,10 +136,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery) => {
         ctrl.ctr_list,
         ttrl.ttr_list
         ${includeExtraInfo ? ', ntrl.ntr_list' : ''}
-        ${includeExtraInfo ? ', ftrl.ftr_list' : ''}
-        , coalesce(t.payer_account_id, ctrl.payer_account_id, ttrl.payer_account_id${
-          includeExtraInfo ? ', ntrl.payer_account_id, ftrl.payer_account_id' : ''
-        }) AS payer_account_id, 
+        ${includeExtraInfo ? ', ftrl.ftr_list' : ''},
+        t.payer_account_id, 
         t.valid_start_ns,
         t.memo,
         t.node_account_id,
