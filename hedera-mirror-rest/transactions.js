@@ -40,11 +40,14 @@ const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel'
 const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'desc') => {
   const transactionTimeStampCte = (modifyingQuery) => {
     let timestampFilter = '';
+    let timestampFilterJoin = '';
+    let limitQuery = 'limit $1';
 
-    // add a pre-clause where a timestamp filter is applied
-    const filteredTransactions = !_.isUndefined(modifyingQuery);
-    if (filteredTransactions) {
+    // populate pre-clause queries where a timestamp filter is applied
+    if (!_.isUndefined(modifyingQuery)) {
       timestampFilter = `timestampFilter as (${modifyingQuery}),`;
+      timestampFilterJoin = `join timestampFilter tf on ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = tf.consensus_timestamp`;
+      limitQuery = '';
     }
 
     const tquery = `select 
@@ -63,13 +66,9 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
                       ${Transaction.RESULT_FULL_NAME},
                       ${Transaction.TYPE_FULL_NAME}
                     from ${Transaction.tableName} as ${Transaction.tableAlias}
-                      ${
-                        filteredTransactions
-                          ? `join timestampFilter tf on ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = tf.consensus_timestamp`
-                          : ''
-                      }
+                    ${timestampFilterJoin}
                     order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
-                    ${filteredTransactions ? '' : 'limit $1'}`;
+                    ${limitQuery}`;
 
     return `${timestampFilter}
       tlist as (${tquery})`;
@@ -130,15 +129,26 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     group by ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}
   )`;
 
-  const transfersListCte = (includeExtraInfo) => {
+  const transfersListCte = (extraInfo) => {
+    let nftAndFeeSelect = '';
+    let nftList = '';
+    let feeList = '';
+    let nftJoin = '';
+    let feeJoin = '';
+    if (extraInfo) {
+      nftAndFeeSelect = ', ntrl.consensus_timestamp, ftrl.consensus_timestamp';
+      nftList = 'ntrl.ntr_list,';
+      feeList = 'ftrl.ftr_list,';
+      nftJoin = 'full outer join nft_list ntrl on t.consensus_timestamp = ntrl.consensus_timestamp';
+      feeJoin = 'full outer join fee_list ftrl on t.consensus_timestamp = ftrl.consensus_timestamp';
+    }
+
     return `transfer_list as (
-      select coalesce(t.consensus_timestamp, ctrl.consensus_timestamp, ttrl.consensus_timestamp${
-        includeExtraInfo ? ', ntrl.consensus_timestamp, ftrl.consensus_timestamp' : ''
-      }) AS consensus_timestamp,
+      select coalesce(t.consensus_timestamp, ctrl.consensus_timestamp, ttrl.consensus_timestamp${nftAndFeeSelect}) AS consensus_timestamp,
         ctrl.ctr_list,
-        ttrl.ttr_list
-        ${includeExtraInfo ? ', ntrl.ntr_list' : ''}
-        ${includeExtraInfo ? ', ftrl.ftr_list' : ''},
+        ttrl.ttr_list,
+        ${nftList}
+        ${feeList}
         t.payer_account_id, 
         t.valid_start_ns,
         t.memo,
@@ -155,8 +165,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
       from tlist t
       full outer join c_list ctrl on t.consensus_timestamp = ctrl.consensus_timestamp
       full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp
-      ${includeExtraInfo ? 'full outer join nft_list ntrl on t.consensus_timestamp = ntrl.consensus_timestamp' : ''}
-      ${includeExtraInfo ? 'full outer join fee_list ftrl on t.consensus_timestamp = ftrl.consensus_timestamp' : ''}
+      ${nftJoin}
+      ${feeJoin}
     )`;
   };
   const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte];
@@ -446,13 +456,14 @@ const getTransactionsInnerQuery = function (
     resultTypeQuery,
     transactionTypeQuery
   );
+  const transactionOnlyLimitQuery = _.isNil(namedLimitQuery) ? '' : namedLimitQuery;
   const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
     ? undefined
     : `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.VALID_START_NS}
     from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
     order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
-    ${_.isNil(namedLimitQuery) ? '' : namedLimitQuery}`;
+    ${transactionOnlyLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(

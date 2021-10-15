@@ -368,7 +368,7 @@ const validateClauseAndValues = (clause, values) => {
   }
 };
 
-const parseAccountIdQueryParam = (parsedQueryParams, columnName, paramCount = 1) => {
+const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
     (value) => EntityId.fromString(value).getEncodedId(),
@@ -381,7 +381,7 @@ const parseAccountIdQueryParam = (parsedQueryParams, columnName, paramCount = 1)
   );
 };
 
-const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}, paramCount) => {
+const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.TIMESTAMP],
     (value) => parseTimestampParam(value),
@@ -419,7 +419,7 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
 /**
  * Parse the type=[credit | debit] parameter
  */
-const parseCreditDebitParams = (parsedQueryParams, columnName, paramCount) => {
+const parseCreditDebitParams = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
     (value) => value,
