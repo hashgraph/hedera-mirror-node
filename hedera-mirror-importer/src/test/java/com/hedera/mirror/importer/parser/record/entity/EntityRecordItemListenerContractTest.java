@@ -531,19 +531,21 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertArrayEquals(
                         expected.getConstructorParameters().toByteArray(), contractResult.getFunctionParameters()),
-                () -> assertEquals(expected.getGas(), contractResult.getGasSupplied()),
-                () -> assertArrayEquals(record.getContractCreateResult().toByteArray(), contractResult.getCallResult()),
+                () -> assertEquals(expected.getGas(), contractResult.getGasLimit()),
+                () -> assertArrayEquals(record.getContractCreateResult()
+                        .toByteArray(), contractResult.getFunctionResult()),
                 () -> assertEquals(record.getContractCreateResult().getGasUsed(), contractResult.getGasUsed()));
     }
 
     private void assertContractCallResult(ContractCallTransactionBody expected, TransactionRecord record) {
         ContractResult contractResult = getContractResult(record.getConsensusTimestamp()).get();
         assertAll(
-                () -> assertArrayEquals(record.getContractCallResult().toByteArray(), contractResult.getCallResult()),
+                () -> assertArrayEquals(record.getContractCallResult()
+                        .toByteArray(), contractResult.getFunctionResult()),
                 () -> assertEquals(record.getContractCallResult().getGasUsed(), contractResult.getGasUsed()),
                 () -> assertArrayEquals(
                         expected.getFunctionParameters().toByteArray(), contractResult.getFunctionParameters()),
-                () -> assertEquals(expected.getGas(), contractResult.getGasSupplied()));
+                () -> assertEquals(expected.getGas(), contractResult.getGasLimit()));
     }
 
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody) {
