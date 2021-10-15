@@ -282,7 +282,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         jdbcOperations
                 .update("insert into transaction (charged_tx_fee, entity_id, initial_balance, max_fee, memo, " +
                                 "node_account_id, payer_account_id, result, transaction_bytes, " +
-                                "transaction_hash, type, valid_duration_seconds, valid_start_ns, consensus_timestamp)" +
+                                "transaction_hash, type, valid_duration_seconds, valid_start_ns, consensus_ns)" +
                                 " values" +
                                 " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         transaction.getChargedTxFee(),
