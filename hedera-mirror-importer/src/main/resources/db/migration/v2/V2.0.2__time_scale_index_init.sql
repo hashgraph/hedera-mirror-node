@@ -152,7 +152,7 @@ alter table token_account
 alter table token_balance
     add primary key (consensus_timestamp, account_id, token_id);
 create index if not exists token_balance__timestamp_token
-    on token_balance (consensus_timestamp, token_id);
+    on token_balance (consensus_timestamp desc, token_id);
 
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp
