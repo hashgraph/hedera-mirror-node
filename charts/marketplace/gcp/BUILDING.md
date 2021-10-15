@@ -19,8 +19,8 @@ Follow the GKE [quickstart](https://cloud.google.com/kubernetes-engine/docs/quic
 
 ## Set environment variables
 
-First ensure the following environment variables are populated with the appropriate version and names.
-These variables will be used for the remainder of the document.
+First ensure the following environment variables are populated with the appropriate version and names. These variables
+will be used for the remainder of the document.
 
     NAME="marketplace"
     NAMESPACE="marketplace"
@@ -28,10 +28,10 @@ These variables will be used for the remainder of the document.
 
 # Building
 
-Apps are required to supply a `deployer` container image which is used in UI-based deployment.
-The image should extend from one of the base images provided in the marketplace-k8s-app-tools registry.
-This solution currently extends `gcr.io/cloud-marketplace-tools/k8s/deployer_helm`. Our deployer image build logic
-is specified in the [Dockerfile](Dockerfile).
+Apps are required to supply a `deployer` container image which is used in UI-based deployment. The image should extend
+from one of the base images provided in the marketplace-k8s-app-tools registry. This solution currently
+extends `gcr.io/cloud-marketplace-tools/k8s/deployer_helm`. Our deployer image build logic is specified in
+the [Dockerfile](Dockerfile).
 
 Additionally, GCP Marketplace restricts applications to images pulled from the Marketplace registry. Since the Mirror
 Node uses some third party images like PostgreSQL, we need to re-publish these images to our staging registry and keep
@@ -49,8 +49,9 @@ The mpdev tool is provided by Google Cloud Platform Marketplace to help verify t
 
 ## Verify
 
-Run `mpdev verify` to automatically install the application in a new namespace, execute acceptance tests against it and uninstall it.
-Ensure [schema-test.yaml](schema-test.yaml) contains defaults for any required fields in [schema.yaml](schema.yaml).
+Run `mpdev verify` to automatically install the application in a new namespace, execute acceptance tests against it and
+uninstall it. Ensure [schema-test.yaml](schema-test.yaml) contains defaults for any required fields
+in [schema.yaml](schema.yaml).
 
     mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
 
@@ -79,8 +80,8 @@ Or you can simply delete the entire namespace if you created it during the insta
 
 # Releasing
 
-Once all local testing is completed successfully and the images are tagged, run the below commands to republish the images
-to the staging registry:
+Once all local testing is completed successfully and the images are tagged, run the below commands to republish the
+images to the staging registry:
 
     git checkout "tags/v${TAG}"
     cd charts/marketplace/gcp
@@ -88,8 +89,8 @@ to the staging registry:
 
 ## Open Source Compliance
 
-As part of submission to marketplace, a list of sources and licenses used by the distroless java images is required.
-To generate the list for the grpc and importer images:
+As part of submission to marketplace, a list of sources and licenses used by the distroless java images is required. To
+generate the list for the grpc and importer images:
 
     cd charts/marketplace/gcp/open-source-compliance
     ./generate.sh "${TAG}"
