@@ -82,7 +82,7 @@ using the protobuf and normalize it into the other fields.
 ```sql
 create table if not exists contract_result
 (
-  amount               bigint             not null,
+  amount               bigint             null,
   bloom                bytea              not null,
   call_result          bytea              not null,
   consensus_timestamp  bigint primary key not null,

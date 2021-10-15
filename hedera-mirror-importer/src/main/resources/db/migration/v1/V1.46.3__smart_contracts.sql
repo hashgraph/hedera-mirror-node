@@ -11,17 +11,21 @@ create table if not exists contract
 alter table if exists contract
     add primary key (id);
 
+create temp table if not exists contract_transaction on commit drop as
+select consensus_ns, entity_id, payer_account_id, result, type
+from transaction
+where entity_id is not null
+  and type in (7, 8, 9, 22);
+
 -- Ensure entities associated with contract transactions are properly marked as contracts
-with contract_transaction as (
+with ct as (
     select distinct entity_id
-    from transaction
-    where entity_id is not null
-      and type in (7, 8, 9, 22)
+    from contract_transaction
 )
 update entity e
 set type = 2
-from contract_transaction t
-where e.id = t.entity_id
+from ct
+where e.id = ct.entity_id
   and e.type <> 2;
 
 -- Move contract entities into contract and delete from entity
@@ -36,7 +40,7 @@ from contract_entity;
 -- Populate the new contract.obtainer_id from the non-fee paying entity associated with a contract delete
 with contract_delete as (
     select distinct ct.consensus_timestamp, ct.entity_id as obtainer_id, t.entity_id as contract_id
-    from transaction t
+    from contract_transaction t
              left join crypto_transfer ct on ct.consensus_timestamp = t.consensus_ns
     where t.type = 22
       and t.result = 22
@@ -71,15 +75,15 @@ create index if not exists contract_history__timestamp_range on contract_history
 -- contract_log
 create table if not exists contract_log
 (
-    bloom               bytea  not null,
-    consensus_timestamp bigint not null,
-    contract_id         bigint not null,
-    data                bytea  not null,
-    index               int    not null,
-    topic0              text   null,
-    topic1              text   null,
-    topic2              text   null,
-    topic3              text   null,
+    bloom               bytea       not null,
+    consensus_timestamp bigint      not null,
+    contract_id         bigint      not null,
+    data                bytea       not null,
+    index               int         not null,
+    topic0              varchar(64) null,
+    topic1              varchar(64) null,
+    topic2              varchar(64) null,
+    topic3              varchar(64) null,
     primary key (consensus_timestamp, index)
 );
 
@@ -112,7 +116,7 @@ alter table if exists contract_result
 -- Populate the new contract_result.amount from the aggregated non-fee crypto transfers associated with contract create and call transactions
 with contract_call as (
     select distinct ct.consensus_timestamp, sum(ct.amount) as amount
-    from transaction t
+    from contract_transaction t
              left join crypto_transfer ct on ct.consensus_timestamp = t.consensus_ns
     where t.type in (7, 8)
       and (ct.entity_id = t.payer_account_id or ct.entity_id < 100)
