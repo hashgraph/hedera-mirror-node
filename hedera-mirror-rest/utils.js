@@ -368,7 +368,7 @@ const validateClauseAndValues = (clause, values) => {
   }
 };
 
-const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
+const parseAccountIdQueryParam = (parsedQueryParams, columnName, paramCount = 1) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
     (value) => EntityId.fromString(value).getEncodedId(),
@@ -381,7 +381,7 @@ const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   );
 };
 
-const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
+const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}, paramCount) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.TIMESTAMP],
     (value) => parseTimestampParam(value),
@@ -419,7 +419,7 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
 /**
  * Parse the type=[credit | debit] parameter
  */
-const parseCreditDebitParams = (parsedQueryParams, columnName) => {
+const parseCreditDebitParams = (parsedQueryParams, columnName, paramCount) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
     (value) => value,
@@ -498,8 +498,8 @@ const parseBooleanValue = (value) => {
  * @param {String} sqlQuery MySql style query
  * @return {String} SQL query with Postgres style positional parameters
  */
-const convertMySqlStyleQueryToPostgres = (sqlQuery) => {
-  let paramsCount = 1;
+const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
+  let paramsCount = startIndex;
   const namedParamIndex = {};
   return sqlQuery.replace(/\?([a-zA-Z][a-zA-Z0-9]*)?/g, (s) => {
     let index = namedParamIndex[s];
@@ -867,13 +867,19 @@ const formatComparator = (comparator) => {
  */
 const parseTokenBalances = (tokenBalances) => {
   return tokenBalances
-    ? tokenBalances.map((tokenBalance) => {
-        const {token_id: tokenId, balance} = tokenBalance;
-        return {
-          token_id: EntityId.fromString(tokenId).toString(),
-          balance,
-        };
-      })
+    ? tokenBalances
+        .map((tokenBalance) => {
+          const {token_id: tokenId, balance} = tokenBalance;
+          if (_.isNil(tokenId)) {
+            return null;
+          }
+
+          return {
+            token_id: EntityId.fromString(tokenId).toString(),
+            balance,
+          };
+        })
+        .filter((x) => !!x)
     : [];
 };
 

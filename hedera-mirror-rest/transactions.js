@@ -20,7 +20,10 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 const utils = require('./utils');
+const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
@@ -34,53 +37,138 @@ const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel'
  * @param {boolean} includeExtraInfo - include extra info: the nft transfer list, the assessed custom fees, and etc
  * @return {string}
  */
-const getSelectClauseWithTransfers = (includeExtraInfo) => {
+const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery) => {
+  const transactionTimeStampCte = (modifyingQuery) => {
+    let timestampFilter = '';
+
+    // add a pre-clause where a timestamp filter is applied
+    const filteredTransactions = !_.isUndefined(modifyingQuery);
+    if (filteredTransactions) {
+      timestampFilter = `timestampFilter as (${modifyingQuery}),`;
+    }
+
+    const tquery = `select 
+                      t.consensus_ns AS consensus_timestamp, 
+                      t.payer_account_id, 
+                      t.valid_start_ns,
+                      t.memo,
+                      t.node_account_id,
+                      t.charged_tx_fee,
+                      t.valid_duration_seconds,
+                      t.max_fee,
+                      t.transaction_hash,
+                      t.scheduled,
+                      t.entity_id,
+                      t.transaction_bytes,
+                      t.result,
+                      t.type
+                    from transaction as t
+                      ${
+                        filteredTransactions ? 'join timestampFilter tf on t.consensus_ns = tf.consensus_timestamp' : ''
+                      }
+                    order by consensus_timestamp desc
+                    ${filteredTransactions ? '' : 'limit $1'}`;
+
+    return `${timestampFilter}
+      tlist as (${tquery})`;
+  };
+
   // aggregate crypto transfers, token transfers, and nft transfers
-  const aggregateCryptoTransferQuery = `
+  const cryptoTransferListCte = `c_list as (
+      select jsonb_agg(jsonb_build_object(
+              'amount', ctr.amount,
+              'entity_id', ctr.entity_id
+          ) order by ctr.entity_id, ctr.amount
+        ) as ctr_list,
+        ctr.consensus_timestamp,
+        tlist.payer_account_id
+      from crypto_transfer ctr
+      join tlist on ctr.consensus_timestamp = tlist.consensus_timestamp
+      group by ctr.consensus_timestamp, payer_account_id
+  )`;
+
+  const tokenTransferListCte = `t_list as (
     select jsonb_agg(jsonb_build_object(
-        'amount', amount,
-        'entity_id', entity_id
-      ) order by entity_id, amount
-    )
-    from crypto_transfer
-    where crypto_transfer.consensus_timestamp = t.consensus_ns
-  `;
-  const aggregateTokenTransferQuery = `
+          'account_id', ttr.account_id,
+          'amount', ttr.amount,
+          'token_id', ttr.token_id
+        ) order by ttr.token_id, ttr.account_id
+      ) as ttr_list,
+      ttr.consensus_timestamp,
+      tlist.payer_account_id
+    from token_transfer ttr
+    join tlist on ttr.consensus_timestamp = tlist.consensus_timestamp
+    group by ttr.consensus_timestamp, payer_account_id
+  )`;
+
+  const nftTransferListCte = `nft_list as (
     select jsonb_agg(jsonb_build_object(
-        'account_id', account_id,
-        'amount', amount,
-        'token_id', token_id
-      ) order by token_id, account_id
-    )
-    from token_transfer
-    where token_transfer.consensus_timestamp = t.consensus_ns
-  `;
-  const aggregateNftTransferQuery = `
-    select jsonb_agg(jsonb_build_object(
-      'receiver_account_id', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-      'sender_account_id', ${NftTransfer.SENDER_ACCOUNT_ID},
-      'serial_number', ${NftTransfer.SERIAL_NUMBER},
-      'token_id', ${NftTransfer.TOKEN_ID}
-      ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER}
-    )
+          'receiver_account_id', ${NftTransfer.RECEIVER_ACCOUNT_ID},
+          'sender_account_id', ${NftTransfer.SENDER_ACCOUNT_ID},
+          'serial_number', ${NftTransfer.SERIAL_NUMBER},
+          'token_id', ${NftTransfer.TOKEN_ID}
+        ) order by ${NftTransfer.TOKEN_ID_FULL_NAME}, ${NftTransfer.SERIAL_NUMBER_FULL_NAME}
+      ) as ntr_list,
+      ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME},
+      tlist.payer_account_id
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-    where ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
-  `;
-  const aggregateAssessedCustomFeeQuery = `
+    join tlist on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
+    group by ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}, payer_account_id
+  )`;
+
+  const assessedFeeListCte = `fee_list as (
     select jsonb_agg(jsonb_build_object(
-      'amount', ${AssessedCustomFee.AMOUNT},
-      'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
-      'effective_payer_account_ids', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
-      'token_id', ${AssessedCustomFee.TOKEN_ID}
-      ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT}
-    )
+          'amount', ${AssessedCustomFee.AMOUNT},
+          'collector_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+          'effective_payer_account_ids', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
+          'payer_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+          'token_id', ${AssessedCustomFee.TOKEN_ID}
+        ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT}
+      ) as ftr_list,
+      ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME},
+      tlist.payer_account_id
     from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
-    where ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}
-  `;
+    join tlist on ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
+    group by ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}, payer_account_id
+  )`;
+
+  const transfersListCte = (includeExtraInfo) => {
+    return `transfer_list as (
+      select coalesce(t.consensus_timestamp, ctrl.consensus_timestamp, ttrl.consensus_timestamp${
+        includeExtraInfo ? ', ntrl.consensus_timestamp, ftrl.consensus_timestamp' : ''
+      }) AS consensus_timestamp,
+        ctrl.ctr_list,
+        ttrl.ttr_list
+        ${includeExtraInfo ? ', ntrl.ntr_list' : ''}
+        ${includeExtraInfo ? ', ftrl.ftr_list' : ''}
+        , coalesce(t.payer_account_id, ctrl.payer_account_id, ttrl.payer_account_id${
+          includeExtraInfo ? ', ntrl.payer_account_id, ftrl.payer_account_id' : ''
+        }) AS payer_account_id, 
+        t.valid_start_ns,
+        t.memo,
+        t.node_account_id,
+        t.charged_tx_fee,
+        t.valid_duration_seconds,
+        t.max_fee,
+        t.transaction_hash,
+        t.scheduled,
+        t.entity_id,
+        t.transaction_bytes,
+        t.result,
+        t.type
+      from tlist t
+      full outer join c_list ctrl on t.consensus_timestamp = ctrl.consensus_timestamp
+      full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp
+      ${includeExtraInfo ? 'full outer join nft_list ntrl on t.consensus_timestamp = ntrl.consensus_timestamp' : ''}
+      ${includeExtraInfo ? 'full outer join fee_list ftrl on t.consensus_timestamp = ftrl.consensus_timestamp' : ''}
+    )`;
+  };
+  const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte];
+
   const fields = [
     't.payer_account_id',
     't.memo',
-    't.consensus_ns',
+    't.consensus_timestamp',
     't.valid_start_ns',
     `coalesce(ttr.result, 'UNKNOWN') AS result`,
     `coalesce(ttt.name, 'UNKNOWN') AS name`,
@@ -92,16 +180,20 @@ const getSelectClauseWithTransfers = (includeExtraInfo) => {
     't.scheduled',
     't.entity_id',
     't.transaction_bytes',
-    `(${aggregateCryptoTransferQuery}) AS crypto_transfer_list`,
-    `(${aggregateTokenTransferQuery}) AS token_transfer_list`,
+    `t.ctr_list AS crypto_transfer_list`,
+    `t.ttr_list AS token_transfer_list`,
   ];
 
   if (includeExtraInfo) {
-    fields.push(`(${aggregateNftTransferQuery}) AS nft_transfer_list`);
-    fields.push(`(${aggregateAssessedCustomFeeQuery}) AS assessed_custom_fees`);
+    ctes.push(nftTransferListCte, assessedFeeListCte);
+    fields.push(`t.ntr_list AS nft_transfer_list`);
+    fields.push(`t.ftr_list AS assessed_custom_fees`);
   }
 
-  return `SELECT
+  // push transfers list last to ensure CTE's are in order
+  ctes.push(transfersListCte(includeExtraInfo));
+  return `with ${ctes.join(',\n')}
+    SELECT
     ${fields.join(',\n')}
   `;
 };
@@ -194,7 +286,7 @@ const createTransferLists = (rows) => {
     const payerAccountId = EntityId.fromEncodedId(row.payer_account_id).toString();
     return {
       charged_tx_fee: Number(row.charged_tx_fee),
-      consensus_timestamp: utils.nsToSecNs(row.consensus_ns),
+      consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
       entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
@@ -236,12 +328,11 @@ const createTransferLists = (rows) => {
  */
 const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) => {
   return `
-    ${getSelectClauseWithTransfers(includeExtraInfo)}
-    FROM ( ${innerQuery} ) AS tlist
-       JOIN transaction t ON tlist.consensus_timestamp = t.consensus_ns
+    ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
+    FROM transfer_list t
        LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = t.result
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-     ORDER BY t.consensus_ns ${order}`;
+     ORDER BY t.consensus_timestamp ${order}`;
 };
 
 /**
@@ -359,12 +450,13 @@ const getTransactionsInnerQuery = function (
     resultTypeQuery,
     transactionTypeQuery
   );
-  const transactionOnlyQuery = `
-    SELECT consensus_ns AS consensus_timestamp
-    FROM transaction AS t
+  const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
+    ? undefined
+    : `select consensus_ns as consensus_timestamp, valid_start_ns
+    from transaction as t
     ${transactionWhereClause}
-    ORDER BY consensus_ns ${order}
-    ${namedLimitQuery}`;
+    order by consensus_ns ${order}
+    ${_.isNil(namedLimitQuery) ? '' : namedLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(
@@ -426,13 +518,20 @@ const getTransactionsInnerQuery = function (
 const reqToSql = function (req) {
   // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
   const parsedQueryParams = req.query;
-  const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
-  const [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
+  let sqlParams = [];
+  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
+  accountQuery = utils.convertMySqlStyleQueryToPostgres(accountQuery, sqlParams.length + 1);
+  sqlParams = sqlParams.concat(accountParams);
+  let [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_ns');
+  tsQuery = utils.convertMySqlStyleQueryToPostgres(tsQuery, sqlParams.length + 1);
+  sqlParams = sqlParams.concat(tsParams);
+  let [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
+  creditDebitQuery = utils.convertMySqlStyleQueryToPostgres(creditDebitQuery, sqlParams.length + 1);
+  sqlParams = sqlParams.concat(creditDebitParams);
   const resultTypeQuery = utils.parseResultParams(req, 't.result');
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  const sqlParams = accountParams.concat(tsParams).concat(creditDebitParams).concat(params);
+  sqlParams = sqlParams.concat(params);
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,
@@ -447,7 +546,7 @@ const reqToSql = function (req) {
 
   return {
     limit,
-    query: utils.convertMySqlStyleQueryToPostgres(sqlQuery),
+    query: utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams.length),
     order,
     params: sqlParams,
   };
@@ -523,17 +622,22 @@ const getOneTransaction = async (req, res) => {
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduledQuery = getScheduledQuery(req.query);
-  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
+  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), config.maxLimit];
   const whereClause = buildWhereClause('t.payer_account_id = ?', 't.valid_start_ns = ?', scheduledQuery);
   const includeExtraInfo = true;
 
+  const innerQuery = `select consensus_ns AS consensus_timestamp, valid_start_ns
+                      from transaction AS t
+                        ${whereClause}
+                      order by consensus_timestamp desc
+                      limit $3`;
+
   const sqlQuery = `
-    ${getSelectClauseWithTransfers(includeExtraInfo)}
-    FROM transaction t
+    ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
+    FROM transfer_list t
     JOIN t_transaction_results ttr ON ttr.proto_id = t.result
     JOIN t_transaction_types ttt ON ttt.proto_id = t.type
-    ${whereClause}
-    ORDER BY consensus_ns ASC`;
+    ORDER BY t.consensus_timestamp ASC`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
   if (logger.isTraceEnabled()) {

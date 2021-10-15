@@ -89,9 +89,27 @@ const getAccountQuery = (
   }
 
   const query = `
-    select ab.balance as account_balance,
-       ab.consensus_timestamp as consensus_timestamp,
-       coalesce(ab.account_id, e.id) as entity_id,
+    with ab_tb as (
+      select json_agg(
+          json_build_object(
+            'token_id', tb.token_id::text,
+            'balance', tb.balance
+          ) order by tb.token_id ${order || ''}
+        ) as token_bals,
+        ab.balance             as balance,
+        ab.consensus_timestamp as consensus_timestamp,
+        ab.account_id          as account_id
+      from account_balance ab
+      left outer join token_balance tb
+        on ab.account_id = tb.account_id and ab.consensus_timestamp = tb.consensus_timestamp
+      where ${balanceWhereFilter}
+      group by ab.consensus_timestamp, ab.account_id, ab.balance
+      order by ab.account_id ${order || ''}
+      ${limitQuery || ''}
+    )
+    select ab_tb.balance as account_balance,
+      ab_tb.consensus_timestamp as consensus_timestamp,
+       coalesce(ab_tb.account_id, e.id) as entity_id,
        e.expiration_timestamp,
        e.auto_renew_period,
        e.key,
@@ -99,23 +117,8 @@ const getAccountQuery = (
        e.max_automatic_token_associations,
        e.memo,
        e.receiver_sig_required,
-       (
-         select json_agg(
-           json_build_object(
-             'token_id', token_id::text,
-             'balance', balance
-           ) order by token_id ${order || ''}
-         )
-         from token_balance
-         where account_id = ab.account_id and consensus_timestamp = ab.consensus_timestamp
-       ) token_balances
-    from (
-      select *
-      from account_balance ab
-      where ${balanceWhereFilter}
-      order by ab.account_id ${order || ''}
-      ${limitQuery || ''}
-    ) ab
+       ab_tb.token_bals as token_balances
+    from ab_tb
     ${joinType} join (
       select
         id,
@@ -132,8 +135,8 @@ const getAccountQuery = (
       where ${entityWhereFilter}
       order by e.id ${order || ''}
       ${limitQuery || ''}
-    ) e on e.id = ab.account_id
-    order by coalesce(ab.account_id, e.id) ${order || ''}
+    ) e on e.id = ab_tb.account_id
+    order by coalesce(ab_tb.account_id, e.id) ${order || ''}
     ${limitQuery || ''}`;
 
   const params = balancesAccountQuery.params

@@ -849,6 +849,35 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
 
   const transferWhereQuery = `where ${transferConditions.join('\nand ')}`;
 
+  const serialTransferCte = getCte(
+    'serial_transfers',
+    nftTransferHistoryCteSelectFields.join(',\n'),
+    `from ${NftTransfer.tableName} ${NftTransfer.tableAlias}`,
+    '',
+    transferWhereQuery
+  );
+
+  const tokenTransactionCte = getCte(
+    'token_transactions',
+    nftTransferHistorySelectFields.join(',\n'),
+    `from serial_transfers ${NftTransfer.tableAlias}`,
+    `${joinTransactionClause} and ${NftTransfer.TOKEN_ID_FULL_NAME} = ${Transaction.ENTITY_ID_FULL_NAME}`,
+    ''
+  );
+
+  const tokenTransferCte = getCte(
+    'token_transfers',
+    nftTransferHistorySelectFields.join(',\n'),
+    `from serial_transfers ${NftTransfer.tableAlias}`,
+    `${joinTransactionClause} and ${Transaction.ENTITY_ID_FULL_NAME} is null`,
+    ''
+  );
+
+  const cteQuery = `with ${serialTransferCte}, ${tokenTransactionCte}, ${tokenTransferCte}
+  select * from token_transactions
+  union
+  select * from token_transfers`;
+
   const unionQuery = `union\n${deleteQuery}`;
 
   const deleteWhereCondition = `where ${deleteConditions.join('\nand ')}`;
@@ -856,15 +885,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const orderQuery = `order by ${NftTransfer.CONSENSUS_TIMESTAMP} ${order}`;
   const limitQuery = `limit $${params.push(limit)}`;
 
-  const finalQuery = [
-    transferQuery,
-    joinTransactionClause,
-    transferWhereQuery,
-    unionQuery,
-    deleteWhereCondition,
-    orderQuery,
-    limitQuery,
-  ]
+  const finalQuery = [cteQuery, unionQuery, deleteWhereCondition, orderQuery, limitQuery]
     .filter((q) => q !== '')
     .join('\n');
 
@@ -904,6 +925,22 @@ const nftDeleteHistorySelectQuery = [
   nftDeleteHistorySelectFields.join(',\n'),
   `from ${Transaction.tableName} ${Transaction.tableAlias}`,
 ].join('\n');
+
+const nftTransferHistoryCteSelectFields = [
+  NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME,
+  NftTransfer.RECEIVER_ACCOUNT_ID_FULL_NAME,
+  NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME,
+  NftTransfer.TOKEN_ID_FULL_NAME,
+];
+
+const getCte = (cteName, select, from, join, where) => {
+  return `${cteName} as (
+    select ${select}
+    ${from}
+    ${join}
+    ${where}
+  )`;
+};
 
 /**
  * Handler function for /api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions API.
