@@ -212,17 +212,22 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContractResult() {
         // given
-        ContractResult expectedContractResult = new ContractResult(15L, "function parameters".getBytes(),
-                10000L, "call result".getBytes(), 10000L);
+        ContractResult contractResult = new ContractResult();
+        contractResult.setCallResult(new byte[] {'c'});
+        contractResult.setConsensusTimestamp(15L);
+        contractResult.setFunctionParameters(new byte[] {'p'});
+        contractResult.setFunctionResult(new byte[] {'r'});
+        contractResult.setGasLimit(10000L);
+        contractResult.setGasUsed(999L);
 
         // when
-        sqlEntityListener.onContractResult(expectedContractResult);
+        sqlEntityListener.onContractResult(contractResult);
         completeFileAndCommit();
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(1, contractResultRepository.count());
-        assertExistsAndEquals(contractResultRepository, expectedContractResult, 15L);
+        assertExistsAndEquals(contractResultRepository, contractResult, 15L);
     }
 
     @Test

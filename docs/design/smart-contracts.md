@@ -27,17 +27,30 @@ node is storing the appropriate smart contract information and making it retriev
 
 #### Contract
 
-Create a contract table that inherits from the entity table. A database migration should move entries in `entity` into
-`contract` if they are of type contract or have contract create or update transactions. The contract-specific fields
-will need to be marked as nullable since we didn't store them on any existing tables.
+Create a contract table that has most of the same fields as the entity table. A database migration should move entries
+in `entity` into `contract` if they are of type contract or have contract create or update transactions. The
+contract-specific fields will need to be marked as nullable since we didn't store them on any existing tables.
 
 ```sql
 create table if not exists contract
 (
-  file_id         bigint null,
-  initial_balance bigint null,
-  obtainer_id     bigint null
-) inherits (entity);
+  auto_renew_period    bigint             null,
+  created_timestamp    bigint             null,
+  deleted              boolean            null,
+  expiration_timestamp bigint             null,
+  file_id              bigint             null,
+  id                   bigint             not null,
+  key                  bytea              null,
+  memo                 text    default '' not null,
+  num                  bigint             not null,
+  obtainer_id          bigint             null,
+  proxy_account_id     bigint             null,
+  public_key           character varying  null,
+  realm                bigint             not null,
+  shard                bigint             not null,
+  timestamp_range      int8range          not null,
+  type                 integer default 2  not null
+);
 
 alter table if exists contract
   add primary key (id);
@@ -84,17 +97,20 @@ create table if not exists contract_result
 
 #### Contract Log
 
-Create a new table to store the results of the contract's log output
+Create a new table to store the results of the contract's log output.
 
 ```sql
 create table if not exists contract_log
 (
-  bloom               bytea                    not null,
-  consensus_timestamp bigint                   not null,
-  contract_id         bigint                   not null,
-  index               int                      not null,
-  data                bytea                    not null,
-  topics              bytea array default '{}' not null,
+  bloom               bytea  not null,
+  consensus_timestamp bigint not null,
+  contract_id         bigint not null,
+  data                bytea  not null,
+  index               int    not null,
+  topic0              text   null,
+  topic1              text   null,
+  topic2              text   null,
+  topic3              text   null,
   primary key (consensus_timestamp, index)
 );
 ```
@@ -134,7 +150,6 @@ create table if not exists contract_log
       "deleted": false,
       "expiration_timestamp": null,
       "file_id": 1000,
-      "initial_balance": 100,
       "memo": "First contract",
       "obtainer_id": null,
       "proxy_account_id": "0.0.100",
@@ -172,7 +187,6 @@ Optional filters
   "contract_id": "0.0.10001",
   "deleted": false,
   "file_id": "0.0.1000",
-  "initial_balance": 100,
   "memo": "First contract",
   "obtainer_id": "0.0.101",
   "proxy_account_id": "0.0.100",
