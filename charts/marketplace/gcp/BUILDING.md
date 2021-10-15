@@ -41,7 +41,7 @@ Run the below commands to re-tag an existing image for testing with Marketplace:
 
     SRC_TAG="x.y.z"
     cd charts/marketplace/gcp
-    ./release.sh "${SRC_TAG}" ${TAG}"
+    ./release.sh "${SRC_TAG}" "${TAG}"
 
 # Testing
 

@@ -17,19 +17,13 @@ x-google-marketplace:
   publishedVersion: "$TAG"
   publishedVersionMetadata:
     releaseNote: >-
-      v0.37 brings many new features to the mirror node marketplace application since v0.27.
-      This upgrade includes breaking changes. Please refer to <a href"https://github.com/hashgraph/hedera-mirror-node/tree/main/charts/marketplace/gcp#v037">v0.37 Upgrade</a> for additional upgrade steps.
 
-      The largest feature introduced since v0.13 is that of the Hedera Token Service (HTS) which allows for the creation and management of custom tokens on the Hedera network.
-      Token entity types are now ingested to the DB and can be queried through new REST APIs.
-      Support for the new v5 <a href="https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats">Record and Event Stream File Formats</a> introduced in HAPI v0.11.0 was added.
-      Topic fragmentation support was added to the ingestion process as well as exposed through the appropriate REST and gRPC APIs.
-      State Proof alpha REST API was added to support Mirror node users who want to verify the cryptographic claims of submitted transactions for themselves.
-      <a href"https://swagger.io/specification">OpenAPI 3.0</a> specification support was added to the REST API along with a docs endpoint for up to date documentation and REST API curl support.
-      DB and process memory optimizations were made to improve the ingestion rate with at least 2x-3x improvements.
-      `startDate` and `endDate` properties were added to enable Mirror node users the ability to specify a time range for data processing.
+      v0.42 brings support for <a href"https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-18.md">HTS custom fees</a>,
+      <a href"https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-18.md">automatic token associations</a>, and
+      <a href"https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-24.md">the HTS pause feature</a>, as well as
+      various new REST APIs and performance improvements.  There are no breaking changes in this release, so upgrading should be a smooth process.
+      For detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>
 
-      Many more features went into the release, for detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>.
     # releaseTypes - Feature | BugFix | Security
     releaseTypes:
       - Feature
@@ -81,7 +75,7 @@ properties:
   namespace:
     type: string
     x-google-marketplace:
-      type: NAMESPACE  
+      type: NAMESPACE
   db.owner.password:
     type: string
     description: The password used by the db owner to connect to the database for schema migrations
