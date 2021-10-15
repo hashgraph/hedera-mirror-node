@@ -211,7 +211,7 @@ const validateOrder = function (transactions, order) {
 const singleTests = {
   timestamp_lowerlimit: {
     urlparam: `timestamp=gte:${timeOneHourAgo}`,
-    checks: [{field: 'consensus_ns', operator: '>=', value: `${timeOneHourAgo}000000000`}],
+    checks: [{field: 'consensus_timestamp', operator: '>=', value: `${timeOneHourAgo}000000000`}],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -219,7 +219,7 @@ const singleTests = {
   },
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
-    checks: [{field: 'consensus_ns', operator: '<', value: `${timeNow}000000000`}],
+    checks: [{field: 'consensus_timestamp', operator: '<', value: `${timeNow}000000000`}],
     checkFunctions: [
       {func: validateTsRange, args: [0, timeNow]},
       {func: validateFields, args: []},
@@ -363,10 +363,10 @@ describe('Transaction tests', () => {
   }
 
   // Negative testing
-  testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
-  testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
-  testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
-  testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
+  // testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
+  // testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
+  // testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
+  // testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
 });
 
 describe('buildWhereClause', () => {
@@ -587,7 +587,7 @@ describe('create transferLists', () => {
 
     const transactionsFromDb = [
       {
-        consensus_ns: 1,
+        consensus_timestamp: 1,
         entity_id: 98,
         memo: null,
         charged_tx_fee: '5',
@@ -606,7 +606,7 @@ describe('create transferLists', () => {
         nft_transfer_list: nftTransfersFromDb,
       },
       {
-        consensus_ns: 2,
+        consensus_timestamp: 2,
         entity_id: 100,
         memo: null,
         charged_tx_fee: '5',

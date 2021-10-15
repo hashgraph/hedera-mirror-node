@@ -356,7 +356,7 @@ const addTransaction = async (transaction) => {
   const nodeAccount = EntityId.fromString(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId();
   const entityId = EntityId.fromString(transaction.entity_id, 'entity_id', true);
   await sqlConnection.query(
-    `INSERT INTO transaction (consensus_ns, valid_start_ns, payer_account_id, node_account_id, result, type,
+    `INSERT INTO transaction (consensus_timestamp, valid_start_ns, payer_account_id, node_account_id, result, type,
                               valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id,
                               transaction_bytes)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,

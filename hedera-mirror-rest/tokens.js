@@ -845,7 +845,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   }
 
   const joinTransactionClause = `join ${Transaction.tableName} ${Transaction.tableAlias}
-    on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_NS_FULL_NAME}`;
+    on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}`;
 
   const transferWhereQuery = `where ${transferConditions.join('\nand ')}`;
 
@@ -913,7 +913,7 @@ const nftTransferHistorySelectQuery = [
 ].join('\n');
 
 const nftDeleteHistorySelectFields = [
-  `${Transaction.CONSENSUS_NS_FULL_NAME} as ${NftTransfer.CONSENSUS_TIMESTAMP}`,
+  `${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} as ${NftTransfer.CONSENSUS_TIMESTAMP}`,
   Transaction.PAYER_ACCOUNT_ID_FULL_NAME,
   Transaction.VALID_START_NS_FULL_NAME,
   `null as ${NftTransfer.RECEIVER_ACCOUNT_ID}`,
