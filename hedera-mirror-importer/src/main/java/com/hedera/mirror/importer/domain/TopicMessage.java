@@ -35,6 +35,8 @@ import org.springframework.data.domain.Persistable;
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.AccountIdDeserializer;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
+import com.hedera.mirror.importer.converter.TopicIdConverter;
+import com.hedera.mirror.importer.converter.TopicIdDeserializer;
 
 @Data
 @Entity
@@ -57,15 +59,16 @@ public class TopicMessage implements Persistable<Long>, StreamMessage {
     @JsonDeserialize(using = AccountIdDeserializer.class)
     private EntityId payerAccountId;
 
-    private int realmNum;
-
     private byte[] runningHash;
 
     private int runningHashVersion;
 
     private long sequenceNumber;
 
-    private int topicNum;
+    @Convert(converter = TopicIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
+    @JsonDeserialize(using = TopicIdDeserializer.class)
+    private EntityId topicId;
 
     private Long validStartTimestamp;
 

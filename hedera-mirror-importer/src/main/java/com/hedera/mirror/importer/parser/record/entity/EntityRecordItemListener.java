@@ -69,6 +69,7 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
@@ -340,11 +341,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         topicMessage.setConsensusTimestamp(Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
         topicMessage.setMessage(Utility.toBytes(transactionBody.getMessage()));
-        topicMessage.setRealmNum((int) topicId.getRealmNum());
         topicMessage.setRunningHash(Utility.toBytes(receipt.getTopicRunningHash()));
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());
-        topicMessage.setTopicNum((int) topicId.getTopicNum());
+        topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum(), EntityTypeEnum.TOPIC));
         entityListener.onTopicMessage(topicMessage);
     }
 
