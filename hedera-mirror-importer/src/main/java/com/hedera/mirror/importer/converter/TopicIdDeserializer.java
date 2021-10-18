@@ -34,8 +34,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @Log4j2
 public class TopicIdDeserializer extends JsonDeserializer<EntityId> {
     @Override
-    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException,
-            JsonProcessingException {
+    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
         Long value = jsonParser.readValueAs(Long.class);
         return value != null ? EntityIdEndec.decode(value, EntityTypeEnum.TOPIC) : null;
     }

@@ -38,7 +38,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
@@ -52,8 +51,7 @@ public class RedisTopicListener extends SharedTopicListener {
     private final SerializationPair<TopicMessage> messageSerializer;
     private final Map<String, Flux<TopicMessage>> topicMessages; // Topic name to active subscription
 
-    public RedisTopicListener(GrpcProperties grpcProperties,
-                              ListenerProperties listenerProperties,
+    public RedisTopicListener(ListenerProperties listenerProperties,
                               ReactiveRedisConnectionFactory connectionFactory,
                               RedisSerializer<?> redisSerializer) {
         super(listenerProperties);

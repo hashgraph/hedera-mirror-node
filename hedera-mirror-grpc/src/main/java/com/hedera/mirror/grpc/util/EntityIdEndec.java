@@ -39,6 +39,8 @@ import com.hedera.mirror.grpc.domain.EntityType;
  */
 @Log4j2
 public class EntityIdEndec {
+    public static final EntityIdEndec INSTANCE = new EntityIdEndec();
+
     static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;
     static final int NUM_BITS = 32; // bits for entity num

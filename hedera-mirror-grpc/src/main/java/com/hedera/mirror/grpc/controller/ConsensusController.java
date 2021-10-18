@@ -76,7 +76,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             throw new IllegalArgumentException("Missing required topicID");
         }
 
-        Long topicId = EntityIdEndec.encode(
+        Long topicId = EntityIdEndec.INSTANCE.encode(
                 query.getTopicID().getShardNum(),
                 query.getTopicID().getRealmNum(),
                 query.getTopicID().getTopicNum());

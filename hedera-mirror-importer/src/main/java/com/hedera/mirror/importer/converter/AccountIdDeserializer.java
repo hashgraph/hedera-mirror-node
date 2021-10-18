@@ -32,8 +32,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 
 public class AccountIdDeserializer extends JsonDeserializer<EntityId> {
     @Override
-    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException,
-            JsonProcessingException {
+    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
         Long value = jsonParser.readValueAs(Long.class);
         return value != null ? EntityIdEndec.decode(value, EntityTypeEnum.ACCOUNT) : null;
     }
