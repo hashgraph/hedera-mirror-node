@@ -33,7 +33,7 @@
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
     "long": "^4.0.0",
-    "mathjs": "^9.5.0",
+    "mathjs": "^9.5.1",
     "pg": "~8.7.1",
     "prom-client": "^13.2.0",
     "qs": "^6.10.1",
@@ -67,7 +67,7 @@
   "devDependencies": {
     "app-root-path": "^3.0.0",
     "aws-sdk-mock": "^5.4.0",
-    "axios": "^0.22.0",
+    "axios": "^0.23.0",
     "codecov": "^3.8.3",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^6.15.0",
