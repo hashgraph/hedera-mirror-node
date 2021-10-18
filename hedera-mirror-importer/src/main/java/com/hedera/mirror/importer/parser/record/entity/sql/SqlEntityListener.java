@@ -26,7 +26,11 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
@@ -134,6 +138,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
 
+    // executor service to enable parallel runs of table inserts
+    private final ExecutorService persistanceThreadPool;
+
     public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
                              DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
@@ -197,6 +204,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokens = new HashMap<>();
 
         tokenAccountState = new HashMap<>();
+
+        persistanceThreadPool = Executors.newFixedThreadPool(17); // make numThreads configurable
     }
 
     @Override
@@ -206,12 +215,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onStart() {
+        log.info("Starting new stream file persistence");
         cleanup();
     }
 
     @Override
     public void onEnd(RecordFile recordFile) {
-        executeBatches();
+        executeBatchesInParallel();
         recordFileRepository.save(recordFile);
     }
 
@@ -247,7 +257,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
-    private void executeBatches() {
+    private void executeBatchesInParallel() {
         Connection connection = null;
 
         try {
@@ -258,31 +268,39 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // insert only operations
-            assessedCustomFeePgCopy.copy(assessedCustomFees, connection);
-            contractResultPgCopy.copy(contractResults, connection);
-            cryptoTransferPgCopy.copy(cryptoTransfers, connection);
-            customFeePgCopy.copy(customFees, connection);
-            fileDataPgCopy.copy(fileData, connection);
-            liveHashPgCopy.copy(liveHashes, connection);
-            topicMessagePgCopy.copy(topicMessages, connection);
-            transactionPgCopy.copy(transactions, connection);
-            transactionSignaturePgCopy.copy(transactionSignatures, connection);
-
-            // insert operations with conflict management
+            Stopwatch entityInsertStopwatch = Stopwatch.createStarted();
             entityPgCopy.copy(entities.values(), connection);
             tokenPgCopy.copy(tokens.values(), connection);
-            // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            tokenAccountPgCopy.copy(tokenAccounts, connection);
-            nftPgCopy.copy(nfts.values(), connection); // persist nft after token entity
-            schedulePgCopy.copy(schedules.values(), connection);
+            log.info("Completed insert only copies in {}", entityInsertStopwatch);
 
-            // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
-            nftTransferPgCopy.copy(nftTransfers, connection);
-            tokenTransferPgCopy.copy(tokenTransfers, connection);
+            // insert operations with conflict management
+            List<Callable<Object>> insertWithConflictTasks = new ArrayList<>(11);
+            addCopyTask(insertWithConflictTasks, assessedCustomFeePgCopy, assessedCustomFees);
+            addCopyTask(insertWithConflictTasks, contractResultPgCopy, contractResults);
+            addCopyTask(insertWithConflictTasks, customFeePgCopy, customFees);
+            addCopyTask(insertWithConflictTasks, fileDataPgCopy, fileData);
+            addCopyTask(insertWithConflictTasks, liveHashPgCopy, liveHashes);
+            addCopyTask(insertWithConflictTasks, topicMessagePgCopy, topicMessages);
+            addCopyTask(insertWithConflictTasks, transactionPgCopy, transactions);
+            addCopyTask(insertWithConflictTasks, transactionSignaturePgCopy, transactionSignatures);
+            // pass connection used on token table to token_account and nft tables to ensure visibility of changes
+            addCopyTask(insertWithConflictTasks, tokenAccountPgCopy, tokenAccounts, connection);
+            addCopyTask(insertWithConflictTasks, nftPgCopy, nfts.values(), connection);
+            addCopyTask(insertWithConflictTasks, schedulePgCopy, schedules.values());
 
-            // handle the transfers from token dissociate transactions after nft is processed
-            tokenDissociateTransferPgCopy.copy(tokenDissociateTransfers, connection);
+            Stopwatch insertWithConflictStopwatch = Stopwatch.createStarted();
+            persistanceThreadPool.invokeAll(insertWithConflictTasks);
+            log.info("Completed insert with conflict management tasks in {}", insertWithConflictStopwatch);
+
+            List<Callable<Object>> transferTasks = new ArrayList<>(4);
+            addCopyTask(transferTasks, cryptoTransferPgCopy, cryptoTransfers);
+            addCopyTask(transferTasks, nonFeeTransferPgCopy, nonFeeTransfers);
+            addCopyTask(transferTasks, nftTransferPgCopy, nftTransfers);
+            addCopyTask(transferTasks, tokenTransferPgCopy, tokenTransfers);
+            addCopyTask(transferTasks, tokenDissociateTransferPgCopy, tokenDissociateTransfers);
+            Stopwatch transferStopwatch = Stopwatch.createStarted();
+            persistanceThreadPool.invokeAll(transferTasks);
+            log.info("Completed transfer inserts in {}", transferStopwatch);
 
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
@@ -293,6 +311,31 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cleanup();
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
+    }
+
+    private void addCopyTask(List<Callable<Object>> tasks, PgCopy pgCopy, Collection collection) {
+        addCopyTask(tasks, pgCopy, collection, DataSourceUtils.getConnection(dataSource));
+    }
+
+    private void addCopyTask(List<Callable<Object>> tasks, PgCopy pgCopy, Collection collection,
+                             Connection connection) {
+        if (collection == null || collection.isEmpty()) {
+            return;
+        }
+
+        tasks.add(Executors.callable(() -> {
+            try {
+                pgCopy.copy(collection, connection);
+            } catch (ParserException e) {
+                Thread.currentThread().interrupt();
+                throw e;
+            } catch (Exception e) {
+                Thread.currentThread().interrupt();
+                throw new ParserException(e);
+            } finally {
+                DataSourceUtils.releaseConnection(connection, dataSource);
+            }
+        }));
     }
 
     @Override
@@ -389,7 +432,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
         if (transactions.size() == sqlProperties.getBatchSize()) {
-            executeBatches();
+            executeBatchesInParallel();
         }
     }
 
