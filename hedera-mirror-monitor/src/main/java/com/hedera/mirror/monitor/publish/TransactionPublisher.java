@@ -212,7 +212,6 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private boolean validateNode(Client client, NodeProperties node) {
-        boolean valid = false;
         NodeValidationProperties nodeValidationProperties = monitorProperties.getNodeValidation();
         client.setMinBackoff(nodeValidationProperties.getMinBackoff());
         client.setMaxBackoff(nodeValidationProperties.getMaxBackoff());

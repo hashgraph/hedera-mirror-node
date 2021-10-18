@@ -41,10 +41,8 @@ public class TokenUnpauseTransactionSupplier implements TransactionSupplier<Toke
     @Override
     public TokenUnpauseTransaction get() {
 
-        TokenUnpauseTransaction transaction = new TokenUnpauseTransaction()
+        return new TokenUnpauseTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
                 .setTokenId(TokenId.fromString(tokenId));
-
-        return transaction;
     }
 }
