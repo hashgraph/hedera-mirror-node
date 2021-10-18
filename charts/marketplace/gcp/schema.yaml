@@ -19,8 +19,8 @@ x-google-marketplace:
     releaseNote: >-
 
       v0.42 brings support for <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-18.md">HTS custom fees</a>,
-      <a href"https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-23.md">automatic token associations</a>, and
-      <a href"https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-24.md">the HTS pause feature</a>, as well as
+      <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-23.md">automatic token associations</a>, and
+      <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-24.md">the HTS pause feature</a>, as well as
       various new REST APIs and performance improvements. There are no breaking changes in this release, so upgrading should be a smooth process.
       For detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>
 
