@@ -38,8 +38,7 @@ import com.hedera.mirror.grpc.domain.EntityType;
  * 4294967295 will also be human readable.
  */
 @Log4j2
-public class EntityIdEndec {
-    public static final EntityIdEndec INSTANCE = new EntityIdEndec();
+public final class EntityIdEndec {
 
     static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;
