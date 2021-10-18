@@ -31,11 +31,10 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
   MESSAGE: 'message',
-  REALM_NUM: 'realm_num',
   RUNNING_HASH: 'running_hash',
   RUNNING_HASH_VERSION: 'running_hash_version',
   SEQUENCE_NUMBER: 'sequence_number',
-  TOPIC_NUM: 'topic_num',
+  TOPIC_ID: 'topic_id',
 };
 
 const columnMap = {
@@ -58,7 +57,7 @@ const validateConsensusTimestampParam = (consensusTimestamp) => {
 const validateGetSequenceMessageParams = (topicId, seqNum) => {
   const badParams = [];
   if (!EntityId.isValidEntityId(topicId)) {
-    badParams.push(topicMessageColumns.TOPIC_NUM);
+    badParams.push(topicMessageColumns.TOPIC_ID);
   }
 
   if (!utils.isValidNum(seqNum)) {
@@ -75,7 +74,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
  */
 const validateGetTopicMessagesParams = (topicId) => {
   if (!EntityId.isValidEntityId(topicId)) {
-    throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_NUM);
+    throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_ID);
   }
 };
 
@@ -110,7 +109,7 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
 const formatTopicMessageRow = (row, messageEncoding) => {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
-    topic_id: `${config.shard}.${row[topicMessageColumns.REALM_NUM]}.${row[topicMessageColumns.TOPIC_NUM]}`,
+    topic_id: EntityId.fromEncodedId(row[topicMessageColumns.TOPIC_ID]).toString(),
     message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     running_hash_version: parseInt(row[topicMessageColumns.RUNNING_HASH_VERSION]),
@@ -151,14 +150,13 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const topicId = EntityId.fromString(topicIdStr);
   await validateTopicId(topicId, topicIdStr);
 
-  // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7. Defaults realm to 0 if not stated
+  // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
   const pgSqlQuery = `select *
                       from topic_message
-                      where realm_num = $1
-                        and topic_num = $2
-                        and sequence_number = $3
+                      where topic_id = $1
+                        and sequence_number = $2
                       limit 1`;
-  const pgSqlParams = [topicId.realm, topicId.num, seqNum];
+  const pgSqlParams = [topicId.getEncodedId(), seqNum];
 
   res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
 };
@@ -212,10 +210,9 @@ const getTopicMessages = async (req, res) => {
 const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   let pgSqlQuery = `select *
                     from topic_message
-                    where realm_num = $1
-                      and topic_num = $2`;
-  let nextParamCount = 3;
-  const pgSqlParams = [topicId.realm, topicId.num];
+                    where topic_id = $1`;
+  let nextParamCount = 2;
+  const pgSqlParams = [topicId.getEncodedId()];
 
   // add filters
   let limit;

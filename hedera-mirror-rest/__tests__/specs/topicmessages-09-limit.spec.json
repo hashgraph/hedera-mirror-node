@@ -13,32 +13,32 @@
     "topicmessages": [
       {
         "timestamp": "1234567890000000001",
-        "topic_num": 7,
+        "topic_id": 7,
         "seq_num": 1
       },
       {
         "timestamp": "1234567890000000002",
-        "topic_num": 7,
+        "topic_id": 7,
         "seq_num": 2
       },
       {
         "timestamp": "1234567890000000003",
-        "topic_num": 7,
+        "topic_id": 7,
         "seq_num": 3
       },
       {
         "timestamp": "1234567890000000004",
-        "topic_num": 7,
+        "topic_id": 7,
         "seq_num": 4
       },
       {
         "timestamp": "1234567890000000005",
-        "topic_num": 7,
+        "topic_id": 7,
         "seq_num": 5
       },
       {
         "timestamp": "1234567890000000006",
-        "topic_num": 7,
+        "topic_id": 7,
         "seq_num": 6
       }
     ]

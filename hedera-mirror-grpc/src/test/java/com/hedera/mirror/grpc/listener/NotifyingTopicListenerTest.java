@@ -55,7 +55,6 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                 "\"consensus_timestamp\":1594401417000000000," +
                 "\"message\":\"AQID\"," +
                 "\"payer_account_id\":4294968296," +
-                "\"realm_num\":0," +
                 "\"running_hash\":\"BAUG\"," +
                 "\"running_hash_version\":2," +
                 "\"sequence_number\":1," +
