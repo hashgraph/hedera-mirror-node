@@ -20,9 +20,14 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
+import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.grpc.config.CacheConfiguration;
 import com.hedera.mirror.grpc.domain.Entity;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
+    @Cacheable(cacheNames = "entity", cacheManager = CacheConfiguration.ENTITY_CACHE, unless = "#result == null")
+    Optional<Entity> findById(long entityId);
 }

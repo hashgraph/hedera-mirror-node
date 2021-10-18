@@ -157,7 +157,6 @@ public class RedisEntityListener implements BatchEntityListener {
         };
     }
 
-    // For now, we assume realm is zero. Once we optimize TopicMessage to store encoded ID we can use that instead.
     private String getChannelName(Long id) {
         return String.format(TOPIC_FORMAT, id);
     }

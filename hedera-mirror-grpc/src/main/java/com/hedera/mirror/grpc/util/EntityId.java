@@ -20,10 +20,8 @@ package com.hedera.mirror.grpc.util;
  * ‍
  */
 
-import lombok.extern.log4j.Log4j2;
-
-import com.hedera.mirror.grpc.domain.Entity;
-import com.hedera.mirror.grpc.domain.EntityType;
+import com.hederahashgraph.api.proto.java.TopicID;
+import lombok.experimental.UtilityClass;
 
 /**
  * Encodes given shard, realm, num into 8 bytes long.
@@ -37,8 +35,8 @@ import com.hedera.mirror.grpc.domain.EntityType;
  * - 65535 <br/> num: 0 - 4294967295 <br/> Placing entity num in the end has the advantage that encoded ids <=
  * 4294967295 will also be human readable.
  */
-@Log4j2
-public final class EntityIdEndec {
+@UtilityClass
+public final class EntityId {
 
     static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;
@@ -47,29 +45,19 @@ public final class EntityIdEndec {
     private static final long REALM_MASK = (1L << REALM_BITS) - 1;
     private static final long NUM_MASK = (1L << NUM_BITS) - 1;
 
-    public static Long encode(long shardNum, long realmNum, long entityNum) {
-        if (shardNum > SHARD_MASK || shardNum < 0 ||
-                realmNum > REALM_MASK || realmNum < 0 ||
-                entityNum > NUM_MASK || entityNum < 0) {
+    public static Long encode(TopicID topicID) {
+        if (topicID == null) {
             return null;
         }
-        return (entityNum & NUM_MASK) |
-                (realmNum & REALM_MASK) << NUM_BITS |
-                (shardNum & SHARD_MASK) << (REALM_BITS + NUM_BITS);
-    }
 
-    public static Entity decode(long encodedId, EntityType entityType) {
-        if (encodedId < 0) {
+        if (topicID.getShardNum() > SHARD_MASK || topicID.getShardNum() < 0 ||
+                topicID.getRealmNum() > REALM_MASK || topicID.getRealmNum() < 0 ||
+                topicID.getTopicNum() > NUM_MASK || topicID.getTopicNum() < 0) {
             return null;
         }
-        long shard = encodedId >> (REALM_BITS + NUM_BITS);
-        long realm = (encodedId >> NUM_BITS) & REALM_MASK;
-        long num = encodedId & NUM_MASK;
-        return Entity.builder()
-                .shard(shard)
-                .realm(realm)
-                .num(num)
-                .type(entityType)
-                .build();
+
+        return (topicID.getTopicNum() & NUM_MASK) |
+                (topicID.getRealmNum() & REALM_MASK) << NUM_BITS |
+                (topicID.getShardNum() & SHARD_MASK) << (REALM_BITS + NUM_BITS);
     }
 }

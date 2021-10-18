@@ -42,4 +42,4 @@ create unique index if not exists topic_message__topic_id_seqnum
     on topic_message (topic_id, sequence_number);
 
 -- remove function
-drop function if exists encodeentityid(bigint, bigint, bigint);
+drop function if exists encodeEntityId(shard bigint, realm bigint, num bigint);

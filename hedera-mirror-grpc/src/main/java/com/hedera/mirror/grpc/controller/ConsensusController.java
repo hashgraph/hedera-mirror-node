@@ -43,7 +43,7 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
-import com.hedera.mirror.grpc.util.EntityIdEndec;
+import com.hedera.mirror.grpc.util.EntityId;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 /**
@@ -76,10 +76,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             throw new IllegalArgumentException("Missing required topicID");
         }
 
-        Long topicId = EntityIdEndec.encode(
-                query.getTopicID().getShardNum(),
-                query.getTopicID().getRealmNum(),
-                query.getTopicID().getTopicNum());
+        Long topicId = EntityId.encode(query.getTopicID());
         if (topicId == null) {
             throw new IllegalArgumentException("Invalid entity ID");
         }
