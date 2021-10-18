@@ -77,7 +77,7 @@
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-security": "^1.4.0",
     "husky": "^7.0.2",
-    "jest": "^27.2.5",
+    "jest": "^27.3.0",
     "jest-circus": "^27.2.5",
     "jest-junit": "^13.0.0",
     "mock-req-res": "^1.2.0",
