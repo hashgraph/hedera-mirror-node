@@ -94,7 +94,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
         return Mono.justOrEmpty(entityRepository
-                .findByCompositeKey(grpcProperties.getShard(), filter.getRealmNum(), filter.getTopicNum()))
+                .findById(filter.getTopicId()))
                 .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
                         Mono.just(Entity.builder().type(EntityType.TOPIC).build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)
@@ -187,7 +187,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             this.last = new AtomicReference<>();
             this.startTime = Instant.now();
             this.stopwatch = Stopwatch.createStarted();
-            this.topicId = grpcProperties.getShard() + "." + filter.getRealmNum() + "." + filter.getTopicNum();
+            this.topicId = String.valueOf(filter.getTopicId());
         }
 
         private TopicMessage getLast() {

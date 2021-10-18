@@ -202,39 +202,16 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void topicNum() {
+    void topicId() {
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.topicNum(0).consensusTimestamp(future.plusNanos(1L))),
-                domainBuilder.topicMessage(t -> t.topicNum(1).consensusTimestamp(future.plusNanos(2L))),
-                domainBuilder.topicMessage(t -> t.topicNum(2).consensusTimestamp(future.plusNanos(3L)))
+                domainBuilder.topicMessage(t -> t.topicId(0).consensusTimestamp(future.plusNanos(1L))),
+                domainBuilder.topicMessage(t -> t.topicId(1).consensusTimestamp(future.plusNanos(2L))),
+                domainBuilder.topicMessage(t -> t.topicId(2).consensusTimestamp(future.plusNanos(3L)))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicNum(1)
-                .build();
-
-        topicListener.listen(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
-                .then(() -> publish(generator))
-                .expectNext(2L)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
-    }
-
-    @Test
-    void realmNum() {
-        Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.realmNum(0).consensusTimestamp(future.plusNanos(1L))),
-                domainBuilder.topicMessage(t -> t.realmNum(1).consensusTimestamp(future.plusNanos(2L))),
-                domainBuilder.topicMessage(t -> t.realmNum(2).consensusTimestamp(future.plusNanos(3L)))
-        );
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .realmNum(1)
+                .topicId(1)
                 .build();
 
         topicListener.listen(filter)
@@ -251,21 +228,25 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     void multipleSubscribers() {
         // @formatter:off
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
-                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
-                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
-                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
-                domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L)))
+                domainBuilder
+                        .topicMessage(t -> t.topicId(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
+                domainBuilder
+                        .topicMessage(t -> t.topicId(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
+                domainBuilder
+                        .topicMessage(t -> t.topicId(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
+                domainBuilder
+                        .topicMessage(t -> t.topicId(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
+                domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L)))
         );
         // @formatter:on
 
         TopicMessageFilter filter1 = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicNum(1)
+                .topicId(1)
                 .build();
         TopicMessageFilter filter2 = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicNum(2)
+                .topicId(2)
                 .build();
 
         StepVerifier stepVerifier1 = topicListener

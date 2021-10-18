@@ -47,7 +47,6 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 @Named
 public class RedisTopicListener extends SharedTopicListener {
 
-    private final GrpcProperties grpcProperties;
     private final Mono<ReactiveRedisMessageListenerContainer> container;
     private final SerializationPair<String> channelSerializer;
     private final SerializationPair<TopicMessage> messageSerializer;
@@ -58,7 +57,6 @@ public class RedisTopicListener extends SharedTopicListener {
                               ReactiveRedisConnectionFactory connectionFactory,
                               RedisSerializer<?> redisSerializer) {
         super(listenerProperties);
-        this.grpcProperties = grpcProperties;
         this.channelSerializer = SerializationPair.fromSerializer(RedisSerializer.string());
         this.messageSerializer = (SerializationPair<TopicMessage>) SerializationPair.fromSerializer(redisSerializer);
         this.topicMessages = new ConcurrentHashMap<>();
@@ -80,8 +78,7 @@ public class RedisTopicListener extends SharedTopicListener {
     }
 
     private Topic getTopic(TopicMessageFilter filter) {
-        return ChannelTopic.of(String.format("topic.%d.%d.%d",
-                grpcProperties.getShard(), filter.getRealmNum(), filter.getTopicNum()));
+        return ChannelTopic.of(String.format("topic.%d", filter.getTopicId()));
     }
 
     private Flux<TopicMessage> subscribe(Topic topic) {

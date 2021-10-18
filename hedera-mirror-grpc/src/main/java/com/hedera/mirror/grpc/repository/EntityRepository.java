@@ -20,18 +20,9 @@ package com.hedera.mirror.grpc.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.grpc.config.CacheConfiguration;
 import com.hedera.mirror.grpc.domain.Entity;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
-
-    @Cacheable(cacheNames = "entity", cacheManager = CacheConfiguration.ENTITY_CACHE, unless = "#result == null")
-    @Query(value = "select * from entity where shard = ?1 and realm = ?2 and num = ?3 limit 1",
-            nativeQuery = true)
-    Optional<Entity> findByCompositeKey(long shard, long realm, long num);
 }
