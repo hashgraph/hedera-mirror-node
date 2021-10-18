@@ -21,6 +21,18 @@ class TokenPauseTransactionSupplierTest extends AbstractTransactionSupplierTest 
                 .returns(TOKEN_ID, TokenPauseTransaction::getTokenId);
     }
 
+    @Test
+    void createWithCustomData() {
+        TokenPauseTransactionSupplier TokenPauseTransactionSupplier = new TokenPauseTransactionSupplier();
+        TokenPauseTransactionSupplier.setMaxTransactionFee(1);
+        TokenPauseTransactionSupplier.setTokenId(TOKEN_ID.toString());
+        TokenPauseTransaction actual = TokenPauseTransactionSupplier.get();
+
+        assertThat(actual)
+                .returns(ONE_TINYBAR, TokenPauseTransaction::getMaxTransactionFee)
+                .returns(TOKEN_ID, TokenPauseTransaction::getTokenId);
+    }
+
     @Override
     protected Class getSupplierClass() {
         return TokenFreezeTransactionSupplier.class;
