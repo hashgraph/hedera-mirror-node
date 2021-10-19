@@ -31,23 +31,21 @@ import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-@Disabled("Fails in CI")
 @RequiredArgsConstructor
 class RecordFileParserIntegrationTest extends IntegrationTest {
 
@@ -116,7 +114,9 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         verifyFinalDatabaseState(recordFileDescriptor1);
 
         // when
-        Assertions.assertThrows(ParserException.class, () -> recordFileParser.parse(recordFile));
+        RecordFile recordFile2 = recordFileDescriptor2.getRecordFile();
+        recordFile2.setDigestAlgorithm(null); // trigger db schema violation
+        Assertions.assertThrows(DataIntegrityViolationException.class, () -> recordFileParser.parse(recordFile2));
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);

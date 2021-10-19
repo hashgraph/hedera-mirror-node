@@ -38,6 +38,7 @@ import org.springframework.beans.factory.BeanCreationNotAllowedException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.ContractResult;
@@ -258,46 +259,47 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void executeBatchesInParallel() {
-        Connection connection = null;
-
+        // collect connections to allow for joint release after persistence
+        List<Connection> connections = new ArrayList<>();
         try {
             // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
 
-            connection = DataSourceUtils.getConnection(dataSource);
+            Connection entityConnection = DataSourceUtils.getConnection(dataSource);
+            connections.add(entityConnection);
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // insert only operations
             Stopwatch entityInsertStopwatch = Stopwatch.createStarted();
-            entityPgCopy.copy(entities.values(), connection);
-            tokenPgCopy.copy(tokens.values(), connection);
+            entityPgCopy.copy(entities.values(), entityConnection);
+            tokenPgCopy.copy(tokens.values(), entityConnection);
             log.info("Completed insert only copies in {}", entityInsertStopwatch);
 
             // insert operations with conflict management
             List<Callable<Object>> insertWithConflictTasks = new ArrayList<>(11);
-            addCopyTask(insertWithConflictTasks, assessedCustomFeePgCopy, assessedCustomFees);
-            addCopyTask(insertWithConflictTasks, contractResultPgCopy, contractResults);
-            addCopyTask(insertWithConflictTasks, customFeePgCopy, customFees);
-            addCopyTask(insertWithConflictTasks, fileDataPgCopy, fileData);
-            addCopyTask(insertWithConflictTasks, liveHashPgCopy, liveHashes);
-            addCopyTask(insertWithConflictTasks, topicMessagePgCopy, topicMessages);
-            addCopyTask(insertWithConflictTasks, transactionPgCopy, transactions);
-            addCopyTask(insertWithConflictTasks, transactionSignaturePgCopy, transactionSignatures);
-            // pass connection used on token table to token_account and nft tables to ensure visibility of changes
-            addCopyTask(insertWithConflictTasks, tokenAccountPgCopy, tokenAccounts, connection);
-            addCopyTask(insertWithConflictTasks, nftPgCopy, nfts.values(), connection);
-            addCopyTask(insertWithConflictTasks, schedulePgCopy, schedules.values());
+            connections.add(addCopyTask(insertWithConflictTasks, assessedCustomFeePgCopy, assessedCustomFees));
+            connections.add(addCopyTask(insertWithConflictTasks, contractResultPgCopy, contractResults));
+            connections.add(addCopyTask(insertWithConflictTasks, customFeePgCopy, customFees));
+            connections.add(addCopyTask(insertWithConflictTasks, fileDataPgCopy, fileData));
+            connections.add(addCopyTask(insertWithConflictTasks, liveHashPgCopy, liveHashes));
+            connections.add(addCopyTask(insertWithConflictTasks, schedulePgCopy, schedules.values()));
+            connections.add(addCopyTask(insertWithConflictTasks, topicMessagePgCopy, topicMessages));
+            connections.add(addCopyTask(insertWithConflictTasks, transactionPgCopy, transactions));
+            connections.add(addCopyTask(insertWithConflictTasks, transactionSignaturePgCopy, transactionSignatures));
+            // reuse entityConnection used on entity tables to ensure visibility of any changes
+            addCopyTask(insertWithConflictTasks, tokenAccountPgCopy, tokenAccounts, entityConnection);
+            addCopyTask(insertWithConflictTasks, nftPgCopy, nfts.values(), entityConnection);
 
             Stopwatch insertWithConflictStopwatch = Stopwatch.createStarted();
             persistanceThreadPool.invokeAll(insertWithConflictTasks);
             log.info("Completed insert with conflict management tasks in {}", insertWithConflictStopwatch);
 
             List<Callable<Object>> transferTasks = new ArrayList<>(4);
-            addCopyTask(transferTasks, cryptoTransferPgCopy, cryptoTransfers);
-            addCopyTask(transferTasks, nonFeeTransferPgCopy, nonFeeTransfers);
-            addCopyTask(transferTasks, nftTransferPgCopy, nftTransfers);
-            addCopyTask(transferTasks, tokenTransferPgCopy, tokenTransfers);
-            addCopyTask(transferTasks, tokenDissociateTransferPgCopy, tokenDissociateTransfers);
+            connections.add(addCopyTask(transferTasks, cryptoTransferPgCopy, cryptoTransfers));
+            connections.add(addCopyTask(transferTasks, nonFeeTransferPgCopy, nonFeeTransfers));
+            connections.add(addCopyTask(transferTasks, nftTransferPgCopy, nftTransfers));
+            connections.add(addCopyTask(transferTasks, tokenTransferPgCopy, tokenTransfers));
+            connections.add(addCopyTask(transferTasks, tokenDissociateTransferPgCopy, tokenDissociateTransfers));
             Stopwatch transferStopwatch = Stopwatch.createStarted();
             persistanceThreadPool.invokeAll(transferTasks);
             log.info("Completed transfer inserts in {}", transferStopwatch);
@@ -309,12 +311,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserException(e);
         } finally {
             cleanup();
-            DataSourceUtils.releaseConnection(connection, dataSource);
+            connections.stream().filter(x -> x != null).forEach(c -> DataSourceUtils.releaseConnection(c, dataSource));
         }
     }
 
-    private void addCopyTask(List<Callable<Object>> tasks, PgCopy pgCopy, Collection collection) {
-        addCopyTask(tasks, pgCopy, collection, DataSourceUtils.getConnection(dataSource));
+    private Connection addCopyTask(List<Callable<Object>> tasks, PgCopy pgCopy, Collection collection) {
+        if (CollectionUtils.isEmpty(collection)) {
+            return null;
+        }
+
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        addCopyTask(tasks, pgCopy, collection, connection);
+        return connection;
     }
 
     private void addCopyTask(List<Callable<Object>> tasks, PgCopy pgCopy, Collection collection,
@@ -332,8 +340,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             } catch (Exception e) {
                 Thread.currentThread().interrupt();
                 throw new ParserException(e);
-            } finally {
-                DataSourceUtils.releaseConnection(connection, dataSource);
             }
         }));
     }
