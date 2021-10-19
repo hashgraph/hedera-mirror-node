@@ -298,7 +298,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onEntityMerge() {
         // given
-        Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY));
+        Entity entity = getEntity(1, 1L, 1L, 0, "memo", keyFromString(KEY));
         sqlEntityListener.onEntity(entity);
 
         Entity entityAutoUpdated = getEntity(1, 5L);
@@ -337,13 +337,14 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onEntityEntityIdMerge() {
         // given
         Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, null, keyFromString(KEY2));
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, keyFromString(KEY2));
         sqlEntityListener.onEntity(entity);
 
         EntityId entityId1 = EntityId.of(0L, 0L, 1L, ACCOUNT);
         sqlEntityListener.onEntity(entityId1.toEntity());
 
-        Entity entityUpdated = getEntity(1, null, 5L, "memo-updated", null);
+        Entity entityUpdated = getEntity(1, 5L);
+        entityUpdated.setMemo("memo-updated");
         sqlEntityListener.onEntity(entityUpdated);
 
         EntityId entityId2 = EntityId.of(0L, 0L, 1L, ACCOUNT);
@@ -354,7 +355,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         Entity entityMerged = getEntity(1, 1L, 5L, "memo-updated", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, null, keyFromString(KEY2));
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityMerged, 1L);
@@ -1066,11 +1067,13 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private Entity getEntity(long id, long modifiedTimestamp) {
-        return getEntity(id, null, modifiedTimestamp, null, null);
+        return getEntity(id, null, modifiedTimestamp, null, null, null);
     }
 
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo, Key adminKey) {
-        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, adminKey, null, null, null, null, null, null);
+    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, Integer maxAutomaticTokenAssociations,
+                             String memo, Key adminKey) {
+        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, adminKey, null, null, null, null,
+                maxAutomaticTokenAssociations, null);
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
@@ -1084,8 +1087,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setDeleted(deleted);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
-        entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations != null ?
-                maxAutomaticTokenAssociations : 0);
+        entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations);
         entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setNum(id);
         entity.setRealm(0L);
