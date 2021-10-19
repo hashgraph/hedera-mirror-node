@@ -178,7 +178,7 @@ const mapTransactionResults = (rows) => {
       };
     });
     return {
-      consensusNs: v.consensus_ns,
+      consensusTimestamp: v.consensus_timestamp,
       cryptoTransfers,
     };
   });
@@ -255,10 +255,10 @@ describe('DB integration test -  utils.isValidTransactionType', () => {
   });
 });
 
-// expected transaction rows order by consensus_ns desc, only check fields consensus_ns and crypto_transfer_list
+// expected transaction rows order by consensus_timestamp desc, only check fields consensus_timestamp and crypto_transfer_list
 const expectedTransactionRowsDesc = [
   {
-    consensusNs: '1052',
+    consensusTimestamp: '1052',
     cryptoTransfers: [
       {account: '0.15.8', amount: -31},
       {account: '0.15.9', amount: 30},
@@ -266,7 +266,7 @@ const expectedTransactionRowsDesc = [
     ],
   },
   {
-    consensusNs: '1051',
+    consensusTimestamp: '1051',
     cryptoTransfers: [
       {account: '0.15.9', amount: 20},
       {account: '0.15.10', amount: -21},
@@ -274,7 +274,7 @@ const expectedTransactionRowsDesc = [
     ],
   },
   {
-    consensusNs: '1050',
+    consensusTimestamp: '1050',
     cryptoTransfers: [
       {account: '0.15.9', amount: 10},
       {account: '0.15.10', amount: -11},
@@ -283,7 +283,7 @@ const expectedTransactionRowsDesc = [
   },
 ];
 const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) => {
-  m[row.consensusNs] = row;
+  m[row.consensusTimestamp] = row;
   return m;
 }, {});
 
@@ -335,7 +335,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
   const expected = [
     {
-      consensusNs: '2064',
+      consensusTimestamp: '2064',
       cryptoTransfers: [
         {account: '0.15.63', amount: 20},
         {account: '0.15.82', amount: -21},
@@ -343,7 +343,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
       ],
     },
     {
-      consensusNs: '2063',
+      consensusTimestamp: '2063',
       cryptoTransfers: [
         {account: '0.15.63', amount: -71},
         {account: '0.15.82', amount: 70},

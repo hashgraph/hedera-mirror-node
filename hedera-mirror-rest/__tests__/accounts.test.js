@@ -300,7 +300,7 @@ describe('Accounts tests', () => {
       }
     }
     const comburl = combtest.urls.join('&');
-    test(`Accounts combinationn test: ${combtest.names} - URL: ${comburl}`, async () => {
+    test(`Accounts combination test: ${combtest.names} - URL: ${comburl}`, async () => {
       const response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
       const accounts = JSON.parse(response.text);

@@ -43,7 +43,7 @@ import com.hedera.mirror.importer.converter.UnknownIdConverter;
 public class Transaction implements Persistable<Long> {
 
     @Id
-    private Long consensusNs;
+    private Long consensusTimestamp;
 
     private Long chargedTxFee;
 
@@ -82,7 +82,7 @@ public class Transaction implements Persistable<Long> {
     @JsonIgnore
     @Override
     public Long getId() {
-        return consensusNs;
+        return consensusTimestamp;
     }
 
     @JsonIgnore

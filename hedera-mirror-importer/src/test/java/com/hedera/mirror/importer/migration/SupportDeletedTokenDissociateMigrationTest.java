@@ -59,7 +59,6 @@ import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -75,9 +74,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private static final int TRANSACTION_TYPE_TOKEN_DISSOCIATE = 41;
     private static final EntityId TREASURY = EntityId.of("0.0.200", ACCOUNT);
     private static final EntityId NEW_TREASURY = EntityId.of("0.0.201", ACCOUNT);
-
-    @Resource
-    private EntityRepository entityRepository;
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
 
     @Resource
     private JdbcOperations jdbcOperations;
@@ -163,7 +160,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 tokenDissociateTransaction(account1Nft2DissociateTimestamp, account1),
                 tokenDissociateTransaction(account2Nft2DissociateTimestamp, account2)
         );
-        transactionRepository.saveAll(transactions);
+        persistTransactions(transactions);
 
         // transfers
         tokenTransferRepository.saveAll(List.of(
@@ -235,7 +232,8 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrder(
                 new TokenTransfer(account1Ft1DissociateTimestamp, -10, ftId1, account1)
         );
-        assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
+        assertThat(findAllTransactions())
+                .containsExactlyInAnyOrderElementsOf(transactions);
     }
 
     @SneakyThrows
@@ -356,9 +354,10 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     private Transaction tokenDissociateTransaction(long consensusNs, EntityId payer) {
         Transaction transaction = new Transaction();
-        transaction.setConsensusNs(consensusNs);
+        transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(payer);
         transaction.setPayerAccountId(payer);
+        transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setResult(22);
         transaction.setType(TRANSACTION_TYPE_TOKEN_DISSOCIATE);
         transaction.setValidStartNs(consensusNs - 5);
@@ -380,6 +379,54 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                     entity.getType()
             );
         }
+    }
+
+    private void persistTransactions(List<Transaction> transactions) {
+        for (Transaction transaction : transactions) {
+            jdbcOperations
+                    .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " +
+                                    "max_fee, " +
+                                    "memo, " +
+                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
+                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
+                                    " values" +
+                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            transaction.getChargedTxFee(),
+                            transaction.getConsensusTimestamp(),
+                            transaction.getEntityId().getId(),
+                            transaction.getInitialBalance(),
+                            transaction.getMaxFee(),
+                            transaction.getMemo(),
+                            transaction.getNodeAccountId().getId(),
+                            transaction.getPayerAccountId().getId(),
+                            transaction.getResult(),
+                            transaction.isScheduled(),
+                            transaction.getTransactionBytes(),
+                            transaction.getTransactionHash(),
+                            transaction.getType(),
+                            transaction.getValidDurationSeconds(),
+                            transaction.getValidStartNs());
+        }
+    }
+
+    private List<Transaction> findAllTransactions() {
+        return jdbcOperations.query("select * from transaction", new RowMapper<>() {
+
+            @Override
+            public Transaction mapRow(ResultSet rs, int rowNum) throws SQLException {
+                Transaction transaction = new Transaction();
+                transaction.setConsensusTimestamp(rs.getLong("consensus_ns"));
+                transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT));
+                transaction.setMemo(rs.getBytes("transaction_bytes"));
+                transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityTypeEnum.ACCOUNT));
+                transaction
+                        .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityTypeEnum.ACCOUNT));
+                transaction.setResult(rs.getInt("result"));
+                transaction.setType(rs.getInt("type"));
+                transaction.setValidStartNs(rs.getLong("valid_start_ns"));
+                return transaction;
+            }
+        });
     }
 
     // Use a custom class for Entity table since its columns have changed from the current domain object

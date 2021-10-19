@@ -89,13 +89,13 @@ class Pool {
     let orderprefix = '';
     switch (callerFile) {
       case 'transactions':
-        orderprefix = 'consensus_ns';
+        orderprefix = 'consensus_timestamp';
         break;
       case 'balances':
         orderprefix = 'account_id';
         break;
       case 'accounts':
-        orderprefix = 'coalesce\\(ab.account_id, e.id\\)';
+        orderprefix = 'coalesce\\(balances.account_id, e.id\\)';
         break;
       default:
         break;
@@ -162,7 +162,7 @@ class Pool {
         case 'entity_id':
           accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
           break;
-        case 'consensus_ns':
+        case 'consensus_timestamp':
           timestamp = this.adjustRangeBasedOnConstraints(param, timestamp);
           break;
         case 'limit':
@@ -185,7 +185,7 @@ class Pool {
       const row = {};
       row.payer_account_id = EntityId.of(0n, 0n, BigInt(i)).getEncodedId();
       row.memo = Buffer.from(`Test memo ${i}`);
-      row.consensus_ns = this.toNs(this.timeNow - i);
+      row.consensus_timestamp = this.toNs(this.timeNow - i);
       row.valid_start_ns = this.toNs(this.timeNow - i - 1);
       row.result = 'SUCCESS';
       row.type = 14;
