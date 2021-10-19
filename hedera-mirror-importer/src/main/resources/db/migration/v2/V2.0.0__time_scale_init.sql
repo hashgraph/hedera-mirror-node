@@ -7,6 +7,7 @@
 create type token_pause_status as enum ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
 create type token_supply_type as enum ('INFINITE', 'FINITE');
 create type token_type as enum ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
+create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 
 -- assessed_custom_fee
 create table if not exists assessed_custom_fee
@@ -306,14 +307,6 @@ create table if not exists transaction_signature
 );
 comment on table transaction_signature is 'Transaction signatories';
 
--- t_entity_types
-create table if not exists t_entity_types
-(
-    id   integer not null,
-    name character varying(8)
-);
-comment on table t_entity_types is 'Network entity types';
-
 -- t_transaction_results
 create table if not exists t_transaction_results
 (
@@ -327,7 +320,7 @@ create table if not exists t_transaction_types
 (
     proto_id    integer not null,
     name        character varying(30),
-    entity_type integer null
+    entity_type entity_type null
 );
 comment on table t_transaction_types is 'Transaction types';
 

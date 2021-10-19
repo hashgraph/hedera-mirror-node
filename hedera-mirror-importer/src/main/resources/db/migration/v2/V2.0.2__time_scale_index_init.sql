@@ -122,10 +122,6 @@ alter table if exists schedule
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
--- t_entity_types
-alter table t_entity_types
-    add primary key (id);
-
 -- t_transaction_results
 alter table t_transaction_results
     add primary key (proto_id);
