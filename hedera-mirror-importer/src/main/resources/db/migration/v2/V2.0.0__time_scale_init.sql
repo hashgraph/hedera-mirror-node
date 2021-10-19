@@ -400,7 +400,7 @@ comment on table token_transfer is 'Crypto account token transfers';
 create table if not exists topic_message
 (
     consensus_timestamp   bigint   not null,
-    topic_id              integer  not null,
+    topic_id              bigint   not null,
     message               bytea    not null,
     running_hash          bytea    not null,
     sequence_number       bigint   not null,
