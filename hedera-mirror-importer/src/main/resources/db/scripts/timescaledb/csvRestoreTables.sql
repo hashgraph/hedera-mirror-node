@@ -54,8 +54,8 @@
 
 \copy token_transfer (token_id, account_id, consensus_timestamp, amount) from token_transfer.csv csv;
 
-\copy topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number, running_hash_version, chunk_num, chunk_total, payer_account_id, valid_start_timestamp) from topic_message.csv csv;
+\copy topic_message (consensus_timestamp, topic_id, message, running_hash, sequence_number, running_hash_version, chunk_num, chunk_total, payer_account_id, valid_start_timestamp) from topic_message.csv csv;
 
-\copy transaction (consensus_ns, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled) from transaction.csv csv;
+\copy transaction (consensus_timestamp, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled) from transaction.csv csv;
 
 \copy transaction_signature (consensus_timestamp, public_key_prefix, entity_id, signature) from transaction_signature.csv csv;

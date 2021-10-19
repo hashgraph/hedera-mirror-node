@@ -345,7 +345,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                                     TransactionTypeEnum transactionTypeEnum) {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
-        transaction.setConsensusNs(consensusNs);
+        transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(EntityId.of(0, 0, entityNum, entityType));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
@@ -362,8 +362,29 @@ class CleanupEntityMigrationTest extends IntegrationTest {
     private void insertTransaction(long consensusTimestamp, long entityNum, EntityTypeEnum entityType,
                                    ResponseCodeEnum result,
                                    TransactionTypeEnum transactionTypeEnum) {
-        transactionRepository
-                .save(transaction(consensusTimestamp, entityNum, entityType, result, transactionTypeEnum));
+        Transaction transaction = transaction(consensusTimestamp, entityNum, entityType, result, transactionTypeEnum);
+        jdbcOperations
+                .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, max_fee, " +
+                                "memo, " +
+                                "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
+                                "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
+                                " values" +
+                                " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        transaction.getChargedTxFee(),
+                        transaction.getConsensusTimestamp(),
+                        transaction.getEntityId().getId(),
+                        transaction.getInitialBalance(),
+                        transaction.getMaxFee(),
+                        transaction.getMemo(),
+                        transaction.getNodeAccountId().getId(),
+                        transaction.getPayerAccountId().getId(),
+                        transaction.getResult(),
+                        transaction.isScheduled(),
+                        transaction.getTransactionBytes(),
+                        transaction.getTransactionHash(),
+                        transaction.getType(),
+                        transaction.getValidDurationSeconds(),
+                        transaction.getValidStartNs());
     }
 
     private Entity entity(long id, EntityTypeEnum entityType) {

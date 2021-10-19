@@ -49,6 +49,4 @@ public class GrpcProperties {
 
     @NotNull
     private NettyProperties netty = new NettyProperties();
-
-    private long shard = 0;
 }

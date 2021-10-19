@@ -34,6 +34,9 @@ grpc:
   serviceAccount:
     create: false
 
+rosetta:
+  enabled: false
+
 importer:
   config:
     hedera:

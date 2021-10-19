@@ -44,7 +44,7 @@ const formatSqlQueryString = (query) => {
 
 /**
  * Parse the sql query with positional parameters and an array of corresponding
- * values to extracts the filter clauses of the query (e.g. consensus_ns < xyz)
+ * values to extracts the filter clauses of the query (e.g. consensus_timestamp < xyz)
  * @param {String} sqlquery The SQL query string for postgreSQL
  * @param {Array} sqlparams The array of values for positional parameters
  * @param {String} orderprefix The parameter before ASC or DESC keyword in the SQL query

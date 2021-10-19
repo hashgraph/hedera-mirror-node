@@ -53,7 +53,7 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
         // given
         TopicMessage topicMessage = topicMessage();
         topicMessage.setMessage(RandomUtils.nextBytes(5824)); // Just exceeds 8000B
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicNum());
+        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicId().getId());
 
         // when
         entityListener.onTopicMessage(topicMessage);

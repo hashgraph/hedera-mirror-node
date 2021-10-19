@@ -85,8 +85,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void invalidFilter() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .realmNum(-1)
-                .topicNum(-1)
+                .topicId(-1)
                 .startTime(null)
                 .limit(-1)
                 .build();
@@ -94,9 +93,8 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         assertThatThrownBy(() -> topicMessageService.subscribeTopic(filter))
                 .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("limit: must be greater than or equal to 0")
-                .hasMessageContaining("realmNum: must be greater than or equal to 0")
                 .hasMessageContaining("startTime: must not be null")
-                .hasMessageContaining("topicNum: must be greater than or equal to 0");
+                .hasMessageContaining("topicId: must be greater than or equal to 0");
     }
 
     @Test
@@ -137,7 +135,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void topicNotFound() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicNum(999)
+                .topicId(999)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -150,7 +148,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     void topicNotFoundWithCheckTopicExistsFalse() {
         grpcProperties.setCheckTopicExists(false);
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicNum(999)
+                .topicId(999)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -167,7 +165,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     void invalidTopic() {
         domainBuilder.entity(e -> e.type(EntityType.ACCOUNT).num(1L).id(1L)).block();
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicNum(1)
+                .topicId(1)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -179,7 +177,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void noMessages() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicNum(1)
+                .topicId(1)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -412,53 +410,23 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void bothMessagesWithTopicNum() {
+    void bothMessagesWithTopicId() {
         domainBuilder.entity(e -> e.num(1L).id(1L)).block();
         domainBuilder.entity(e -> e.num(2L).id(2L)).block();
-        domainBuilder.topicMessage(t -> t.topicNum(0).sequenceNumber(1)).block();
-        domainBuilder.topicMessage(t -> t.topicNum(1).sequenceNumber(1)).block();
+        domainBuilder.topicMessage(t -> t.topicId(0).sequenceNumber(1)).block();
+        domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(1)).block();
 
         Flux<TopicMessage> generator = Flux.concat(
                 domainBuilder
-                        .topicMessage(t -> t.topicNum(0).sequenceNumber(2).consensusTimestamp(future.plusNanos(1))),
+                        .topicMessage(t -> t.topicId(0).sequenceNumber(2).consensusTimestamp(future.plusNanos(1))),
                 domainBuilder
-                        .topicMessage(t -> t.topicNum(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2))),
-                domainBuilder.topicMessage(t -> t.topicNum(2).sequenceNumber(1).consensusTimestamp(future.plusNanos(3)))
+                        .topicMessage(t -> t.topicId(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2))),
+                domainBuilder.topicMessage(t -> t.topicId(2).sequenceNumber(1).consensusTimestamp(future.plusNanos(3)))
         );
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicNum(1)
-                .build();
-
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
-                .then(generator::blockLast)
-                .expectNext(1L, 2L)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
-    }
-
-    @Test
-    void bothMessagesWithRealmNum() {
-        domainBuilder.entity(e -> e.realm(1L).id(1L)).block();
-        domainBuilder.entity(e -> e.realm(2L).id(2L)).block();
-        domainBuilder.topicMessage(t -> t.realmNum(0).sequenceNumber(1)).block();
-        domainBuilder.topicMessage(t -> t.realmNum(1).sequenceNumber(1)).block();
-
-        Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder
-                        .topicMessage(t -> t.realmNum(0).sequenceNumber(2).consensusTimestamp(future.plusNanos(1))),
-                domainBuilder
-                        .topicMessage(t -> t.realmNum(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2))),
-                domainBuilder.topicMessage(t -> t.realmNum(2).sequenceNumber(1).consensusTimestamp(future.plusNanos(3)))
-        );
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .realmNum(1)
+                .topicId(1)
                 .build();
 
         topicMessageService.subscribeTopic(filter)
@@ -484,7 +452,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .build();
 
         Mockito.when(entityRepository
-                .findByCompositeKey(0, retrieverFilter.getRealmNum(), retrieverFilter.getTopicNum()))
+                .findById(retrieverFilter.getTopicId()))
                 .thenReturn(Optional
                         .of(Entity.builder().type(EntityType.TOPIC).build()));
 
@@ -522,7 +490,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage beforeMissing = topicMessage(1);
         TopicMessage afterMissing = topicMessage(4);
 
-        Mockito.when(entityRepository.findByCompositeKey(0, filter.getRealmNum(), filter.getTopicNum()))
+        Mockito.when(entityRepository.findById(filter.getTopicId()))
                 .thenReturn(Optional
                         .of(Entity.builder().type(EntityType.TOPIC).build()));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.eq(filter), ArgumentMatchers.eq(true)))
@@ -616,7 +584,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage afterMissing3 = topicMessage(10);
 
         Mockito.when(entityRepository
-                .findByCompositeKey(0, retrieverFilter.getRealmNum(), retrieverFilter.getTopicNum()))
+                .findById(retrieverFilter.getTopicId()))
                 .thenReturn(Optional
                         .of(Entity.builder().type(EntityType.TOPIC).build()));
 
@@ -673,7 +641,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         // mock entity type check
         Mockito.when(entityRepository
-                .findByCompositeKey(0, filter.getRealmNum(), filter.getTopicNum()))
+                .findById(filter.getTopicId()))
                 .thenReturn(Optional
                         .of(Entity.builder().type(EntityType.TOPIC).build()));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.eq(filter), ArgumentMatchers.eq(true)))
@@ -701,11 +669,10 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     private TopicMessage topicMessage(long sequenceNumber, Instant consensusTimestamp) {
         return TopicMessage.builder()
                 .consensusTimestamp(consensusTimestamp)
-                .realmNum(0)
                 .sequenceNumber(sequenceNumber)
                 .message(new byte[] {0, 1, 2})
                 .runningHash(new byte[] {3, 4, 5})
-                .topicNum(0)
+                .topicId(0)
                 .runningHashVersion(2)
                 .build();
     }

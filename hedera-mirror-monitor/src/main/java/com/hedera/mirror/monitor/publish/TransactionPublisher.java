@@ -20,6 +20,8 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import static com.hedera.hashgraph.sdk.Status.SUCCESS;
+
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -43,6 +45,7 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.HbarUnit;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
@@ -209,7 +212,6 @@ public class TransactionPublisher implements AutoCloseable {
     }
 
     private boolean validateNode(Client client, NodeProperties node) {
-        boolean valid = false;
         NodeValidationProperties nodeValidationProperties = monitorProperties.getNodeValidation();
         client.setMinBackoff(nodeValidationProperties.getMinBackoff());
         client.setMaxBackoff(nodeValidationProperties.getMaxBackoff());
@@ -217,20 +219,23 @@ public class TransactionPublisher implements AutoCloseable {
         try {
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Hbar hbar = Hbar.fromTinybars(1L);
-            new TransferTransaction()
+            Status receiptStatus = new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
                     .execute(client, Duration.ofSeconds(30L))
-                    .getReceipt(client, Duration.ofSeconds(30L));
-            log.info("Validated node: {}", node);
-            valid = true;
+                    .getReceipt(client, Duration.ofSeconds(30L))
+                    .status;
+            if (receiptStatus == SUCCESS) {
+                return true;
+            }
+            log.warn("Unable to validate node {}: invalid status code {}", node, receiptStatus);
         } catch (TimeoutException e) {
             log.warn("Unable to validate node {}: Timed out", node);
         } catch (Exception e) {
             log.warn("Unable to validate node {}: ", node, e);
         }
 
-        return valid;
+        return false;
     }
 
     private Client toClient(Map<String, AccountId> nodes) {

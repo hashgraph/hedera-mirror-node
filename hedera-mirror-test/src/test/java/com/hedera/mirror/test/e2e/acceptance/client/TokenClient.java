@@ -47,10 +47,12 @@ import com.hedera.hashgraph.sdk.TokenFreezeTransaction;
 import com.hedera.hashgraph.sdk.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
+import com.hedera.hashgraph.sdk.TokenPauseTransaction;
 import com.hedera.hashgraph.sdk.TokenRevokeKycTransaction;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TokenUnfreezeTransaction;
+import com.hedera.hashgraph.sdk.TokenUnpauseTransaction;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 import com.hedera.hashgraph.sdk.TransferTransaction;
@@ -110,6 +112,7 @@ public class TokenClient extends AbstractNetworkClient {
         if (adminKey != null) {
             transaction
                     .setAdminKey(adminKey)
+                    .setPauseKey(adminKey)
                     .setSupplyKey(adminKey)
                     .setWipeKey(adminKey);
         }
@@ -285,6 +288,40 @@ public class TokenClient extends AbstractNetworkClient {
                 tokenRevokeKycTransaction);
 
         log.debug("Revoked Kyc for account {} with token {}", accountId, tokenId);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse pause(TokenId tokenId) {
+
+        log.debug("Pausing token {}", tokenId);
+        Instant refInstant = Instant.now();
+        TokenPauseTransaction tokenPauseTransaction = new TokenPauseTransaction()
+                .setTokenId(tokenId)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
+                .setTransactionMemo("Pause token_" + refInstant);
+
+        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
+                tokenPauseTransaction);
+
+        log.debug("Paused token {}", tokenId);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse unpause(TokenId tokenId) {
+
+        log.debug("Unpausing token {}", tokenId);
+        Instant refInstant = Instant.now();
+        TokenUnpauseTransaction tokenUnpauseTransaction = new TokenUnpauseTransaction()
+                .setTokenId(tokenId)
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
+                .setTransactionMemo("Unpause token_" + refInstant);
+
+        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
+                tokenUnpauseTransaction);
+
+        log.debug("Unpaused token {}", tokenId);
 
         return networkTransactionResponse;
     }

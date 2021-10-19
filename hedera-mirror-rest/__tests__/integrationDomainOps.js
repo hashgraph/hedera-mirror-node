@@ -392,7 +392,7 @@ const addTransaction = async (transaction) => {
   const nodeAccount = EntityId.fromString(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId();
   const entityId = EntityId.fromString(transaction.entity_id, 'entity_id', true);
   await sqlConnection.query(
-    `INSERT INTO transaction (consensus_ns, valid_start_ns, payer_account_id, node_account_id, result, type,
+    `INSERT INTO transaction (consensus_timestamp, valid_start_ns, payer_account_id, node_account_id, result, type,
                               valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id,
                               transaction_bytes)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
@@ -570,7 +570,6 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
 const addTopicMessage = async (message) => {
   message = {
-    realm_num: 0,
     message: 'message', // Base64 encoding: bWVzc2FnZQ==
     running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
     running_hash_version: 2,
@@ -578,13 +577,12 @@ const addTopicMessage = async (message) => {
   };
 
   await sqlConnection.query(
-    `INSERT INTO topic_message (consensus_timestamp, realm_num, topic_num, message, running_hash, sequence_number,
+    `INSERT INTO topic_message (consensus_timestamp, topic_id, message, running_hash, sequence_number,
                                 running_hash_version)
-     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+     VALUES ($1, $2, $3, $4, $5, $6);`,
     [
       message.timestamp,
-      message.realm_num,
-      message.topic_num,
+      message.topic_id,
       message.message,
       message.running_hash,
       message.seq_num,

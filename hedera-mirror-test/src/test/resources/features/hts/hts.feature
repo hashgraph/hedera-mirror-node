@@ -45,6 +45,21 @@ Feature: HTS Base Coverage Feature
             | 2350   | 200            | 100                |
 
     @acceptance
+    Scenario Outline: Validate Token Pause Flow - Create, Associate, Pause, Unpause, Transfer
+        Given I successfully create a new token
+        Then the mirror node REST API should return status <httpStatusCode>
+        Then I associate a new recipient account with token
+        Then I pause the token
+        And the mirror node REST API should return status <httpStatusCode>
+        Then I unpause the token
+        And the mirror node REST API should return status <httpStatusCode>
+        Then I transfer <amount> tokens to recipient
+        And the mirror node REST API should return status <httpStatusCode> for token fund flow
+        Examples:
+            | amount | httpStatusCode |
+            | 2350   | 200            |
+
+    @acceptance
     Scenario Outline: Validate Token ramp down Flow - Create, Associate, Dissociate, Delete
         Given I successfully create a new token
         When I associate a new recipient account with token

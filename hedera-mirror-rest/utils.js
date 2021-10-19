@@ -501,8 +501,8 @@ const parseBooleanValue = (value) => {
  * @param {String} sqlQuery MySql style query
  * @return {String} SQL query with Postgres style positional parameters
  */
-const convertMySqlStyleQueryToPostgres = (sqlQuery) => {
-  let paramsCount = 1;
+const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
+  let paramsCount = startIndex;
   const namedParamIndex = {};
   return sqlQuery.replace(/\?([a-zA-Z][a-zA-Z0-9]*)?/g, (s) => {
     let index = namedParamIndex[s];
@@ -878,15 +878,19 @@ const formatComparator = (comparator) => {
  * @return {[]|{token_id: string, balance: Number}[]}
  */
 const parseTokenBalances = (tokenBalances) => {
+  if (_.isNil(tokenBalances)) {
+    return [];
+  }
+
   return tokenBalances
-    ? tokenBalances.map((tokenBalance) => {
-        const {token_id: tokenId, balance} = tokenBalance;
-        return {
-          token_id: EntityId.fromString(tokenId).toString(),
-          balance,
-        };
-      })
-    : [];
+    .filter((x) => !_.isNil(x.token_id))
+    .map((tokenBalance) => {
+      const {token_id: tokenId, balance} = tokenBalance;
+      return {
+        token_id: EntityId.fromString(tokenId).toString(),
+        balance,
+      };
+    });
 };
 
 const parsePublicKey = (publicKey) => {

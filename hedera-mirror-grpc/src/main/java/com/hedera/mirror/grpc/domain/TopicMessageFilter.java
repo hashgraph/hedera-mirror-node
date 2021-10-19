@@ -49,9 +49,6 @@ public class TopicMessageFilter {
     @Min(0)
     private long limit;
 
-    @Min(0)
-    private int realmNum;
-
     @NotNull
     @Builder.Default
     private Instant startTime = Instant.now();
@@ -64,7 +61,7 @@ public class TopicMessageFilter {
     private String subscriberId = RandomStringUtils.random(8, 0, 0, true, true, null, RANDOM);
 
     @Min(0)
-    private int topicNum;
+    private long topicId;
 
     public boolean hasLimit() {
         return limit > 0;

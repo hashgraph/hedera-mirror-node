@@ -44,16 +44,16 @@ const (
 )
 
 const (
-	andTransactionHashFilter = " and transaction_hash = @hash"
-	orderByConsensusNs       = " order by consensus_ns"
-	selectTransactionResults = "select * from " + tableNameTransactionResults
-	selectTransactionTypes   = "select * from " + tableNameTransactionTypes
+	andTransactionHashFilter  = " and transaction_hash = @hash"
+	orderByConsensusTimestamp = " order by consensus_timestamp"
+	selectTransactionResults  = "select * from " + tableNameTransactionResults
+	selectTransactionTypes    = "select * from " + tableNameTransactionTypes
 	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json, non-fee transfers
 	// in json, token transfers in json, and optionally the token information when the transaction is token create,
 	// token delete, or token update. Note the three token transactions are the ones the entity_id in the transaction
 	// table is its related token id and require an extra rosetta operation
 	selectTransactionsInTimestampRange = `select
-                                            t.consensus_ns,
+                                            t.consensus_timestamp,
                                             t.payer_account_id,
                                             t.transaction_hash as hash,
                                             t.result,
@@ -62,7 +62,7 @@ const (
                                               select json_agg(json_build_object(
                                                 'account_id', entity_id,
                                                 'amount', amount))
-                                              from crypto_transfer where consensus_timestamp = t.consensus_ns
+                                              from crypto_transfer where consensus_timestamp = t.consensus_timestamp
                                             ), '[]') as crypto_transfers,
                                             case
                                               when t.type = 14 then coalesce((
@@ -71,7 +71,7 @@ const (
                                                       'amount', amount
                                                     ))
                                                   from non_fee_transfer
-                                                  where consensus_timestamp = t.consensus_ns
+                                                  where consensus_timestamp = t.consensus_timestamp
                                                 ), '[]')
                                               else '[]'
                                             end as non_fee_transfers,
@@ -85,7 +85,7 @@ const (
                                                 ))
                                               from token_transfer tkt
                                               join token tk on tk.token_id = tkt.token_id
-                                              where tkt.consensus_timestamp = t.consensus_ns
+                                              where tkt.consensus_timestamp = t.consensus_timestamp
                                             ), '[]') as token_transfers,
                                             coalesce((
                                               select json_agg(json_build_object(
@@ -96,7 +96,7 @@ const (
                                                 ))
                                               from nft_transfer nftt
                                               join token tk on tk.token_id = nftt.token_id
-                                              where nftt.consensus_timestamp = t.consensus_ns and serial_number <> -1
+                                              where nftt.consensus_timestamp = t.consensus_timestamp and serial_number <> -1
                                             ), '[]') as nft_transfers,
                                             case
                                               when t.type in (29, 35, 36) then coalesce((
@@ -113,9 +113,9 @@ const (
                                               else '{}'
                                             end as token
                                           from transaction t
-                                          where consensus_ns >= @start and consensus_ns <= @end`
+                                          where consensus_timestamp >= @start and consensus_timestamp <= @end`
 	selectTransactionsByHashInTimestampRange  = selectTransactionsInTimestampRange + andTransactionHashFilter
-	selectTransactionsInTimestampRangeOrdered = selectTransactionsInTimestampRange + orderByConsensusNs
+	selectTransactionsInTimestampRangeOrdered = selectTransactionsInTimestampRange + orderByConsensusTimestamp
 )
 
 type transactionType struct {
@@ -141,16 +141,16 @@ func (transactionResult) TableName() string {
 // transaction maps to the transaction query which returns the required transaction fields, CryptoTransfers json string,
 // NonFeeTransfers json string, TokenTransfers json string, and Token definition json string
 type transaction struct {
-	ConsensusNs     int64
-	Hash            []byte
-	PayerAccountId  int64
-	Result          int16
-	Type            int16
-	CryptoTransfers string
-	NftTransfers    string
-	NonFeeTransfers string
-	TokenTransfers  string
-	Token           string
+	ConsensusTimestamp int64
+	Hash               []byte
+	PayerAccountId     int64
+	Result             int16
+	Type               int16
+	CryptoTransfers    string
+	NftTransfers       string
+	NonFeeTransfers    string
+	TokenTransfers     string
+	Token              string
 }
 
 func (t transaction) getHashString() string {
@@ -264,7 +264,7 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 			break
 		}
 
-		start = transactionsBatch[len(transactionsBatch)-1].ConsensusNs + 1
+		start = transactionsBatch[len(transactionsBatch)-1].ConsensusTimestamp + 1
 	}
 
 	hashes := make([]string, 0)
