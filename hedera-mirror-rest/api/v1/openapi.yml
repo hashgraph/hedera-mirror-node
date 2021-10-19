@@ -72,6 +72,47 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - balances
+  /api/v1/contracts:
+    get:
+      summary: List contract entities on network
+      description: Returns a list of all contract entity items on the network.
+      operationId: listContracts
+      parameters:
+        - $ref: '#/components/parameters/contractIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
+  /api/v1/contracts/{contractId}:
+    get:
+      summary: Get contract by id
+      description: Return the contract information given an id
+      operationId: getContractById
+      parameters:
+        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -636,6 +677,25 @@ components:
             $ref: '#/components/schemas/AccountBalance'
         links:
           $ref: '#/components/schemas/Links'
+    ContractResponse:
+      allOf:
+        - $ref: '#/components/schemas/Contract'
+        - type: object
+          properties:
+            bytecode:
+              type: string
+              format: binary
+              description: The contract bytecode in hex
+              example: "0x01021a1fdc9b"
+          required:
+            - bytecode
+    ContractsResponse:
+      type: object
+      properties:
+        contracts:
+          $ref: '#/components/schemas/Contracts'
+        links:
+          $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
       type: object
       properties:
@@ -823,6 +883,66 @@ components:
         tokens:
           - token_id: 0.0.200001
             balance: 8
+    Contract:
+      type: object
+      properties:
+        admin_key:
+          $ref: '#/components/schemas/Key'
+        auto_renew_period:
+          type: number
+          nullable: true
+          example: null
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        created_timestamp:
+          type: string
+          example: "1633466568.31556926"
+        deleted:
+          type: boolean
+          example: false
+        expiration_timestamp:
+          type: string
+          example: "9851266350.000999111"
+        file_id:
+          $ref: '#/components/schemas/EntityId'
+        memo:
+          example: contract memo
+          type: string
+        obtainer_id:
+          $ref: '#/components/schemas/EntityId'
+        proxy_account_id:
+          $ref: '#/components/schemas/EntityId'
+        solidity_address:
+          type: string
+          format: binary
+          minLength: 42
+          maxLength: 42
+          example: "0x00000000000000000000000000001f4100000000"
+        timestamp:
+          type: object
+          description: The timestamp range the contract is valid in
+          properties:
+            from:
+              type: string
+              description: The inclusive from timestamp in seconds
+              example: "1633466568.31556926"
+            to:
+              type: string
+              description: The exclusive to timestamp in seconds
+              nullable: true
+              example: "1957001234.31556926"
+      required:
+        - admin_key
+        - contract_id
+        - created_timestamp
+        - file_id
+        - memo
+        - solidity_address
+        - timestamp
+    Contracts:
+      type: array
+      items:
+        $ref: '#/components/schemas/Contract'
     CustomFees:
       type: object
       properties:
@@ -1555,6 +1675,32 @@ components:
       schema:
         type: string
         format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
+    contractIdQueryParam:
+      name: contract.id
+      description: Contract entity id
+      in: query
+      example:
+        - 25101
+        - 0.25101
+        - 0.0.25101
+        - lt:0.30000.0
+        - gt:0.7.25301
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
+    contractIdPathParam:
+      name: contractId
+      in: path
+      required: true
+      description: Contract entity id
+      example:
+        - 1135
+        - 0.1135
+        - 0.0.1135
+      schema:
+        type: string
     limitQueryParam:
       name: limit
       in: query
@@ -1562,9 +1708,9 @@ components:
       example: 2
       schema:
         type: integer
-        default: 1000
+        default: 500
         minimum: 1
-        maximum: 1000
+        maximum: 500
     orderQueryParam:
       name: order
       in: query
