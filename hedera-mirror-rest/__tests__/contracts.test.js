@@ -42,6 +42,10 @@ const contractFields = [
   'timestamp_range',
 ].map((f) => `c.${f}`);
 
+const assertSqlQueryEqual = (actual, expected) => {
+  expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
+};
+
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
     filterQuery: '',
@@ -285,8 +289,7 @@ describe('getContractByIdQuery', () => {
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      const actual = formatSqlQueryString(contracts.getContractByIdQuery(spec.input));
-      expect(actual).toEqual(formatSqlQueryString(spec.expected));
+      assertSqlQueryEqual(contracts.getContractByIdQuery(spec.input), spec.expected);
     });
   });
 });
@@ -328,10 +331,10 @@ describe('getContractsQuery', () => {
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      const actual = formatSqlQueryString(
-        contracts.getContractsQuery(spec.input.whereQuery, spec.input.limitQuery, spec.input.order)
+      assertSqlQueryEqual(
+        contracts.getContractsQuery(spec.input.whereQuery, spec.input.limitQuery, spec.input.order),
+        spec.expected
       );
-      expect(actual).toEqual(formatSqlQueryString(spec.expected));
     });
   });
 });

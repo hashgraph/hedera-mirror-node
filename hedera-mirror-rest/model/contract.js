@@ -27,12 +27,13 @@ class Contract {
    * Parses contract table columns into object
    */
   constructor(contract) {
-    _.merge(
+    Object.assign(
       this,
       _.mapKeys(contract, (v, k) => _.camelCase(k))
     );
   }
 
+  static historyTableName = 'contract_history';
   static tableAlias = 'c';
   static tableName = 'contract';
 

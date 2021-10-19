@@ -205,7 +205,7 @@ const getContractByIdQuery = (timestampConditions) => {
     // if there is timestamp condition, union the result from both tables
     tableUnionQueries.push(
       'union',
-      getContractByIdQueryForTable('contract_history', timestampConditions),
+      getContractByIdQueryForTable(Contract.historyTableName, timestampConditions),
       `order by ${Contract.TIMESTAMP_RANGE} desc`,
       `limit 1`
     );
