@@ -64,27 +64,13 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     }
 
     @Test
-    void findByFilterWithRealmNum() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage(t -> t.realmNum(0)).block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage(t -> t.realmNum(1)).block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage(t -> t.realmNum(2)).block();
+    void findByFilterWithTopicId() {
+        TopicMessage topicMessage1 = domainBuilder.topicMessage(t -> t.topicId(1)).block();
+        TopicMessage topicMessage2 = domainBuilder.topicMessage(t -> t.topicId(2)).block();
+        TopicMessage topicMessage3 = domainBuilder.topicMessage(t -> t.topicId(3)).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .realmNum(1)
-                .startTime(topicMessage1.getConsensusTimestampInstant())
-                .build();
-
-        assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage2);
-    }
-
-    @Test
-    void findByFilterWithTopicNum() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage(t -> t.topicNum(1)).block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage(t -> t.topicNum(2)).block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage(t -> t.topicNum(3)).block();
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicNum(2)
+                .topicId(2)
                 .startTime(topicMessage1.getConsensusTimestampInstant())
                 .build();
 

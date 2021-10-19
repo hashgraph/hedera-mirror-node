@@ -163,21 +163,21 @@ create index if not exists token_transfer__account_timestamp
 -- topic_message
 alter table if exists topic_message
     add primary key (consensus_timestamp);
-create index if not exists topic_message__realm_num_timestamp
-    on topic_message (realm_num, topic_num, consensus_timestamp);
-create unique index if not exists topic_message__topic_num_realm_num_seqnum
-    on topic_message (realm_num, topic_num, sequence_number, consensus_timestamp);
+create index if not exists topic_message__topic_id_timestamp
+    on topic_message (topic_id, consensus_timestamp);
+create unique index if not exists topic_message__topic_id_seqnum_timestamp
+    on topic_message (topic_id, sequence_number, consensus_timestamp);
 -- have to add consensus_timestamp when creating unique indexes due to partitioning
 
 -- transaction
 alter table if exists transaction
-    add primary key (consensus_ns);
+    add primary key (consensus_timestamp);
 create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
 create index if not exists transaction_type
-    on transaction (type, consensus_ns desc);
+    on transaction (type, consensus_timestamp desc);
 
 -- transaction_signature
 create index if not exists transaction_signature__entity_id

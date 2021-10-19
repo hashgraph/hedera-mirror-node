@@ -279,7 +279,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         // build transaction
         Transaction tx = new Transaction();
         tx.setChargedTxFee(txRecord.getTransactionFee());
-        tx.setConsensusNs(consensusTimestamp);
+        tx.setConsensusTimestamp(consensusTimestamp);
         tx.setInitialBalance(0L);
         tx.setMaxFee(body.getTransactionFee());
         tx.setMemo(Utility.toBytes(body.getMemoBytes()));
@@ -340,11 +340,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         topicMessage.setConsensusTimestamp(Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
         topicMessage.setMessage(Utility.toBytes(transactionBody.getMessage()));
-        topicMessage.setRealmNum((int) topicId.getRealmNum());
         topicMessage.setRunningHash(Utility.toBytes(receipt.getTopicRunningHash()));
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());
-        topicMessage.setTopicNum((int) topicId.getTopicNum());
+        topicMessage.setTopicId(EntityId.of(topicId));
         entityListener.onTopicMessage(topicMessage);
     }
 

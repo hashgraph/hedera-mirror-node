@@ -33,15 +33,15 @@ const {NotFoundError} = require('./errors/notFoundError');
 const {FileDownloadError} = require('./errors/fileDownloadError');
 
 /**
- * Get the consensus_ns of the transaction. Throws exception if no such successful transaction found or multiple such
+ * Get the consensus_timestamp of the transaction. Throws exception if no such successful transaction found or multiple such
  * transactions found.
  * @param {TransactionId} transactionId
  * @param {Boolean} scheduled
- * @returns {Promise<String>} consensus_ns of the successful transaction if found
+ * @returns {Promise<String>} consensus_timestamp of the successful transaction if found
  */
 let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
-  const sqlQuery = `SELECT consensus_ns
+  const sqlQuery = `SELECT consensus_timestamp
        FROM transaction
        WHERE payer_account_id = $1
          AND valid_start_ns = $2
@@ -58,7 +58,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
     throw new DbError('Invalid state, more than one transaction found');
   }
 
-  return _.first(rows).consensus_ns;
+  return _.first(rows).consensus_timestamp;
 };
 
 /**

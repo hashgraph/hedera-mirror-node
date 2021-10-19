@@ -13,10 +13,10 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: topic_num"
+          "message": "Invalid parameter: topic.id"
         },
         {
-          "message": "Invalid parameter: sequence_number"
+          "message": "Invalid parameter: sequencenumber"
         }
       ]
     }

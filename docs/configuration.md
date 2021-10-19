@@ -215,7 +215,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.grpc.retriever.unthrottled.maxPageSize`      | 5000             | The maximum number of messages the retriever can return in a single call to the database when unthrottled |
 | `hedera.mirror.grpc.retriever.unthrottled.maxPolls`         | 12               | The max number of polls when unthrottled                                                       |
 | `hedera.mirror.grpc.retriever.unthrottled.pollingFrequency` | 20ms             | How often to poll for messages when unthrottled. Can accept duration units like `50ms`, `10s` etc |
-| `hedera.mirror.grpc.shard`                                  | 0                | The default shard number that the GRPC component participates in                               |
 
 ## Monitor
 

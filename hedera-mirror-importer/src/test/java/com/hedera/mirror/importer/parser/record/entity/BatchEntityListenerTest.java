@@ -62,7 +62,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         // given
         TopicMessage topicMessage1 = topicMessage();
         TopicMessage topicMessage2 = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage1.getTopicNum());
+        Flux<TopicMessage> topicMessages = subscribe(topicMessage1.getTopicId().getId());
 
         // when
         entityListener.onTopicMessage(topicMessage1);
@@ -98,7 +98,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         // given
         properties.setEnabled(false);
         TopicMessage topicMessage = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicNum());
+        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicId().getId());
 
         // when
         entityListener.onTopicMessage(topicMessage);
@@ -116,7 +116,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     void onCleanup() throws InterruptedException {
         // given
         TopicMessage topicMessage = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicNum());
+        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicId().getId());
 
         // when
         entityListener.onTopicMessage(topicMessage);
@@ -139,11 +139,10 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         topicMessage.setConsensusTimestamp(consensusTimestamp++);
         topicMessage.setMessage("test message".getBytes());
         topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
         topicMessage.setRunningHash("running hash".getBytes());
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(sequenceNumber++);
-        topicMessage.setTopicNum(1001);
+        topicMessage.setTopicId(EntityId.of("0.0.101", EntityTypeEnum.TOPIC));
         topicMessage.setValidStartTimestamp(4L);
         return topicMessage;
     }

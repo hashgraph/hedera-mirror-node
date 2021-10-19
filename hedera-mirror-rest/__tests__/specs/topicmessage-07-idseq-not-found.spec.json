@@ -13,7 +13,7 @@
     "topicmessages": [
       {
         "timestamp": "1234567890000000001",
-        "topic_num": 7,
+        "topic_id": 7,
         "seq_num": 1
       }
     ]

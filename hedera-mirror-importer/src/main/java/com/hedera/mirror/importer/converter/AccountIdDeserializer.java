@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.converter;
  */
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import java.io.IOException;
@@ -32,8 +31,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 
 public class AccountIdDeserializer extends JsonDeserializer<EntityId> {
     @Override
-    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException,
-            JsonProcessingException {
+    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
         Long value = jsonParser.readValueAs(Long.class);
         return value != null ? EntityIdEndec.decode(value, EntityTypeEnum.ACCOUNT) : null;
     }

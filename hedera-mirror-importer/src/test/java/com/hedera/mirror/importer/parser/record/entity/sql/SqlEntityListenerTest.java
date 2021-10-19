@@ -1103,7 +1103,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private Transaction makeTransaction() {
         EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
         Transaction transaction = new Transaction();
-        transaction.setConsensusNs(101L);
+        transaction.setConsensusTimestamp(101L);
         transaction.setEntityId(entityId);
         transaction.setNodeAccountId(entityId);
         transaction.setMemo("memo".getBytes());
@@ -1128,11 +1128,10 @@ class SqlEntityListenerTest extends IntegrationTest {
         topicMessage.setConsensusTimestamp(1L);
         topicMessage.setMessage("test message".getBytes());
         topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
         topicMessage.setRunningHash("running hash".getBytes());
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
+        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityTypeEnum.TOPIC));
         topicMessage.setValidStartTimestamp(4L);
 
         return topicMessage;

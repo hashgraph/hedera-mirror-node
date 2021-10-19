@@ -14,22 +14,19 @@
     "topicmessages": [
       {
         "timestamp": "1234567890000000001",
-        "topic_num": 3,
-        "realm_num": 2,
+        "topic_id": 8589934595,
         "seq_num": 1
       },
       {
         "timestamp": "1234567890000000002",
-        "topic_num": 3,
-        "realm_num": 2,
+        "topic_id": 8589934595,
         "seq_num": 2,
         "message": ["1", "2", "3"],
         "running_hash": ["4", "5", "6"]
       },
       {
         "timestamp": "1234567890000000003",
-        "topic_num": 3,
-        "realm_num": 2,
+        "topic_id": 8589934595,
         "seq_num": 3
       }
     ]

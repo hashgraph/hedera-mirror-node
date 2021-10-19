@@ -43,6 +43,7 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
+import com.hedera.mirror.grpc.util.EntityId;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 /**
@@ -75,10 +76,14 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
             throw new IllegalArgumentException("Missing required topicID");
         }
 
+        Long topicId = EntityId.encode(query.getTopicID());
+        if (topicId == null) {
+            throw new IllegalArgumentException("Invalid entity ID");
+        }
+
         TopicMessageFilter.TopicMessageFilterBuilder builder = TopicMessageFilter.builder()
                 .limit(query.getLimit())
-                .realmNum((int) query.getTopicID().getRealmNum())
-                .topicNum((int) query.getTopicID().getTopicNum());
+                .topicId(topicId);
 
         if (query.hasConsensusStartTime()) {
             Timestamp startTimeStamp = query.getConsensusStartTime();

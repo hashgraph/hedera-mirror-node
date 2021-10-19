@@ -32,7 +32,7 @@ const (
 )
 
 type Transaction struct {
-	ConsensusNs          int64 `gorm:"primaryKey"`
+	ConsensusTimestamp   int64 `gorm:"primaryKey"`
 	ChargedTxFee         int64
 	EntityId             *EntityId
 	InitialBalance       int64

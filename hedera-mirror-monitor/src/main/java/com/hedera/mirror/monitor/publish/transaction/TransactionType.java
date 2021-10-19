@@ -20,14 +20,6 @@ package com.hedera.mirror.monitor.publish.transaction;
  * ‍
  */
 
-import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusCreateTopicTransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusSubmitMessageTransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleCreateTransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleDeleteTransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleSignTransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.token.TokenGrantKycTransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.token.TokenUnfreezeTransactionSupplier;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -35,16 +27,25 @@ import com.hedera.mirror.monitor.publish.transaction.account.AccountCreateTransa
 import com.hedera.mirror.monitor.publish.transaction.account.AccountDeleteTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.account.AccountUpdateTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.account.CryptoTransferTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusCreateTopicTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusDeleteTopicTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusSubmitMessageTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusUpdateTopicTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleCreateTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleDeleteTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleSignTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenAssociateTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenBurnTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenCreateTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenDeleteTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenDissociateTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenFreezeTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.token.TokenGrantKycTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenMintTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.token.TokenPauseTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenRevokeKycTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.token.TokenUnfreezeTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.token.TokenUnpauseTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenUpdateTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.token.TokenWipeTransactionSupplier;
 
@@ -71,8 +72,10 @@ public enum TransactionType {
     TOKEN_FREEZE(TokenFreezeTransactionSupplier.class),
     TOKEN_GRANT_KYC(TokenGrantKycTransactionSupplier.class),
     TOKEN_MINT(TokenMintTransactionSupplier.class),
+    TOKEN_PAUSE(TokenPauseTransactionSupplier.class),
     TOKEN_REVOKE_KYC(TokenRevokeKycTransactionSupplier.class),
     TOKEN_UNFREEZE(TokenUnfreezeTransactionSupplier.class),
+    TOKEN_UNPAUSE(TokenUnpauseTransactionSupplier.class),
     TOKEN_UPDATE(TokenUpdateTransactionSupplier.class),
     TOKEN_WIPE(TokenWipeTransactionSupplier.class);
 

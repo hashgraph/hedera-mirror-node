@@ -52,7 +52,7 @@ func (*integrationTest) SetupTest() {
 
 func addTransaction(
 	dbClient interfaces.DbClient,
-	consensusNs int64,
+	consensusTimestamp int64,
 	entityId *domain.EntityId,
 	nodeAccountId *domain.EntityId,
 	payerAccountId domain.EntityId,
@@ -66,7 +66,7 @@ func addTransaction(
 	nftTransfers []domain.NftTransfer,
 ) {
 	tx := &domain.Transaction{
-		ConsensusNs:          consensusNs,
+		ConsensusTimestamp:   consensusTimestamp,
 		ChargedTxFee:         17,
 		EntityId:             entityId,
 		NodeAccountId:        nodeAccountId,
