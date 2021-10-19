@@ -849,29 +849,23 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
 
   const transferWhereQuery = `where ${transferConditions.join('\nand ')}`;
 
-  const serialTransferCte = getCte(
-    'serial_transfers',
-    nftTransferHistoryCteSelectFields.join(',\n'),
-    `from ${NftTransfer.tableName} ${NftTransfer.tableAlias}`,
-    '',
-    transferWhereQuery
-  );
+  const serialTransferCte = `serial_transfers as (
+    select ${nftTransferHistoryCteSelectFields.join(',\n')}
+    from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
+    ${transferWhereQuery}
+  )`;
 
-  const tokenTransactionCte = getCte(
-    'token_transactions',
-    nftTransferHistorySelectFields.join(',\n'),
-    `from serial_transfers ${NftTransfer.tableAlias}`,
-    `${joinTransactionClause} and ${NftTransfer.TOKEN_ID_FULL_NAME} = ${Transaction.ENTITY_ID_FULL_NAME}`,
-    ''
-  );
+  const tokenTransactionCte = `token_transactions as (
+    select ${nftTransferHistorySelectFields.join(',\n')}
+    from serial_transfers ${NftTransfer.tableAlias}
+    ${joinTransactionClause} and ${NftTransfer.TOKEN_ID_FULL_NAME} = ${Transaction.ENTITY_ID_FULL_NAME}
+  )`;
 
-  const tokenTransferCte = getCte(
-    'token_transfers',
-    nftTransferHistorySelectFields.join(',\n'),
-    `from serial_transfers ${NftTransfer.tableAlias}`,
-    `${joinTransactionClause} and ${Transaction.ENTITY_ID_FULL_NAME} is null`,
-    ''
-  );
+  const tokenTransferCte = `token_transfers as (
+    select ${nftTransferHistorySelectFields.join(',\n')}
+    from serial_transfers ${NftTransfer.tableAlias}
+    ${joinTransactionClause} and ${Transaction.ENTITY_ID_FULL_NAME} is null
+  )`;
 
   const cteQuery = `with ${serialTransferCte}, ${tokenTransactionCte}, ${tokenTransferCte}
   select * from token_transactions
@@ -932,15 +926,6 @@ const nftTransferHistoryCteSelectFields = [
   NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME,
   NftTransfer.TOKEN_ID_FULL_NAME,
 ];
-
-const getCte = (cteName, select, from, join, where) => {
-  return `${cteName} as (
-    select ${select}
-    ${from}
-    ${join}
-    ${where}
-  )`;
-};
 
 /**
  * Handler function for /api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions API.

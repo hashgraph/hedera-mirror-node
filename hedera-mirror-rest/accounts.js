@@ -89,13 +89,13 @@ const getAccountQuery = (
   }
 
   const query = `
-    with ab_tb as (
+    with balances as (
       select json_agg(
           json_build_object(
             'token_id', tb.token_id::text,
             'balance', tb.balance
           ) order by tb.token_id ${order || ''}
-        ) as token_bals,
+        ) as token_balances,
         ab.balance             as balance,
         ab.consensus_timestamp as consensus_timestamp,
         ab.account_id          as account_id
@@ -107,9 +107,9 @@ const getAccountQuery = (
       order by ab.account_id ${order || ''}
       ${limitQuery || ''}
     )
-    select ab_tb.balance as account_balance,
-      ab_tb.consensus_timestamp as consensus_timestamp,
-       coalesce(ab_tb.account_id, e.id) as entity_id,
+    select balances.balance as account_balance,
+      balances.consensus_timestamp as consensus_timestamp,
+       coalesce(balances.account_id, e.id) as entity_id,
        e.expiration_timestamp,
        e.auto_renew_period,
        e.key,
@@ -117,8 +117,8 @@ const getAccountQuery = (
        e.max_automatic_token_associations,
        e.memo,
        e.receiver_sig_required,
-       ab_tb.token_bals as token_balances
-    from ab_tb
+       balances.token_balances
+    from balances
     ${joinType} join (
       select
         id,
@@ -135,8 +135,8 @@ const getAccountQuery = (
       where ${entityWhereFilter}
       order by e.id ${order || ''}
       ${limitQuery || ''}
-    ) e on e.id = ab_tb.account_id
-    order by coalesce(ab_tb.account_id, e.id) ${order || ''}
+    ) e on e.id = balances.account_id
+    order by coalesce(balances.account_id, e.id) ${order || ''}
     ${limitQuery || ''}`;
 
   const params = balancesAccountQuery.params

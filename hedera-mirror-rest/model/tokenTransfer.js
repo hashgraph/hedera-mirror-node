@@ -31,7 +31,7 @@ class TokenTransfer {
     this.tokenId = tokenTransfer.token_id;
   }
 
-  static tableAlias = 'ttr';
+  static tableAlias = 'tk_tr';
   static tableName = 'token_transfer';
 
   static ACCOUNT_ID = 'account_id';
