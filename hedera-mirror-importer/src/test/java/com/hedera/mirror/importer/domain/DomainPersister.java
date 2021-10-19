@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,10 +20,32 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenId;
+@Log4j2
+@RequiredArgsConstructor
+public class DomainPersister<T, B> {
 
-public interface TokenRepository extends CrudRepository<Token, TokenId> {
+    private final CrudRepository<T, ?> crudRepository;
+    private final B builder;
+    private final Supplier<T> supplier;
+
+    public DomainPersister<T, B> customize(Consumer<B> customizer) {
+        customizer.accept(builder);
+        return this;
+    }
+
+    public T get() {
+        return supplier.get();
+    }
+
+    public T persist() {
+        T t = get();
+        log.trace("Inserting {}", t);
+        return crudRepository.save(t);
+    }
 }

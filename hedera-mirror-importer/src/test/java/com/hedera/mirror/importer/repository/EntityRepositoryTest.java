@@ -22,45 +22,57 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.postgresql.util.PGobject;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.RowMapper;
 
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class EntityRepositoryTest extends AbstractRepositoryTest {
 
+    private static final RowMapper<Entity> ROW_MAPPER;
+
+    static {
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        defaultConversionService.addConverter(PGobject.class, Range.class,
+                source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
+        defaultConversionService.addConverter(Long.class, EntityId.class,
+                id -> EntityId.of(0L, 0L, id, EntityTypeEnum.ACCOUNT));
+        DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(Entity.class);
+        dataClassRowMapper.setConversionService(defaultConversionService);
+        ROW_MAPPER = dataClassRowMapper;
+    }
+
+    @Resource
+    private DomainBuilder domainBuilder;
+
     @Resource
     private EntityRepository entityRepository;
 
+    @Resource
+    private JdbcOperations jdbcOperations;
+
     @Test
     void nullCharacter() {
-        Entity entity = new Entity();
-        entity.setId(1L);
-        entity.setNum(1L);
-        entity.setRealm(0L);
-        entity.setShard(0L);
-        entity.setType(1);
-        entity.setMemo("abc" + (char) 0);
-        entity.setDeleted(false);
-        entityRepository.save(entity);
+        Entity entity = domainBuilder.entity().customize(e -> e.memo("abc" + (char) 0)).persist();
         assertThat(entityRepository.findById(entity.getId())).get().isEqualTo(entity);
     }
 
     @Test
     void entityPublicKeyUpdates() {
-        Entity entity = new Entity();
-        entity.setId(1L);
-        entity.setNum(1L);
-        entity.setRealm(0L);
-        entity.setShard(0L);
-        entity.setType(1);
-        entity.setMemo("abc" + (char) 0);
-        entity.setDeleted(false);
-        entityRepository.save(entity);
+        Entity entity = domainBuilder.entity().customize(b -> b.key(null)).persist();
 
         // unset key should result in null public key
         assertThat(entityRepository.findById(entity.getId())).get()
@@ -91,24 +103,17 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
                 .extracting(Entity::getPublicKey).isNull();
     }
 
+    /**
+     * This test verifies that the Entity domain object and table definition are in sync with the entity_history table.
+     */
     @Test
-    void insertEntityId() {
-        // given
-        EntityId entityId = EntityId.of(10L, 20L, 30L, EntityTypeEnum.ACCOUNT);
-        entityRepository.insertEntityId(entityId);
-        assertThat(entityRepository.findById(entityId.getId())).get()
-                .isEqualTo(getEntityWithDefaultMemo(entityId));
+    void entityHistory() {
+        Entity entity = domainBuilder.entity().persist();
 
-        // when
-        entityRepository.insertEntityId(entityId); // insert again to test for conflict
+        jdbcOperations.update("insert into entity_history select * from entity");
+        List<Entity> entityHistory = jdbcOperations.query("select * from entity_history", ROW_MAPPER);
 
-        assertThat(entityRepository.count()).isEqualTo(1);
-        assertThat(entityRepository.findById(entityId.getId())).get().isEqualTo(getEntityWithDefaultMemo(entityId));
-    }
-
-    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
-        Entity entity = entityId.toEntity();
-        entity.setMemo("");
-        return entity;
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(entityHistory).containsExactly(entity);
     }
 }

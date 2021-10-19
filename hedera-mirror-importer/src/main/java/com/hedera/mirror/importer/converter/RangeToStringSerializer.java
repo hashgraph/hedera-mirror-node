@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.domain;
+package com.hedera.mirror.importer.converter;
 
 /*-
  * ‌
@@ -20,35 +20,19 @@ package com.hedera.mirror.grpc.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import javax.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.TypeDef;
+import java.io.IOException;
 
-@Builder
-@Data
-@javax.persistence.Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@TypeDef(
-        defaultForType = Range.class,
-        typeClass = PostgreSQLGuavaRangeType.class
-)
-public class Entity {
-    @Id
-    private Long id;
+public class RangeToStringSerializer extends JsonSerializer<Range<?>> {
 
-    private Long num;
-
-    private Long realm;
-
-    private Long shard;
-
-    private Range<Long> timestampRange;
-
-    private EntityType type;
+    @Override
+    public void serialize(Range<?> range, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        if (range != null) {
+            gen.writeString(PostgreSQLGuavaRangeType.INSTANCE.asString(range));
+        }
+    }
 }

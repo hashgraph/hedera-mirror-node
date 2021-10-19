@@ -32,6 +32,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import javax.annotation.Resource;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
@@ -43,7 +45,6 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Nft;
@@ -62,7 +63,6 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
-import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -93,9 +93,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     @Resource
     private TokenAccountRepository tokenAccountRepository;
-
-    @Resource
-    private TokenRepository tokenRepository;
 
     @Resource
     private TokenTransferRepository tokenTransferRepository;
@@ -129,13 +126,13 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         Token nftClass2 = token(25L, nftId2, NON_FUNGIBLE_UNIQUE);
         Token nftClass3 = token(30L, nftId3, NON_FUNGIBLE_UNIQUE);
 
-        Entity ft1Entity = entity(ftClass1, true, 50L);
-        Entity ft2Entity = entity(ftClass2);
-        Entity nft1Entity = entity(nftClass1, true, 55L);
-        Entity nft2Entity = entity(nftClass2, true, 60L);
-        Entity nft3Entity = entity(nftClass3);
+        MigrationEntity ft1Entity = entity(ftClass1, true, 50L);
+        MigrationEntity ft2Entity = entity(ftClass2);
+        MigrationEntity nft1Entity = entity(nftClass1, true, 55L);
+        MigrationEntity nft2Entity = entity(nftClass2, true, 60L);
+        MigrationEntity nft3Entity = entity(nftClass3);
 
-        entityRepository.saveAll(List.of(ft1Entity, ft2Entity, nft1Entity, nft2Entity, nft3Entity));
+        persistEntities(List.of(ft1Entity, ft2Entity, nft1Entity, nft2Entity, nft3Entity));
 
         long account1Ft1DissociateTimestamp = 70;
         long account1Nft1DissociateTimestamp = 75;
@@ -246,16 +243,19 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         jdbcOperations.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
-    private Entity entity(Token token) {
+    private MigrationEntity entity(Token token) {
         return entity(token, false, token.getCreatedTimestamp());
     }
 
-    private Entity entity(Token token, boolean deleted, long modifiedTimestamp) {
-        Entity entity = token.getTokenId().getTokenId().toEntity();
+    private MigrationEntity entity(Token token, boolean deleted, long modifiedTimestamp) {
+        long id = token.getTokenId().getTokenId().getId();
+        MigrationEntity entity = new MigrationEntity();
         entity.setCreatedTimestamp(token.getCreatedTimestamp());
         entity.setDeleted(deleted);
-        entity.setMemo("");
+        entity.setId(id);
         entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setNum(id);
+        entity.setType(TOKEN.getId());
         return entity;
     }
 
@@ -363,5 +363,36 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         transaction.setType(TRANSACTION_TYPE_TOKEN_DISSOCIATE);
         transaction.setValidStartNs(consensusNs - 5);
         return transaction;
+    }
+
+    private void persistEntities(List<MigrationEntity> entities) {
+        for (MigrationEntity entity : entities) {
+            jdbcOperations.update(
+                    "insert into entity (created_timestamp, deleted, id, modified_timestamp, num, realm, shard, type)" +
+                            " values (?,?,?,?,?,?,?,?)",
+                    entity.getCreatedTimestamp(),
+                    entity.isDeleted(),
+                    entity.getId(),
+                    entity.getModifiedTimestamp(),
+                    entity.getNum(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    entity.getType()
+            );
+        }
+    }
+
+    // Use a custom class for Entity table since its columns have changed from the current domain object
+    @Data
+    @NoArgsConstructor
+    private static class MigrationEntity {
+        private Long createdTimestamp;
+        private boolean deleted = false;
+        private long id;
+        private Long modifiedTimestamp;
+        private long num;
+        private long realm = 0;
+        private long shard = 0;
+        private int type;
     }
 }

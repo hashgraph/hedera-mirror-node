@@ -39,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -53,8 +52,6 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.31.2.sql")
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.31.1")
 class RemoveInvalidEntityMigrationTest extends IntegrationTest {
@@ -345,8 +342,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 new Object[] {id},
                 (rs, rowNum) -> {
                     Entity entity = EntityIdEndec.decode(
-                            rs.getLong("id"),
-                            getEntityTypeEnumFromInt(rs.getInt("fk_entity_type_id")))
+                                    rs.getLong("id"),
+                                    getEntityTypeEnumFromInt(rs.getInt("fk_entity_type_id")))
                             .toEntity();
                     entity.setAutoRenewAccountId(EntityIdEndec
                             .decode(rs.getLong("auto_renew_account_id"), EntityTypeEnum.ACCOUNT));

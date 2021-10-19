@@ -38,8 +38,6 @@ class TokenAccountRepositoryTest extends AbstractRepositoryTest {
 
     private final EntityId tokenId = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
     private final EntityId accountId = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
-    private final EntityId tokenId2 = EntityId.of("0.2.22", EntityTypeEnum.TOKEN);
-    private final EntityId accountId2 = EntityId.of("0.0.44", EntityTypeEnum.ACCOUNT);
 
     @Test
     void save() {
@@ -48,30 +46,6 @@ class TokenAccountRepositoryTest extends AbstractRepositoryTest {
                 .get()
                 .isNotNull()
                 .isEqualTo(token);
-    }
-
-    @Test
-    void findLastByTokenIdAndAccountId() {
-        tokenAccountRepository.save(tokenAccount(tokenId, accountId, 1, 1));
-        tokenAccountRepository.save(tokenAccount(tokenId, accountId, 1, 10));
-        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId.getId(), accountId.getId()))
-                .get()
-                .isEqualTo(tokenAccount(tokenId, accountId, 1, 10));
-    }
-
-    @Test
-    void findLastByTokenIdAndAccountIdMultipleTokensSameAccount() {
-        long createTimestamp1 = 55;
-        long createTimestamp2 = 66;
-        tokenAccountRepository.save(tokenAccount(tokenId, accountId, createTimestamp1, createTimestamp1));
-        tokenAccountRepository.save(tokenAccount(tokenId, accountId, createTimestamp2, createTimestamp2));
-        tokenAccountRepository.save(tokenAccount(tokenId2, accountId, createTimestamp2, createTimestamp2));
-
-        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId2.getId(), accountId.getId()))
-                .get()
-                .isEqualTo(tokenAccount(tokenId2, accountId, createTimestamp2, createTimestamp2));
-        assertThat(tokenAccountRepository.findLastByTokenIdAndAccountId(tokenId.getId(), accountId2.getId()))
-                .isNotPresent();
     }
 
     private TokenAccount tokenAccount(EntityId tokenId, EntityId accountId, long createdTimestamp,

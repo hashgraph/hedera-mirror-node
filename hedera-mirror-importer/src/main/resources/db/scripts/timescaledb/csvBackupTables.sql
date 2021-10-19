@@ -14,6 +14,12 @@
 
 \copy assessed_custom_fee to assessed_custom_fee.csv delimiter ',' csv;
 
+\copy contract to contract.csv delimiter ',' csv;
+
+\copy contract_history to contract_history.csv delimiter ',' csv;
+
+\copy contract_log to contract_log.csv delimiter ',' csv;
+
 \copy contract_result to contract_result.csv delimiter ',' csv;
 
 \copy crypto_transfer to crypto_transfer.csv delimiter ',' csv;
@@ -21,6 +27,8 @@
 \copy custom_fee to custom_fee.csv delimiter ',' csv;
 
 \copy entity to entity.csv delimiter ',' csv;
+
+\copy entity_history to entity_history.csv delimiter ',' csv;
 
 \copy event_file to event_file.csv delimiter ',' csv;
 

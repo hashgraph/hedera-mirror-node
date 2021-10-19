@@ -30,9 +30,22 @@ alter table address_book_entry
 alter table address_book_service_endpoint
     add primary key (consensus_timestamp, node_id, ip_address_v4, port);
 
+-- contract
+alter table if exists contract
+    add primary key (id);
+
+-- contract_history
+alter table if exists contract_history
+    add primary key (id, timestamp_range);
+create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
+
+-- contract_log
+alter table if exists contract_log
+    add primary key (consensus_timestamp, index);
+
 -- contract_result
-create index if not exists contract_result__consensus
-    on contract_result (consensus_timestamp desc);
+alter table if exists contract_result
+    add primary key (consensus_timestamp);
 
 -- crypto_transfer
 create index if not exists crypto_transfer__consensus_timestamp
@@ -60,6 +73,11 @@ create index if not exists entity__public_key
 create unique index if not exists entity__shard_realm_num
     on entity (shard, realm, num, id);
 -- have to add id when creating unique indexes due to partitioning
+
+-- entity_history
+alter table if exists entity_history
+    add primary key (id, timestamp_range);
+create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
 -- event_file
 alter table event_file
@@ -133,6 +151,8 @@ alter table token_account
 -- token_balance
 alter table token_balance
     add primary key (consensus_timestamp, account_id, token_id);
+create index if not exists token_balance__timestamp_token
+    on token_balance (consensus_timestamp desc, token_id);
 
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp

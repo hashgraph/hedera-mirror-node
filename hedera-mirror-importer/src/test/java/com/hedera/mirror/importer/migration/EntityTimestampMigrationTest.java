@@ -28,44 +28,37 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.List;
 import javax.annotation.Resource;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
-import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.39.2")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.40.1.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup_v1.40.1.sql")
 class EntityTimestampMigrationTest extends IntegrationTest {
 
-    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityTypeEnum.ACCOUNT);
-
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
+    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityTypeEnum.ACCOUNT);
 
     @Resource
     private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.40.0__entity_timestamp.sql")
     private File migrationSql;
-
-    @Resource
-    private EntityRepository entityRepository;
 
     @Resource
     private TransactionRepository transactionRepository;
@@ -75,7 +68,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         // migration
         migrate();
 
-        assertThat(entityRepository.count()).isZero();
+        assertThat(jdbcOperations.queryForObject("select count(*) from entity", Integer.class)).isZero();
         assertThat(transactionRepository.count()).isZero();
     }
 
@@ -106,7 +99,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
                 transaction(112L, 9006, SUCCESS, TransactionTypeEnum.SCHEDULECREATE)
         ));
 
-        List<Entity> expected = List.of(
+        List<MigrationEntity> expected = List.of(
                 entity(9000, EntityTypeEnum.ACCOUNT, 99L, 99L), // no change
                 entity(9001, EntityTypeEnum.ACCOUNT, 100L, 102L), // updated at 102L
                 entity(9002, EntityTypeEnum.CONTRACT, 103L, 103L), // update transaction failed at 104L
@@ -120,21 +113,23 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(retrieveAllEntity())
+        assertThat(retrieveEntities())
                 .usingElementComparatorOnFields("id", "createdTimestamp", "modifiedTimestamp")
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private Entity entity(long id, EntityTypeEnum entityTypeEnum) {
+    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum) {
         return entity(id, entityTypeEnum, null, null);
     }
 
-    private Entity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp, Long modifiedTimestamp) {
-        Entity entity = EntityIdEndec.decode(id, entityTypeEnum).toEntity();
+    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp,
+                                   Long modifiedTimestamp) {
+        MigrationEntity entity = new MigrationEntity();
         entity.setCreatedTimestamp(createdTimestamp);
-        entity.setDeleted(false);
-        entity.setMemo("foobar");
+        entity.setId(id);
         entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setNum(id);
+        entity.setType(entityTypeEnum.getId());
         return entity;
     }
 
@@ -155,56 +150,36 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
-    private void persistEntities(List<Entity> entities) {
-        for (Entity entity : entities) {
+    private void persistEntities(List<MigrationEntity> entities) {
+        for (MigrationEntity entity : entities) {
             jdbcOperations.update(
-                    "insert into entity (auto_renew_account_id, auto_renew_period, created_timestamp, deleted, " +
-                            "expiration_timestamp, id, key, memo, modified_timestamp, num, public_key, " +
-                            "proxy_account_id, realm, shard, submit_key, type) " +
-                            "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                    entity.getAutoRenewAccountId() == null ? null : entity.getAutoRenewAccountId().getId(),
-                    entity.getAutoRenewPeriod(),
+                    "insert into entity (created_timestamp, id, modified_timestamp, num, realm, shard, type) " +
+                            "values (?,?,?,?,?,?,?)",
                     entity.getCreatedTimestamp(),
-                    entity.getDeleted(),
-                    entity.getExpirationTimestamp(),
                     entity.getId(),
-                    entity.getKey(),
-                    entity.getMemo(),
                     entity.getModifiedTimestamp(),
                     entity.getNum(),
-                    entity.getPublicKey(),
-                    entity.getProxyAccountId() == null ? null : entity.getProxyAccountId().getId(),
                     entity.getRealm(),
                     entity.getShard(),
-                    entity.getSubmitKey(),
                     entity.getType()
             );
         }
     }
 
-    private List<Entity> retrieveAllEntity() {
-        return jdbcOperations.query(
-                "select * from entity",
-                (rs, rowNum) -> {
-                    Entity entity = new Entity();
-                    entity.setAutoRenewAccountId(EntityIdEndec
-                            .decode(rs.getLong("auto_renew_account_id"), EntityTypeEnum.ACCOUNT));
-                    entity.setAutoRenewPeriod(rs.getLong("auto_renew_period"));
-                    entity.setCreatedTimestamp(rs.getLong("created_timestamp"));
-                    entity.setDeleted(rs.getBoolean("deleted"));
-                    entity.setExpirationTimestamp(rs.getLong("expiration_timestamp"));
-                    entity.setId(rs.getLong("id"));
-                    entity.setKey(rs.getBytes("key"));
-                    entity.setMemo(rs.getString("memo"));
-                    entity.setModifiedTimestamp(rs.getLong("modified_timestamp"));
-                    entity.setNum(rs.getLong("num"));
-                    entity.setPublicKey(rs.getString("public_key"));
-                    entity.setRealm(rs.getLong("realm"));
-                    entity.setShard(rs.getLong("shard"));
-                    entity.setSubmitKey(rs.getBytes("submit_key"));
-                    entity.setType(rs.getInt("type"));
+    private List<MigrationEntity> retrieveEntities() {
+        return jdbcOperations.query("select * from entity", new BeanPropertyRowMapper<>(MigrationEntity.class));
+    }
 
-                    return entity;
-                });
+    // Use a custom class for Entity table since its columns have changed from the current domain object
+    @Data
+    @NoArgsConstructor
+    private static class MigrationEntity {
+        private Long createdTimestamp;
+        private long id;
+        private Long modifiedTimestamp;
+        private long num;
+        private long realm = 0;
+        private long shard = 0;
+        private int type;
     }
 }

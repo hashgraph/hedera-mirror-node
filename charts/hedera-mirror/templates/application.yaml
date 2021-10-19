@@ -55,7 +55,7 @@ spec:
       - name: Hedera Mirror Node team
         email: mirrornode@hedera.com
     notes: |
-      {{- if .Values.grpc.enabled -}}
+      {{ if .Values.grpc.enabled -}}
       To access the GRPC API:
 
         GRPC_IP=$(kubectl get service/{{ .Release.Name }}-grpc -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')

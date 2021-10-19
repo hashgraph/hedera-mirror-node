@@ -20,22 +20,35 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.Range;
+import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import javax.persistence.Convert;
 import javax.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
+import com.hedera.mirror.importer.converter.RangeToStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
+@AllArgsConstructor
+@Builder(toBuilder = true)
 @Data
 @javax.persistence.Entity
-@Log4j2
+@NoArgsConstructor
 @ToString(exclude = {"key", "submitKey"})
+@TypeDef(
+        defaultForType = Range.class,
+        typeClass = PostgreSQLGuavaRangeType.class
+)
 public class Entity {
     @Convert(converter = AccountIdConverter.class)
     private EntityId autoRenewAccountId;
@@ -58,8 +71,6 @@ public class Entity {
     @JsonSerialize(using = NullableStringSerializer.class)
     private String memo;
 
-    private Long modifiedTimestamp;
-
     private Long num;
 
     @Convert(converter = AccountIdConverter.class)
@@ -78,6 +89,18 @@ public class Entity {
 
     private Integer type;
 
+    @JsonSerialize(using = RangeToStringSerializer.class)
+    private Range<Long> timestampRange;
+
+    @JsonIgnore
+    public Long getModifiedTimestamp() {
+        return timestampRange != null ? timestampRange.lowerEndpoint() : null;
+    }
+
+    public void setModifiedTimestamp(long modifiedTimestamp) {
+        timestampRange = Range.atLeast(modifiedTimestamp);
+    }
+
     public void setKey(byte[] key) {
         this.key = key;
         publicKey = Utility.convertSimpleKeyToHex(key);
@@ -89,5 +112,19 @@ public class Entity {
 
     public EntityId toEntityId() {
         return new EntityId(shard, realm, num, type);
+    }
+
+    // Necessary since Lombok doesn't use our setters for builders
+    public static class EntityBuilder {
+        public EntityBuilder key(byte[] key) {
+            this.key = key;
+            this.publicKey = Utility.convertSimpleKeyToHex(key);
+            return this;
+        }
+
+        public EntityBuilder memo(String memo) {
+            this.memo = StringUtils.isEmpty(memo) ? "" : Utility.sanitize(memo);
+            return this;
+        }
     }
 }
