@@ -401,7 +401,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         Entity dbAccountEntity = getEntity(dbTransaction.getEntityId());
-        LiveHash dbLiveHash = liveHashRepository.findById(dbTransaction.getConsensusNs()).get();
+        LiveHash dbLiveHash = liveHashRepository.findById(dbTransaction.getConsensusTimestamp()).get();
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())

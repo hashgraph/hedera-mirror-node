@@ -85,7 +85,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
                 entity(9006, EntityTypeEnum.SCHEDULE)
         ));
 
-        transactionRepository.saveAll(List.of(
+        persistTransactions(List.of(
                 transaction(102L, 9001, SUCCESS, TransactionTypeEnum.CRYPTOUPDATEACCOUNT),
                 transaction(103L, 9002, SUCCESS, TransactionTypeEnum.CONTRACTCREATEINSTANCE),
                 transaction(104L, 9002, INSUFFICIENT_TX_FEE, TransactionTypeEnum.CONTRACTUPDATEINSTANCE),
@@ -136,7 +136,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
     private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result,
                                     TransactionTypeEnum type) {
         Transaction transaction = new Transaction();
-        transaction.setConsensusNs(consensusNs);
+        transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityTypeEnum.UNKNOWN));
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setPayerAccountId(PAYER_ID);
@@ -168,6 +168,34 @@ class EntityTimestampMigrationTest extends IntegrationTest {
 
     private List<MigrationEntity> retrieveEntities() {
         return jdbcOperations.query("select * from entity", new BeanPropertyRowMapper<>(MigrationEntity.class));
+    }
+
+    private void persistTransactions(List<Transaction> transactions) {
+        for (Transaction transaction : transactions) {
+            jdbcOperations
+                    .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " +
+                                    "max_fee, " +
+                                    "memo, " +
+                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
+                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
+                                    " values" +
+                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            transaction.getChargedTxFee(),
+                            transaction.getConsensusTimestamp(),
+                            transaction.getEntityId().getId(),
+                            transaction.getInitialBalance(),
+                            transaction.getMaxFee(),
+                            transaction.getMemo(),
+                            transaction.getNodeAccountId().getId(),
+                            transaction.getPayerAccountId().getId(),
+                            transaction.getResult(),
+                            transaction.isScheduled(),
+                            transaction.getTransactionBytes(),
+                            transaction.getTransactionHash(),
+                            transaction.getType(),
+                            transaction.getValidDurationSeconds(),
+                            transaction.getValidStartNs());
+        }
     }
 
     // Use a custom class for Entity table since its columns have changed from the current domain object

@@ -119,8 +119,7 @@ describe('topicmessage formatTopicMessageRow tests', () => {
   const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
   const rowInput = {
     consensus_timestamp: '1234567890000000003',
-    realm_num: 1,
-    topic_num: 7,
+    topic_id: 4294967303,
     message: inputMessage,
     running_hash: inputMessage,
     sequence_number: '3',
@@ -158,14 +157,13 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
 
   const expectedQuery = `select *
                          from topic_message
-                         where realm_num = $1
-                           and topic_num = $2
-                           and sequence_number > $3
-                           and consensus_timestamp <= $4
+                         where topic_id = $1
+                           and sequence_number > $2
+                           and consensus_timestamp <= $3
                          order by consensus_timestamp desc
-                         limit $5;`;
+                         limit $4;`;
   expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
-  expect(params).toStrictEqual([0n, 7n, '2', '1234567890.000000006', '3']);
+  expect(params).toStrictEqual(['7', '2', '1234567890.000000006', '3']);
   expect(order).toStrictEqual(constants.orderFilterValues.DESC);
   expect(limit).toStrictEqual(3);
 });

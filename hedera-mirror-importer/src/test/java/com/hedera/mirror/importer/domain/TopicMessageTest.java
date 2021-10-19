@@ -37,11 +37,10 @@ class TopicMessageTest {
         topicMessage.setConsensusTimestamp(1594401417000000000L);
         topicMessage.setMessage(new byte[] {1, 2, 3});
         topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
-        topicMessage.setRealmNum(0);
         topicMessage.setRunningHash(new byte[] {4, 5, 6});
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicNum(1001);
+        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityTypeEnum.TOPIC));
         topicMessage.setValidStartTimestamp(1594401416000000000L);
 
         ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
@@ -53,11 +52,10 @@ class TopicMessageTest {
                 "\"consensus_timestamp\":1594401417000000000," +
                 "\"message\":\"AQID\"," +
                 "\"payer_account_id\":4294968296," +
-                "\"realm_num\":0," +
                 "\"running_hash\":\"BAUG\"," +
                 "\"running_hash_version\":2," +
                 "\"sequence_number\":1," +
-                "\"topic_num\":1001," +
+                "\"topic_id\":1001," +
                 "\"valid_start_timestamp\":1594401416000000000}");
     }
 }

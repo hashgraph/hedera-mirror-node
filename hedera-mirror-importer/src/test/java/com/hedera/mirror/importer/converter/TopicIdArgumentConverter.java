@@ -21,12 +21,11 @@ package com.hedera.mirror.importer.converter;
  */
 
 import com.hederahashgraph.api.proto.java.TopicID;
-
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;
 
-public final class TopicIdConverter implements ArgumentConverter {
+public final class TopicIdArgumentConverter implements ArgumentConverter {
     @Override
     public Object convert(Object input, ParameterContext parameterContext)
             throws ArgumentConversionException {

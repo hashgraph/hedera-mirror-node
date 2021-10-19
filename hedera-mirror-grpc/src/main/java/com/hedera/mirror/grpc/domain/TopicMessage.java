@@ -73,8 +73,6 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @ToString.Exclude
     private byte[] message;
 
-    private int realmNum;
-
     @ToString.Exclude
     private byte[] runningHash;
 
@@ -82,7 +80,7 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
 
     private long sequenceNumber;
 
-    private int topicNum;
+    private long topicId;
 
     private Integer chunkNum;
 

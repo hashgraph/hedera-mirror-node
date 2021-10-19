@@ -98,7 +98,7 @@ select create_hypertable('topic_message', 'consensus_timestamp', chunk_time_inte
                          create_default_indexes => false, if_not_exists => true);
 
 -- transaction
-select create_hypertable('transaction', 'consensus_ns', chunk_time_interval => ${chunkTimeInterval},
+select create_hypertable('transaction', 'consensus_timestamp', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
 -- transaction_signature
