@@ -866,21 +866,19 @@ const formatComparator = (comparator) => {
  * @return {[]|{token_id: string, balance: Number}[]}
  */
 const parseTokenBalances = (tokenBalances) => {
-  return tokenBalances
-    ? tokenBalances
-        .map((tokenBalance) => {
-          const {token_id: tokenId, balance} = tokenBalance;
-          if (_.isNil(tokenId)) {
-            return null;
-          }
+  if (_.isNil(tokenBalances)) {
+    return [];
+  }
 
-          return {
-            token_id: EntityId.fromString(tokenId).toString(),
-            balance,
-          };
-        })
-        .filter((x) => !!x)
-    : [];
+  return tokenBalances
+    .filter((x) => !_.isNil(x.token_id))
+    .map((tokenBalance) => {
+      const {token_id: tokenId, balance} = tokenBalance;
+      return {
+        token_id: EntityId.fromString(tokenId).toString(),
+        balance,
+      };
+    });
 };
 
 const parsePublicKey = (publicKey) => {
