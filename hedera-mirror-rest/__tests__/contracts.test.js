@@ -295,12 +295,6 @@ describe('getContractByIdQuery', () => {
 });
 
 describe('getContractsQuery', () => {
-  const defaultInput = {
-    whereQuery: '',
-    limitQuery: 'limit $1',
-    order: 'asc',
-  };
-
   const specs = [
     {
       name: 'empty whereQuery',

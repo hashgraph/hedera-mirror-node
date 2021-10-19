@@ -88,8 +88,8 @@ const loadContracts = async (contracts) => {
     return;
   }
 
-  for (let i = 0; i < contracts.length; ++i) {
-    await addContract(contracts[i]);
+  for (const contract of contracts) {
+    await addContract(contract);
   }
 };
 
@@ -98,8 +98,8 @@ const loadCryptoTransfers = async (cryptoTransfers) => {
     return;
   }
 
-  for (let i = 0; i < cryptoTransfers.length; ++i) {
-    await addCryptoTransaction(cryptoTransfers[i]);
+  for (const cryptoTransfer of cryptoTransfers) {
+    await addCryptoTransaction(cryptoTransfer);
   }
 };
 
@@ -188,8 +188,8 @@ const loadTransactions = async (transactions) => {
     return;
   }
 
-  for (let i = 0; i < transactions.length; ++i) {
-    await addTransaction(transactions[i]);
+  for (const transaction of transactions) {
+    await addTransaction(transaction);
   }
 };
 
@@ -198,8 +198,8 @@ const loadTopicMessages = async (messages) => {
     return;
   }
 
-  for (let i = 0; i < messages.length; ++i) {
-    await addTopicMessage(messages[i]);
+  for (const message of messages) {
+    await addTopicMessage(message);
   }
 };
 
@@ -452,8 +452,7 @@ const insertTransfers = async (
     );
   }
 
-  for (let i = 0; i < transfers.length; ++i) {
-    const transfer = transfers[i];
+  for (const transfer of transfers) {
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id)
        VALUES ($1, $2, $3);`,
