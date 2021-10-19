@@ -40,6 +40,7 @@ const filterKeys = {
   TOKENID: 'tokenid',
   TOKEN_ID: 'token.id',
   TOKEN_TYPE: 'type',
+  TOPIC_ID: 'topic.id',
   TRANSACTION_TYPE: 'transactiontype',
 };
 

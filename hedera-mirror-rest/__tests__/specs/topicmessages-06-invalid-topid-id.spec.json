@@ -29,7 +29,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: topic_id"
+          "message": "Invalid parameter: topic.id"
         }
       ]
     }

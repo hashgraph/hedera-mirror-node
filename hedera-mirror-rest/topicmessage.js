@@ -57,11 +57,11 @@ const validateConsensusTimestampParam = (consensusTimestamp) => {
 const validateGetSequenceMessageParams = (topicId, seqNum) => {
   const badParams = [];
   if (!EntityId.isValidEntityId(topicId)) {
-    badParams.push(topicMessageColumns.TOPIC_ID);
+    badParams.push(constants.filterKeys.TOPIC_ID);
   }
 
   if (!utils.isValidNum(seqNum)) {
-    badParams.push(topicMessageColumns.SEQUENCE_NUMBER);
+    badParams.push(constants.filterKeys.SEQUENCE_NUMBER);
   }
 
   if (badParams.length > 0) {
@@ -74,7 +74,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
  */
 const validateGetTopicMessagesParams = (topicId) => {
   if (!EntityId.isValidEntityId(topicId)) {
-    throw InvalidArgumentError.forParams(topicMessageColumns.TOPIC_ID);
+    throw InvalidArgumentError.forParams(constants.filterKeys.TOPIC_ID);
   }
 };
 
