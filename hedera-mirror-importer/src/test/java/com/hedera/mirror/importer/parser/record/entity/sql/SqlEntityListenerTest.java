@@ -1091,7 +1091,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private Transaction makeTransaction() {
         EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
         Transaction transaction = new Transaction();
-        transaction.setConsensusNs(101L);
+        transaction.setConsensusTimestamp(101L);
         transaction.setEntityId(entityId);
         transaction.setNodeAccountId(entityId);
         transaction.setMemo("memo".getBytes());

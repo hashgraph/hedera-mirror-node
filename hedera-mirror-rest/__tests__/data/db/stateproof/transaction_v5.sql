@@ -22,7 +22,7 @@ SET row_security = off;
 -- Data for Name: transaction; Type: TABLE DATA; Schema: public; Owner: mirror_node
 --
 
-INSERT INTO public.transaction (consensus_ns, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled) VALUES
+INSERT INTO public.transaction (consensus_timestamp, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled) VALUES
 (1614921782071338000, 33, 22, 1744, 1614921769532637508, 120, 3, 2241, 0, 3000000000, 841446, '\x', '\xc3cef4e7f49694630a02e3dbfcc94e45cc983e5b2473592a4fe0eb3e89c5999dbb20aeeddcacd53dd92a79ec47fb459c', NULL, false),
 (1614921782161292000, 33, 22, 1744, 1614921773011663869, 120, 4, 2242, 0, 3000000000, 841446, '\x', '\x477c8e2ab5e4b71d64f4133f6e698c48cec6d2d6fbad0ad0cf8d6173e72caba3f12a97c2fd22f72eb593b4d9a460bee2', NULL, false),
 (1614921782161294000, 40, 22, 1744, 1614921773517191276, 120, 4, 2244, 0, 500000000, 67512675, '\x', '\x2845ad0e074eff6b8d247565eb858aa88363527c7d5051e6371c74757f7407fc9bb02dcb9276a93392067a8d9f9f1df3', NULL, false),

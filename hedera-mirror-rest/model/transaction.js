@@ -28,7 +28,7 @@ class Transaction {
    */
   constructor(transaction) {
     this.chargedTxFee = transaction.charged_tx_fee;
-    this.consensusNs = transaction.consensus_ns;
+    this.consensusTimestamp = transaction.consensus_timestamp;
     this.entityId = transaction.entity_id;
     this.initialBalance = transaction.initial_balance;
     this.maxFee = transaction.max_fee;
@@ -49,8 +49,8 @@ class Transaction {
 
   static CHARGED_TX_FEE = `charged_tx_fee`;
   static CHARGED_TX_FEE_FULL_NAME = `${this.tableAlias}.${this.CHARGED_TX_FEE}`;
-  static CONSENSUS_NS = `consensus_ns`;
-  static CONSENSUS_NS_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_NS}`;
+  static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
+  static CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_TIMESTAMP}`;
   static ENTITY_ID = `entity_id`;
   static ENTITY_ID_FULL_NAME = `${this.tableAlias}.${this.ENTITY_ID}`;
   static INITIAL_BALANCE = `initial_balance`;
@@ -79,7 +79,7 @@ class Transaction {
   static VALID_START_NS_FULL_NAME = `${this.tableAlias}.${this.VALID_START_NS}`;
 
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: Transaction.CONSENSUS_NS_FULL_NAME,
+    [constants.filterKeys.TIMESTAMP]: Transaction.CONSENSUS_TIMESTAMP_FULL_NAME,
   };
 }
 
