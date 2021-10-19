@@ -49,6 +49,8 @@ class EntityIdTest {
 
     @Test
     void testEntityEncodingNullResult() {
+        assertThat(EntityId.encode(null)).isNull();
+
         TopicID topicID = TopicID.newBuilder().setShardNum(1L << SHARD_BITS).setRealmNum(0).setTopicNum(0).build();
         assertThat(EntityId.encode(topicID)).isNull();
 
