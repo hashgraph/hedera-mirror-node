@@ -24,15 +24,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import java.io.IOException;
+import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
-public class AccountIdDeserializer extends JsonDeserializer<EntityId> {
+@Log4j2
+public class TopicIdDeserializer extends JsonDeserializer<EntityId> {
     @Override
     public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
         Long value = jsonParser.readValueAs(Long.class);
-        return value != null ? EntityIdEndec.decode(value, EntityTypeEnum.ACCOUNT) : null;
+        return value != null ? EntityIdEndec.decode(value, EntityTypeEnum.TOPIC) : null;
     }
 }

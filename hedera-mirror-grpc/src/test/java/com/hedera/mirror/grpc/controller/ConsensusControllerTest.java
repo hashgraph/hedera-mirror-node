@@ -82,6 +82,17 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
+    void invalidTopicID() {
+        ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
+                .setTopicID(TopicID.newBuilder().setTopicNum(-1).build())
+                .build();
+        grpcConsensusService.subscribeTopic(Mono.just(query))
+                .as(StepVerifier::create)
+                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Invalid entity ID"))
+                .verify(Duration.ofMillis(500));
+    }
+
+    @Test
     void constraintViolationException() {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setTopicID(TopicID.newBuilder().build())

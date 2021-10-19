@@ -14,39 +14,39 @@ Array [
 
 exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams throws error for -123 1`] = `
 Array [
-  "Invalid parameter: topic_num",
-  "Invalid parameter: sequence_number",
+  "Invalid parameter: topic.id",
+  "Invalid parameter: sequencenumber",
 ]
 `;
 
 exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams throws error for 123.0001 1`] = `
 Array [
-  "Invalid parameter: topic_num",
-  "Invalid parameter: sequence_number",
+  "Invalid parameter: topic.id",
+  "Invalid parameter: sequencenumber",
 ]
 `;
 
 exports[`topicmessage validateGetSequenceMessageParams tests Verify validateGetSequenceMessageParams throws error for abc 1`] = `
 Array [
-  "Invalid parameter: topic_num",
-  "Invalid parameter: sequence_number",
+  "Invalid parameter: topic.id",
+  "Invalid parameter: sequencenumber",
 ]
 `;
 
 exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams throws error for -123 1`] = `
 Array [
-  "Invalid parameter: topic_num",
+  "Invalid parameter: topic.id",
 ]
 `;
 
 exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams throws error for 123.0001 1`] = `
 Array [
-  "Invalid parameter: topic_num",
+  "Invalid parameter: topic.id",
 ]
 `;
 
 exports[`topicmessage validateGetTopicMessagesParams tests Verify validateGetTopicMessagesParams throws error for abc 1`] = `
 Array [
-  "Invalid parameter: topic_num",
+  "Invalid parameter: topic.id",
 ]
 `;

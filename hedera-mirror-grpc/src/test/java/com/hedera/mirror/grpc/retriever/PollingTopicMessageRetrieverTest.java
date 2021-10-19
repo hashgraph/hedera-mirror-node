@@ -236,34 +236,14 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void topicNum(boolean throttle) {
-        domainBuilder.topicMessage(t -> t.topicNum(0)).block();
-        domainBuilder.topicMessage(t -> t.topicNum(1)).block();
-        domainBuilder.topicMessage(t -> t.topicNum(2)).block();
+    void topicId(boolean throttle) {
+        domainBuilder.topicMessage(t -> t.topicId(0)).block();
+        domainBuilder.topicMessage(t -> t.topicId(1)).block();
+        domainBuilder.topicMessage(t -> t.topicId(2)).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicNum(1)
-                .build();
-
-        pollingTopicMessageRetriever.retrieve(filter, throttle)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .expectNext(2L)
-                .thenCancel()
-                .verify(Duration.ofMillis(500));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void realmNum(boolean throttle) {
-        domainBuilder.topicMessage(t -> t.realmNum(0)).block();
-        domainBuilder.topicMessage(t -> t.realmNum(1)).block();
-        domainBuilder.topicMessage(t -> t.realmNum(2)).block();
-
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .realmNum(1)
+                .topicId(1)
                 .build();
 
         pollingTopicMessageRetriever.retrieve(filter, throttle)

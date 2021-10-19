@@ -86,8 +86,7 @@ public class CompositeTopicListener implements TopicListener {
     }
 
     private boolean filterMessage(TopicMessage message, TopicMessageFilter filter) {
-        return message.getRealmNum() == filter.getRealmNum() &&
-                message.getTopicNum() == filter.getTopicNum() &&
+        return message.getTopicId() == filter.getTopicId() &&
                 message.getConsensusTimestamp() >= filter.getStartTimeLong();
     }
 

@@ -106,7 +106,7 @@ alter table token_transfer
     set (timescaledb.compress, timescaledb.compress_segmentby = 'account_id');
 
 alter table topic_message
-    set (timescaledb.compress, timescaledb.compress_segmentby = 'realm_num, topic_num');
+    set (timescaledb.compress, timescaledb.compress_segmentby = 'topic_id');
 
 alter table transaction
     set (timescaledb.compress, timescaledb.compress_segmentby = 'payer_account_id, type');

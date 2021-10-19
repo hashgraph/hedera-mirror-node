@@ -340,11 +340,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         topicMessage.setConsensusTimestamp(Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
         topicMessage.setMessage(Utility.toBytes(transactionBody.getMessage()));
-        topicMessage.setRealmNum((int) topicId.getRealmNum());
         topicMessage.setRunningHash(Utility.toBytes(receipt.getTopicRunningHash()));
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());
-        topicMessage.setTopicNum((int) topicId.getTopicNum());
+        topicMessage.setTopicId(EntityId.of(topicId));
         entityListener.onTopicMessage(topicMessage);
     }
 

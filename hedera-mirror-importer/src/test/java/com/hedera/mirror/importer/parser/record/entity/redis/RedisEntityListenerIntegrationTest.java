@@ -46,13 +46,13 @@ class RedisEntityListenerIntegrationTest extends BatchEntityListenerTest {
     }
 
     @Override
-    protected Flux<TopicMessage> subscribe(long topicNum) {
+    protected Flux<TopicMessage> subscribe(long topicId) {
         Sinks.Many<TopicMessage> sink = Sinks.many().unicast().onBackpressureBuffer();
         RedisSerializer stringSerializer = ((RedisTemplate<String, ?>) redisOperations).getStringSerializer();
         RedisSerializer<TopicMessage> serializer = (RedisSerializer<TopicMessage>) redisOperations.getValueSerializer();
 
         RedisCallback<TopicMessage> redisCallback = connection -> {
-            byte[] channel = stringSerializer.serialize("topic.0.0." + topicNum);
+            byte[] channel = stringSerializer.serialize("topic." + topicId);
             connection.subscribe((message, pattern) -> sink.emitNext(serializer.deserialize(message.getBody()),
                     Sinks.EmitFailureHandler.FAIL_FAST), channel);
             return null;

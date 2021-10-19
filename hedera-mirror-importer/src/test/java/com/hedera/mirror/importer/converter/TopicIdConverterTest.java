@@ -20,19 +20,11 @@ package com.hedera.mirror.importer.converter;
  * ‍
  */
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import java.io.IOException;
+import org.junit.jupiter.api.BeforeAll;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.util.EntityIdEndec;
-
-public class AccountIdDeserializer extends JsonDeserializer<EntityId> {
-    @Override
-    public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
-        Long value = jsonParser.readValueAs(Long.class);
-        return value != null ? EntityIdEndec.decode(value, EntityTypeEnum.ACCOUNT) : null;
+class TopicIdConverterTest extends AbstractEntityConverterTest {
+    @BeforeAll
+    static void beforeAll() {
+        converter = new TopicIdConverter();
     }
 }

@@ -198,11 +198,10 @@ class PgCopyTest extends IntegrationTest {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusNs);
         topicMessage.setMessage(RandomUtils.nextBytes(messageSize)); // Just exceeds 8000B
-        topicMessage.setRealmNum(0);
         topicMessage.setRunningHash(Strings.toByteArray("running hash"));
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(consensusNs);
-        topicMessage.setTopicNum(1001);
+        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityTypeEnum.TOPIC));
         return topicMessage;
     }
 }

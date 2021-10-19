@@ -57,13 +57,13 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @RequiredArgsConstructor
 public class RedisEntityListener implements BatchEntityListener {
 
-    private static final String TOPIC_FORMAT = "topic.%d.%d.%d";
+    private static final String TOPIC_FORMAT = "topic.%d";
 
     private final MirrorProperties mirrorProperties;
     private final RedisProperties redisProperties;
     private final RedisOperations<String, StreamMessage> redisOperations;
     private final MeterRegistry meterRegistry;
-    private final LoadingCache<Integer, String> channelNames = Caffeine.newBuilder()
+    private final LoadingCache<Long, String> channelNames = Caffeine.newBuilder()
             .maximumSize(1000L)
             .build(this::getChannelName);
 
@@ -149,7 +149,7 @@ public class RedisEntityListener implements BatchEntityListener {
             @Override
             public Object execute(RedisOperations operations) {
                 for (TopicMessage topicMessage : messages) {
-                    String channel = channelNames.get(topicMessage.getTopicNum());
+                    String channel = channelNames.get(topicMessage.getTopicId().getId());
                     redisOperations.convertAndSend(channel, topicMessage);
                 }
                 return null;
@@ -157,8 +157,7 @@ public class RedisEntityListener implements BatchEntityListener {
         };
     }
 
-    // For now, we assume realm is zero. Once we optimize TopicMessage to store encoded ID we can use that instead.
-    private String getChannelName(Integer id) {
-        return String.format(TOPIC_FORMAT, mirrorProperties.getShard(), 0, id);
+    private String getChannelName(Long id) {
+        return String.format(TOPIC_FORMAT, id);
     }
 }
