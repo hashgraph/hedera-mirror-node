@@ -214,6 +214,20 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @Given("^I pause the token(?: (.*))?$")
+    public void pauseToken(Integer index) {
+        networkTransactionResponse = tokenClient.pause(tokenIds.get(getIndexOrDefault(index)));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Given("^I unpause the token(?: (.*))?$")
+    public void unpauseToken(Integer index) {
+        networkTransactionResponse = tokenClient.unpause(tokenIds.get(getIndexOrDefault(index)));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
     @Given("^I update the treasury of token(?: (.*))? to recipient(?: (.*))?$")
     public void updateTokenTreasury(Integer tokenIndex, Integer recipientIndex) {
         try {

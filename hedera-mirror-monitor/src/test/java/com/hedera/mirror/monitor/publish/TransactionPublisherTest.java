@@ -259,7 +259,7 @@ class TransactionPublisherTest {
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
-                        .hasMessageContaining("Failed to get gRPC response within maximum retry count")
+                        .hasMessageContaining("exceeded maximum attempts for request with last exception being")
                         .getRootCause()
                         .hasMessageContaining(errorResponseCode.toString()))
                 .verify(Duration.ofSeconds(1L));
