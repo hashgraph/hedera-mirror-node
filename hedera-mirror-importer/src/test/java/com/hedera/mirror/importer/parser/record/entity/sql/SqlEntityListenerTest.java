@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -261,7 +260,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    @Transactional
     void onEntityId() {
         // given
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
@@ -300,48 +298,57 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onEntityMerge() {
         // given
-        Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
-                null, null, false, null, null);
+        Entity entity = getEntity(1, 1L, 1L, 0, "memo", keyFromString(KEY));
         sqlEntityListener.onEntity(entity);
 
-        Entity entityAutoUpdated = getEntity(1, null, 5L, null, null,
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, null, null, null);
+        Entity entityAutoUpdated = getEntity(1, 5L);
+        EntityId autoRenewAccountId = EntityId.of("0.0.10", ACCOUNT);
+        entityAutoUpdated.setAutoRenewAccountId(autoRenewAccountId);
+        entityAutoUpdated.setAutoRenewPeriod(360L);
         sqlEntityListener.onEntity(entityAutoUpdated);
 
-        Entity entityExpirationUpdated = getEntity(1, null, 10L, null, null,
-                null, null, null, 720L, null);
+        Entity entityExpirationUpdated = getEntity(1, 10L);
+        entityExpirationUpdated.setExpirationTimestamp(720L);
         sqlEntityListener.onEntity(entityExpirationUpdated);
 
-        Entity entitySubmitKeyUpdated = getEntity(1, null, 15L, null, null,
-                null, null, null, null, keyFromString(KEY2));
+        Entity entitySubmitKeyUpdated = getEntity(1, 15L);
+        entitySubmitKeyUpdated.setSubmitKey(keyFromString(KEY2).toByteArray());
         sqlEntityListener.onEntity(entitySubmitKeyUpdated);
 
-        Entity entityMemoDeleteUpdated = getEntity(1, null, 20L, "memo-deleted", null,
-                null, null, true, null, null);
-        sqlEntityListener.onEntity(entityMemoDeleteUpdated);
+        Entity entityMemoUpdated = getEntity(1, 20L);
+        entityMemoUpdated.setMemo("memo-updated");
+        sqlEntityListener.onEntity(entityMemoUpdated);
+
+        Entity entityMaxAutomaticTokenAssociationsUpdated = getEntity(1, 25L);
+        entityMaxAutomaticTokenAssociationsUpdated.setMaxAutomaticTokenAssociations(10);
+        sqlEntityListener.onEntity(entityMaxAutomaticTokenAssociationsUpdated);
+
+        Entity entityReceiverSigRequired = getEntity(1, 30L);
+        entityReceiverSigRequired.setReceiverSigRequired(true);
+        sqlEntityListener.onEntity(entityReceiverSigRequired);
 
         // when
         completeFileAndCommit();
 
         // then
-        Entity entityMerged = getEntity(1, 1L, 20L, "memo-deleted", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, true, 720L, keyFromString(KEY2));
+        Entity expected = getEntity(1, 1L, 30L, "memo-updated", keyFromString(KEY), autoRenewAccountId, 360L, null,
+                720L, 10, true, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, entityRepository.count());
-        assertExistsAndEquals(entityRepository, entityMerged, 1L);
+        assertThat(entityRepository.findAll()).containsOnly(expected);
     }
 
     @Test
     void onEntityEntityIdMerge() {
         // given
-        Entity entity = getEntity(1, 1L, 1L, "memo-updated", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, keyFromString(KEY2));
+        Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
         sqlEntityListener.onEntity(entity);
 
         EntityId entityId1 = EntityId.of(0L, 0L, 1L, ACCOUNT);
         sqlEntityListener.onEntity(entityId1.toEntity());
 
-        Entity entityUpdated = getEntity(1, null, 5L, "memo-updated");
+        Entity entityUpdated = getEntity(1, 5L);
+        entityUpdated.setMemo("memo-updated");
         sqlEntityListener.onEntity(entityUpdated);
 
         EntityId entityId2 = EntityId.of(0L, 0L, 1L, ACCOUNT);
@@ -352,7 +359,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         Entity entityMerged = getEntity(1, 1L, 5L, "memo-updated", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, keyFromString(KEY2));
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityMerged, 1L);
@@ -1030,11 +1037,11 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private void completeFileAndCommit() {
-        transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(clone(recordFile1)));
+        completeFileAndCommit(recordFile1);
     }
 
-    private void completeFileAndCommit(RecordFile recordFileToParse) {
-        transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(clone(recordFileToParse)));
+    private void completeFileAndCommit(RecordFile recordFile) {
+        transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(clone(recordFile)));
     }
 
     private RecordFile recordFile(long consensusStart, String filename, String fileHash, long index, String prevHash) {
@@ -1063,13 +1070,20 @@ class SqlEntityListenerTest extends IntegrationTest {
         return rf;
     }
 
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {
-        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, null, null, null, null, null, null);
+    private Entity getEntity(long id, long modifiedTimestamp) {
+        return getEntity(id, null, modifiedTimestamp, null, null, null);
+    }
+
+    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp,
+                             Integer maxAutomaticTokenAssociations, String memo, Key adminKey) {
+        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, adminKey, null, null, null, null,
+                maxAutomaticTokenAssociations, false, null);
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
                              Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-                             Boolean deleted, Long expiryTimeNs, Key submitKey) {
+                             Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations,
+                             Boolean receiverSigRequired, Key submitKey) {
         Entity entity = new Entity();
         entity.setId(id);
         entity.setAutoRenewAccountId(autoRenewAccountId);
@@ -1078,13 +1092,17 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setDeleted(deleted);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
+        entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations);
         entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setNum(id);
         entity.setRealm(0L);
+        entity.setReceiverSigRequired(receiverSigRequired);
         entity.setShard(0L);
         entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
-        entity.setType(1);
-        entity.setMemo(memo);
+        entity.setType(ACCOUNT.getId());
+        if (memo != null) {
+            entity.setMemo(memo);
+        }
         return entity;
     }
 
@@ -1175,27 +1193,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         nft.setDeleted(deleted);
         nft.setMetadata(metadata == null ? null : metadata.getBytes(StandardCharsets.UTF_8));
         nft.setId(new NftId(serialNumber, tokenId));
-        nft.setModifiedTimestamp(modifiedTimestamp);
-
-        return nft;
-    }
-
-    private Nft getNftOnMint(String tokenId, long serialNumber, long createdTimestamp, String metadata) {
-        Nft nft = new Nft();
-        nft.setCreatedTimestamp(createdTimestamp);
-        nft.setDeleted(false);
-        nft.setMetadata(metadata.getBytes(StandardCharsets.UTF_8));
-        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
-        nft.setModifiedTimestamp(createdTimestamp);
-
-        return nft;
-    }
-
-    private Nft getNftOnTransfer(String tokenId, long serialNumber, String accountId, long modifiedTimestamp) {
-        Nft nft = new Nft();
-        nft.setAccountId(EntityId.of(accountId, ACCOUNT));
-        nft.setDeleted(false);
-        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
         nft.setModifiedTimestamp(modifiedTimestamp);
 
         return nft;
