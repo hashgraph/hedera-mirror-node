@@ -1063,34 +1063,40 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     void loadAllTransactionTypes() {
+        // entities
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
-        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
-                .of(0L, 0L, 1L, ACCOUNT)));
-        TopicMessage topicMessage = getTopicMessage();
-        FileData fileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
-                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
-        ContractResult contractResult = new ContractResult(15L, "funcParams".getBytes(), 10000L,
-                "callResult".getBytes(), "functionResult".getBytes(), 999L);
-        LiveHash liveHash = new LiveHash(20L, "live hash".getBytes());
-        var transaction = makeTransaction();
         EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
         Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
                 null, null, false, null, null);
         EntityId tokenId1 = EntityId.of("0.0.1000", TOKEN);
+        Schedule schedule1 = getSchedule(1, "0.0.200");
         EntityId treasuryId = EntityId.of("0.0.98", ACCOUNT);
         Token token1 = getToken(tokenId1, treasuryId, 100L, 100L);
+
+        // entity metadata
+        ContractResult contractResult = new ContractResult(15L, "funcParams".getBytes(), 10000L,
+                "callResult".getBytes(), "functionResult".getBytes(), 999L);
+        FileData fileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
+                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
+        LiveHash liveHash = new LiveHash(20L, "live hash".getBytes());
         var nft = getNft(tokenId1, 1L, null, 3L, false, "nft1", 3L);
         var tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
-        TokenTransfer tokenTransfer1 = getTokenTransfer(1000, 2L, tokenId1, accountId1);
-        Schedule schedule1 = getSchedule(1, "0.0.200");
+        TopicMessage topicMessage = getTopicMessage();
 
+        // transaction metadata
+        var transaction = makeTransaction();
         TransactionSignature transactionSignature1 = getTransactionSignature(1, "0.0.200", "pubKeyPrefix1".getBytes());
+
+        // transfers
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
         var assessedCustomFee = getAssessedCustomFee("0.0.1000");
         var customFee = getCustomFee("0.0.1000");
         var nftTransfer = getNftTransfer(2002L, "0.0.1000", 1, "0.0.456",
                 "0.0.789");
+        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
+                .of(0L, 0L, 1L, ACCOUNT)));
+        TokenTransfer tokenTransfer1 = getTokenTransfer(1000, 2L, tokenId1, accountId1);
 
         // when
         // entities
