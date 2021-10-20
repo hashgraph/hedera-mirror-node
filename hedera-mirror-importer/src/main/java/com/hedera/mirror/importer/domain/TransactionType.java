@@ -20,19 +20,31 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
 import lombok.Data;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
 @Data
 @Entity
 @Table(name = "t_transaction_types")
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
+)
 public class TransactionType {
 
     @Id
     private Integer protoId;
+
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private EntityTypeEnum entityTypeEnum;
 
     private String name;
 }
