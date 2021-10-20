@@ -117,7 +117,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionTemplate transactionTemplate;
     private final String filename1 = "2019-08-30T18_10_00.419072Z.rcd";
     private final String filename2 = "2019-08-30T18_10_05.419072Z.rcd";
-    private final boolean defaultParallelIngestion = false;
     private RecordFile recordFile1;
     private RecordFile recordFile2;
 
@@ -130,7 +129,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         recordFile1 = recordFile(1L, filename1, UUID.randomUUID().toString(), 0L, "fileHash0");
         recordFile2 = recordFile(10L, filename2, UUID.randomUUID().toString(), 1L, "fileHash1");
 
-        sqlProperties.setParallelIngestion(defaultParallelIngestion);
         sqlEntityListener.onStart();
     }
 
@@ -1048,15 +1046,20 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onEndAllTransactionTypesInParallel() {
-        // given
-        sqlProperties.setParallelIngestion(true);
-        loadAllTransactionTypes();
+        boolean defaultParallelIngestion = sqlProperties.isParallelIngestion();
+        try {
+            // given
+            sqlProperties.setParallelIngestion(true);
+            loadAllTransactionTypes();
 
-        // when
-        completeFileAndCommit();
+            // when
+            completeFileAndCommit();
 
-        // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+            // then
+            assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        } finally {
+            sqlProperties.setParallelIngestion(defaultParallelIngestion);
+        }
     }
 
     void loadAllTransactionTypes() {
