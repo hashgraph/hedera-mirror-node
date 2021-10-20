@@ -27,20 +27,21 @@ const constants = require('../constants');
 const contracts = require('../contracts');
 const {formatSqlQueryString} = require('./testutils');
 const utils = require('../utils');
+const {Contract} = require('../model');
 
 const contractFields = [
-  'auto_renew_period',
-  'created_timestamp',
-  'deleted',
-  'expiration_timestamp',
-  'file_id',
-  'id',
-  'key',
-  'memo',
-  'obtainer_id',
-  'proxy_account_id',
-  'timestamp_range',
-].map((f) => `c.${f}`);
+  Contract.AUTO_RENEW_PERIOD,
+  Contract.CREATED_TIMESTAMP,
+  Contract.DELETED,
+  Contract.EXPIRATION_TIMESTAMP,
+  Contract.FILE_ID,
+  Contract.ID,
+  Contract.KEY,
+  Contract.MEMO,
+  Contract.OBTAINER_ID,
+  Contract.PROXY_ACCOUNT_ID,
+  Contract.TIMESTAMP_RANGE,
+].map((column) => Contract.getFullName(column));
 
 const assertSqlQueryEqual = (actual, expected) => {
   expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
@@ -127,7 +128,7 @@ describe('extractSqlFromContractFilters', () => {
 
 describe('extractTimestampConditionsFromContractFilters', () => {
   const timestampKey = constants.filterKeys.TIMESTAMP;
-  const timestampColumn = 'c.timestamp_range';
+  const timestampColumn = Contract.getFullName(Contract.TIMESTAMP_RANGE);
   const specs = [
     {
       name: 'empty filters',
@@ -241,7 +242,7 @@ describe('formatContractRow', () => {
     memo: 'sample contract',
     obtainer_id: '0.0.2005',
     proxy_account_id: '0.0.2002',
-    solidity_address: '0x00000000000000000000000000000bb900000000',
+    solidity_address: '0x0000000000000000000000000000000000000bb9',
     timestamp: {
       from: '1000.123456789',
       to: '2000.123456789',
@@ -254,11 +255,10 @@ describe('formatContractRow', () => {
 });
 
 describe('getContractByIdQuery', () => {
-  const mainQuery = `select ${[...contractFields, 'f.file_data bytecode']}
-    from contract c, file_data f
-    where c.file_id = f.entity_id and f.consensus_timestamp <= c.created_timestamp`;
+  const mainQuery = `select ${[...contractFields, 'cf.bytecode']}
+    from contract c, contract_file cf`;
   const queryForTable = (table, extraConditions) => {
-    return `select ${contractFields.join(',')}
+    return `select ${contractFields}
       from ${table} c
       where c.id = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
   };
@@ -270,6 +270,8 @@ describe('getContractByIdQuery', () => {
       input: [],
       expected: `with contract as (
         ${queryForTable('contract')}
+      ), contract_file as (
+          ${contracts.fileDataQuery}
       )
       ${mainQuery}`,
     },
@@ -282,7 +284,9 @@ describe('getContractByIdQuery', () => {
         ${queryForTable('contract_history', timestampConditions)}
         order by timestamp_range desc
         limit 1
-	    )
+	    ), contract_file as (
+        ${contracts.fileDataQuery}
+      )
 	    ${mainQuery}`,
     },
   ];
@@ -303,7 +307,7 @@ describe('getContractsQuery', () => {
         limitQuery: 'limit $1',
         order: 'asc',
       },
-      expected: `select ${contractFields.join(',')}
+      expected: `select ${contractFields}
         from contract c
         order by c.id asc
         limit $1`,
@@ -315,7 +319,7 @@ describe('getContractsQuery', () => {
         limitQuery: 'limit $2',
         order: 'desc',
       },
-      expected: `select ${contractFields.join(',')}
+      expected: `select ${contractFields}
         from contract c
         where c.id <= $1
         order by c.id desc

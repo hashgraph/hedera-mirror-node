@@ -51,7 +51,7 @@ describe('ContractViewModel', () => {
     memo: 'sample contract',
     obtainer_id: '0.0.2005',
     proxy_account_id: '0.0.2002',
-    solidity_address: '0x00000000000000000000000000000bb900000000',
+    solidity_address: '0x0000000000000000000000000000000000000bb9',
     timestamp: {
       from: '1000.123456789',
       to: '2000.123456789',
@@ -71,6 +71,18 @@ describe('ContractViewModel', () => {
     ).toEqual({
       ...defaultExpected,
       bytecode: '0xdeadbeef',
+    });
+  });
+
+  test('null bytecode', () => {
+    expect(
+      new ContractViewModel({
+        ...defaultContract,
+        bytecode: null,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      bytecode: null,
     });
   });
 

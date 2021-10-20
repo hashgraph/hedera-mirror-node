@@ -50,14 +50,12 @@ class EntityId {
    * Converts the entity id to the 20-byte solidity address in hex with '0x' prefix
    */
   toSolidityAddress() {
-    // shard, realm, and num take 4, 4, and 8 bytes respectively from the left. The last 4 bytes are used for
-    // precompiles
+    // shard, realm, and num take 4, 8, and 8 bytes respectively from the left
     return [
       '0x',
       this.shard.toString(16).padStart(8, '0'),
-      this.realm.toString(16).padStart(8, '0'),
+      this.realm.toString(16).padStart(16, '0'),
       this.num.toString(16).padStart(16, '0'),
-      '00'.repeat(4),
     ].join('');
   }
 

@@ -53,7 +53,7 @@ class ContractViewModel {
       },
     });
 
-    if (contract.bytecode != null) {
+    if (contract.bytecode !== undefined) {
       this.bytecode = utils.toHexString(contract.bytecode, true);
     }
   }

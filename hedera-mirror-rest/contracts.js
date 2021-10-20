@@ -46,6 +46,23 @@ const contractSelectFields = [
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
 
+// the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
+// file* txs from the latest FileCreate or FileUpdate transaction before T, to T
+// Note the 'contract' relation is the cte not the 'contract' table
+const fileDataQuery = `select string_agg(f.file_data, '' order by f.consensus_timestamp) bytecode
+    from file_data f
+    join contract c
+      on c.file_id = f.entity_id
+    where f.consensus_timestamp >= (
+      select f.consensus_timestamp
+      from file_data f
+      join contract c
+        on f.entity_id = c.file_id and f.consensus_timestamp <= c.created_timestamp
+      where f.transaction_type in (17, 19)
+      order by f.consensus_timestamp desc
+      limit 1
+    ) and f.consensus_timestamp <= c.created_timestamp`;
+
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
  * param filters
@@ -95,9 +112,9 @@ const extractSqlFromContractFilters = (filters) => {
     // add the condition 'c.id in ()'
     const start = params.length + 1; // start is the next positional index
     params.push(...contractIdInValues);
-    const positions = _.range(start, params.length + 1) // end is exclusive
-      .map((position) => `$${position}`)
-      .join(',');
+    const positions = _.range(contractIdInValues.length)
+      .map((position) => position + start)
+      .map((position) => `$${position}`);
     conditions.push(`${contractIdFullName} in (${positions})`);
   }
   const whereQuery = conditions.length !== 0 ? `where ${conditions.join(' and ')}` : '';
@@ -131,10 +148,10 @@ const extractTimestampConditionsFromContractFilters = (filters) => {
 
       if (filter.operator === utils.opsMap.ne) {
         // handle ne filter differently
-        condition = `not ${timestampRangeColumn} @> ${position}`;
+        condition = `not ${timestampRangeColumn} @> ${position}`; // @> is the pg range "contains" operator
         range = Range(filter.value, filter.value, '[]');
       } else {
-        condition = `${timestampRangeColumn} && ${position}`;
+        condition = `${timestampRangeColumn} && ${position}`; // && is the pg range "overlaps" operator
 
         switch (filter.operator) {
           case utils.opsMap.lt:
@@ -183,7 +200,7 @@ const getContractByIdQueryForTable = (table, timestampConditions) => {
   const conditions = [`${Contract.getFullName(Contract.ID)} = $1`, ...timestampConditions];
 
   return [
-    `select ${contractSelectFields.join(',')}`,
+    `select ${contractSelectFields}`,
     `from ${table} ${Contract.tableAlias}`,
     `where ${conditions.join(' and ')}`,
   ].join('\n');
@@ -195,11 +212,6 @@ const getContractByIdQueryForTable = (table, timestampConditions) => {
  * @return {string}
  */
 const getContractByIdQuery = (timestampConditions) => {
-  const fileDataConditions = [
-    `${Contract.getFullName(Contract.FILE_ID)} = f.entity_id`,
-    `f.consensus_timestamp <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}`,
-  ];
-
   const tableUnionQueries = [getContractByIdQueryForTable(Contract.tableName, timestampConditions)];
   if (timestampConditions.length !== 0) {
     // if there is timestamp condition, union the result from both tables
@@ -213,13 +225,14 @@ const getContractByIdQuery = (timestampConditions) => {
 
   const cte = `with contract as (
     ${tableUnionQueries.join('\n')}
+  ), contract_file as (
+    ${fileDataQuery}
   )`;
-  // find the byte code from file_data table
+
   return [
     cte,
-    `select ${[...contractSelectFields, 'f.file_data bytecode'].join(',')}`,
-    `from contract ${Contract.tableAlias}, file_data f`,
-    `where ${fileDataConditions.join(' and ')}`,
+    `select ${[...contractSelectFields, 'cf.bytecode']}`,
+    `from contract ${Contract.tableAlias}, contract_file cf`,
   ].join('\n');
 };
 
@@ -232,7 +245,7 @@ const getContractByIdQuery = (timestampConditions) => {
  */
 const getContractsQuery = (whereQuery, limitQuery, order) => {
   return [
-    `select ${contractSelectFields.join(',')}`,
+    `select ${contractSelectFields}`,
     `from ${Contract.tableName} ${Contract.tableAlias}`,
     whereQuery,
     `order by ${Contract.getFullName(Contract.ID)} ${order}`,
@@ -320,6 +333,7 @@ if (utils.isTestEnv()) {
   Object.assign(module.exports, {
     extractSqlFromContractFilters,
     extractTimestampConditionsFromContractFilters,
+    fileDataQuery,
     formatContractRow,
     getContractByIdQuery,
     getContractsQuery,
