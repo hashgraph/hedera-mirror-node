@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -267,7 +268,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entity dbContractEntity = getTransactionEntity(record.getConsensusTimestamp());
+        Contract dbContractEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -466,7 +467,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private void assertContractTransaction(TransactionBody transactionBody, TransactionRecord record, boolean deleted) {
-        Entity actualContract = getTransactionEntity(record.getConsensusTimestamp());
+        Contract actualContract = getTransactionEntity(record.getConsensusTimestamp());
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContract(record.getReceipt().getContractID(), actualContract),
@@ -493,7 +494,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     private void assertContractEntity(ContractCreateTransactionBody expected, Timestamp consensusTimestamp) {
         var dbTransaction = getDbTransaction(consensusTimestamp);
-        Entity actualContract = getEntity(dbTransaction.getEntityId());
+        Contract actualContract = getEntity(dbTransaction.getEntityId());
         Entity actualProxyAccount = getEntity(actualContract.getProxyAccountId());
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualContract.getAutoRenewPeriod()),
@@ -505,7 +506,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private void assertContractEntity(ContractUpdateTransactionBody expected, Timestamp consensusTimestamp) {
-        Entity actualContract = getTransactionEntity(consensusTimestamp);
+        Contract actualContract = getTransactionEntity(consensusTimestamp);
         Entity actualProxyAccount = getEntity(actualContract.getProxyAccountId());
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualContract.getAutoRenewPeriod()),
@@ -518,7 +519,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private void assertContractEntityHasNullFields(Timestamp consensusTimestamp) {
-        Entity actualContract = getTransactionEntity(consensusTimestamp);
+        Contract actualContract = getTransactionEntity(consensusTimestamp);
         assertAll(
                 () -> assertNull(actualContract.getKey()),
                 () -> assertNull(actualContract.getExpirationTimestamp()),
@@ -532,16 +533,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertArrayEquals(
                         expected.getConstructorParameters().toByteArray(), contractResult.getFunctionParameters()),
                 () -> assertEquals(expected.getGas(), contractResult.getGasLimit()),
-                () -> assertArrayEquals(record.getContractCreateResult()
-                        .toByteArray(), contractResult.getFunctionResult()),
                 () -> assertEquals(record.getContractCreateResult().getGasUsed(), contractResult.getGasUsed()));
     }
 
     private void assertContractCallResult(ContractCallTransactionBody expected, TransactionRecord record) {
         ContractResult contractResult = getContractResult(record.getConsensusTimestamp()).get();
         assertAll(
-                () -> assertArrayEquals(record.getContractCallResult()
-                        .toByteArray(), contractResult.getFunctionResult()),
                 () -> assertEquals(record.getContractCallResult().getGasUsed(), contractResult.getGasUsed()),
                 () -> assertArrayEquals(
                         expected.getFunctionParameters().toByteArray(), contractResult.getFunctionParameters()),

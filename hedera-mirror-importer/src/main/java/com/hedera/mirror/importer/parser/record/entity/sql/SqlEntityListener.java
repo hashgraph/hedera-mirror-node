@@ -36,6 +36,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.importer.domain.ContractLog;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.CustomFee;
@@ -67,6 +69,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.upsert.ContractUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.NftUpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
@@ -87,6 +90,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // init schemas, writers, etc once per process
     private final PgCopy<AssessedCustomFee> assessedCustomFeePgCopy;
+    private final PgCopy<ContractLog> contractLogPgCopy;
     private final PgCopy<ContractResult> contractResultPgCopy;
     private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
     private final PgCopy<CustomFee> customFeePgCopy;
@@ -99,6 +103,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final PgCopy<Transaction> transactionPgCopy;
     private final PgCopy<TransactionSignature> transactionSignaturePgCopy;
 
+    private final UpsertPgCopy<Contract> contractPgCopy;
     private final UpsertPgCopy<Entity> entityPgCopy;
     private final UpsertPgCopy<Nft> nftPgCopy;
     private final UpsertPgCopy<Schedule> schedulePgCopy;
@@ -108,6 +113,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // lists of insert only domains
     private final Collection<AssessedCustomFee> assessedCustomFees;
+    private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
@@ -123,6 +129,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
+    private final Map<Long, Contract> contracts;
     private final Map<Long, Entity> entities;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
@@ -138,6 +145,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              DataSource dataSource,
                              RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
                              ApplicationEventPublisher eventPublisher,
+                             ContractUpsertQueryGenerator contractUpsertQueryGenerator,
                              EntityUpsertQueryGenerator entityUpsertQueryGenerator,
                              ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator,
                              TokenUpsertQueryGenerator tokenUpsertQueryGenerator,
@@ -150,6 +158,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         // insert only tables
         assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, recordParserProperties);
+        contractLogPgCopy = new PgCopy<>(ContractLog.class, meterRegistry, recordParserProperties);
         contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, recordParserProperties);
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, recordParserProperties);
         customFeePgCopy = new PgCopy<>(CustomFee.class, meterRegistry, recordParserProperties);
@@ -163,6 +172,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, recordParserProperties);
 
         // updatable tables
+        contractPgCopy = new UpsertPgCopy<>(Contract.class, meterRegistry, recordParserProperties,
+                contractUpsertQueryGenerator);
         entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
                 entityUpsertQueryGenerator);
         nftPgCopy = new UpsertPgCopy<>(Nft.class, meterRegistry, recordParserProperties,
@@ -177,6 +188,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 tokenUpsertQueryGenerator);
 
         assessedCustomFees = new ArrayList<>();
+        contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
@@ -191,6 +203,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
+        contracts = new HashMap<>();
         entities = new HashMap<>();
         nfts = new HashMap<>();
         schedules = new HashMap<>();
@@ -223,6 +236,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void cleanup() {
         try {
             assessedCustomFees.clear();
+            contracts.clear();
+            contractLogs.clear();
             contractResults.clear();
             cryptoTransfers.clear();
             customFees.clear();
@@ -259,6 +274,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert only operations
             assessedCustomFeePgCopy.copy(assessedCustomFees, connection);
+            contractLogPgCopy.copy(contractLogs, connection);
             contractResultPgCopy.copy(contractResults, connection);
             cryptoTransferPgCopy.copy(cryptoTransfers, connection);
             customFeePgCopy.copy(customFees, connection);
@@ -269,6 +285,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             transactionSignaturePgCopy.copy(transactionSignatures, connection);
 
             // insert operations with conflict management
+            contractPgCopy.copy(contracts.values(), connection);
             entityPgCopy.copy(entities.values(), connection);
             tokenPgCopy.copy(tokens.values(), connection);
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
@@ -301,6 +318,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onContract(Contract contract) {
+        contracts.merge(contract.getId(), contract, this::mergeContract);
+        entities.remove(contract.getId());
+    }
+
+    @Override
+    public void onContractLog(ContractLog contractLog) {
+        contractLogs.add(contractLog);
+    }
+
+    @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
         contractResults.add(contractResult);
     }
@@ -317,13 +345,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEntity(Entity entity) throws ImporterException {
-        EntityId entityId = entity.toEntityId();
-        // handle empty id case
-        if (EntityId.isEmpty(entityId)) {
+        long id = entity.getId();
+        if (id == EntityId.EMPTY.getId() || contracts.containsKey(id)) {
             return;
         }
 
-        entities.merge(entity.getId(), entity, this::mergeEntity);
+        entities.merge(id, entity, this::mergeEntity);
     }
 
     @Override
@@ -398,6 +425,58 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures.add(transactionSignature);
     }
 
+    private Contract mergeContract(Contract cachedContract, Contract newContract) {
+        if (newContract.getAutoRenewPeriod() != null) {
+            cachedContract.setAutoRenewPeriod(newContract.getAutoRenewPeriod());
+        }
+
+        if (newContract.getCreatedTimestamp() != null) {
+            // it's possible when processing transactions, an entity is populated with the minimum amount of info and
+            // gets inserted to the cache before a later fully populated entity object of the same id. So set the
+            // created timestamp if the new entity object has it set.
+            cachedContract.setCreatedTimestamp(newContract.getCreatedTimestamp());
+        }
+
+        if (newContract.getDeleted() != null) {
+            cachedContract.setDeleted(newContract.getDeleted());
+        }
+
+        if (newContract.getExpirationTimestamp() != null) {
+            cachedContract.setExpirationTimestamp(newContract.getExpirationTimestamp());
+        }
+
+        if (newContract.getFileId() != null) {
+            cachedContract.setFileId(newContract.getFileId());
+        }
+
+        if (newContract.getKey() != null) {
+            cachedContract.setKey(newContract.getKey());
+        }
+
+        if (newContract.getMemo() != null) {
+            cachedContract.setMemo(newContract.getMemo());
+        }
+
+        if (newContract.getObtainerId() != null) {
+            cachedContract.setObtainerId(newContract.getObtainerId());
+        }
+
+        if (newContract.getParentId() != null) {
+            cachedContract.setParentId(newContract.getParentId());
+        }
+
+        if (newContract.getProxyAccountId() != null) {
+            cachedContract.setProxyAccountId(newContract.getProxyAccountId());
+        }
+
+        if (newContract.getTimestampRange() != null && (cachedContract.getTimestampRange() == null ||
+                newContract.getModifiedTimestamp() >= cachedContract.getModifiedTimestamp())) {
+            cachedContract.setTimestampRange(newContract.getTimestampRange());
+        }
+
+        return cachedContract;
+    }
+
     private Entity mergeEntity(Entity cachedEntity, Entity newEntity) {
         if (newEntity.getAutoRenewAccountId() != null) {
             cachedEntity.setAutoRenewAccountId(newEntity.getAutoRenewAccountId());
@@ -424,7 +503,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (newEntity.getKey() != null) {
             cachedEntity.setKey(newEntity.getKey());
-            cachedEntity.setPublicKey(newEntity.getPublicKey());
+        }
+
+        if (newEntity.getMaxAutomaticTokenAssociations() != null) {
+            cachedEntity.setMaxAutomaticTokenAssociations(newEntity.getMaxAutomaticTokenAssociations());
         }
 
         if (newEntity.getMaxAutomaticTokenAssociations() != null) {

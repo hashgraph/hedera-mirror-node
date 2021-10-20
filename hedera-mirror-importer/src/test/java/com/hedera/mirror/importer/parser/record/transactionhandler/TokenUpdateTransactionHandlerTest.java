@@ -50,7 +50,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenUpdateTransactionHandler(nftRepository);
+        return new TokenUpdateTransactionHandler(entityListener, nftRepository);
     }
 
     @Override
@@ -95,7 +95,10 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
 
-        transactionHandler.updateEntity(entity, recordItem);
+        com.hedera.mirror.importer.domain.Transaction transaction =
+                new com.hedera.mirror.importer.domain.Transaction();
+        transaction.setEntityId(entity.toEntityId());
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         Mockito.verify(nftRepository).updateTreasury(tokenID.getTokenNum(), previousAccountId.getAccountNum(),
                 newAccountId.getAccountNum(), consensusTimestamp);
@@ -115,7 +118,10 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
 
-        transactionHandler.updateEntity(entity, recordItem);
+        com.hedera.mirror.importer.domain.Transaction transaction =
+                new com.hedera.mirror.importer.domain.Transaction();
+        transaction.setEntityId(entity.toEntityId());
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         Mockito.verifyNoInteractions(nftRepository);
     }

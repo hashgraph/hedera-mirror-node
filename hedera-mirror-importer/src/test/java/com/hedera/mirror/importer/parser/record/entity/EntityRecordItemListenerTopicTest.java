@@ -631,7 +631,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     private Entity createTopicEntity(TopicID topicId, Long expirationTimeSeconds, Integer expirationTimeNanos,
                                      Key adminKey, Key submitKey, String memo, Long autoRenewAccountNum,
                                      Long autoRenewPeriod) {
-        var topic = EntityId.of(topicId).toEntity();
+        Entity topic = EntityId.of(topicId).toEntity();
         if (autoRenewAccountNum != null) {
             var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
             entityRepository.findById(autoRenewAccount.getId())
@@ -749,6 +749,6 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     private Entity getTopicEntity(TopicID topicId) {
-        return getEntity(EntityId.of(topicId).getId());
+        return getEntity(EntityId.of(topicId));
     }
 }

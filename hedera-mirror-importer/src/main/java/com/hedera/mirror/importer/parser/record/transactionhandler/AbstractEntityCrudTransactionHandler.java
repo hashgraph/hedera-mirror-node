@@ -20,61 +20,54 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
-abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> implements TransactionHandler {
+
+    protected final EntityListener entityListener;
 
     @Getter
-    private final EntityOperationEnum entityOperationEnum;
-
-    protected AbstractEntityCrudTransactionHandler(EntityOperationEnum entityOperationEnum) {
-        this.entityOperationEnum = entityOperationEnum;
-    }
+    private final TransactionTypeEnum type;
 
     @Override
-    public boolean updatesEntity() {
-        return true;
+    public final void updateTransaction(Transaction transaction, RecordItem recordItem) {
+        doUpdateTransaction(transaction, recordItem);
+        EntityId entityId = transaction.getEntityId();
+        EntityOperation entityOperation = type.getEntityOperation();
+
+        if (entityOperation != EntityOperation.NONE && !EntityId.isEmpty(entityId) && recordItem.isSuccessful()) {
+            updateEntity(entityId, recordItem);
+        }
     }
 
-    @Override
-    public void updateEntity(Entity entity, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
+    }
+
+    protected final void updateEntity(EntityId entityId, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
+        T entity = entityId.toEntity();
+        EntityOperation entityOperation = type.getEntityOperation();
 
-        if (entityOperationEnum == EntityOperationEnum.CREATE) {
+        if (entityOperation == EntityOperation.CREATE) {
             entity.setCreatedTimestamp(consensusTimestamp);
             entity.setDeleted(false);
-        } else if (entityOperationEnum == EntityOperationEnum.DELETE) {
+        } else if (entityOperation == EntityOperation.DELETE) {
             entity.setDeleted(true);
         }
 
         entity.setModifiedTimestamp(consensusTimestamp);
-
-        // stream contains account ID explicitly set to the default '0.0.0'
-        EntityId autoRenewAccountId = getAutoRenewAccount(recordItem);
-        if (!EntityId.isEmpty(autoRenewAccountId)) {
-            entity.setAutoRenewAccountId(autoRenewAccountId);
-        }
-
-        EntityId proxyAccountId = getProxyAccount(recordItem);
-        if (!EntityId.isEmpty(proxyAccountId)) {
-            entity.setProxyAccountId(proxyAccountId);
-        }
-
         doUpdateEntity(entity, recordItem);
     }
 
-    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-    }
-
-    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return null;
-    }
-
-    protected EntityId getProxyAccount(RecordItem recordItem) {
-        return  null;
-    }
+    protected abstract void doUpdateEntity(T entity, RecordItem recordItem);
 }

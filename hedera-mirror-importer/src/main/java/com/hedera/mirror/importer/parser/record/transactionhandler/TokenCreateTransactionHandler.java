@@ -20,19 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public TokenCreateTransactionHandler() {
-        super(EntityOperationEnum.CREATE);
+    TokenCreateTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.TOKENCREATION);
     }
 
     @Override
@@ -42,24 +43,27 @@ public class TokenCreateTransactionHandler extends AbstractEntityCrudTransaction
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
-        if (tokenCreateTransactionBody.hasAdminKey()) {
-            entity.setKey(tokenCreateTransactionBody.getAdminKey().toByteArray());
+        var transactionBody = recordItem.getTransactionBody().getTokenCreation();
+
+        if (transactionBody.hasAdminKey()) {
+            entity.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
-        if (tokenCreateTransactionBody.hasAutoRenewPeriod()) {
-            entity.setAutoRenewPeriod(tokenCreateTransactionBody.getAutoRenewPeriod().getSeconds());
+        if (transactionBody.hasAutoRenewAccount()) {
+            EntityId autoRenewAccountId = EntityId.of(transactionBody.getAutoRenewAccount());
+            entity.setAutoRenewAccountId(autoRenewAccountId);
+            entityListener.onEntityId(autoRenewAccountId);
         }
 
-        if (tokenCreateTransactionBody.hasExpiry()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(tokenCreateTransactionBody.getExpiry()));
+        if (transactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        entity.setMemo(tokenCreateTransactionBody.getMemo());
-    }
+        if (transactionBody.hasExpiry()) {
+            entity.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpiry()));
+        }
 
-    @Override
-    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenCreation().getAutoRenewAccount());
+        entity.setMemo(transactionBody.getMemo());
+        entityListener.onEntity(entity);
     }
 }

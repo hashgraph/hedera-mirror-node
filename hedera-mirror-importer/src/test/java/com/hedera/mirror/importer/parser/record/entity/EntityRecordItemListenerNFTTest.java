@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -49,6 +50,8 @@ import lombok.Data;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -186,7 +189,8 @@ class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemListenerTe
 
     private void assertEntities() {
         var expected = expectedEntityNum.toArray();
-        var actual = StreamSupport.stream(entityRepository.findAll().spliterator(), false)
+        var actual = StreamSupport.stream(Iterables.concat(entityRepository.findAll(), contractRepository.findAll())
+                        .spliterator(), false)
                 .map(e -> e.getNum())
                 .toArray();
         Arrays.sort(expected);
@@ -206,7 +210,8 @@ class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemListenerTe
         var expectedTransfersCount = expectedTransactions.stream()
                 .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size()).sum();
         assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "transaction rows")
-                , () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "entity rows")
+                , () -> assertEquals(expectedEntityNum.size(), entityRepository.count() + contractRepository.count(),
+                        "entity rows")
                 , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(),
                         "crypto_transfer rows")
                 , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(),
@@ -217,8 +222,8 @@ class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemListenerTe
     private void assertTransactions() {
         expectedTransactions.forEach(t -> {
             var dbTransaction = getDbTransaction(t.record.getConsensusTimestamp());
-            var dbNodeEntity = getEntity(0, 0, NODE_ACCOUNT_NUM);
-            var dbPayerEntity = getEntity(0, 0, PAYER_ACCOUNT_NUM);
+            var dbNodeEntity = getEntity(EntityId.of(0, 0, NODE_ACCOUNT_NUM, EntityTypeEnum.ACCOUNT));
+            var dbPayerEntity = getEntity(EntityId.of(0, 0, PAYER_ACCOUNT_NUM, EntityTypeEnum.ACCOUNT));
 
             assertAll(
                     () -> assertEquals(dbNodeEntity.getId(), dbTransaction.getNodeAccountId().getId()),

@@ -44,9 +44,11 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -72,6 +74,7 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -94,10 +97,12 @@ class SqlEntityListenerTest extends IntegrationTest {
     private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     private static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
 
+    private final DomainBuilder domainBuilder;
     private final TransactionRepository transactionRepository;
     private final EntityRepository entityRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
+    private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
@@ -137,6 +142,21 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         sqlProperties.setEnabled(true);
         assertThat(sqlEntityListener.isEnabled()).isTrue();
+    }
+
+    @Test
+    void onContract() {
+        // given
+        Contract contract = domainBuilder.contract().get();
+
+        // when
+        sqlEntityListener.onContract(contract);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertEquals(1, contractRepository.count());
+        assertExistsAndEquals(contractRepository, contract, contract.getId());
     }
 
     @Test
@@ -211,13 +231,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContractResult() {
         // given
-        ContractResult contractResult = new ContractResult();
-        contractResult.setCallResult(new byte[] {'c'});
-        contractResult.setConsensusTimestamp(15L);
-        contractResult.setFunctionParameters(new byte[] {'p'});
-        contractResult.setFunctionResult(new byte[] {'r'});
-        contractResult.setGasLimit(10000L);
-        contractResult.setGasUsed(999L);
+        ContractResult contractResult = domainBuilder.contractResult().get();
 
         // when
         sqlEntityListener.onContractResult(contractResult);
@@ -226,7 +240,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(1, contractResultRepository.count());
-        assertExistsAndEquals(contractResultRepository, contractResult, 15L);
+        assertExistsAndEquals(contractResultRepository, contractResult, contractResult.getId());
     }
 
     @Test

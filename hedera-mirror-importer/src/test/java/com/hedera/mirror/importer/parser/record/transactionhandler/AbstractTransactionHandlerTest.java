@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -31,6 +32,7 @@ import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -52,14 +54,21 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
-public abstract class AbstractTransactionHandlerTest {
+@ExtendWith(MockitoExtension.class)
+abstract class AbstractTransactionHandlerTest {
 
     protected static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
 
@@ -77,17 +86,14 @@ public abstract class AbstractTransactionHandlerTest {
             "5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
 
     protected static final KeyList DEFAULT_KEY_LIST = KeyList.newBuilder().addAllKeys(
-            Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
+                    Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
             .build();
 
     protected static final String UPDATED_MEMO = "update memo";
 
     protected static final BoolValue UPDATED_RECEIVER_SIG_REQUIRED = BoolValue.of(true);
-
-    private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
-
     protected static final Timestamp MODIFIED_TIMESTAMP = Timestamp.newBuilder().setSeconds(200).setNanos(2).build();
-
+    private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
     private static final Long CREATED_TIMESTAMP_NS = Utility.timestampInNanosMax(CREATED_TIMESTAMP);
 
     private static final Long MODIFIED_TIMESTAMP_NS = Utility.timestampInNanosMax(MODIFIED_TIMESTAMP);
@@ -95,8 +101,16 @@ public abstract class AbstractTransactionHandlerTest {
     protected final Logger log = LogManager.getLogger(getClass());
 
     protected TransactionHandler transactionHandler;
+    @Mock
+    protected EntityListener entityListener;
+    private EntityOperation entityOperation;
 
-    private EntityOperationEnum entityOperationEnum;
+    @Captor
+    private ArgumentCaptor<Entity> entityCaptor;
+
+    protected static Key getKey(String keyString) {
+        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
+    }
 
     protected abstract TransactionHandler getTransactionHandler();
 
@@ -109,11 +123,12 @@ public abstract class AbstractTransactionHandlerTest {
 
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
         TransactionRecord.Builder builder = TransactionRecord.newBuilder();
-        if (transactionHandler.updatesEntity()) {
+        if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
             Timestamp consensusTimestamp =
-                    entityOperationEnum == EntityOperationEnum.CREATE ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
+                    entityOperation == EntityOperation.CREATE ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
             builder.setConsensusTimestamp(consensusTimestamp);
         }
+        builder.setReceipt(builder.getReceiptBuilder().setStatus(ResponseCodeEnum.SUCCESS));
         return builder;
     }
 
@@ -131,7 +146,7 @@ public abstract class AbstractTransactionHandlerTest {
 
         if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
             AbstractEntityCrudTransactionHandler handler = (AbstractEntityCrudTransactionHandler) transactionHandler;
-            entityOperationEnum = handler.getEntityOperationEnum();
+            entityOperation = handler.getType().getEntityOperation();
         }
     }
 
@@ -148,14 +163,15 @@ public abstract class AbstractTransactionHandlerTest {
 
     @TestFactory
     Stream<DynamicTest> testUpdateEntity() {
-        if (!transactionHandler.updatesEntity()) {
+        if (!(transactionHandler instanceof AbstractEntityCrudTransactionHandler)) {
             // empty test if the handler does not update entity
             return Stream.empty();
         }
 
         FieldDescriptor memoField = getInnerBodyFieldDescriptorByName("memo");
         FieldDescriptor memoWrapperField = getInnerBodyFieldDescriptorByName("memoWrapper");
-        FieldDescriptor maxAutomaticTokenAssociationsField = getInnerBodyFieldDescriptorByName("max_automatic_token_associations");
+        FieldDescriptor maxAutomaticTokenAssociationsField = getInnerBodyFieldDescriptorByName(
+                "max_automatic_token_associations");
         FieldDescriptor receiverSigRequiredField = getInnerBodyFieldDescriptorByName("receiverSigRequired");
         FieldDescriptor receiverSigRequiredWrapperField = getInnerBodyFieldDescriptorByName(
                 "receiverSigRequiredWrapper");
@@ -189,10 +205,14 @@ public abstract class AbstractTransactionHandlerTest {
                     Entity actual = testSpec.getInput();
 
                     // when
-                    transactionHandler.updateEntity(actual, testSpec.getRecordItem());
+                    com.hedera.mirror.importer.domain.Transaction transaction =
+                            new com.hedera.mirror.importer.domain.Transaction();
+                    transaction.setEntityId(actual.toEntityId());
+                    transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
+                    verify(entityListener).onEntity(entityCaptor.capture());
 
                     // then
-                    assertThat(actual).isEqualTo(testSpec.getExpected());
+                    assertThat(entityCaptor.getValue()).isEqualTo(testSpec.getExpected());
                 }
         );
     }
@@ -210,10 +230,20 @@ public abstract class AbstractTransactionHandlerTest {
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }
 
-    protected Entity getExpectedEntityWithTimestamp() {
+    protected Entity getEntity() {
         Entity entity = new Entity();
+        entity.setId(1L);
+        entity.setNum(1L);
+        entity.setRealm(0L);
+        entity.setShard(0L);
+        entity.setType(1);
+        return entity;
+    }
 
-        if (entityOperationEnum == EntityOperationEnum.CREATE) {
+    protected Entity getExpectedEntityWithTimestamp() {
+        Entity entity = getEntity();
+
+        if (entityOperation == EntityOperation.CREATE) {
             entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
             entity.setDeleted(false);
             entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
@@ -234,7 +264,7 @@ public abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("create entity without memo, expect empty memo")
                         .expected(getExpectedUpdatedEntity())
-                        .input(new Entity())
+                        .input(getEntity())
                         .recordItem(getRecordItem(body, innerBody))
                         .build()
         );
@@ -245,7 +275,7 @@ public abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("create entity with empty memo, expect empty memo")
                         .expected(getExpectedUpdatedEntity())
-                        .input(new Entity())
+                        .input(getEntity())
                         .recordItem(getRecordItem(body, updatedInnerBody))
                         .build()
         );
@@ -258,7 +288,7 @@ public abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("create entity with non-empty memo, expect memo set")
                         .expected(expected)
-                        .input(new Entity())
+                        .input(getEntity())
                         .recordItem(getRecordItem(body, updatedInnerBody))
                         .build()
         );
@@ -283,7 +313,7 @@ public abstract class AbstractTransactionHandlerTest {
         // memo not set, expect memo in entity unchanged
         Entity expected = getExpectedUpdatedEntity();
         expected.setMemo(DEFAULT_MEMO);
-        Entity input = new Entity();
+        Entity input = getEntity();
         input.setMemo(DEFAULT_MEMO);
 
         Message unchangedMemoInnerBody = innerBody;
@@ -307,7 +337,7 @@ public abstract class AbstractTransactionHandlerTest {
             // non-empty string, expect memo set to non-empty string
             expected = getExpectedUpdatedEntity();
             expected.setMemo(UPDATED_MEMO);
-            input = new Entity();
+            input = getEntity();
             input.setMemo(DEFAULT_MEMO);
             updatedMemoInnerBody = innerBody.toBuilder().setField(memoField, UPDATED_MEMO).build();
         }
@@ -334,7 +364,7 @@ public abstract class AbstractTransactionHandlerTest {
         }
 
         // empty StringValue, expect memo in entity cleared
-        input = new Entity();
+        input = getEntity();
         input.setMemo(DEFAULT_MEMO);
         expected = getExpectedUpdatedEntity();
         Message clearedMemoInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
@@ -356,7 +386,7 @@ public abstract class AbstractTransactionHandlerTest {
         // non-empty StringValue, expect memo in entity updated
         expected = getExpectedUpdatedEntity();
         expected.setMemo(UPDATED_MEMO);
-        input = new Entity();
+        input = getEntity();
         input.setMemo(DEFAULT_MEMO);
         Message memoStringValueUpdatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO))
                 .build();
@@ -381,7 +411,7 @@ public abstract class AbstractTransactionHandlerTest {
             expected.setMemo(DEFAULT_MEMO);
             expected.setMaxAutomaticTokenAssociations(500);
             expected.setReceiverSigRequired(true);
-            input = new Entity();
+            input = getEntity();
             input.setMemo(DEFAULT_MEMO);
             Message updatedInnerBody = innerBody.toBuilder()
                     .setField(maxAutomaticTokenAssociationsField, Int32Value.of(500))
@@ -506,10 +536,6 @@ public abstract class AbstractTransactionHandlerTest {
                 .build();
 
         return new RecordItem(transaction, record);
-    }
-
-    protected static Key getKey(String keyString) {
-        return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
     }
 
     @Builder

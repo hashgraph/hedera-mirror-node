@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -52,10 +51,6 @@ import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepositor
 
 @EnabledIfV1
 @Tag("migration")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {"truncate table address_book restart " +
-        "identity cascade;"})
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = {"truncate table address_book restart " +
-        "identity cascade;"})
 @TestPropertySource(properties = "spring.flyway.target=1.37.0")
 class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
 

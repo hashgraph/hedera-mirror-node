@@ -35,7 +35,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ScheduleCreateTransactionHandler();
+        return new ScheduleCreateTransactionHandler(entityListener);
     }
 
     @Override

@@ -21,17 +21,61 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
+import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@AllArgsConstructor
-public class ContractCallTransactionHandler implements TransactionHandler {
+class ContractCallTransactionHandler extends AbstractContractCallTransactionHandler {
+
+    private final EntityProperties entityProperties;
+
+    ContractCallTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
+        super(entityListener);
+        this.entityProperties = entityProperties;
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getContractCall().getContractID());
+    }
+
+    @Override
+    public TransactionTypeEnum getType() {
+        return TransactionTypeEnum.CONTRACTCALL;
+    }
+
+    /*
+     * Insert contract results even for failed transactions since they could fail during execution, and we want to
+     * how the gas used and call result regardless.
+     */
+    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+        var transactionRecord = recordItem.getRecord();
+
+        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
+            var transactionBody = recordItem.getTransactionBody().getContractCall();
+            var functionResult = transactionRecord.getContractCallResult();
+
+            ContractResult contractResult = new ContractResult();
+            contractResult.setAmount(transactionBody.getAmount());
+            contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+            contractResult.setContractId(transaction.getEntityId());
+            contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getFunctionParameters()));
+            contractResult.setGasLimit(transactionBody.getGas());
+
+            onContractResult(recordItem, contractResult, functionResult);
+        }
+    }
+
+    @Override
+    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+        entityListener.onContract(contract);
     }
 }

@@ -27,9 +27,9 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,6 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ReflectionUtils;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
 
@@ -55,20 +56,16 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
-    private Set<Field> attributes = null;
-
-    @Value("${spring.flyway.locations:v1}")
-    private String version;
-
-    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
-
+    protected final Logger log = LogManager.getLogger(getClass());
+    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
+    }.getRawType();
     @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
-
+    private Set<Field> attributes = null;
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
-
-    protected final Logger log = LogManager.getLogger(getClass());
+    @Value("${spring.flyway.locations:v1}")
+    private String version;
 
     protected boolean isInsertOnly() {
         return false;
@@ -252,10 +249,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     private Set<Field> getAttributes() {
         if (attributes == null) {
-            attributes = Arrays.stream(metaModelClass.getDeclaredFields())
-                    // get SingularAttributes which are both static and volatile
-                    .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
-                    .collect(Collectors.toSet());
+            Set<Field> fields = new HashSet<>();
+            ReflectionUtils.doWithFields(metaModelClass, field -> {
+                if (Modifier.isStatic(field.getModifiers()) && Modifier.isVolatile(field.getModifiers())) {
+                    fields.add(field);
+                }
+            });
+            attributes = fields;
         }
 
         return attributes;

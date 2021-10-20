@@ -30,7 +30,7 @@ class FileDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransacti
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new FileDeleteTransactionHandler();
+        return new FileDeleteTransactionHandler(entityListener);
     }
 
     @Override

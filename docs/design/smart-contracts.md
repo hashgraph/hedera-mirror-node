@@ -44,6 +44,7 @@ create table if not exists contract
   memo                 text    default '' not null,
   num                  bigint             not null,
   obtainer_id          bigint             null,
+  parent_id            bigint             null,
   proxy_account_id     bigint             null,
   public_key           character varying  null,
   realm                bigint             not null,
@@ -86,7 +87,7 @@ create table if not exists contract_result
   bloom                bytea              not null,
   call_result          bytea              not null,
   consensus_timestamp  bigint primary key not null,
-  contract_id          bigint             not null,
+  contract_id          bigint             null,
   created_contract_ids bigint array       not null,
   error_message        text default ''    not null,
   function_parameters  bytea              not null,
@@ -104,7 +105,7 @@ create table if not exists contract_log
 (
   bloom               bytea  not null,
   consensus_timestamp bigint not null,
-  contract_id         bigint not null,
+  contract_id         bigint null,
   data                bytea  not null,
   index               int    not null,
   topic0              text   null,
@@ -117,19 +118,19 @@ create table if not exists contract_log
 
 ## Importer
 
-- Add a `Contract` domain object with fields that match the schema
-- Add a `ContractLog` domain object with fields that match the schema
-- Update the `ContractResult` domain object with fields that match the schema. Nest `ContractLog` under `ContractResult`
-- Add a `ContractRepository`
-- Add `EntityListener.onContract(Contract)`
+- Add a `Contract` domain object with fields that match the schema.
+- Add a `ContractLog` domain object with fields that match the schema.
+- Update the `ContractResult` domain object with fields that match the schema.
+- Add a `ContractRepository` and `ContractLogRepository`.
+- Add `EntityListener.onContract(Contract)` and `EntityListener.onContractLog(ContractLog)`.
 - Add logic to create a `Contract` domain object in create, update, and delete contract transaction handlers and notify
-  via `EntityListener.onContract(contract)`
+  via `EntityListener`.
 - Add logic to create a `ContractResult` and `ContractLog` domain objects in the contract create and contract call
-  transaction handlers and notify via `EntityListener.onContractResult(contractResult)`.
+  transaction handlers and notify via `EntityListener`.
 - Add logic to `SqlEntityListener` to batch insert `Contract` and `ContractLog`.
 - Implement a generic custom `UpsertQueryGenerator` that generates the insert query entirely from annotations on
   the `Contract` domain object.
-- Remove logic specific to contracts in `EntityRecordItemListener`
+- Remove logic specific to contracts in `EntityRecordItemListener`.
 
 ## REST API
 

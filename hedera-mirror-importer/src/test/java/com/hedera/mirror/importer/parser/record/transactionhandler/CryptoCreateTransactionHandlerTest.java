@@ -36,7 +36,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoCreateTransactionHandler();
+        return new CryptoCreateTransactionHandler(entityListener);
     }
 
     @Override
@@ -80,7 +80,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 UpdateEntityTestSpec.builder()
                         .description("create entity with non-zero max_automatic_token_associations")
                         .expected(expected)
-                        .input(new Entity())
+                        .input(getEntity())
                         .recordItem(getRecordItem(body, getDefaultTransactionRecord().build()))
                         .build()
         );

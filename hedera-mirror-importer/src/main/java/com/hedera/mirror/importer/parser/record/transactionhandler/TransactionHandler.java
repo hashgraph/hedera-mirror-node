@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 /**
@@ -33,27 +33,16 @@ import com.hedera.mirror.importer.parser.domain.RecordItem;
  * {@link RecordItem}. Hence, most functions of this interface require RecordItem as a parameter.
  */
 public interface TransactionHandler {
+
     /**
      * @return main entity associated with this transaction
      */
     EntityId getEntity(RecordItem recordItem);
 
     /**
-     * Override to return true if an implementation wants to update the entity returned by
-     * {@link #getEntity(RecordItem)}.
+     * @return the transaction type associated with this handler
      */
-    default boolean updatesEntity() {
-        return false;
-    }
-
-    /**
-     * Override to update fields of the entity.
-     * If {@link #updatesEntity()} returns true, and {@link #getEntity(RecordItem)} returns a non-null id, and the
-     * transaction is successful, then this function will be called.
-     * @param entity latest state of entity (fetched from the repo)
-     */
-    default void updateEntity(Entity entity, RecordItem recordItem) {
-    }
+    TransactionTypeEnum getType();
 
     /**
      * Override to update fields of the Transaction's (domain) fields.

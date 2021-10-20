@@ -35,7 +35,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenCreateTransactionHandler();
+        return new TokenCreateTransactionHandler(entityListener);
     }
 
     @Override
