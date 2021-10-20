@@ -35,11 +35,14 @@ public class SqlProperties {
     @Min(1)
     private int batchSize = 20_000;
 
-    private boolean enabled = true;
-
-    @Max(20)
+    /**
+     * The number of distinct tables persisted to during batch processing
+     */
+    @Max(25)
     @Min(1)
-    private int connectionThreadPoolSize = 15;
+    private int connectionThreadsPoolSize = 20;
+
+    private boolean enabled = true;
 
     private boolean parallelIngestion = false;
 }

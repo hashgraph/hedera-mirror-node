@@ -1046,7 +1046,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
     }
 
-    //    @Test
+    @Test
     void onEndAllTransactionTypesInParallel() {
         // given
         sqlProperties.setParallelIngestion(true);
