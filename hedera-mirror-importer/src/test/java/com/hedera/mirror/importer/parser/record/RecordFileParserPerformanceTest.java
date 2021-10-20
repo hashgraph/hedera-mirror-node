@@ -23,9 +23,8 @@ package com.hedera.mirror.importer.parser.record;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -39,6 +38,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.entity.sql.SqlProperties;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
@@ -46,22 +46,22 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecordFileParserPerformanceTest extends IntegrationTest {
 
+    private final boolean defaultParallelIngestion = false;
+    private List<RecordFile> recordFiles;
     @Value("classpath:data/recordstreams/performance/v5/*.rcd")
     private Resource[] testFiles;
-
     @Autowired
     private RecordFileParser recordFileParser;
-
     @Autowired
     private RecordFileReader recordFileReader;
-
     @Autowired
     private RecordFileRepository recordFileRepository;
+    @Autowired
+    private SqlProperties sqlProperties;
 
-    private final List<RecordFile> recordFiles = new ArrayList<>();
-
-    @BeforeAll
+    @BeforeEach
     void setup() throws Exception {
+        recordFiles = new ArrayList<>();
         EntityId nodeAccountId = EntityId.of(0L, 0L, 3L, EntityTypeEnum.ACCOUNT);
         for (int index = 0; index < testFiles.length; index++) {
             RecordFile recordFile = recordFileReader.read(StreamFileData.from(testFiles[index].getFile()));
@@ -69,11 +69,21 @@ class RecordFileParserPerformanceTest extends IntegrationTest {
             recordFile.setNodeAccountId(nodeAccountId);
             recordFiles.add(recordFile);
         }
+
+        sqlProperties.setParallelIngestion(defaultParallelIngestion);
     }
 
     @Test
     @Timeout(15)
-    void parse() {
+    void parseInSequence() {
+        recordFiles.forEach(recordFileParser::parse);
+        assertThat(recordFileRepository.count()).isEqualTo(recordFiles.size());
+    }
+
+    @Test
+    @Timeout(15)
+    void parseInParallel() {
+        sqlProperties.setParallelIngestion(true);
         recordFiles.forEach(recordFileParser::parse);
         assertThat(recordFileRepository.count()).isEqualTo(recordFiles.size());
     }

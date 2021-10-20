@@ -23,10 +23,12 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
+@AllArgsConstructor
 @Data
 @Entity
 @NoArgsConstructor

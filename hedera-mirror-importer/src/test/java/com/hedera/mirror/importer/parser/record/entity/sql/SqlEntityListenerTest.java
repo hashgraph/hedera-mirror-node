@@ -44,8 +44,10 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -115,6 +117,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionTemplate transactionTemplate;
     private final String filename1 = "2019-08-30T18_10_00.419072Z.rcd";
     private final String filename2 = "2019-08-30T18_10_05.419072Z.rcd";
+    private final boolean defaultParallelIngestion = false;
     private RecordFile recordFile1;
     private RecordFile recordFile2;
 
@@ -127,6 +130,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         recordFile1 = recordFile(1L, filename1, UUID.randomUUID().toString(), 0L, "fileHash0");
         recordFile2 = recordFile(10L, filename2, UUID.randomUUID().toString(), 1L, "fileHash1");
 
+        sqlProperties.setParallelIngestion(defaultParallelIngestion);
         sqlEntityListener.onStart();
     }
 
@@ -1030,6 +1034,89 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertExistsAndEquals(scheduleRepository, scheduleMerged, entityId.getId());
     }
 
+    @Test
+    void onEndAllTransactionTypesInSequence() {
+        // given
+        loadAllTransactionTypes();
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+    }
+
+    //    @Test
+    void onEndAllTransactionTypesInParallel() {
+        // given
+        sqlProperties.setParallelIngestion(true);
+        loadAllTransactionTypes();
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+    }
+
+    void loadAllTransactionTypes() {
+        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
+                .of(0L, 0L, 1L, ACCOUNT)));
+        TopicMessage topicMessage = getTopicMessage();
+        FileData fileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
+                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
+        ContractResult contractResult = new ContractResult(15L, "funcParams".getBytes(), 10000L,
+                "callResult".getBytes(), "functionResult".getBytes(), 999L);
+        LiveHash liveHash = new LiveHash(20L, "live hash".getBytes());
+        var transaction = makeTransaction();
+        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
+        Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
+                null, null, false, null, null);
+        EntityId tokenId1 = EntityId.of("0.0.1000", TOKEN);
+        EntityId treasuryId = EntityId.of("0.0.98", ACCOUNT);
+        Token token1 = getToken(tokenId1, treasuryId, 100L, 100L);
+        var nft = getNft(tokenId1, 1L, null, 3L, false, "nft1", 3L);
+        var tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
+        TokenTransfer tokenTransfer1 = getTokenTransfer(1000, 2L, tokenId1, accountId1);
+        Schedule schedule1 = getSchedule(1, "0.0.200");
+
+        TransactionSignature transactionSignature1 = getTransactionSignature(1, "0.0.200", "pubKeyPrefix1".getBytes());
+        var assessedCustomFee = getAssessedCustomFee("0.0.1000");
+        var customFee = getCustomFee("0.0.1000");
+        var nftTransfer = getNftTransfer(2002L, "0.0.1000", 1, "0.0.456",
+                "0.0.789");
+
+        // when
+        // entities
+        sqlEntityListener.onEntity(entity);
+        sqlEntityListener.onEntityId(entityId);
+        sqlEntityListener.onSchedule(schedule1);
+        sqlEntityListener.onToken(token1);
+
+        // entity related
+        sqlEntityListener.onContractResult(contractResult);
+        sqlEntityListener.onCustomFee(customFee);
+        sqlEntityListener.onFileData(fileData);
+        sqlEntityListener.onLiveHash(liveHash);
+        sqlEntityListener.onTokenAccount(tokenAccount);
+        sqlEntityListener.onTopicMessage(topicMessage);
+        sqlEntityListener.onNft(nft);
+
+        // transfers
+        sqlEntityListener.onAssessedCustomFee(assessedCustomFee);
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
+        sqlEntityListener.onNftTransfer(nftTransfer);
+        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
+        sqlEntityListener.onTokenTransfer(tokenTransfer1);
+
+        // transaction
+        sqlEntityListener.onTransaction(transaction);
+        sqlEntityListener.onTransactionSignature(transactionSignature1);
+    }
+
     private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) {
         Optional<T> actual = repository.findById(id);
         assertTrue(actual.isPresent());
@@ -1252,6 +1339,24 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     private RecordFile clone(RecordFile recordFile) {
         return recordFile.toBuilder().build();
+    }
+
+    private AssessedCustomFee getAssessedCustomFee(String tokenId) {
+        AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
+        assessedCustomFee.setAmount(8750L);
+        assessedCustomFee.setEffectivePayerAccountIds(List.of(123L, 456L));
+        assessedCustomFee.setId(new AssessedCustomFee.Id(EntityId.of("0.0.789", EntityTypeEnum.ACCOUNT), 10));
+        assessedCustomFee.setTokenId(tokenId == null ? null : EntityId.of(tokenId, TOKEN));
+        return assessedCustomFee;
+    }
+
+    private CustomFee getCustomFee(String tokenId) {
+        CustomFee customFee = new CustomFee();
+        customFee.setAmount(12L);
+        customFee.setCollectorAccountId(EntityId.of("0.0.789", EntityTypeEnum.ACCOUNT));
+        customFee.setDenominatingTokenId(tokenId == null ? null : EntityId.of(tokenId, TOKEN));
+        customFee.setId(new CustomFee.Id(1005L, EntityId.of("0.0.111", TOKEN)));
+        return customFee;
     }
 
     protected Entity getEntityWithDefaultMemo(EntityId entityId) {

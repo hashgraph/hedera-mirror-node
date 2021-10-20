@@ -25,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
@@ -46,7 +47,6 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-@RequiredArgsConstructor
 class RecordFileParserIntegrationTest extends IntegrationTest {
 
     private final static EntityId NODE_ACCOUNT_ID = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
@@ -59,9 +59,6 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
 
     @Resource
     private RecordFileParser recordFileParser;
-
-    @Resource
-    private RecordParserProperties parserProperties;
 
     @Resource
     private CryptoTransferRepository cryptoTransferRepository;
@@ -81,12 +78,17 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     private RecordFileDescriptor recordFileDescriptor1;
     private RecordFileDescriptor recordFileDescriptor2;
 
+    @Resource
+    private MirrorProperties mirrorProperties;
+
     @BeforeEach
     void before() {
         RecordFile recordFile1 = recordFile(recordFilePath1.toFile(), 0L);
         RecordFile recordFile2 = recordFile(recordFilePath2.toFile(), 1L);
         recordFileDescriptor1 = new RecordFileDescriptor(93, 8, recordFile1);
         recordFileDescriptor2 = new RecordFileDescriptor(75, 5, recordFile2);
+
+        mirrorProperties.setStartDate(Instant.EPOCH);
     }
 
     @Test

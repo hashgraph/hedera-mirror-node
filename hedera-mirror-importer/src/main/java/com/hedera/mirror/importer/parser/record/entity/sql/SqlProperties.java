@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -35,4 +36,10 @@ public class SqlProperties {
     private int batchSize = 20_000;
 
     private boolean enabled = true;
+
+    @Max(20)
+    @Min(1)
+    private int connectionThreadPoolSize = 15;
+
+    private boolean parallelIngestion = false;
 }
