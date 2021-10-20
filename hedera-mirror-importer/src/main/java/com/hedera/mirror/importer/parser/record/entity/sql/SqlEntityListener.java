@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -375,11 +376,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserException(e);
         } finally {
             cleanup();
-            connections.stream().filter(x -> x != null).forEach(c -> DataSourceUtils.releaseConnection(c, dataSource));
+            connections.stream().filter(Objects::nonNull)
+                    .forEach(c -> DataSourceUtils.releaseConnection(c, dataSource));
         }
     }
 
-    private Connection addCopyTask(List<Callable<Object>> tasks, PgCopy pgCopy, Collection collection) {
+    private Connection addCopyTask(List<Callable<Object>> tasks, PgCopy<?> pgCopy, Collection collection) {
         if (CollectionUtils.isEmpty(collection)) {
             return null;
         }
@@ -389,10 +391,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             try {
                 pgCopy.copy(collection, connection);
             } catch (ParserException e) {
-                Thread.currentThread().interrupt();
                 throw e;
             } catch (Exception e) {
-                Thread.currentThread().interrupt();
                 throw new ParserException(e);
             }
         }));
@@ -403,6 +403,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void executeTasks(List<Callable<Object>> tasks, List<Connection> connections) {
         try {
             persistenceThreadPool.invokeAll(tasks);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ParserException(ex);
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
