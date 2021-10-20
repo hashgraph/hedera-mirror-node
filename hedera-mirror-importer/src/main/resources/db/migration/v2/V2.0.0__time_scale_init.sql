@@ -214,7 +214,7 @@ create table if not exists event_file
 -- file_data
 create table if not exists file_data
 (
-    file_data           bytea    null,
+    file_data           bytea    not null,
     consensus_timestamp bigint   not null,
     entity_id           bigint   not null,
     transaction_type    smallint not null
