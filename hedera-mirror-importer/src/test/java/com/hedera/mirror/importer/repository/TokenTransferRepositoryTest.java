@@ -39,8 +39,9 @@ class TokenTransferRepositoryTest extends AbstractRepositoryTest {
     void findById() {
         EntityId tokenId = EntityId.of(0L, 1L, 20L, TOKEN);
         EntityId accountId = EntityId.of(0L, 1L, 7L, ACCOUNT);
+        EntityId payerAccountId = EntityId.of(0L, 1L, 500L, ACCOUNT);
         long amount = 40L;
-        TokenTransfer tokenTransfer = new TokenTransfer(1L, amount, tokenId, accountId);
+        TokenTransfer tokenTransfer = new TokenTransfer(1L, amount, tokenId, accountId, false, payerAccountId);
 
         tokenTransferRepository.save(tokenTransfer);
 

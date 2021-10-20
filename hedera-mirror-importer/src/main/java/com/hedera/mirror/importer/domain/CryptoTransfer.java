@@ -39,10 +39,6 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @NoArgsConstructor
 public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
 
-    public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId) {
-        id = new CryptoTransfer.Id(amount, consensusTimestamp, entityId);
-    }
-
     /*
      * It used to be that crypto transfers could have multiple amounts for the same account, so all fields were used for
      * uniqueness. Later a change was made to aggregate amounts by account making the unique key
@@ -52,6 +48,17 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
     @EmbeddedId
     @JsonUnwrapped
     private Id id;
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
+
+    public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId) {
+        id = new CryptoTransfer.Id(amount, consensusTimestamp, entityId);
+    }
+
+    public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId, EntityId transactionPayerAccountId) {
+        this(consensusTimestamp, amount, entityId);
+        payerAccountId = transactionPayerAccountId;
+    }
 
     @JsonIgnore
     @Override

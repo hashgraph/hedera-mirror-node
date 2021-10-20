@@ -43,26 +43,32 @@ import com.hedera.mirror.importer.converter.TokenIdConverter;
 @NoArgsConstructor
 public class TokenTransfer implements Persistable<TokenTransfer.Id> {
 
+    @EmbeddedId
+    @JsonUnwrapped
+    private Id id;
+    private long amount;
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
+    @JsonIgnore
+    @Transient
+    private boolean tokenDissociate;
+
     public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
         this(consensusTimestamp, amount, tokenId, accountId, false);
     }
 
     public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId,
-            boolean tokenDissociate) {
+                         boolean tokenDissociate) {
         id = new TokenTransfer.Id(consensusTimestamp, tokenId, accountId);
         this.amount = amount;
         this.tokenDissociate = tokenDissociate;
     }
 
-    @EmbeddedId
-    @JsonUnwrapped
-    private Id id;
-
-    private long amount;
-
-    @JsonIgnore
-    @Transient
-    private boolean tokenDissociate;
+    public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId,
+                         boolean tokenDissociate, EntityId payerAccountId) {
+        this(consensusTimestamp, amount, tokenId, accountId, tokenDissociate);
+        this.payerAccountId = payerAccountId;
+    }
 
     @JsonIgnore
     @Override

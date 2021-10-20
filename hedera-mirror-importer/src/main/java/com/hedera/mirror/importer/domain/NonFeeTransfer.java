@@ -41,10 +41,16 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
 
     private Long amount;
-
     @EmbeddedId
     @JsonUnwrapped
     private NonFeeTransfer.Id id;
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
+
+    public NonFeeTransfer(long consensusTimestamp, long amount, EntityId entityId) {
+        id = new NonFeeTransfer.Id(consensusTimestamp, entityId);
+        this.amount = amount;
+    }
 
     @JsonIgnore
     @Override

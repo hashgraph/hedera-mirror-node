@@ -159,7 +159,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (body.hasCryptoCreateAccount() && recordItem.isSuccessful()) {
                 insertCryptoCreateTransferList(consensusTimestamp, txRecord, body);
             } else {
-                insertTransferList(consensusTimestamp, txRecord.getTransferList());
+                insertTransferList(consensusTimestamp, txRecord.getTransferList(),
+                        EntityId.of(body.getTransactionID().getAccountID()));
             }
         }
 
@@ -283,9 +284,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
-                entityListener.onNonFeeTransfer(
-                        new NonFeeTransfer(aa.getAmount(), new NonFeeTransfer.Id(consensusTimestamp, EntityId
-                                .of(aa.getAccountID()))));
+                entityListener.onNonFeeTransfer(new NonFeeTransfer(
+                        aa.getAmount(),
+                        new NonFeeTransfer.Id(consensusTimestamp, EntityId.of(aa.getAccountID())),
+                        EntityId.of(body.getTransactionID().getAccountID())));
             }
         }
     }
@@ -355,12 +357,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertTransferList(long consensusTimestamp, TransferList transferList) {
+    private void insertTransferList(long consensusTimestamp, TransferList transferList, EntityId payerAccountId) {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             entityListener.onEntityId(account);
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account,
+                    payerAccountId));
         }
     }
 
@@ -371,12 +374,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         EntityId createdAccount = EntityId.of(txRecord.getReceipt().getAccountID());
         boolean addInitialBalance = true;
         TransferList transferList = txRecord.getTransferList();
+        EntityId payerAccountId = EntityId.of(body.getTransactionID().getAccountID());
 
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             entityListener.onEntityId(account);
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account));
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, aa.getAmount(), account,
+                    payerAccountId));
 
             // Don't manually add an initial balance transfer if the transfer list contains it already
             if (initialBalance == aa.getAmount() && createdAccount.equals(account)) {
@@ -385,11 +390,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         if (addInitialBalance) {
-            var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
-            entityListener.onEntityId(payerAccount);
+            entityListener.onEntityId(payerAccountId);
             entityListener.onEntityId(createdAccount);
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
-            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccountId,
+                    payerAccountId));
+            entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount,
+                    payerAccountId));
         }
     }
 
@@ -605,7 +611,9 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTokenTransfers(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            boolean isTokenDissociate = recordItem.getTransactionBody().hasTokenDissociate();
+            TransactionBody body = recordItem.getTransactionBody();
+            boolean isTokenDissociate = body.hasTokenDissociate();
+            var payerAccountId = EntityId.of(body.getTransactionID().getAccountID());
 
             recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
                 EntityId tokenId = EntityId.of(tokenTransferList.getToken());
@@ -617,7 +625,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     long amount = accountAmount.getAmount();
                     entityListener.onTokenTransfer(new TokenTransfer(consensusTimestamp, amount, tokenId, accountId,
-                            isTokenDissociate));
+                            isTokenDissociate, payerAccountId));
 
                     if (isTokenDissociate) {
                         // token transfers in token dissociate are for deleted tokens and the amount is negative to
@@ -648,6 +656,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     nftTransferDomain.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
                     nftTransferDomain.setReceiverAccountId(receiverId);
                     nftTransferDomain.setSenderAccountId(senderId);
+                    nftTransferDomain.setPayerAccountId(payerAccountId);
 
                     entityListener.onNftTransfer(nftTransferDomain);
                     if (!EntityId.isEmpty(receiverId)) {
@@ -884,6 +893,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertAssessedCustomFees(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
+            var payerAccountId = EntityId.of(recordItem.getTransactionBody().getTransactionID().getAccountID());
             for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
                 // the effective payers must also appear in the *transfer lists of this transaction and the
@@ -896,6 +906,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 assessedCustomFee.setEffectivePayerEntityIds(payerEntityIds);
                 assessedCustomFee.setId(new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp));
                 assessedCustomFee.setTokenId(EntityId.of(protoAssessedCustomFee.getTokenId()));
+                assessedCustomFee.setPayerAccountId(payerAccountId);
                 entityListener.onAssessedCustomFee(assessedCustomFee);
             }
         }

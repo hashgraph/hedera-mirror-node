@@ -15,6 +15,7 @@ create table if not exists assessed_custom_fee
     collector_account_id        bigint   not null,
     consensus_timestamp         bigint   not null,
     effective_payer_account_ids bigint[] not null,
+    payer_account_id            bigint   not null,
     token_id                    bigint
 );
 comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
@@ -143,7 +144,8 @@ create table if not exists crypto_transfer
 (
     entity_id           bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    payer_account_id    bigint not null
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
@@ -246,6 +248,7 @@ comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 create table if not exists nft_transfer
 (
     consensus_timestamp bigint not null,
+    payer_account_id    bigint not null,
     receiver_account_id bigint,
     sender_account_id   bigint,
     serial_number       bigint not null,
@@ -258,7 +261,8 @@ create table if not exists non_fee_transfer
 (
     entity_id           bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    payer_account_id    bigint not null
 );
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
@@ -393,7 +397,8 @@ create table if not exists token_transfer
     token_id            bigint not null,
     account_id          bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    payer_account_id    bigint not null
 );
 comment on table token_transfer is 'Crypto account token transfers';
 

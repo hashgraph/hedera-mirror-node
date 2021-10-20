@@ -37,7 +37,8 @@ class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void findByConsensusTimestampAndEntityNum() {
         EntityId entity = EntityId.of(0L, 1L, 2L, ACCOUNT);
-        CryptoTransfer cryptoTransfer = new CryptoTransfer(1L, 40L, entity);
+        EntityId payerEntity = EntityId.of(0L, 1L, 3L, ACCOUNT);
+        CryptoTransfer cryptoTransfer = new CryptoTransfer(1L, 40L, entity, payerEntity);
 
         cryptoTransferRepository.save(cryptoTransfer);
 
