@@ -44,7 +44,7 @@ public class TransactionType {
 
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
-    private EntityTypeEnum entityTypeEnum;
+    private EntityTypeEnum entityType;
 
     private String name;
 }
