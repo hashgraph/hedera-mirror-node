@@ -60,8 +60,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
-import com.vladmihalcea.hibernate.type.array.internal.ArrayUtil;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
@@ -102,8 +102,6 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
-
-import org.apache.commons.lang3.ArrayUtils;
 
 @Log4j2
 @Named
@@ -375,8 +373,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (addressBookService.isAddressBook(entityId)) {
             fileDataRepository.save(fileData);
             addressBookService.update(fileData);
-        } else if ((entityProperties.getPersist().isFiles() ||
-                (entityProperties.getPersist().isSystemFiles() && entityId.getEntityNum() < 1000))) {
+        } else if (entityProperties.getPersist().isFiles() ||
+                (entityProperties.getPersist().isSystemFiles() && entityId.getEntityNum() < 1000)) {
             entityListener.onFileData(fileData);
         }
     }
