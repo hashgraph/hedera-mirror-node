@@ -775,7 +775,7 @@ describe('Utils toHexString tests', () => {
     });
 
     test(`implicit addPrefix false - ${spec.input}`, () => {
-      expect(utils.toHexString(spec.input, false)).toEqual(spec.expected);
+      expect(utils.toHexString(spec.input)).toEqual(spec.expected);
     });
 
     test(`addPrefix true - ${spec.input}`, () => {
