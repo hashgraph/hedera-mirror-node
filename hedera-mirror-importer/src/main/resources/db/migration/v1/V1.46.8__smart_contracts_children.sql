@@ -8,14 +8,14 @@ alter table if exists contract_history
 
 -- Update the contract_result.initial_balance from the contract create transaction.initial_balance
 with contract_transaction as (
-    select consensus_ns, initial_balance
+    select consensus_timestamp, initial_balance
     from transaction
     where type = 8
 )
 update contract_result cr
 set amount = ct.initial_balance
 from contract_transaction ct
-where cr.consensus_timestamp = ct.consensus_ns;
+where cr.consensus_timestamp = ct.consensus_timestamp;
 
 -- Enumerate the list of created child contract IDs
 create temporary table if not exists contract_relationship on commit drop as
