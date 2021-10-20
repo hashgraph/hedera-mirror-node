@@ -323,12 +323,16 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityMaxAutomaticTokenAssociationsUpdated.setMaxAutomaticTokenAssociations(10);
         sqlEntityListener.onEntity(entityMaxAutomaticTokenAssociationsUpdated);
 
+        Entity entityReceiverSigRequired = getEntity(1, 30L);
+        entityReceiverSigRequired.setReceiverSigRequired(true);
+        sqlEntityListener.onEntity(entityReceiverSigRequired);
+
         // when
         completeFileAndCommit();
 
         // then
-        Entity expected = getEntity(1, 1L, 25L, "memo-updated", keyFromString(KEY), autoRenewAccountId, 360L, null,
-                720L, 10, keyFromString(KEY2));
+        Entity expected = getEntity(1, 1L, 30L, "memo-updated", keyFromString(KEY), autoRenewAccountId, 360L, null,
+                720L, 10, true, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.findAll()).containsOnly(expected);
     }
@@ -337,7 +341,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onEntityEntityIdMerge() {
         // given
         Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, keyFromString(KEY2));
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
         sqlEntityListener.onEntity(entity);
 
         EntityId entityId1 = EntityId.of(0L, 0L, 1L, ACCOUNT);
@@ -355,7 +359,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         Entity entityMerged = getEntity(1, 1L, 5L, "memo-updated", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, keyFromString(KEY2));
+                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityMerged, 1L);
@@ -1070,15 +1074,16 @@ class SqlEntityListenerTest extends IntegrationTest {
         return getEntity(id, null, modifiedTimestamp, null, null, null);
     }
 
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, Integer maxAutomaticTokenAssociations,
-                             String memo, Key adminKey) {
+    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp,
+                             Integer maxAutomaticTokenAssociations, String memo, Key adminKey) {
         return getEntity(id, createdTimestamp, modifiedTimestamp, memo, adminKey, null, null, null, null,
-                maxAutomaticTokenAssociations, null);
+                maxAutomaticTokenAssociations, false, null);
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
                              Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-                             Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations, Key submitKey) {
+                             Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations,
+                             Boolean receiverSigRequired, Key submitKey) {
         Entity entity = new Entity();
         entity.setId(id);
         entity.setAutoRenewAccountId(autoRenewAccountId);
@@ -1091,6 +1096,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setNum(id);
         entity.setRealm(0L);
+        entity.setReceiverSigRequired(receiverSigRequired);
         entity.setShard(0L);
         entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
         entity.setType(ACCOUNT.getId());

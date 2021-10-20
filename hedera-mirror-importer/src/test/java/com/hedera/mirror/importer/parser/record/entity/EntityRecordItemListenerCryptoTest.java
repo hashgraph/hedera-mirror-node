@@ -594,14 +594,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualAccount.getAutoRenewPeriod()),
                 () -> assertEquals(timestamp, actualAccount.getCreatedTimestamp()),
-                () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
-                        actualAccount.getPublicKey()),
+                () -> assertNull(actualAccount.getExpirationTimestamp()),
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
                 () -> assertEquals(0, actualAccount.getMaxAutomaticTokenAssociations()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
-                () -> assertNull(actualAccount.getExpirationTimestamp()),
+                () -> assertEquals(timestamp, actualAccount.getModifiedTimestamp()),
+                () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
+                        actualAccount.getPublicKey()),
                 () -> assertAccount(expected.getProxyAccountID(), actualProxyAccountId),
-                () -> assertEquals(timestamp, actualAccount.getModifiedTimestamp())
+                () -> assertEquals(expected.getReceiverSigRequired(), actualAccount.getReceiverSigRequired())
         );
     }
 

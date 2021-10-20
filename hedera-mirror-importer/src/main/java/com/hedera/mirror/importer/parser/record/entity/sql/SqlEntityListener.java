@@ -439,6 +439,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cachedEntity.setProxyAccountId(newEntity.getProxyAccountId());
         }
 
+        if (newEntity.getReceiverSigRequired() != null) {
+            cachedEntity.setReceiverSigRequired(newEntity.getReceiverSigRequired());
+        }
+
         if (newEntity.getSubmitKey() != null) {
             cachedEntity.setSubmitKey(newEntity.getSubmitKey());
         }
