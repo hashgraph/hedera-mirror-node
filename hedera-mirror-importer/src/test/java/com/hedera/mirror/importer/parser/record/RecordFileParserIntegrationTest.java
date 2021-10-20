@@ -41,6 +41,7 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.parser.record.entity.sql.SqlProperties;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -81,6 +82,9 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     @Resource
     private MirrorProperties mirrorProperties;
 
+    @Resource
+    private SqlProperties sqlProperties;
+
     @BeforeEach
     void before() {
         RecordFile recordFile1 = recordFile(recordFilePath1.toFile(), 0L);
@@ -107,7 +111,22 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void rollback() {
+    void rollbackSequentialIngestion() {
+        rollback();
+    }
+
+    @Test
+    void rollbackParallelIngestion() {
+        boolean defaultIngestion = sqlProperties.isParallelIngestion();
+        try {
+            sqlProperties.setParallelIngestion(true);
+            rollback();
+        } finally {
+            sqlProperties.setParallelIngestion(defaultIngestion);
+        }
+    }
+
+    private void rollback() {
         // when
         RecordFile recordFile = recordFileDescriptor1.getRecordFile();
         recordFileParser.parse(recordFile);

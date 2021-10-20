@@ -326,10 +326,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // entity insert only operations
-            Stopwatch entityInsertStopwatch = Stopwatch.createStarted();
             List<Callable<Object>> entityTasks = new ArrayList<>(3);
             connections.add(addCopyTask(entityTasks, entityPgCopy, entities.values()));
             connections.add(addCopyTask(entityTasks, schedulePgCopy, schedules.values()));
+            Stopwatch entityInsertStopwatch = Stopwatch.createStarted();
             executeTasks(entityTasks, connections);
             log.info("Completed entity inserts in {}", entityInsertStopwatch);
 
@@ -342,7 +342,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // entity and transaction metadata tables
             List<Callable<Object>> transactionMetadataTasks = new ArrayList<>(12);
-            Stopwatch transactionMetadataStopwatch = Stopwatch.createStarted();
             connections.add(addCopyTask(transactionMetadataTasks, contractResultPgCopy, contractResults));
             connections.add(addCopyTask(transactionMetadataTasks, customFeePgCopy, customFees));
             connections.add(addCopyTask(transactionMetadataTasks, fileDataPgCopy, fileData));
@@ -355,7 +354,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             connections.add(addCopyTask(transactionMetadataTasks, nonFeeTransferPgCopy, nonFeeTransfers));
             connections.add(addCopyTask(transactionMetadataTasks, nftTransferPgCopy, nftTransfers));
             connections.add(addCopyTask(transactionMetadataTasks, tokenTransferPgCopy, tokenTransfers));
-            executeTasks(entityTasks, connections);
+            Stopwatch transactionMetadataStopwatch = Stopwatch.createStarted();
+            executeTasks(transactionMetadataTasks, connections);
             log.info("Completed entity and transaction metadata inserts in {}", transactionMetadataStopwatch);
 
             // insert operations with conflict management
@@ -364,7 +364,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                     .add(addCopyTask(insertWithConflictTasks, tokenDissociateTransferPgCopy, tokenDissociateTransfers));
             connections.add(addCopyTask(insertWithConflictTasks, tokenAccountPgCopy, tokenAccounts));
             connections.add(addCopyTask(insertWithConflictTasks, nftPgCopy, nfts.values()));
-
             Stopwatch insertWithConflictStopwatch = Stopwatch.createStarted();
             executeTasks(insertWithConflictTasks, connections);
             log.info("Completed entity metadata upserts in {}", insertWithConflictStopwatch);
