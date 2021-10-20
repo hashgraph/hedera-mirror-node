@@ -22,12 +22,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -61,10 +61,9 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Override
-    protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return super.getDefaultTransactionRecord()
-                .setReceipt(TransactionReceipt.newBuilder()
-                        .setTokenID(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build()));
+    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
+        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum)
+                .setTokenID(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM).build());
     }
 
     @Override

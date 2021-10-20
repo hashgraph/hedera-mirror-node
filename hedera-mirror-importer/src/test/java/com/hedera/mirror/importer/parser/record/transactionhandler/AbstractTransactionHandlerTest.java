@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 import java.util.Arrays;
@@ -58,6 +59,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.Entity;
@@ -121,6 +123,10 @@ abstract class AbstractTransactionHandlerTest {
         return SignatureMap.newBuilder();
     }
 
+    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
+        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum);
+    }
+
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
         TransactionRecord.Builder builder = TransactionRecord.newBuilder();
         if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
@@ -128,8 +134,8 @@ abstract class AbstractTransactionHandlerTest {
                     entityOperation == EntityOperation.CREATE ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
             builder.setConsensusTimestamp(consensusTimestamp);
         }
-        builder.setReceipt(builder.getReceiptBuilder().setStatus(ResponseCodeEnum.SUCCESS));
-        return builder;
+
+        return builder.setReceipt(getTransactionReceipt(ResponseCodeEnum.SUCCESS));
     }
 
     // For testGetEntityId
@@ -201,13 +207,11 @@ abstract class AbstractTransactionHandlerTest {
                 testSpecs.iterator(),
                 UpdateEntityTestSpec::getDescription,
                 (testSpec) -> {
-                    // given spec
-                    Entity actual = testSpec.getInput();
-
                     // when
                     com.hedera.mirror.importer.domain.Transaction transaction =
                             new com.hedera.mirror.importer.domain.Transaction();
-                    transaction.setEntityId(actual.toEntityId());
+                    transaction.setEntityId(testSpec.getExpected().toEntityId());
+                    Mockito.reset(entityListener);
                     transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
                     verify(entityListener).onEntity(entityCaptor.capture());
 
@@ -258,24 +262,26 @@ abstract class AbstractTransactionHandlerTest {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
+        Entity entity = getExpectedUpdatedEntity();
+        entity.setMemo(""); // Proto defaults to empty string
 
         // no memo set, expect empty memo
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
                         .description("create entity without memo, expect empty memo")
-                        .expected(getExpectedUpdatedEntity())
-                        .input(getEntity())
+                        .expected(entity)
                         .recordItem(getRecordItem(body, innerBody))
                         .build()
         );
 
+        entity = getExpectedUpdatedEntity();
+        entity.setMemo("");
         // memo set to empty string, expect empty memo
         Message updatedInnerBody = innerBody.toBuilder().setField(memoField, "").build();
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
                         .description("create entity with empty memo, expect empty memo")
-                        .expected(getExpectedUpdatedEntity())
-                        .input(getEntity())
+                        .expected(entity)
                         .recordItem(getRecordItem(body, updatedInnerBody))
                         .build()
         );
@@ -288,7 +294,6 @@ abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("create entity with non-empty memo, expect memo set")
                         .expected(expected)
-                        .input(getEntity())
                         .recordItem(getRecordItem(body, updatedInnerBody))
                         .build()
         );
@@ -310,23 +315,17 @@ abstract class AbstractTransactionHandlerTest {
                     .build();
         }
 
-        // memo not set, expect memo in entity unchanged
         Entity expected = getExpectedUpdatedEntity();
-        expected.setMemo(DEFAULT_MEMO);
-        Entity input = getEntity();
-        input.setMemo(DEFAULT_MEMO);
 
         Message unchangedMemoInnerBody = innerBody;
         if (receiverSigRequiredWrapperField != null) {
-            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
             expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
-                        .description("update entity without memo, expect memo unchanged")
+                        .description("update entity without memo")
                         .expected(expected)
-                        .input(input)
                         .recordItem(getRecordItem(body, unchangedMemoInnerBody))
                         .build()
         );
@@ -337,21 +336,17 @@ abstract class AbstractTransactionHandlerTest {
             // non-empty string, expect memo set to non-empty string
             expected = getExpectedUpdatedEntity();
             expected.setMemo(UPDATED_MEMO);
-            input = getEntity();
-            input.setMemo(DEFAULT_MEMO);
             updatedMemoInnerBody = innerBody.toBuilder().setField(memoField, UPDATED_MEMO).build();
         }
 
         if (receiverSigRequiredWrapperField != null) {
-            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
             expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
-                        .description("update entity with non-empty String, expect memo updated")
+                        .description("update entity with non-empty String")
                         .expected(expected)
-                        .input(input)
                         .recordItem(getRecordItem(body, updatedMemoInnerBody))
                         .build()
         );
@@ -363,14 +358,11 @@ abstract class AbstractTransactionHandlerTest {
             field = memoField;
         }
 
-        // empty StringValue, expect memo in entity cleared
-        input = getEntity();
-        input.setMemo(DEFAULT_MEMO);
         expected = getExpectedUpdatedEntity();
+        expected.setMemo("");
         Message clearedMemoInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
 
         if (receiverSigRequiredWrapperField != null) {
-            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
             expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
@@ -378,7 +370,6 @@ abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("update entity with empty StringValue memo, expect memo cleared")
                         .expected(expected)
-                        .input(input)
                         .recordItem(getRecordItem(body, clearedMemoInnerBody))
                         .build()
         );
@@ -386,13 +377,10 @@ abstract class AbstractTransactionHandlerTest {
         // non-empty StringValue, expect memo in entity updated
         expected = getExpectedUpdatedEntity();
         expected.setMemo(UPDATED_MEMO);
-        input = getEntity();
-        input.setMemo(DEFAULT_MEMO);
         Message memoStringValueUpdatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO))
                 .build();
 
         if (receiverSigRequiredWrapperField != null) {
-            input.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
             expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
@@ -400,7 +388,6 @@ abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec.builder()
                         .description("update entity with non-empty StringValue memo, expect memo updated")
                         .expected(expected)
-                        .input(input)
                         .recordItem(getRecordItem(body, memoStringValueUpdatedInnerBody))
                         .build()
         );
@@ -408,11 +395,8 @@ abstract class AbstractTransactionHandlerTest {
         if (maxAutomaticTokenAssociationsField != null) {
             // only crypto update has max_automatic_token_associations
             expected = getExpectedUpdatedEntity();
-            expected.setMemo(DEFAULT_MEMO);
             expected.setMaxAutomaticTokenAssociations(500);
             expected.setReceiverSigRequired(true);
-            input = getEntity();
-            input.setMemo(DEFAULT_MEMO);
             Message updatedInnerBody = innerBody.toBuilder()
                     .setField(maxAutomaticTokenAssociationsField, Int32Value.of(500))
                     .build();
@@ -420,7 +404,6 @@ abstract class AbstractTransactionHandlerTest {
                     UpdateEntityTestSpec.builder()
                             .description("update entity with max_automatic_token_associations")
                             .expected(expected)
-                            .input(input)
                             .recordItem(getRecordItem(body, updatedInnerBody))
                             .build()
             );
@@ -463,8 +446,6 @@ abstract class AbstractTransactionHandlerTest {
                     break;
             }
         }
-
-        entity.setMemo("");
 
         return entity;
     }
@@ -543,7 +524,6 @@ abstract class AbstractTransactionHandlerTest {
     static class UpdateEntityTestSpec {
         String description;
         Entity expected;
-        Entity input;
         RecordItem recordItem;
     }
 }

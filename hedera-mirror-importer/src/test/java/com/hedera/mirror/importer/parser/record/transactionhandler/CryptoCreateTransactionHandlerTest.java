@@ -24,9 +24,9 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 
 import com.hedera.mirror.importer.domain.Entity;
@@ -46,10 +46,9 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return super.getDefaultTransactionRecord()
-                .setReceipt(TransactionReceipt.newBuilder()
-                        .setAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build()));
+    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
+        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum)
+                .setAccountID(AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build());
     }
 
     @Override
@@ -76,11 +75,11 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
         Entity expected = getExpectedUpdatedEntity();
         expected.setMaxAutomaticTokenAssociations(500);
+        expected.setMemo("");
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
                         .description("create entity with non-zero max_automatic_token_associations")
                         .expected(expected)
-                        .input(getEntity())
                         .recordItem(getRecordItem(body, getDefaultTransactionRecord().build()))
                         .build()
         );

@@ -40,13 +40,10 @@ abstract class AbstractDeleteOrUndeleteTransactionHandlerTest extends AbstractTr
                 "undelete entity transaction, expect entity undeleted";
         Entity expected = getExpectedEntityWithTimestamp();
         expected.setDeleted(deleteOrUndelete);
-        Entity input = getEntity();
-        input.setDeleted(!deleteOrUndelete);
         return List.of(
                 UpdateEntityTestSpec.builder()
                         .description(description)
                         .expected(expected)
-                        .input(input)
                         .recordItem(getRecordItem(getDefaultTransactionBody().build(),
                                 getDefaultTransactionRecord().build()))
                         .build()

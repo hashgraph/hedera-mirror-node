@@ -56,7 +56,7 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
 
     @Override
     public MigrationVersion getVersion() {
-        return MigrationVersion.fromVersion("1.46.6");
+        return MigrationVersion.fromVersion("1.46.7");
     }
 
     @Override

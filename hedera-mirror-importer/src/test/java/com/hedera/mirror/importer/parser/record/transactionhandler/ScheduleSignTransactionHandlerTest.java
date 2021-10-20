@@ -21,13 +21,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -59,10 +59,9 @@ class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return super.getDefaultTransactionRecord()
-                .setReceipt(TransactionReceipt.newBuilder()
-                        .setScheduleID(ScheduleID.newBuilder().setScheduleNum(DEFAULT_ENTITY_NUM).build()));
+    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
+        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum)
+                .setScheduleID(ScheduleID.newBuilder().setScheduleNum(DEFAULT_ENTITY_NUM).build());
     }
 
     @Override
