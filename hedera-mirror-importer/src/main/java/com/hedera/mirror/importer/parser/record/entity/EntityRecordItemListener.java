@@ -61,7 +61,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.ArrayUtils;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
@@ -361,11 +360,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeEnum) {
-        if (ArrayUtils.isEmpty(contents) && transactionTypeEnum != TransactionTypeEnum.FILECREATE.getProtoId()) {
-            // don't insert the file data when the content is empty, and it's not a filecreate transaction
-            return;
-        }
-
         EntityId entityId = EntityId.of(fileID);
         FileData fileData = new FileData(consensusTimestamp, contents, entityId, transactionTypeEnum);
 

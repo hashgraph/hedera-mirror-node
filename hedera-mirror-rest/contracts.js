@@ -58,7 +58,7 @@ const fileDataQuery = `select string_agg(f.file_data, '' order by f.consensus_ti
       from file_data f
       join contract c
         on f.entity_id = c.file_id and f.consensus_timestamp <= c.created_timestamp
-      where f.transaction_type in (17, 19)
+      where f.transaction_type = 17 or (f.transaction_type = 19 and length(f.file_data) <> 0)
       order by f.consensus_timestamp desc
       limit 1
     ) and f.consensus_timestamp <= c.created_timestamp`;
