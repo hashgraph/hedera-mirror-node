@@ -684,6 +684,7 @@ components:
           properties:
             bytecode:
               type: string
+              nullable: true
               format: binary
               description: The contract bytecode in hex
               example: "0x01021a1fdc9b"
@@ -895,14 +896,12 @@ components:
         contract_id:
           $ref: '#/components/schemas/EntityId'
         created_timestamp:
-          type: string
-          example: "1633466568.31556926"
+          $ref: '#/components/schemas/Timestamp'
         deleted:
           type: boolean
           example: false
         expiration_timestamp:
-          type: string
-          example: "9851266350.000999111"
+          $ref: '#/components/schemas/Timestamp'
         file_id:
           $ref: '#/components/schemas/EntityId'
         memo:
@@ -913,24 +912,9 @@ components:
         proxy_account_id:
           $ref: '#/components/schemas/EntityId'
         solidity_address:
-          type: string
-          format: binary
-          minLength: 42
-          maxLength: 42
-          example: "0x00000000000000000000000000001f4100000000"
+          $ref: '#/components/schemas/SolidityAddress'
         timestamp:
-          type: object
-          description: The timestamp range the contract is valid in
-          properties:
-            from:
-              type: string
-              description: The inclusive from timestamp in seconds
-              example: "1633466568.31556926"
-            to:
-              type: string
-              description: The exclusive to timestamp in seconds
-              nullable: true
-              example: "1957001234.31556926"
+          $ref: '#/components/schemas/TimestampRange'
       required:
         - admin_key
         - contract_id
@@ -1158,6 +1142,13 @@ components:
           type: string
           format: byte
           example: "3q2+7wABAQMLqgMMwQ=="
+    SolidityAddress:
+      type: string
+      description: A network entity encoded as a solidity address
+      format: binary
+      minLength: 42
+      maxLength: 42
+      example: "0x0000000000000000000000000000000000001f41"
     StateProofFiles:
       type: object
       properties:
@@ -1198,6 +1189,19 @@ components:
       type: string
       example: "1586567700.453054000"
       pattern: '/^\d{1,10}(\.\d{1,9})?$'
+    TimestampRange:
+      type: object
+      description: A timestamp range an entity is valid for
+      properties:
+        from:
+          type: string
+          description: The inclusive from timestamp in seconds
+          example: "1633466568.31556926"
+        to:
+          type: string
+          description: The exclusive to timestamp in seconds
+          nullable: true
+          example: "1957001234.31556926"
     Token:
       type: object
       properties:

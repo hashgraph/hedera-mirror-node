@@ -28,7 +28,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
 
-const {Contract} = require('./model');
+const {Contract, FileData} = require('./model');
 const {ContractViewModel} = require('./viewmodel');
 const {NotFoundError} = require('./errors/notFoundError');
 
@@ -49,19 +49,22 @@ const contractSelectFields = [
 // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
 // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
 // Note the 'contract' relation is the cte not the 'contract' table
-const fileDataQuery = `select string_agg(f.file_data, '' order by f.consensus_timestamp) bytecode
-    from file_data f
-    join contract c
-      on c.file_id = f.entity_id
-    where f.consensus_timestamp >= (
-      select f.consensus_timestamp
-      from file_data f
-      join contract c
-        on f.entity_id = c.file_id and f.consensus_timestamp <= c.created_timestamp
-      where f.transaction_type = 17 or (f.transaction_type = 19 and length(f.file_data) <> 0)
-      order by f.consensus_timestamp desc
+const fileDataQuery = `select
+      string_agg(${FileData.FILE_DATA_FULL_NAME}, '' order by ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME}) bytecode
+    from ${FileData.tableName} ${FileData.tableAlias}
+    join ${Contract.tableName} ${Contract.tableAlias}
+      on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.ENTITY_ID_FULL_NAME}
+    where ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME} >= (
+      select ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME}
+      from ${FileData.tableName} ${FileData.tableAlias}
+      join ${Contract.tableName} ${Contract.tableAlias}
+        on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.ENTITY_ID_FULL_NAME}
+          and ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}
+      where ${FileData.TRANSACTION_TYPE_FULL_NAME} = 17
+        or (${FileData.TRANSACTION_TYPE_FULL_NAME} = 19 and length(${FileData.FILE_DATA_FULL_NAME}) <> 0)
+      order by ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME} desc
       limit 1
-    ) and f.consensus_timestamp <= c.created_timestamp`;
+    ) and ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}`;
 
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
