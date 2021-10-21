@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.common.primitives.Longs;
@@ -34,6 +35,8 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
@@ -42,6 +45,8 @@ import com.hedera.mirror.importer.util.Utility;
 public class DomainBuilder {
 
     private final EntityRepository entityRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final TokenRepository tokenRepository;
     private final AtomicLong id = new AtomicLong(0L);
     private final Instant now = Instant.now();
 
@@ -78,5 +83,49 @@ public class DomainBuilder {
                 .type(ACCOUNT.getId());
 
         return new DomainPersister<>(entityRepository, builder, builder::build);
+    }
+
+    public DomainPersister<Schedule, Schedule.ScheduleBuilder> schedule() {
+        long id = id();
+        long timestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id;
+
+        Schedule.ScheduleBuilder builder = Schedule.builder()
+                .consensusTimestamp(timestamp)
+                .creatorAccountId(entityId(ACCOUNT))
+                .payerAccountId(entityId(ACCOUNT))
+                .scheduleId(id())
+                .transactionBody("schedule transaction body".getBytes());
+
+        return new DomainPersister<>(scheduleRepository, builder, builder::build);
+    }
+
+    public DomainPersister<Token, Token.TokenBuilder> token() {
+        long id = id();
+        long timestamp = Utility.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id;
+        var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
+        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFromUtf8(instr)).build().toByteArray();
+
+        Token.TokenBuilder builder = Token.builder()
+                .createdTimestamp(timestamp)
+                .decimals(1000)
+                .freezeDefault(false)
+                .freezeKey(hexKey)
+                .initialSupply(1_000_000L)
+                .kycKey(hexKey)
+                .maxSupply(1_000_000_000L)
+                .modifiedTimestamp(timestamp)
+                .name("FOO COIN TOKEN")
+                .pauseKey(hexKey)
+                .pauseStatus(TokenPauseStatusEnum.NOT_APPLICABLE)
+                .supplyKey(hexKey)
+                .supplyType(TokenSupplyTypeEnum.INFINITE)
+                .symbol("FOOTOK")
+                .tokenId(new TokenId(entityId(TOKEN)))
+                .totalSupply(1_000_000L)
+                .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                .treasuryAccountId(entityId(ACCOUNT))
+                .wipeKey(hexKey);
+
+        return new DomainPersister<>(tokenRepository, builder, builder::build);
     }
 }

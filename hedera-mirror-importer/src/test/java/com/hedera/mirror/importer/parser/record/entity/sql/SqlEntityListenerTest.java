@@ -25,6 +25,7 @@ import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +50,7 @@ import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.CustomFee;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -115,10 +117,13 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
     private final TransactionTemplate transactionTemplate;
+    private final DomainBuilder domainBuilder;
     private final String filename1 = "2019-08-30T18_10_00.419072Z.rcd";
     private final String filename2 = "2019-08-30T18_10_05.419072Z.rcd";
     private RecordFile recordFile1;
     private RecordFile recordFile2;
+
+    f32525a75(Removed getEntity and add ddomainBuilder log for token and schedule)
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
@@ -300,68 +305,88 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onEntityMerge() {
         // given
-        Entity entity = getEntity(1, 1L, 1L, 0, "memo", keyFromString(KEY));
+        Entity entity = domainBuilder.entity()
+                .customize(e -> e.autoRenewAccountId(null).autoRenewPeriod(null).timestampRange(Range.atLeast(5L))
+                        .expirationTimestamp(null).submitKey(null)).get();
         sqlEntityListener.onEntity(entity);
 
-        Entity entityAutoUpdated = getEntity(1, 5L);
-        EntityId autoRenewAccountId = EntityId.of("0.0.10", ACCOUNT);
-        entityAutoUpdated.setAutoRenewAccountId(autoRenewAccountId);
-        entityAutoUpdated.setAutoRenewPeriod(360L);
+        Entity baseUpdateEntity = Entity.builder()
+                .id(entity.getId())
+                .shard(entity.getShard())
+                .realm(entity.getRealm())
+                .num(entity.getNum())
+                .type(entity.getType())
+                .build();
+
+        Entity entityAutoUpdated = baseUpdateEntity.toBuilder()
+                .timestampRange(Range.atLeast(10L))
+                .autoRenewAccountId(EntityId.of(0L, 0L, 10L, ACCOUNT))
+                .autoRenewPeriod(360L).build();
         sqlEntityListener.onEntity(entityAutoUpdated);
 
-        Entity entityExpirationUpdated = getEntity(1, 10L);
-        entityExpirationUpdated.setExpirationTimestamp(720L);
+        Entity entityExpirationUpdated = baseUpdateEntity.toBuilder()
+                .timestampRange(Range.atLeast(20L))
+                .expirationTimestamp(720L).build();
         sqlEntityListener.onEntity(entityExpirationUpdated);
 
-        Entity entitySubmitKeyUpdated = getEntity(1, 15L);
-        entitySubmitKeyUpdated.setSubmitKey(keyFromString(KEY2).toByteArray());
+        Entity entitySubmitKeyUpdated = baseUpdateEntity.toBuilder()
+                .timestampRange(Range.atLeast(30L))
+                .submitKey(keyFromString(KEY2).toByteArray()).build();
         sqlEntityListener.onEntity(entitySubmitKeyUpdated);
 
-        Entity entityMemoUpdated = getEntity(1, 20L);
-        entityMemoUpdated.setMemo("memo-updated");
-        sqlEntityListener.onEntity(entityMemoUpdated);
-
-        Entity entityMaxAutomaticTokenAssociationsUpdated = getEntity(1, 25L);
-        entityMaxAutomaticTokenAssociationsUpdated.setMaxAutomaticTokenAssociations(10);
-        sqlEntityListener.onEntity(entityMaxAutomaticTokenAssociationsUpdated);
-
-        Entity entityReceiverSigRequired = getEntity(1, 30L);
-        entityReceiverSigRequired.setReceiverSigRequired(true);
-        sqlEntityListener.onEntity(entityReceiverSigRequired);
+        Entity entityMemoDeleteUpdated = baseUpdateEntity.toBuilder()
+                .timestampRange(Range.atLeast(40L))
+                .deleted(true)
+                .memo("memo-deleted").build();
+        sqlEntityListener.onEntity(entityMemoDeleteUpdated);
 
         // when
         completeFileAndCommit();
 
         // then
-        Entity expected = getEntity(1, 1L, 30L, "memo-updated", keyFromString(KEY), autoRenewAccountId, 360L, null,
-                720L, 10, true, keyFromString(KEY2));
+        Entity entityMerged = entity.toBuilder()
+                .autoRenewAccountId(EntityId.of(0L, 0L, 10L, ACCOUNT))
+                .autoRenewPeriod(360L).deleted(true).expirationTimestamp(720L)
+                .memo("memo-deleted")
+                .timestampRange(Range.atLeast(entityMemoDeleteUpdated.getModifiedTimestamp()))
+                .submitKey(keyFromString(KEY2).toByteArray()).build();
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertThat(entityRepository.findAll()).containsOnly(expected);
+        assertEquals(1, entityRepository.count());
+        assertExistsAndEquals(entityRepository, entityMerged, 1L);
     }
 
     @Test
     void onEntityEntityIdMerge() {
         // given
-        Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
+        Entity entity = domainBuilder.entity().customize(e -> e.timestampRange(Range.atLeast(1L))).get();
         sqlEntityListener.onEntity(entity);
 
-        EntityId entityId1 = EntityId.of(0L, 0L, 1L, ACCOUNT);
+        EntityId entityId1 = entity.toEntityId();
         sqlEntityListener.onEntity(entityId1.toEntity());
 
-        Entity entityUpdated = getEntity(1, 5L);
-        entityUpdated.setMemo("memo-updated");
+        Entity baseUpdateEntity = Entity.builder()
+                .id(entity.getId())
+                .shard(entity.getShard())
+                .realm(entity.getRealm())
+                .num(entity.getNum())
+                .type(entity.getType())
+                .build();
+
+        Entity entityUpdated = baseUpdateEntity.toBuilder()
+                .timestampRange(Range.atLeast(5L))
+                .memo("memo-updated").build();
         sqlEntityListener.onEntity(entityUpdated);
 
-        EntityId entityId2 = EntityId.of(0L, 0L, 1L, ACCOUNT);
+        EntityId entityId2 = entity.toEntityId();
         sqlEntityListener.onEntity(entityId2.toEntity());
 
         // when
         completeFileAndCommit();
 
         // then
-        Entity entityMerged = getEntity(1, 1L, 5L, "memo-updated", keyFromString(KEY),
-                EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
+        Entity entityMerged = entity.toBuilder()
+                .memo("memo-updated")
+                .timestampRange(Range.atLeast(entityUpdated.getModifiedTimestamp())).build();
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertEquals(1, entityRepository.count());
         assertExistsAndEquals(entityRepository, entityMerged, 1L);
@@ -1065,13 +1090,11 @@ class SqlEntityListenerTest extends IntegrationTest {
     void loadAllTransactionTypes() {
         // entities
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        EntityId entityId = EntityId.of(0L, 0L, 10L, ACCOUNT);
-        Entity entity = getEntity(1, 1L, 1L, "memo", keyFromString(KEY),
-                null, null, false, null, null);
+        EntityId entityId = EntityId.of("0.0.10", ACCOUNT);
         EntityId tokenId1 = EntityId.of("0.0.1000", TOKEN);
-        Schedule schedule1 = getSchedule(1, "0.0.200");
-        EntityId treasuryId = EntityId.of("0.0.98", ACCOUNT);
-        Token token1 = getToken(tokenId1, treasuryId, 100L, 100L);
+        Entity entity = domainBuilder.entity().get();
+        Schedule schedule1 = domainBuilder.schedule().get();
+        Token token1 = domainBuilder.token().get();
 
         // entity metadata
         ContractResult contractResult = new ContractResult(15L, "funcParams".getBytes(), 10000L,
@@ -1164,42 +1187,6 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .previousHash(prevHash)
                 .build();
         return rf;
-    }
-
-    private Entity getEntity(long id, long modifiedTimestamp) {
-        return getEntity(id, null, modifiedTimestamp, null, null, null);
-    }
-
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp,
-                             Integer maxAutomaticTokenAssociations, String memo, Key adminKey) {
-        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, adminKey, null, null, null, null,
-                maxAutomaticTokenAssociations, false, null);
-    }
-
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
-                             Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
-                             Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations,
-                             Boolean receiverSigRequired, Key submitKey) {
-        Entity entity = new Entity();
-        entity.setId(id);
-        entity.setAutoRenewAccountId(autoRenewAccountId);
-        entity.setAutoRenewPeriod(autoRenewPeriod);
-        entity.setCreatedTimestamp(createdTimestamp);
-        entity.setDeleted(deleted);
-        entity.setExpirationTimestamp(expiryTimeNs);
-        entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
-        entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations);
-        entity.setModifiedTimestamp(modifiedTimestamp);
-        entity.setNum(id);
-        entity.setRealm(0L);
-        entity.setReceiverSigRequired(receiverSigRequired);
-        entity.setShard(0L);
-        entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
-        entity.setType(ACCOUNT.getId());
-        if (memo != null) {
-            entity.setMemo(memo);
-        }
-        return entity;
     }
 
     private Transaction makeTransaction() {

@@ -29,6 +29,8 @@ import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -39,6 +41,8 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
+@AllArgsConstructor
+@Builder(toBuilder = true)
 @Data
 @Entity
 @NoArgsConstructor
