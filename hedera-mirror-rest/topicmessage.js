@@ -25,8 +25,13 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
+const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+
+// make the cost estimation of using the index on (topic_id, consensus_timestamp) lower than that of the primary key so
+// pg planner will choose the better index when querying topic messages by id
+const topicMessagesByIdQueryHint = 'set local random_page_cost = 0';
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
@@ -185,7 +190,7 @@ const getTopicMessages = async (req, res) => {
   };
 
   // get results and return formatted response
-  const messages = await getMessages(query, params);
+  const messages = await getMessages(query, params, topicMessagesByIdQueryHint);
   topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
 
   // populate next
@@ -270,14 +275,36 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
   return formatTopicMessageRow(rows[0]);
 };
 
-const getMessages = async (pgSqlQuery, pgSqlParams) => {
+const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint = undefined) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
-  logger.debug(`getMessages returning ${rows.length} entries`);
-  return rows;
+  let result;
+  if (!preQueryHint) {
+    result = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  } else {
+    let client;
+    try {
+      client = await pool.connect();
+      await client.query('begin');
+      await client.query(preQueryHint);
+      result = await client.query(pgSqlQuery, pgSqlParams);
+      await client.query('commit');
+    } catch (err) {
+      if (client !== undefined) {
+        await client.query('rollback');
+      }
+      throw new DbError(err.message);
+    } finally {
+      if (client !== undefined) {
+        client.release();
+      }
+    }
+  }
+
+  logger.debug(`getMessages returning ${result.rows.length} entries`);
+  return result.rows;
 };
 
 module.exports = {
