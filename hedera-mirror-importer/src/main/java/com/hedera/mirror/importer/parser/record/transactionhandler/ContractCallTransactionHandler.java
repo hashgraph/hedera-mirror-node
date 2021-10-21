@@ -56,6 +56,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
      * Insert contract results even for failed transactions since they could fail during execution, and we want to
      * how the gas used and call result regardless.
      */
+    @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionRecord = recordItem.getRecord();
 

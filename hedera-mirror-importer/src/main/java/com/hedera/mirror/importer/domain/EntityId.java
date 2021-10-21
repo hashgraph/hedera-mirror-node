@@ -141,11 +141,10 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     private <T extends AbstractEntity> T createEntity() {
-        switch (type) {
-            case 2:
-                return (T) new Contract();
-            default:
-                return (T) new Entity();
+        if (type == EntityTypeEnum.CONTRACT.getId()) {
+            return (T) new Contract();
+        } else {
+            return (T) new Entity();
         }
     }
 

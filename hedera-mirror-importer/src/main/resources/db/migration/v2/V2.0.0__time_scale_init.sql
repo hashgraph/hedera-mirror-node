@@ -124,17 +124,17 @@ comment on table contract_log is 'Contract execution result logs';
 -- contract_result
 create table if not exists contract_result
 (
-    amount               bigint                    null,
-    bloom                bytea                     not null,
-    call_result          bytea                     not null,
-    consensus_timestamp  bigint                    not null,
-    contract_id          bigint                    null,
-    created_contract_ids bigint array default '{}' not null,
-    error_message        text         default ''   not null,
-    function_parameters  bytea                     not null,
-    function_result      bytea                     not null,
-    gas_limit            bigint                    not null,
-    gas_used             bigint                    not null
+    amount               bigint       null,
+    bloom                bytea        null,
+    call_result          bytea        null,
+    consensus_timestamp  bigint       not null,
+    contract_id          bigint       null,
+    created_contract_ids bigint array null,
+    error_message        text         null,
+    function_parameters  bytea        not null,
+    function_result      bytea        null,
+    gas_limit            bigint       not null,
+    gas_used             bigint       not null
 );
 comment on table contract_result is 'Crypto contract execution results';
 

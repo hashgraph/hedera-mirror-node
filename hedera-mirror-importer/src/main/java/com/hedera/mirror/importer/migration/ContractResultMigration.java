@@ -64,7 +64,8 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
                     }
                 });
 
-        DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(MigrationContractResult.class);
+        DataClassRowMapper<MigrationContractResult> dataClassRowMapper =
+                new DataClassRowMapper<>(MigrationContractResult.class);
         dataClassRowMapper.setConversionService(defaultConversionService);
         resultRowMapper = dataClassRowMapper;
     }

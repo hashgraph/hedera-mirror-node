@@ -25,6 +25,7 @@ import java.util.Set;
 import javax.inject.Named;
 import lombok.Value;
 
+import com.hedera.mirror.importer.domain.AbstractEntity_;
 import com.hedera.mirror.importer.domain.Contract_;
 
 @Named
@@ -33,13 +34,15 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
 
     private final String finalTableName = "contract";
     private final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> v1ConflictIdColumns = List.of(Contract_.ID);
-    private final List<String> v2ConflictIdColumns = List.of(Contract_.ID);
-    private final Set<String> nullableColumns = Set.of(Contract_.AUTO_RENEW_PERIOD, Contract_.CREATED_TIMESTAMP,
-            Contract_.DELETED, Contract_.EXPIRATION_TIMESTAMP, Contract_.KEY, Contract_.PARENT_ID, Contract_.PUBLIC_KEY,
-            Contract_.PROXY_ACCOUNT_ID, Contract_.TIMESTAMP_RANGE);
-    private final Set<String> nonUpdatableColumns = Set.of(Contract_.CREATED_TIMESTAMP, Contract_.ID, Contract_.NUM,
-            Contract_.REALM, Contract_.SHARD, Contract_.TYPE);
+    private final List<String> v1ConflictIdColumns = List.of(AbstractEntity_.ID);
+    private final List<String> v2ConflictIdColumns = List.of(AbstractEntity_.ID);
+    private final Set<String> nullableColumns = Set.of(AbstractEntity_.AUTO_RENEW_PERIOD,
+            AbstractEntity_.CREATED_TIMESTAMP, AbstractEntity_.DELETED, AbstractEntity_.EXPIRATION_TIMESTAMP,
+            Contract_.FILE_ID, AbstractEntity_.KEY, Contract_.OBTAINER_ID, Contract_.PARENT_ID,
+            AbstractEntity_.PUBLIC_KEY, AbstractEntity_.PROXY_ACCOUNT_ID, AbstractEntity_.TIMESTAMP_RANGE);
+    private final Set<String> nonUpdatableColumns = Set.of(AbstractEntity_.CREATED_TIMESTAMP, AbstractEntity_.ID,
+            AbstractEntity_.NUM,
+            AbstractEntity_.REALM, AbstractEntity_.SHARD, AbstractEntity_.TYPE);
 
     @Override
     public String getInsertWhereClause() {
@@ -53,9 +56,9 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
     @Override
     public String getUpdateWhereClause() {
         return String.format(" where %s = %s and %s is null and lower(%s) > 0",
-                getFullFinalTableColumnName(Contract_.ID),
-                getFullTempTableColumnName(Contract_.ID),
-                getFullTempTableColumnName(Contract_.CREATED_TIMESTAMP),
-                getFullTempTableColumnName(Contract_.TIMESTAMP_RANGE));
+                getFullFinalTableColumnName(AbstractEntity_.ID),
+                getFullTempTableColumnName(AbstractEntity_.ID),
+                getFullTempTableColumnName(AbstractEntity_.CREATED_TIMESTAMP),
+                getFullTempTableColumnName(AbstractEntity_.TIMESTAMP_RANGE));
     }
 }

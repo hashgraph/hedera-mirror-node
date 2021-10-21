@@ -103,15 +103,15 @@ Create a new table to store the results of the contract's log output.
 ```sql
 create table if not exists contract_log
 (
-  bloom               bytea  not null,
-  consensus_timestamp bigint not null,
-  contract_id         bigint not null,
-  data                bytea  not null,
-  index               int    not null,
-  topic0              text   null,
-  topic1              text   null,
-  topic2              text   null,
-  topic3              text   null,
+  bloom               bytea       not null,
+  consensus_timestamp bigint      not null,
+  contract_id         bigint      not null,
+  data                bytea       not null,
+  index               int         not null,
+  topic0              varchar(64) null,
+  topic1              varchar(64) null,
+  topic2              varchar(64) null,
+  topic3              varchar(64) null,
   primary key (consensus_timestamp, index)
 );
 ```

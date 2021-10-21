@@ -42,6 +42,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     // We explicitly ignore the updated fileID field since hedera nodes do not allow changing the bytecode after create
+    @SuppressWarnings("java:S1874")
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
