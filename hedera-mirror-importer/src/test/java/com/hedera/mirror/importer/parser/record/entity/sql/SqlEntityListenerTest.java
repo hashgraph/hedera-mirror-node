@@ -76,8 +76,10 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
@@ -114,6 +116,8 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TokenTransferRepository tokenTransferRepository;
     private final ScheduleRepository scheduleRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
+    private final AssessedCustomFeeRepository assessedCustomFeeRepository;
+    private final CustomFeeRepository customFeeRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
     private final TransactionTemplate transactionTemplate;
@@ -122,8 +126,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final String filename2 = "2019-08-30T18_10_05.419072Z.rcd";
     private RecordFile recordFile1;
     private RecordFile recordFile2;
-
-    f32525a75(Removed getEntity and add ddomainBuilder log for token and schedule)
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
@@ -1060,13 +1062,13 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onEndAllTransactionTypesInSequence() {
         // given
-        loadAllTransactionTypes();
+        loadAllOnDomainTypes();
 
         // when
         completeFileAndCommit();
 
         // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertAllOnDomainTypes();
     }
 
     @Test
@@ -1075,58 +1077,57 @@ class SqlEntityListenerTest extends IntegrationTest {
         try {
             // given
             sqlProperties.setParallelIngestion(true);
-            loadAllTransactionTypes();
+            loadAllOnDomainTypes();
 
             // when
             completeFileAndCommit();
 
             // then
-            assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+            assertAllOnDomainTypes();
         } finally {
             sqlProperties.setParallelIngestion(defaultParallelIngestion);
         }
     }
 
-    void loadAllTransactionTypes() {
+    void loadAllOnDomainTypes() {
         // entities
-        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        EntityId entityId = EntityId.of("0.0.10", ACCOUNT);
-        EntityId tokenId1 = EntityId.of("0.0.1000", TOKEN);
-        Entity entity = domainBuilder.entity().get();
-        Schedule schedule1 = domainBuilder.schedule().get();
-        Token token1 = domainBuilder.token().get();
+        var accountId = EntityId.of("0.0.7", ACCOUNT);
+        var entityId = EntityId.of("0.0.10", ACCOUNT);
+        var entity = domainBuilder.entity().get();
+        var schedule = domainBuilder.schedule().get();
+        var token = domainBuilder.token().get();
 
         // entity metadata
-        ContractResult contractResult = new ContractResult(15L, "funcParams".getBytes(), 10000L,
+        var contractResult = new ContractResult(15L, "funcParams".getBytes(), 10000L,
                 "callResult".getBytes(), "functionResult".getBytes(), 999L);
-        FileData fileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
+        var fileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
                 .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
-        LiveHash liveHash = new LiveHash(20L, "live hash".getBytes());
-        var nft = getNft(tokenId1, 1L, null, 3L, false, "nft1", 3L);
-        var tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, 5L, true, false,
+        var liveHash = new LiveHash(20L, "live hash".getBytes());
+        var nft = getNft(token.getTokenId().getTokenId(), 1L, null, 3L, false, "nft1", 3L);
+        var tokenAccount = getTokenAccount(token.getTokenId().getTokenId(), accountId, 5L, 5L, true, false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
-        TopicMessage topicMessage = getTopicMessage();
+        var topicMessage = getTopicMessage();
 
         // transaction metadata
         var transaction = makeTransaction();
-        TransactionSignature transactionSignature1 = getTransactionSignature(1, "0.0.200", "pubKeyPrefix1".getBytes());
+        var transactionSignature = getTransactionSignature(1, "0.0.200", "pubKeyPrefix1".getBytes());
 
         // transfers
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+        var cryptoTransfer = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
         var assessedCustomFee = getAssessedCustomFee("0.0.1000");
         var customFee = getCustomFee("0.0.1000");
         var nftTransfer = getNftTransfer(2002L, "0.0.1000", 1, "0.0.456",
                 "0.0.789");
-        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
+        var nonFeeTransfer = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
                 .of(0L, 0L, 1L, ACCOUNT)));
-        TokenTransfer tokenTransfer1 = getTokenTransfer(1000, 2L, tokenId1, accountId1);
+        var tokenTransfer = getTokenTransfer(1000, 2L, token.getTokenId().getTokenId(), accountId);
 
         // when
         // entities
         sqlEntityListener.onEntity(entity);
         sqlEntityListener.onEntityId(entityId);
-        sqlEntityListener.onSchedule(schedule1);
-        sqlEntityListener.onToken(token1);
+        sqlEntityListener.onSchedule(schedule);
+        sqlEntityListener.onToken(token);
 
         // entity related
         sqlEntityListener.onContractResult(contractResult);
@@ -1139,14 +1140,38 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // transfers
         sqlEntityListener.onAssessedCustomFee(assessedCustomFee);
-        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer);
         sqlEntityListener.onNftTransfer(nftTransfer);
-        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
-        sqlEntityListener.onTokenTransfer(tokenTransfer1);
+        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer);
+        sqlEntityListener.onTokenTransfer(tokenTransfer);
 
         // transaction
         sqlEntityListener.onTransaction(transaction);
-        sqlEntityListener.onTransactionSignature(transactionSignature1);
+        sqlEntityListener.onTransactionSignature(transactionSignature);
+    }
+
+    private void assertAllOnDomainTypes() {
+        assertAll(
+                () -> assertEquals(2, entityRepository.count()),
+                () -> assertEquals(1, scheduleRepository.count()),
+                () -> assertEquals(1, tokenRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(1, customFeeRepository.count()),
+                () -> assertEquals(1, fileDataRepository.count()),
+                () -> assertEquals(1, liveHashRepository.count()),
+                () -> assertEquals(1, tokenAccountRepository.count()),
+                () -> assertEquals(1, tokenRepository.count()),
+                () -> assertEquals(1, topicMessageRepository.count()),
+                () -> assertEquals(1, nftRepository.count()),
+                () -> assertEquals(1, assessedCustomFeeRepository.count()),
+                () -> assertEquals(1, cryptoTransferRepository.count()),
+                () -> assertEquals(1, nftTransferRepository.count()),
+                () -> assertEquals(1, nonFeeTransferRepository.count()),
+                () -> assertEquals(1, tokenTransferRepository.count()),
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(1, transactionSignatureRepository.count()),
+                () -> assertThat(recordFileRepository.findAll()).containsExactly(recordFile1)
+        );
     }
 
     private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) {
