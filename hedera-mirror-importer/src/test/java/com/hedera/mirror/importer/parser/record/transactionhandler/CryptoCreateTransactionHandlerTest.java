@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
 
+import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -57,9 +58,9 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected Entity getExpectedUpdatedEntity() {
-        Entity entity = super.getExpectedUpdatedEntity();
-        entity.setMaxAutomaticTokenAssociations(0);
+    protected AbstractEntity getExpectedUpdatedEntity() {
+        AbstractEntity entity = super.getExpectedUpdatedEntity();
+        ((Entity) entity).setMaxAutomaticTokenAssociations(0);
         return entity;
     }
 
@@ -73,8 +74,8 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         innerBody = innerBody.toBuilder().setField(field, 500).build();
         body = getTransactionBody(body, innerBody);
 
-        Entity expected = getExpectedUpdatedEntity();
-        expected.setMaxAutomaticTokenAssociations(500);
+        AbstractEntity expected = getExpectedUpdatedEntity();
+        ((Entity) expected).setMaxAutomaticTokenAssociations(500);
         expected.setMemo("");
         testSpecs.add(
                 UpdateEntityTestSpec.builder()

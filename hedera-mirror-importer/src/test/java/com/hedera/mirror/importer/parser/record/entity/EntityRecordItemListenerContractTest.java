@@ -573,7 +573,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         builder.setContractID(CONTRACT_ID);
         builder.setErrorMessage("call error message");
         builder.setGasUsed(30);
-        builder.addLogInfo(ContractLoginfo.newBuilder().addTopic(ByteString.copyFromUtf8("Topic")).build());
+        builder.addLogInfo(ContractLoginfo.newBuilder()
+                .setBloom(ByteString.copyFromUtf8("bloom"))
+                .setContractID(ContractID.newBuilder().setContractNum(1000L).build())
+                .setData(ByteString.copyFromUtf8("data"))
+                .addTopic(ByteString.copyFromUtf8("Topic0"))
+                .addTopic(ByteString.copyFromUtf8("Topic1"))
+                .addTopic(ByteString.copyFromUtf8("Topic2"))
+                .addTopic(ByteString.copyFromUtf8("Topic3")).build());
     }
 
     private Transaction contractCreateTransaction() {

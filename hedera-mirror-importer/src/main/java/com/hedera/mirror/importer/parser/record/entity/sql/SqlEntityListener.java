@@ -509,10 +509,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cachedEntity.setMaxAutomaticTokenAssociations(newEntity.getMaxAutomaticTokenAssociations());
         }
 
-        if (newEntity.getMaxAutomaticTokenAssociations() != null) {
-            cachedEntity.setMaxAutomaticTokenAssociations(newEntity.getMaxAutomaticTokenAssociations());
-        }
-
         if (newEntity.getMemo() != null) {
             cachedEntity.setMemo(newEntity.getMemo());
         }
