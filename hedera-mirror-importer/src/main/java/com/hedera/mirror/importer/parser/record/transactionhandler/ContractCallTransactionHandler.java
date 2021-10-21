@@ -63,6 +63,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
             var transactionBody = recordItem.getTransactionBody().getContractCall();
             var functionResult = transactionRecord.getContractCallResult();
 
+            // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
             ContractResult contractResult = new ContractResult();
             contractResult.setAmount(transactionBody.getAmount());
             contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());

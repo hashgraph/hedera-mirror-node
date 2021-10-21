@@ -111,7 +111,7 @@ create table if not exists contract_log
 (
     bloom               bytea       not null,
     consensus_timestamp bigint      not null,
-    contract_id         bigint      null,
+    contract_id         bigint      not null,
     data                bytea       not null,
     index               int         not null,
     topic0              varchar(64) null,

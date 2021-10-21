@@ -20,22 +20,26 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.flywaydb.core.api.MigrationVersion;
+import org.postgresql.jdbc.PgArray;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -47,6 +51,24 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class ContractResultMigration extends MirrorBaseJavaMigration {
 
+    static final RowMapper<MigrationContractResult> resultRowMapper;
+
+    static {
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        defaultConversionService.addConverter(PgArray.class, Long[].class,
+                source -> {
+                    try {
+                        return (Long[]) source.getArray();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(MigrationContractResult.class);
+        dataClassRowMapper.setConversionService(defaultConversionService);
+        resultRowMapper = dataClassRowMapper;
+    }
+
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -56,44 +78,46 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
 
     @Override
     public MigrationVersion getVersion() {
-        return MigrationVersion.fromVersion("1.46.7");
+        return MigrationVersion.fromVersion("1.46.8");
     }
 
     @Override
     protected void doMigrate() throws IOException {
-        RowMapper<MigrationContractResult> rowMapper = new BeanPropertyRowMapper<>(MigrationContractResult.class);
+        AtomicLong count = new AtomicLong(0L);
+        Stopwatch stopwatch = Stopwatch.createStarted();
 
         jdbcTemplate.setFetchSize(100);
-        jdbcTemplate.query("select consensus_timestamp, function_result " +
-                "from contract_result " +
+        jdbcTemplate.query("select consensus_timestamp, function_result from contract_result " +
                 "order by consensus_timestamp asc", rs -> {
-            MigrationContractResult contractResult = rowMapper.mapRow(rs, rs.getRow());
-            process(contractResult);
+
+            MigrationContractResult contractResult = resultRowMapper.mapRow(rs, rs.getRow());
+            if (process(contractResult)) {
+                count.incrementAndGet();
+            }
         });
+
+        log.info("Updated {} contract results in {}", count, stopwatch);
     }
 
-    private void process(MigrationContractResult contractResult) {
-        try {
-            byte[] bytes = contractResult.getFunctionResult();
+    private boolean process(MigrationContractResult contractResult) {
+        long consensusTimestamp = contractResult.getConsensusTimestamp();
 
-            if (bytes == null || bytes.length == 0) {
-                log.warn("Contract result {} is missing function result data", contractResult.getConsensusTimestamp());
-                return;
+        try {
+            byte[] functionResult = contractResult.getFunctionResult();
+            if (functionResult == null || functionResult.length == 0) {
+                return false;
             }
 
-            ContractFunctionResult contractFunctionResult = ContractFunctionResult.parseFrom(bytes);
-            EntityId contractId = EntityId.of(contractFunctionResult.getContractID());
-            String createdContractIds = contractFunctionResult
-                    .getCreatedContractIDsList()
-                    .stream()
-                    .map(EntityId::of)
-                    .map(EntityId::getId)
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(",", "{", "}"));
+            ContractFunctionResult contractFunctionResult = ContractFunctionResult.parseFrom(functionResult);
+            Long[] createdContractIds = new Long[contractFunctionResult.getCreatedContractIDsCount()];
+
+            for (int i = 0; i < createdContractIds.length; ++i) {
+                createdContractIds[i] = getContractId(contractFunctionResult.getCreatedContractIDs(i));
+            }
 
             contractResult.setBloom(Utility.toBytes(contractFunctionResult.getBloom()));
             contractResult.setCallResult(Utility.toBytes(contractFunctionResult.getContractCallResult()));
-            contractResult.setContractId(contractId.getId());
+            contractResult.setContractId(getContractId(contractFunctionResult.getContractID()));
             contractResult.setCreatedContractIds(createdContractIds);
             contractResult.setErrorMessage(contractFunctionResult.getErrorMessage());
             update(contractResult);
@@ -104,8 +128,8 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
 
                 MigrationContractLog migrationContractLog = new MigrationContractLog();
                 migrationContractLog.setBloom(Utility.toBytes(contractLoginfo.getBloom()));
-                migrationContractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-                migrationContractLog.setContractId(contractResult.getContractId());
+                migrationContractLog.setConsensusTimestamp(consensusTimestamp);
+                migrationContractLog.setContractId(getContractId(contractLoginfo.getContractID()));
                 migrationContractLog.setData(Utility.toBytes(contractLoginfo.getData()));
                 migrationContractLog.setIndex(index);
                 migrationContractLog.setTopic0(getTopic(topics, 0));
@@ -115,9 +139,18 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
 
                 insert(migrationContractLog);
             }
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
+
+            return true;
+        } catch (Exception e) {
+            log.warn("Unable to parse {} as ContractFunctionResult", consensusTimestamp, e);
         }
+
+        return false;
+    }
+
+    private Long getContractId(ContractID contractID) {
+        EntityId entityId = EntityId.of(contractID);
+        return !EntityId.isEmpty(entityId) ? entityId.getId() : null;
     }
 
     private String getTopic(List<ByteString> topics, int index) {
@@ -144,7 +177,7 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
 
     private void insert(MigrationContractLog contractLog) {
         jdbcTemplate.update("insert into contract_log (bloom, consensus_timestamp, contract_id, data, index, topic0, " +
-                        "topic1, topic2, topic3) values (?, ?, ?, ?, ?, ?)",
+                        "topic1, topic2, topic3) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 contractLog.getBloom(),
                 contractLog.getConsensusTimestamp(),
                 contractLog.getContractId(),
@@ -158,23 +191,24 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
     }
 
     @Data
-    private class MigrationContractResult {
+    static class MigrationContractResult {
         private byte[] bloom;
         private byte[] callResult;
         private long consensusTimestamp;
         private Long contractId;
-        private String createdContractIds;
-        private byte[] functionResult;
+        private Long[] createdContractIds;
         private String errorMessage;
+        private byte[] functionParameters;
+        private byte[] functionResult;
     }
 
     @Data
-    private class MigrationContractLog {
+    static class MigrationContractLog {
         private byte[] bloom;
         private long consensusTimestamp;
         private long contractId;
-        private int index;
         private byte[] data;
+        private int index;
         private String topic0;
         private String topic1;
         private String topic2;

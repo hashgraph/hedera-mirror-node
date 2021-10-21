@@ -66,6 +66,8 @@ public class ContractResult implements Persistable<Long> {
     @ToString.Exclude
     private byte[] functionParameters;
 
+    private byte[] functionResult; // Temporary field until we can confirm the migration captured everything
+
     private Long gasLimit;
 
     private Long gasUsed;

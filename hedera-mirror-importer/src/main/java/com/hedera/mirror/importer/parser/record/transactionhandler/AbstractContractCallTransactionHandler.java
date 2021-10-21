@@ -77,7 +77,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             ContractLog contractLog = new ContractLog();
             contractLog.setBloom(Utility.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(consensusTimestamp);
-            contractLog.setContractId(contractResult.getContractId());
+            contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
             contractLog.setData(Utility.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
             contractLog.setTopic0(getTopic(topics, 0));

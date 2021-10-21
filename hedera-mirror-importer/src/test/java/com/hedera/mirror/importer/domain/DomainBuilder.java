@@ -125,6 +125,7 @@ public class DomainBuilder {
                 .createdContractIds(List.of(entityId(CONTRACT).getId()))
                 .errorMessage("")
                 .functionParameters(bytes(64))
+                .functionResult(bytes(128))
                 .gasLimit(200L)
                 .gasUsed(100L);
         return new DomainPersister<>(getRepository(ContractResult.class), builder, builder::build);

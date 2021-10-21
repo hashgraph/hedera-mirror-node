@@ -6,16 +6,32 @@ alter table if exists contract
 alter table if exists contract_history
     add column if not exists parent_id bigint null;
 
--- Update the contract_result.initial_balance from the contract create transaction.initial_balance
+-- Update the contract_result.amount from the contract create transaction.initial_balance.
+-- Update the contract_result.amount from the contract call to clear the previous erroneous value from the last migration.
+-- Also update the contract_result.contract_id from transaction.entity_id since it wasn't always populated correctly by main nodes
 with contract_transaction as (
-    select consensus_timestamp, initial_balance
+    select consensus_timestamp, entity_id, initial_balance, type
     from transaction
-    where type = 8
-)
+    where type in (7, 8, 9, 22)
+),
+     contract_create_amount as (
+         update contract_result cr
+             set amount = ct.initial_balance
+             from contract_transaction ct
+             where cr.consensus_timestamp = ct.consensus_timestamp and ct.type = 8
+     ),
+     contract_call_amount as (
+         update contract_result cr
+             set amount = null
+             from contract_transaction ct
+             where cr.consensus_timestamp = ct.consensus_timestamp and ct.type = 7
+     )
 update contract_result cr
-set amount = ct.initial_balance
+set contract_id = ct.entity_id
 from contract_transaction ct
-where cr.consensus_timestamp = ct.consensus_timestamp;
+where cr.consensus_timestamp = ct.consensus_timestamp
+  and ct.entity_id is not null
+  and (cr.contract_id is null or cr.contract_id <= 0);
 
 -- Enumerate the list of created child contract IDs
 create temporary table if not exists contract_relationship on commit drop as
@@ -27,6 +43,7 @@ from (
                 generate_subscripts(created_contract_ids, 1) as i
          from contract_result
          where array_length(created_contract_ids, 1) > 0
+           and contract_id is not null
      ) children;
 
 -- Move child contract IDs still marked as accounts in entity table to the contract table
@@ -66,18 +83,6 @@ from deleted_entity;
 
 -- Upsert the child contract. If the child ID doesn't exist copy the fields from the parent. If it does, update using
 -- the merged parent and child fields.
-with parent_contract as (
-    select *
-    from contract c,
-         contract_relationship cr
-    where c.id = cr.parent_contract_id
-),
-     child_contract as (
-         select *
-         from contract c,
-              contract_relationship cr
-         where c.id = cr.child_contract_id
-     )
 insert
 into contract (auto_renew_period,
                created_timestamp,
@@ -95,22 +100,25 @@ into contract (auto_renew_period,
                timestamp_range,
                type)
 select coalesce(child.auto_renew_period, parent.auto_renew_period),
-       coalesce(child.created_timestamp, child.consensus_timestamp, parent.created_timestamp),
+       coalesce(child.created_timestamp, cr.consensus_timestamp),
        coalesce(child.deleted, parent.deleted),
        coalesce(child.expiration_timestamp, parent.expiration_timestamp),
-       child.child_contract_id,
+       cr.child_contract_id,
        coalesce(child.key, parent.key),
        coalesce(child.memo, parent.memo, ''),
-       child.child_contract_id & 4294967295,
-       parent.id,
+       cr.child_contract_id & 4294967295,
+       cr.parent_contract_id,
        coalesce(child.proxy_account_id, parent.proxy_account_id),
        coalesce(child.public_key, parent.public_key),
        coalesce(child.realm, parent.realm, 0),
        coalesce(child.shard, parent.shard, 0),
-       coalesce(child.timestamp_range, int8range(child.consensus_timestamp, null), parent.timestamp_range, '[0,)'),
-       parent.type
-from child_contract child
-         left join parent_contract parent on parent.id = child.id
+       case
+           when lower(child.timestamp_range) > 0 then child.timestamp_range
+           else int8range(cr.consensus_timestamp, null) end,
+       coalesce(parent.type, 2)
+from contract_relationship cr
+         left join contract child on child.id = cr.child_contract_id
+         left join contract parent on parent.id = cr.parent_contract_id
 on conflict (id)
     do update set auto_renew_period    = excluded.auto_renew_period,
                   created_timestamp    = excluded.created_timestamp,
@@ -124,15 +132,5 @@ on conflict (id)
                   public_key           = excluded.public_key,
                   realm                = excluded.realm,
                   shard                = excluded.shard,
-                  timestamp_range      = excluded.timestamp_range;
-
-alter table if exists contract_result
-    alter column bloom set not null,
-    alter column call_result set not null,
-    alter column created_contract_ids set default '{}',
-    alter column created_contract_ids set not null,
-    alter column error_message set default '',
-    alter column error_message set not null;
-
-alter table if exists contract_log
-    alter column contract_id drop not null;
+                  timestamp_range      = excluded.timestamp_range,
+                  type                 = excluded.type;

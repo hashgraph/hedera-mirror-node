@@ -84,12 +84,12 @@ using the protobuf and normalize it into the other fields.
 create table if not exists contract_result
 (
   amount               bigint             null,
-  bloom                bytea              not null,
-  call_result          bytea              not null,
+  bloom                bytea              null,
+  call_result          bytea              null,
   consensus_timestamp  bigint primary key not null,
   contract_id          bigint             null,
-  created_contract_ids bigint array       not null,
-  error_message        text default ''    not null,
+  created_contract_ids bigint array       null,
+  error_message        text               null,
   function_parameters  bytea              not null,
   gas_limit            bigint             not null,
   gas_used             bigint             not null
@@ -105,7 +105,7 @@ create table if not exists contract_log
 (
   bloom               bytea  not null,
   consensus_timestamp bigint not null,
-  contract_id         bigint null,
+  contract_id         bigint not null,
   data                bytea  not null,
   index               int    not null,
   topic0              text   null,
