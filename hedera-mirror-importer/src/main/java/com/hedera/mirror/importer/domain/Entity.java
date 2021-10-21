@@ -23,8 +23,11 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import javax.persistence.Convert;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,6 +35,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
@@ -48,6 +52,10 @@ import com.hedera.mirror.importer.util.Utility;
 @TypeDef(
         defaultForType = Range.class,
         typeClass = PostgreSQLGuavaRangeType.class
+)
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
 )
 public class Entity {
     @Convert(converter = AccountIdConverter.class)
@@ -87,7 +95,9 @@ public class Entity {
 
     private byte[] submitKey;
 
-    private Integer type;
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private EntityTypeEnum type;
 
     @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;

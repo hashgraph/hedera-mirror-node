@@ -75,7 +75,7 @@ public class DomainBuilder {
                 .shard(0L)
                 .submitKey(key)
                 .timestampRange(Range.atLeast(timestamp))
-                .type(ACCOUNT.getId());
+                .type(ACCOUNT);
 
         return new DomainPersister<>(entityRepository, builder, builder::build);
     }

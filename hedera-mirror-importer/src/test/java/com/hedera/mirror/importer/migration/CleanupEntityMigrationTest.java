@@ -159,7 +159,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                     entity.setRealm(rs.getLong("realm"));
                     entity.setShard(rs.getLong("shard"));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
-                    entity.setType(rs.getInt("type"));
+                    entity.setType(EntityTypeEnum.fromId(rs.getInt("type")));
 
                     return entity;
                 }));
@@ -417,7 +417,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                         entity.getShard(),
                         entity.getPublicKey(),
                         entity.getExpirationTimestamp(),
-                        entity.getType(),
+                        entity.getType().getId(),
                         entity.getId(),
                         entity.getKey(),
                         entity.getMemo(),

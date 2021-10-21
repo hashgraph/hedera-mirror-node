@@ -50,7 +50,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EntityId implements Serializable, Comparable<EntityId> {
 
-    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT.getId());
+    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT);
     private static final Comparator<EntityId> COMPARATOR = Comparator
             .nullsFirst(Comparator.comparingLong(EntityId::getId));
     private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
@@ -64,9 +64,9 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     private final Long shardNum;
     private final Long realmNum;
     private final Long entityNum;
-    private final Integer type;
+    private final EntityTypeEnum type;
 
-    public EntityId(Long shardNum, Long realmNum, Long entityNum, Integer type) {
+    public EntityId(Long shardNum, Long realmNum, Long entityNum, EntityTypeEnum type) {
         id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
         this.shardNum = shardNum;
         this.realmNum = realmNum;
@@ -117,7 +117,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
             return EMPTY;
         }
-        return new EntityId(entityShard, entityRealm, entityNum, type.getId());
+        return new EntityId(entityShard, entityRealm, entityNum, type);
     }
 
     public static boolean isEmpty(EntityId entityId) {

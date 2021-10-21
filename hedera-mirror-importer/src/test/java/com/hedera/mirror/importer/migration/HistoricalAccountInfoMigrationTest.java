@@ -268,7 +268,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         entity.setNum(num);
         entity.setRealm(0L);
         entity.setShard(0L);
-        entity.setType(type.getId());
+        entity.setType(type);
         entity.setId(num);
         entity.setDeleted(false);
         entity.setMemo("");

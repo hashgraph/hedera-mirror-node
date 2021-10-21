@@ -1083,7 +1083,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setRealm(0L);
         entity.setShard(0L);
         entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
-        entity.setType(1);
+        entity.setType(ACCOUNT);
         entity.setMemo(memo);
         return entity;
     }

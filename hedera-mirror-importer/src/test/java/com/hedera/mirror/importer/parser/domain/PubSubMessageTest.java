@@ -23,26 +23,13 @@ package com.hedera.mirror.importer.parser.domain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
-import java.time.Instant;
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.util.Utility;
+import java.time.Instant;
 
 class PubSubMessageTest {
     private static final Long DEFAULT_TIMESTAMP_LONG = 123456789L;
@@ -73,7 +60,7 @@ class PubSubMessageTest {
                 "    \"shardNum\" : 0," +
                 "    \"realmNum\" : 0," +
                 "    \"entityNum\" : 20," +
-                "    \"type\" : 4" +
+                "    \"type\" : TOPIC" +
                 "  }," +
                 "  \"transactionType\" : 10," +
                 getExpectedTransactionJson() + "," +
