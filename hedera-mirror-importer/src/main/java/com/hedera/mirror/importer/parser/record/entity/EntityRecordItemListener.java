@@ -279,7 +279,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         // build transaction
         Transaction tx = new Transaction();
         tx.setChargedTxFee(txRecord.getTransactionFee());
-        tx.setConsensusNs(consensusTimestamp);
+        tx.setConsensusTimestamp(consensusTimestamp);
         tx.setInitialBalance(0L);
         tx.setMaxFee(body.getTransactionFee());
         tx.setMemo(Utility.toBytes(body.getMemoBytes()));

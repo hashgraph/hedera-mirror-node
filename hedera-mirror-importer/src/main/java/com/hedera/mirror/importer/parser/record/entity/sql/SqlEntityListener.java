@@ -427,12 +427,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cachedEntity.setPublicKey(newEntity.getPublicKey());
         }
 
+        if (newEntity.getMaxAutomaticTokenAssociations() != null) {
+            cachedEntity.setMaxAutomaticTokenAssociations(newEntity.getMaxAutomaticTokenAssociations());
+        }
+
         if (newEntity.getMemo() != null) {
             cachedEntity.setMemo(newEntity.getMemo());
         }
 
         if (newEntity.getProxyAccountId() != null) {
             cachedEntity.setProxyAccountId(newEntity.getProxyAccountId());
+        }
+
+        if (newEntity.getReceiverSigRequired() != null) {
+            cachedEntity.setReceiverSigRequired(newEntity.getReceiverSigRequired());
         }
 
         if (newEntity.getSubmitKey() != null) {

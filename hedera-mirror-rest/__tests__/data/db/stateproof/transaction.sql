@@ -22,7 +22,7 @@ SET row_security = off;
 -- Data for Name: transaction; Type: TABLE DATA; Schema: public; Owner: mirror_node
 --
 
-INSERT INTO public.transaction (consensus_ns, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes) VALUES
+INSERT INTO public.transaction (consensus_timestamp, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes) VALUES
 	(1570800761443132000, 11, 22, 94139, 1570800748313194300, 120, 3, 111146, 70000000000, 100000000, 71563593, '\x437265617465204163636f756e742054657374', '\x2ad4022e2b8bf87b6b07443c514c5b2d2c1276d6bfa32d36568dc773c2e273572fa232c2f9bfc8b9dd7be69f790b41c2', NULL),
 	(1570800802783669054, 14, 22, 94139, 1570800790443984000, 120, 3, NULL, 0, 500000000, 253995, '\x67657443727970746f4765744163636f756e74496e666f', '\xafe1b151dc512a42c52c3c51d35738eed16b1a99db24615d4c3ff7b66377adcf62412beb888d8f0d4302a96c53ee1e78', NULL),
 	(1570800802870345000, 11, 22, 94139, 1570800790519782600, 120, 3, 111147, 70000, 100000000, 40678442, '\x437265617465204163636f756e742054657374', '\x05f927426a9772e8ce67409768c1a6e34e3d8a5f4f74e35cb7533367c530ee15677412f2a790f25398a9f8c9cc99a754', NULL),
@@ -55,7 +55,7 @@ INSERT INTO public.transaction (consensus_ns, type, result, payer_account_id, va
 -- schedulescreate transaction in the first record file and the scheduled cryptotransfer transaction in another record file
 --
 
-INSERT INTO public.transaction (consensus_ns, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled) VALUES
+INSERT INTO public.transaction (consensus_timestamp, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled) VALUES
     (1570800762443132000, 42, 22, 94139, 1570800762443131000, 120, 3, NULL, 0, 500000000, 253995, '\x67657443727970746f4765744163636f756e74496e666f', '\xfae15b11dc512a42c52c3c51d35738eed16b1a99db24615d4c3007b22159cdaf62412beb888d8f9d4314a96c53ef1e66', NULL, false),
 	(1570803140026969100, 14, 22, 94139, 1570800762443131000, 120, 3, NULL, 0, 500000000, 253995, '\x67657443727970746f4765744163636f756e74496e666f', '\xafe1b151dc512a42c52c3c51d35738eed16b1a99db24615d4c3ff7b66377adcf62412beb888d8f9d4314a96c53ef1e78', NULL, true);
 

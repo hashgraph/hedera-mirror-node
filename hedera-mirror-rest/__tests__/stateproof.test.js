@@ -62,7 +62,7 @@ const verifyFakeCallCountAndLastCallParamsArg = (fake, expectedCount, expectedLa
 describe('getSuccessfulTransactionConsensusNs', () => {
   const expectedValidConsensusNs = '1234567891000000001';
   const validQueryResult = {
-    rows: [{consensus_ns: expectedValidConsensusNs}],
+    rows: [{consensus_timestamp: expectedValidConsensusNs}],
   };
   const transactionId = TransactionId.fromString('0.0.1-1234567891-000111222');
 

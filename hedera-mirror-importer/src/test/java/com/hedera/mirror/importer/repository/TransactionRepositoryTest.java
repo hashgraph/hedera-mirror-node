@@ -41,13 +41,13 @@ class TransactionRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         Transaction transaction = transactionRepository.save(transaction());
-        assertThat(transactionRepository.findById(transaction.getConsensusNs())).get().isEqualTo(transaction);
+        assertThat(transactionRepository.findById(transaction.getConsensusTimestamp())).get().isEqualTo(transaction);
     }
 
     private Transaction transaction() {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
-        transaction.setConsensusNs(++count);
+        transaction.setConsensusTimestamp(++count);
         transaction.setEntityId(EntityId.of(0, 0, 1, EntityTypeEnum.ACCOUNT));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());

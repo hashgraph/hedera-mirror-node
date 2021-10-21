@@ -317,6 +317,16 @@ public class TokenFeature {
         tokenCustomFees.put(tokenId, customFees);
     }
 
+    @Then("the mirror node Token Info REST API should return pause status {string}")
+    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyTokenPauseStatus(String status) {
+        verifyTokenPauseStatus(tokenIds.get(0), status);
+
+        publishBackgroundMessages();
+    }
+
     @Then("the mirror node REST API should return status {int}")
     @Retryable(value = {AssertionError.class, AssertionFailedError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
@@ -674,6 +684,12 @@ public class TokenFeature {
         MirrorTokenResponse mirrorToken = verifyToken(tokenId);
 
         assertThat(mirrorToken.getCreatedTimestamp()).isNotEqualTo(mirrorToken.getModifiedTimestamp());
+    }
+
+    private void verifyTokenPauseStatus(TokenId tokenId, String pauseStatus) {
+        MirrorTokenResponse mirrorToken = verifyToken(tokenId);
+
+        assertThat(mirrorToken.getPauseStatus()).isEqualTo(pauseStatus);
     }
 
     private void verifyTokenWithCustomFeesSchedule(TokenId tokenId, String createdTimestamp) {

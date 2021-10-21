@@ -51,8 +51,10 @@ Feature: HTS Base Coverage Feature
         Then I associate a new recipient account with token
         Then I pause the token
         And the mirror node REST API should return status <httpStatusCode>
+        And the mirror node Token Info REST API should return pause status "PAUSED"
         Then I unpause the token
         And the mirror node REST API should return status <httpStatusCode>
+        And the mirror node Token Info REST API should return pause status "UNPAUSED"
         Then I transfer <amount> tokens to recipient
         And the mirror node REST API should return status <httpStatusCode> for token fund flow
         Examples:
