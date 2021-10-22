@@ -54,7 +54,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
 
     /*
      * Insert contract results even for failed transactions since they could fail during execution, and we want to
-     * how the gas used and call result regardless.
+     * know the gas used and call result regardless.
      */
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
@@ -76,6 +76,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
         }
     }
 
+    // Will only be called for child created contract IDs.
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
         entityListener.onContract(contract);

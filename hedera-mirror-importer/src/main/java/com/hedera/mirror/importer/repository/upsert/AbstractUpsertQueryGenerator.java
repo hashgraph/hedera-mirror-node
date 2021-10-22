@@ -61,7 +61,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }.getRawType();
     @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
-    private Set<Field> attributes = null;
+    private volatile Set<Field> attributes = null;
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
     @Value("${spring.flyway.locations:v1}")
@@ -95,8 +95,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 getTemporaryTableName(), getFinalTableName());
     }
 
-    protected String getAttributeSelectQuery(String attributeName) {
-        return null;
+    protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
+        // default implementations per type
+        if (attributeType == String.class) {
+            return getStringColumnTypeSelect(attributeName);
+        } else {
+            return getFullTempTableColumnName(attributeName);
+        }
     }
 
     protected String getAttributeUpdateQuery(String attributeName) {
@@ -285,8 +290,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
         // loop over fields to create select clause
         List<String> selectableFields = new ArrayList<>();
-        domainFields.forEach(d -> selectableFields
-                .add(getDefaultColumnSelectQuery(d.getType(), d.getName())));
+        domainFields.forEach(d -> selectableFields.add(getAttributeSelectQuery(d.getType(), d.getName())));
 
         return StringUtils.join(selectableFields, ", ");
     }
@@ -298,22 +302,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return parameterizedTypes[1];
     }
 
-    private String getDefaultColumnSelectQuery(Type attributeType, String attributeName) {
-        // get column custom select implementations
-        String columnSelectQuery = getAttributeSelectQuery(attributeName);
-        if (!StringUtils.isEmpty(columnSelectQuery)) {
-            return columnSelectQuery;
-        }
-
-        // default implementations per type
-        if (attributeType == String.class) {
-            return getStringColumnTypeSelect(attributeName);
-        } else {
-            return getFullTempTableColumnName(attributeName);
-        }
-    }
-
-    private String getStringColumnTypeSelect(String attributeName) {
+    protected String getStringColumnTypeSelect(String attributeName) {
         // String columns need extra logic since their default value and empty value are both serialized as null
         // Domain serializer adds a special scenario to set a placeholder for an empty. Null is null
         if (isNullableColumn(attributeName)) {

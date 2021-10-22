@@ -243,11 +243,15 @@ abstract class AbstractTransactionHandlerTest {
 
     protected AbstractEntity getExpectedEntityWithTimestamp() {
         AbstractEntity entity = getEntity();
+        EntityOperation entityOperation = transactionHandler.getType().getEntityOperation();
 
-        if (transactionHandler.getType().getEntityOperation() == EntityOperation.CREATE) {
+        if (entityOperation == EntityOperation.CREATE) {
             entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
             entity.setDeleted(false);
             entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
+        } else if (entityOperation == EntityOperation.UPDATE) {
+            entity.setDeleted(false);
+            entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
         } else {
             entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
         }

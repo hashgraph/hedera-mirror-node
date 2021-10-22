@@ -61,6 +61,8 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
         if (entityOperation == EntityOperation.CREATE) {
             entity.setCreatedTimestamp(consensusTimestamp);
             entity.setDeleted(false);
+        } else if (entityOperation == EntityOperation.UPDATE) {
+            entity.setDeleted(false);
         } else if (entityOperation == EntityOperation.DELETE) {
             entity.setDeleted(true);
         }

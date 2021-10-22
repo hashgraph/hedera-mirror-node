@@ -33,7 +33,8 @@ where cr.consensus_timestamp = ct.consensus_timestamp
   and ct.entity_id is not null
   and (cr.contract_id is null or cr.contract_id <= 0);
 
--- Enumerate the list of created child contract IDs
+-- Create a map of parent contract IDs to created child contract IDs. In some HAPI versions, created_contract_ids can
+-- also contain the parent so we exclude self-references.
 create temporary table if not exists contract_relationship on commit drop as
 select consensus_timestamp, contract_id as parent_contract_id, created_contract_ids[i] as child_contract_id
 from (
@@ -44,7 +45,8 @@ from (
          from contract_result
          where array_length(created_contract_ids, 1) > 0
            and contract_id is not null
-     ) children;
+     ) children
+where contract_id <> created_contract_ids[i];
 
 -- Move child contract IDs still marked as accounts in entity table to the contract table
 with deleted_entity as (
@@ -106,7 +108,7 @@ select coalesce(child.auto_renew_period, parent.auto_renew_period),
        cr.child_contract_id,
        coalesce(child.key, parent.key),
        coalesce(child.memo, parent.memo, ''),
-       cr.child_contract_id & 4294967295,
+       cr.child_contract_id & 4294967295, -- Extract the num from the last 32 bits of the entity id
        cr.parent_contract_id,
        coalesce(child.proxy_account_id, parent.proxy_account_id),
        coalesce(child.public_key, parent.public_key),

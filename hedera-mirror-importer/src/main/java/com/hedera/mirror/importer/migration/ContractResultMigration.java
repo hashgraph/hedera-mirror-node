@@ -27,12 +27,12 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.flywaydb.core.api.MigrationVersion;
@@ -41,7 +41,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.util.Utility;
@@ -51,26 +50,21 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class ContractResultMigration extends MirrorBaseJavaMigration {
 
-    static final RowMapper<MigrationContractResult> resultRowMapper;
+    static final DataClassRowMapper<MigrationContractResult> resultRowMapper;
 
     static {
         DefaultConversionService defaultConversionService = new DefaultConversionService();
-        defaultConversionService.addConverter(PgArray.class, Long[].class,
-                source -> {
-                    try {
-                        return (Long[]) source.getArray();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-        DataClassRowMapper<MigrationContractResult> dataClassRowMapper =
-                new DataClassRowMapper<>(MigrationContractResult.class);
-        dataClassRowMapper.setConversionService(defaultConversionService);
-        resultRowMapper = dataClassRowMapper;
+        defaultConversionService.addConverter(PgArray.class, Long[].class, ContractResultMigration::convert);
+        resultRowMapper = new DataClassRowMapper<>(MigrationContractResult.class);
+        resultRowMapper.setConversionService(defaultConversionService);
     }
 
     private final JdbcTemplate jdbcTemplate;
+
+    @SneakyThrows
+    private static Long[] convert(PgArray s) {
+        return (Long[]) s.getArray();
+    }
 
     @Override
     public String getDescription() {

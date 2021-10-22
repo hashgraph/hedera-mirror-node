@@ -51,8 +51,6 @@ class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     protected void doUpdateEntity(AbstractEntity entity, RecordItem recordItem) {
-        entity.setDeleted(false);
-
         if (entity instanceof Contract) {
             entityListener.onContract((Contract) entity);
         } else {
