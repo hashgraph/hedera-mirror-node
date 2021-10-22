@@ -36,12 +36,11 @@ class ContractViewModel {
     const contractId = EntityId.fromEncodedId(contract.id);
     Object.assign(this, {
       admin_key: utils.encodeKey(contract.key),
-      auto_renew_period: contract.autoRenewPeriod === null ? null : Number(contract.autoRenewPeriod),
+      auto_renew_period: contract.autoRenewPeriod && Number(contract.autoRenewPeriod),
       contract_id: contractId.toString(),
       created_timestamp: utils.nsToSecNs(contract.createdTimestamp),
       deleted: contract.deleted,
-      expiration_timestamp:
-        contract.expirationTimestamp === null ? null : utils.nsToSecNs(contract.expirationTimestamp),
+      expiration_timestamp: utils.nsToSecNs(contract.expirationTimestamp),
       file_id: EntityId.fromEncodedId(contract.fileId, true).toString(),
       memo: contract.memo,
       obtainer_id: EntityId.fromEncodedId(contract.obtainerId, true).toString(),
@@ -49,7 +48,7 @@ class ContractViewModel {
       solidity_address: contractId.toSolidityAddress(),
       timestamp: {
         from: utils.nsToSecNs(contract.timestampRange.begin),
-        to: contract.timestampRange.end === null ? null : utils.nsToSecNs(contract.timestampRange.end),
+        to: contract.timestampRange.end && utils.nsToSecNs(contract.timestampRange.end),
       },
     });
 

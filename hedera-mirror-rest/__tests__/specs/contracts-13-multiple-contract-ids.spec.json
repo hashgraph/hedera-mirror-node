@@ -34,37 +34,6 @@
         "proxy_account_id": "7005",
         "timestamp_range": "[987654222123456,)"
       }
-    ],
-    "filedata": [
-      {
-        "file_data": [12, 11, 10, 9, 8, 7, 255],
-        "consensus_timestamp": "987654000123000",
-        "entity_id": "5001"
-      },
-      {
-        "file_data": [16, 28],
-        "consensus_timestamp": "987654000123005",
-        "entity_id": "5002"
-      },
-      {
-        "file_data": [128],
-        "consensus_timestamp": "987654000123010",
-        "entity_id": "5001",
-        "transaction_type": 16
-      },
-      {
-        "_description": "a FileUpdate tx after the contract creation, the tx overwrites the data",
-        "file_data": [1],
-        "consensus_timestamp": "987654000124000",
-        "entity_id": "5001",
-        "transaction_type": 19
-      },
-      {
-        "file_data": [2],
-        "consensus_timestamp": "987654999123000",
-        "entity_id": "5001",
-        "transaction_type": 16
-      }
     ]
   },
   "urls": [

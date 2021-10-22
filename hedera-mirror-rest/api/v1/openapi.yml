@@ -616,6 +616,8 @@ tags:
     description: The balance object represents the balance of accounts on the Hedera network.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
+  - name: contracts
+    description: The contracts objects represents the information associated with contract entities.
   - name: schedules
     description: The schedules object represents the information associated with a schedule entity.
   - name: transactions
@@ -634,7 +636,7 @@ info:
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
-  description: "The Mirror Node REST API offers the ability to query cryptocurrency transactions and account information from a Hedera managed mirror node.\n\nAvailable versions: [v1](/api/v1/doc). Base url: [/api/v1](/api/v1)"
+  description: "The Mirror Node REST API offers the ability to query cryptocurrency transactions and account information from a Hedera managed mirror node.\n\nAvailable versions: [v1](/api/v1/docs). Base url: [/api/v1](/api/v1)"
   contact:
     name: Hedera Mirror Node Team
     email: mirrornode@hedera.com
@@ -1197,11 +1199,13 @@ components:
           type: string
           description: The inclusive from timestamp in seconds
           example: "1633466568.31556926"
+          pattern: '/^\d{1,10}(\.\d{1,9})?$'
         to:
           type: string
           description: The exclusive to timestamp in seconds
           nullable: true
           example: "1957001234.31556926"
+          pattern: '/^\d{1,10}(\.\d{1,9})?$'
     Token:
       type: object
       properties:
@@ -1693,18 +1697,14 @@ components:
       schema:
         type: array
         items:
-          type: string
+          $ref: '#/components/schemas/EntityId'
     contractIdPathParam:
       name: contractId
       in: path
       required: true
       description: Contract entity id
-      example:
-        - 1135
-        - 0.1135
-        - 0.0.1135
       schema:
-        type: string
+        $ref: '#/components/schemas/EntityId'
     limitQueryParam:
       name: limit
       in: query

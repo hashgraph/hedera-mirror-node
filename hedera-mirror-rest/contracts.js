@@ -64,7 +64,8 @@ const fileDataQuery = `select
         or (${FileData.TRANSACTION_TYPE_FULL_NAME} = 19 and length(${FileData.FILE_DATA_FULL_NAME}) <> 0)
       order by ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME} desc
       limit 1
-    ) and ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}`;
+    ) and ${FileData.CONSENSUS_TIMESTAMP_FULL_NAME} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}
+      and ${Contract.getFullName(Contract.FILE_ID)} is not null`;
 
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query

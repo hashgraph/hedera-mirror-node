@@ -63,7 +63,7 @@ describe('Utils nsToSecNs tests', () => {
 
   test('Verify nsToSecNs returns correct result for null validStartNs', () => {
     const val = utils.nsToSecNs(null);
-    expect(val).toBe('0.000000000');
+    expect(val).toBe(null);
   });
 
   test('Verify nsToSecNsWithHyphen returns correct result for valid validStartNs', () => {
@@ -78,7 +78,7 @@ describe('Utils nsToSecNs tests', () => {
 
   test('Verify nsToSecNsWithHyphen returns correct result for null validStartNs', () => {
     const val = utils.nsToSecNsWithHyphen(null);
-    expect(val).toBe('0-000000000');
+    expect(val).toBe(null);
   });
 });
 
@@ -89,10 +89,6 @@ describe('Utils createTransactionId tests', () => {
 
   test('Verify nsToSecNs returns correct result for 0 inputs', () => {
     expect(utils.createTransactionId('0.0.0', 0)).toEqual('0.0.0-0-000000000');
-  });
-
-  test('Verify nsToSecNs returns correct result for null inputs', () => {
-    expect(utils.createTransactionId('0.0.0', null)).toEqual('0.0.0-0-000000000');
   });
 });
 

@@ -588,8 +588,8 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
 const nsToSecNs = (ns, sep = '.') => {
-  if (!ns) {
-    return `0${sep}000000000`;
+  if (ns === null) {
+    return null;
   }
 
   ns = `${ns}`;
