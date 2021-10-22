@@ -4,7 +4,7 @@
     "entities": [
       {
         "num": 1,
-        "type": 5
+        "type": "TOKEN"
       }
     ],
     "tokens": [
