@@ -43,6 +43,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.importer.domain.ContractLog;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
@@ -72,6 +73,7 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -101,6 +103,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final NonFeeTransferRepository nonFeeTransferRepository;
     private final ContractRepository contractRepository;
+    private final ContractLogRepository contractLogRepository;
     private final ContractResultRepository contractResultRepository;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
@@ -146,16 +149,61 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContract() {
         // given
         Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
+        Entity entity = new Entity();
+        entity.setId(contract.getId());
+        entity.setNum(contract.getNum());
+        entity.setRealm(contract.getRealm());
+        entity.setShard(contract.getShard());
+        entity.setModifiedTimestamp(contract.getModifiedTimestamp() + 10L);
+        entity.setType(ACCOUNT.getId());
 
         // when
-        sqlEntityListener.onEntityId(contract.toEntityId());
+        sqlEntityListener.onEntityId(entity.toEntityId()); // Removed after onContract
         sqlEntityListener.onContract(contract);
+        sqlEntityListener.onEntity(entity); // Ignored
         completeFileAndCommit();
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.count()).isZero();
         assertThat(contractRepository.findAll()).containsExactly(contract);
+    }
+
+    @Test
+    void onContractMergeSame() {
+        // given
+        Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
+
+        // when
+        sqlEntityListener.onEntityId(contract.toEntityId());
+        sqlEntityListener.onContract(contract);
+        sqlEntityListener.onContract(contract);
+        sqlEntityListener.onEntityId(contract.toEntityId());
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractRepository.findAll()).containsExactly(contract);
+    }
+
+    @Test
+    void onContractMergeDifferent() {
+        // given
+        Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
+        Contract contractUpdated = domainBuilder.contract()
+                .customize(c -> c.parentId(null).id(contract.getId()).num(contract.getNum()))
+                .get();
+
+        // when
+        sqlEntityListener.onContract(contract);
+        sqlEntityListener.onContract(contractUpdated);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractRepository.findAll()).containsExactly(contractUpdated);
     }
 
     @Test
@@ -187,6 +235,34 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .usingRecursiveComparison()
                 .ignoringFields("createdTimestamp", "id", "num", "parentId", "timestampRange")
                 .isEqualTo(parent);
+    }
+
+    @Test
+    void onContractLog() {
+        // given
+        ContractLog contractLog = domainBuilder.contractLog().get();
+
+        // when
+        sqlEntityListener.onContractLog(contractLog);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(contractLogRepository.findAll()).containsExactlyInAnyOrder(contractLog);
+    }
+
+    @Test
+    void onContractResult() {
+        // given
+        ContractResult contractResult = domainBuilder.contractResult().get();
+
+        // when
+        sqlEntityListener.onContractResult(contractResult);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(contractResultRepository.findAll()).containsExactlyInAnyOrder(contractResult);
     }
 
     @Test
@@ -253,20 +329,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onContractResult() {
-        // given
-        ContractResult contractResult = domainBuilder.contractResult().get();
-
-        // when
-        sqlEntityListener.onContractResult(contractResult);
-        completeFileAndCommit();
-
-        // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertThat(contractResultRepository.findAll()).containsExactlyInAnyOrder(contractResult);
-    }
-
-    @Test
     void onLiveHash() {
         // given
         LiveHash expectedLiveHash = new LiveHash(20L, "live hash".getBytes());
@@ -306,6 +368,19 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(getEntityWithDefaultMemo(entityId));
+        assertThat(contractRepository.count()).isZero();
+    }
+
+    @Test
+    void onEntityIdEmpty() {
+        // when
+        sqlEntityListener.onEntityId(EntityId.EMPTY);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractRepository.count()).isZero();
     }
 
     @Test
@@ -326,6 +401,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1, recordFile2);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(getEntityWithDefaultMemo(entityId));
+        assertThat(contractRepository.count()).isZero();
     }
 
     @Test
@@ -368,6 +444,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 720L, 10, true, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(expected);
+        assertThat(contractRepository.count()).isZero();
     }
 
     @Test
@@ -395,6 +472,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entityMerged);
+        assertThat(contractRepository.count()).isZero();
     }
 
     @Test

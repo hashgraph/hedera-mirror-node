@@ -51,6 +51,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class ContractResultMigration extends MirrorBaseJavaMigration {
 
     static final DataClassRowMapper<MigrationContractResult> resultRowMapper;
+    private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.46.8");
 
     static {
         DefaultConversionService defaultConversionService = new DefaultConversionService();
@@ -62,8 +63,8 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
     private final JdbcTemplate jdbcTemplate;
 
     @SneakyThrows
-    private static Long[] convert(PgArray s) {
-        return (Long[]) s.getArray();
+    private static Long[] convert(PgArray pgArray) {
+        return (Long[]) pgArray.getArray();
     }
 
     @Override
@@ -73,7 +74,7 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
 
     @Override
     public MigrationVersion getVersion() {
-        return MigrationVersion.fromVersion("1.46.8");
+        return VERSION;
     }
 
     @Override

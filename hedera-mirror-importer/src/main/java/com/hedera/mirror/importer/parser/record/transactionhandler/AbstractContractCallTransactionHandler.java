@@ -67,6 +67,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         contractResult.setCallResult(Utility.toBytes(functionResult.getContractCallResult()));
         contractResult.setCreatedContractIds(createdContractIds);
         contractResult.setErrorMessage(functionResult.getErrorMessage());
+        contractResult.setFunctionResult(functionResult.toByteArray());
         contractResult.setGasUsed(functionResult.getGasUsed());
         entityListener.onContractResult(contractResult);
 
