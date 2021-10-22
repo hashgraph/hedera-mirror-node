@@ -315,16 +315,16 @@ describe('Utils convertMySqlStyleQueryToPostgres tests', () => {
 });
 
 describe('Utils randomString tests', () => {
-  test('Negative', () => {
-    const val = utils.randomString(-4);
+  test('Negative', async () => {
+    const val = await utils.randomString(-4);
     expect(val).toMatch(/^[0-9a-z]{2}$/);
   });
-  test('Zero', () => {
-    const val = utils.randomString(0);
+  test('Zero', async () => {
+    const val = await utils.randomString(0);
     expect(val).toMatch(/^[0-9a-z]{2}$/);
   });
-  test('Positive', () => {
-    const val = utils.randomString(8);
+  test('Positive', async () => {
+    const val = await utils.randomString(8);
     expect(val).toMatch(/^[0-9a-z]{8}$/);
   });
 });

@@ -617,8 +617,13 @@ const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
 };
 
-const randomString = (length) => {
-  return crypto.randomBytes(Math.max(2, length) / 2).toString('hex');
+const randomString = async (length) => {
+  return new Promise((resolve, reject) => {
+    crypto.randomBytes(Math.max(2, length) / 2, (err, data) => {
+      if (err) return reject(err);
+      resolve(data.toString('hex'));
+    });
+  });
 };
 
 /**

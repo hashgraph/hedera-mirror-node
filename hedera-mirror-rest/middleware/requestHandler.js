@@ -27,7 +27,8 @@ const {randomString} = require('../utils');
 const {httpStatusCodes} = require('../constants');
 
 const requestLogger = async (req, res, next) => {
-  httpContext.set(constants.requestIdLabel, randomString(8));
+  const requestId = await randomString(8);
+  httpContext.set(constants.requestIdLabel, requestId);
   logger.info(`${req.ip} ${req.method} ${req.originalUrl}`);
 
   // set default http OK code for reference

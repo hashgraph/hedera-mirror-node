@@ -50,9 +50,9 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
       limitQuery = '';
     }
 
-    const tquery = `select 
-                      ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}, 
-                      ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME}, 
+    const tquery = `select
+                      ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME},
+                      ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME},
                       ${Transaction.VALID_START_NS_FULL_NAME},
                       ${Transaction.MEMO_FULL_NAME},
                       ${Transaction.NODE_ACCOUNT_ID_FULL_NAME},
@@ -149,7 +149,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
         ttrl.ttr_list,
         ${nftList}
         ${feeList}
-        t.payer_account_id, 
+        t.payer_account_id,
         t.valid_start_ns,
         t.memo,
         t.node_account_id,
@@ -467,10 +467,10 @@ const getTransactionsInnerQuery = function (
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(
-      'crypto_transfer',
+      CryptoTransfer.tableName,
       'ctl',
       namedTsQuery,
-      Transaction.CONSENSUS_TIMESTAMP,
+      CryptoTransfer.CONSENSUS_TIMESTAMP,
       resultTypeQuery,
       transactionTypeQuery,
       namedAccountQuery,
@@ -482,10 +482,10 @@ const getTransactionsInnerQuery = function (
     const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
     const namedTtlCreditDebitQuery = namedCreditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount');
     const ttlQuery = getTransferDistinctTimestampsQuery(
-      'token_transfer',
+      TokenTransfer.tableName,
       'ttl',
       namedTsQuery,
-      Transaction.CONSENSUS_TIMESTAMP,
+      TokenTransfer.CONSENSUS_TIMESTAMP,
       resultTypeQuery,
       transactionTypeQuery,
       namedTtlAccountQuery,
@@ -515,7 +515,6 @@ const getTransactionsInnerQuery = function (
       ON ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = ctl.consensus_timestamp
       FULL OUTER JOIN (${ttlQuery}) AS ttl
       ON coalesce(${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}, ctl.consensus_timestamp) = ttl.consensus_timestamp
-      ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
       ${namedLimitQuery}`;
   }
 
@@ -640,7 +639,7 @@ const getOneTransaction = async (req, res) => {
   );
   const includeExtraInfo = true;
 
-  const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.VALID_START_NS}
+  const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
                       from ${Transaction.tableName} AS ${Transaction.tableAlias}
                         ${whereClause}
                       order by ${Transaction.CONSENSUS_TIMESTAMP} desc
