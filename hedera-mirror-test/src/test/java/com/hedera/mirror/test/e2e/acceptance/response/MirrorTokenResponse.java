@@ -33,5 +33,7 @@ public class MirrorTokenResponse {
 
     private String modifiedTimestamp;
 
+    private String pauseStatus;
+
     private String tokenId;
 }

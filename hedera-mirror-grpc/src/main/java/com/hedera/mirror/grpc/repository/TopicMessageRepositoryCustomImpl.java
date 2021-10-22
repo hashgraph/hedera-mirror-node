@@ -41,6 +41,10 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 @RequiredArgsConstructor
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
 
+    // make the cost estimation of using the index on (topic_id, consensus_timestamp) lower than that of
+    // the primary key so pg planner will choose the better index when querying topic messages by id
+    private static final String TOPIC_MESSAGES_BY_ID_QUERY_HINT = "set local random_page_cost = 0";
+
     private final EntityManager entityManager;
     private final InstantToLongConverter converter;
 
@@ -69,6 +73,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
             typedQuery.setMaxResults((int) filter.getLimit());
         }
 
+        entityManager.createNativeQuery(TOPIC_MESSAGES_BY_ID_QUERY_HINT).executeUpdate();
         return typedQuery.getResultList().stream(); // getResultStream()'s cursor doesn't work with reactive streams
     }
 }

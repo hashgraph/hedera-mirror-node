@@ -77,23 +77,15 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected static final SignatureMap DEFAULT_SIG_MAP = getDefaultSigMap();
     protected static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
-    protected static final AccountID PAYER =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2002).build();
-    protected static final AccountID PAYER2 =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2003).build();
-    protected static final AccountID RECEIVER =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2004).build();
-    protected static final AccountID DEFAULT_ACCOUNT_ID =
-            AccountID.getDefaultInstance();
-    protected static final AccountID NODE =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build();
+    protected static final AccountID PAYER = AccountID.newBuilder().setAccountNum(2002).build();
+    protected static final AccountID PAYER2 = AccountID.newBuilder().setAccountNum(2003).build();
+    protected static final AccountID RECEIVER = AccountID.newBuilder().setAccountNum(2004).build();
+    protected static final AccountID DEFAULT_ACCOUNT_ID = AccountID.getDefaultInstance();
+    protected static final AccountID NODE = AccountID.newBuilder().setAccountNum(3).build();
     protected static final EntityId NODE_ACCOUNT_ID = EntityId.of(NODE);
-    protected static final AccountID TREASURY =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(98).build();
-    protected static final AccountID PROXY =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1003).build();
-    protected static final AccountID PROXY_UPDATE =
-            AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3000).build();
+    protected static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
+    protected static final AccountID PROXY = AccountID.newBuilder().setAccountNum(1003).build();
+    protected static final AccountID PROXY_UPDATE = AccountID.newBuilder().setAccountNum(3000).build();
     protected static final String TRANSACTION_MEMO = "transaction memo";
 
     @Resource
