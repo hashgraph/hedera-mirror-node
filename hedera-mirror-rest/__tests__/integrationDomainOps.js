@@ -193,7 +193,7 @@ const addEntity = async (defaults, entity) => {
     receiver_sig_required: false,
     shard: 0,
     timestamp_range: '[0,)',
-    type: 1,
+    type: 'ACCOUNT',
     ...defaults,
     ...entity,
   };
@@ -227,7 +227,7 @@ const addAccount = async (account) => {
     {
       max_automatic_token_associations: 0,
       public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      type: 1,
+      type: 'ACCOUNT',
     },
     account
   );

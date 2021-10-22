@@ -68,7 +68,9 @@ const getAccountQuery = (
   pubKeyQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: ''}
 ) => {
-  const entityWhereFilter = ['type < 3', entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
+  const entityWhereFilter = [`e.type IN ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
+    .filter((x) => !!x)
+    .join(' and ');
   const balanceWhereFilter = [
     'ab.consensus_timestamp = (select max(consensus_timestamp) as time_stamp_max from account_balance)',
     balancesAccountQuery.query,

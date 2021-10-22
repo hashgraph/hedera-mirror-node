@@ -24,7 +24,7 @@ const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 const readinessQuery = `select true
-                        from t_entity_types
+                        from t_transaction_types
                         limit 1;`;
 
 /**
