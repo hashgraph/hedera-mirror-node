@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -40,7 +39,6 @@ import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -147,7 +145,28 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContract() {
         // given
-        Contract contract = domainBuilder.contract().get();
+        Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
+
+        // when
+        sqlEntityListener.onEntityId(contract.toEntityId());
+        sqlEntityListener.onContract(contract);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractRepository.findAll()).containsExactly(contract);
+    }
+
+    @Test
+    void onContractWithParent() {
+        // given
+        Contract parent = domainBuilder.contract().persist();
+        Contract contract = EntityId.of(0L, 0L, 100L, EntityTypeEnum.CONTRACT).toEntity();
+        contract.setCreatedTimestamp(1L);
+        contract.setDeleted(false);
+        contract.setModifiedTimestamp(1L);
+        contract.setParentId(parent.toEntityId());
 
         // when
         sqlEntityListener.onContract(contract);
@@ -155,8 +174,19 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, contractRepository.count());
-        assertExistsAndEquals(contractRepository, contract, contract.getId());
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractRepository.findAll())
+                .hasSize(2)
+                .filteredOn(c -> c.getId().equals(contract.getId()))
+                .first()
+                .returns(contract.getCreatedTimestamp(), Contract::getCreatedTimestamp)
+                .returns(contract.getId(), Contract::getId)
+                .returns(contract.getModifiedTimestamp(), Contract::getModifiedTimestamp)
+                .returns(contract.getNum(), Contract::getNum)
+                .returns(contract.getParentId(), Contract::getParentId)
+                .usingRecursiveComparison()
+                .ignoringFields("createdTimestamp", "id", "num", "parentId", "timestampRange")
+                .isEqualTo(parent);
     }
 
     @Test
@@ -172,9 +202,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, cryptoTransferRepository.count());
-        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer1, cryptoTransfer1.getId());
-        assertExistsAndEquals(cryptoTransferRepository, cryptoTransfer2, cryptoTransfer2.getId());
+        assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrder(cryptoTransfer1, cryptoTransfer2);
     }
 
     @Test
@@ -192,9 +220,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, nonFeeTransferRepository.count());
-        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer1, nonFeeTransfer1.getId());
-        assertExistsAndEquals(nonFeeTransferRepository, nonFeeTransfer2, nonFeeTransfer2.getId());
+        assertThat(nonFeeTransferRepository.findAll()).containsExactlyInAnyOrder(nonFeeTransfer1, nonFeeTransfer2);
     }
 
     @Test
@@ -208,8 +234,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, topicMessageRepository.count());
-        assertExistsAndEquals(topicMessageRepository, topicMessage, topicMessage.getConsensusTimestamp());
+        assertThat(topicMessageRepository.findAll()).containsExactlyInAnyOrder(topicMessage);
     }
 
     @Test
@@ -224,8 +249,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, fileDataRepository.count());
-        assertExistsAndEquals(fileDataRepository, expectedFileData, 11L);
+        assertThat(fileDataRepository.findAll()).containsExactlyInAnyOrder(expectedFileData);
     }
 
     @Test
@@ -239,8 +263,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, contractResultRepository.count());
-        assertExistsAndEquals(contractResultRepository, contractResult, contractResult.getId());
+        assertThat(contractResultRepository.findAll()).containsExactlyInAnyOrder(contractResult);
     }
 
     @Test
@@ -254,8 +277,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, liveHashRepository.count());
-        assertExistsAndEquals(liveHashRepository, expectedLiveHash, 20L);
+        assertThat(liveHashRepository.findAll()).containsExactlyInAnyOrder(expectedLiveHash);
     }
 
     @Test
@@ -269,8 +291,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, transactionRepository.count());
-        assertExistsAndEquals(transactionRepository, expectedTransaction, 101L);
+        assertThat(transactionRepository.findAll()).containsExactlyInAnyOrder(expectedTransaction);
     }
 
     @Test
@@ -284,8 +305,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, entityRepository.count());
-        assertExistsAndEquals(entityRepository, getEntityWithDefaultMemo(entityId), 10L);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(getEntityWithDefaultMemo(entityId));
     }
 
     @Test
@@ -305,8 +325,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1, recordFile2);
-        assertEquals(1, entityRepository.count());
-        assertExistsAndEquals(entityRepository, getEntityWithDefaultMemo(entityId), 10L);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(getEntityWithDefaultMemo(entityId));
     }
 
     @Test
@@ -348,7 +367,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         Entity expected = getEntity(1, 1L, 30L, "memo-updated", keyFromString(KEY), autoRenewAccountId, 360L, null,
                 720L, 10, true, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertThat(entityRepository.findAll()).containsOnly(expected);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(expected);
     }
 
     @Test
@@ -375,8 +394,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         Entity entityMerged = getEntity(1, 1L, 5L, "memo-updated", keyFromString(KEY),
                 EntityId.of(0L, 0L, 10L, ACCOUNT), 360L, false, 720L, 0, false, keyFromString(KEY2));
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, entityRepository.count());
-        assertExistsAndEquals(entityRepository, entityMerged, 1L);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entityMerged);
     }
 
     @Test
@@ -406,14 +424,11 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         completeFileAndCommit();
 
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, nftRepository.count());
-
         Nft nft1 = getNft(tokenId1, 1L, accountId1, 3L, false, metadata1, 3L); // transfer
         Nft nft2 = getNft(tokenId2, 1L, accountId2, 4L, false, metadata2, 4L); // transfer
 
-        assertExistsAndEquals(nftRepository, nft1, nft1.getId());
-        assertExistsAndEquals(nftRepository, nft2, nft2.getId());
+        assertThat(recordFileRepository.findAll()).containsExactlyInAnyOrder(recordFile1);
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
     @Test
@@ -443,14 +458,11 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         completeFileAndCommit();
 
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, nftRepository.count());
-
         Nft nft1 = getNft(tokenId1, 1L, accountId1, 3L, false, metadata1, 3L); // transfer
         Nft nft2 = getNft(tokenId2, 1L, accountId2, 4L, false, metadata2, 4L); // transfer
 
-        assertExistsAndEquals(nftRepository, nft1, nft1.getId());
-        assertExistsAndEquals(nftRepository, nft2, nft2.getId());
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
     @Test
@@ -486,13 +498,10 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onNft(getNft(tokenId2, 1L, accountId4, null, null, null, 6L)); // transfer
         completeFileAndCommit();
 
-        assertEquals(2, nftRepository.count());
-
         Nft nft1 = getNft(tokenId1, 1L, accountId3, 3L, false, metadata1, 5L); // transfer
         Nft nft2 = getNft(tokenId2, 1L, accountId4, 4L, false, metadata2, 6L); // transfer
 
-        assertExistsAndEquals(nftRepository, nft1, nft1Combined.getId());
-        assertExistsAndEquals(nftRepository, nft2, nft2Combined.getId());
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
     @Test
@@ -532,14 +541,12 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         completeFileAndCommit();
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, nftRepository.count());
 
         // expected nfts
         Nft nft1 = getNft(tokenId1, 1L, null, 3L, true, metadata1, 5L); // transfer
         Nft nft2 = getNft(tokenId1, 2L, null, 4L, true, metadata2, 6L); // transfer
 
-        assertExistsAndEquals(nftRepository, nft1, nft1Combined.getId());
-        assertExistsAndEquals(nftRepository, nft2, nft2Combined.getId());
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
     @Test
@@ -578,14 +585,12 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, nftRepository.count());
 
         // expected nfts
         Nft nft1 = getNft(tokenId1, 1L, null, 3L, true, metadata1, 5L); // transfer
         Nft nft2 = getNft(tokenId1, 2L, null, 4L, true, metadata2, 6L); // transfer
 
-        assertExistsAndEquals(nftRepository, nft1, nft1.getId());
-        assertExistsAndEquals(nftRepository, nft2, nft2.getId());
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
 
     @Test
@@ -602,12 +607,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(3, nftTransferRepository.count());
-        EntityId tokenId1 = EntityId.of("0.0.1", TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.2", TOKEN);
-        assertExistsAndEquals(nftTransferRepository, nftTransfer1, new NftTransferId(1L, 1L, tokenId1));
-        assertExistsAndEquals(nftTransferRepository, nftTransfer2, new NftTransferId(2L, 2L, tokenId1));
-        assertExistsAndEquals(nftTransferRepository, nftTransfer3, new NftTransferId(3L, 1L, tokenId2));
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(nftTransfer1, nftTransfer2, nftTransfer3);
     }
 
     @Test
@@ -622,9 +622,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, tokenRepository.count());
-        assertExistsAndEquals(tokenRepository, token1, token1.getTokenId());
-        assertExistsAndEquals(tokenRepository, token2, token2.getTokenId());
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(token1, token2);
     }
 
     @Test
@@ -649,7 +647,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 1_000_000_000L, keyFromString(KEY2), "BAR COIN TOKEN", keyFromString(KEY), "BARTOK",
                 keyFromString(KEY2), keyFromString(KEY2), TokenPauseStatusEnum.UNPAUSED);
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertExistsAndEquals(tokenRepository, tokenMerged, new TokenId(tokenId));
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
     }
 
     @Test
@@ -679,7 +677,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findAll()).containsExactlyInAnyOrder(recordFile1, recordFile2);
         token.setTotalSupply(token.getTotalSupply() - 25);
         token.setModifiedTimestamp(6);
-        assertExistsAndEquals(tokenRepository, token, new TokenId(tokenId));
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(token);
     }
 
     @Test
@@ -704,7 +702,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         Token expected = getToken(tokenId, accountId, 1L, 5L);
         expected.setTotalSupply(expected.getTotalSupply() - 10);
         assertThat(recordFileRepository.findAll()).containsOnly(recordFile1);
-        assertExistsAndEquals(tokenRepository, expected, new TokenId(tokenId));
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(expected);
     }
 
     @Test
@@ -733,9 +731,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, tokenAccountRepository.count());
-        assertExistsAndEquals(tokenAccountRepository, tokenAccount1, tokenAccount1.getId());
-        assertExistsAndEquals(tokenAccountRepository, tokenAccount2, tokenAccount2.getId());
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount1, tokenAccount2);
     }
 
     @Test
@@ -789,8 +785,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         TokenAccount tokenAccountMerged = getTokenAccount(tokenId1, accountId1, 5L, 15L, true, false,
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED);
         assertThat(recordFileRepository.findAll()).containsOnly(recordFile1);
-        assertEquals(2, tokenAccountRepository.count());
-        assertExistsAndEquals(tokenAccountRepository, tokenAccountMerged, tokenAccountMerged.getId());
+        assertThat(tokenAccountRepository.findAll()).hasSize(2).contains(tokenAccountMerged);
     }
 
     @Test
@@ -961,10 +956,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(3, tokenTransferRepository.count());
-        assertExistsAndEquals(tokenTransferRepository, tokenTransfer1, new TokenTransfer.Id(2L, tokenId1, accountId1));
-        assertExistsAndEquals(tokenTransferRepository, tokenTransfer2, new TokenTransfer.Id(2L, tokenId2, accountId2));
-        assertExistsAndEquals(tokenTransferRepository, tokenTransfer3, new TokenTransfer.Id(4L, tokenId1, accountId1));
+        assertThat(tokenTransferRepository.findAll())
+                .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2, tokenTransfer3);
     }
 
     @Test
@@ -982,9 +975,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(2, scheduleRepository.count());
-        assertExistsAndEquals(scheduleRepository, schedule1, entityId1.getId());
-        assertExistsAndEquals(scheduleRepository, schedule2, entityId2.getId());
+        assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule1, schedule2);
     }
 
     @Test
@@ -1011,13 +1002,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(3, transactionSignatureRepository.count());
-        assertExistsAndEquals(transactionSignatureRepository, transactionSignature1, new TransactionSignature.Id(1L,
-                pubKeyPrefix1));
-        assertExistsAndEquals(transactionSignatureRepository, transactionSignature2, new TransactionSignature.Id(2L,
-                pubKeyPrefix2));
-        assertExistsAndEquals(transactionSignatureRepository, transactionSignature3, new TransactionSignature.Id(3L,
-                pubKeyPrefix3));
+        assertThat(transactionSignatureRepository.findAll())
+                .containsExactlyInAnyOrder(transactionSignature1, transactionSignature2, transactionSignature3);
     }
 
     @Test
@@ -1040,14 +1026,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         Schedule scheduleMerged = getSchedule(1, entityId.entityIdToString());
         scheduleMerged.setExecutedTimestamp(5L);
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertEquals(1, scheduleRepository.count());
-        assertExistsAndEquals(scheduleRepository, scheduleMerged, entityId.getId());
-    }
-
-    private <T, ID> void assertExistsAndEquals(CrudRepository<T, ID> repository, T expected, ID id) {
-        Optional<T> actual = repository.findById(id);
-        assertTrue(actual.isPresent());
-        assertEquals(expected, actual.get());
+        assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(scheduleMerged);
     }
 
     private void completeFileAndCommit() {
