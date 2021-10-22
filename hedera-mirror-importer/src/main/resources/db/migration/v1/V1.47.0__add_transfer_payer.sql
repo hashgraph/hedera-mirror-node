@@ -57,54 +57,9 @@ from transfers_subset t
 where tt.consensus_timestamp = t.consensus_timestamp
   and result = 22;
 
--- CTE approach
---select 'crypto_map';
---with crypto_map as (
---    select distinct t.consensus_timestamp, t.result, t.payer_account_id
---    from crypto_transfer ct
---    join transaction_temp t on ct.consensus_timestamp = t.consensus_timestamp and t.type = 14
---    order by t.consensus_timestamp
---)
---update crypto_transfer
---set payer_account_id = payer_account_id
---from crypto_map
---where consensus_timestamp = crypto_map.consensus_timestamp;
-
---select 'nft map';
---with nft_map as (
---    select distinct t.consensus_timestamp, t.result, t.payer_account_id
---    from nft_transfer nft
---    join transaction_temp t on nft.consensus_timestamp = t.consensus_timestamp and t.type = 14 and result = 22
---    order by t.consensus_timestamp
---)
---update nft_transfer
---set payer_account_id = payer_account_id
---from nft_map
---where consensus_timestamp = nft_map.consensus_timestamp;
-
---with non_fee_map as (
---    select distinct t.consensus_timestamp, t.result, t.payer_account_id
---    from non_fee_transfer nftr
---    join transaction_temp t on nftr.consensus_timestamp = t.consensus_timestamp and t.type = 14
---    order by t.consensus_timestamp
---)
---update non_fee_transfer
---set payer_account_id = payer_account_id
---from non_fee_map
---where consensus_timestamp = non_fee_map.consensus_timestamp;
-
---with token_map as (
---    select distinct t.consensus_timestamp, t.result, t.payer_account_id
---    from token_transfer ttr
---    join transaction_temp t on ttr.consensus_timestamp = t.consensus_timestamp and t.type = 14 and result = 22
---    order by t.consensus_timestamp
---)
---update token_transfer
---set payer_account_id = payer_account_id
---from token_map
---where consensus_timestamp = token_map.consensus_timestamp;
-
 -- set no nulls
+alter table assessed_custom_fee
+    alter column payer_account_id set not null;
 alter table crypto_transfer
     alter column payer_account_id set not null;
 alter table nft_transfer
