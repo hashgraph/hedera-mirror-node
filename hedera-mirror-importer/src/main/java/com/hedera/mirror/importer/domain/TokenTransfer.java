@@ -46,9 +46,12 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
     @EmbeddedId
     @JsonUnwrapped
     private Id id;
+
     private long amount;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
+
     @JsonIgnore
     @Transient
     private boolean tokenDissociate;

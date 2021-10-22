@@ -2,6 +2,9 @@
 -- Add transaction payer to transfer tables
 -------------------
 -- add payer to transfer tables
+alter table assessed_custom_fee
+    add column if not exists payer_account_id bigint;
+
 alter table crypto_transfer
     add column if not exists payer_account_id bigint;
 
@@ -16,84 +19,90 @@ alter table token_transfer
 
 -- retrieve subset of transaction representing transfers
 create temporary table if not exists transfers_subset as
-select consensus_ns, result, payer_account_id
+select consensus_timestamp, result, payer_account_id
 from transaction
 where type = 14
-order by consensus_ns;
+order by consensus_timestamp;
 
 create unique index if not exists transfers_subset__time_res
-    on transfers_subset (consensus_ns, result);
+    on transfers_subset (consensus_timestamp, result);
 
 -- from transaction table, insert payer to transfer tables
-update crypto_transfer
-set payer_account_id = payer_account_id
-from transfers_subset
-where consensus_timestamp = transfers_subset.consensus_ns
+update assessed_custom_fee acf
+set payer_account_id = t.payer_account_id
+from transfers_subset t
+where acf.consensus_timestamp = t.consensus_timestamp
   and result = 22;
 
-update nft_transfer
-set payer_account_id = payer_account_id
-from transfers_subset
-where consensus_timestamp = transfers_subset.consensus_ns
+update crypto_transfer ct
+set payer_account_id = t.payer_account_id
+from transfers_subset t
+where ct.consensus_timestamp = t.consensus_timestamp
   and result = 22;
 
-update non_fee_transfer
-set payer_account_id = payer_account_id
-from transfers_subset
-where consensus_timestamp = transfers_subset.consensus_ns;
+update nft_transfer nt
+set payer_account_id = t.payer_account_id
+from transfers_subset t
+where nt.consensus_timestamp = t.consensus_timestamp
+  and result = 22;
 
-update token_transfer
-set payer_account_id = payer_account_id
-from transfers_subset
-where consensus_timestamp = transfers_subset.consensus_ns
+update non_fee_transfer nft
+set payer_account_id = t.payer_account_id
+from transfers_subset t
+where nft.consensus_timestamp = t.consensus_timestamp;
+
+update token_transfer tt
+set payer_account_id = t.payer_account_id
+from transfers_subset t
+where tt.consensus_timestamp = t.consensus_timestamp
   and result = 22;
 
 -- CTE approach
 --select 'crypto_map';
 --with crypto_map as (
---    select distinct t.consensus_ns, t.result, t.payer_account_id
+--    select distinct t.consensus_timestamp, t.result, t.payer_account_id
 --    from crypto_transfer ct
---    join transaction_temp t on ct.consensus_timestamp = t.consensus_ns and t.type = 14
---    order by t.consensus_ns
+--    join transaction_temp t on ct.consensus_timestamp = t.consensus_timestamp and t.type = 14
+--    order by t.consensus_timestamp
 --)
 --update crypto_transfer
 --set payer_account_id = payer_account_id
 --from crypto_map
---where consensus_timestamp = crypto_map.consensus_ns;
+--where consensus_timestamp = crypto_map.consensus_timestamp;
 
 --select 'nft map';
 --with nft_map as (
---    select distinct t.consensus_ns, t.result, t.payer_account_id
+--    select distinct t.consensus_timestamp, t.result, t.payer_account_id
 --    from nft_transfer nft
---    join transaction_temp t on nft.consensus_timestamp = t.consensus_ns and t.type = 14 and result = 22
---    order by t.consensus_ns
+--    join transaction_temp t on nft.consensus_timestamp = t.consensus_timestamp and t.type = 14 and result = 22
+--    order by t.consensus_timestamp
 --)
 --update nft_transfer
 --set payer_account_id = payer_account_id
 --from nft_map
---where consensus_timestamp = nft_map.consensus_ns;
+--where consensus_timestamp = nft_map.consensus_timestamp;
 
 --with non_fee_map as (
---    select distinct t.consensus_ns, t.result, t.payer_account_id
+--    select distinct t.consensus_timestamp, t.result, t.payer_account_id
 --    from non_fee_transfer nftr
---    join transaction_temp t on nftr.consensus_timestamp = t.consensus_ns and t.type = 14
---    order by t.consensus_ns
+--    join transaction_temp t on nftr.consensus_timestamp = t.consensus_timestamp and t.type = 14
+--    order by t.consensus_timestamp
 --)
 --update non_fee_transfer
 --set payer_account_id = payer_account_id
 --from non_fee_map
---where consensus_timestamp = non_fee_map.consensus_ns;
+--where consensus_timestamp = non_fee_map.consensus_timestamp;
 
 --with token_map as (
---    select distinct t.consensus_ns, t.result, t.payer_account_id
+--    select distinct t.consensus_timestamp, t.result, t.payer_account_id
 --    from token_transfer ttr
---    join transaction_temp t on ttr.consensus_timestamp = t.consensus_ns and t.type = 14 and result = 22
---    order by t.consensus_ns
+--    join transaction_temp t on ttr.consensus_timestamp = t.consensus_timestamp and t.type = 14 and result = 22
+--    order by t.consensus_timestamp
 --)
 --update token_transfer
 --set payer_account_id = payer_account_id
 --from token_map
---where consensus_timestamp = token_map.consensus_ns;
+--where consensus_timestamp = token_map.consensus_timestamp;
 
 -- set no nulls
 alter table crypto_transfer

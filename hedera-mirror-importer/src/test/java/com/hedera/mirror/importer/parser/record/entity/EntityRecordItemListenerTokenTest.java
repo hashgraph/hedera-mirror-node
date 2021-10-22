@@ -122,7 +122,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final Key TOKEN_UPDATE_REF_KEY = keyFromString(KEY2);
     private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
     private static final long TRANSFER_TIMESTAMP = 15L;
-    private static final EntityId TRANSACTION_PAYER_ACCOUNT_ID = EntityIdEndec.decode(2000, EntityTypeEnum.ACCOUNT);
+    private static final EntityId PAYER_ACCOUNT_ID = EntityIdEndec.decode(2002, EntityTypeEnum.ACCOUNT);
     @Resource
     protected TokenRepository tokenRepository;
     @Resource
@@ -1597,7 +1597,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private void assertTokenTransferInRepository(TokenID tokenID, AccountID accountID, long consensusTimestamp,
                                                  long amount) {
-        var expected = new TokenTransfer(consensusTimestamp, amount, EntityId.of(tokenID), EntityId.of(accountID));
+        var expected = new TokenTransfer(consensusTimestamp, amount, EntityId.of(tokenID), EntityId.of(accountID),
+                false, PAYER_ACCOUNT_ID);
         assertThat(tokenTransferRepository.findById(expected.getId()))
                 .get()
                 .isEqualTo(expected);
