@@ -41,11 +41,14 @@ public class NftTransfer implements Persistable<NftTransferId> {
     @JsonUnwrapped
     @EmbeddedId
     private NftTransferId id;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
+
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId receiverAccountId;
+
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId senderAccountId;

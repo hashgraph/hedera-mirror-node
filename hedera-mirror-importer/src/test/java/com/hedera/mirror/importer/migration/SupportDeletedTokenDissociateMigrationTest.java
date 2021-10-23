@@ -60,10 +60,7 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
-import com.hedera.mirror.importer.repository.TokenTransferRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
@@ -75,7 +72,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private static final EntityId TREASURY = EntityId.of("0.0.200", ACCOUNT);
     private static final EntityId NEW_TREASURY = EntityId.of("0.0.201", ACCOUNT);
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
-    private static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.2002", ACCOUNT);
 
     @Resource
     private JdbcOperations jdbcOperations;
@@ -87,16 +83,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private NftRepository nftRepository;
 
     @Resource
-    private NftTransferRepository nftTransferRepository;
-
-    @Resource
     private TokenAccountRepository tokenAccountRepository;
-
-    @Resource
-    private TokenTransferRepository tokenTransferRepository;
-
-    @Resource
-    private TransactionRepository transactionRepository;
 
     @Test
     void verify() {
@@ -231,7 +218,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(ftClass1, ftClass2, nftClass1, nftClass2,
                         nftClass3);
         // the token transfer for nft should have been removed
-        assertThat(findAllTokenTransfers()).usingElementComparatorIgnoringFields("payer_account_id, token_dissociate")
+        assertThat(findAllTokenTransfers()).usingElementComparatorIgnoringFields("payer_account_id")
                 .containsExactlyInAnyOrder(
                         new TokenTransfer(account1Ft1DissociateTimestamp, -10, ftId1, account1)
                 );
@@ -484,14 +471,16 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
             @Override
             public NftTransfer mapRow(ResultSet rs, int rowNum) throws SQLException {
+                var receiver = rs.getLong("receiver_account_id");
+                var sender = rs.getLong("sender_account_id");
                 NftTransfer nftTransfer = new NftTransfer();
                 nftTransfer
                         .setId(new NftTransferId(
                                 rs.getLong("consensus_timestamp"),
                                 rs.getLong("serial_number"),
-                                EntityIdEndec.decode(rs.getLong("token_id"), ACCOUNT)));
-                nftTransfer.setReceiverAccountId(EntityIdEndec.decode(rs.getLong("receiver_account_id"), ACCOUNT));
-                nftTransfer.setReceiverAccountId(EntityIdEndec.decode(rs.getLong("sender_account_id"), ACCOUNT));
+                                EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
+                nftTransfer.setReceiverAccountId(receiver == 0 ? null : EntityIdEndec.decode(receiver, ACCOUNT));
+                nftTransfer.setSenderAccountId(sender == 0 ? null : EntityIdEndec.decode(sender, ACCOUNT));
                 return nftTransfer;
             }
         });
