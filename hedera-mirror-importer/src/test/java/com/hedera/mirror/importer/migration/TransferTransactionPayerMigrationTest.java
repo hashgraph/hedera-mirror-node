@@ -46,6 +46,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
+import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
@@ -66,7 +67,7 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
-@Tag("v1")
+@EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.6")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
