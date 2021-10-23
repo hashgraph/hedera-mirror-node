@@ -26,6 +26,7 @@ type CryptoTransfer struct {
 	Amount             int64
 	ConsensusTimestamp int64
 	EntityId           EntityId
+	PayerAccountId     EntityId
 }
 
 func (CryptoTransfer) TableName() string {
