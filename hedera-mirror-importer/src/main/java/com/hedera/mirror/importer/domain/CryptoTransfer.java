@@ -48,6 +48,7 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
     @EmbeddedId
     @JsonUnwrapped
     private Id id;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
