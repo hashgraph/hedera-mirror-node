@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
@@ -36,6 +37,7 @@ import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
+import com.hedera.mirror.importer.converter.RangeToStringDeserializer;
 import com.hedera.mirror.importer.converter.RangeToStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -80,6 +82,7 @@ public abstract class AbstractEntity {
 
     private Integer type;
 
+    @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;
 

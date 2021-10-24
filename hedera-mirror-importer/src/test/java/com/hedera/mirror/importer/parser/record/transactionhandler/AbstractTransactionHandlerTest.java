@@ -205,8 +205,7 @@ abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec::getDescription,
                 (testSpec) -> {
                     // when
-                    com.hedera.mirror.importer.domain.Transaction transaction =
-                            new com.hedera.mirror.importer.domain.Transaction();
+                    var transaction = new com.hedera.mirror.importer.domain.Transaction();
                     transaction.setEntityId(testSpec.getExpected().toEntityId());
                     Mockito.reset(entityListener);
                     transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());

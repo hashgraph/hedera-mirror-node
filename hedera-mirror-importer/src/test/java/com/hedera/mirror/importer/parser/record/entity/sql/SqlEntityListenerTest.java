@@ -237,6 +237,30 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .isEqualTo(parent);
     }
 
+    // Tests scenario when mirror node has partial data and is missing contract parent
+    @Test
+    void onContractWithMissingParent() {
+        // given
+        Contract contract = EntityId.of(0L, 0L, 101L, EntityTypeEnum.CONTRACT).toEntity();
+        contract.setCreatedTimestamp(1L);
+        contract.setDeleted(false);
+        contract.setMemo("");
+        contract.setModifiedTimestamp(1L);
+        contract.setParentId(EntityId.of(0L, 0L, 100L, EntityTypeEnum.CONTRACT));
+
+        // when
+        sqlEntityListener.onContract(contract);
+        completeFileAndCommit();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractRepository.findAll())
+                .hasSize(1)
+                .first()
+                .isEqualTo(contract);
+    }
+
     @Test
     void onContractLog() {
         // given

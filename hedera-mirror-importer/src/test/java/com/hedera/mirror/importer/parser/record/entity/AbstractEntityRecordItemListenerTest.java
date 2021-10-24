@@ -56,6 +56,7 @@ import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -92,6 +93,8 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected static final AccountID PROXY_UPDATE = AccountID.newBuilder().setAccountNum(3000).build();
     protected static final String TRANSACTION_MEMO = "transaction memo";
 
+    @Resource
+    protected DomainBuilder domainBuilder;
     @Resource
     protected TransactionRepository transactionRepository;
     @Resource

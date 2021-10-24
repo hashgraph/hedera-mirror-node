@@ -132,34 +132,34 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(transactionType);
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionTypeEnum);
 
-        long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
+        long consensusTimestamp = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId;
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusNs, e.getMessage());
+            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
             entityId = null;
         }
 
-        log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
+        log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusTimestamp, entityId);
 
         // to:do - exclude Freeze from Filter transaction type
         TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
         if (!transactionFilter.test(transactionFilterFields)) {
             log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
-                    consensusNs, transactionTypeEnum, entityId);
+                    consensusTimestamp, transactionTypeEnum, entityId);
             return;
         }
 
-        Transaction transaction = buildTransaction(consensusNs, recordItem);
+        Transaction transaction = buildTransaction(consensusTimestamp, recordItem);
         transaction.setEntityId(entityId);
         transactionHandler.updateTransaction(transaction, recordItem);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
             if (body.hasCryptoCreateAccount() && recordItem.isSuccessful()) {
-                insertCryptoCreateTransferList(consensusNs, txRecord, body);
+                insertCryptoCreateTransferList(consensusTimestamp, txRecord, body);
             } else {
-                insertTransferList(consensusNs, txRecord.getTransferList());
+                insertTransferList(consensusTimestamp, txRecord.getTransferList());
             }
         }
 
@@ -182,19 +182,19 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             // Only add non-fee transfers on success as the data is assured to be valid
-            processNonFeeTransfers(consensusNs, body, txRecord);
+            processNonFeeTransfers(consensusTimestamp, body, txRecord);
 
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
-                insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
+                insertCryptoAddLiveHash(consensusTimestamp, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
-                insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
+                insertFileAppend(consensusTimestamp, body.getFileAppend(), transactionType);
             } else if (body.hasFileCreate()) {
-                insertFileData(consensusNs, Utility.toBytes(body.getFileCreate().getContents()),
+                insertFileData(consensusTimestamp, Utility.toBytes(body.getFileCreate().getContents()),
                         txRecord.getReceipt().getFileID(), transactionType);
             } else if (body.hasFileUpdate()) {
-                insertFileUpdate(consensusNs, body.getFileUpdate(), transactionType);
+                insertFileUpdate(consensusTimestamp, body.getFileUpdate(), transactionType);
             } else if (body.hasTokenAssociate()) {
                 insertTokenAssociate(recordItem);
             } else if (body.hasTokenBurn()) {
@@ -251,24 +251,24 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onEntityId(payerAccount);
 
         // build transaction
-        Transaction tx = new Transaction();
-        tx.setChargedTxFee(txRecord.getTransactionFee());
-        tx.setConsensusTimestamp(consensusTimestamp);
-        tx.setInitialBalance(0L);
-        tx.setMaxFee(body.getTransactionFee());
-        tx.setMemo(Utility.toBytes(body.getMemoBytes()));
-        tx.setNodeAccountId(nodeAccount);
-        tx.setPayerAccountId(payerAccount);
-        tx.setResult(txRecord.getReceipt().getStatusValue());
-        tx.setScheduled(txRecord.hasScheduleRef());
-        tx.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
+        Transaction transaction = new Transaction();
+        transaction.setChargedTxFee(txRecord.getTransactionFee());
+        transaction.setConsensusTimestamp(consensusTimestamp);
+        transaction.setInitialBalance(0L);
+        transaction.setMaxFee(body.getTransactionFee());
+        transaction.setMemo(Utility.toBytes(body.getMemoBytes()));
+        transaction.setNodeAccountId(nodeAccount);
+        transaction.setPayerAccountId(payerAccount);
+        transaction.setResult(txRecord.getReceipt().getStatusValue());
+        transaction.setScheduled(txRecord.hasScheduleRef());
+        transaction.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
                 recordItem.getTransactionBytes() : null);
-        tx.setTransactionHash(Utility.toBytes(txRecord.getTransactionHash()));
-        tx.setType(recordItem.getTransactionType());
-        tx.setValidDurationSeconds(validDurationSeconds);
-        tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        transaction.setTransactionHash(Utility.toBytes(txRecord.getTransactionHash()));
+        transaction.setType(recordItem.getTransactionType());
+        transaction.setValidDurationSeconds(validDurationSeconds);
+        transaction.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
 
-        return tx;
+        return transaction;
     }
 
     /**

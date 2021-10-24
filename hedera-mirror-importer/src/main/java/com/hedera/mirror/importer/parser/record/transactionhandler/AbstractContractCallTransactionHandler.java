@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
 
@@ -43,7 +44,8 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
     protected final EntityListener entityListener;
 
-    protected final void onContractResult(RecordItem recordItem, ContractResult contractResult,
+    protected final void onContractResult(RecordItem recordItem, Supplier<Contract> inheritedContract,
+                                          ContractResult contractResult,
                                           ContractFunctionResult functionResult) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         List<Long> createdContractIds = new ArrayList<>();
@@ -54,11 +56,16 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             createdContractIds.add(contractId.getId());
 
             if (isSuccessful) {
-                Contract contract = contractId.toEntity();
+                Contract contract = inheritedContract.get();
                 contract.setCreatedTimestamp(consensusTimestamp);
                 contract.setDeleted(false);
+                contract.setId(contractId.getId());
                 contract.setModifiedTimestamp(consensusTimestamp);
+                contract.setNum(contractId.getEntityNum());
                 contract.setParentId(contractResult.getContractId());
+                contract.setRealm(contractId.getRealmNum());
+                contract.setShard(contractId.getShardNum());
+                contract.setType(contractId.getType());
                 doUpdateEntity(contract, recordItem);
             }
         }

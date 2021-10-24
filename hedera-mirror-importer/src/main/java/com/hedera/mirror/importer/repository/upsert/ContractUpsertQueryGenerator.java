@@ -48,9 +48,7 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
 
     @Override
     protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
-        if (Contract_.PARENT_ID.equals(attributeName)) {
-            return getFullTableColumnName(PARENT, AbstractEntity_.ID);
-        } else if (attributeType == String.class) {
+        if (attributeType == String.class) {
             return getStringColumnTypeSelect(attributeName);
         } else if (nullableColumns.contains(attributeName)) {
             return getSelectCoalesceQuery(attributeName, null);

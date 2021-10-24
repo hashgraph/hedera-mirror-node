@@ -72,7 +72,8 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
             contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getFunctionParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
 
-            onContractResult(recordItem, contractResult, functionResult);
+            // The upsert logic will load the inherited contract and merge the two
+            onContractResult(recordItem, Contract::new, contractResult, functionResult);
         }
     }
 
