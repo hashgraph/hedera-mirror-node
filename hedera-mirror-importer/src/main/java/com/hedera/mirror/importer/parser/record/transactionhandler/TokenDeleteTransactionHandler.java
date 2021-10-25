@@ -22,18 +22,26 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-public class TokenDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class TokenDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public TokenDeleteTransactionHandler() {
-        super(EntityOperationEnum.DELETE);
+    TokenDeleteTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.TOKENDELETION);
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenDeletion().getToken());
+    }
+
+    @Override
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+        entityListener.onEntity(entity);
     }
 }

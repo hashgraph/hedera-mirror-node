@@ -30,7 +30,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusUpdateTopicTransactionHandler();
+        return new ConsensusUpdateTopicTransactionHandler(entityListener);
     }
 
     @Override

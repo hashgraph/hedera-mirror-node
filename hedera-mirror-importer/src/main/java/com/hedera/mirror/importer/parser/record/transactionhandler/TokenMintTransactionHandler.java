@@ -21,16 +21,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-@AllArgsConstructor
-public class TokenMintTransactionHandler implements TransactionHandler {
+class TokenMintTransactionHandler implements TransactionHandler {
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenMint().getToken());
+    }
+
+    public TransactionTypeEnum getType() {
+        return TransactionTypeEnum.TOKENMINT;
     }
 }

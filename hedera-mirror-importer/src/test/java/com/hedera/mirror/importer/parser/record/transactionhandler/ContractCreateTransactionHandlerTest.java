@@ -20,19 +20,25 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.util.Cloner;
 
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
+    private final Cloner cloner = new Cloner(new ObjectMapper());
+    private final EntityProperties entityProperties = new EntityProperties();
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCreateTransactionHandler();
+        return new ContractCreateTransactionHandler(cloner, entityListener, entityProperties);
     }
 
     @Override
@@ -42,10 +48,9 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Override
-    protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return super.getDefaultTransactionRecord()
-                .setReceipt(TransactionReceipt.newBuilder()
-                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()));
+    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
+        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum)
+                .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build());
     }
 
     @Override

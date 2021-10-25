@@ -20,19 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public CryptoUpdateTransactionHandler() {
-        super(EntityOperationEnum.UPDATE);
+    CryptoUpdateTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.CRYPTOUPDATEACCOUNT);
     }
 
     @Override
@@ -43,37 +44,41 @@ public class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactio
     @Override
     @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        CryptoUpdateTransactionBody txMessage = recordItem.getTransactionBody().getCryptoUpdateAccount();
-        if (txMessage.hasExpirationTime()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+        var transactionBody = recordItem.getTransactionBody().getCryptoUpdateAccount();
+
+        if (transactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        if (txMessage.hasAutoRenewPeriod()) {
-            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+        if (transactionBody.hasExpirationTime()) {
+            entity.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpirationTime()));
         }
 
-        if (txMessage.hasKey()) {
-            entity.setKey(txMessage.getKey().toByteArray());
+        if (transactionBody.hasKey()) {
+            entity.setKey(transactionBody.getKey().toByteArray());
         }
 
-        if (txMessage.hasMaxAutomaticTokenAssociations()) {
-            entity.setMaxAutomaticTokenAssociations(txMessage.getMaxAutomaticTokenAssociations().getValue());
+        if (transactionBody.hasMaxAutomaticTokenAssociations()) {
+            entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations().getValue());
         }
 
-        if (txMessage.hasMemo()) {
-            entity.setMemo(txMessage.getMemo().getValue());
+        if (transactionBody.hasMemo()) {
+            entity.setMemo(transactionBody.getMemo().getValue());
         }
 
-        if (txMessage.hasReceiverSigRequiredWrapper()) {
-            entity.setReceiverSigRequired(txMessage.getReceiverSigRequiredWrapper().getValue());
-        } else if (txMessage.getReceiverSigRequired()) {
+        if (transactionBody.hasProxyAccountID()) {
+            EntityId proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
+            entity.setProxyAccountId(proxyAccountId);
+            entityListener.onEntityId(proxyAccountId);
+        }
+
+        if (transactionBody.hasReceiverSigRequiredWrapper()) {
+            entity.setReceiverSigRequired(transactionBody.getReceiverSigRequiredWrapper().getValue());
+        } else if (transactionBody.getReceiverSigRequired()) {
             // support old transactions
-            entity.setReceiverSigRequired(txMessage.getReceiverSigRequired());
+            entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());
         }
-    }
 
-    @Override
-    protected EntityId getProxyAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoUpdateAccount().getProxyAccountID());
+        entityListener.onEntity(entity);
     }
 }

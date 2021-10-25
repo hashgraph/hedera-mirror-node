@@ -20,19 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public FileUpdateTransactionHandler() {
-        super(EntityOperationEnum.UPDATE);
+    FileUpdateTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.FILEUPDATE);
     }
 
     @Override
@@ -42,17 +43,20 @@ public class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionH
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        FileUpdateTransactionBody txMessage = recordItem.getTransactionBody().getFileUpdate();
-        if (txMessage.hasExpirationTime()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+        var transactionBody = recordItem.getTransactionBody().getFileUpdate();
+
+        if (transactionBody.hasExpirationTime()) {
+            entity.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpirationTime()));
         }
 
-        if (txMessage.hasKeys()) {
-            entity.setKey(txMessage.getKeys().toByteArray());
+        if (transactionBody.hasKeys()) {
+            entity.setKey(transactionBody.getKeys().toByteArray());
         }
 
-        if (txMessage.hasMemo()) {
-            entity.setMemo(txMessage.getMemo().getValue());
+        if (transactionBody.hasMemo()) {
+            entity.setMemo(transactionBody.getMemo().getValue());
         }
+
+        entityListener.onEntity(entity);
     }
 }

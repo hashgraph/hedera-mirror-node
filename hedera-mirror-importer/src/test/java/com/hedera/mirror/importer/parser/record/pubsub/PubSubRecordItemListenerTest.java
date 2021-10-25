@@ -106,11 +106,44 @@ class PubSubRecordItemListenerTest {
     private PubSubProperties pubSubProperties;
     private PubSubRecordItemListener pubSubRecordItemListener;
 
+    private static AccountAmount buildAccountAmount(long accountNum, long amount) {
+        return AccountAmount.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(accountNum).build())
+                .setAmount(amount)
+                .build();
+    }
+
+    private static Transaction buildTransaction(Consumer<TransactionBody.Builder> transactionModifier) {
+        TransactionBody.Builder transactionBodyBuilder = TransactionBody.newBuilder();
+        transactionModifier.accept(transactionBodyBuilder);
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(transactionBodyBuilder.build().toByteString())
+                                .setSigMap(SignatureMap.getDefaultInstance())
+                                .build().toByteString()
+                )
+                .build();
+    }
+
+    private static PubSubMessage.Transaction buildPubSubTransaction(Transaction transaction) throws InvalidProtocolBufferException {
+        return new PubSubMessage.Transaction(TransactionBody.parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes())
+                .getBodyBytes()), SignatureMap.getDefaultInstance());
+    }
+
+    private static NodeAddressBook addressBook(int size) {
+        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+        for (int i = 0; i < size; ++i) {
+            builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
+        }
+        return builder.build();
+    }
+
     @BeforeEach
     void beforeEach() {
         TransactionHandlerFactory transactionHandlerFactory = mock(TransactionHandlerFactory.class);
         pubSubProperties = new PubSubProperties();
-        when(transactionHandlerFactory.create(any())).thenReturn(transactionHandler);
+        when(transactionHandlerFactory.get(any())).thenReturn(transactionHandler);
         doReturn(true).when(addressBookService).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
         pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, addressBookService,
                 fileDataRepository, nonFeeTransferExtractionStrategy, transactionHandlerFactory);
@@ -257,37 +290,5 @@ class PubSubRecordItemListenerTest {
                 .hasSize(3) // +2 are default attributes 'id' and 'timestamp' (publish)
                 .containsEntry("consensusTimestamp", CONSENSUS_TIMESTAMP);
         return actual;
-    }
-
-    private static AccountAmount buildAccountAmount(long accountNum, long amount) {
-        return AccountAmount.newBuilder()
-                .setAccountID(AccountID.newBuilder().setAccountNum(accountNum).build())
-                .setAmount(amount)
-                .build();
-    }
-
-    private static Transaction buildTransaction(Consumer<TransactionBody.Builder> transactionModifier) {
-        TransactionBody.Builder transactionBodyBuilder = TransactionBody.newBuilder();
-        transactionModifier.accept(transactionBodyBuilder);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(transactionBodyBuilder.build().toByteString())
-                                .setSigMap(SignatureMap.getDefaultInstance())
-                                .build().toByteString()
-                )
-                .build();
-    }
-
-    private static PubSubMessage.Transaction buildPubSubTransaction(Transaction transaction) throws InvalidProtocolBufferException {
-        return new PubSubMessage.Transaction(TransactionBody.parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes()).getBodyBytes()), SignatureMap.getDefaultInstance());
-    }
-
-    private static NodeAddressBook addressBook(int size) {
-        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
-        for (int i = 0; i < size; ++i) {
-            builder.addNodeAddress(NodeAddress.newBuilder().setPortno(i).build());
-        }
-        return builder.build();
     }
 }

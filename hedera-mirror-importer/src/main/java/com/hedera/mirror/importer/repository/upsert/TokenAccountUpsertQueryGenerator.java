@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
+import java.lang.reflect.Type;
 import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
@@ -62,10 +63,10 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
         String finalTableTokenIdColumn = getFullFinalTableColumnName(TokenAccountId_.TOKEN_ID);
         String finalTableModifiedTimestampColumn = getFullFinalTableColumnName(TokenAccountId_.MODIFIED_TIMESTAMP);
         return String.format("with %s as (" +
-                "  select distinct on (%s, %s) %s.*" +
-                "  from %s" +
-                "  join %s on %s = %s and %s = %s" +
-                "  order by %s, %s, %s desc)",
+                        "  select distinct on (%s, %s) %s.*" +
+                        "  from %s" +
+                        "  join %s on %s = %s and %s = %s" +
+                        "  order by %s, %s, %s desc)",
                 CTE_NAME,
                 finalTableAccountIdColumn, finalTableTokenIdColumn, finalTableName,
                 finalTableName,
@@ -97,7 +98,7 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
     }
 
     @Override
-    protected String getAttributeSelectQuery(String attributeName) {
+    protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
         if (attributeName.equalsIgnoreCase(TokenAccount_.FREEZE_STATUS)) {
             String freezeStatusInsert = "case when %s is not null then %s" +
                     "  when %s is not null then" +
@@ -142,7 +143,7 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
                     getFullTableColumnName(CTE_NAME, attributeName));
         }
 
-        return null;
+        return super.getAttributeSelectQuery(attributeType, attributeName);
     }
 
     @Override

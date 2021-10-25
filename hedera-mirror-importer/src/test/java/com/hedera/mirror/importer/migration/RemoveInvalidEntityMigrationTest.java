@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
@@ -306,7 +305,12 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
      * @param entityId entityId domain
      */
     private void insertEntity(EntityId entityId) {
-        Entity entity = entityId.toEntity();
+        Entity entity = new Entity();
+        entity.setId(entityId.getId());
+        entity.setNum(entityId.getEntityNum());
+        entity.setRealm(entityId.getRealmNum());
+        entity.setShard(entityId.getShardNum());
+        entity.setType(entityId.getType());
         entity.setMemo("abc" + (char) 0);
         entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityTypeEnum.ACCOUNT));
         entity.setProxyAccountId(EntityId.of("4.5.6", EntityTypeEnum.ACCOUNT));
@@ -341,27 +345,23 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 "select * from t_entities where id = ?",
                 new Object[] {id},
                 (rs, rowNum) -> {
-                    Entity entity = EntityIdEndec.decode(
-                            rs.getLong("id"),
-                            getEntityTypeEnumFromInt(rs.getInt("fk_entity_type_id")))
-                            .toEntity();
+                    Entity entity = new Entity();
                     entity.setAutoRenewAccountId(EntityIdEndec
                             .decode(rs.getLong("auto_renew_account_id"), EntityTypeEnum.ACCOUNT));
                     entity.setAutoRenewPeriod(rs.getLong("auto_renew_period"));
                     entity.setDeleted(rs.getBoolean("deleted"));
                     entity.setExpirationTimestamp(rs.getLong("exp_time_ns"));
+                    entity.setId(rs.getLong("id"));
                     entity.setKey(rs.getBytes("key"));
                     entity.setMemo(rs.getString("memo"));
+                    entity.setNum(rs.getLong("entity_num"));
+                    entity.setRealm(rs.getLong("entity_realm"));
+                    entity.setShard(rs.getLong("entity_shard"));
                     entity.setProxyAccountId(EntityIdEndec
                             .decode(rs.getLong("proxy_account_id"), EntityTypeEnum.ACCOUNT));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
+                    entity.setType(rs.getInt("fk_entity_type_id"));
                     return entity;
                 });
-    }
-
-    private EntityTypeEnum getEntityTypeEnumFromInt(int entityInt) {
-        return Arrays.stream(EntityTypeEnum.values())
-                .filter(p -> p.getId() == entityInt)
-                .findFirst().get();
     }
 }

@@ -22,21 +22,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Arrays;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
-    private final KeyList KEY_LIST = KeyList.newBuilder().addAllKeys(
-            Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
-            .build();
-
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new FileUpdateTransactionHandler();
+        return new FileUpdateTransactionHandler(entityListener);
     }
 
     @Override

@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -52,10 +51,6 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {"truncate table transaction restart " +
-        "identity cascade"})
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = {"truncate table transaction restart " +
-        "identity cascade"})
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.35.5")
 class CleanupEntityMigrationTest extends IntegrationTest {
@@ -388,7 +383,12 @@ class CleanupEntityMigrationTest extends IntegrationTest {
     }
 
     private Entity entity(long id, EntityTypeEnum entityType) {
-        Entity entity = EntityIdEndec.decode(id, entityType).toEntity();
+        Entity entity = new Entity();
+        entity.setId(id);
+        entity.setNum(id);
+        entity.setRealm(0L);
+        entity.setShard(0L);
+        entity.setType(entityType.getId());
         entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityTypeEnum.ACCOUNT));
         entity.setProxyAccountId(EntityId.of("4.5.6", EntityTypeEnum.ACCOUNT));
         return entity;
@@ -411,7 +411,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                                 " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         entity.getAutoRenewAccountId().getId(),
                         entity.getAutoRenewPeriod(),
-                        entity.getDeleted() == null ? false : entity.getDeleted(),
+                        entity.getDeleted() != null && entity.getDeleted(),
                         entity.getNum(),
                         entity.getRealm(),
                         entity.getShard(),

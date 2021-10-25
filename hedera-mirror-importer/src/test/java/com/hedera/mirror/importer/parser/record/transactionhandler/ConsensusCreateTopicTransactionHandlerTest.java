@@ -21,10 +21,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
@@ -32,7 +32,7 @@ class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHand
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusCreateTopicTransactionHandler();
+        return new ConsensusCreateTopicTransactionHandler(entityListener);
     }
 
     @Override
@@ -42,10 +42,9 @@ class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHand
     }
 
     @Override
-    protected TransactionRecord.Builder getDefaultTransactionRecord() {
-        return super.getDefaultTransactionRecord()
-                .setReceipt(TransactionReceipt.newBuilder()
-                        .setTopicID(TopicID.newBuilder().setTopicNum(DEFAULT_ENTITY_NUM).build()));
+    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
+        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum)
+                .setTopicID(TopicID.newBuilder().setTopicNum(DEFAULT_ENTITY_NUM));
     }
 
     @Override

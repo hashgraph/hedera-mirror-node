@@ -20,19 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class FileCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class FileCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public FileCreateTransactionHandler() {
-        super(EntityOperationEnum.CREATE);
+    FileCreateTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.FILECREATE);
     }
 
     @Override
@@ -42,15 +43,17 @@ public class FileCreateTransactionHandler extends AbstractEntityCrudTransactionH
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        FileCreateTransactionBody txMessage = recordItem.getTransactionBody().getFileCreate();
-        if (txMessage.hasExpirationTime()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+        var transactionBody = recordItem.getTransactionBody().getFileCreate();
+
+        if (transactionBody.hasExpirationTime()) {
+            entity.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpirationTime()));
         }
 
-        if (txMessage.hasKeys()) {
-            entity.setKey(txMessage.getKeys().toByteArray());
+        if (transactionBody.hasKeys()) {
+            entity.setKey(transactionBody.getKeys().toByteArray());
         }
 
-        entity.setMemo(txMessage.getMemo());
+        entity.setMemo(transactionBody.getMemo());
+        entityListener.onEntity(entity);
     }
 }

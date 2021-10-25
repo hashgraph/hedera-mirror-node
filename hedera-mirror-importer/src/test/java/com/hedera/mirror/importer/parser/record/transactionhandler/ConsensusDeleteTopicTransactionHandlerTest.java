@@ -30,7 +30,7 @@ class ConsensusDeleteTopicTransactionHandlerTest extends AbstractDeleteOrUndelet
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusDeleteTopicTransactionHandler();
+        return new ConsensusDeleteTopicTransactionHandler(entityListener);
     }
 
     @Override
