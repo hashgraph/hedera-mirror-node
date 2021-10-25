@@ -115,13 +115,15 @@ class UtilityTest {
                 .addTopic(ByteString.copyFrom(new byte[] {0, 127}))
                 .addTopic(ByteString.copyFrom(new byte[] {-1}))
                 .addTopic(ByteString.copyFrom(new byte[] {0}))
+                .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0}))
                 .addTopic(ByteString.copyFrom(new byte[0]))
                 .build();
         assertThat(Utility.getTopic(contractLoginfo, 0)).isEqualTo("01");
         assertThat(Utility.getTopic(contractLoginfo, 1)).isEqualTo("7f");
         assertThat(Utility.getTopic(contractLoginfo, 2)).isEqualTo("ff");
         assertThat(Utility.getTopic(contractLoginfo, 3)).isEqualTo("00");
-        assertThat(Utility.getTopic(contractLoginfo, 4)).isEmpty();
+        assertThat(Utility.getTopic(contractLoginfo, 4)).isEqualTo("00");
+        assertThat(Utility.getTopic(contractLoginfo, 5)).isEmpty();
         assertThat(Utility.getTopic(contractLoginfo, 999)).isNull();
     }
 

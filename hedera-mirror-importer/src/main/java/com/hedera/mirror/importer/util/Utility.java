@@ -228,7 +228,7 @@ public class Utility {
         byte[] topic = Utility.toBytes(byteString);
         int firstNonZero = 0;
         for (int i = 0; i < topic.length; i++) {
-            if (topic[i] != 0) {
+            if (topic[i] != 0 || i == topic.length - 1) {
                 firstNonZero = i;
                 break;
             }
