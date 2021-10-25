@@ -12,6 +12,10 @@ update t_transaction_types
     where entity_type = 1;
 
 update t_transaction_types
+    set entity_type_enum = 'ACCOUNT'
+    where entity_type = 1;
+
+update t_transaction_types
     set entity_type_enum = 'CONTRACT'
     where entity_type = 2;
 
@@ -71,6 +75,9 @@ alter table entity
 alter table entity
     rename column type_enum TO type;
 
+alter table entity
+    alter column type set not null;
+
 -- Alter entity_history to use the new enum entity_type
 alter table entity_history
     add column type_enum entity_type null;
@@ -105,6 +112,10 @@ alter table entity_history
 alter table entity_history
     rename column type_enum TO type;
 
+alter table entity_history
+    alter column type set not null;
+
+
 -- Alter contract to use the new enum entity_type
 alter table contract
     add column type_enum entity_type null;
@@ -139,6 +150,9 @@ alter table contract
 alter table contract
     rename column type_enum TO type;
 
+alter table contract
+    alter column type set not null;
+
 -- Alter contract to use the new enum entity_type
 alter table contract_history
     add column type_enum entity_type null;
@@ -172,6 +186,10 @@ alter table contract_history
 
 alter table contract_history
     rename column type_enum TO type;
+
+alter table contract
+    alter column type set not null;
+
 
 -- Drop t_entity_types
 drop table t_entity_types;
