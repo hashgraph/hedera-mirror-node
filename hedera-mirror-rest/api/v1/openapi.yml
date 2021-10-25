@@ -7,10 +7,11 @@ paths:
       operationId: listAccounts
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/balanceQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
+        - $ref: '#/components/parameters/balanceQueryParam'
+        - $ref: '#/components/parameters/excludeBalanceQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
       responses:
         200:
           description: OK
@@ -1555,6 +1556,14 @@ components:
       schema:
         type: string
         format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
+    excludeBalanceQueryParam:
+      name: excluebalance
+      in: query
+      description: Whether to exclude balance information or not
+      example: true
+      schema:
+        type: boolean
+        default: false
     limitQueryParam:
       name: limit
       in: query

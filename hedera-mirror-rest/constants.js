@@ -28,6 +28,7 @@ const filterKeys = {
   CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
   ENTITY_PUBLICKEY: 'publickey',
+  EXCLUDE_BALANCE: 'excludebalance',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
@@ -114,6 +115,8 @@ const tokenTypeFilter = {
   NON_FUNGIBLE_UNIQUE: 'non_fungible_unique',
 };
 
+const zeroRandomPageCostQueryHint = 'set local random_page_cost = 0';
+
 class StatusCode {
   constructor(code, message) {
     this.code = code;
@@ -157,4 +160,5 @@ module.exports = {
   tokenTypeFilter,
   transactionColumns,
   transactionResultFilter,
+  zeroRandomPageCostQueryHint,
 };

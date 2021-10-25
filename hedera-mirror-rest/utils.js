@@ -177,6 +177,9 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.EXCLUDE_BALANCE:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
     case constants.filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits
       ret = isValidLimitNum(val);
@@ -917,11 +920,31 @@ const ipMask = (ip) => {
  */
 const getPoolClass = (mock = false) => {
   const Pool = mock ? require('./__tests__/mockpool') : require('pg').Pool;
-  Pool.prototype.queryQuietly = async function (query, ...params) {
+  Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
+    let client;
+    let result;
+    params = Array.isArray(params) ? params : [params];
     try {
-      return await this.query(query, params);
+      if (!preQueryHint) {
+        result = await this.query(query, params);
+      } else {
+        client = await this.connect();
+        await client.query('begin');
+        await client.query(preQueryHint);
+        result = await client.query(query, params);
+        await client.query('commit');
+      }
+
+      return result;
     } catch (err) {
+      if (client !== undefined) {
+        await client.query('rollback');
+      }
       throw new DbError(err.message);
+    } finally {
+      if (client !== undefined) {
+        client.release();
+      }
     }
   };
 
@@ -955,6 +978,9 @@ module.exports = {
   isValidNum,
   isValidTimestampParam,
   isValidTransactionType,
+  nsToSecNs,
+  nsToSecNsWithHyphen,
+  opsMap,
   parseCreditDebitParams,
   parseLimitAndOrderParams,
   parseBalanceQueryParam,
@@ -966,8 +992,7 @@ module.exports = {
   parseResultParams,
   parseBooleanValue,
   parseTimestampParam,
-  nsToSecNs,
-  nsToSecNsWithHyphen,
+  parseTokenBalances,
   randomString,
   returnEntriesLimit,
   secNsToNs,
@@ -975,8 +1000,6 @@ module.exports = {
   toHexString,
   TRANSACTION_RESULT_SUCCESS,
   validateReq,
-  parseTokenBalances,
-  opsMap,
 };
 
 if (isTestEnv()) {

@@ -199,7 +199,7 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getScheduleById query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
   logger.debug(`getScheduleEntities returning ${rows.length} entries`);
 
   return rows.map((m) => formatScheduleRow(m));

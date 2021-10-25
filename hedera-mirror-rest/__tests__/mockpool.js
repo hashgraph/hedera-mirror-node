@@ -337,13 +337,12 @@ class Pool {
       const row = {};
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
-      row.consensus_timestamp = this.toNs(this.timeNow);
-      row.entity_id = this.getAccountId(accountNum, i);
-
-      row.expiration_timestamp = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;
-      row.key = Buffer.from(`Key for row ${i}`);
+      row.consensus_timestamp = this.toNs(this.timeNow);
       row.deleted = false;
+      row.expiration_timestamp = this.toNs(this.timeNow + 1000);
+      row.id = this.getAccountId(accountNum, i);
+      row.key = Buffer.from(`Key for row ${i}`);
       row.type = 'Account';
 
       rows.push(row);
