@@ -102,7 +102,7 @@ comment on table contract is 'Contract entity';
 -- contract_history
 create table if not exists contract_history
 (
-    like contract
+    like contract including defaults
 );
 comment on table contract_history is 'Contract entity historical state';
 
@@ -190,7 +190,7 @@ comment on table entity is 'Network entity with state';
 
 create table if not exists entity_history
 (
-    like entity
+    like entity including defaults
 );
 comment on table entity_history is 'Network entity historical state';
 

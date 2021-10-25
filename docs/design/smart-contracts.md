@@ -67,7 +67,7 @@ history table after setting its timestamp range to end (exclusively) at the new 
 ```sql
 create table if not exists contract_history
 (
-  like contract,
+  like contract including defaults,
   primary key (id, timestamp_range)
 );
 

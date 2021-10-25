@@ -1,10 +1,17 @@
 -- Fixes up the smart contract tables after normalizing the contract result raw protobuf into discrete columns
 
 alter table if exists contract
-    add column if not exists parent_id bigint null;
+    add column if not exists parent_id bigint null,
+    alter column memo set default '';
 
 alter table if exists contract_history
-    add column if not exists parent_id bigint null;
+    add column if not exists parent_id bigint null,
+    alter column memo set default '',
+    alter column type set default 2;
+
+alter table if exists entity_history
+    add column if not exists parent_id bigint null,
+    alter column memo set default '';
 
 create temp table if not exists contract_transaction on commit drop as
 select consensus_timestamp, entity_id, initial_balance, type
