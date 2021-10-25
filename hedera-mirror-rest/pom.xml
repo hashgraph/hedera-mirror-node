@@ -19,7 +19,7 @@
         <sonar.sources>${project.basedir}</sonar.sources>
         <sonar.javascript.lcov.reportPaths>${project.basedir}/coverage/lcov.info</sonar.javascript.lcov.reportPaths>
         <frontend-maven-plugin.version>1.12.0</frontend-maven-plugin.version>
-        <openapi-generator.version>5.2.1</openapi-generator.version>
+        <openapi-generator.version>5.3.0</openapi-generator.version>
     </properties>
 
     <build>
