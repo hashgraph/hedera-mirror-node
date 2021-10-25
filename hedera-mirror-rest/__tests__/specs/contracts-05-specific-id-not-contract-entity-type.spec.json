@@ -1,5 +1,5 @@
 {
-  "description": "Contract api calls for a specific contract using contract id, matching type found",
+  "description": "Contract api calls for a specific contract using contract id, matching type not found",
   "setup": {
     "accounts": [
       {

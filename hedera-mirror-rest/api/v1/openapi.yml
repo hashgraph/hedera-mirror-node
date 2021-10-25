@@ -1146,7 +1146,7 @@ components:
           example: "3q2+7wABAQMLqgMMwQ=="
     SolidityAddress:
       type: string
-      description: A network entity encoded as a solidity address
+      description: A network entity encoded as a solidity address in hex
       format: binary
       minLength: 42
       maxLength: 42

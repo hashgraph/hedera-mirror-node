@@ -37,13 +37,9 @@ class FileData {
   static tableName = 'file_data';
 
   static FILE_DATA = 'file_data';
-  static FILE_DATA_FULL_NAME = this.getFullName(FileData.FILE_DATA);
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static CONSENSUS_TIMESTAMP_FULL_NAME = this.getFullName(FileData.CONSENSUS_TIMESTAMP);
   static ENTITY_ID = 'entity_id';
-  static ENTITY_ID_FULL_NAME = this.getFullName(FileData.ENTITY_ID);
   static TRANSACTION_TYPE = 'transaction_type';
-  static TRANSACTION_TYPE_FULL_NAME = this.getFullName(FileData.TRANSACTION_TYPE);
 
   /**
    * Gets full column name with table alias prepended.

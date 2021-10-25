@@ -48,7 +48,7 @@ class ContractViewModel {
       solidity_address: contractId.toSolidityAddress(),
       timestamp: {
         from: utils.nsToSecNs(contract.timestampRange.begin),
-        to: contract.timestampRange.end && utils.nsToSecNs(contract.timestampRange.end),
+        to: utils.nsToSecNs(contract.timestampRange.end),
       },
     });
 
