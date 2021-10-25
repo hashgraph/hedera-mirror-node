@@ -32,7 +32,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 @Data
-@ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity")
 public class EntityProperties {
 

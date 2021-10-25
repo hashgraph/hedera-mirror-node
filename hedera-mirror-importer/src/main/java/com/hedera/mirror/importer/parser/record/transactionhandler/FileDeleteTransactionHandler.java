@@ -24,13 +24,15 @@ import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-public class FileDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class FileDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public FileDeleteTransactionHandler() {
-        super(EntityOperationEnum.DELETE);
+    FileDeleteTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.FILEDELETE);
     }
 
     @Override
@@ -41,5 +43,6 @@ public class FileDeleteTransactionHandler extends AbstractEntityCrudTransactionH
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         entity.setDeleted(true);
+        entityListener.onEntity(entity);
     }
 }

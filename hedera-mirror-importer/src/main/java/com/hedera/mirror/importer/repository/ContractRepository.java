@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-enum EntityOperationEnum {
-    NONE,
-    CREATE,
-    UPDATE,
-    DELETE;
+import org.springframework.data.repository.CrudRepository;
+
+import com.hedera.mirror.importer.domain.Contract;
+
+public interface ContractRepository extends CrudRepository<Contract, Long> {
 }

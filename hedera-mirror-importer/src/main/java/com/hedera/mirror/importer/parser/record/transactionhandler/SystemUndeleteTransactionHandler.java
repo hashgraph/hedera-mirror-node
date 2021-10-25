@@ -23,15 +23,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import javax.inject.Named;
 
+import com.hedera.mirror.importer.domain.AbstractEntity;
+import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-public class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<AbstractEntity> {
 
-    public SystemUndeleteTransactionHandler() {
-        super(EntityOperationEnum.NONE);
+    SystemUndeleteTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.SYSTEMUNDELETE);
     }
 
     @Override
@@ -46,7 +50,11 @@ public class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransact
     }
 
     @Override
-    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        entity.setDeleted(false);
+    protected void doUpdateEntity(AbstractEntity entity, RecordItem recordItem) {
+        if (entity instanceof Contract) {
+            entityListener.onContract((Contract) entity);
+        } else {
+            entityListener.onEntity((Entity) entity);
+        }
     }
 }

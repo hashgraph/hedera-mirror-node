@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.importer.domain.AbstractEntity;
 
 @RequiredArgsConstructor
 abstract class AbstractDeleteOrUndeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -38,15 +38,12 @@ abstract class AbstractDeleteOrUndeleteTransactionHandlerTest extends AbstractTr
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecs() {
         String description = deleteOrUndelete ? "delete entity transaction, expect entity deleted" :
                 "undelete entity transaction, expect entity undeleted";
-        Entity expected = getExpectedEntityWithTimestamp();
+        AbstractEntity expected = getExpectedEntityWithTimestamp();
         expected.setDeleted(deleteOrUndelete);
-        Entity input = new Entity();
-        input.setDeleted(!deleteOrUndelete);
         return List.of(
                 UpdateEntityTestSpec.builder()
                         .description(description)
                         .expected(expected)
-                        .input(input)
                         .recordItem(getRecordItem(getDefaultTransactionBody().build(),
                                 getDefaultTransactionRecord().build()))
                         .build()

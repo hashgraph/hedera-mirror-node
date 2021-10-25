@@ -45,6 +45,12 @@ public class DomainPersister<T, B> {
 
     public T persist() {
         T t = get();
+
+        // The DomainBuilder can be used without an active ApplicationContext. If so, this method shouldn't be used.
+        if (crudRepository == null) {
+            throw new IllegalStateException("Unable to save without a repository");
+        }
+
         log.trace("Inserting {}", t);
         return crudRepository.save(t);
     }

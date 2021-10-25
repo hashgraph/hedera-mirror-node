@@ -105,6 +105,12 @@ class TransactionSignatureTest {
 
     private Set<TransactionTypeEnum> transactionSignatures;
 
+    private static Stream<Arguments> provideDefaultTransactionSignatures() {
+        return new EntityProperties().getPersist().getTransactionSignatures()
+                .stream()
+                .map(Arguments::of);
+    }
+
     @BeforeEach
     void setup() {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
@@ -129,7 +135,7 @@ class TransactionSignatureTest {
         transactionSignatures = entityProperties.getPersist().getTransactionSignatures();
 
         doReturn(ENTITY_ID).when(transactionHandler).getEntity(any(RecordItem.class));
-        doReturn(transactionHandler).when(transactionHandlerFactory).create(any(TransactionBody.class));
+        doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionTypeEnum.class));
     }
 
     @Test
@@ -189,12 +195,6 @@ class TransactionSignatureTest {
         entityRecordItemListener.onItem(recordItem);
 
         assertTransactionSignatures(defaultTransactionSignatures);
-    }
-
-    private static Stream<Arguments> provideDefaultTransactionSignatures() {
-        return new EntityProperties().getPersist().getTransactionSignatures()
-                .stream()
-                .map(Arguments::of);
     }
 
     private SignatureMap.Builder getDefaultSignatureMap() {

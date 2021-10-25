@@ -25,14 +25,16 @@ import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public ConsensusUpdateTopicTransactionHandler() {
-        super(EntityOperationEnum.UPDATE);
+    ConsensusUpdateTopicTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.CONSENSUSUPDATETOPIC);
     }
 
     @Override
@@ -42,27 +44,35 @@ public class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTr
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        var updateTopic = recordItem.getTransactionBody().getConsensusUpdateTopic();
-        if (updateTopic.hasExpirationTime()) {
-            Timestamp expirationTime = updateTopic.getExpirationTime();
+        var transactionBody = recordItem.getTransactionBody().getConsensusUpdateTopic();
+
+        if (transactionBody.hasAutoRenewAccount()) {
+            EntityId autoRenewAccountId = EntityId.of(transactionBody.getAutoRenewAccount());
+            entity.setAutoRenewAccountId(autoRenewAccountId);
+            entityListener.onEntityId(autoRenewAccountId);
+        }
+
+        if (transactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+        }
+
+        if (transactionBody.hasExpirationTime()) {
+            Timestamp expirationTime = transactionBody.getExpirationTime();
             entity.setExpirationTimestamp(Utility.timestampInNanosMax(expirationTime));
         }
-        if (updateTopic.hasAutoRenewPeriod()) {
-            entity.setAutoRenewPeriod(updateTopic.getAutoRenewPeriod().getSeconds());
-        }
-        if (updateTopic.hasAdminKey()) {
-            entity.setKey(updateTopic.getAdminKey().toByteArray());
-        }
-        if (updateTopic.hasSubmitKey()) {
-            entity.setSubmitKey(updateTopic.getSubmitKey().toByteArray());
-        }
-        if (updateTopic.hasMemo()) {
-            entity.setMemo(updateTopic.getMemo().getValue());
-        }
-    }
 
-    @Override
-    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getAutoRenewAccount());
+        if (transactionBody.hasAdminKey()) {
+            entity.setKey(transactionBody.getAdminKey().toByteArray());
+        }
+
+        if (transactionBody.hasMemo()) {
+            entity.setMemo(transactionBody.getMemo().getValue());
+        }
+
+        if (transactionBody.hasSubmitKey()) {
+            entity.setSubmitKey(transactionBody.getSubmitKey().toByteArray());
+        }
+
+        entityListener.onEntity(entity);
     }
 }

@@ -30,7 +30,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoUpdateTransactionHandler();
+        return new CryptoUpdateTransactionHandler(entityListener);
     }
 
     @Override

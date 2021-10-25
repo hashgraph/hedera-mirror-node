@@ -28,6 +28,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.importer.domain.ContractLog;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.CustomFee;
@@ -65,6 +67,16 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
         onEach(EntityListener::onAssessedCustomFee, assessedCustomFee);
+    }
+
+    @Override
+    public void onContract(Contract contract) throws ImporterException {
+        onEach(EntityListener::onContract, contract);
+    }
+
+    @Override
+    public void onContractLog(ContractLog contractLog) throws ImporterException {
+        onEach(EntityListener::onContractLog, contractLog);
     }
 
     @Override

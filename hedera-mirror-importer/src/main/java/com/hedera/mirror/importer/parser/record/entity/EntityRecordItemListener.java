@@ -23,15 +23,12 @@ package com.hedera.mirror.importer.parser.record.entity;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -64,10 +61,8 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
-import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.CustomFee;
-import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
@@ -129,98 +124,77 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionFilter = commonParserProperties.getFilter();
     }
 
-    public static boolean isSuccessful(TransactionRecord transactionRecord) {
-        return ResponseCodeEnum.SUCCESS == transactionRecord.getReceipt().getStatus();
-    }
-
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getRecord();
         TransactionBody body = recordItem.getTransactionBody();
-        TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
+        int transactionType = recordItem.getTransactionType();
+        TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(transactionType);
+        TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionTypeEnum);
 
-        long consensusNs = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
+        long consensusTimestamp = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId;
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusNs, e.getMessage());
+            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
             entityId = null;
         }
 
-        int transactionType = recordItem.getTransactionType();
-        TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(transactionType);
-        log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusNs, entityId);
+        log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusTimestamp, entityId);
 
         // to:do - exclude Freeze from Filter transaction type
-
         TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
         if (!transactionFilter.test(transactionFilterFields)) {
             log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
-                    consensusNs, transactionTypeEnum, entityId);
+                    consensusTimestamp, transactionTypeEnum, entityId);
             return;
         }
 
-        boolean isSuccessful = isSuccessful(txRecord);
-        Transaction tx = buildTransaction(consensusNs, recordItem);
-        transactionHandler.updateTransaction(tx, recordItem);
-        tx.setEntityId(entityId);
+        Transaction transaction = buildTransaction(consensusTimestamp, recordItem);
+        transaction.setEntityId(entityId);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            if (body.hasCryptoCreateAccount() && isSuccessful) {
-                insertCryptoCreateTransferList(consensusNs, txRecord, body);
+            if (body.hasCryptoCreateAccount() && recordItem.isSuccessful()) {
+                insertCryptoCreateTransferList(consensusTimestamp, txRecord, body);
             } else {
-                insertTransferList(consensusNs, txRecord.getTransferList());
+                insertTransferList(consensusTimestamp, txRecord.getTransferList());
             }
-        }
-
-        // Insert contract results even for failed transactions since they could fail during execution and we want to
-        // show the gas used and call result.
-        if (body.hasContractCall()) {
-            insertContractCall(consensusNs, body.getContractCall(), txRecord);
-        } else if (body.hasContractCreateInstance()) {
-            insertContractCreateInstance(consensusNs, body.getContractCreateInstance(), txRecord);
         }
 
         // handle scheduled transaction, even on failure
-        if (tx.isScheduled()) {
+        if (transaction.isScheduled()) {
             onScheduledTransaction(recordItem);
         }
 
-        if (isSuccessful) {
-            if (!EntityId.isEmpty(entityId)) {
-                // Only insert entityId on successful transaction, both create and update transactions update entities
-                if (transactionHandler.updatesEntity()) {
-                    insertEntityCreateOrUpdate(recordItem, transactionHandler, entityId);
-                } else {
-                    // Non null entityIds can be retrieved from transactionBody which may not yet exist on network.
-                    // entityIds from successful transactions are guaranteed to be valid entities on network
-                    // (validated to exist in pre-consensus checks).
-                    entityListener.onEntity(entityId.toEntity());
-                }
-            }
+        if (recordItem.isSuccessful()) {
+            // Non null entityIds can be retrieved from transactionBody which may not yet exist on network.
+            // entityIds from successful transactions are guaranteed to be valid entities on network
+            // (validated to exist in pre-consensus checks).
+            entityListener.onEntityId(entityId);
 
             if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
                 insertTransactionSignatures(
-                        tx.getEntityId(),
+                        transaction.getEntityId(),
                         recordItem.getConsensusTimestamp(),
                         recordItem.getSignatureMap().getSigPairList());
             }
 
             // Only add non-fee transfers on success as the data is assured to be valid
-            processNonFeeTransfers(consensusNs, body, txRecord);
+            processNonFeeTransfers(consensusTimestamp, body, txRecord);
 
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
             } else if (body.hasCryptoAddLiveHash()) {
-                insertCryptoAddLiveHash(consensusNs, body.getCryptoAddLiveHash());
+                insertCryptoAddLiveHash(consensusTimestamp, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
-                insertFileAppend(consensusNs, body.getFileAppend(), transactionType);
+                insertFileAppend(consensusTimestamp, body.getFileAppend(), transactionType);
             } else if (body.hasFileCreate()) {
-                insertFileData(consensusNs, Utility.toBytes(body.getFileCreate().getContents()),
+                insertFileData(consensusTimestamp, Utility.toBytes(body.getFileCreate().getContents()),
                         txRecord.getReceipt().getFileID(), transactionType);
             } else if (body.hasFileUpdate()) {
-                insertFileUpdate(consensusNs, body.getFileUpdate(), transactionType);
+                insertFileUpdate(consensusTimestamp, body.getFileUpdate(), transactionType);
             } else if (body.hasTokenAssociate()) {
                 insertTokenAssociate(recordItem);
             } else if (body.hasTokenBurn()) {
@@ -259,8 +233,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
         }
 
-        entityListener.onTransaction(tx);
-        log.debug("Storing transaction: {}", tx);
+        entityListener.onTransaction(transaction);
+        log.debug("Storing transaction: {}", transaction);
     }
 
     private Transaction buildTransaction(long consensusTimestamp, RecordItem recordItem) {
@@ -277,24 +251,24 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onEntityId(payerAccount);
 
         // build transaction
-        Transaction tx = new Transaction();
-        tx.setChargedTxFee(txRecord.getTransactionFee());
-        tx.setConsensusTimestamp(consensusTimestamp);
-        tx.setInitialBalance(0L);
-        tx.setMaxFee(body.getTransactionFee());
-        tx.setMemo(Utility.toBytes(body.getMemoBytes()));
-        tx.setNodeAccountId(nodeAccount);
-        tx.setPayerAccountId(payerAccount);
-        tx.setResult(txRecord.getReceipt().getStatusValue());
-        tx.setScheduled(txRecord.hasScheduleRef());
-        tx.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
+        Transaction transaction = new Transaction();
+        transaction.setChargedTxFee(txRecord.getTransactionFee());
+        transaction.setConsensusTimestamp(consensusTimestamp);
+        transaction.setInitialBalance(0L);
+        transaction.setMaxFee(body.getTransactionFee());
+        transaction.setMemo(Utility.toBytes(body.getMemoBytes()));
+        transaction.setNodeAccountId(nodeAccount);
+        transaction.setPayerAccountId(payerAccount);
+        transaction.setResult(txRecord.getReceipt().getStatusValue());
+        transaction.setScheduled(txRecord.hasScheduleRef());
+        transaction.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
                 recordItem.getTransactionBytes() : null);
-        tx.setTransactionHash(Utility.toBytes(txRecord.getTransactionHash()));
-        tx.setType(recordItem.getTransactionType());
-        tx.setValidDurationSeconds(validDurationSeconds);
-        tx.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        transaction.setTransactionHash(Utility.toBytes(txRecord.getTransactionHash()));
+        transaction.setType(recordItem.getTransactionType());
+        transaction.setValidDurationSeconds(validDurationSeconds);
+        transaction.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
 
-        return tx;
+        return transaction;
     }
 
     /**
@@ -381,34 +355,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertContractCall(long consensusTimestamp,
-                                    ContractCallTransactionBody transactionBody,
-                                    TransactionRecord transactionRecord) {
-        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
-            ContractResult contractResult = new ContractResult();
-            contractResult.setConsensusTimestamp(consensusTimestamp);
-            contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getFunctionParameters()));
-            contractResult.setFunctionResult(transactionRecord.getContractCallResult().toByteArray());
-            contractResult.setGasLimit(transactionBody.getGas());
-            contractResult.setGasUsed(transactionRecord.getContractCallResult().getGasUsed());
-            entityListener.onContractResult(contractResult);
-        }
-    }
-
-    private void insertContractCreateInstance(long consensusTimestamp,
-                                              ContractCreateTransactionBody transactionBody,
-                                              TransactionRecord transactionRecord) {
-        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
-            ContractResult contractResult = new ContractResult();
-            contractResult.setConsensusTimestamp(consensusTimestamp);
-            contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getConstructorParameters()));
-            contractResult.setFunctionResult(transactionRecord.getContractCreateResult().toByteArray());
-            contractResult.setGasLimit(transactionBody.getGas());
-            contractResult.setGasUsed(transactionRecord.getContractCreateResult().getGasUsed());
-            entityListener.onContractResult(contractResult);
-        }
-    }
-
     private void insertTransferList(long consensusTimestamp, TransferList transferList) {
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
@@ -445,19 +391,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, -initialBalance, payerAccount));
             entityListener.onCryptoTransfer(new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount));
         }
-    }
-
-    /**
-     * @param entityId entity to be updated. Should not be null.
-     * @return entity associated with the transaction. Entity is guaranteed to be persisted in repo.
-     */
-    private void insertEntityCreateOrUpdate(
-            RecordItem recordItem, TransactionHandler transactionHandler, EntityId entityId) {
-        Entity entity = entityId.toEntity();
-        transactionHandler.updateEntity(entity, recordItem);
-        entityListener.onEntityId(entity.getAutoRenewAccountId());
-        entityListener.onEntityId(entity.getProxyAccountId());
-        entityListener.onEntity(entity);
     }
 
     private void insertTokenAssociate(RecordItem recordItem) {

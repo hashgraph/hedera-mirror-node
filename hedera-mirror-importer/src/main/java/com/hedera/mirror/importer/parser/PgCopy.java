@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.csv.CsvGenerator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.CaseFormat;
@@ -52,12 +53,12 @@ import com.hedera.mirror.importer.exception.ParserException;
 @Log4j2
 public class PgCopy<T> {
 
-    private final String sql;
-    private final ObjectWriter writer;
-    private final ParserProperties properties;
     protected final MeterRegistry meterRegistry;
     protected final String tableName;
     protected final Timer insertDurationMetric;
+    private final String sql;
+    private final ObjectWriter writer;
+    private final ParserProperties properties;
 
     public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
         this(entityClass, meterRegistry, properties, entityClass.getSimpleName());
@@ -74,6 +75,7 @@ public class PgCopy<T> {
         module.addSerializer(byte[].class, ByteArrayToHexSerializer.INSTANCE);
         module.addSerializer(EntityId.class, EntityIdSerializer.INSTANCE);
         mapper.registerModule(module);
+        mapper.configure(CsvGenerator.Feature.ALWAYS_QUOTE_EMPTY_STRINGS, true);
         var schema = mapper.schemaFor(entityClass);
         writer = mapper.writer(schema);
         String columnsCsv = Lists.newArrayList(schema.iterator()).stream()
