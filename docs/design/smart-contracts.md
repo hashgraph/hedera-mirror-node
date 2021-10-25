@@ -188,6 +188,7 @@ Optional filters
   "contract_id": "0.0.10001",
   "created_timestamp": "1633466229.96874612",
   "deleted": false,
+  "expiration_timestamp": null,
   "file_id": "0.0.1000",
   "memo": "First contract",
   "obtainer_id": "0.0.101",
