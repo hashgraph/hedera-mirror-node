@@ -690,8 +690,6 @@ components:
               format: binary
               description: The contract bytecode in hex
               example: "0x01021a1fdc9b"
-          required:
-            - bytecode
     ContractsResponse:
       type: object
       properties:
