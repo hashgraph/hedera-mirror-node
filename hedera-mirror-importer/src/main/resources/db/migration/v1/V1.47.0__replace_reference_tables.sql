@@ -1,8 +1,9 @@
--- TODO add comment
+-- Remove t_entity_types and alter tables referencing it to use a entity_type value instead.
 
+-- Create the enum entity_type to replace the foreign key with
 create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 
--- Alter t_transaction_types to use the new enum
+-- Alter t_transaction_types to use the new enum entity_type
 alter table t_transaction_types
     add column entity_type_enum entity_type null;
 
@@ -36,7 +37,7 @@ alter table t_transaction_types
 alter table t_transaction_types
     rename column entity_type_enum TO entity_type;
 
--- Alter entity to use the new enum
+-- Alter entity to use the new enum entity_type
 alter table entity
     add column type_enum entity_type null;
 
@@ -70,7 +71,7 @@ alter table entity
 alter table entity
     rename column type_enum TO type;
 
--- Alter entity_history to use the new enum
+-- Alter entity_history to use the new enum entity_type
 alter table entity_history
     add column type_enum entity_type null;
 
@@ -104,7 +105,7 @@ alter table entity_history
 alter table entity_history
     rename column type_enum TO type;
 
--- Alter contract to use the new enum
+-- Alter contract to use the new enum entity_type
 alter table contract
     add column type_enum entity_type null;
 
@@ -138,7 +139,7 @@ alter table contract
 alter table contract
     rename column type_enum TO type;
 
--- Alter contract to use the new enum
+-- Alter contract to use the new enum entity_type
 alter table contract_history
     add column type_enum entity_type null;
 
@@ -171,3 +172,6 @@ alter table contract_history
 
 alter table contract_history
     rename column type_enum TO type;
+
+-- Drop t_entity_types
+drop table t_entity_types;
