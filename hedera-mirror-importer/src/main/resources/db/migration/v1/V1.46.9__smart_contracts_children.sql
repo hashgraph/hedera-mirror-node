@@ -6,20 +6,27 @@ alter table if exists contract
 alter table if exists contract_history
     add column if not exists parent_id bigint null;
 
--- Update the contract_result.amount from the contract create transaction.initial_balance.
+create temp table if not exists contract_transaction on commit drop as
+select consensus_timestamp, entity_id, initial_balance, type
+from transaction
+where entity_id is not null
+  and type in (7, 8, 9, 22);
+
 -- Update the contract_result.amount from the contract call to clear the previous erroneous value from the last migration.
--- Also update the contract_result.contract_id from transaction.entity_id since it wasn't always populated correctly by main nodes
-with contract_transaction as (
-    select consensus_timestamp, entity_id, initial_balance, type
-    from transaction
-    where type in (7, 8, 9, 22)
-),
-     contract_amount as (
-         update contract_result cr
-             set amount = case when ct.type = 8 then ct.initial_balance else null end
-             from contract_transaction ct
-             where cr.consensus_timestamp = ct.consensus_timestamp and ct.type in (7, 8)
-     )
+update contract_result cr
+set amount = null
+from contract_transaction ct
+where cr.consensus_timestamp = ct.consensus_timestamp
+  and ct.type = 7;
+
+-- Update the contract_result.amount from the contract create transaction.initial_balance.
+update contract_result cr
+set amount = ct.initial_balance
+from contract_transaction ct
+where cr.consensus_timestamp = ct.consensus_timestamp
+  and ct.type = 8;
+
+-- Update the contract_result.contract_id from transaction.entity_id since it wasn't always populated correctly by main nodes
 update contract_result cr
 set contract_id = ct.entity_id
 from contract_transaction ct
