@@ -1,0 +1,108 @@
+{
+  "description": "Contract api calls for a specific contract using contract id and timestamp filter",
+  "extendedDescription": [
+    "The rest api should return the latest contract as the result of using the specific timestamp filter, the bytecode",
+    "of the contract is the concatenated content by the file* transactions at 987654000124000 and 987654999123000"
+  ],
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "id": "8001",
+        "key": [1, 1, 1],
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "id": "8001",
+        "key": [1, 1, 1],
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
+    "filedata": [
+      {
+        "file_data": [12, 11, 10, 9, 8, 7, 255],
+        "consensus_timestamp": "987654000123000",
+        "entity_id": "5001"
+      },
+      {
+        "_description": "another file, not used by any contracts",
+        "file_data": [16, 28],
+        "consensus_timestamp": "987654000123003",
+        "entity_id": "5002"
+      },
+      {
+        "_description": "FileAppend with empty file_data",
+        "file_data": [],
+        "consensus_timestamp": "987654000123005",
+        "entity_id": "5001",
+        "transaction_type": 16
+      },
+      {
+        "file_data": [128],
+        "consensus_timestamp": "987654000123010",
+        "entity_id": "5001",
+        "transaction_type": 16
+      },
+      {
+        "_description": "FileUpdate with empty file_data",
+        "file_data": [],
+        "consensus_timestamp": "987654000123012",
+        "entity_id": "5001",
+        "transaction_type": 19
+      },
+      {
+        "_description": "FileAppend, now the file is complete",
+        "file_data": [127],
+        "consensus_timestamp": "987654000123020",
+        "entity_id": "5001",
+        "transaction_type": 16
+      },
+      {
+        "_description": "FileUpdate overwrites the data",
+        "file_data": [1],
+        "consensus_timestamp": "987654000124000",
+        "entity_id": "5001",
+        "transaction_type": 19
+      },
+      {
+        "_description": "FileAppend, the contract is created with the content [1, 2]",
+        "file_data": [2],
+        "consensus_timestamp": "987654999123000",
+        "entity_id": "5001",
+        "transaction_type": 16
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/8001?timestamp=987654.999123300",
+    "/api/v1/contracts/8001?timestamp=lte:987654.999123300",
+    "/api/v1/contracts/8001?timestamp=lt:987654.999123301",
+    "/api/v1/contracts/8001?timestamp=gt:987654.999123299",
+    "/api/v1/contracts/8001?timestamp=gte:987654.999123300"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "admin_key": {
+      "_type": "ProtobufEncoded",
+      "key": "010101"
+    },
+    "auto_renew_period": null,
+    "bytecode": "0x0102",
+    "contract_id": "0.0.8001",
+    "created_timestamp": "987654.999123200",
+    "deleted": false,
+    "expiration_timestamp": null,
+    "file_id": "0.0.5001",
+    "memo": "contract memo",
+    "obtainer_id": null,
+    "proxy_account_id": null,
+    "solidity_address": "0x0000000000000000000000000000000000001f41",
+    "timestamp": {
+      "from": "987654.999123300",
+      "to": null
+    }
+  }
+}

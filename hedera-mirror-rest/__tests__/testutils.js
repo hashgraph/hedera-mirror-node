@@ -38,6 +38,10 @@ const checkSql = (parsedparams, condition) => {
   return false;
 };
 
+const formatSqlQueryString = (query) => {
+  return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
+};
+
 /**
  * Parse the sql query with positional parameters and an array of corresponding
  * values to extracts the filter clauses of the query (e.g. consensus_timestamp < xyz)
@@ -203,6 +207,7 @@ const validateAccNumInArray = function (responseObjects, potentialValues) {
 module.exports = {
   badParamsList,
   checkSql,
+  formatSqlQueryString,
   parseSqlQueryAndParams,
   testBadParams,
   validateAccNumInArray,
