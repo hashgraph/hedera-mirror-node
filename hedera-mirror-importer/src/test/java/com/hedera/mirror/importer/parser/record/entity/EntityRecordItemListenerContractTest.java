@@ -66,11 +66,9 @@ import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
 
-    private static final ContractID CONTRACT_ID =
-            ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1001).build();
-    private static final ContractID CREATED_CONTRACT_ID =
-            ContractID.newBuilder().setShardNum(0).setRealmNum(0).setContractNum(1002).build();
-    private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1003).build();
+    private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(1001).build();
+    private static final ContractID CREATED_CONTRACT_ID = ContractID.newBuilder().setContractNum(1002).build();
+    private static final FileID FILE_ID = FileID.newBuilder().setFileNum(1003).build();
 
     @Resource
     private ContractLogRepository contractLogRepository;

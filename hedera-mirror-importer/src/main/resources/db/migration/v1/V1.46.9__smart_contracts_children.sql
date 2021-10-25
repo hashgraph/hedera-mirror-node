@@ -14,17 +14,11 @@ with contract_transaction as (
     from transaction
     where type in (7, 8, 9, 22)
 ),
-     contract_create_amount as (
+     contract_amount as (
          update contract_result cr
-             set amount = ct.initial_balance
+             set amount = case when ct.type = 8 then ct.initial_balance else null end
              from contract_transaction ct
-             where cr.consensus_timestamp = ct.consensus_timestamp and ct.type = 8
-     ),
-     contract_call_amount as (
-         update contract_result cr
-             set amount = null
-             from contract_transaction ct
-             where cr.consensus_timestamp = ct.consensus_timestamp and ct.type = 7
+             where cr.consensus_timestamp = ct.consensus_timestamp and ct.type in (7, 8)
      )
 update contract_result cr
 set contract_id = ct.entity_id
@@ -65,8 +59,7 @@ into contract (auto_renew_period,
                public_key,
                realm,
                shard,
-               timestamp_range,
-               type)
+               timestamp_range)
 select auto_renew_period,
        created_timestamp,
        deleted,
@@ -79,8 +72,7 @@ select auto_renew_period,
        public_key,
        realm,
        shard,
-       timestamp_range,
-       2
+       timestamp_range
 from deleted_entity;
 
 -- Upsert the child contract. If the child ID doesn't exist copy the fields from the parent. If it does, update using

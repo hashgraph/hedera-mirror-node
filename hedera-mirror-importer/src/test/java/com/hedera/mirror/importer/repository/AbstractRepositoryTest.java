@@ -33,6 +33,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.util.EntityIdEndec;
 
 public abstract class AbstractRepositoryTest extends IntegrationTest {
 
@@ -47,7 +48,7 @@ public abstract class AbstractRepositoryTest extends IntegrationTest {
         defaultConversionService.addConverter(PGobject.class, Range.class,
                 source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
         defaultConversionService.addConverter(Long.class, EntityId.class,
-                id -> EntityId.of(0L, 0L, id, EntityTypeEnum.ACCOUNT));
+                id -> EntityIdEndec.decode(id, EntityTypeEnum.ACCOUNT));
 
         DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);

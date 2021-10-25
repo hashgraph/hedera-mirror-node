@@ -40,11 +40,11 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
     private final List<String> v2ConflictIdColumns = List.of(AbstractEntity_.ID);
     private final Set<String> nullableColumns = Set.of(AbstractEntity_.AUTO_RENEW_PERIOD,
             AbstractEntity_.CREATED_TIMESTAMP, AbstractEntity_.DELETED, AbstractEntity_.EXPIRATION_TIMESTAMP,
-            Contract_.FILE_ID, AbstractEntity_.KEY, Contract_.OBTAINER_ID, Contract_.PARENT_ID,
+            Contract_.FILE_ID, AbstractEntity_.KEY, Contract_.OBTAINER_ID,
             AbstractEntity_.PUBLIC_KEY, AbstractEntity_.PROXY_ACCOUNT_ID, AbstractEntity_.TIMESTAMP_RANGE);
     private final Set<String> nonUpdatableColumns = Set.of(AbstractEntity_.CREATED_TIMESTAMP, AbstractEntity_.ID,
-            AbstractEntity_.NUM,
-            AbstractEntity_.REALM, AbstractEntity_.SHARD, AbstractEntity_.TYPE);
+            AbstractEntity_.NUM, Contract_.PARENT_ID, AbstractEntity_.REALM, AbstractEntity_.SHARD,
+            AbstractEntity_.TYPE);
 
     @Override
     protected String getAttributeSelectQuery(Type attributeType, String attributeName) {

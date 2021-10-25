@@ -46,7 +46,7 @@ class ContractUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
                 "coalesce(contract_temp.key, parent.key, null), case when contract_temp.memo = '<uuid>' then '' else " +
                 "coalesce(contract_temp.memo, parent.memo, '') end, contract_temp.num, coalesce(contract_temp" +
                 ".obtainer_id, parent.obtainer_id, null), " +
-                "coalesce(contract_temp.parent_id, parent.parent_id, null), coalesce(contract_temp.proxy_account_id, " +
+                "contract_temp.parent_id, coalesce(contract_temp.proxy_account_id, " +
                 "parent.proxy_account_id, null), case when " +
                 "contract_temp.public_key = '<uuid>' then '' else coalesce(contract_temp.public_key, parent" +
                 ".public_key, null) end, contract_temp.realm, contract_temp.shard, " +
@@ -66,7 +66,6 @@ class ContractUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
                 "memo = case when contract_temp.memo = '<uuid>' then '' else " +
                 "coalesce(contract_temp.memo, contract.memo) end, " +
                 "obtainer_id = coalesce(contract_temp.obtainer_id, contract.obtainer_id), " +
-                "parent_id = coalesce(contract_temp.parent_id, contract.parent_id), " +
                 "proxy_account_id = coalesce(contract_temp.proxy_account_id, contract.proxy_account_id), " +
                 "public_key = case when contract_temp.public_key = '<uuid>' then '' else " +
                 "coalesce(contract_temp.public_key, contract.public_key) end, " +

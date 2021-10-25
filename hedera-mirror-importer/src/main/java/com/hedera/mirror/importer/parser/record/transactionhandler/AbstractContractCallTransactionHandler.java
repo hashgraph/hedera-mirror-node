@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.common.collect.Iterables;
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -29,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.ContractLog;
@@ -88,24 +85,14 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
             contractLog.setData(Utility.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
-            contractLog.setTopic0(getTopic(topics, 0));
-            contractLog.setTopic1(getTopic(topics, 1));
-            contractLog.setTopic2(getTopic(topics, 2));
-            contractLog.setTopic3(getTopic(topics, 3));
+            contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
+            contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
+            contractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));
+            contractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
 
             entityListener.onContractLog(contractLog);
         }
     }
 
     protected abstract void doUpdateEntity(Contract contract, RecordItem recordItem);
-
-    private String getTopic(List<ByteString> topics, int index) {
-        ByteString byteString = Iterables.get(topics, index, null);
-
-        if (byteString == null) {
-            return null;
-        }
-
-        return Hex.encodeHexString(Utility.toBytes(byteString));
-    }
 }

@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -34,7 +33,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 import org.flywaydb.core.api.MigrationVersion;
 import org.postgresql.jdbc.PgArray;
 import org.springframework.context.annotation.Lazy;
@@ -128,10 +126,10 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
                 migrationContractLog.setContractId(getContractId(contractLoginfo.getContractID()));
                 migrationContractLog.setData(Utility.toBytes(contractLoginfo.getData()));
                 migrationContractLog.setIndex(index);
-                migrationContractLog.setTopic0(getTopic(topics, 0));
-                migrationContractLog.setTopic1(getTopic(topics, 1));
-                migrationContractLog.setTopic2(getTopic(topics, 2));
-                migrationContractLog.setTopic3(getTopic(topics, 3));
+                migrationContractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
+                migrationContractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
+                migrationContractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));
+                migrationContractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
 
                 insert(migrationContractLog);
             }
@@ -147,16 +145,6 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
     private Long getContractId(ContractID contractID) {
         EntityId entityId = EntityId.of(contractID);
         return !EntityId.isEmpty(entityId) ? entityId.getId() : null;
-    }
-
-    private String getTopic(List<ByteString> topics, int index) {
-        ByteString byteString = Iterables.get(topics, index, null);
-
-        if (byteString == null) {
-            return null;
-        }
-
-        return Hex.encodeHexString(Utility.toBytes(byteString));
     }
 
     private void update(MigrationContractResult contractResult) {

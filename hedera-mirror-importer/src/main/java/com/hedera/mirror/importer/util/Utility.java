@@ -22,12 +22,14 @@ package com.hedera.mirror.importer.util;
 
 import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
 
+import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.TextFormat;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -205,6 +207,34 @@ public class Utility {
         } catch (Exception e) {
             log.error("Error archiving file to {}", destination, e);
         }
+    }
+
+    /**
+     * Retrieves the nth topic from the contract log info or null if there is no such topic at that index. The topic is
+     * returned as a hex-encoded string.
+     *
+     * @param contractLoginfo
+     * @param index
+     * @return a hex encoded topic or null
+     */
+    public static String getTopic(ContractLoginfo contractLoginfo, int index) {
+        var topics = contractLoginfo.getTopicList();
+        ByteString byteString = Iterables.get(topics, index, null);
+
+        if (byteString == null) {
+            return null;
+        }
+
+        byte[] topic = Utility.toBytes(byteString);
+        int firstNonZero = 0;
+        for (int i = 0; i < topic.length; i++) {
+            if (topic[i] != 0) {
+                firstNonZero = i;
+                break;
+            }
+        }
+
+        return new String(Hex.encodeHex(topic, firstNonZero, topic.length - firstNonZero, true));
     }
 
     /**
