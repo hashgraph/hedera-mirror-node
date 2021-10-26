@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -67,12 +68,16 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             }
         }
 
+        TransactionBody body = recordItem.getTransactionBody();
+        var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
+
         contractResult.setBloom(Utility.toBytes(functionResult.getBloom()));
         contractResult.setCallResult(Utility.toBytes(functionResult.getContractCallResult()));
         contractResult.setCreatedContractIds(createdContractIds);
         contractResult.setErrorMessage(functionResult.getErrorMessage());
         contractResult.setFunctionResult(functionResult.toByteArray());
         contractResult.setGasUsed(functionResult.getGasUsed());
+        contractResult.setPayerAccountId(payerAccount);
         entityListener.onContractResult(contractResult);
 
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
@@ -85,6 +90,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
             contractLog.setData(Utility.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
+            contractLog.setPayerAccountId(payerAccount);
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
             contractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));

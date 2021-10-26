@@ -5,6 +5,12 @@
 alter table assessed_custom_fee
     add column if not exists payer_account_id bigint;
 
+alter table contract_result
+    add column if not exists payer_account_id bigint;
+
+alter table contract_log
+    add column if not exists payer_account_id bigint;
+
 alter table crypto_transfer
     add column if not exists payer_account_id bigint;
 
@@ -34,11 +40,20 @@ from transfers_subset t
 where acf.consensus_timestamp = t.consensus_timestamp
   and result = 22;
 
+update contract_log cl
+set payer_account_id = t.payer_account_id
+from transfers_subset t
+where cl.consensus_timestamp = t.consensus_timestamp;
+
+update contract_result cr
+set payer_account_id = t.payer_account_id
+from transfers_subset t
+where cr.consensus_timestamp = t.consensus_timestamp;
+
 update crypto_transfer ct
 set payer_account_id = t.payer_account_id
 from transfers_subset t
-where ct.consensus_timestamp = t.consensus_timestamp
-  and result = 22;
+where ct.consensus_timestamp = t.consensus_timestamp;
 
 update nft_transfer nt
 set payer_account_id = t.payer_account_id
@@ -49,7 +64,8 @@ where nt.consensus_timestamp = t.consensus_timestamp
 update non_fee_transfer nft
 set payer_account_id = t.payer_account_id
 from transfers_subset t
-where nft.consensus_timestamp = t.consensus_timestamp;
+where nft.consensus_timestamp = t.consensus_timestamp
+  and result = 22;
 
 update token_transfer tt
 set payer_account_id = t.payer_account_id
@@ -59,6 +75,10 @@ where tt.consensus_timestamp = t.consensus_timestamp
 
 -- set no nulls
 alter table assessed_custom_fee
+    alter column payer_account_id set not null;
+alter table contract_log
+    alter column payer_account_id set not null;
+alter table contract_result
     alter column payer_account_id set not null;
 alter table crypto_transfer
     alter column payer_account_id set not null;

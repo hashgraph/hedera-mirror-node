@@ -62,13 +62,13 @@ public class DomainBuilder {
 
     @Autowired
     public DomainBuilder(Collection<CrudRepository<?, ?>> crudRepositories) {
-        this.repositories = new HashMap<>();
+        repositories = new HashMap<>();
 
         for (CrudRepository<?, ?> crudRepository : crudRepositories) {
             try {
                 Class<?> domainClass = GenericTypeResolver.resolveTypeArguments(crudRepository.getClass(),
                         CrudRepository.class)[0];
-                this.repositories.put(domainClass, crudRepository);
+                repositories.put(domainClass, crudRepository);
             } catch (Exception e) {
                 log.warn("Unable to map repository {} to domain class", crudRepository.getClass());
             }
@@ -108,6 +108,7 @@ public class DomainBuilder {
                 .contractId(entityId(CONTRACT))
                 .data(bytes(128))
                 .index((int) id())
+                .payerAccountId(entityId(ACCOUNT))
                 .topic0("0x00")
                 .topic1("0x01")
                 .topic2("0x02")
@@ -127,7 +128,8 @@ public class DomainBuilder {
                 .functionParameters(bytes(64))
                 .functionResult(bytes(128))
                 .gasLimit(200L)
-                .gasUsed(100L);
+                .gasUsed(100L)
+                .payerAccountId(entityId(ACCOUNT));
         return new DomainPersister<>(getRepository(ContractResult.class), builder, builder::build);
     }
 
@@ -160,7 +162,7 @@ public class DomainBuilder {
 
     // Helper methods
     private byte[] bytes(int length) {
-        final byte[] bytes = new byte[length];
+        byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
     }
