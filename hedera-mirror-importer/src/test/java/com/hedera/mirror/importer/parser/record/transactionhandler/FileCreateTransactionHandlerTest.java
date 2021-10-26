@@ -26,7 +26,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -48,7 +48,7 @@ class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.FILE;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.FILE;
     }
 }

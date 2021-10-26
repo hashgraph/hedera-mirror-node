@@ -24,6 +24,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.domain.EntityType;
+
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.List;
@@ -41,7 +43,6 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -52,8 +53,8 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @Tag("migration")
 class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
 
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
-    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityTypeEnum.ACCOUNT);
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
+    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityType.ACCOUNT);
 
     @Resource
     private JdbcOperations jdbcOperations;
@@ -80,13 +81,13 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
     void verifyEntityTimestampMigration() throws Exception {
         // given
         persistEntities(List.of(
-                entity(9000, EntityTypeEnum.ACCOUNT, 99L, 99L),
-                entity(9001, EntityTypeEnum.ACCOUNT, 100L, 101L),
-                entity(9002, EntityTypeEnum.CONTRACT),
-                entity(9003, EntityTypeEnum.FILE),
-                entity(9004, EntityTypeEnum.TOPIC),
-                entity(9005, EntityTypeEnum.TOKEN),
-                entity(9006, EntityTypeEnum.SCHEDULE)
+                entity(9000, EntityType.ACCOUNT, 99L, 99L),
+                entity(9001, EntityType.ACCOUNT, 100L, 101L),
+                entity(9002, EntityType.CONTRACT),
+                entity(9003, EntityType.FILE),
+                entity(9004, EntityType.TOPIC),
+                entity(9005, EntityType.TOKEN),
+                entity(9006, EntityType.SCHEDULE)
         ));
 
         persistTransactions(List.of(
@@ -107,13 +108,13 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         ));
 
         List<MigrationEntity> expected = List.of(
-                entity(9000, EntityTypeEnum.ACCOUNT, 99L, 99L), // no change
-                entity(9001, EntityTypeEnum.ACCOUNT, 100L, 102L), // updated at 102L
-                entity(9002, EntityTypeEnum.CONTRACT, 103L, 103L), // update transaction failed at 104L
-                entity(9003, EntityTypeEnum.FILE, 105L, 107L), // created at 105L, deleted at 107L
-                entity(9004, EntityTypeEnum.TOPIC, 108L, 111L), // last update at 111L
-                entity(9005, EntityTypeEnum.TOKEN, 112L, 113L), // last update at 113L
-                entity(9006, EntityTypeEnum.SCHEDULE, 114L, true, 116L) // schedule was deleted at 116L
+                entity(9000, EntityType.ACCOUNT, 99L, 99L), // no change
+                entity(9001, EntityType.ACCOUNT, 100L, 102L), // updated at 102L
+                entity(9002, EntityType.CONTRACT, 103L, 103L), // update transaction failed at 104L
+                entity(9003, EntityType.FILE, 105L, 107L), // created at 105L, deleted at 107L
+                entity(9004, EntityType.TOPIC, 108L, 111L), // last update at 111L
+                entity(9005, EntityType.TOKEN, 112L, 113L), // last update at 113L
+                entity(9006, EntityType.SCHEDULE, 114L, true, 116L) // schedule was deleted at 116L
         );
 
         // when
@@ -125,16 +126,16 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum) {
+    private MigrationEntity entity(long id, EntityType entityTypeEnum) {
         return entity(id, entityTypeEnum, null, false, null);
     }
 
-    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp,
+    private MigrationEntity entity(long id, EntityType entityTypeEnum, Long createdTimestamp,
                                    Long modifiedTimestamp) {
         return entity(id, entityTypeEnum, createdTimestamp, false, modifiedTimestamp);
     }
 
-    private MigrationEntity entity(long id, EntityTypeEnum entityTypeEnum, Long createdTimestamp, boolean deleted,
+    private MigrationEntity entity(long id, EntityType entityType, Long createdTimestamp, boolean deleted,
                                    Long modifiedTimestamp) {
         MigrationEntity entity = new MigrationEntity();
         entity.setDeleted(deleted);
@@ -142,7 +143,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         entity.setId(id);
         entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setNum(id);
-        entity.setType(entityTypeEnum.getId());
+        entity.setType(entityType.getId());
         return entity;
     }
 
@@ -150,7 +151,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                                     TransactionTypeEnum type) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityTypeEnum.UNKNOWN));
+        transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setPayerAccountId(PAYER_ID);
         transaction.setResult(result.getNumber());

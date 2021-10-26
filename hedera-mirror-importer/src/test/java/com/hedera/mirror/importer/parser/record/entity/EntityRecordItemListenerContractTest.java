@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.importer.domain.*;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -52,13 +53,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.ContractLog;
-import com.hedera.mirror.importer.domain.ContractResult;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperation;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
@@ -499,7 +494,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, Contract::getObtainerId)
                 .returns(null, Contract::getParentId)
                 .returns(Utility.convertSimpleKeyToHex(adminKey), Contract::getPublicKey)
-                .returns(EntityTypeEnum.CONTRACT, Contract::getType)
+                .returns(EntityType.CONTRACT, Contract::getType)
                 .extracting(Contract::getProxyAccountId)
                 .isEqualTo(EntityId.of(transactionBody.getProxyAccountID()))
                 .extracting(this::getEntity)

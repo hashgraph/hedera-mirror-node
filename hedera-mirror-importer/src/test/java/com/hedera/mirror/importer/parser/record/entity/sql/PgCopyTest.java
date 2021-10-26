@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -28,6 +28,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+
+import com.hedera.mirror.importer.domain.EntityType;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -48,7 +50,6 @@ import org.postgresql.copy.CopyManager;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -163,15 +164,15 @@ class PgCopyTest extends IntegrationTest {
     }
 
     private CryptoTransfer cryptoTransfer(long consensusTimestamp) {
-        return new CryptoTransfer(consensusTimestamp, 1L, EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT));
+        return new CryptoTransfer(consensusTimestamp, 1L, EntityId.of(0L, 1L, 2L, EntityType.ACCOUNT));
     }
 
     private TokenTransfer tokenTransfer(long consensusTimestamp) {
         return new TokenTransfer(
                 consensusTimestamp,
                 1L,
-                EntityId.of(0L, 1L, 4L, EntityTypeEnum.TOKEN),
-                EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT));
+                EntityId.of(0L, 1L, 4L, EntityType.TOKEN),
+                EntityId.of(0L, 1L, 2L, EntityType.ACCOUNT));
     }
 
     private Transaction transaction(long consensusNs) {
@@ -201,7 +202,7 @@ class PgCopyTest extends IntegrationTest {
         topicMessage.setRunningHash(Strings.toByteArray("running hash"));
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(consensusNs);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityTypeEnum.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
         return topicMessage;
     }
 }

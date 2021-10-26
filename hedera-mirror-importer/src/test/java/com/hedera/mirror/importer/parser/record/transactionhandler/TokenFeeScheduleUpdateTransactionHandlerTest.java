@@ -20,11 +20,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -42,7 +41,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.TOKEN;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.TOKEN;
     }
 }

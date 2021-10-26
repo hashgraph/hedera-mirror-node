@@ -24,11 +24,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.hedera.mirror.importer.domain.EntityType;
+
 import lombok.experimental.UtilityClass;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 
 @UtilityClass
@@ -118,7 +120,7 @@ public class TestRecordFiles {
     }
 
     public List<RecordFile> getV2V5Files() {
-        EntityId nodeAccountId = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
+        EntityId nodeAccountId = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
         RecordFile recordFileV2 = RecordFile.builder()
                 .consensusStart(1611188151568507001L)
                 .consensusEnd(1611188151568507001L)

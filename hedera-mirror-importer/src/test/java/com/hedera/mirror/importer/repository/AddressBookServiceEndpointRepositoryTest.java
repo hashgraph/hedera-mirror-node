@@ -30,18 +30,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.CollectionUtils;
 
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
 
-    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
+    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityType.FILE);
 
     @Resource
     protected AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
@@ -120,12 +118,12 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
                 consensusTimestamp,
                 ip,
                 port,
-                EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT));
+                EntityId.of(nodeAccountIdString, EntityType.ACCOUNT));
     }
 
     private AddressBookEntry addressBookEntry(long consensusTimestamp, long nodeAccountId, List<Integer> portNums) throws UnknownHostException {
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
-        EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT);
+        EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString, EntityType.ACCOUNT);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
                 .id(new AddressBookEntry.Id(consensusTimestamp, nodeAccountId - 3))
                 .publicKey("rsa+public/key")

@@ -51,7 +51,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -222,8 +222,8 @@ class EntityRecordItemListenerNFTTest extends AbstractEntityRecordItemListenerTe
     private void assertTransactions() {
         expectedTransactions.forEach(t -> {
             var dbTransaction = getDbTransaction(t.record.getConsensusTimestamp());
-            var dbNodeEntity = getEntity(EntityId.of(0, 0, NODE_ACCOUNT_NUM, EntityTypeEnum.ACCOUNT));
-            var dbPayerEntity = getEntity(EntityId.of(0, 0, PAYER_ACCOUNT_NUM, EntityTypeEnum.ACCOUNT));
+            var dbNodeEntity = getEntity(EntityId.of(0, 0, NODE_ACCOUNT_NUM, EntityType.ACCOUNT));
+            var dbPayerEntity = getEntity(EntityId.of(0, 0, PAYER_ACCOUNT_NUM, EntityType.ACCOUNT));
 
             assertAll(
                     () -> assertEquals(dbNodeEntity.getId(), dbTransaction.getNodeAccountId().getId()),

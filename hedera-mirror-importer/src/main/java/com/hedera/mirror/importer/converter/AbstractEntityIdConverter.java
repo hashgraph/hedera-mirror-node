@@ -21,20 +21,22 @@ package com.hedera.mirror.importer.converter;
  */
 
 import javax.persistence.AttributeConverter;
+
+import com.hedera.mirror.importer.domain.EntityType;
+
 import lombok.Getter;
 import org.springframework.core.convert.converter.Converter;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 public abstract class AbstractEntityIdConverter implements AttributeConverter<EntityId, Long>, Converter<String,
         EntityId> {
     @Getter
-    private final EntityTypeEnum entityTypeEnum;
+    private final EntityType entityType;
 
-    public AbstractEntityIdConverter(EntityTypeEnum entityTypeEnum) {
-        this.entityTypeEnum = entityTypeEnum;
+    public AbstractEntityIdConverter(EntityType entityType) {
+        this.entityType = entityType;
     }
 
     @Override
@@ -50,11 +52,11 @@ public abstract class AbstractEntityIdConverter implements AttributeConverter<En
         if (encodedId == null) {
             return null;
         }
-        return EntityIdEndec.decode(encodedId, entityTypeEnum);
+        return EntityIdEndec.decode(encodedId, entityType);
     }
 
     @Override
     public EntityId convert(String source) {
-        return EntityId.of(source, entityTypeEnum);
+        return EntityId.of(source, entityType);
     }
 }

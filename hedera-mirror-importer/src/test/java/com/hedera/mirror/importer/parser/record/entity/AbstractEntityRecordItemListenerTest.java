@@ -59,7 +59,7 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
@@ -170,7 +170,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .extracting(AccountID::getShardNum, AccountID::getRealmNum, AccountID::getAccountNum)
                 .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
         assertThat(dbEntity.getType())
-                .isEqualTo(EntityTypeEnum.ACCOUNT);
+                .isEqualTo(EntityType.ACCOUNT);
     }
 
     protected final void assertFile(FileID fileId, Entity dbEntity) {
@@ -179,7 +179,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .extracting(FileID::getShardNum, FileID::getRealmNum, FileID::getFileNum)
                 .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
         assertThat(dbEntity.getType())
-                .isEqualTo(EntityTypeEnum.FILE);
+                .isEqualTo(EntityType.FILE);
     }
 
     protected final void assertContract(ContractID contractId, Contract dbEntity) {
@@ -188,7 +188,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
                 .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
         assertThat(dbEntity.getType())
-                .isEqualTo(EntityTypeEnum.CONTRACT);
+                .isEqualTo(EntityType.CONTRACT);
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {

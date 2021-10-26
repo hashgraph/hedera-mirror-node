@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
@@ -76,7 +76,7 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
 
             return new AccountBalance(balance, Collections
                     .emptyList(), new AccountBalance.Id(consensusTimestamp, EntityId
-                    .of(shardNum, realmNum, accountNum, EntityTypeEnum.ACCOUNT)));
+                    .of(shardNum, realmNum, accountNum, EntityType.ACCOUNT)));
         } catch (NumberFormatException ex) {
             throw new InvalidDatasetException("Invalid account balance line: " + line, ex);
         }

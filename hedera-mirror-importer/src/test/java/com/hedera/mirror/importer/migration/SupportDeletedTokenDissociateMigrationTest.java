@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static com.hedera.mirror.importer.domain.TokenTypeEnum.FUNGIBLE_COMMON;
 import static com.hedera.mirror.importer.domain.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +32,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -45,20 +47,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenId;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
-import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
-import com.hedera.mirror.importer.domain.TokenTransfer;
-import com.hedera.mirror.importer.domain.TokenTypeEnum;
-import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -73,7 +62,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private static final int TRANSACTION_TYPE_TOKEN_DISSOCIATE = 41;
     private static final EntityId TREASURY = EntityId.of("0.0.200", ACCOUNT);
     private static final EntityId NEW_TREASURY = EntityId.of("0.0.201", ACCOUNT);
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
 
     @Resource
     private JdbcOperations jdbcOperations;
@@ -330,7 +319,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 token.setTokenId(new TokenId(EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
                 token.setTotalSupply(rs.getLong("total_supply"));
                 token.setTreasuryAccountId(EntityIdEndec.decode(rs.getLong("treasury_account_id"),
-                        EntityTypeEnum.TOKEN));
+                        EntityType.TOKEN));
                 token.setType(TokenTypeEnum.valueOf(rs.getString("type")));
                 return token;
             }
@@ -412,11 +401,11 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
             public Transaction mapRow(ResultSet rs, int rowNum) throws SQLException {
                 Transaction transaction = new Transaction();
                 transaction.setConsensusTimestamp(rs.getLong("consensus_ns"));
-                transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT));
+                transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityType.ACCOUNT));
                 transaction.setMemo(rs.getBytes("transaction_bytes"));
-                transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityTypeEnum.ACCOUNT));
+                transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityType.ACCOUNT));
                 transaction
-                        .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityTypeEnum.ACCOUNT));
+                        .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityType.ACCOUNT));
                 transaction.setResult(rs.getInt("result"));
                 transaction.setType(rs.getInt("type"));
                 transaction.setValidStartNs(rs.getLong("valid_start_ns"));

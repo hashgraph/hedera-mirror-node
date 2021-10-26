@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -42,7 +42,7 @@ class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.ACCOUNT;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.ACCOUNT;
     }
 }

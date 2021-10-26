@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -27,7 +28,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
@@ -48,8 +48,8 @@ class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.FILE;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.FILE;
     }
 
     // SystemUndelete for file is tested by common test case in AbstractTransactionHandlerTest.
@@ -62,6 +62,6 @@ class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
                 .build();
 
         testGetEntityIdHelper(transactionBody, getDefaultTransactionRecord().build(),
-                EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, EntityTypeEnum.CONTRACT));
+                EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, EntityType.CONTRACT));
     }
 }

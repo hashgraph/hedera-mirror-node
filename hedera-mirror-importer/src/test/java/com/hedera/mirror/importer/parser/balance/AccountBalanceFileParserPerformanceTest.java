@@ -24,6 +24,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.hedera.mirror.importer.domain.EntityType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -36,7 +38,6 @@ import org.springframework.core.io.Resource;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -65,7 +66,7 @@ class AccountBalanceFileParserPerformanceTest extends IntegrationTest {
     @BeforeAll
     void setup() throws Exception {
         balanceParserProperties.setEnabled(true);
-        EntityId nodeAccountId = EntityId.of(0L, 0L, 3L, EntityTypeEnum.ACCOUNT);
+        EntityId nodeAccountId = EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT);
         for (Resource resource : testFiles) {
             AccountBalanceFile accountBalanceFile = balanceFileReader.read(StreamFileData.from(resource.getFile()));
             accountBalanceFile.setNodeAccountId(nodeAccountId);

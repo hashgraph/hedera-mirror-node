@@ -90,7 +90,7 @@ public abstract class AbstractEntity {
 
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
-    private EntityTypeEnum type;
+    private EntityType type;
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)

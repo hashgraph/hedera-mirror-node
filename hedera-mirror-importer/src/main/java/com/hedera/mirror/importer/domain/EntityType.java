@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum EntityTypeEnum {
+public enum EntityType {
 
     UNKNOWN(0),
     ACCOUNT(1),
@@ -41,11 +41,11 @@ public enum EntityTypeEnum {
 
     private final int id;
 
-    private static final Map<Integer, EntityTypeEnum> ID_MAP = Arrays.stream(values())
-            .collect(Collectors.toUnmodifiableMap(EntityTypeEnum::getId, Function
+    private static final Map<Integer, EntityType> ID_MAP = Arrays.stream(values())
+            .collect(Collectors.toUnmodifiableMap(EntityType::getId, Function
                     .identity()));
 
-    public static EntityTypeEnum fromId(int id) {
+    public static EntityType fromId(int id) {
         return ID_MAP.getOrDefault(id, UNKNOWN);
     }
 }

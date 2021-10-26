@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -28,8 +29,6 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -59,7 +58,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.SCHEDULE;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.SCHEDULE;
     }
 }

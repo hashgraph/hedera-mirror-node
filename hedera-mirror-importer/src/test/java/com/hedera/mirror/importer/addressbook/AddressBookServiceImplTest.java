@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.importer.domain.*;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -57,13 +58,7 @@ import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.CacheConfiguration;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -324,15 +319,15 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @Test
     void isAddressBook() {
-        EntityId fileID = EntityId.of(0, 0, 234, EntityTypeEnum.FILE);
+        EntityId fileID = EntityId.of(0, 0, 234, EntityType.FILE);
         boolean isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isFalse();
 
-        fileID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
+        fileID = EntityId.of(0, 0, 101, EntityType.FILE);
         isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isTrue();
 
-        fileID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        fileID = EntityId.of(0, 0, 102, EntityType.FILE);
         isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isTrue();
     }

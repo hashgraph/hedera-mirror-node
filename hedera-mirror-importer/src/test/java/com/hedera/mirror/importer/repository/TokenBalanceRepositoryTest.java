@@ -26,7 +26,7 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TokenBalance;
 
 class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
@@ -48,9 +48,9 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
     private TokenBalance create(long consensusTimestamp, int accountNum, int tokenNum, long balance) {
         TokenBalance tokenBalance = new TokenBalance();
         TokenBalance.Id id = new TokenBalance.Id();
-        id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
+        id.setAccountId(EntityId.of(0, 0, accountNum, EntityType.ACCOUNT));
         id.setConsensusTimestamp(consensusTimestamp);
-        id.setTokenId(EntityId.of(0, 0, tokenNum, EntityTypeEnum.TOKEN));
+        id.setTokenId(EntityId.of(0, 0, tokenNum, EntityType.TOKEN));
         tokenBalance.setBalance(balance);
         tokenBalance.setId(id);
         return tokenBalanceRepository.save(tokenBalance);

@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.CONTRACT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.FILE;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.CONTRACT;
+import static com.hedera.mirror.importer.domain.EntityType.FILE;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -165,7 +165,7 @@ public class DomainBuilder {
         return bytes;
     }
 
-    private EntityId entityId(EntityTypeEnum type) {
+    private EntityId entityId(EntityType type) {
         return EntityId.of(0L, 0L, id(), type);
     }
 

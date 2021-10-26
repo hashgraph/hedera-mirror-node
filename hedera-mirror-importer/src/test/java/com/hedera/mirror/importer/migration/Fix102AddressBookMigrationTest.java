@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 
 @EnabledIfV1
@@ -98,7 +98,7 @@ class Fix102AddressBookMigrationTest extends IntegrationTest {
         AddressBook addressBook = new AddressBook();
         addressBook.setEndConsensusTimestamp(endConsensusTimestamp);
         addressBook.setFileData(new byte[] {});
-        addressBook.setFileId(EntityId.of(0, 0, fileId, EntityTypeEnum.FILE));
+        addressBook.setFileId(EntityId.of(0, 0, fileId, EntityType.FILE));
         addressBook.setStartConsensusTimestamp(startConsensusTimestamp);
         return addressBookRepository.save(addressBook);
     }

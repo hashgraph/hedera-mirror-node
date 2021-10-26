@@ -24,15 +24,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.*;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftId;
-import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class NftRepositoryTest extends AbstractRepositoryTest {
 
@@ -59,7 +57,7 @@ class NftRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void updateDeletedMissingNft() {
-        NftId nftId = new NftId(1L, EntityId.of("0.0.1", EntityTypeEnum.TOKEN));
+        NftId nftId = new NftId(1L, EntityId.of("0.0.1", EntityType.TOKEN));
         nftRepository.burnOrWipeNft(nftId, 1L);
         assertThat(nftRepository.findById(nftId)).isNotPresent();
     }
@@ -67,7 +65,7 @@ class NftRepositoryTest extends AbstractRepositoryTest {
     @Test
     void updateAccountId() {
         Nft savedNft = nftRepository.save(nft("0.0.3", 2, 2));
-        EntityId accountId = EntityId.of("0.0.10", EntityTypeEnum.ACCOUNT);
+        EntityId accountId = EntityId.of("0.0.10", EntityType.ACCOUNT);
         nftRepository.transferNftOwnership(savedNft.getId(), accountId, 3L);
         savedNft.setAccountId(accountId);
         savedNft.setModifiedTimestamp(3L);
@@ -76,8 +74,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void updateAccountIdMissingNft() {
-        NftId nftId = new NftId(1L, EntityId.of("0.0.1", EntityTypeEnum.TOKEN));
-        EntityId accountId = EntityId.of("0.0.10", EntityTypeEnum.ACCOUNT);
+        NftId nftId = new NftId(1L, EntityId.of("0.0.1", EntityType.TOKEN));
+        EntityId accountId = EntityId.of("0.0.10", EntityType.ACCOUNT);
         nftRepository.transferNftOwnership(nftId, accountId, 3L);
         assertThat(nftRepository.findById(nftId)).isNotPresent();
     }
@@ -85,7 +83,7 @@ class NftRepositoryTest extends AbstractRepositoryTest {
     @Test
     void updateTreasury() {
         long consensusTimestamp = 6L;
-        EntityId newAccountId = EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT);
+        EntityId newAccountId = EntityId.of("0.0.2", EntityType.ACCOUNT);
         Nft nft1 = nft("0.0.100", 1, 1);
         Nft nft2 = nft("0.0.100", 2, 2);
         Nft nft3 = nft("0.0.100", 3, 3);
@@ -121,9 +119,9 @@ class NftRepositoryTest extends AbstractRepositoryTest {
 
     private Nft nft(String tokenId, long serialNumber, long consensusTimestamp) {
         Nft nft = new Nft();
-        nft.setAccountId(EntityId.of("0.0.1", EntityTypeEnum.ACCOUNT));
+        nft.setAccountId(EntityId.of("0.0.1", EntityType.ACCOUNT));
         nft.setCreatedTimestamp(consensusTimestamp);
-        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityTypeEnum.TOKEN)));
+        nft.setId(new NftId(serialNumber, EntityId.of(tokenId, EntityType.TOKEN)));
         nft.setMetadata(new byte[] {1});
         nft.setModifiedTimestamp(consensusTimestamp);
         return nft;

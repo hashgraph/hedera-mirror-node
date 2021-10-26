@@ -26,11 +26,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.EntityType;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TokenBalance;
 
 class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
@@ -54,7 +55,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
     private AccountBalance create(long consensusTimestamp, int accountNum, long balance, int numberOfTokenBalances) {
         AccountBalance.Id id = new AccountBalance.Id();
         id.setConsensusTimestamp(consensusTimestamp);
-        id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
+        id.setAccountId(EntityId.of(0, 0, accountNum, EntityType.ACCOUNT));
 
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(balance);
@@ -70,9 +71,9 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         for (int i = 1; i <= numberOfBalances; i++) {
             TokenBalance tokenBalance = new TokenBalance();
             TokenBalance.Id id = new TokenBalance.Id();
-            id.setAccountId(EntityId.of(0, 0, accountNum, EntityTypeEnum.ACCOUNT));
+            id.setAccountId(EntityId.of(0, 0, accountNum, EntityType.ACCOUNT));
             id.setConsensusTimestamp(consensusTimestamp);
-            id.setTokenId(EntityId.of(0, 1, i, EntityTypeEnum.TOKEN));
+            id.setTokenId(EntityId.of(0, 1, i, EntityType.TOKEN));
             tokenBalance.setBalance(balance);
             tokenBalance.setId(id);
             tokenBalanceList.add(tokenBalance);

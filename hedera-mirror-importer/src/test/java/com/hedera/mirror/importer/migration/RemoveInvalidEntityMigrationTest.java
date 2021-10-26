@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.importer.domain.*;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.io.IOException;
@@ -42,11 +43,7 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
@@ -84,27 +81,27 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationValidEntities() throws Exception {
-        insertEntity(entityId(1, EntityTypeEnum.ACCOUNT));
-        insertEntity(entityId(2, EntityTypeEnum.CONTRACT));
-        insertEntity(entityId(3, EntityTypeEnum.FILE));
-        insertEntity(entityId(4, EntityTypeEnum.TOPIC));
-        insertEntity(entityId(5, EntityTypeEnum.TOKEN));
+        insertEntity(entityId(1, EntityType.ACCOUNT));
+        insertEntity(entityId(2, EntityType.CONTRACT));
+        insertEntity(entityId(3, EntityType.FILE));
+        insertEntity(entityId(4, EntityType.TOPIC));
+        insertEntity(entityId(5, EntityType.TOKEN));
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
-                .add(transaction(1, 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CRYPTOCREATEACCOUNT));
         transactionList
-                .add(transaction(20, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
                         .FILECREATE));
         transactionList
-                .add(transaction(40, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+                .add(transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
         transactionList
-                .add(transaction(50, 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+                .add(transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.TOKENCREATION));
         transactionList.forEach(this::insertTransaction);
 
@@ -117,11 +114,11 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationInvalidEntities() throws Exception {
-        EntityId typeMismatchedAccountEntityId = entityId(1, EntityTypeEnum.TOPIC);
-        EntityId typeMismatchedContractEntityId = entityId(2, EntityTypeEnum.TOKEN);
-        EntityId typeMismatchedFileEntityId = entityId(3, EntityTypeEnum.CONTRACT);
-        EntityId typeMismatchedTopicEntityId = entityId(4, EntityTypeEnum.ACCOUNT);
-        EntityId typeMismatchedTokenEntityId = entityId(5, EntityTypeEnum.FILE);
+        EntityId typeMismatchedAccountEntityId = entityId(1, EntityType.TOPIC);
+        EntityId typeMismatchedContractEntityId = entityId(2, EntityType.TOKEN);
+        EntityId typeMismatchedFileEntityId = entityId(3, EntityType.CONTRACT);
+        EntityId typeMismatchedTopicEntityId = entityId(4, EntityType.ACCOUNT);
+        EntityId typeMismatchedTokenEntityId = entityId(5, EntityType.FILE);
         insertEntity(typeMismatchedAccountEntityId);
         insertEntity(typeMismatchedContractEntityId);
         insertEntity(typeMismatchedFileEntityId);
@@ -130,25 +127,25 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
-                .add(transaction(1, 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CRYPTOCREATEACCOUNT));
         transactionList
-                .add(transaction(20, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
                         .FILECREATE));
         transactionList
-                .add(transaction(40, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+                .add(transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
         transactionList
-                .add(transaction(50, 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+                .add(transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.TOKENCREATION));
         transactionList
-                .add(transaction(70, 50, EntityTypeEnum.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID,
+                .add(transaction(70, 50, EntityType.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID,
                         TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         transactionList
-                .add(transaction(80, 100, EntityTypeEnum.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
+                .add(transaction(80, 100, EntityType.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
                         TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         transactionList.forEach(this::insertTransaction);
 
@@ -160,31 +157,31 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
         assertAll(
                 () -> assertThat(findEntityById(typeMismatchedAccountEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.ACCOUNT),
+                        .extracting(Entity::getType).isEqualTo(EntityType.ACCOUNT),
                 () -> assertThat(findEntityById(typeMismatchedContractEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.CONTRACT),
+                        .extracting(Entity::getType).isEqualTo(EntityType.CONTRACT),
                 () -> assertThat(findEntityById(typeMismatchedFileEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.FILE),
+                        .extracting(Entity::getType).isEqualTo(EntityType.FILE),
                 () -> assertThat(findEntityById(typeMismatchedTopicEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOPIC),
+                        .extracting(Entity::getType).isEqualTo(EntityType.TOPIC),
                 () -> assertThat(findEntityById(typeMismatchedTokenEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOKEN)
+                        .extracting(Entity::getType).isEqualTo(EntityType.TOKEN)
         );
     }
 
     @Test
     void verifyEntityTypeMigrationInvalidEntitiesMultiBatch() throws Exception {
-        insertEntity(entityId(1, EntityTypeEnum.ACCOUNT));
-        insertEntity(entityId(2, EntityTypeEnum.CONTRACT));
-        insertEntity(entityId(3, EntityTypeEnum.FILE));
-        insertEntity(entityId(4, EntityTypeEnum.TOPIC));
-        insertEntity(entityId(5, EntityTypeEnum.TOKEN));
+        insertEntity(entityId(1, EntityType.ACCOUNT));
+        insertEntity(entityId(2, EntityType.CONTRACT));
+        insertEntity(entityId(3, EntityType.FILE));
+        insertEntity(entityId(4, EntityType.TOPIC));
+        insertEntity(entityId(5, EntityType.TOKEN));
 
-        EntityId typeMismatchedAccountEntityId = entityId(6, EntityTypeEnum.TOPIC);
-        EntityId typeMismatchedContractEntityId = entityId(7, EntityTypeEnum.TOKEN);
-        EntityId typeMismatchedFileEntityId = entityId(8, EntityTypeEnum.CONTRACT);
-        EntityId typeMismatchedTopicEntityId = entityId(9, EntityTypeEnum.ACCOUNT);
-        EntityId typeMismatchedTokenEntityId = entityId(10, EntityTypeEnum.FILE);
+        EntityId typeMismatchedAccountEntityId = entityId(6, EntityType.TOPIC);
+        EntityId typeMismatchedContractEntityId = entityId(7, EntityType.TOKEN);
+        EntityId typeMismatchedFileEntityId = entityId(8, EntityType.CONTRACT);
+        EntityId typeMismatchedTopicEntityId = entityId(9, EntityType.ACCOUNT);
+        EntityId typeMismatchedTokenEntityId = entityId(10, EntityType.FILE);
         insertEntity(typeMismatchedAccountEntityId);
         insertEntity(typeMismatchedContractEntityId);
         insertEntity(typeMismatchedFileEntityId);
@@ -193,40 +190,40 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
-                .add(transaction(1, 1, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CRYPTOCREATEACCOUNT));
         transactionList
-                .add(transaction(20, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
                         .FILECREATE));
         transactionList
-                .add(transaction(40, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+                .add(transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
         transactionList
-                .add(transaction(50, 5, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+                .add(transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.TOKENCREATION));
         transactionList
-                .add(transaction(60, 6, EntityTypeEnum.ACCOUNT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(60, 6, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CRYPTOCREATEACCOUNT));
         transactionList
-                .add(transaction(70, 7, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
+                .add(transaction(70, 7, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(80, 8, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(80, 8, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
                         .FILECREATE));
         transactionList
-                .add(transaction(90, 9, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
+                .add(transaction(90, 9, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
         transactionList
-                .add(transaction(100, 10, EntityTypeEnum.TOKEN, ResponseCodeEnum.SUCCESS,
+                .add(transaction(100, 10, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.TOKENCREATION));
         transactionList
-                .add(transaction(500, 50, EntityTypeEnum.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID,
+                .add(transaction(500, 50, EntityType.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID,
                         TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         transactionList
-                .add(transaction(1000, 100, EntityTypeEnum.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
+                .add(transaction(1000, 100, EntityType.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
                         TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
         transactionList.forEach(this::insertTransaction);
 
@@ -238,19 +235,19 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
         assertAll(
                 () -> assertThat(findEntityById(typeMismatchedAccountEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.ACCOUNT),
+                        .extracting(Entity::getType).isEqualTo(EntityType.ACCOUNT),
                 () -> assertThat(findEntityById(typeMismatchedContractEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.CONTRACT),
+                        .extracting(Entity::getType).isEqualTo(EntityType.CONTRACT),
                 () -> assertThat(findEntityById(typeMismatchedFileEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.FILE),
+                        .extracting(Entity::getType).isEqualTo(EntityType.FILE),
                 () -> assertThat(findEntityById(typeMismatchedTopicEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOPIC),
+                        .extracting(Entity::getType).isEqualTo(EntityType.TOPIC),
                 () -> assertThat(findEntityById(typeMismatchedTokenEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOKEN)
+                        .extracting(Entity::getType).isEqualTo(EntityType.TOKEN)
         );
     }
 
-    private Transaction transaction(long consensusNs, long id, EntityTypeEnum entityType, ResponseCodeEnum result,
+    private Transaction transaction(long consensusNs, long id, EntityType entityType, ResponseCodeEnum result,
                                     TransactionTypeEnum transactionTypeEnum) {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
@@ -258,8 +255,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         transaction.setEntityId(EntityId.of(0, 1, id, entityType));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityTypeEnum.ACCOUNT));
-        transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityTypeEnum.ACCOUNT));
+        transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityType.ACCOUNT));
+        transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityType.ACCOUNT));
         transaction.setResult(result.getNumber());
         transaction.setType(transactionTypeEnum.getProtoId());
         transaction.setValidStartNs(20L);
@@ -268,7 +265,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         return transaction;
     }
 
-    private EntityId entityId(long id, EntityTypeEnum entityType) {
+    private EntityId entityId(long id, EntityType entityType) {
         return EntityId.of(0, 1, id, entityType);
     }
 
@@ -316,8 +313,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         entity.setShard(entityId.getShardNum());
         entity.setType(entityId.getType());
         entity.setMemo("abc" + (char) 0);
-        entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityTypeEnum.ACCOUNT));
-        entity.setProxyAccountId(EntityId.of("4.5.6", EntityTypeEnum.ACCOUNT));
+        entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityType.ACCOUNT));
+        entity.setProxyAccountId(EntityId.of("4.5.6", EntityType.ACCOUNT));
 
         jdbcOperations
                 .update("insert into t_entities (auto_renew_account_id, auto_renew_period, deleted, entity_num, " +
@@ -351,7 +348,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 (rs, rowNum) -> {
                     Entity entity = new Entity();
                     entity.setAutoRenewAccountId(EntityIdEndec
-                            .decode(rs.getLong("auto_renew_account_id"), EntityTypeEnum.ACCOUNT));
+                            .decode(rs.getLong("auto_renew_account_id"), EntityType.ACCOUNT));
                     entity.setAutoRenewPeriod(rs.getLong("auto_renew_period"));
                     entity.setDeleted(rs.getBoolean("deleted"));
                     entity.setExpirationTimestamp(rs.getLong("exp_time_ns"));
@@ -362,9 +359,9 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                     entity.setRealm(rs.getLong("entity_realm"));
                     entity.setShard(rs.getLong("entity_shard"));
                     entity.setProxyAccountId(EntityIdEndec
-                            .decode(rs.getLong("proxy_account_id"), EntityTypeEnum.ACCOUNT));
+                            .decode(rs.getLong("proxy_account_id"), EntityType.ACCOUNT));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
-                    entity.setType(EntityTypeEnum.fromId(rs.getInt("fk_entity_type_id")));
+                    entity.setType(EntityType.fromId(rs.getInt("fk_entity_type_id")));
                     return entity;
                 });
     }

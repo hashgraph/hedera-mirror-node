@@ -20,12 +20,12 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.CONTRACT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.FILE;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.SCHEDULE;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOPIC;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.CONTRACT;
+import static com.hedera.mirror.importer.domain.EntityType.FILE;
+import static com.hedera.mirror.importer.domain.EntityType.SCHEDULE;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -34,6 +34,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.EntityType;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -48,7 +51,6 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.converter.RangeToStringSerializer;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 @EnabledIfV1
 @Tag("migration")
@@ -68,8 +70,8 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         List<MigrationContractV1_47_0> contracts = new ArrayList<>();
 
         for (int i = 1; i < 7; i++) {
-            entities.add(entity(i, i, EntityTypeEnum.fromId(i)));
-            contracts.add(contract(i, i, EntityTypeEnum.fromId(i)));
+            entities.add(entity(i, i, EntityType.fromId(i)));
+            contracts.add(contract(i, i, EntityType.fromId(i)));
         }
         persistEntities(entities);
         persistContracts(contracts);
@@ -96,7 +98,7 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         jdbcOperations.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
-    private MigrationEntityV1_47_0 entity(long id, long num, EntityTypeEnum type) {
+    private MigrationEntityV1_47_0 entity(long id, long num, EntityType type) {
         MigrationEntityV1_47_0 entity = new MigrationEntityV1_47_0();
         entity.setId(id);
         entity.setNum(num);
@@ -104,7 +106,7 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         return entity;
     }
 
-    private MigrationContractV1_47_0 contract(long id, long num, EntityTypeEnum type) {
+    private MigrationContractV1_47_0 contract(long id, long num, EntityType type) {
         MigrationContractV1_47_0 entity = new MigrationContractV1_47_0();
         entity.setId(id);
         entity.setNum(num);
@@ -205,7 +207,7 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         private final long shard = 0;
         @JsonSerialize(using = RangeToStringSerializer.class)
         private final Range<Long> timestampRange = Range.atLeast(2L);
-        private EntityTypeEnum type;
+        private EntityType type;
     }
 
     @Data
@@ -219,6 +221,6 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         private long shard = 0;
         @JsonSerialize(using = RangeToStringSerializer.class)
         private Range<Long> timestampRange = Range.atLeast(2L);
-        private EntityTypeEnum type;
+        private EntityType type;
     }
 }

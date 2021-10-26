@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.hedera.mirror.importer.domain.EntityType;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +39,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
@@ -124,7 +125,7 @@ class AccountBalanceLineParserV2Test {
 
                     assertThat(actualId.getTokenId().getShardNum()).isEqualTo(mirrorProperties.getShard());
                     assertThat(actualId.getTokenId().getRealmNum()).isEqualTo(expectedRealm);
-                    assertThat(actualId.getTokenId().getType()).isEqualTo(EntityTypeEnum.TOKEN);
+                    assertThat(actualId.getTokenId().getType()).isEqualTo(EntityType.TOKEN);
                 }
             } else {
                 assertThat(actualTokenBalanceList.size()).isEqualTo(0);

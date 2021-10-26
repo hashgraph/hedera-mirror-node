@@ -20,11 +20,12 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.importer.domain.*;
 import com.hederahashgraph.api.proto.java.Key;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
@@ -43,23 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftId;
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenId;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
-import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
-import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
-import com.hedera.mirror.importer.domain.TokenTransfer;
-import com.hedera.mirror.importer.domain.TokenTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -749,10 +734,10 @@ class UpsertPgCopyTest extends IntegrationTest {
     private Schedule getSchedule(Long createdTimestamp, String scheduleId, Long executedTimestamp) {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(createdTimestamp);
-        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
+        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityType.ACCOUNT));
         schedule.setExecutedTimestamp(executedTimestamp);
-        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
-        schedule.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityType.ACCOUNT));
+        schedule.setScheduleId(EntityId.of(scheduleId, EntityType.SCHEDULE));
         schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }
@@ -766,7 +751,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     private Nft getNft(String tokenId, long serialNumber, String accountId, Long createdTimestamp,
                        long modifiedTimeStamp, String metadata, Boolean deleted) {
         Nft nft = new Nft();
-        nft.setAccountId(accountId == null ? null : EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
+        nft.setAccountId(accountId == null ? null : EntityId.of(accountId, EntityType.ACCOUNT));
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(deleted);
         nft.setId(new NftId(serialNumber, EntityId.of(tokenId, TOKEN)));
@@ -795,7 +780,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         token.setSupplyType(TokenSupplyTypeEnum.FINITE);
         token.setSymbol("bar");
         token.setTotalSupply(200L);
-        token.setTreasuryAccountId(EntityId.of("0.0.200", EntityTypeEnum.ACCOUNT));
+        token.setTreasuryAccountId(EntityId.of("0.0.200", EntityType.ACCOUNT));
         token.setType(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         return token;
     }
