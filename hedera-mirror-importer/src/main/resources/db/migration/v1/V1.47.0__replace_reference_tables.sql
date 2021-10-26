@@ -1,7 +1,7 @@
 -- Remove t_entity_types and alter tables referencing it to use a entity_type value instead.
 
 -- Create the enum entity_type to replace the foreign key with
-create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
+create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'toPIC', 'toKEN', 'SCHEDULE');
 
 drop function if exists updateEntityTypeFromInt(integer);
 
@@ -12,8 +12,8 @@ create function updateEntityTypeFromInt(integer)
             when 1 then return 'ACCOUNT';
             when 2 then return 'CONTRACT';
             when 3 then return 'FILE';
-            when 4 then return 'TOPIC';
-            when 5 then return 'TOKEN';
+            when 4 then return 'toPIC';
+            when 5 then return 'toKEN';
             when 6 then return 'SCHEDULE';
             else return null;
         end case;
@@ -31,7 +31,7 @@ alter table t_transaction_types
     drop column entity_type;
 
 alter table t_transaction_types
-    rename column entity_type_enum TO entity_type;
+    rename column entity_type_enum to entity_type;
 
 -- Alter entity to use the new enum entity_type
 alter table entity
@@ -44,7 +44,7 @@ alter table entity
     drop column type;
 
 alter table entity
-    rename column type_enum TO type;
+    rename column type_enum to type;
 
 alter table entity
     alter column type set not null;
@@ -60,7 +60,7 @@ alter table entity_history
     drop column type;
 
 alter table entity_history
-    rename column type_enum TO type;
+    rename column type_enum to type;
 
 alter table entity_history
     alter column type set not null;
@@ -77,7 +77,7 @@ alter table contract
     drop column type;
 
 alter table contract
-    rename column type_enum TO type;
+    rename column type_enum to type;
 
 alter table contract
     alter column type set not null;
@@ -93,7 +93,7 @@ alter table contract_history
     drop column type;
 
 alter table contract_history
-    rename column type_enum TO type;
+    rename column type_enum to type;
 
 alter table contract
     alter column type set not null;
