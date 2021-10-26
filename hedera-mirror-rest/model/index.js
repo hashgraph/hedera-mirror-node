@@ -22,14 +22,16 @@
 
 module.exports = {
   AssessedCustomFee: require('./assessedCustomFee'),
+  Contract: require('./contract'),
   CryptoTransfer: require('./cryptoTransfer'),
   CustomFee: require('./customFee'),
+  FileData: require('./fileData'),
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),
   Token: require('./token'),
-  TokenTransfer: require('./tokenTransfer'),
   TokenFreezeStatus: require('./tokenFreezeStatus'),
   TokenKycStatus: require('./tokenKycStatus'),
+  TokenTransfer: require('./tokenTransfer'),
   Transaction: require('./transaction'),
   TransactionResult: require('./transactionResult'),
   TransactionType: require('./transactionType'),

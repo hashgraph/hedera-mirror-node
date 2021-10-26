@@ -1,0 +1,15 @@
+{
+  "description": "Contract api calls for a specific contract using contract id, not found",
+  "setup": {},
+  "url": "/api/v1/contracts/0.0.6001",
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}

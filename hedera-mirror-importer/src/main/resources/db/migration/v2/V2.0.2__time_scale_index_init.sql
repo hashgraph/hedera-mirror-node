@@ -88,6 +88,8 @@ create unique index if not exists event_file__hash
 -- file_data
 alter table file_data
     add primary key (consensus_timestamp);
+create index if not exists file_data__id_timestamp
+    on file_data (entity_id, consensus_timestamp);
 
 -- live_hash
 alter table live_hash

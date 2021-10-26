@@ -52,7 +52,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             EntityId contractId = EntityId.of(createdContractId);
             createdContractIds.add(contractId.getId());
 
-            if (isSuccessful) {
+            if (isSuccessful && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
                 Contract contract = inheritedContract.get();
                 contract.setCreatedTimestamp(consensusTimestamp);
                 contract.setDeleted(false);
