@@ -3,9 +3,7 @@
 -- Create the enum entity_type to replace the foreign key with
 create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 
-drop function if exists updateEntityTypeFromInt(integer);
-
-create function updateEntityTypeFromInt(integer)
+create or replace function updateEntityTypeFromInt(integer)
     returns entity_type as $$
     begin
         case $1
@@ -49,6 +47,8 @@ alter table entity
 alter table entity
     alter column type set not null;
 
+create index if not exists entity__id_type on entity (id, type);
+
 -- Alter entity_history to use the new enum entity_type
 alter table entity_history
     add column type_enum entity_type null;
@@ -64,7 +64,6 @@ alter table entity_history
 
 alter table entity_history
     alter column type set not null;
-
 
 -- Alter contract to use the new enum entity_type
 alter table contract
