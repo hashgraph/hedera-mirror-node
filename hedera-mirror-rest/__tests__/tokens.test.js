@@ -565,7 +565,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
                  tb.balance
           from token_balance tb
                  join entity e
-                      on e.type = ${constants.entityTypes.ACCOUNT}
+                      on e.type = '${constants.entityTypes.ACCOUNT}'
                         and e.id = tb.account_id
                         and e.public_key = $2
           where tb.token_id = $1

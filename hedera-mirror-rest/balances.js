@@ -105,7 +105,7 @@ const getBalances = async (req, res) => {
       ? `
       JOIN entity e
         ON e.id = ab.account_id
-          AND e.type in (${constants.entityTypes.ACCOUNT}, ${constants.entityTypes.CONTRACT})`
+          AND e.type in ('${constants.entityTypes.ACCOUNT}', '${constants.entityTypes.CONTRACT}')`
       : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
