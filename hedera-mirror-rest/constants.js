@@ -54,6 +54,15 @@ const entityColumns = {
   PUBLIC_KEY: 'public_key',
 };
 
+const entityTypes = {
+  ACCOUNT: 'ACCOUNT',
+  CONTRACT: 'CONTRACT',
+  FILE: 'FILE',
+  TOKEN: 'TOKEN',
+  TOPIC: 'TOPIC',
+  SCHEDULE: 'SCHEDULE',
+};
+
 const transactionColumns = {
   TYPE: 'type',
 };
@@ -149,6 +158,7 @@ module.exports = {
   defaultBucketNames,
   defaultCloudProviderEndpoints,
   entityColumns,
+  entityTypes,
   filterKeys,
   httpStatusCodes,
   networks,

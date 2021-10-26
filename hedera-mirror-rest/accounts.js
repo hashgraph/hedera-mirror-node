@@ -69,7 +69,7 @@ const getAccountQuery = (
   limitAndOrderQuery = {query: '', params: [], order: ''}
 ) => {
   const entityWhereFilter = [
-    `e.type in (${utils.ENTITY_TYPE_ACCOUNT}, ${utils.ENTITY_TYPE_CONTRACT})`,
+    `e.type in (${constants.entityTypes.ACCOUNT}, ${constants.entityTypes.CONTRACT})`,
     entityAccountQuery.query,
     pubKeyQuery.query,
   ]
