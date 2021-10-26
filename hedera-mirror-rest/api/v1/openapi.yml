@@ -786,7 +786,7 @@ components:
           $ref: '#/components/schemas/Key'
         max_automatic_token_associations:
           type: integer
-          format: int64
+          format: int32
         memo:
           type: string
         receiver_sig_required:
