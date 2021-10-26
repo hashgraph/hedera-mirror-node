@@ -115,6 +115,7 @@ create table if not exists contract_log
     contract_id         bigint      not null,
     data                bytea       not null,
     index               int         not null,
+    payer_account_id    bigint      not null,
     topic0              varchar(64) null,
     topic1              varchar(64) null,
     topic2              varchar(64) null,
@@ -135,7 +136,8 @@ create table if not exists contract_result
     function_parameters  bytea        not null,
     function_result      bytea        null,
     gas_limit            bigint       not null,
-    gas_used             bigint       not null
+    gas_used             bigint       not null,
+    payer_account_id     bigint       not null
 );
 comment on table contract_result is 'Crypto contract execution results';
 
