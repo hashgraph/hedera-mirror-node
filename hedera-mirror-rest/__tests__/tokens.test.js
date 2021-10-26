@@ -27,7 +27,7 @@ const {opsMap} = require('../utils');
 const utils = require('../utils');
 const {TransactionResultService, TransactionTypeService} = require('../service');
 const {formatSqlQueryString} = require('./testutils');
-const constants = require('./constants');
+const constants = require('../constants');
 
 describe('token formatTokenRow tests', () => {
   const rowInput = {
