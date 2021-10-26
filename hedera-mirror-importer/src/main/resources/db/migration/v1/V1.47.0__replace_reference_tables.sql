@@ -1,7 +1,7 @@
 -- Remove t_entity_types and alter tables referencing it to use a entity_type value instead.
 
 -- Create the enum entity_type to replace the foreign key with
-create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'toPIC', 'toKEN', 'SCHEDULE');
+create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 
 drop function if exists updateEntityTypeFromInt(integer);
 
