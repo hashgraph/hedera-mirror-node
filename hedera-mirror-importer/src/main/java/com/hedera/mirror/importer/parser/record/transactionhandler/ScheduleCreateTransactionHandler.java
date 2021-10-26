@@ -20,18 +20,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-public class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public ScheduleCreateTransactionHandler() {
-        super(EntityOperationEnum.CREATE);
+    ScheduleCreateTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.SCHEDULECREATE);
     }
 
     @Override
@@ -41,12 +42,13 @@ public class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransact
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        ScheduleCreateTransactionBody scheduleCreateTransactionBody = recordItem.getTransactionBody()
-                .getScheduleCreate();
-        if (scheduleCreateTransactionBody.hasAdminKey()) {
-            entity.setKey(scheduleCreateTransactionBody.getAdminKey().toByteArray());
+        var transactionBody = recordItem.getTransactionBody().getScheduleCreate();
+
+        if (transactionBody.hasAdminKey()) {
+            entity.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
-        entity.setMemo(scheduleCreateTransactionBody.getMemo());
+        entity.setMemo(transactionBody.getMemo());
+        entityListener.onEntity(entity);
     }
 }

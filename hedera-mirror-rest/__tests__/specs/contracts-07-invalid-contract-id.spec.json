@@ -1,0 +1,15 @@
+{
+  "description": "Contract api calls for using invalid contract id",
+  "setup": {},
+  "urls": ["/api/v1/contracts/abc", "/api/v1/contracts/1.2.3.4"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: contractid"
+        }
+      ]
+    }
+  }
+}

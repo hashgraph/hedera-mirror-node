@@ -73,6 +73,47 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - balances
+  /api/v1/contracts:
+    get:
+      summary: List contract entities on network
+      description: Returns a list of all contract entity items on the network.
+      operationId: listContracts
+      parameters:
+        - $ref: '#/components/parameters/contractIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
+  /api/v1/contracts/{contractId}:
+    get:
+      summary: Get contract by id
+      description: Return the contract information given an id
+      operationId: getContractById
+      parameters:
+        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -576,6 +617,8 @@ tags:
     description: The balance object represents the balance of accounts on the Hedera network.
     externalDocs:
       url: https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api#balances
+  - name: contracts
+    description: The contracts objects represents the information associated with contract entities.
   - name: schedules
     description: The schedules object represents the information associated with a schedule entity.
   - name: transactions
@@ -590,11 +633,11 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.43.0-SNAPSHOT
+  version: 0.44.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
-  description: "The Mirror Node REST API offers the ability to query cryptocurrency transactions and account information from a Hedera managed mirror node.\n\nAvailable versions: [v1](/api/v1/doc). Base url: [/api/v1](/api/v1)"
+  description: "The Mirror Node REST API offers the ability to query cryptocurrency transactions and account information from a Hedera managed mirror node.\n\nAvailable versions: [v1](/api/v1/docs). Base url: [/api/v1](/api/v1)"
   contact:
     name: Hedera Mirror Node Team
     email: mirrornode@hedera.com
@@ -635,6 +678,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AccountBalance'
+        links:
+          $ref: '#/components/schemas/Links'
+    ContractResponse:
+      allOf:
+        - $ref: '#/components/schemas/Contract'
+        - type: object
+          properties:
+            bytecode:
+              type: string
+              nullable: true
+              format: binary
+              description: The contract bytecode in hex
+              example: "0x01021a1fdc9b"
+    ContractsResponse:
+      type: object
+      properties:
+        contracts:
+          $ref: '#/components/schemas/Contracts'
         links:
           $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
@@ -721,12 +782,12 @@ components:
         deleted:
           type: boolean
         expiry_timestamp:
-          nullable: true
+          $ref: '#/components/schemas/TimestampNullable'
         key:
           $ref: '#/components/schemas/Key'
         max_automatic_token_associations:
           type: integer
-          format: int64
+          format: int32
         memo:
           type: string
         receiver_sig_required:
@@ -782,7 +843,7 @@ components:
         account:
           $ref: '#/components/schemas/EntityId'
         expiry_timestamp:
-          nullable: true
+          $ref: '#/components/schemas/TimestampNullable'
         auto_renew_period:
           nullable: true
         key:
@@ -824,6 +885,41 @@ components:
         tokens:
           - token_id: 0.0.200001
             balance: 8
+    Contract:
+      type: object
+      properties:
+        admin_key:
+          $ref: '#/components/schemas/Key'
+        auto_renew_period:
+          type: number
+          nullable: true
+          example: null
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        created_timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        deleted:
+          type: boolean
+          example: false
+        expiration_timestamp:
+          $ref: '#/components/schemas/TimestampNullable'
+        file_id:
+          $ref: '#/components/schemas/EntityId'
+        memo:
+          example: contract memo
+          type: string
+        obtainer_id:
+          $ref: '#/components/schemas/EntityId'
+        proxy_account_id:
+          $ref: '#/components/schemas/EntityId'
+        solidity_address:
+          $ref: '#/components/schemas/SolidityAddress'
+        timestamp:
+          $ref: '#/components/schemas/TimestampRange'
+    Contracts:
+      type: array
+      items:
+        $ref: '#/components/schemas/Contract'
     CustomFees:
       type: object
       properties:
@@ -846,6 +942,9 @@ components:
       description: "Network entity ID in the format of `shard.realm.num`"
       pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
       example: "0.1.2"
+    EntityIdQuery:
+      type: string
+      format: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
     Error:
       type: object
       properties:
@@ -1005,8 +1104,7 @@ components:
           type: boolean
           example: false
         executed_timestamp:
-          $ref: '#/components/schemas/Timestamp'
-          nullable: true
+          $ref: '#/components/schemas/TimestampNullable'
         memo:
           type: string
           example: 'created on 02/10/2021'
@@ -1039,6 +1137,13 @@ components:
           type: string
           format: byte
           example: "3q2+7wABAQMLqgMMwQ=="
+    SolidityAddress:
+      type: string
+      description: A network entity encoded as a solidity address in hex
+      format: binary
+      minLength: 42
+      maxLength: 42
+      example: "0x0000000000000000000000000000000000001f41"
     StateProofFiles:
       type: object
       properties:
@@ -1079,6 +1184,22 @@ components:
       type: string
       example: "1586567700.453054000"
       pattern: '/^\d{1,10}(\.\d{1,9})?$'
+    TimestampNullable:
+      allOf:
+        - $ref: '#/components/schemas/Timestamp'
+        - nullable: true
+    TimestampRange:
+      type: object
+      description: A timestamp range an entity is valid for
+      properties:
+        from:
+          allOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - description: The inclusive from timestamp in seconds
+        to:
+          allOf:
+            - $ref: '#/components/schemas/TimestampNullable'
+            - description: The exclusive to timestamp in seconds
     Token:
       type: object
       properties:
@@ -1147,8 +1268,7 @@ components:
           type: boolean
           example: true
         expiry_timestamp:
-          example: null
-          nullable: true
+          $ref: '#/components/schemas/TimestampNullable'
         fee_schedule_key:
           $ref: '#/components/schemas/Key'
         freeze_default:
@@ -1524,8 +1644,7 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
-        type: string
-        format: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
+        $ref: '#/components/schemas/EntityIdQuery'
     balanceQueryParam:
       name: account.balance
       in: query
@@ -1556,6 +1675,62 @@ components:
       schema:
         type: string
         format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
+    contractIdQueryParam:
+      name: contract.id
+      description: The ID of the contract to return information for
+      in: query
+      examples:
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        entityNumNeOperator:
+          summary: Example of entityNum not equals operator
+          value: ne:300
+        idNeOperator:
+          summary: Example of id not equals operator
+          value: ne:0.0.300
+        entityNumGtOperator:
+          summary: Example of entityNum greater than operator
+          value: gt:400
+        idGtOperator:
+          summary: Example of id greater than operator
+          value: gt:0.0.400
+        entityNumGteOperator:
+          summary: Example of entityNum greater than or equals operator
+          value: gte:500
+        idGteOperator:
+          summary: Example of id greater than or equals operator
+          value: gte:0.0.500
+        entityNumLtOperator:
+          summary: Example of entityNum less than operator
+          value: lt:600
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.600
+        entityNumLteOperator:
+          summary: Example of entityNum less than or equals operator
+          value: lte:700
+        idLteOperator:
+          summary: Example of id less than or equals operator
+          value: lte:0.0.700
+      schema:
+        $ref: '#/components/schemas/EntityIdQuery'
+    contractIdPathParam:
+      name: contractId
+      in: path
+      required: true
+      description: Contract entity id
+      schema:
+        $ref: '#/components/schemas/EntityId'
     excludeBalanceQueryParam:
       name: excluebalance
       in: query
@@ -1571,9 +1746,9 @@ components:
       example: 2
       schema:
         type: integer
-        default: 1000
+        default: 500
         minimum: 1
-        maximum: 1000
+        maximum: 500
     orderQueryParam:
       name: order
       in: query
@@ -1606,16 +1781,53 @@ components:
         type: string
     scheduleIdQueryParam:
       name: schedule.id
+      description: The ID of the schedule to return information for
       in: query
-      example:
-        - 2
-        - lt:0.30000.0
-        - gt:0.7.25301
-      explode: true
+      examples:
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        entityNumNeOperator:
+          summary: Example of entityNum not equals operator
+          value: ne:300
+        idNeOperator:
+          summary: Example of id not equals operator
+          value: ne:0.0.300
+        entityNumGtOperator:
+          summary: Example of entityNum greater than operator
+          value: gt:400
+        idGtOperator:
+          summary: Example of id greater than operator
+          value: gt:0.0.400
+        entityNumGteOperator:
+          summary: Example of entityNum greater than or equals operator
+          value: gte:500
+        idGteOperator:
+          summary: Example of id greater than or equals operator
+          value: gte:0.0.500
+        entityNumLtOperator:
+          summary: Example of entityNum less than operator
+          value: lt:600
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.600
+        entityNumLteOperator:
+          summary: Example of entityNum less than or equals operator
+          value: lte:700
+        idLteOperator:
+          summary: Example of id less than or equals operator
+          value: lte:0.0.700
       schema:
-        type: array
-        items:
-          type: string
+        $ref: '#/components/schemas/EntityIdQuery'
     serialNumberPathParam:
       name: serialnumber
       in: path
@@ -1739,15 +1951,53 @@ components:
         type: string
     tokenIdQueryParam:
       name: token.id
+      description: The ID of the token to return information for
       in: query
-      example:
-        - lt:0.30000.0
-        - gt:0.7.25301
-      explode: true
+      examples:
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+        entityNumNeOperator:
+          summary: Example of entityNum not equals operator
+          value: ne:300
+        idNeOperator:
+          summary: Example of id not equals operator
+          value: ne:0.0.300
+        entityNumGtOperator:
+          summary: Example of entityNum greater than operator
+          value: gt:400
+        idGtOperator:
+          summary: Example of id greater than operator
+          value: gt:0.0.400
+        entityNumGteOperator:
+          summary: Example of entityNum greater than or equals operator
+          value: gte:500
+        idGteOperator:
+          summary: Example of id greater than or equals operator
+          value: gte:0.0.500
+        entityNumLtOperator:
+          summary: Example of entityNum less than operator
+          value: lt:600
+        idLtOperator:
+          summary: Example of id less than operator
+          value: lt:0.0.600
+        entityNumLteOperator:
+          summary: Example of entityNum less than or equals operator
+          value: lte:700
+        idLteOperator:
+          summary: Example of id less than or equals operator
+          value: lte:0.0.700
       schema:
-        type: array
-        items:
-          type: string
+        $ref: '#/components/schemas/EntityIdQuery'
     tokenIdPathParam:
       name: tokenId
       in: path

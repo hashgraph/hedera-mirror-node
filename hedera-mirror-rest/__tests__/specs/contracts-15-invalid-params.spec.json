@@ -1,0 +1,56 @@
+{
+  "description": "Contracts api calls with invalid params",
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654000123456",
+        "file_id": "5001",
+        "id": "8001",
+        "key": [1, 1, 1],
+        "timestamp_range": "[987654000123456, 997654000123456]"
+      },
+      {
+        "created_timestamp": "987654000123456",
+        "file_id": "5001",
+        "id": "8001",
+        "key": [1, 1, 1],
+        "timestamp_range": "[997654000123457,)"
+      },
+      {
+        "created_timestamp": "987654111123456",
+        "file_id": "5001",
+        "id": "8002",
+        "key": [2, 2, 2],
+        "timestamp_range": "[987654111123456,)"
+      },
+      {
+        "auto_renew_period": 1500,
+        "created_timestamp": "987654222123456",
+        "expiration_timestamp": "1236987654000000123",
+        "file_id": "5001",
+        "id": "8003",
+        "key": [3, 3, 3],
+        "obtainer_id": "7001",
+        "proxy_account_id": "7005",
+        "timestamp_range": "[987654222123456,)"
+      }
+    ]
+  },
+  "urls": ["/api/v1/contracts?contract.id=a&order=b&limit=c"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: contract.id"
+        },
+        {
+          "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        }
+      ]
+    }
+  }
+}

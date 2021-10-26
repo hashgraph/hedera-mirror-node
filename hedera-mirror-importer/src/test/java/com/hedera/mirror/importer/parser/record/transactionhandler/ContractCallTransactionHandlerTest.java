@@ -25,11 +25,15 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
+    private final EntityProperties entityProperties = new EntityProperties();
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCallTransactionHandler();
+        return new ContractCallTransactionHandler(entityListener, entityProperties);
     }
 
     @Override

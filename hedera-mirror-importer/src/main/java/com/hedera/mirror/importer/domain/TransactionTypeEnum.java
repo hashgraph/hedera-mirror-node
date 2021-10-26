@@ -20,6 +20,11 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperation.CREATE;
+import static com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperation.DELETE;
+import static com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperation.NONE;
+import static com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperation.UPDATE;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
@@ -27,56 +32,59 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperation;
+
 @Getter
 @RequiredArgsConstructor
 public enum TransactionTypeEnum {
 
-    UNKNOWN(-1),
-    CONTRACTCALL(7),
-    CONTRACTCREATEINSTANCE(8),
-    CONTRACTUPDATEINSTANCE(9),
-    CRYPTOADDLIVEHASH(10),
-    CRYPTOCREATEACCOUNT(11),
-    CRYPTODELETE(12),
-    CRYPTODELETELIVEHASH(13),
-    CRYPTOTRANSFER(14),
-    CRYPTOUPDATEACCOUNT(15),
-    FILEAPPEND(16),
-    FILECREATE(17),
-    FILEDELETE(18),
-    FILEUPDATE(19),
-    SYSTEMDELETE(20),
-    SYSTEMUNDELETE(21),
-    CONTRACTDELETEINSTANCE(22),
-    FREEZE(23),
-    CONSENSUSCREATETOPIC(24),
-    CONSENSUSUPDATETOPIC(25),
-    CONSENSUSDELETETOPIC(26),
-    CONSENSUSSUBMITMESSAGE(27),
-    UNCHECKEDSUBMIT(28),
-    TOKENCREATION(29),
-    TOKENFREEZE(31),
-    TOKENUNFREEZE(32),
-    TOKENGRANTKYC(33),
-    TOKENREVOKEKYC(34),
-    TOKENDELETION(35),
-    TOKENUPDATE(36),
-    TOKENMINT(37),
-    TOKENBURN(38),
-    TOKENWIPE(39),
-    TOKENASSOCIATE(40),
-    TOKENDISSOCIATE(41),
-    SCHEDULECREATE(42),
-    SCHEDULEDELETE(43),
-    SCHEDULESIGN(44),
-    TOKENFEESCHEDULEUPDATE(45),
-    TOKENPAUSE(46),
-    TOKENUNPAUSE(47);
+    UNKNOWN(-1, NONE),
+    CONTRACTCALL(7, NONE),
+    CONTRACTCREATEINSTANCE(8, CREATE),
+    CONTRACTUPDATEINSTANCE(9, UPDATE),
+    CRYPTOADDLIVEHASH(10, NONE),
+    CRYPTOCREATEACCOUNT(11, CREATE),
+    CRYPTODELETE(12, DELETE),
+    CRYPTODELETELIVEHASH(13, NONE),
+    CRYPTOTRANSFER(14, NONE),
+    CRYPTOUPDATEACCOUNT(15, UPDATE),
+    FILEAPPEND(16, NONE),
+    FILECREATE(17, CREATE),
+    FILEDELETE(18, DELETE),
+    FILEUPDATE(19, UPDATE),
+    SYSTEMDELETE(20, DELETE),
+    SYSTEMUNDELETE(21, UPDATE),
+    CONTRACTDELETEINSTANCE(22, DELETE),
+    FREEZE(23, NONE),
+    CONSENSUSCREATETOPIC(24, CREATE),
+    CONSENSUSUPDATETOPIC(25, UPDATE),
+    CONSENSUSDELETETOPIC(26, DELETE),
+    CONSENSUSSUBMITMESSAGE(27, NONE),
+    UNCHECKEDSUBMIT(28, NONE),
+    TOKENCREATION(29, CREATE),
+    TOKENFREEZE(31, NONE),
+    TOKENUNFREEZE(32, NONE),
+    TOKENGRANTKYC(33, NONE),
+    TOKENREVOKEKYC(34, NONE),
+    TOKENDELETION(35, DELETE),
+    TOKENUPDATE(36, UPDATE),
+    TOKENMINT(37, NONE),
+    TOKENBURN(38, NONE),
+    TOKENWIPE(39, NONE),
+    TOKENASSOCIATE(40, NONE),
+    TOKENDISSOCIATE(41, NONE),
+    SCHEDULECREATE(42, CREATE),
+    SCHEDULEDELETE(43, DELETE),
+    SCHEDULESIGN(44, NONE),
+    TOKENFEESCHEDULEUPDATE(45, NONE),
+    TOKENPAUSE(46, NONE),
+    TOKENUNPAUSE(47, NONE);
 
     private static final Map<Integer, TransactionTypeEnum> idMap = Arrays.stream(values())
             .collect(Collectors.toMap(TransactionTypeEnum::getProtoId, Function.identity()));
 
     private final int protoId;
+    private final EntityOperation entityOperation;
 
     public static TransactionTypeEnum of(int protoId) {
         return idMap.getOrDefault(protoId, UNKNOWN);

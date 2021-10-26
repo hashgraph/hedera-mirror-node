@@ -89,6 +89,7 @@ create table if not exists contract
     memo                 text    default '' not null,
     num                  bigint             not null,
     obtainer_id          bigint             null,
+    parent_id            bigint             null,
     proxy_account_id     bigint             null,
     public_key           character varying  null,
     realm                bigint             not null,
@@ -101,7 +102,7 @@ comment on table contract is 'Contract entity';
 -- contract_history
 create table if not exists contract_history
 (
-    like contract
+    like contract including defaults
 );
 comment on table contract_history is 'Contract entity historical state';
 
@@ -131,7 +132,7 @@ create table if not exists contract_result
     created_contract_ids bigint array null,
     error_message        text         null,
     function_parameters  bytea        not null,
-    function_result      bytea        not null,
+    function_result      bytea        null,
     gas_limit            bigint       not null,
     gas_used             bigint       not null
 );
@@ -189,7 +190,7 @@ comment on table entity is 'Network entity with state';
 
 create table if not exists entity_history
 (
-    like entity
+    like entity including defaults
 );
 comment on table entity_history is 'Network entity historical state';
 

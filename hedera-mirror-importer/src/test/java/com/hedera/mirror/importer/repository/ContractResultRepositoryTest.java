@@ -34,15 +34,7 @@ class ContractResultRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void save() {
-        ContractResult contractResult = new ContractResult();
-        contractResult.setCallResult(new byte[] {'c'});
-        contractResult.setConsensusTimestamp(1L);
-        contractResult.setFunctionParameters(new byte[] {'p'});
-        contractResult.setFunctionResult(new byte[] {'r'});
-        contractResult.setGasLimit(200L);
-        contractResult.setGasUsed(100L);
-        contractResult = contractResultRepository.save(contractResult);
-
+        ContractResult contractResult = domainBuilder.contractResult().persist();
         assertThat(contractResultRepository.findById(contractResult.getId())).get().isEqualTo(contractResult);
     }
 }
