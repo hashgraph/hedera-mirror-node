@@ -12,8 +12,8 @@ create function updateEntityTypeFromInt(integer)
             when 1 then return 'ACCOUNT';
             when 2 then return 'CONTRACT';
             when 3 then return 'FILE';
-            when 4 then return 'toPIC';
-            when 5 then return 'toKEN';
+            when 4 then return 'TOPIC';
+            when 5 then return 'TOKEN';
             when 6 then return 'SCHEDULE';
             else return null;
         end case;
@@ -68,35 +68,13 @@ alter table entity_history
 
 -- Alter contract to use the new enum entity_type
 alter table contract
-    add column type_enum entity_type null;
+    drop column type,
+    add column type entity_type default 'CONTRACT' not null;
 
-update contract
-    set type_enum = updateEntityTypeFromInt(type);
-
-alter table contract
-    drop column type;
-
-alter table contract
-    rename column type_enum to type;
-
-alter table contract
-    alter column type set not null;
-
--- Alter contract to use the new enum entity_type
+-- Alter contract_history to use the new enum entity_type
 alter table contract_history
-    add column type_enum entity_type null;
-
-update contract_history
-    set type_enum = updateEntityTypeFromInt(type);
-
-alter table contract_history
-    drop column type;
-
-alter table contract_history
-    rename column type_enum to type;
-
-alter table contract
-    alter column type set not null;
+    drop column type,
+    add column type entity_type default 'CONTRACT' not null;
 
 
 -- Drop t_entity_types

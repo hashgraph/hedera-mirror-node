@@ -84,10 +84,10 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
                 ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
         );
         assertThat(findAllContracts()).extracting(MigrationContractV1_47_0::getType).containsExactly(
-                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
+                CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT
         );
         assertThat(findAllContractsHistory()).extracting(MigrationContractV1_47_0::getType).containsExactly(
-                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
+                CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT
         );
     }
 
