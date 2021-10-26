@@ -122,7 +122,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final Key TOKEN_UPDATE_REF_KEY = keyFromString(KEY2);
     private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
     private static final long TRANSFER_TIMESTAMP = 15L;
-    private static final EntityId PAYER_ACCOUNT_ID = EntityIdEndec.decode(2002, EntityTypeEnum.ACCOUNT);
+    private static final EntityId PAYER_ACCOUNT_ID = EntityId.of(PAYER);
     @Resource
     protected TokenRepository tokenRepository;
     @Resource

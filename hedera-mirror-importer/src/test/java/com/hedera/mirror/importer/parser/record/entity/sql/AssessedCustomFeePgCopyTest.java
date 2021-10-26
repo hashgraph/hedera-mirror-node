@@ -39,7 +39,6 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.util.EntityIdEndec;
 
 class AssessedCustomFeePgCopyTest extends IntegrationTest {
 
@@ -47,6 +46,7 @@ class AssessedCustomFeePgCopyTest extends IntegrationTest {
     private static final EntityId FEE_COLLECTOR_1 = EntityId.of("0.0.2000", EntityTypeEnum.ACCOUNT);
     private static final EntityId FEE_COLLECTOR_2 = EntityId.of("0.0.2001", EntityTypeEnum.ACCOUNT);
     private static final long FEE_PAYER_1 = 3000L;
+    private static final EntityId FEE_PAYER_1_ID = EntityId.of(FEE_PAYER_1, EntityTypeEnum.ACCOUNT);
     private static final long FEE_PAYER_2 = 3001L;
     private static final EntityId TOKEN_ID_1 = EntityId.of("0.0.5000", EntityTypeEnum.TOKEN);
     private static final EntityId TOKEN_ID_2 = EntityId.of("0.0.5001", EntityTypeEnum.TOKEN);
@@ -73,7 +73,7 @@ class AssessedCustomFeePgCopyTest extends IntegrationTest {
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
         assessedCustomFee1.setAmount(10L);
         assessedCustomFee1.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_1, CONSENSUS_TIMESTAMP));
-        assessedCustomFee1.setPayerAccountId(EntityIdEndec.decode(FEE_PAYER_1, ACCOUNT));
+        assessedCustomFee1.setPayerAccountId(FEE_PAYER_1_ID);
 
         // fee paid in TOKEN_ID_1 by FEE_PAYER_1 to FEE_COLLECTOR_2
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
@@ -81,7 +81,7 @@ class AssessedCustomFeePgCopyTest extends IntegrationTest {
         assessedCustomFee2.setEffectivePayerAccountIds(List.of(FEE_PAYER_1));
         assessedCustomFee2.setTokenId(TOKEN_ID_1);
         assessedCustomFee2.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_2, CONSENSUS_TIMESTAMP));
-        assessedCustomFee2.setPayerAccountId(EntityIdEndec.decode(FEE_PAYER_1, ACCOUNT));
+        assessedCustomFee2.setPayerAccountId(FEE_PAYER_1_ID);
 
         // fee paid in TOKEN_ID_2 by FEE_PAYER_1 and FEE_PAYER_2 to FEE_COLLECTOR_2
         AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
@@ -89,7 +89,7 @@ class AssessedCustomFeePgCopyTest extends IntegrationTest {
         assessedCustomFee3.setEffectivePayerAccountIds(List.of(FEE_PAYER_1, FEE_PAYER_2));
         assessedCustomFee3.setTokenId(TOKEN_ID_2);
         assessedCustomFee3.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_2, CONSENSUS_TIMESTAMP));
-        assessedCustomFee3.setPayerAccountId(EntityIdEndec.decode(FEE_PAYER_2, ACCOUNT));
+        assessedCustomFee3.setPayerAccountId(EntityId.of(FEE_PAYER_2, ACCOUNT));
 
         List<AssessedCustomFee> assessedCustomFees = List.of(
                 assessedCustomFee1,

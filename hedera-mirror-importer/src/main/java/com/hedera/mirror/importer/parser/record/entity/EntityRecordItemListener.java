@@ -284,10 +284,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
-                entityListener.onNonFeeTransfer(new NonFeeTransfer(
-                        aa.getAmount(),
-                        new NonFeeTransfer.Id(consensusTimestamp, EntityId.of(aa.getAccountID())),
-                        EntityId.of(body.getTransactionID().getAccountID())));
+                entityListener.onNonFeeTransfer(new NonFeeTransfer(consensusTimestamp, aa.getAmount(),
+                        EntityId.of(aa.getAccountID()), EntityId.of(body.getTransactionID().getAccountID())));
             }
         }
     }

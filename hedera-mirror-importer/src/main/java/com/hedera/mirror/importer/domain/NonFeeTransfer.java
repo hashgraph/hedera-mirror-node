@@ -44,12 +44,18 @@ public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
     @EmbeddedId
     @JsonUnwrapped
     private NonFeeTransfer.Id id;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     public NonFeeTransfer(long consensusTimestamp, long amount, EntityId entityId) {
+        this(consensusTimestamp, amount, entityId, null);
+    }
+
+    public NonFeeTransfer(long consensusTimestamp, long amount, EntityId entityId, EntityId payerAccountId) {
         id = new NonFeeTransfer.Id(consensusTimestamp, entityId);
         this.amount = amount;
+        this.payerAccountId = payerAccountId;
     }
 
     @JsonIgnore
