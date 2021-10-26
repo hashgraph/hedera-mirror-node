@@ -80,7 +80,7 @@
     "eslint-plugin-security": "^1.4.0",
     "husky": "^7.0.2",
     "jest": "^27.3.0",
-    "jest-circus": "^27.3.0",
+    "jest-circus": "^27.3.1",
     "jest-junit": "^13.0.0",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
