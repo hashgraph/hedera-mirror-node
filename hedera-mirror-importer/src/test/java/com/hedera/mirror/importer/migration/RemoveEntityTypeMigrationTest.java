@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
 import lombok.Data;
@@ -47,19 +48,15 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.converter.RangeToStringSerializer;
-import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 @EnabledIfV1
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.46.7")
+@TestPropertySource(properties = "spring.flyway.target=1.46.11")
 class RemoveEntityTypeMigrationTest extends IntegrationTest {
 
     @Resource
     private JdbcOperations jdbcOperations;
-
-    @Resource
-    private DomainBuilder domainBuilder;
 
     @Value("classpath:db/migration/v1/V1.47.0__replace_reference_tables.sql")
     private File migrationSql;
@@ -67,33 +64,31 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
     @Test
     void verify() {
         // given
-        // entities
-        // - 2 ft classes
-        //   - deleted, account1's token dissociate includes token transfer
-        //   - still alive
-        // - 3 nft classes
-        //   - deleted, account1's token dissociate doesn't include token transfer, account2's includes
-        //   - deleted, account1's token dissociate doesn't include token transfer, account2's dissociate happened
-        //     before token deletion
-        //   - still alive
-        MigrationEntityV1_46 account = entity(1, 1, ACCOUNT);
-        MigrationEntityV1_46 contract = entity(2, 2, CONTRACT);
-        MigrationEntityV1_46 file = entity(3, 3, FILE);
-        MigrationEntityV1_46 topic = entity(4, 4, TOPIC);
-        MigrationEntityV1_46 token = entity(5, 5, TOKEN);
-        MigrationEntityV1_46 schedule = entity(6, 6, SCHEDULE);
+        List<MigrationEntityV1_47_0> entities = new ArrayList<>();
+        List<MigrationContractV1_47_0> contracts = new ArrayList<>();
 
-        persistEntities(List.of(account, contract, file, topic, token, schedule));
+        for (int i = 1; i < 7; i++) {
+            entities.add(entity(i, i, EntityTypeEnum.fromId(i)));
+            contracts.add(contract(i, i, EntityTypeEnum.fromId(i)));
+        }
+        persistEntities(entities);
+        persistContracts(contracts);
         // when
         migrate();
 
         // then
-        assertThat(findAllEntities()).extracting(MigrationEntityV1_46::getType).containsExactly(
+        assertThat(findAllEntities()).extracting(MigrationEntityV1_47_0::getType).containsExactly(
                 ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
         );
-//        assertThat(findAllEntitiesHistory()).extracting(MigrationEntityV1_46::getType).containsExactly(
-//                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
-//        );
+        assertThat(findAllEntitiesHistory()).extracting(MigrationEntityV1_47_0::getType).containsExactly(
+                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
+        );
+        assertThat(findAllContracts()).extracting(MigrationContractV1_47_0::getType).containsExactly(
+                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
+        );
+        assertThat(findAllContractsHistory()).extracting(MigrationContractV1_47_0::getType).containsExactly(
+                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
+        );
     }
 
     @SneakyThrows
@@ -101,18 +96,39 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         jdbcOperations.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
-    private MigrationEntityV1_46 entity(long id, long num, EntityTypeEnum type) {
-        MigrationEntityV1_46 entity = new MigrationEntityV1_46();
+    private MigrationEntityV1_47_0 entity(long id, long num, EntityTypeEnum type) {
+        MigrationEntityV1_47_0 entity = new MigrationEntityV1_47_0();
         entity.setId(id);
         entity.setNum(num);
         entity.setType(type);
         return entity;
     }
 
-    private void persistEntities(List<MigrationEntityV1_46> entities) {
-        for (MigrationEntityV1_46 entity : entities) {
+    private MigrationContractV1_47_0 contract(long id, long num, EntityTypeEnum type) {
+        MigrationContractV1_47_0 entity = new MigrationContractV1_47_0();
+        entity.setId(id);
+        entity.setNum(num);
+        entity.setType(type);
+        return entity;
+    }
+
+    private void persistEntities(List<MigrationEntityV1_47_0> entities) {
+        for (MigrationEntityV1_47_0 entity : entities) {
             jdbcOperations.update(
                     "insert into entity (id, created_timestamp, num, realm, shard, type, timestamp_range)" +
+                            " values (?,?,?,?,?,?,?::int8range)",
+                    entity.getId(),
+                    entity.getCreatedTimestamp(),
+                    entity.getNum(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    entity.getType().getId(),
+                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
+                            .lowerEndpoint())
+            );
+
+            jdbcOperations.update(
+                    "insert into entity_history (id, created_timestamp, num, realm, shard, type, timestamp_range)" +
                             " values (?,?,?,?,?,?,?::int8range)",
                     entity.getId(),
                     entity.getCreatedTimestamp(),
@@ -126,70 +142,78 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         }
     }
 
-    //    private void persistTransactions(List<Transaction> transactions) {
-//        for (Transaction transaction : transactions) {
-//            jdbcOperations
-//                    .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " +
-//                                    "max_fee, " +
-//                                    "memo, " +
-//                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
-//                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
-//                                    " values" +
-//                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-//                            transaction.getChargedTxFee(),
-//                            transaction.getConsensusTimestamp(),
-//                            transaction.getEntityId().getId(),
-//                            transaction.getInitialBalance(),
-//                            transaction.getMaxFee(),
-//                            transaction.getMemo(),
-//                            transaction.getNodeAccountId().getId(),
-//                            transaction.getPayerAccountId().getId(),
-//                            transaction.getResult(),
-//                            transaction.isScheduled(),
-//                            transaction.getTransactionBytes(),
-//                            transaction.getTransactionHash(),
-//                            transaction.getType(),
-//                            transaction.getValidDurationSeconds(),
-//                            transaction.getValidStartNs());
-//        }
-//    }
-//
-//    private List<Transaction> findAllTransactions() {
-//        return jdbcOperations.query("select * from transaction", new RowMapper<>() {
-//
-//            @Override
-//            public Transaction mapRow(ResultSet rs, int rowNum) throws SQLException {
-//                Transaction transaction = new Transaction();
-//                transaction.setConsensusTimestamp(rs.getLong("consensus_ns"));
-//                transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT));
-//                transaction.setMemo(rs.getBytes("transaction_bytes"));
-//                transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityTypeEnum
-//                .ACCOUNT));
-//                transaction
-//                        .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityTypeEnum.ACCOUNT));
-//                transaction.setResult(rs.getInt("result"));
-//                transaction.setType(rs.getInt("type"));
-//                transaction.setValidStartNs(rs.getLong("valid_start_ns"));
-//                return transaction;
-//            }
-//        });
-//    }
-//
-    private List<MigrationEntityV1_46> findAllEntities() {
-        return jdbcOperations.query("select id, type from entity order by id",
-                new BeanPropertyRowMapper<>(MigrationEntityV1_46.class));
+    private void persistContracts(List<MigrationContractV1_47_0> contracts) {
+        for (MigrationContractV1_47_0 contract : contracts) {
+            jdbcOperations.update(
+                    "insert into contract (id, created_timestamp, memo, num, realm, shard, type, timestamp_range)" +
+                            " values (?,?,?,?,?,?,?,?::int8range)",
+                    contract.getId(),
+                    contract.getCreatedTimestamp(),
+                    contract.getMemo(),
+                    contract.getNum(),
+                    contract.getRealm(),
+                    contract.getShard(),
+                    contract.getType().getId(),
+                    String.format("(%d, %d)", contract.getCreatedTimestamp(), contract.getTimestampRange()
+                            .lowerEndpoint())
+            );
+
+            jdbcOperations.update(
+                    "insert into contract_history (id, created_timestamp, memo, num, realm, shard, type, " +
+                            "timestamp_range)" +
+                            " values (?,?,?,?,?,?,?,?::int8range)",
+                    contract.getId(),
+                    contract.getCreatedTimestamp(),
+                    contract.getMemo(),
+                    contract.getNum(),
+                    contract.getRealm(),
+                    contract.getShard(),
+                    contract.getType().getId(),
+                    String.format("(%d, %d)", contract.getCreatedTimestamp(), contract.getTimestampRange()
+                            .lowerEndpoint())
+            );
+        }
     }
 
-    private List<MigrationEntityV1_46> findAllEntitiesHistory() {
+    private List<MigrationEntityV1_47_0> findAllEntities() {
+        return jdbcOperations.query("select id, type from entity order by id",
+                new BeanPropertyRowMapper<>(MigrationEntityV1_47_0.class));
+    }
+
+    private List<MigrationEntityV1_47_0> findAllEntitiesHistory() {
         return jdbcOperations.query("select id, type from entity_history order by id",
-                new BeanPropertyRowMapper<>(MigrationEntityV1_46.class));
+                new BeanPropertyRowMapper<>(MigrationEntityV1_47_0.class));
+    }
+
+    private List<MigrationContractV1_47_0> findAllContracts() {
+        return jdbcOperations.query("select id, type from contract order by id",
+                new BeanPropertyRowMapper<>(MigrationContractV1_47_0.class));
+    }
+
+    private List<MigrationContractV1_47_0> findAllContractsHistory() {
+        return jdbcOperations.query("select id, type from contract_history order by id",
+                new BeanPropertyRowMapper<>(MigrationContractV1_47_0.class));
     }
 
     @Data
     @NoArgsConstructor
-    private static class MigrationEntityV1_46 {
+    private static class MigrationEntityV1_47_0 {
+        private final long createdTimestamp = 1L;
+        private long id;
+        private long num;
+        private final long realm = 0;
+        private final long shard = 0;
+        @JsonSerialize(using = RangeToStringSerializer.class)
+        private final Range<Long> timestampRange = Range.atLeast(2L);
+        private EntityTypeEnum type;
+    }
+
+    @Data
+    @NoArgsConstructor
+    private static class MigrationContractV1_47_0 {
         private long createdTimestamp = 1L;
         private long id;
+        private String memo = "Migration test";
         private long num;
         private long realm = 0;
         private long shard = 0;
