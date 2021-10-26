@@ -25,9 +25,7 @@ const math = require('mathjs');
 const pgformat = require('pg-format');
 const config = require('../config');
 const EntityId = require('../entityId');
-const utils = require('../utils');
-const {ENTITY_TYPE_CONTRACT} = require('../utils');
-const constants = require('./constants');
+const constants = require('../constants');
 
 const NETWORK_FEE = 1;
 const NODE_FEE = 2;
