@@ -27,9 +27,9 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,6 +43,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ReflectionUtils;
 
 import com.hedera.mirror.importer.converter.NullableStringSerializer;
 
@@ -55,20 +56,16 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
-    private Set<Field> attributes = null;
-
-    @Value("${spring.flyway.locations:v1}")
-    private String version;
-
-    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {}.getRawType();
-
+    protected final Logger log = LogManager.getLogger(getClass());
+    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
+    }.getRawType();
     @Getter(lazy = true)
     private final String insertQuery = generateInsertQuery();
-
+    private volatile Set<Field> attributes = null;
     @Getter(lazy = true)
     private final String updateQuery = generateUpdateQuery();
-
-    protected final Logger log = LogManager.getLogger(getClass());
+    @Value("${spring.flyway.locations:v1}")
+    private String version;
 
     protected boolean isInsertOnly() {
         return false;
@@ -98,8 +95,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 getTemporaryTableName(), getFinalTableName());
     }
 
-    protected String getAttributeSelectQuery(String attributeName) {
-        return null;
+    protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
+        // default implementations per type
+        if (attributeType == String.class) {
+            return getStringColumnTypeSelect(attributeName);
+        } else {
+            return getFullTempTableColumnName(attributeName);
+        }
     }
 
     protected String getAttributeUpdateQuery(String attributeName) {
@@ -252,10 +254,13 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     private Set<Field> getAttributes() {
         if (attributes == null) {
-            attributes = Arrays.stream(metaModelClass.getDeclaredFields())
-                    // get SingularAttributes which are both static and volatile
-                    .filter(f -> Modifier.isStatic(f.getModifiers()) && Modifier.isVolatile(f.getModifiers()))
-                    .collect(Collectors.toSet());
+            Set<Field> fields = new HashSet<>();
+            ReflectionUtils.doWithFields(metaModelClass, field -> {
+                if (Modifier.isStatic(field.getModifiers()) && Modifier.isVolatile(field.getModifiers())) {
+                    fields.add(field);
+                }
+            });
+            attributes = fields;
         }
 
         return attributes;
@@ -285,8 +290,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
         // loop over fields to create select clause
         List<String> selectableFields = new ArrayList<>();
-        domainFields.forEach(d -> selectableFields
-                .add(getDefaultColumnSelectQuery(d.getType(), d.getName())));
+        domainFields.forEach(d -> selectableFields.add(getAttributeSelectQuery(d.getType(), d.getName())));
 
         return StringUtils.join(selectableFields, ", ");
     }
@@ -298,22 +302,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return parameterizedTypes[1];
     }
 
-    private String getDefaultColumnSelectQuery(Type attributeType, String attributeName) {
-        // get column custom select implementations
-        String columnSelectQuery = getAttributeSelectQuery(attributeName);
-        if (!StringUtils.isEmpty(columnSelectQuery)) {
-            return columnSelectQuery;
-        }
-
-        // default implementations per type
-        if (attributeType == String.class) {
-            return getStringColumnTypeSelect(attributeName);
-        } else {
-            return getFullTempTableColumnName(attributeName);
-        }
-    }
-
-    private String getStringColumnTypeSelect(String attributeName) {
+    protected String getStringColumnTypeSelect(String attributeName) {
         // String columns need extra logic since their default value and empty value are both serialized as null
         // Domain serializer adds a special scenario to set a placeholder for an empty. Null is null
         if (isNullableColumn(attributeName)) {

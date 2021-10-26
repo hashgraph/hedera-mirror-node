@@ -20,7 +20,10 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.importer.domain.ContractLog;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.CustomFee;
@@ -52,6 +55,12 @@ public interface EntityListener {
     default void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
     }
 
+    default void onContract(Contract contract) {
+    }
+
+    default void onContractLog(ContractLog contractLog) {
+    }
+
     default void onContractResult(ContractResult contractResult) throws ImporterException {
     }
 
@@ -67,7 +76,12 @@ public interface EntityListener {
     default void onEntityId(EntityId entityId) throws ImporterException {
         // entityId may have the default value "0.0.0" and should not persist to db
         if (!EntityId.isEmpty(entityId)) {
-            onEntity(entityId.toEntity());
+            AbstractEntity entity = entityId.toEntity();
+            if (entity instanceof Contract) {
+                onContract((Contract) entity);
+            } else {
+                onEntity((Entity) entity);
+            }
         }
     }
 

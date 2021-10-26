@@ -21,14 +21,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
-@AllArgsConstructor
-public class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
+class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
+
+    @Override
+    public TransactionTypeEnum getType() {
+        return TransactionTypeEnum.CONSENSUSSUBMITMESSAGE;
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {

@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -97,14 +98,6 @@ public class RecordItem implements StreamItem {
         recordBytes = null;
     }
 
-    public TransactionBody getTransactionBody() {
-        return transactionBodyAndSignatureMap.getTransactionBody();
-    }
-
-    public SignatureMap getSignatureMap() {
-        return transactionBodyAndSignatureMap.getSignatureMap();
-    }
-
     private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {
         try {
             if (!transaction.getSignedTransactionBytes().equals(ByteString.EMPTY)) {
@@ -148,6 +141,18 @@ public class RecordItem implements StreamItem {
             return transactionType;
         }
         return dataCase.getNumber();
+    }
+
+    public TransactionBody getTransactionBody() {
+        return transactionBodyAndSignatureMap.getTransactionBody();
+    }
+
+    public SignatureMap getSignatureMap() {
+        return transactionBodyAndSignatureMap.getSignatureMap();
+    }
+
+    public boolean isSuccessful() {
+        return record.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS;
     }
 
     @Value

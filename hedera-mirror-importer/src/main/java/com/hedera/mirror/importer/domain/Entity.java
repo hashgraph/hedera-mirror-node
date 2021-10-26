@@ -20,121 +20,27 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.collect.Range;
-import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import javax.persistence.Convert;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Id;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
+import lombok.experimental.SuperBuilder;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.NullableStringSerializer;
-import com.hedera.mirror.importer.converter.RangeToStringSerializer;
-import com.hedera.mirror.importer.util.Utility;
 
-@AllArgsConstructor
-@Builder(toBuilder = true)
 @Data
 @javax.persistence.Entity
 @NoArgsConstructor
-@ToString(exclude = {"key", "submitKey"})
-@TypeDef(
-        defaultForType = Range.class,
-        typeClass = PostgreSQLGuavaRangeType.class
-)
-@TypeDef(
-        name = "pgsql_enum",
-        typeClass = PostgreSQLEnumType.class
-)
-public class Entity {
+@SuperBuilder
+public class Entity extends AbstractEntity {
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId autoRenewAccountId;
 
-    private Long autoRenewPeriod;
-
-    private Long createdTimestamp;
-
-    private Boolean deleted;
-
-    private Long expirationTimestamp;
-
-    @Id
-    private Long id;
-
-    private byte[] key;
-
     private Integer maxAutomaticTokenAssociations;
-
-    @JsonSerialize(using = NullableStringSerializer.class)
-    private String memo;
-
-    private Long num;
-
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId proxyAccountId;
-
-    @JsonSerialize(using = NullableStringSerializer.class)
-    private String publicKey;
-
-    private Long realm;
 
     private Boolean receiverSigRequired;
 
-    private Long shard;
-
+    @ToString.Exclude
     private byte[] submitKey;
-
-    @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
-    private EntityTypeEnum type;
-
-    @JsonSerialize(using = RangeToStringSerializer.class)
-    private Range<Long> timestampRange;
-
-    @JsonIgnore
-    public Long getModifiedTimestamp() {
-        return timestampRange != null ? timestampRange.lowerEndpoint() : null;
-    }
-
-    public void setModifiedTimestamp(long modifiedTimestamp) {
-        timestampRange = Range.atLeast(modifiedTimestamp);
-    }
-
-    public void setKey(byte[] key) {
-        this.key = key;
-        publicKey = Utility.convertSimpleKeyToHex(key);
-    }
-
-    public void setMemo(String memo) {
-        this.memo = StringUtils.isEmpty(memo) ? "" : Utility.sanitize(memo);
-    }
-
-    public EntityId toEntityId() {
-        return new EntityId(shard, realm, num, type);
-    }
-
-    // Necessary since Lombok doesn't use our setters for builders
-    public static class EntityBuilder {
-        public EntityBuilder key(byte[] key) {
-            this.key = key;
-            this.publicKey = Utility.convertSimpleKeyToHex(key);
-            return this;
-        }
-
-        public EntityBuilder memo(String memo) {
-            this.memo = StringUtils.isEmpty(memo) ? "" : Utility.sanitize(memo);
-            return this;
-        }
-    }
 }

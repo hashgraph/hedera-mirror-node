@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -44,14 +45,18 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.AbstractEntity;
+import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -61,6 +66,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -69,7 +75,6 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
-import com.hedera.mirror.importer.util.EntityIdEndec;
 import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
@@ -89,9 +94,13 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected static final String TRANSACTION_MEMO = "transaction memo";
 
     @Resource
+    protected DomainBuilder domainBuilder;
+    @Resource
     protected TransactionRepository transactionRepository;
     @Resource
     protected EntityRepository entityRepository;
+    @Resource
+    protected ContractRepository contractRepository;
     @Resource
     protected ContractResultRepository contractResultRepository;
     @Resource
@@ -145,6 +154,16 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
+    private static Builder defaultTransactionBodyBuilder() {
+        TransactionBody.Builder body = TransactionBody.newBuilder();
+        body.setTransactionFee(100L);
+        body.setMemo(TRANSACTION_MEMO);
+        body.setNodeAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build());
+        body.setTransactionID(Utility.getTransactionId(PAYER));
+        body.setTransactionValidDuration(Duration.newBuilder().setSeconds(120).build());
+        return body;
+    }
+
     protected final void assertAccount(AccountID accountId, Entity dbEntity) {
         assertThat(accountId)
                 .isNotEqualTo(AccountID.getDefaultInstance())
@@ -163,7 +182,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .isEqualTo(EntityTypeEnum.FILE);
     }
 
-    protected final void assertContract(ContractID contractId, Entity dbEntity) {
+    protected final void assertContract(ContractID contractId, Contract dbEntity) {
         assertThat(contractId)
                 .isNotEqualTo(ContractID.getDefaultInstance())
                 .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
@@ -259,16 +278,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         );
     }
 
-    private static Builder defaultTransactionBodyBuilder() {
-        TransactionBody.Builder body = TransactionBody.newBuilder();
-        body.setTransactionFee(100L);
-        body.setMemo(TRANSACTION_MEMO);
-        body.setNodeAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(3).build());
-        body.setTransactionID(Utility.getTransactionId(PAYER));
-        body.setTransactionValidDuration(Duration.newBuilder().setSeconds(120).build());
-        return body;
-    }
-
     protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder,
                                                                               SignatureMap sigMap) {
         TransactionBody.Builder bodyBuilder = defaultTransactionBodyBuilder();
@@ -317,21 +326,17 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         return transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
     }
 
-    protected Entity getTransactionEntity(Timestamp consensusTimestamp) {
+    protected <T extends AbstractEntity> T getTransactionEntity(Timestamp consensusTimestamp) {
         var transaction = transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
         return getEntity(transaction.getEntityId());
     }
 
-    protected Entity getEntity(long entityId) {
-        return entityRepository.findById(entityId).get();
-    }
-
-    protected Entity getEntity(EntityId entityId) {
-        return getEntity(entityId.getId());
-    }
-
-    protected Entity getEntity(long shard, long realm, long num) {
-        return getEntity(EntityIdEndec.encode(shard, realm, num));
+    protected <T extends AbstractEntity> T getEntity(EntityId entityId) {
+        Optional<Contract> contract = contractRepository.findById(entityId.getId());
+        if (contract.isPresent()) {
+            return (T) contract.get();
+        }
+        return (T) entityRepository.findById(entityId.getId()).get();
     }
 
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
@@ -352,7 +357,8 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                                   Boolean deleted, Long expiryTimeNs, String memo, Key submitKey,
                                   Long createdTimestamp, Long modifiedTimestamp) {
         if (autoRenewAccountId != null) {
-            entityRepository.save(getEntityWithDefaultMemo(autoRenewAccountId));
+            Entity entity = getEntityWithDefaultMemo(autoRenewAccountId);
+            entityRepository.save(entity);
         }
 
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
@@ -393,21 +399,21 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
             return;
         }
 
-        assertThat(entityRepository.findAll())
+        assertThat(Iterables.concat(contractRepository.findAll(), entityRepository.findAll()))
                 .hasSize(entityIds.length)
                 .allMatch(entity -> entity.getId() > 0)
                 .allMatch(entity -> entity.getType() != null)
-                .extracting(Entity::toEntityId)
+                .extracting(AbstractEntity::toEntityId)
                 .containsExactlyInAnyOrder(entityIds);
     }
 
-    protected void assertEntity(Entity expected) {
-        Entity actual = getEntity(expected.getId());
+    protected void assertEntity(AbstractEntity expected) {
+        AbstractEntity actual = getEntity(expected.toEntityId());
         assertThat(actual).isEqualTo(expected);
     }
 
-    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
-        Entity entity = entityId.toEntity();
+    protected <T extends AbstractEntity> T getEntityWithDefaultMemo(EntityId entityId) {
+        T entity = entityId.toEntity();
         entity.setMemo("");
         return entity;
     }

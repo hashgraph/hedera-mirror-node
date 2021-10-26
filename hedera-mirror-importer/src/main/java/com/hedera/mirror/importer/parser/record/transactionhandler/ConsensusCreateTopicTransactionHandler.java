@@ -24,13 +24,17 @@ import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-public class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public ConsensusCreateTopicTransactionHandler() {
-        super(EntityOperationEnum.CREATE);
+    private static final byte[] EMPTY = new byte[0];
+
+    ConsensusCreateTopicTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.CONSENSUSCREATETOPIC);
     }
 
     @Override
@@ -40,22 +44,25 @@ public class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTr
 
     @Override
     protected void doUpdateEntity(final Entity entity, final RecordItem recordItem) {
-        var createTopic = recordItem.getTransactionBody().getConsensusCreateTopic();
-        if (createTopic.hasAutoRenewPeriod()) {
-            entity.setAutoRenewPeriod(createTopic.getAutoRenewPeriod().getSeconds());
+        var transactionBody = recordItem.getTransactionBody().getConsensusCreateTopic();
+
+        if (transactionBody.hasAutoRenewAccount()) {
+            EntityId autoRenewAccountId = EntityId.of(transactionBody.getAutoRenewAccount());
+            entity.setAutoRenewAccountId(autoRenewAccountId);
+            entityListener.onEntityId(autoRenewAccountId);
+        }
+
+        if (transactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
         // If either key is empty, they should end up as empty bytea in the DB to indicate that there is
         // explicitly no value, as opposed to null which has been used to indicate the value is unknown.
-        var adminKey = createTopic.hasAdminKey() ? createTopic.getAdminKey().toByteArray() : new byte[0];
-        var submitKey = createTopic.hasSubmitKey() ? createTopic.getSubmitKey().toByteArray() : new byte[0];
-        entity.setMemo(createTopic.getMemo());
+        var adminKey = transactionBody.hasAdminKey() ? transactionBody.getAdminKey().toByteArray() : EMPTY;
+        var submitKey = transactionBody.hasSubmitKey() ? transactionBody.getSubmitKey().toByteArray() : EMPTY;
+        entity.setMemo(transactionBody.getMemo());
         entity.setKey(adminKey);
         entity.setSubmitKey(submitKey);
-    }
-
-    @Override
-    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getConsensusCreateTopic().getAutoRenewAccount());
+        entityListener.onEntity(entity);
     }
 }

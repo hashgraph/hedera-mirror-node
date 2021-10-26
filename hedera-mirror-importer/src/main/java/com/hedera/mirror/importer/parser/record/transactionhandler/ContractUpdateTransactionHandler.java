@@ -20,19 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
-    public ContractUpdateTransactionHandler() {
-        super(EntityOperationEnum.UPDATE);
+    ContractUpdateTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.CONTRACTUPDATEINSTANCE);
     }
 
     @Override
@@ -40,37 +41,43 @@ public class ContractUpdateTransactionHandler extends AbstractEntityCrudTransact
         return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getContractID());
     }
 
+    // We explicitly ignore the updated fileID field since hedera nodes do not allow changing the bytecode after create
+    @SuppressWarnings("java:S1874")
     @Override
-    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        ContractUpdateTransactionBody txMessage = recordItem.getTransactionBody().getContractUpdateInstance();
-        if (txMessage.hasExpirationTime()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(txMessage.getExpirationTime()));
+    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
+
+        if (transactionBody.hasExpirationTime()) {
+            contract.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpirationTime()));
         }
 
-        if (txMessage.hasAutoRenewPeriod()) {
-            entity.setAutoRenewPeriod(txMessage.getAutoRenewPeriod().getSeconds());
+        if (transactionBody.hasAutoRenewPeriod()) {
+            contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        if (txMessage.hasAdminKey()) {
-            entity.setKey(txMessage.getAdminKey().toByteArray());
+        if (transactionBody.hasAdminKey()) {
+            contract.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
-        switch (txMessage.getMemoFieldCase()) {
+        switch (transactionBody.getMemoFieldCase()) {
             case MEMOWRAPPER:
-                entity.setMemo(txMessage.getMemoWrapper().getValue());
+                contract.setMemo(transactionBody.getMemoWrapper().getValue());
                 break;
             case MEMO:
-                if (txMessage.getMemo().length() > 0) {
-                    entity.setMemo(txMessage.getMemo());
+                if (transactionBody.getMemo().length() > 0) {
+                    contract.setMemo(transactionBody.getMemo());
                 }
                 break;
             default:
                 break;
         }
-    }
 
-    @Override
-    protected EntityId getProxyAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getProxyAccountID());
+        if (transactionBody.hasProxyAccountID()) {
+            EntityId proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
+            contract.setProxyAccountId(proxyAccountId);
+            entityListener.onEntityId(proxyAccountId);
+        }
+
+        entityListener.onContract(contract);
     }
 }

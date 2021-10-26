@@ -63,7 +63,6 @@ import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
-import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
@@ -93,9 +92,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     @Resource
     private TokenTransferRepository tokenTransferRepository;
-
-    @Resource
-    private TransactionRepository transactionRepository;
 
     @Test
     void verify() {
