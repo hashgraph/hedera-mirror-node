@@ -585,7 +585,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(result.getBloom().toByteArray(), ContractResult::getBloom)
                 .returns(result.getContractCallResult().toByteArray(), ContractResult::getCallResult)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(List.of(CREATED_CONTRACT_ID.getContractNum()), ContractResult::getCreatedContractIds)
+                .returns(List.of(CONTRACT_ID.getContractNum(), CREATED_CONTRACT_ID.getContractNum()),
+                        ContractResult::getCreatedContractIds)
                 .returns(result.getErrorMessage(), ContractResult::getErrorMessage)
                 .returns(result.toByteArray(), ContractResult::getFunctionResult)
                 .returns(result.getGasUsed(), ContractResult::getGasUsed);
@@ -631,6 +632,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         builder.setBloom(ByteString.copyFromUtf8("bloom"));
         builder.setContractCallResult(ByteString.copyFromUtf8("call result"));
         builder.setContractID(CONTRACT_ID);
+        builder.addCreatedContractIDs(CONTRACT_ID);
         builder.addCreatedContractIDs(CREATED_CONTRACT_ID);
         builder.setErrorMessage("call error message");
         builder.setGasUsed(30);
