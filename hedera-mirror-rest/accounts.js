@@ -68,7 +68,11 @@ const getAccountQuery = (
   pubKeyQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: ''}
 ) => {
-  const entityWhereFilter = [`e.type IN ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
+  const entityWhereFilter = [
+    `e.type in (${utils.ENTITY_TYPE_ACCOUNT}, ${utils.ENTITY_TYPE_CONTRACT})`,
+    entityAccountQuery.query,
+    pubKeyQuery.query,
+  ]
     .filter((x) => !!x)
     .join(' and ');
   const balanceWhereFilter = [
