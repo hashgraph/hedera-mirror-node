@@ -527,7 +527,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
     switch (filter.key) {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         joinEntityClause = `join entity e
-          on e.type = '${utils.ENTITY_TYPE_ACCOUNT}'
+          on e.type = '${constants.entityTypes.ACCOUNT}'
           and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
           and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
         break;

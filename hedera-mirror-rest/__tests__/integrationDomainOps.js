@@ -27,6 +27,7 @@ const config = require('../config');
 const EntityId = require('../entityId');
 const utils = require('../utils');
 const {ENTITY_TYPE_CONTRACT} = require('../utils');
+const constants = require('./constants');
 
 const NETWORK_FEE = 1;
 const NODE_FEE = 2;
@@ -218,7 +219,7 @@ const addEntity = async (defaults, entity) => {
     receiver_sig_required: false,
     shard: 0,
     timestamp_range: '[0,)',
-    type: utils.ENTITY_TYPE_ACCOUNT,
+    type: constants.entityTypes.ACCOUNT,
     ...defaults,
     ...entity,
   };
@@ -265,7 +266,7 @@ const addAccount = async (account) => {
     {
       max_automatic_token_associations: 0,
       public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      type: utils.ENTITY_TYPE_ACCOUNT,
+      type: constants.entityTypes.ACCOUNT,
     },
     account
   );
@@ -536,7 +537,7 @@ const addContract = async (contract) => {
     public_key: null,
     realm: 0,
     shard: 0,
-    type: utils.ENTITY_TYPE_CONTRACT,
+    type: constants.entityTypes.CONTRACT,
     ...contract,
   };
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
