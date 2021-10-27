@@ -102,7 +102,7 @@ const formatScheduleRow = (row) => {
     deleted: row.deleted,
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
     creator_account_id: EntityId.fromEncodedId(row.creator_account_id).toString(),
-    executed_timestamp: row.executed_timestamp === null ? null : utils.nsToSecNs(row.executed_timestamp),
+    executed_timestamp: utils.nsToSecNs(row.executed_timestamp),
     memo: row.memo,
     payer_account_id: EntityId.fromEncodedId(row.payer_account_id).toString(),
     schedule_id: EntityId.fromEncodedId(row.schedule_id).toString(),
