@@ -932,8 +932,7 @@ const getPoolClass = (mock = false) => {
         result = await this.query(query, params);
       } else {
         client = await this.connect();
-        await client.query('begin');
-        await client.query(preQueryHint);
+        await client.query(`begin; ${preQueryHint}`);
         result = await client.query(query, params);
         await client.query('commit');
       }
