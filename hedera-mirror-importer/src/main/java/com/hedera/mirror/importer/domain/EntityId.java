@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,10 +34,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import javax.persistence.Enumerated;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
-import com.hedera.mirror.importer.converter.EntityTypeSerializer;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 /**
@@ -66,7 +65,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     private final Long shardNum;
     private final Long realmNum;
     private final Long entityNum;
-    @JsonSerialize(using = EntityTypeSerializer.class)
+    @Enumerated
     private final EntityTypeEnum type;
 
     public EntityId(Long shardNum, Long realmNum, Long entityNum, EntityTypeEnum type) {
