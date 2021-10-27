@@ -25,13 +25,8 @@ const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
-const {DbError} = require('./errors/dbError');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-
-// make the cost estimation of using the index on (topic_id, consensus_timestamp) lower than that of the primary key so
-// pg planner will choose the better index when querying topic messages by id
-// const topicMessagesByIdQueryHint = 'set local random_page_cost = 0';
 
 const topicMessageColumns = {
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
@@ -190,7 +185,7 @@ const getTopicMessages = async (req, res) => {
   };
 
   // get results and return formatted response
-  // setting random_page_cost to 0 to make the cost estimation of using the index on (topic_id, consensus_timestamp)
+  // set random_page_cost to 0 to make the cost estimation of using the index on (topic_id, consensus_timestamp)
   // lower than that of the primary key so pg planner will choose the better index when querying topic messages by id
   const messages = await getMessages(query, params, constants.zeroRandomPageCostQueryHint);
   topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));

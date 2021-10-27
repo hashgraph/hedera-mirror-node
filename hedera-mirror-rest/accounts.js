@@ -211,7 +211,10 @@ const getAccounts = async (req, res) => {
   }
 
   // Execute query
-  const result = await pool.queryQuietly(pgQuery, params, excludeBalance && constants.zeroRandomPageCostQueryHint);
+  // set random_page_cost to 0 to make the cost estimation of using the index on (public_key, index)
+  // lower than that of other indexes so pg planner will choose the better index when querying by public key
+  const preQueryHint = pubKeyQuery.query !== '' && constants.zeroRandomPageCostQueryHint;
+  const result = await pool.queryQuietly(pgQuery, params, preQueryHint);
   const ret = {
     accounts: result.rows.map((row) => processRow(row)),
     links: {

@@ -1732,7 +1732,7 @@ components:
       schema:
         $ref: '#/components/schemas/EntityId'
     excludeBalanceQueryParam:
-      name: excluebalance
+      name: excludebalance
       in: query
       description: Whether to exclude balance information or not
       example: true
