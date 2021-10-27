@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.28.0'
+      version: '0.29.0'
   dependsOn:
     - name: mirror
       namespace: common
