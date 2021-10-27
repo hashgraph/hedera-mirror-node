@@ -41,7 +41,11 @@ class TokenTransferRepositoryTest extends AbstractRepositoryTest {
         EntityId accountId = EntityId.of(0L, 1L, 7L, ACCOUNT);
         EntityId payerAccountId = EntityId.of(0L, 1L, 500L, ACCOUNT);
         long amount = 40L;
-        TokenTransfer tokenTransfer = new TokenTransfer(1L, amount, tokenId, accountId, false, payerAccountId);
+        TokenTransfer tokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(amount)
+                .id(new TokenTransfer.Id(1L, tokenId, accountId))
+                .payerAccountId(payerAccountId)
+                .tokenDissociate(false)).get();
 
         tokenTransferRepository.save(tokenTransfer);
 

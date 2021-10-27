@@ -77,7 +77,6 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         contractResult.setErrorMessage(functionResult.getErrorMessage());
         contractResult.setFunctionResult(functionResult.toByteArray());
         contractResult.setGasUsed(functionResult.getGasUsed());
-        contractResult.setPayerAccountId(payerAccount);
         entityListener.onContractResult(contractResult);
 
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
@@ -90,7 +89,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
             contractLog.setData(Utility.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
-            contractLog.setPayerAccountId(payerAccount);
+            contractLog.setPayerAccountId(contractResult.getPayerAccountId());
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
             contractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));

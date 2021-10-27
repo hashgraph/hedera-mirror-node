@@ -56,11 +56,6 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
         id = new CryptoTransfer.Id(amount, consensusTimestamp, entityId);
     }
 
-    public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId, EntityId transactionPayerAccountId) {
-        this(consensusTimestamp, amount, entityId);
-        payerAccountId = transactionPayerAccountId;
-    }
-
     @JsonIgnore
     @Override
     public boolean isNew() {

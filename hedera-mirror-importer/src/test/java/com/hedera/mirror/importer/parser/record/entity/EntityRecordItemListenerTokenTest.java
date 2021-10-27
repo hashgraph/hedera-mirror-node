@@ -500,8 +500,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // then
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, dissociateTimeStamp, SYMBOL, INITIAL_SUPPLY - 10);
-        var expected = new TokenTransfer(dissociateTimeStamp, -10, EntityId.of(TOKEN_ID), EntityId.of(PAYER2),
-                false, EntityId.of(PAYER));
+        var expected = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(-10)
+                .id(new TokenTransfer.Id(dissociateTimeStamp, EntityId.of(TOKEN_ID), EntityId.of(PAYER2)))
+                .payerAccountId(EntityId.of(PAYER))
+                .tokenDissociate(false)).get();
         assertThat(tokenTransferRepository.findById(expected.getId())).get().isEqualTo(expected);
     }
 
@@ -1597,8 +1600,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private void assertTokenTransferInRepository(TokenID tokenID, AccountID accountID, long consensusTimestamp,
                                                  long amount) {
-        var expected = new TokenTransfer(consensusTimestamp, amount, EntityId.of(tokenID), EntityId.of(accountID),
-                false, PAYER_ACCOUNT_ID);
+        var expected = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(amount)
+                .id(new TokenTransfer.Id(consensusTimestamp, EntityId.of(tokenID), EntityId.of(accountID)))
+                .payerAccountId(PAYER_ACCOUNT_ID)
+                .tokenDissociate(false)).get();
         assertThat(tokenTransferRepository.findById(expected.getId()))
                 .get()
                 .isEqualTo(expected);

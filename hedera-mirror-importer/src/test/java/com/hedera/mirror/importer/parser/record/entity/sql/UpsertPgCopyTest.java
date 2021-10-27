@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -119,6 +120,9 @@ class UpsertPgCopyTest extends IntegrationTest {
 
     @Resource
     private RecordParserProperties recordParserProperties;
+
+    @Resource
+    private DomainBuilder domainBuilder;
 
     @BeforeEach
     void beforeEach() {
@@ -650,10 +654,16 @@ class UpsertPgCopyTest extends IntegrationTest {
         long consensusTimestamp = 30L;
         EntityId ftId = EntityId.of("0.0.217", TOKEN);
         EntityId payerId = EntityId.of("0.0.2002", ACCOUNT);
-        TokenTransfer fungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -10, ftId, accountId, true,
-                payerId);
-        TokenTransfer nonFungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -2, tokenId1, accountId, true,
-                payerId);
+        TokenTransfer fungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(-10)
+                .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
+                .payerAccountId(payerId)
+                .tokenDissociate(true)).get();
+        TokenTransfer nonFungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(-2)
+                .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
+                .payerAccountId(payerId)
+                .tokenDissociate(true)).get();
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
 
         // when

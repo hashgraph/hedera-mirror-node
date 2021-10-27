@@ -44,7 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -55,6 +54,7 @@ import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.NftTransfer;
+import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.Transaction;
@@ -70,8 +70,6 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.6")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
     private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityTypeEnum.ACCOUNT);
@@ -216,13 +214,25 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         long nodePaymentAmount = 10L;
         long treasuryPaymentAmount = 5L;
 
+        AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
+        assessedCustomFee1.setAmount(receivedAmount);
+        assessedCustomFee1.setEffectivePayerAccountIds(List.of(senderId.getId()));
+        assessedCustomFee1.setId(new AssessedCustomFee.Id(receiverId, transfer1.getConsensusTimestamp()));
+        assessedCustomFee1.setPayerAccountId(tokenId);
+        assessedCustomFee1.setTokenId(tokenId);
+
+        AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
+        assessedCustomFee2.setAmount(receivedAmount);
+        assessedCustomFee2.setEffectivePayerAccountIds(List.of(senderId.getId()));
+        assessedCustomFee2.setId(new AssessedCustomFee.Id(receiverId, transfer5.getConsensusTimestamp()));
+        assessedCustomFee2.setPayerAccountId(tokenId);
+        assessedCustomFee2.setTokenId(tokenId);
+
         persistAssessedCustomFees(List.of(
                 // assessed custom fee transfer
-                new AssessedCustomFee(new AssessedCustomFee.Id(receiverId, transfer1.getConsensusTimestamp()),
-                        receivedAmount, List.of(senderId.getId()), tokenId, null),
+                assessedCustomFee1,
                 // all transfers
-                new AssessedCustomFee(new AssessedCustomFee.Id(receiverId, transfer5.getConsensusTimestamp()),
-                        receivedAmount, List.of(senderId.getId()), tokenId, null)
+                assessedCustomFee2
         ));
 
         persistCryptoTransfers(List.of(
@@ -255,27 +265,55 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
         persistNonFeeTransfers(List.of(
                 // assessed custom fee only transfer
-                new NonFeeTransfer(transfer1.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new NonFeeTransfer(transfer1.getConsensusTimestamp(), receivedAmount, receiverId),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(senderPaymentAmount)
+                        .id(new NonFeeTransfer.Id(transfer1.getConsensusTimestamp(), senderId))).get(),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(receivedAmount)
+                        .id(new NonFeeTransfer.Id(transfer1.getConsensusTimestamp(), receiverId))).get(),
                 // crypto only transfer
-                new NonFeeTransfer(transfer2.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new NonFeeTransfer(transfer2.getConsensusTimestamp(), receivedAmount, receiverId),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(senderPaymentAmount)
+                        .id(new NonFeeTransfer.Id(transfer2.getConsensusTimestamp(), senderId))).get(),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(receivedAmount)
+                        .id(new NonFeeTransfer.Id(transfer2.getConsensusTimestamp(), receiverId))).get(),
                 // nft transfer
-                new NonFeeTransfer(transfer3.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new NonFeeTransfer(transfer3.getConsensusTimestamp(), receivedAmount, receiverId),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(senderPaymentAmount)
+                        .id(new NonFeeTransfer.Id(transfer3.getConsensusTimestamp(), senderId))).get(),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(receivedAmount)
+                        .id(new NonFeeTransfer.Id(transfer3.getConsensusTimestamp(), receiverId))).get(),
                 // token transfer
-                new NonFeeTransfer(transfer4.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new NonFeeTransfer(transfer4.getConsensusTimestamp(), receivedAmount, receiverId),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(senderPaymentAmount)
+                        .id(new NonFeeTransfer.Id(transfer4.getConsensusTimestamp(), senderId))).get(),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(receivedAmount)
+                        .id(new NonFeeTransfer.Id(transfer4.getConsensusTimestamp(), receiverId))).get(),
                 // all transfers
-                new NonFeeTransfer(transfer5.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new NonFeeTransfer(transfer5.getConsensusTimestamp(), receivedAmount, receiverId)
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(senderPaymentAmount)
+                        .id(new NonFeeTransfer.Id(transfer5.getConsensusTimestamp(), senderId))).get(),
+                domainBuilder.nonFeeTransfer().customize(n -> n
+                        .amount(receivedAmount)
+                        .id(new NonFeeTransfer.Id(transfer5.getConsensusTimestamp(), receiverId))).get()
         ));
 
         persistNftTransfers(List.of(
                 // nft transfer
-                new NftTransfer(transfer3.getConsensusTimestamp(), 1L, tokenId, senderId, receiverId, null),
+                domainBuilder.nftTransfer().customize(n -> n
+                        .id(new NftTransferId(transfer3.getConsensusTimestamp(), 1L, tokenId))
+                        .payerAccountId(null)
+                        .receiverAccountId(receiverId)
+                        .senderAccountId(senderId)).get(),
                 // all transfers
-                new NftTransfer(transfer5.getConsensusTimestamp(), 2L, tokenId, senderId, receiverId, null)
+                domainBuilder.nftTransfer().customize(n -> n
+                        .id(new NftTransferId(transfer5.getConsensusTimestamp(), 2L, tokenId))
+                        .payerAccountId(null)
+                        .receiverAccountId(receiverId)
+                        .senderAccountId(senderId)).get()
         ));
 
         persistTokenTransfers(List.of(
@@ -475,9 +513,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                             .asList((Long[]) rs.getArray("effective_payer_account_ids").getArray());
                     EntityId sender = ObjectUtils.isNotEmpty(effectivePayers) ? EntityIdEndec
                             .decode(effectivePayers.get(0), EntityTypeEnum.ACCOUNT) : null;
-//                            String senderString = StringUtils.split(rs.getString("effective_payer_account_ids"))[0];
-//                    EntityId sender = StringUtils.isNotEmpty(senderString) ? EntityIdEndec
-//                            .decode(Integer.valueOf(senderString), EntityTypeEnum.ACCOUNT) : null;
                     EntityId receiver = EntityIdEndec
                             .decode(rs.getLong("collector_account_id"), EntityTypeEnum.ACCOUNT);
                     SharedTransfer sharedTransfer = new SharedTransfer(

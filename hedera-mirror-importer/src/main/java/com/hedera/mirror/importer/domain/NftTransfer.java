@@ -26,6 +26,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
@@ -33,13 +36,15 @@ import org.springframework.data.domain.Persistable;
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
 public class NftTransfer implements Persistable<NftTransferId> {
 
-    @JsonUnwrapped
     @EmbeddedId
+    @JsonUnwrapped
     private NftTransferId id;
 
     @Convert(converter = AccountIdConverter.class)
@@ -52,14 +57,6 @@ public class NftTransfer implements Persistable<NftTransferId> {
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId senderAccountId;
-
-    public NftTransfer(long consensusTimestamp, long serialNumber, EntityId tokenId,
-                       EntityId senderAccountId, EntityId receiverAccountId, EntityId payerAccountId) {
-        id = new NftTransferId(consensusTimestamp, serialNumber, tokenId);
-        this.receiverAccountId = receiverAccountId;
-        this.senderAccountId = senderAccountId;
-        this.payerAccountId = payerAccountId;
-    }
 
     @JsonIgnore
     @Override

@@ -293,10 +293,10 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onCryptoTransferList() {
         // given
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT),
-                TRANSACTION_PAYER);
-        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT),
-                TRANSACTION_PAYER);
+        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
+        cryptoTransfer1.setPayerAccountId(TRANSACTION_PAYER);
+        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
+        cryptoTransfer2.setPayerAccountId(TRANSACTION_PAYER);
 
         // when
         sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
@@ -311,10 +311,14 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onNonFeeTransfer() {
         // given
-        NonFeeTransfer nonFeeTransfer1 = new NonFeeTransfer(1L, new NonFeeTransfer.Id(1L, EntityId
-                .of(0L, 0L, 1L, ACCOUNT)), TRANSACTION_PAYER);
-        NonFeeTransfer nonFeeTransfer2 = new NonFeeTransfer(-2L, new NonFeeTransfer.Id(2L, EntityId
-                .of(0L, 0L, 2L, ACCOUNT)), TRANSACTION_PAYER);
+        NonFeeTransfer nonFeeTransfer1 = domainBuilder.nonFeeTransfer().customize(n -> n
+                .amount(1L)
+                .id(new NonFeeTransfer.Id(1L, EntityId.of(0L, 0L, 1L, ACCOUNT)))
+                .payerAccountId(TRANSACTION_PAYER)).get();
+        NonFeeTransfer nonFeeTransfer2 = domainBuilder.nonFeeTransfer().customize(n -> n
+                .amount(2L)
+                .id(new NonFeeTransfer.Id(-2L, EntityId.of(0L, 0L, 2L, ACCOUNT)))
+                .payerAccountId(TRANSACTION_PAYER)).get();
 
         // when
         sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);

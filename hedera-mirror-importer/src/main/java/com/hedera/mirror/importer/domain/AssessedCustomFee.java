@@ -41,7 +41,6 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.LongListToStringSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 
-@AllArgsConstructor
 @Data
 @Entity
 @NoArgsConstructor

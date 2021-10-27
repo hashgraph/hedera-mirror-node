@@ -47,6 +47,7 @@ import org.postgresql.copy.CopyManager;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
@@ -83,8 +84,11 @@ class PgCopyTest extends IntegrationTest {
     @Resource
     private RecordParserProperties properties;
 
+    @Resource
+    private DomainBuilder domainBuilder;
+
     @BeforeEach
-    void beforeEach() throws Exception {
+    void beforeEach() {
         cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, properties);
         transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, properties);
         topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, properties);
@@ -163,18 +167,19 @@ class PgCopyTest extends IntegrationTest {
     }
 
     private CryptoTransfer cryptoTransfer(long consensusTimestamp) {
-        return new CryptoTransfer(consensusTimestamp, 1L, EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT),
-                EntityId.of(0L, 1L, 100L, EntityTypeEnum.ACCOUNT));
+        CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, 1L, EntityId
+                .of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT));
+        cryptoTransfer.setPayerAccountId(EntityId.of(0L, 1L, 100L, EntityTypeEnum.ACCOUNT));
+        return cryptoTransfer;
     }
 
     private TokenTransfer tokenTransfer(long consensusTimestamp) {
-        return new TokenTransfer(
-                consensusTimestamp,
-                1L,
-                EntityId.of(0L, 1L, 4L, EntityTypeEnum.TOKEN),
-                EntityId.of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT),
-                false,
-                EntityId.of(0L, 1L, 100L, EntityTypeEnum.ACCOUNT));
+        return domainBuilder.tokenTransfer().customize(t -> t
+                .amount(1L)
+                .id(new TokenTransfer.Id(consensusTimestamp, EntityId.of(0L, 1L, 4L, EntityTypeEnum.TOKEN), EntityId
+                        .of(0L, 1L, 2L, EntityTypeEnum.ACCOUNT)))
+                .payerAccountId(EntityId.of(0L, 1L, 100L, EntityTypeEnum.ACCOUNT))
+                .tokenDissociate(false)).get();
     }
 
     private Transaction transaction(long consensusNs) {
