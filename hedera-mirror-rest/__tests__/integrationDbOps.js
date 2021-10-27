@@ -54,8 +54,8 @@ const v1SchemaConfigs = {
 };
 const v2SchemaConfigs = {
   docker: {
-    imageName: 'timescale/timescaledb-ha',
-    tagName: 'pg13.4-ts2.4.1-latest',
+    imageName: 'citusdata/citus',
+    tagName: '10.2.2-alpine',
   },
   flyway: {
     baselineVersion: '1.999.999',

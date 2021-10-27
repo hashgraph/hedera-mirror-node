@@ -4,10 +4,19 @@
 -------------------
 
 -- Create enums for tables
+create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 create type token_pause_status as enum ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
 create type token_supply_type as enum ('INFINITE', 'FINITE');
 create type token_type as enum ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
-create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
+
+-- account_balance
+create table if not exists account_balance
+(
+    consensus_timestamp bigint not null,
+    balance             bigint not null,
+    account_id          bigint not null
+);
+comment on table account_balance is 'Account balances (historical) in tinybars at different consensus timestamps';
 
 -- assessed_custom_fee
 create table if not exists assessed_custom_fee
@@ -20,15 +29,6 @@ create table if not exists assessed_custom_fee
     token_id                    bigint
 );
 comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
-
--- account_balance
-create table if not exists account_balance
-(
-    consensus_timestamp bigint not null,
-    balance             bigint not null,
-    account_id          bigint not null
-);
-comment on table account_balance is 'Account balances (historical) in tinybars at different consensus timestamps';
 
 create table if not exists account_balance_file
 (
