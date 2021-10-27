@@ -91,6 +91,20 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         );
     }
 
+    @Test
+    void verifyEmpty() {
+        // given
+
+        // when
+        migrate();
+
+        // then
+        assertThat(findAllEntities()).isEmpty();
+        assertThat(findAllEntitiesHistory()).isEmpty();
+        assertThat(findAllContracts()).isEmpty();
+        assertThat(findAllContractsHistory()).isEmpty();
+    }
+
     @SneakyThrows
     private void migrate() {
         jdbcOperations.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
