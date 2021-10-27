@@ -27,11 +27,13 @@ import static com.hedera.mirror.importer.domain.EntityType.SCHEDULE;
 import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static com.hedera.mirror.importer.domain.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import lombok.Data;
@@ -41,8 +43,10 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
@@ -53,6 +57,7 @@ import com.hedera.mirror.importer.domain.EntityType;
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.11")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class RemoveEntityTypeMigrationTest extends IntegrationTest {
 
     @Resource
@@ -66,29 +71,49 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         // given
         List<MigrationEntityV1_47_0> entities = new ArrayList<>();
         List<MigrationContractV1_47_0> contracts = new ArrayList<>();
+        List<MigrationEntityV1_47_0> badEntities = Arrays.asList(entity(1, 1, CONTRACT));
+        List<MigrationContractV1_47_0> badContracts = Arrays.asList(contract(1, 1, FILE));
 
         for (int i = 1; i < 7; i++) {
-            entities.add(entity(i, i, EntityType.fromId(i)));
-            contracts.add(contract(i, i, EntityType.fromId(i)));
+            if (i == 2) {
+                contracts.add(contract(i, i, EntityType.fromId(i)));
+            } else {
+                entities.add(entity(i, i, EntityType.fromId(i)));
+            }
         }
-        persistEntities(entities);
-        persistContracts(contracts);
+        persistEntities(entities, false);
+        persistEntitiesHistory(entities, false);
+        persistContracts(contracts, false);
+        persistContractsHistory(contracts, false);
         // when
         migrate();
 
         // then
         assertThat(findAllEntities()).extracting(MigrationEntityV1_47_0::getType).containsExactly(
-                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
+                ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE
         );
         assertThat(findAllEntitiesHistory()).extracting(MigrationEntityV1_47_0::getType).containsExactly(
-                ACCOUNT, CONTRACT, FILE, TOPIC, TOKEN, SCHEDULE
+                ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE
         );
         assertThat(findAllContracts()).extracting(MigrationContractV1_47_0::getType).containsExactly(
-                CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT
+                CONTRACT
         );
         assertThat(findAllContractsHistory()).extracting(MigrationContractV1_47_0::getType).containsExactly(
-                CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT
+                CONTRACT
         );
+
+        assertThrows(DataIntegrityViolationException.class, () -> {
+            persistEntities(badEntities, true);
+        });
+        assertThrows(DataIntegrityViolationException.class, () -> {
+            persistEntitiesHistory(badEntities, true);
+        });
+        assertThrows(DataIntegrityViolationException.class, () -> {
+            persistContracts(badContracts, true);
+        });
+        assertThrows(DataIntegrityViolationException.class, () -> {
+            persistContractsHistory(badContracts, true);
+        });
     }
 
     @Test
@@ -126,67 +151,81 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         return entity;
     }
 
-    private void persistEntities(List<MigrationEntityV1_47_0> entities) {
+    private void persistEntities(List<MigrationEntityV1_47_0> entities, boolean migrationRan) {
         for (MigrationEntityV1_47_0 entity : entities) {
             jdbcOperations.update(
-                    "insert into entity (id, created_timestamp, num, realm, shard, type, timestamp_range)" +
-                            " values (?,?,?,?,?,?,?::int8range)",
+                    getEntitySql("entity", migrationRan),
                     entity.getId(),
                     entity.getCreatedTimestamp(),
                     entity.getNum(),
                     entity.getRealm(),
                     entity.getShard(),
-                    entity.getType().getId(),
-                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
-                            .lowerEndpoint())
-            );
-
-            jdbcOperations.update(
-                    "insert into entity_history (id, created_timestamp, num, realm, shard, type, timestamp_range)" +
-                            " values (?,?,?,?,?,?,?::int8range)",
-                    entity.getId(),
-                    entity.getCreatedTimestamp(),
-                    entity.getNum(),
-                    entity.getRealm(),
-                    entity.getShard(),
-                    entity.getType().getId(),
+                    migrationRan ? entity.getType().toString() : entity.getType().getId(),
                     String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
                             .lowerEndpoint())
             );
         }
     }
 
-    private void persistContracts(List<MigrationContractV1_47_0> contracts) {
-        for (MigrationContractV1_47_0 contract : contracts) {
+    private void persistEntitiesHistory(List<MigrationEntityV1_47_0> entities, boolean migrationRan) {
+        for (MigrationEntityV1_47_0 entity : entities) {
             jdbcOperations.update(
-                    "insert into contract (id, created_timestamp, memo, num, realm, shard, type, timestamp_range)" +
-                            " values (?,?,?,?,?,?,?,?::int8range)",
-                    contract.getId(),
-                    contract.getCreatedTimestamp(),
-                    contract.getMemo(),
-                    contract.getNum(),
-                    contract.getRealm(),
-                    contract.getShard(),
-                    contract.getType().getId(),
-                    String.format("(%d, %d)", contract.getCreatedTimestamp(), contract.getTimestampRange()
+                    getEntitySql("entity_history", migrationRan),
+                    entity.getId(),
+                    entity.getCreatedTimestamp(),
+                    entity.getNum(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    migrationRan ? entity.getType().toString() : entity.getType().getId(),
+                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
                             .lowerEndpoint())
             );
+        }
+    }
 
+    private void persistContracts(List<MigrationContractV1_47_0> contracts, boolean migrationRan) {
+        for (MigrationContractV1_47_0 contract : contracts) {
             jdbcOperations.update(
-                    "insert into contract_history (id, created_timestamp, memo, num, realm, shard, type, " +
-                            "timestamp_range)" +
-                            " values (?,?,?,?,?,?,?,?::int8range)",
+                    getContractSql("contract", migrationRan),
                     contract.getId(),
                     contract.getCreatedTimestamp(),
                     contract.getMemo(),
                     contract.getNum(),
                     contract.getRealm(),
                     contract.getShard(),
-                    contract.getType().getId(),
+                    migrationRan ? contract.getType().toString() : contract.getType().getId(),
                     String.format("(%d, %d)", contract.getCreatedTimestamp(), contract.getTimestampRange()
                             .lowerEndpoint())
             );
         }
+    }
+
+    private void persistContractsHistory(List<MigrationContractV1_47_0> contracts, boolean migrationRan) {
+        for (MigrationContractV1_47_0 contract : contracts) {
+            jdbcOperations.update(
+                    getContractSql("contract_history", migrationRan),
+                    contract.getId(),
+                    contract.getCreatedTimestamp(),
+                    contract.getMemo(),
+                    contract.getNum(),
+                    contract.getRealm(),
+                    contract.getShard(),
+                    migrationRan ? contract.getType().toString() : contract.getType().getId(),
+                    String.format("(%d, %d)", contract.getCreatedTimestamp(), contract.getTimestampRange()
+                            .lowerEndpoint())
+            );
+        }
+    }
+
+    private String getContractSql(String table, boolean useEnum) {
+        return String.format("insert into %s (id, created_timestamp, memo, num, realm, shard, type, " +
+                "timestamp_range)" +
+                " values (?,?,?,?,?,?,%s,?::int8range)", table, useEnum ? "cast(? as entity_type)" : "?");
+    }
+
+    private String getEntitySql(String table, boolean useEnum) {
+        return String.format("insert into %s (id, created_timestamp, num, realm, shard, type, " +
+                "timestamp_range) values (?,?,?,?,?,%s,?::int8range)", table, useEnum ? "cast(? as entity_type)" : "?");
     }
 
     private List<MigrationEntityV1_47_0> findAllEntities() {
