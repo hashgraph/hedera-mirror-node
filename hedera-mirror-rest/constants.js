@@ -30,7 +30,7 @@ const filterKeys = {
   CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
   ENTITY_PUBLICKEY: 'publickey',
-  EXCLUDE_BALANCE: 'excludebalance',
+  INCLUDE_BALANCE: 'includebalance',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',

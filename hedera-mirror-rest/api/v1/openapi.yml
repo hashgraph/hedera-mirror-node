@@ -9,7 +9,7 @@ paths:
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
         - $ref: '#/components/parameters/balanceQueryParam'
-        - $ref: '#/components/parameters/excludeBalanceQueryParam'
+        - $ref: '#/components/parameters/includeBalanceQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
       responses:
@@ -1645,6 +1645,13 @@ components:
           value: lte:0.0.700
       schema:
         $ref: '#/components/schemas/EntityIdQuery'
+    accountPublicKeyQueryParam:
+      name: account.publickey
+      in: query
+      description: The ED25519 account publickey to compare against
+      example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
+      schema:
+        type: string
     balanceQueryParam:
       name: account.balance
       in: query
@@ -1731,14 +1738,14 @@ components:
       description: Contract entity id
       schema:
         $ref: '#/components/schemas/EntityId'
-    excludeBalanceQueryParam:
-      name: excludebalance
+    includeBalanceQueryParam:
+      name: includebalance
       in: query
-      description: Whether to exclude balance information or not
+      description: Whether to include balance information or not
       example: true
       schema:
         type: boolean
-        default: false
+        default: true
     limitQueryParam:
       name: limit
       in: query
@@ -1757,13 +1764,6 @@ components:
       schema:
         enum: [ asc, desc ]
         default: asc
-    accountPublicKeyQueryParam:
-      name: account.publickey
-      in: query
-      description: The ED25519 account publickey to compare against
-      example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
-      schema:
-        type: string
     publicKeyQueryParam:
       name: publickey
       in: query

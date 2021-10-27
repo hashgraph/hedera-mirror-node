@@ -180,7 +180,7 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
-    case constants.filterKeys.EXCLUDE_BALANCE:
+    case constants.filterKeys.INCLUDE_BALANCE:
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.LIMIT:

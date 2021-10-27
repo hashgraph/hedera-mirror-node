@@ -6,7 +6,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=-2&timestamp=-1.2&order=any",
+  "url": "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=-2&timestamp=-1.2&order=any&&includebalance=1",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -25,6 +25,9 @@
         },
         {
           "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: includebalance"
         }
       ]
     }

@@ -62,7 +62,7 @@ const processRow = (row) => {
  * @param balanceQuery optional account balance query
  * @param pubKeyQuery optional entity public key query
  * @param limitAndOrderQuery optional limit and order query
- * @param excludeBalance exclude balance info or not
+ * @param includeBalance include balance info or not
  * @return {{query: string, params: []}}
  */
 const getAccountQuery = (
@@ -71,7 +71,7 @@ const getAccountQuery = (
   balanceQuery = {query: '', params: []},
   pubKeyQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: ''},
-  excludeBalance = false
+  includeBalance = true
 ) => {
   const entityWhereFilter = ['type < 3', entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
@@ -91,7 +91,7 @@ const getAccountQuery = (
     order by e.id ${order || ''}
     ${limitQuery || ''}`;
 
-  if (excludeBalance) {
+  if (!includeBalance) {
     return {
       query: entityQuery,
       params: entityAccountQuery.params.concat(pubKeyQuery.params).concat(limitParams),
@@ -170,8 +170,8 @@ const toQueryObject = (queryAndParams) => {
   };
 };
 
-const getExcludeBalance = (query) => {
-  const values = query[constants.filterKeys.EXCLUDE_BALANCE] || 'false';
+const getIncludeBalance = (query) => {
+  const values = query[constants.filterKeys.INCLUDE_BALANCE] || 'true';
   const lastValue = typeof values === 'string' ? values : values[values.length - 1];
   return utils.parseBooleanValue(lastValue);
 };
@@ -191,7 +191,7 @@ const getAccounts = async (req, res) => {
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
   const balancesAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
   const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'ab.balance'));
-  const excludeBalance = getExcludeBalance(req.query);
+  const includeBalance = getIncludeBalance(req.query);
   const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'e.public_key'));
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
 
@@ -201,7 +201,7 @@ const getAccounts = async (req, res) => {
     balanceQuery,
     pubKeyQuery,
     limitAndOrderQuery,
-    excludeBalance
+    includeBalance
   );
 
   const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);

@@ -84,7 +84,6 @@ class Pool {
     // for transactions, balances, or accounts
     let callerFile;
     try {
-      console.log(new Error().stack);
       const callerFiles = new Error().stack
         .split('at ')
         .map((entry) => {
