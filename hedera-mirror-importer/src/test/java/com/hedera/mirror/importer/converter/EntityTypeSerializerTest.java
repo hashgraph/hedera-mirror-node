@@ -31,6 +31,6 @@ class EntityTypeSerializerTest {
         new EntityTypeSerializer().serialize(EntityTypeEnum.TOKEN, jsonGenerator, null);
 
         // then
-        verify(jsonGenerator).writeNull();
+        verify(jsonGenerator).writeNumber(EntityTypeEnum.TOKEN.getId());
     }
 }
