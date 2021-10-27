@@ -34,9 +34,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.EntityType;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -51,6 +48,7 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.converter.RangeToStringSerializer;
+import com.hedera.mirror.importer.domain.EntityType;
 
 @EnabledIfV1
 @Tag("migration")
@@ -91,6 +89,20 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         assertThat(findAllContractsHistory()).extracting(MigrationContractV1_47_0::getType).containsExactly(
                 CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT, CONTRACT
         );
+    }
+
+    @Test
+    void verifyEmpty() {
+        // given
+
+        // when
+        migrate();
+
+        // then
+        assertThat(findAllEntities()).isEmpty();
+        assertThat(findAllEntitiesHistory()).isEmpty();
+        assertThat(findAllContracts()).isEmpty();
+        assertThat(findAllContractsHistory()).isEmpty();
     }
 
     @SneakyThrows
