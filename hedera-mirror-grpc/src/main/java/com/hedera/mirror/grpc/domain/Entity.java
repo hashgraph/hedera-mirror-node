@@ -30,7 +30,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 @Builder
@@ -43,7 +42,7 @@ import org.hibernate.annotations.TypeDef;
         typeClass = PostgreSQLGuavaRangeType.class
 )
 @TypeDef(
-        name = "pgsql_enum",
+        defaultForType = EntityType.class,
         typeClass = PostgreSQLEnumType.class
 )
 public class Entity {
@@ -59,6 +58,5 @@ public class Entity {
     private Range<Long> timestampRange;
 
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
     private EntityType type;
 }

@@ -27,14 +27,13 @@ import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import lombok.Data;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 @Data
 @Entity
 @Table(name = "t_transaction_types")
 @TypeDef(
-        name = "pgsql_enum",
+        defaultForType = EntityTypeEnum.class,
         typeClass = PostgreSQLEnumType.class
 )
 public class TransactionType {
@@ -43,7 +42,6 @@ public class TransactionType {
     private Integer protoId;
 
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
     private EntityTypeEnum entityType;
 
     private String name;

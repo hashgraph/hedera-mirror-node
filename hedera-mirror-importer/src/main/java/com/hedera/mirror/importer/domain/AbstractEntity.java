@@ -36,7 +36,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
@@ -54,7 +53,7 @@ import com.hedera.mirror.importer.util.Utility;
         typeClass = PostgreSQLGuavaRangeType.class
 )
 @TypeDef(
-        name = "pgsql_enum",
+        defaultForType = EntityTypeEnum.class,
         typeClass = PostgreSQLEnumType.class
 )
 public abstract class AbstractEntity {
@@ -89,7 +88,6 @@ public abstract class AbstractEntity {
     private Long shard;
 
     @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
     private EntityTypeEnum type;
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
