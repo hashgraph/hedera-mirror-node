@@ -33,7 +33,7 @@ alter table t_transaction_types
 
 -- Alter entity to use the new enum entity_type
 alter table entity
-    add column type_enum entity_type null;
+    add column type_enum entity_type check (type_enum <> 'CONTRACT') null;
 
 update entity
     set type_enum = updateEntityTypeFromInt(type);
@@ -51,7 +51,7 @@ create index if not exists entity__id_type on entity (id, type);
 
 -- Alter entity_history to use the new enum entity_type
 alter table entity_history
-    add column type_enum entity_type null;
+    add column type_enum entity_type check (type_enum <> 'CONTRACT') null;
 
 update entity_history
     set type_enum = updateEntityTypeFromInt(type);
@@ -68,12 +68,12 @@ alter table entity_history
 -- Alter contract to use the new enum entity_type
 alter table contract
     drop column type,
-    add column type entity_type default 'CONTRACT' not null;
+    add column type entity_type default 'CONTRACT' check (type = 'CONTRACT') not null;
 
 -- Alter contract_history to use the new enum entity_type
 alter table contract_history
     drop column type,
-    add column type entity_type default 'CONTRACT' not null;
+    add column type entity_type default 'CONTRACT' check (type = 'CONTRACT') not null;
 
 
 -- Drop t_entity_types

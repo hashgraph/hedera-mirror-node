@@ -102,8 +102,8 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void existingEntitiesAfterReset() throws Exception {
         Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, true);
-        Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.CONTRACT, true);
-        Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.CONTRACT, true);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.FILE, true);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.FILE, true);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3); // No update
     }

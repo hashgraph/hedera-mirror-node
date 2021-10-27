@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.List;
@@ -42,6 +41,7 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -118,8 +118,8 @@ class EntityTimestampMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private MigrationEntity entity(long id, EntityType entityTypeEnum) {
-        return entity(id, entityTypeEnum, null, null);
+    private MigrationEntity entity(long id, EntityType entityType) {
+        return entity(id, entityType, null, null);
     }
 
     private MigrationEntity entity(long id, EntityType entityTypeEnum, Long createdTimestamp,
