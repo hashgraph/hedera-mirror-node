@@ -6,7 +6,8 @@ create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN'
 
 create or replace function updateEntityTypeFromInt(integer)
     returns entity_type as 'select cast(upper(tet.name) as entity_type) from t_entity_types tet where tet.id = $1;'
-    language sql;
+    language sql
+    returns null on null input;
 
 
 -- Alter t_transaction_types to use the new enum entity_type
