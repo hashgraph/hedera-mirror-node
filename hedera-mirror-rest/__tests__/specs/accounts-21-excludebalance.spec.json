@@ -1,0 +1,93 @@
+{
+  "description": "Account api calls with excludebalance filter",
+  "setup": {
+    "accounts": [
+      {
+        "num": 7
+      },
+      {
+        "num": 8
+      },
+      {
+        "num": 9
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 7,
+        "balance": 70,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 100001,
+            "balance": 7
+          },
+          {
+            "token_realm": 0,
+            "token_num": 100002,
+            "balance": 77
+          }
+        ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 8,
+        "balance": 80,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 200001,
+            "balance": 8
+          }
+        ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 9,
+        "balance": 90
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "urls": ["/api/v1/accounts?excludebalance=true", "/api/v1/accounts?excludebalance=false&excludebalance=true"],
+  "responseStatus": 200,
+  "responseJson": {
+    "accounts": [
+      {
+        "account": "0.0.7",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
+      },
+      {
+        "account": "0.0.8",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
+      },
+      {
+        "account": "0.0.9",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

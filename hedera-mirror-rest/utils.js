@@ -628,15 +628,6 @@ const randomString = (length) => {
 };
 
 /**
- * Returns the limit on how many result entries should be in the API
- * @param {String} type of API (e.g. transactions, balances, etc.). Currently unused.
- * @return {Number} limit Max # entries to be returned.
- */
-const returnEntriesLimit = (type) => {
-  return config.maxLimit;
-};
-
-/**
  * Converts the byte array returned by SQL queries into hex string
  * @param {Array} byteArray Array of bytes to be converted to hex string
  * @param {boolean} addPrefix Whether to add the '0x' prefix to the hex string
@@ -1016,7 +1007,6 @@ module.exports = {
   parseTimestampQueryParam,
   parseTokenBalances,
   randomString,
-  returnEntriesLimit,
   secNsToNs,
   secNsToSeconds,
   toHexString,
