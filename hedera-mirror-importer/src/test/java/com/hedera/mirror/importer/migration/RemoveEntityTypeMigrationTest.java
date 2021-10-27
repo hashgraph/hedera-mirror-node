@@ -36,9 +36,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -77,13 +74,16 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         List<MigrationEntityV1_47_0> badEntities = Arrays.asList(entity(1, 1, CONTRACT));
         List<MigrationContractV1_47_0> badContracts = Arrays.asList(contract(1, 1, FILE));
 
-        for (int i = 1; i < 7; i++) {
-            if (i == 2) {
-                contracts.add(contract(i, i, EntityTypeEnum.fromId(i)));
-            } else {
-                entities.add(entity(i, i, EntityTypeEnum.fromId(i)));
-            }
-        }
+        //Entities can have any type except CONTRACT
+        entities.add(entity(1, 1, ACCOUNT));
+        entities.add(entity(2, 2, FILE));
+        entities.add(entity(3, 3, TOPIC));
+        entities.add(entity(4, 4, TOKEN));
+        entities.add(entity(5, 5, SCHEDULE));
+
+        //Contracts can only have type CONTRACT
+        contracts.add(contract(6, 6, CONTRACT));
+
         persistEntities(entities, false);
         persistEntitiesHistory(entities, false);
         persistContracts(contracts, false);
