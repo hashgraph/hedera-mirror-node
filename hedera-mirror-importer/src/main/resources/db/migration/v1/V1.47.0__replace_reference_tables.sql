@@ -1,21 +1,12 @@
 -- Remove t_entity_types and alter tables referencing it to use a entity_type value instead.
 
 -- Create the enum entity_type to replace the foreign key with
+drop type if exists entity_type;
 create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 
 create or replace function updateEntityTypeFromInt(integer)
-    returns entity_type as $$
-    begin
-        case $1
-            when 1 then return 'ACCOUNT';
-            when 2 then return 'CONTRACT';
-            when 3 then return 'FILE';
-            when 4 then return 'TOPIC';
-            when 5 then return 'TOKEN';
-            when 6 then return 'SCHEDULE';
-            else return null;
-        end case;
-    end; $$ LANGUAGE plpgsql;
+    returns entity_type as 'select cast(upper(tet.name) as entity_type) from t_entity_types tet where tet.id = $1;'
+    language sql;
 
 
 -- Alter t_transaction_types to use the new enum entity_type
@@ -78,3 +69,6 @@ alter table contract_history
 
 -- Drop t_entity_types
 drop table t_entity_types;
+
+-- Drop updateEntityTypeFromInt
+drop function updateEntityTypeFromInt(integer);
