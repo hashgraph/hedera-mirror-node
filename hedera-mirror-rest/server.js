@@ -34,6 +34,7 @@ const accounts = require('./accounts');
 const balances = require('./balances');
 const config = require('./config');
 const constants = require('./constants');
+const contracts = require('./contracts');
 const health = require('./health');
 const network = require('./network');
 const schedules = require('./schedules');
@@ -41,7 +42,7 @@ const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
-const {getPoolClass, isTestEnv} = require('./utils');
+const {getPoolClass, isTestEnv, loadPgRange} = require('./utils');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
@@ -103,6 +104,7 @@ if (config.db.tls.enabled) {
 }
 
 const Pool = getPoolClass(isTestEnv());
+loadPgRange();
 const pool = new Pool(poolConfig);
 global.pool = pool;
 
@@ -149,6 +151,10 @@ app.getAsync(`${apiPrefix}/accounts/:accountId`, accounts.getOneAccount);
 
 // balances routes
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
+
+// contracts routes
+app.getAsync(`${apiPrefix}/contracts`, contracts.getContracts);
+app.getAsync(`${apiPrefix}/contracts/:contractId`, contracts.getContractById);
 
 // network routes
 app.getAsync(`${apiPrefix}/network/supply`, network.getSupply);

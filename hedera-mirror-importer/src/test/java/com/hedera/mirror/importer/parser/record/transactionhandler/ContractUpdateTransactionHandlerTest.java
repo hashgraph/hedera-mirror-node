@@ -30,7 +30,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractUpdateTransactionHandler();
+        return new ContractUpdateTransactionHandler(entityListener);
     }
 
     @Override

@@ -63,7 +63,7 @@ describe('Utils nsToSecNs tests', () => {
 
   test('Verify nsToSecNs returns correct result for null validStartNs', () => {
     const val = utils.nsToSecNs(null);
-    expect(val).toBe('0.000000000');
+    expect(val).toBe(null);
   });
 
   test('Verify nsToSecNsWithHyphen returns correct result for valid validStartNs', () => {
@@ -78,7 +78,7 @@ describe('Utils nsToSecNs tests', () => {
 
   test('Verify nsToSecNsWithHyphen returns correct result for null validStartNs', () => {
     const val = utils.nsToSecNsWithHyphen(null);
-    expect(val).toBe('0-000000000');
+    expect(val).toBe(null);
   });
 });
 
@@ -89,10 +89,6 @@ describe('Utils createTransactionId tests', () => {
 
   test('Verify nsToSecNs returns correct result for 0 inputs', () => {
     expect(utils.createTransactionId('0.0.0', 0)).toEqual('0.0.0-0-000000000');
-  });
-
-  test('Verify nsToSecNs returns correct result for null inputs', () => {
-    expect(utils.createTransactionId('0.0.0', null)).toEqual('0.0.0-0-000000000');
   });
 });
 
@@ -754,5 +750,32 @@ describe('Utils ipMask tests', () => {
   test('Verify ipV6 dual', () => {
     const maskedIp = utils.ipMask('2001:db8:3333:4444:5555:6666:1.2.3.4');
     expect(maskedIp).toStrictEqual('2001:db8:3333::0.0.0.0');
+  });
+});
+
+describe('Utils toHexString tests', () => {
+  const specs = [
+    {
+      input: [1, 2, 3],
+      expected: '010203',
+    },
+    {
+      input: [0x1a, 0x1b, 0x1c],
+      expected: '1a1b1c',
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`explicit addPrefix false - ${spec.input}`, () => {
+      expect(utils.toHexString(spec.input, false)).toEqual(spec.expected);
+    });
+
+    test(`implicit addPrefix false - ${spec.input}`, () => {
+      expect(utils.toHexString(spec.input)).toEqual(spec.expected);
+    });
+
+    test(`addPrefix true - ${spec.input}`, () => {
+      expect(utils.toHexString(spec.input, true)).toEqual(`0x${spec.expected}`);
+    });
   });
 });

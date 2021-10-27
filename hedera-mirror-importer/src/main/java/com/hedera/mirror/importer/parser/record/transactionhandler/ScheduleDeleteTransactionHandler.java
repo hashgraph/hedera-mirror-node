@@ -22,18 +22,26 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
+import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-public class ScheduleDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class ScheduleDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    public ScheduleDeleteTransactionHandler() {
-        super(EntityOperationEnum.DELETE);
+    ScheduleDeleteTransactionHandler(EntityListener entityListener) {
+        super(entityListener, TransactionTypeEnum.SCHEDULEDELETE);
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getScheduleDelete().getScheduleID());
+    }
+
+    @Override
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+        entityListener.onEntity(entity);
     }
 }

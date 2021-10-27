@@ -25,6 +25,8 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  CONTRACTID: 'contractid',
+  CONTRACT_ID: 'contract.id',
   CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
   ENTITY_PUBLICKEY: 'publickey',

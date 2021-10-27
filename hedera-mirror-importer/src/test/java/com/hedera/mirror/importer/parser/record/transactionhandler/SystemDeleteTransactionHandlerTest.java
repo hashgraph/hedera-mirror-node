@@ -33,7 +33,7 @@ class SystemDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new SystemDeleteTransactionHandler();
+        return new SystemDeleteTransactionHandler(entityListener);
     }
 
     @Override

@@ -34,6 +34,7 @@ import org.springframework.messaging.support.MessageBuilder;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
@@ -62,7 +63,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionBody body = recordItem.getTransactionBody();
         TransactionRecord txRecord = recordItem.getRecord();
-        TransactionHandler transactionHandler = transactionHandlerFactory.create(body);
+        TransactionTypeEnum transactionType = TransactionTypeEnum.of(recordItem.getTransactionType());
+        TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long consensusTimestamp = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entity = transactionHandler.getEntity(recordItem);
@@ -117,7 +119,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
         var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getRecord());
-        return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(), new PubSubMessage.Transaction(recordItem.getTransactionBody(), recordItem.getSignatureMap()),
+        return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(),
+                new PubSubMessage.Transaction(recordItem.getTransactionBody(), recordItem.getSignatureMap()),
                 recordItem.getRecord(), nonFeeTransfers);
     }
 

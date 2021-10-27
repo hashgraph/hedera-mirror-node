@@ -22,23 +22,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.NftTransferId;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
     private final NftRepository nftRepository;
 
-    public TokenUpdateTransactionHandler(NftRepository nftRepository) {
-        super(EntityOperationEnum.UPDATE);
+    TokenUpdateTransactionHandler(EntityListener entityListener, NftRepository nftRepository) {
+        super(entityListener, TransactionTypeEnum.TOKENUPDATE);
         this.nftRepository = nftRepository;
     }
 
@@ -49,29 +50,32 @@ public class TokenUpdateTransactionHandler extends AbstractEntityCrudTransaction
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
-        if (tokenUpdateTransactionBody.hasAdminKey()) {
-            entity.setKey(tokenUpdateTransactionBody.getAdminKey().toByteArray());
+        var transactionBody = recordItem.getTransactionBody().getTokenUpdate();
+
+        if (transactionBody.hasAdminKey()) {
+            entity.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
-        if (tokenUpdateTransactionBody.hasAutoRenewPeriod()) {
-            entity.setAutoRenewPeriod(tokenUpdateTransactionBody.getAutoRenewPeriod().getSeconds());
+        if (transactionBody.hasAutoRenewAccount()) {
+            EntityId autoRenewAccountId = EntityId.of(transactionBody.getAutoRenewAccount());
+            entity.setAutoRenewAccountId(autoRenewAccountId);
+            entityListener.onEntityId(autoRenewAccountId);
         }
 
-        if (tokenUpdateTransactionBody.hasExpiry()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(tokenUpdateTransactionBody.getExpiry()));
+        if (transactionBody.hasAutoRenewPeriod()) {
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
-        if (tokenUpdateTransactionBody.hasMemo()) {
-            entity.setMemo(tokenUpdateTransactionBody.getMemo().getValue());
+        if (transactionBody.hasExpiry()) {
+            entity.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpiry()));
+        }
+
+        if (transactionBody.hasMemo()) {
+            entity.setMemo(transactionBody.getMemo().getValue());
         }
 
         updateTreasury(recordItem);
-    }
-
-    @Override
-    protected EntityId getAutoRenewAccount(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getAutoRenewAccount());
+        entityListener.onEntity(entity);
     }
 
     private void updateTreasury(RecordItem recordItem) {

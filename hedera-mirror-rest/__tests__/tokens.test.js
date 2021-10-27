@@ -26,10 +26,7 @@ const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
 const {TransactionResultService, TransactionTypeService} = require('../service');
-
-const formatSqlQueryString = (query) => {
-  return query.trim().replace(/\n/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s+/g, ' ');
-};
+const {formatSqlQueryString} = require('./testutils');
 
 describe('token formatTokenRow tests', () => {
   const rowInput = {

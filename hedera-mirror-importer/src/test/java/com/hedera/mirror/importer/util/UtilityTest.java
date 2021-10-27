@@ -27,6 +27,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Internal;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -105,6 +106,25 @@ class UtilityTest {
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
         var bytes = Key.newBuilder().setThresholdKey(tk).build().toByteArray();
         assertThat(Utility.convertSimpleKeyToHex(bytes)).isNull();
+    }
+
+    @Test
+    void getTopic() {
+        ContractLoginfo contractLoginfo = ContractLoginfo.newBuilder()
+                .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0, 0, 0, 1}))
+                .addTopic(ByteString.copyFrom(new byte[] {0, 127}))
+                .addTopic(ByteString.copyFrom(new byte[] {-1}))
+                .addTopic(ByteString.copyFrom(new byte[] {0}))
+                .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0}))
+                .addTopic(ByteString.copyFrom(new byte[0]))
+                .build();
+        assertThat(Utility.getTopic(contractLoginfo, 0)).isEqualTo("01");
+        assertThat(Utility.getTopic(contractLoginfo, 1)).isEqualTo("7f");
+        assertThat(Utility.getTopic(contractLoginfo, 2)).isEqualTo("ff");
+        assertThat(Utility.getTopic(contractLoginfo, 3)).isEqualTo("00");
+        assertThat(Utility.getTopic(contractLoginfo, 4)).isEqualTo("00");
+        assertThat(Utility.getTopic(contractLoginfo, 5)).isEmpty();
+        assertThat(Utility.getTopic(contractLoginfo, 999)).isNull();
     }
 
     @Test

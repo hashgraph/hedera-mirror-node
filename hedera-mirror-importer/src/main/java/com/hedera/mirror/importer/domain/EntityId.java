@@ -129,8 +129,8 @@ public class EntityId implements Serializable, Comparable<EntityId> {
                 getRealmNum(), getEntityNum());
     }
 
-    public Entity toEntity() {
-        Entity entity = new Entity();
+    public <T extends AbstractEntity> T toEntity() {
+        T entity = createEntity();
         entity.setId(id);
         entity.setShard(shardNum);
         entity.setRealm(realmNum);
@@ -138,6 +138,14 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         entity.setTimestampRange(DEFAULT_RANGE);
         entity.setType(type);
         return entity;
+    }
+
+    private <T extends AbstractEntity> T createEntity() {
+        if (type == EntityTypeEnum.CONTRACT.getId()) {
+            return (T) new Contract();
+        } else {
+            return (T) new Entity();
+        }
     }
 
     @Override
