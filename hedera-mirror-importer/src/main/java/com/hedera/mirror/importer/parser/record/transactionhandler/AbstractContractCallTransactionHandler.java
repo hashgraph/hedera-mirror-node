@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -67,9 +66,6 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                 doUpdateEntity(contract, recordItem);
             }
         }
-
-        TransactionBody body = recordItem.getTransactionBody();
-        var payerAccount = EntityId.of(body.getTransactionID().getAccountID());
 
         contractResult.setBloom(Utility.toBytes(functionResult.getBloom()));
         contractResult.setCallResult(Utility.toBytes(functionResult.getContractCallResult()));

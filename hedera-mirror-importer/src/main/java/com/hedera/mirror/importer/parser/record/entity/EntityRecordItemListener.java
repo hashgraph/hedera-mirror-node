@@ -182,7 +182,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             // Only add non-fee transfers on success as the data is assured to be valid
-            processNonFeeTransfers(consensusTimestamp, body, txRecord);
+            processNonFeeTransfers(consensusTimestamp, recordItem);
 
             if (body.hasConsensusSubmitMessage()) {
                 insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
@@ -275,17 +275,19 @@ public class EntityRecordItemListener implements RecordItemListener {
      * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
-    private void processNonFeeTransfers(
-            long consensusTimestamp, TransactionBody body, TransactionRecord transactionRecord) {
+    private void processNonFeeTransfers(long consensusTimestamp, RecordItem recordItem) {
         if (!entityProperties.getPersist().isNonFeeTransfers()) {
             return;
         }
+
+        var body = recordItem.getTransactionBody();
+        var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
                 nonFeeTransfer.setAmount(aa.getAmount());
                 nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, EntityId.of(aa.getAccountID())));
-                nonFeeTransfer.setPayerAccountId(EntityId.of(body.getTransactionID().getAccountID()));
+                nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
             }
         }
@@ -368,8 +370,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertCryptoCreateTransferList(long consensusTimestamp, RecordItem recordItem) {
-        TransactionRecord record = recordItem.getRecord();
-        TransactionBody body = recordItem.getTransactionBody();
+        var record = recordItem.getRecord();
+        var body = recordItem.getTransactionBody();
         long initialBalance = body.getCryptoCreateAccount().getInitialBalance();
         EntityId createdAccount = EntityId.of(record.getReceipt().getAccountID());
         boolean addInitialBalance = true;
