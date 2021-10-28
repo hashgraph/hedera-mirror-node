@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hedera.mirror.importer.util.Utility.toBytes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
