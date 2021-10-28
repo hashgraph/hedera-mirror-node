@@ -65,7 +65,7 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/v1/V1.47.0__replace_reference_tables.sql")
+    @Value("classpath:db/migration/v1/V1.47.0__remove_t_entity_types.sql")
     private File migrationSql;
 
     @Test
