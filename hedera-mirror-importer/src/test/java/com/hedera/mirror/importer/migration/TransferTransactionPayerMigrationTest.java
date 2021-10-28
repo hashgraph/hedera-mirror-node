@@ -157,7 +157,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 .type(EntityTypeEnum.SCHEDULE)).get();
 
         // given
-        entityRepository.saveAll(List.of(
+        persistEntities(List.of(
                 node,
                 treasury,
                 sender,
@@ -166,8 +166,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 file,
                 topic,
                 token,
-                schedule
-        ));
+                schedule));
 
         Transaction transfer1 = transaction(schedule
                 .getCreatedTimestamp() + 200L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
@@ -594,6 +593,23 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                             sender);
                     return sharedTransfer;
                 });
+    }
+
+    private void persistEntities(List<Entity> entities) {
+        for (Entity entity : entities) {
+            jdbcOperations.update(
+                    "insert into entity (id, created_timestamp, num, realm, shard, type, timestamp_range) values (?," +
+                            "?,?,?,?,?,?::int8range)",
+                    entity.getId(),
+                    entity.getCreatedTimestamp(),
+                    entity.getNum(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    entity.getType().getId(),
+                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
+                            .lowerEndpoint())
+            );
+        }
     }
 
     /**
