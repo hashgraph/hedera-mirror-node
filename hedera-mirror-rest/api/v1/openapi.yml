@@ -1359,6 +1359,7 @@ components:
         - TOKENMINT
         - TOKENREVOKEKYC
         - TOKENUNFREEZE
+        - TOKENUNPAUSE
         - TOKENUPDATE
         - TOKENWIPE
         - UNCHECKEDSUBMIT
