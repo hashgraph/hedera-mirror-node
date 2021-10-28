@@ -76,7 +76,7 @@ Add a `ScheduleIdConverter`.
 
 - Add a `Schedule` domain object with the same fields as the schema.
 - Add a `ScheduleSignature` domain object with the same fields as the schema.
-- Add a `SCHEDULE` enum value to `EntityTypeEnum`.
+- Add a `SCHEDULE` enum value to `EntityType`.
 
 ### Entity Listener
 
