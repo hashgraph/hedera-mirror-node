@@ -459,7 +459,7 @@ const getTransactionsInnerQuery = function (
   const transactionOnlyLimitQuery = _.isNil(namedLimitQuery) ? '' : namedLimitQuery;
   const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
     ? undefined
-    : `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.VALID_START_NS}
+    : `select ${Transaction.CONSENSUS_TIMESTAMP}
     from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
     order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}

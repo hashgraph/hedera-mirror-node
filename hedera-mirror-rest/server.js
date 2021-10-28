@@ -130,6 +130,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 if (config.response.compression) {
+  logger.info('Response compression is enabled');
   app.use(compression());
 }
 
