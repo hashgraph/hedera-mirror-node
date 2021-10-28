@@ -24,13 +24,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.*;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.importer.domain.Nft;
+import com.hedera.mirror.importer.domain.NftId;
+import com.hedera.mirror.importer.domain.NftTransfer;
 
 class NftRepositoryTest extends AbstractRepositoryTest {
 
@@ -95,7 +97,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         EntityId tokenId = nft1.getId().getTokenId();
         EntityId previousAccountId = nft1.getAccountId();
         nftRepository
-                .updateTreasury(tokenId.getId(), previousAccountId.getId(), newAccountId.getId(), consensusTimestamp);
+                .updateTreasury(tokenId.getId(), previousAccountId.getId(), newAccountId.getId(), consensusTimestamp,
+                        EntityId.of("0.0.200", EntityType.ACCOUNT).getId());
 
         assertAccountUpdated(nft1, newAccountId);
         assertAccountUpdated(nft2, newAccountId);

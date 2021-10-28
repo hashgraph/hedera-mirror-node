@@ -48,8 +48,9 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
             "  where token_id = ?1 and account_id = ?2" +
             "  returning serial_number) " +
             "insert into nft_transfer " +
-            "(token_id, sender_account_id, receiver_account_id, consensus_timestamp, serial_number) " +
-            "select ?1, ?2, ?3, ?4, nft_updated.serial_number " +
+            "(token_id, sender_account_id, receiver_account_id, consensus_timestamp, payer_account_id, serial_number)" +
+            " select ?1, ?2, ?3, ?4, ?5, nft_updated.serial_number " +
             "from nft_updated", nativeQuery = true)
-    void updateTreasury(long tokenId, long previousAccountId, long newAccountId, long consensusTimestamp);
+    void updateTreasury(long tokenId, long previousAccountId, long newAccountId, long consensusTimestamp,
+                        long payerAccountId);
 }

@@ -77,7 +77,7 @@ const getSupply = async (req, res) => {
     logger.trace(`getSupply query: ${query} ${JSON.stringify(tsParams)}`);
   }
 
-  return pool.queryQuietly(query, ...tsParams).then((result) => {
+  return pool.queryQuietly(query, tsParams).then((result) => {
     res.locals[constants.responseDataLabel] = formatResponse(result);
     logger.debug(`getSupply returning ${result.rows.length} entries`);
   });

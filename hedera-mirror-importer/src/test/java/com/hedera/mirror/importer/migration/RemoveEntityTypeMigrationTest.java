@@ -36,9 +36,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.EntityType;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -55,6 +52,7 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.converter.RangeToStringSerializer;
+import com.hedera.mirror.importer.domain.EntityType;
 
 @EnabledIfV1
 @Tag("migration")
@@ -65,16 +63,16 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/v1/V1.47.0__remove_t_entity_types.sql")
+    @Value("classpath:db/migration/v1/V1.47.1__remove_t_entity_types.sql")
     private File migrationSql;
 
     @Test
     void verify() {
         // given
-        List<MigrationEntityV1_47_0> entities = new ArrayList<>();
-        List<MigrationContractV1_47_0> contracts = new ArrayList<>();
-        List<MigrationEntityV1_47_0> badEntities = Arrays.asList(entity(1, 1, CONTRACT));
-        List<MigrationContractV1_47_0> badContracts = Arrays.asList(contract(1, 1, FILE));
+        List<MigrationEntityV1_47_1> entities = new ArrayList<>();
+        List<MigrationContractV1_47_1> contracts = new ArrayList<>();
+        List<MigrationEntityV1_47_1> badEntities = Arrays.asList(entity(1, 1, CONTRACT));
+        List<MigrationContractV1_47_1> badContracts = Arrays.asList(contract(1, 1, FILE));
 
         //Entities can have any type except CONTRACT
         entities.add(entity(1, 1, ACCOUNT));
@@ -94,16 +92,16 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(findAllEntities()).extracting(MigrationEntityV1_47_0::getType).containsExactly(
+        assertThat(findAllEntities()).extracting(MigrationEntityV1_47_1::getType).containsExactly(
                 ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE
         );
-        assertThat(findAllEntitiesHistory()).extracting(MigrationEntityV1_47_0::getType).containsExactly(
+        assertThat(findAllEntitiesHistory()).extracting(MigrationEntityV1_47_1::getType).containsExactly(
                 ACCOUNT, FILE, TOPIC, TOKEN, SCHEDULE
         );
-        assertThat(findAllContracts()).extracting(MigrationContractV1_47_0::getType).containsExactly(
+        assertThat(findAllContracts()).extracting(MigrationContractV1_47_1::getType).containsExactly(
                 CONTRACT
         );
-        assertThat(findAllContractsHistory()).extracting(MigrationContractV1_47_0::getType).containsExactly(
+        assertThat(findAllContractsHistory()).extracting(MigrationContractV1_47_1::getType).containsExactly(
                 CONTRACT
         );
 
@@ -140,24 +138,24 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         jdbcOperations.execute(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 
-    private MigrationEntityV1_47_0 entity(long id, long num, EntityType type) {
-        MigrationEntityV1_47_0 entity = new MigrationEntityV1_47_0();
+    private MigrationEntityV1_47_1 entity(long id, long num, EntityType type) {
+        MigrationEntityV1_47_1 entity = new MigrationEntityV1_47_1();
         entity.setId(id);
         entity.setNum(num);
         entity.setType(type);
         return entity;
     }
 
-    private MigrationContractV1_47_0 contract(long id, long num, EntityType type) {
-        MigrationContractV1_47_0 entity = new MigrationContractV1_47_0();
+    private MigrationContractV1_47_1 contract(long id, long num, EntityType type) {
+        MigrationContractV1_47_1 entity = new MigrationContractV1_47_1();
         entity.setId(id);
         entity.setNum(num);
         entity.setType(type);
         return entity;
     }
 
-    private void persistEntities(List<MigrationEntityV1_47_0> entities, boolean migrationRan) {
-        for (MigrationEntityV1_47_0 entity : entities) {
+    private void persistEntities(List<MigrationEntityV1_47_1> entities, boolean migrationRan) {
+        for (MigrationEntityV1_47_1 entity : entities) {
             jdbcOperations.update(
                     getEntitySql("entity", migrationRan),
                     entity.getId(),
@@ -172,8 +170,8 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         }
     }
 
-    private void persistEntitiesHistory(List<MigrationEntityV1_47_0> entities, boolean migrationRan) {
-        for (MigrationEntityV1_47_0 entity : entities) {
+    private void persistEntitiesHistory(List<MigrationEntityV1_47_1> entities, boolean migrationRan) {
+        for (MigrationEntityV1_47_1 entity : entities) {
             jdbcOperations.update(
                     getEntitySql("entity_history", migrationRan),
                     entity.getId(),
@@ -188,8 +186,8 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         }
     }
 
-    private void persistContracts(List<MigrationContractV1_47_0> contracts, boolean migrationRan) {
-        for (MigrationContractV1_47_0 contract : contracts) {
+    private void persistContracts(List<MigrationContractV1_47_1> contracts, boolean migrationRan) {
+        for (MigrationContractV1_47_1 contract : contracts) {
             jdbcOperations.update(
                     getContractSql("contract", migrationRan),
                     contract.getId(),
@@ -205,8 +203,8 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
         }
     }
 
-    private void persistContractsHistory(List<MigrationContractV1_47_0> contracts, boolean migrationRan) {
-        for (MigrationContractV1_47_0 contract : contracts) {
+    private void persistContractsHistory(List<MigrationContractV1_47_1> contracts, boolean migrationRan) {
+        for (MigrationContractV1_47_1 contract : contracts) {
             jdbcOperations.update(
                     getContractSql("contract_history", migrationRan),
                     contract.getId(),
@@ -233,29 +231,29 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
                 "timestamp_range) values (?,?,?,?,?,%s,?::int8range)", table, useEnum ? "cast(? as entity_type)" : "?");
     }
 
-    private List<MigrationEntityV1_47_0> findAllEntities() {
+    private List<MigrationEntityV1_47_1> findAllEntities() {
         return jdbcOperations.query("select id, type from entity order by id",
-                new BeanPropertyRowMapper<>(MigrationEntityV1_47_0.class));
+                new BeanPropertyRowMapper<>(MigrationEntityV1_47_1.class));
     }
 
-    private List<MigrationEntityV1_47_0> findAllEntitiesHistory() {
+    private List<MigrationEntityV1_47_1> findAllEntitiesHistory() {
         return jdbcOperations.query("select id, type from entity_history order by id",
-                new BeanPropertyRowMapper<>(MigrationEntityV1_47_0.class));
+                new BeanPropertyRowMapper<>(MigrationEntityV1_47_1.class));
     }
 
-    private List<MigrationContractV1_47_0> findAllContracts() {
+    private List<MigrationContractV1_47_1> findAllContracts() {
         return jdbcOperations.query("select id, type from contract order by id",
-                new BeanPropertyRowMapper<>(MigrationContractV1_47_0.class));
+                new BeanPropertyRowMapper<>(MigrationContractV1_47_1.class));
     }
 
-    private List<MigrationContractV1_47_0> findAllContractsHistory() {
+    private List<MigrationContractV1_47_1> findAllContractsHistory() {
         return jdbcOperations.query("select id, type from contract_history order by id",
-                new BeanPropertyRowMapper<>(MigrationContractV1_47_0.class));
+                new BeanPropertyRowMapper<>(MigrationContractV1_47_1.class));
     }
 
     @Data
     @NoArgsConstructor
-    private static class MigrationEntityV1_47_0 {
+    private static class MigrationEntityV1_47_1 {
         private final long createdTimestamp = 1L;
         private long id;
         private long num;
@@ -268,7 +266,7 @@ class RemoveEntityTypeMigrationTest extends IntegrationTest {
 
     @Data
     @NoArgsConstructor
-    private static class MigrationContractV1_47_0 {
+    private static class MigrationContractV1_47_1 {
         private long createdTimestamp = 1L;
         private long id;
         private String memo = "Migration test";

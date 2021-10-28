@@ -69,6 +69,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
             contractResult.setAmount(transactionBody.getAmount());
             contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
             contractResult.setContractId(transaction.getEntityId());
+            contractResult.setPayerAccountId(transaction.getPayerAccountId());
             contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getFunctionParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
 

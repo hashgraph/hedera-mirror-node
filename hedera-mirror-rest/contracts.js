@@ -286,7 +286,7 @@ const getContractById = async (req, res) => {
     logger.trace(`getContractById query: ${query}, params: ${params}`);
   }
 
-  const {rows} = await pool.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
@@ -314,7 +314,7 @@ const getContracts = async (req, res) => {
     logger.trace(`getContracts query: ${query}, params: ${params}`);
   }
 
-  const {rows} = await pool.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, params);
   logger.debug(`getContracts returning ${rows.length} entries`);
 
   const response = {

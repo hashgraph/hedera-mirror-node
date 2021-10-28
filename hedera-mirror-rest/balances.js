@@ -20,7 +20,6 @@
 
 'use strict';
 
-const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -138,7 +137,7 @@ const getBalances = async (req, res) => {
   }
 
   // Execute query
-  const result = await pool.queryQuietly(pgSqlQuery, ...sqlParams);
+  const result = await pool.queryQuietly(pgSqlQuery, sqlParams);
   res.locals[constants.responseDataLabel] = formatBalancesResult(req, result, limit, order);
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };

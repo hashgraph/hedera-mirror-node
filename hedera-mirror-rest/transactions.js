@@ -50,9 +50,9 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
       limitQuery = '';
     }
 
-    const tquery = `select 
-                      ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}, 
-                      ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME}, 
+    const tquery = `select
+                      ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME},
+                      ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME},
                       ${Transaction.VALID_START_NS_FULL_NAME},
                       ${Transaction.MEMO_FULL_NAME},
                       ${Transaction.NODE_ACCOUNT_ID_FULL_NAME},
@@ -149,7 +149,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
         ttrl.ttr_list,
         ${nftList}
         ${feeList}
-        t.payer_account_id, 
+        t.payer_account_id,
         t.valid_start_ns,
         t.memo,
         t.node_account_id,
@@ -577,7 +577,7 @@ const getTransactions = async (req, res) => {
   }
 
   // Execute query
-  const {rows, sqlQuery} = await pool.queryQuietly(query.query, ...query.params);
+  const {rows, sqlQuery} = await pool.queryQuietly(query.query, query.params);
   const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,
@@ -659,7 +659,7 @@ const getOneTransaction = async (req, res) => {
   }
 
   // Execute query
-  const {rows} = await pool.queryQuietly(pgSqlQuery, ...sqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, sqlParams);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }

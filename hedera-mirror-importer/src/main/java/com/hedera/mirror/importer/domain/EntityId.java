@@ -123,6 +123,10 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         return new EntityId(entityShard, entityRealm, entityNum, type);
     }
 
+    public static EntityId of(long encodedEntityId, EntityType type) {
+        return EntityIdEndec.decode(encodedEntityId, type);
+    }
+
     public static boolean isEmpty(EntityId entityId) {
         return entityId == null || EMPTY.equals(entityId);
     }

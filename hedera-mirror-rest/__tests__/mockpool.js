@@ -21,6 +21,7 @@
 'use strict';
 
 const math = require('mathjs');
+const path = require('path');
 const EntityId = require('../entityId');
 const testutils = require('./testutils');
 const {maxLimit} = require('../config');
@@ -44,6 +45,18 @@ class Pool {
     this.NUM_NODES = 39;
 
     this.timeNow = Math.floor(new Date().getTime() / 1000);
+  }
+
+  /**
+   * Mocks Pool.connect, returns a client object with query and release methods
+   * @return {{release: release, query: (function(*, *): any)}}
+   */
+  connect() {
+    const that = this;
+    return {
+      query: (...args) => that.query(...args),
+      release: () => {},
+    };
   }
 
   /**
@@ -71,16 +84,19 @@ class Pool {
     // for transactions, balances, or accounts
     let callerFile;
     try {
-      const callerFiles = new Error().stack.split('at ').map((entry) => {
-        const result = entry.match(/\/(\w+?).js:/);
-        return result ? result[1] : '';
-      });
-      // transactions / balances / accounts may call pool.query directly or through utils,
-      // so if the stack frame at index 0 is utils, look one more up the stack for the callerFile
-      callerFile = callerFiles[2];
-      if (callerFile === 'utils') {
-        callerFile = callerFiles[3];
-      }
+      const callerFiles = new Error().stack
+        .split('at ')
+        .map((entry) => {
+          const result = entry.match(/([^ ()]*)\.js:.*/);
+          return result && path.parse(result[1]);
+        })
+        .filter((r) => !!r)
+        // filter modules, files in __tests__ dir, and nodejs internal source files
+        .filter((r) => !r.dir.includes('node_modules') && !r.dir.includes('__tests__') && !r.dir.startsWith('internal'))
+        // filter utils.js
+        .filter((r) => r.base !== 'utils')
+        .map((r) => r.base);
+      callerFile = callerFiles[0];
     } catch (err) {
       callerFile = 'unknown';
     }
@@ -104,18 +120,14 @@ class Pool {
     // Parse the SQL query
     const parsedparams = testutils.parseSqlQueryAndParams(sqlquery, sqlparams, orderprefix);
     const rows = this.createMockData(callerFile, parsedparams);
-    const promise = new Promise(function (resolve, reject) {
-      resolve({
-        rows,
-        sqlQuery: {
-          query: sqlquery,
-          params: sqlparams,
-          parsedparams,
-        },
-      });
+    return Promise.resolve({
+      rows,
+      sqlQuery: {
+        query: sqlquery,
+        params: sqlparams,
+        parsedparams,
+      },
     });
-
-    return promise;
   }
 
   /**
@@ -337,13 +349,12 @@ class Pool {
       const row = {};
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
-      row.consensus_timestamp = this.toNs(this.timeNow);
-      row.entity_id = this.getAccountId(accountNum, i);
-
-      row.expiration_timestamp = this.toNs(this.timeNow + 1000);
       row.auto_renew_period = i * 1000;
-      row.key = Buffer.from(`Key for row ${i}`);
+      row.consensus_timestamp = this.toNs(this.timeNow);
       row.deleted = false;
+      row.expiration_timestamp = this.toNs(this.timeNow + 1000);
+      row.id = this.getAccountId(accountNum, i);
+      row.key = Buffer.from(`Key for row ${i}`);
       row.type = 'Account';
 
       rows.push(row);

@@ -30,43 +30,48 @@ const {DbError} = require('./errors/dbError');
 /**
  * Processes one row of the results of the SQL query and format into API return format
  * @param {Object} row One row of the SQL query result
- * @return {Object} accRecord Processed account record
+ * @return {Object} Processed account record
  */
 const processRow = (row) => {
-  const accRecord = {};
-  accRecord.account = EntityId.fromEncodedId(row.entity_id).toString();
-  accRecord.auto_renew_period = row.auto_renew_period === null ? null : Number(row.auto_renew_period);
-  accRecord.balance = {
-    balance: row.account_balance === null ? null : Number(row.account_balance),
-    timestamp: row.consensus_timestamp === null ? null : utils.nsToSecNs(row.consensus_timestamp),
-    tokens: utils.parseTokenBalances(row.token_balances),
+  const balance =
+    row.account_balance === undefined
+      ? undefined
+      : {
+          balance: row.account_balance === null ? null : Number(row.account_balance),
+          timestamp: utils.nsToSecNs(row.consensus_timestamp),
+          tokens: utils.parseTokenBalances(row.token_balances),
+        };
+  return {
+    account: EntityId.fromEncodedId(row.id).toString(),
+    auto_renew_period: row.auto_renew_period === null ? null : Number(row.auto_renew_period),
+    balance,
+    deleted: row.deleted,
+    expiry_timestamp: utils.nsToSecNs(row.expiration_timestamp),
+    key: utils.encodeKey(row.key),
+    max_automatic_token_associations: row.max_automatic_token_associations,
+    memo: row.memo,
+    receiver_sig_required: row.receiver_sig_required,
   };
-  accRecord.deleted = row.deleted;
-  accRecord.expiry_timestamp = row.expiration_timestamp === null ? null : utils.nsToSecNs(row.expiration_timestamp);
-  accRecord.key = row.key === null ? null : utils.encodeKey(row.key);
-  accRecord.max_automatic_token_associations = row.max_automatic_token_associations;
-  accRecord.memo = row.memo;
-  accRecord.receiver_sig_required = row.receiver_sig_required;
-
-  return accRecord;
 };
 
 /**
  * Creates account query and params from filters with limit and order
  *
- * @param entityAccountQuery - optional entity id query
- * @param balancesAccountQuery - optional account balance account id query
- * @param balanceQuery - optional account balance query
- * @param pubKeyQuery - optional entity public key query
- * @param limitAndOrderQuery - optional limit and order query
- * @return {{query: string, params}}
+ * @param entityAccountQuery optional entity id query
+ * @param balancesAccountQuery optional account balance account id query
+ * @param balanceQuery optional account balance query
+ * @param pubKeyQuery optional entity public key query
+ * @param limitAndOrderQuery optional limit and order query
+ * @param includeBalance include balance info or not
+ * @return {{query: string, params: []}}
  */
 const getAccountQuery = (
   entityAccountQuery,
   balancesAccountQuery,
   balanceQuery = {query: '', params: []},
   pubKeyQuery = {query: '', params: []},
-  limitAndOrderQuery = {query: '', params: [], order: ''}
+  limitAndOrderQuery = {query: '', params: [], order: ''},
+  includeBalance = true
 ) => {
   const entityWhereFilter = [
     `e.type in ('${constants.entityTypes.ACCOUNT}', '${constants.entityTypes.CONTRACT}')`,
@@ -75,6 +80,30 @@ const getAccountQuery = (
   ]
     .filter((x) => !!x)
     .join(' and ');
+  const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
+  const entityQuery = `select
+      id,
+      expiration_timestamp,
+      auto_renew_period,
+      key,
+      deleted,
+      type,
+      public_key,
+      max_automatic_token_associations,
+      memo,
+      receiver_sig_required
+    from entity e
+    where ${entityWhereFilter}
+    order by e.id ${order || ''}
+    ${limitQuery || ''}`;
+
+  if (!includeBalance) {
+    return {
+      query: entityQuery,
+      params: entityAccountQuery.params.concat(pubKeyQuery.params).concat(limitParams),
+    };
+  }
+
   const balanceWhereFilter = [
     'ab.consensus_timestamp = (select max(consensus_timestamp) as time_stamp_max from account_balance)',
     balancesAccountQuery.query,
@@ -82,7 +111,6 @@ const getAccountQuery = (
   ]
     .filter((x) => !!x)
     .join(' and ');
-  const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
 
   // balanceQuery and pubKeyQuery are applied in the two sub queries; depending on the presence, use different joins
   let joinType = 'full outer';
@@ -115,7 +143,7 @@ const getAccountQuery = (
     )
     select balances.balance as account_balance,
       balances.consensus_timestamp as consensus_timestamp,
-       coalesce(balances.account_id, e.id) as entity_id,
+       coalesce(balances.account_id, e.id) as id,
        e.expiration_timestamp,
        e.auto_renew_period,
        e.key,
@@ -125,23 +153,8 @@ const getAccountQuery = (
        e.receiver_sig_required,
        balances.token_balances
     from balances
-    ${joinType} join (
-      select
-        id,
-        expiration_timestamp,
-        auto_renew_period,
-        key,
-        deleted,
-        type,
-        public_key,
-        max_automatic_token_associations,
-        memo,
-        receiver_sig_required
-      from entity e
-      where ${entityWhereFilter}
-      order by e.id ${order || ''}
-      ${limitQuery || ''}
-    ) e on e.id = balances.account_id
+    ${joinType} join (${entityQuery}) e
+      on e.id = balances.account_id
     order by coalesce(balances.account_id, e.id) ${order || ''}
     ${limitQuery || ''}`;
 
@@ -163,6 +176,12 @@ const toQueryObject = (queryAndParams) => {
   };
 };
 
+const getBalanceParamValue = (query) => {
+  const values = query[constants.filterKeys.BALANCE] || 'true';
+  const lastValue = typeof values === 'string' ? values : values[values.length - 1];
+  return utils.parseBooleanValue(lastValue);
+};
+
 /**
  * Handler function for /accounts API.
  *
@@ -178,6 +197,7 @@ const getAccounts = async (req, res) => {
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
   const balancesAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
   const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'ab.balance'));
+  const includeBalance = getBalanceParamValue(req.query);
   const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'e.public_key'));
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
 
@@ -186,17 +206,21 @@ const getAccounts = async (req, res) => {
     balancesAccountQuery,
     balanceQuery,
     pubKeyQuery,
-    limitAndOrderQuery
+    limitAndOrderQuery,
+    includeBalance
   );
 
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(query);
+  const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAccounts query: ${pgEntityQuery} ${JSON.stringify(params)}`);
+    logger.trace(`getAccounts query: ${pgQuery} ${JSON.stringify(params)}`);
   }
 
   // Execute query
-  const result = await pool.queryQuietly(pgEntityQuery, ...params);
+  // set random_page_cost to 0 to make the cost estimation of using the index on (public_key, index)
+  // lower than that of other indexes so pg planner will choose the better index when querying by public key
+  const preQueryHint = pubKeyQuery.query !== '' && constants.zeroRandomPageCostQueryHint;
+  const result = await pool.queryQuietly(pgQuery, params, preQueryHint);
   const ret = {
     accounts: result.rows.map((row) => processRow(row)),
     links: {
