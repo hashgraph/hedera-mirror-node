@@ -112,11 +112,14 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
             return;
         }
 
+        Stopwatch stopwatch = Stopwatch.createStarted();
         loadContractIds();
         moveContractEntities();
+        processFile(stopwatch);
+    }
 
+    private void processFile(Stopwatch stopwatch) throws IOException {
         log.info("Importing historical account information");
-        Stopwatch stopwatch = Stopwatch.createStarted();
 
         try (BufferedReader reader = toReader(new GZIPInputStream(accountInfoPath.getInputStream()))) {
             long count = reader.lines()
