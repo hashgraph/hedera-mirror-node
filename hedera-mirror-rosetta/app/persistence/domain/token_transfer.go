@@ -26,6 +26,7 @@ type TokenTransfer struct {
 	AccountId          EntityId
 	Amount             int64
 	ConsensusTimestamp int64
+	PayerAccountId     EntityId
 	TokenId            EntityId
 }
 

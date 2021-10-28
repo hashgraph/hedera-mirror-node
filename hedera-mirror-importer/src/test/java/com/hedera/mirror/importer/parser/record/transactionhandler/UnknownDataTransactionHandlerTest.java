@@ -20,10 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.codec.binary.Hex;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class UnknownDataTransactionHandlerTest extends AbstractTransactionHandlerTest {
     // TransactionBody containing an unknown field with a field id = 9999
@@ -45,7 +44,7 @@ class UnknownDataTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
+    protected EntityType getExpectedEntityIdType() {
         return null;
     }
 }

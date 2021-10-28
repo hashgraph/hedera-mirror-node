@@ -34,14 +34,14 @@ class EntityIdTest {
     @DisplayName("Convert String to EntityId and fail")
     @ParameterizedTest(name = "with {0}")
     void ofStringNegative(String string) {
-        assertThatThrownBy(() -> EntityId.of(string, EntityTypeEnum.ACCOUNT))
+        assertThatThrownBy(() -> EntityId.of(string, EntityType.ACCOUNT))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @DisplayName("Convert String to EntityId")
     @Test
     void ofStringPositive() {
-        EntityTypeEnum type = EntityTypeEnum.ACCOUNT;
+        EntityType type = EntityType.ACCOUNT;
         assertThat(EntityId.of("0.0.1", type)).isEqualTo(EntityId.of(0, 0, 1, type));
         assertThat(EntityId.of("0.0.0", type)).isEqualTo(EntityId.EMPTY);
     }

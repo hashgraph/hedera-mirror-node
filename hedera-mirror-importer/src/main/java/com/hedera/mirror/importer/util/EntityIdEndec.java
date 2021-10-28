@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.util;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.exception.InvalidEntityException;
 
 /**
@@ -59,13 +59,13 @@ public class EntityIdEndec {
                 (shardNum & SHARD_MASK) << (REALM_BITS + NUM_BITS);
     }
 
-    public static EntityId decode(long encodedId, EntityTypeEnum entityTypeEnum) {
+    public static EntityId decode(long encodedId, EntityType entityType) {
         if (encodedId < 0) {
             throw new InvalidEntityException("encodedId can not be negative: " + encodedId);
         }
         long shard = encodedId >> (REALM_BITS + NUM_BITS);
         long realm = (encodedId >> NUM_BITS) & REALM_MASK;
         long num = encodedId & NUM_MASK;
-        return EntityId.of(shard, realm, num, entityTypeEnum);
+        return EntityId.of(shard, realm, num, entityType);
     }
 }

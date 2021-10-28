@@ -34,6 +34,7 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -55,6 +56,10 @@ public class RecordItem implements StreamItem {
 
     @Getter(lazy = true)
     private long consensusTimestamp = Utility.timestampInNanosMax(record.getConsensusTimestamp());
+
+    // transactions in stream always have a valid payerAccountId
+    @Getter(lazy = true)
+    private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.

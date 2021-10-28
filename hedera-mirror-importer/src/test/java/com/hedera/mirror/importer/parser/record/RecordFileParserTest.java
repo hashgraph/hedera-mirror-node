@@ -48,7 +48,7 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -117,7 +117,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         recordFile.setLoadEnd(id);
         recordFile.setLoadStart(id);
         recordFile.setName(filename);
-        recordFile.setNodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
+        recordFile.setNodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
         recordFile.setPreviousHash("previousHash" + (id - 1));
         recordFile.setVersion(1);
         recordFile.setItems(Flux.just(recordItem));

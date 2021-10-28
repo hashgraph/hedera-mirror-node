@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -28,8 +29,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -65,7 +64,7 @@ class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.SCHEDULE;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.SCHEDULE;
     }
 }

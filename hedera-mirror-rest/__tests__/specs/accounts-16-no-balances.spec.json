@@ -108,15 +108,15 @@
     "entities": [
       {
         "num": 6,
-        "type": 3
+        "type": "FILE"
       },
       {
         "num": 7,
-        "type": 4
+        "type": "TOPIC"
       },
       {
         "num": 8,
-        "type": 5
+        "type": "TOKEN"
       }
     ]
   },

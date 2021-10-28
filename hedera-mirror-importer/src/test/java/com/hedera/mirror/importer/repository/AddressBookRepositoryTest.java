@@ -33,15 +33,15 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class AddressBookRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     protected AddressBookRepository addressBookRepository;
 
-    private final EntityId addressBookEntityId101 = EntityId.of("0.0.101", EntityTypeEnum.FILE);
-    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
+    private final EntityId addressBookEntityId101 = EntityId.of("0.0.101", EntityType.FILE);
+    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityType.FILE);
 
     @Test
     void save() {
@@ -74,7 +74,7 @@ class AddressBookRepositoryTest extends AbstractRepositoryTest {
             addressBookEntryList
                     .add(addressBookEntry(a -> a.id(new AddressBookEntry.Id(startConsensusTimestamp, nodeId))
                             .memo("0.0." + nodeId)
-                            .nodeAccountId(EntityId.of("0.0." + nodeId, EntityTypeEnum.ACCOUNT))));
+                            .nodeAccountId(EntityId.of("0.0." + nodeId, EntityType.ACCOUNT))));
         }
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
@@ -96,7 +96,7 @@ class AddressBookRepositoryTest extends AbstractRepositoryTest {
                 .id(new AddressBookEntry.Id(Instant.now().getEpochSecond(), 5L))
                 .publicKey("rsa+public/key")
                 .memo("0.0.3")
-                .nodeAccountId(EntityId.of("0.0.5", EntityTypeEnum.ACCOUNT))
+                .nodeAccountId(EntityId.of("0.0.5", EntityType.ACCOUNT))
                 .nodeCertHash("nodeCertHash".getBytes());
 
         if (nodeAddressCustomizer != null) {

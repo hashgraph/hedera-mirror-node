@@ -176,7 +176,7 @@ To support the goals the following database schema changes should be made
     public class TokenIdConverter extends AbstractEntityIdConverter {
 
         public TokenIdConverter() {
-            super(EntityTypeEnum.TOKEN);
+            super(EntityType.TOKEN);
         }
     }
 ```
@@ -200,10 +200,10 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `consensusTimestamp`
     -   `tokenId`
 
-#### EntityTypeEnum
--   Update `EntityTypeEnum` with `Token` type
+#### EntityType
+-   Update `EntityType` with `Token` type
 ```java
-    public enum EntityTypeEnum {
+    public enum EntityType {
         ...
         TOKEN(5);
         ...

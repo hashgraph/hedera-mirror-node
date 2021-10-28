@@ -59,10 +59,19 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
     @Convert(converter = TokenIdConverter.class)
     private EntityId tokenId;
 
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
+
     @JsonIgnore
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
+
+    public void setEffectivePayerEntityIds(List<EntityId> effectivePayerEntityIds) {
+        effectivePayerAccountIds = effectivePayerEntityIds.stream()
+                .map(AccountIdConverter.INSTANCE::convertToDatabaseColumn)
+                .collect(Collectors.toList());
     }
 
     @Data
@@ -77,11 +86,5 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
         private EntityId collectorAccountId;
 
         private long consensusTimestamp;
-    }
-
-    public void setEffectivePayerEntityIds(List<EntityId> effectivePayerEntityIds) {
-        effectivePayerAccountIds = effectivePayerEntityIds.stream()
-                .map(AccountIdConverter.INSTANCE::convertToDatabaseColumn)
-                .collect(Collectors.toList());
     }
 }

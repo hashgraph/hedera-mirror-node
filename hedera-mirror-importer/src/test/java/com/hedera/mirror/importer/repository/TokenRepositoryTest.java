@@ -30,7 +30,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Token;
 import com.hedera.mirror.importer.domain.TokenId;
 import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
@@ -42,9 +42,9 @@ class TokenRepositoryTest extends AbstractRepositoryTest {
     @Resource
     protected TokenRepository tokenRepository;
 
-    private static final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
+    private static final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityType.TOKEN);
     private static final String key = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-    private static final EntityId treasuryAccount = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private static final EntityId treasuryAccount = EntityId.of("0.0.102", EntityType.ACCOUNT);
     private static final long INITIAL_SUPPLY = 1_000_000L;
 
     @Test

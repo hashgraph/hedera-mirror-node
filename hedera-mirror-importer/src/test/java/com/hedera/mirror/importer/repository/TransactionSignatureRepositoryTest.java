@@ -23,10 +23,11 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.EntityType;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 
 class TransactionSignatureRepositoryTest extends AbstractRepositoryTest {
@@ -45,7 +46,7 @@ class TransactionSignatureRepositoryTest extends AbstractRepositoryTest {
         transactionSignature.setId(new TransactionSignature.Id(
                 consensusTimestamp,
                 "signatory public key prefix".getBytes()));
-        transactionSignature.setEntityId(EntityId.of("0.0.789", EntityTypeEnum.UNKNOWN));
+        transactionSignature.setEntityId(EntityId.of("0.0.789", EntityType.UNKNOWN));
         transactionSignature.setSignature("scheduled transaction signature".getBytes());
         return transactionSignature;
     }

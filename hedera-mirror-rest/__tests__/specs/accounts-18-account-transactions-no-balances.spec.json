@@ -95,15 +95,15 @@
     "entities": [
       {
         "num": 10,
-        "type": 3
+        "type": "FILE"
       },
       {
         "num": 11,
-        "type": 4
+        "type": "TOPIC"
       },
       {
         "num": 12,
-        "type": 5
+        "type": "TOKEN"
       }
     ]
   },

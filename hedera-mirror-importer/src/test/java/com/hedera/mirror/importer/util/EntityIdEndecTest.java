@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.FILE;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.FILE;
 import static com.hedera.mirror.importer.util.EntityIdEndec.NUM_BITS;
 import static com.hedera.mirror.importer.util.EntityIdEndec.REALM_BITS;
 import static com.hedera.mirror.importer.util.EntityIdEndec.SHARD_BITS;

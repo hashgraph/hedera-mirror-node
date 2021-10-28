@@ -26,11 +26,13 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NftTransferId;
 
 class NftTransferRepositoryTest extends AbstractRepositoryTest {
+
+    private static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.1000", EntityType.ACCOUNT);
 
     @Resource
     NftTransferRepository repository;
@@ -38,9 +40,10 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
-        nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT));
-        nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
+        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityType.TOKEN)));
+        nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityType.ACCOUNT));
+        nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
+        nftTransfer.setPayerAccountId(PAYER_ACCOUNT_ID);
         NftTransfer saved = repository.save(nftTransfer);
         assertThat(repository.findById(saved.getId())).contains(saved);
     }
@@ -48,8 +51,9 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void saveMintTransfer() {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
-        nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityTypeEnum.ACCOUNT));
+        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityType.TOKEN)));
+        nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityType.ACCOUNT));
+        nftTransfer.setPayerAccountId(PAYER_ACCOUNT_ID);
         NftTransfer saved = repository.save(nftTransfer);
         assertThat(repository.findById(saved.getId())).contains(saved);
     }
@@ -57,8 +61,9 @@ class NftTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void saveBurnTransfer() {
         NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityTypeEnum.TOKEN)));
-        nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT));
+        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityType.TOKEN)));
+        nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
+        nftTransfer.setPayerAccountId(PAYER_ACCOUNT_ID);
         NftTransfer saved = repository.save(nftTransfer);
         assertThat(repository.findById(saved.getId())).contains(saved);
     }

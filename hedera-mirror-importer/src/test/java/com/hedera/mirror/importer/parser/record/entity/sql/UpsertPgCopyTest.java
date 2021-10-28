@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Nft;
 import com.hedera.mirror.importer.domain.NftId;
 import com.hedera.mirror.importer.domain.NftTransfer;
@@ -130,6 +130,9 @@ class UpsertPgCopyTest extends IntegrationTest {
 
     @Resource
     private RecordParserProperties recordParserProperties;
+
+    @Resource
+    private DomainBuilder domainBuilder;
 
     @BeforeEach
     void beforeEach() {
@@ -688,8 +691,17 @@ class UpsertPgCopyTest extends IntegrationTest {
 
         long consensusTimestamp = 30L;
         EntityId ftId = EntityId.of("0.0.217", TOKEN);
-        TokenTransfer fungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -10, ftId, accountId, true);
-        TokenTransfer nonFungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -2, tokenId1, accountId, true);
+        EntityId payerId = EntityId.of("0.0.2002", ACCOUNT);
+        TokenTransfer fungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(-10)
+                .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
+                .payerAccountId(payerId)
+                .tokenDissociate(true)).get();
+        TokenTransfer nonFungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(-2)
+                .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
+                .payerAccountId(payerId)
+                .tokenDissociate(true)).get();
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
 
         // when
@@ -703,10 +715,13 @@ class UpsertPgCopyTest extends IntegrationTest {
                 nft4,
                 nft5
         );
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(
-                getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp),
-                getNftTransfer(tokenId1, accountId, 3L, consensusTimestamp)
-        );
+
+        NftTransfer serial2Transfer = getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp);
+        serial2Transfer.setPayerAccountId(payerId);
+        NftTransfer serial3Transfer = getNftTransfer(tokenId1, accountId, 3L, consensusTimestamp);
+        serial3Transfer.setPayerAccountId(payerId);
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(serial2Transfer, serial3Transfer);
+
         assertThat(tokenTransferRepository.findAll())
                 .usingElementComparatorIgnoringFields("tokenDissociate")
                 .containsOnly(fungibleTokenTransfer);
@@ -730,7 +745,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         entity.setNum(id);
         entity.setRealm(0L);
         entity.setShard(0L);
-        entity.setType(1);
+        entity.setType(ACCOUNT);
         entity.setMemo(memo);
         return entity;
     }
@@ -788,10 +803,10 @@ class UpsertPgCopyTest extends IntegrationTest {
     private Schedule getSchedule(Long createdTimestamp, String scheduleId, Long executedTimestamp) {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(createdTimestamp);
-        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
+        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityType.ACCOUNT));
         schedule.setExecutedTimestamp(executedTimestamp);
-        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
-        schedule.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityType.ACCOUNT));
+        schedule.setScheduleId(EntityId.of(scheduleId, EntityType.SCHEDULE));
         schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }
@@ -805,7 +820,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     private Nft getNft(String tokenId, long serialNumber, String accountId, Long createdTimestamp,
                        long modifiedTimeStamp, String metadata, Boolean deleted) {
         Nft nft = new Nft();
-        nft.setAccountId(accountId == null ? null : EntityId.of(accountId, EntityTypeEnum.ACCOUNT));
+        nft.setAccountId(accountId == null ? null : EntityId.of(accountId, EntityType.ACCOUNT));
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(deleted);
         nft.setId(new NftId(serialNumber, EntityId.of(tokenId, TOKEN)));
@@ -834,7 +849,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         token.setSupplyType(TokenSupplyTypeEnum.FINITE);
         token.setSymbol("bar");
         token.setTotalSupply(200L);
-        token.setTreasuryAccountId(EntityId.of("0.0.200", EntityTypeEnum.ACCOUNT));
+        token.setTreasuryAccountId(EntityId.of("0.0.200", EntityType.ACCOUNT));
         token.setType(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         return token;
     }

@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -67,7 +67,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.TOKEN;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.TOKEN;
     }
 }

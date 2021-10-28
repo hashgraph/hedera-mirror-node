@@ -21,9 +21,9 @@ package com.hedera.mirror.importer.converter;
  */
 
 import javax.inject.Named;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
 @Named
 @javax.persistence.Converter
@@ -31,6 +31,6 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 public class UnknownIdConverter extends AbstractEntityIdConverter {
 
     public UnknownIdConverter() {
-        super(EntityTypeEnum.UNKNOWN);
+        super(EntityType.UNKNOWN);
     }
 }

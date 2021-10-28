@@ -35,7 +35,7 @@ import org.springframework.core.io.Resource;
 
 import com.hedera.mirror.importer.PubSubIntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
@@ -62,7 +62,7 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
         for (int index = 0; index < testFiles.length; index++) {
             RecordFile recordFile = recordFileReader.read(StreamFileData.from(testFiles[index].getFile()));
             recordFile.setIndex((long) index);
-            recordFile.setNodeAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
+            recordFile.setNodeAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
             recordFileParser.parse(recordFile);
         }
 

@@ -40,11 +40,12 @@ public class AssessedCustomFeeWrapper {
     private final AssessedCustomFee assessedCustomFee;
 
     public AssessedCustomFeeWrapper(long amount, long collectorAccountId, PgArray effectivePayerAccountIds,
-                                    Long tokenId, long consensusTimestamp) throws SQLException {
+                                    Long tokenId, long consensusTimestamp, Long payerAccountId) throws SQLException {
         assessedCustomFee = new AssessedCustomFee();
         assessedCustomFee.setAmount(amount);
         assessedCustomFee.setId(new AssessedCustomFee.Id(
-                EntityIdEndec.decode(collectorAccountId, EntityTypeEnum.ACCOUNT), consensusTimestamp));
+                EntityIdEndec.decode(collectorAccountId, EntityType.ACCOUNT), consensusTimestamp));
+        assessedCustomFee.setPayerAccountId(EntityIdEndec.decode(payerAccountId, EntityType.ACCOUNT));
 
         if (effectivePayerAccountIds != null) {
             Long[] payers = (Long[]) effectivePayerAccountIds.getArray();
@@ -52,7 +53,7 @@ public class AssessedCustomFeeWrapper {
         }
 
         if (tokenId != null) {
-            assessedCustomFee.setTokenId(EntityIdEndec.decode(tokenId, EntityTypeEnum.TOKEN));
+            assessedCustomFee.setTokenId(EntityIdEndec.decode(tokenId, EntityType.TOKEN));
         }
     }
 }

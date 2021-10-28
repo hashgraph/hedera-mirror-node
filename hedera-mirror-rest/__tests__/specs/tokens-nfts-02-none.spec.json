@@ -10,15 +10,15 @@
       },
       {
         "num": 1500,
-        "type": 5
+        "type": "TOKEN"
       },
       {
         "num": 2500,
-        "type": 5
+        "type": "TOKEN"
       },
       {
         "num": 3500,
-        "type": 5
+        "type": "TOKEN"
       }
     ],
     "tokens": [

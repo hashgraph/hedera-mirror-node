@@ -66,7 +66,7 @@ import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
@@ -141,7 +141,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     // For testGetEntityId
-    protected abstract EntityTypeEnum getExpectedEntityIdType();
+    protected abstract EntityType getExpectedEntityIdType();
 
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecs() {
         return null;
@@ -210,7 +210,7 @@ abstract class AbstractTransactionHandlerTest {
                     Mockito.reset(entityListener);
                     transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
 
-                    if (getExpectedEntityIdType() == EntityTypeEnum.CONTRACT) {
+                    if (getExpectedEntityIdType() == EntityType.CONTRACT) {
                         verify(entityListener).onContract((Contract) entityCaptor.capture());
                     } else {
                         verify(entityListener).onEntity((Entity) entityCaptor.capture());

@@ -4,27 +4,27 @@
     "entities": [
       {
         "num": 1,
-        "type": 5,
+        "type": "TOKEN",
         "memo": "token.0.0.1",
         "deleted": true
       },
       {
         "num": 1135,
-        "type": 5,
+        "type": "TOKEN",
         "memo": "token.0.0.1135",
         "deleted": null
       },
       {
         "realm": 7,
         "num": 25301,
-        "type": 5,
+        "type": "TOKEN",
         "memo": "token.0.7.25301",
         "deleted": false
       },
       {
         "realm": 23,
         "num": 45678,
-        "type": 5,
+        "type": "TOKEN",
         "memo": "token.0.23.45678",
         "deleted": false
       }

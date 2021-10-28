@@ -58,7 +58,7 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -71,8 +71,8 @@ import com.hedera.mirror.importer.util.Utility;
 @CacheConfig(cacheNames = ADDRESS_BOOK_102_CACHE_NAME, cacheManager = EXPIRE_AFTER_5M)
 public class AddressBookServiceImpl implements AddressBookService {
 
-    public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
-    public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+    public static final EntityId ADDRESS_BOOK_101_ENTITY_ID = EntityId.of(0, 0, 101, EntityType.FILE);
+    public static final EntityId ADDRESS_BOOK_102_ENTITY_ID = EntityId.of(0, 0, 102, EntityType.FILE);
     public static final String ADDRESS_BOOK_102_CACHE_NAME = "current_102_address_book";
     public static final int INITIAL_NODE_ID_ACCOUNT_ID_OFFSET = 3;
 
@@ -348,7 +348,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     private static Pair<Long, EntityId> getNodeIds(NodeAddress nodeAddressProto) {
         var memo = nodeAddressProto.getMemo().toStringUtf8();
         EntityId memoNodeAccountId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId
-                .of(memo, EntityTypeEnum.ACCOUNT);
+                .of(memo, EntityType.ACCOUNT);
         var nodeAccountId = nodeAddressProto.hasNodeAccountId() ? EntityId
                 .of(nodeAddressProto.getNodeAccountId()) : memoNodeAccountId;
 

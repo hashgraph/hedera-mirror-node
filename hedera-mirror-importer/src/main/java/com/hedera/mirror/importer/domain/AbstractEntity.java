@@ -24,14 +24,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import javax.persistence.Convert;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
@@ -46,6 +50,10 @@ import com.hedera.mirror.importer.util.Utility;
 @TypeDef(
         defaultForType = Range.class,
         typeClass = PostgreSQLGuavaRangeType.class
+)
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
 )
 public abstract class AbstractEntity {
 
@@ -76,7 +84,9 @@ public abstract class AbstractEntity {
 
     private Long shard;
 
-    private Integer type;
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private EntityType type;
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)

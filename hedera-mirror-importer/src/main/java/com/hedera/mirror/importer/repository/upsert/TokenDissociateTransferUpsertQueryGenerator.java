@@ -30,10 +30,12 @@ public class TokenDissociateTransferUpsertQueryGenerator implements UpsertQueryG
             "  update nft set deleted = true, modified_timestamp = tdt.consensus_timestamp" +
             "  from " + TEMP_TABLE_NAME + " tdt" +
             "  where nft.token_id = tdt.token_id and nft.account_id = tdt.account_id and nft.deleted is false" +
-            "  returning nft.token_id, nft.serial_number, nft.account_id, nft.modified_timestamp" +
+            "  returning nft.token_id, nft.serial_number, nft.account_id, nft.modified_timestamp, tdt" +
+            ".payer_account_id" +
             "), updated_nft as (" +
-            "  insert into nft_transfer (consensus_timestamp, sender_account_id, serial_number, token_id)" +
-            "  select modified_timestamp, account_id, serial_number, token_id" +
+            "  insert into nft_transfer (consensus_timestamp, sender_account_id, serial_number, token_id," +
+            "payer_account_id)" +
+            "  select modified_timestamp, account_id, serial_number, token_id, payer_account_id" +
             "  from dissociated_nft" +
             "  returning token_id" +
             ") " +

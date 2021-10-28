@@ -34,6 +34,7 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
 
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.ContractIdConverter;
 import com.hedera.mirror.importer.converter.LongListToStringSerializer;
 
@@ -71,6 +72,9 @@ public class ContractResult implements Persistable<Long> {
     private Long gasLimit;
 
     private Long gasUsed;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
 
     @JsonIgnore
     @Override

@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -41,7 +41,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.ACCOUNT;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.ACCOUNT;
     }
 }

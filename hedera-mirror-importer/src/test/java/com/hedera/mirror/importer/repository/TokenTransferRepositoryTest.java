@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
@@ -39,8 +39,13 @@ class TokenTransferRepositoryTest extends AbstractRepositoryTest {
     void findById() {
         EntityId tokenId = EntityId.of(0L, 1L, 20L, TOKEN);
         EntityId accountId = EntityId.of(0L, 1L, 7L, ACCOUNT);
+        EntityId payerAccountId = EntityId.of(0L, 1L, 500L, ACCOUNT);
         long amount = 40L;
-        TokenTransfer tokenTransfer = new TokenTransfer(1L, amount, tokenId, accountId);
+        TokenTransfer tokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(amount)
+                .id(new TokenTransfer.Id(1L, tokenId, accountId))
+                .payerAccountId(payerAccountId)
+                .tokenDissociate(false)).get();
 
         tokenTransferRepository.save(tokenTransfer);
 
