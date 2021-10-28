@@ -405,7 +405,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                                                ResponseCodeEnum responseCode) {
         assertThat(transactionRepository.findById(consensusTimestamp)).get()
                 .returns(scheduled, from(com.hedera.mirror.importer.domain.Transaction::isScheduled))
-                .returns(responseCode.getNumber(), from(com.hedera.mirror.importer.domain.Transaction::getResult));
+                .returns(responseCode.getNumber(), from(t -> t.getResult().getId()));
     }
 
     private List<TransactionSignature> toTransactionSignatureList(long timestamp, ScheduleID scheduleId,

@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.mirror.importer.domain.*;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +41,12 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionResult;
+import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -343,7 +347,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         transaction.setMemo("transaction memo".getBytes());
         transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityType.ACCOUNT));
         transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityType.ACCOUNT));
-        transaction.setResult(result.getNumber());
+        transaction.setResult(TransactionResult.fromId(result.getNumber()));
         transaction.setType(transactionTypeEnum.getProtoId());
         transaction.setValidStartNs(20L);
         transaction.setValidDurationSeconds(11L);
@@ -370,7 +374,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                         transaction.getMemo(),
                         transaction.getNodeAccountId().getId(),
                         transaction.getPayerAccountId().getId(),
-                        transaction.getResult(),
+                        transaction.getResult().getId(),
                         transaction.isScheduled(),
                         transaction.getTransactionBytes(),
                         transaction.getTransactionHash(),

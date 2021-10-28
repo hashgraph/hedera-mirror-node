@@ -83,6 +83,7 @@ import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
+import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -258,7 +259,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setMemo(Utility.toBytes(body.getMemoBytes()));
         transaction.setNodeAccountId(nodeAccount);
         transaction.setPayerAccountId(recordItem.getPayerAccountId());
-        transaction.setResult(txRecord.getReceipt().getStatusValue());
+        transaction.setResult(TransactionResult.fromId(txRecord.getReceipt().getStatusValue()));
         transaction.setScheduled(txRecord.hasScheduleRef());
         transaction.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
                 recordItem.getTransactionBytes() : null);

@@ -26,9 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.importer.domain.EntityType;
-
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -53,6 +50,7 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
@@ -73,6 +71,7 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
@@ -1218,7 +1217,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         transaction.setNodeAccountId(entityId);
         transaction.setMemo("memo".getBytes());
         transaction.setType(14);
-        transaction.setResult(22);
+        transaction.setResult(TransactionResult.SUCCESS);
         transaction.setTransactionHash("transaction hash".getBytes());
         transaction.setTransactionBytes("transaction bytes".getBytes());
         transaction.setPayerAccountId(entityId);

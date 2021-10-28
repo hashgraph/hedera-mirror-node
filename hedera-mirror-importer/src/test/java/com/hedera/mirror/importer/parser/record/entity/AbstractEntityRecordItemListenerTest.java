@@ -253,7 +253,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()),
                 dbTransaction.getValidStartNs());
         // receipt
-        assertEquals(record.getReceipt().getStatusValue(), dbTransaction.getResult());
+        assertEquals(record.getReceipt().getStatusValue(), dbTransaction.getResult().getId());
         assertArrayEquals(record.getTransactionHash().toByteArray(), dbTransaction.getTransactionHash());
         // assert crypto transfer list
         assertRecordTransfers(record);
@@ -386,7 +386,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
             ResponseCodeEnum responseCode, long consensusTimestamp, Long entityId) {
         var transaction = transactionRepository.findById(consensusTimestamp).get();
         assertThat(transaction)
-                .returns(responseCode.getNumber(), from(Transaction::getResult))
+                .returns(responseCode.getNumber(), from(t -> t.getResult().getId()))
                 .returns(TRANSACTION_MEMO.getBytes(), from(Transaction::getMemo));
         if (entityId != null) {
             assertThat(transaction)

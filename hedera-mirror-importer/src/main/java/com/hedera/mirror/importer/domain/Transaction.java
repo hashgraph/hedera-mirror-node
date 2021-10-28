@@ -22,13 +22,18 @@ package com.hedera.mirror.importer.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
@@ -40,6 +45,10 @@ import com.hedera.mirror.importer.converter.UnknownIdConverter;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
+)
 public class Transaction implements Persistable<Long> {
 
     @Id
@@ -65,7 +74,9 @@ public class Transaction implements Persistable<Long> {
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
-    private Integer result;
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private TransactionResult result;
 
     private boolean scheduled;
 

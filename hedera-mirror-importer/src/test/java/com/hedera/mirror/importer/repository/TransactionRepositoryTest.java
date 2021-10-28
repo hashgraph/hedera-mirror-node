@@ -22,13 +22,14 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 class TransactionRepositoryTest extends AbstractRepositoryTest {
@@ -53,7 +54,7 @@ class TransactionRepositoryTest extends AbstractRepositoryTest {
         transaction.setMemo("transaction memo".getBytes());
         transaction.setNodeAccountId(EntityId.of(0, 0, 2, EntityType.ACCOUNT));
         transaction.setPayerAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
-        transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
+        transaction.setResult(TransactionResult.fromId(ResponseCodeEnum.SUCCESS.getNumber()));
         transaction.setType(TransactionTypeEnum.CRYPTOCREATEACCOUNT.getProtoId());
         transaction.setValidStartNs(20L);
         transaction.setValidDurationSeconds(11L);

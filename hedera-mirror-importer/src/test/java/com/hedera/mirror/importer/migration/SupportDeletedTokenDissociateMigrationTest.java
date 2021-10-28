@@ -59,6 +59,7 @@ import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -348,7 +349,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         transaction.setEntityId(payer);
         transaction.setPayerAccountId(payer);
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
-        transaction.setResult(22);
+        transaction.setResult(TransactionResult.SUCCESS);
         transaction.setType(TRANSACTION_TYPE_TOKEN_DISSOCIATE);
         transaction.setValidStartNs(consensusNs - 5);
         return transaction;
@@ -389,7 +390,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                             transaction.getMemo(),
                             transaction.getNodeAccountId().getId(),
                             transaction.getPayerAccountId().getId(),
-                            transaction.getResult(),
+                            transaction.getResult().getId(),
                             transaction.isScheduled(),
                             transaction.getTransactionBytes(),
                             transaction.getTransactionHash(),
@@ -441,7 +442,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityType.ACCOUNT));
                 transaction
                         .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityType.ACCOUNT));
-                transaction.setResult(rs.getInt("result"));
+                transaction.setResult(TransactionResult.fromId(rs.getInt("result")));
                 transaction.setType(rs.getInt("type"));
                 transaction.setValidStartNs(rs.getLong("valid_start_ns"));
                 return transaction;
