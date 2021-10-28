@@ -170,8 +170,8 @@ const toQueryObject = (queryAndParams) => {
   };
 };
 
-const getIncludeBalance = (query) => {
-  const values = query[constants.filterKeys.INCLUDE_BALANCE] || 'true';
+const getBalanceParamValue = (query) => {
+  const values = query[constants.filterKeys.BALANCE] || 'true';
   const lastValue = typeof values === 'string' ? values : values[values.length - 1];
   return utils.parseBooleanValue(lastValue);
 };
@@ -191,7 +191,7 @@ const getAccounts = async (req, res) => {
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
   const balancesAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
   const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'ab.balance'));
-  const includeBalance = getIncludeBalance(req.query);
+  const includeBalance = getBalanceParamValue(req.query);
   const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'e.public_key'));
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
 

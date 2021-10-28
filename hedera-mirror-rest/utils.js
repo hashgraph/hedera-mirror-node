@@ -165,6 +165,9 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.BALANCE:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
     case constants.filterKeys.CONTRACT_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -179,9 +182,6 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ENTITY_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
-      break;
-    case constants.filterKeys.INCLUDE_BALANCE:
-      ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.LIMIT:
       // Acceptable forms: upto 4 digits

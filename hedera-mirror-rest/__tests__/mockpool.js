@@ -54,7 +54,7 @@ class Pool {
   connect() {
     const that = this;
     return {
-      query: (sqlquery, sqlparams) => that.query.apply(that, [sqlquery, sqlparams]),
+      query: (...args) => that.query(...args),
       release: () => {},
     };
   }

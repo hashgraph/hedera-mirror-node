@@ -6,10 +6,10 @@ paths:
       description: Returns a list of all account entity items on the network.
       operationId: listAccounts
       parameters:
+        - $ref: '#/components/parameters/accountBalanceQueryParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
         - $ref: '#/components/parameters/balanceQueryParam'
-        - $ref: '#/components/parameters/includeBalanceQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
       responses:
@@ -1595,6 +1595,36 @@ components:
               messages:
                 - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
   parameters:
+    accountBalanceQueryParam:
+      name: account.balance
+      in: query
+      description: The optional balance value to compare against
+      explode: true
+      examples:
+        noOperator:
+          summary: Example of equals with no operator
+          value: 100
+        eqOperator:
+          summary: Example of equals operator
+          value: eq:200
+        neOperator:
+          summary: Example of not equals operator
+          value: ne:300
+        gtOperator:
+          summary: Example of greater than operator
+          value: gt:400
+        gteOperator:
+          summary: Example of greater than or equals operator
+          value: gte:500
+        ltOperator:
+          summary: Example of less than operator
+          value: lt:600
+        lteOperator:
+          summary: Example of less than or equals operator
+          value: lte:700
+      schema:
+        type: string
+        format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
     accountIdQueryParam:
       name: account.id
       in: query
@@ -1653,35 +1683,13 @@ components:
       schema:
         type: string
     balanceQueryParam:
-      name: account.balance
+      name: balance
       in: query
-      description: The optional balance value to compare against
-      explode: true
-      examples:
-        noOperator:
-          summary: Example of equals with no operator
-          value: 100
-        eqOperator:
-          summary: Example of equals operator
-          value: eq:200
-        neOperator:
-          summary: Example of not equals operator
-          value: ne:300
-        gtOperator:
-          summary: Example of greater than operator
-          value: gt:400
-        gteOperator:
-          summary: Example of greater than or equals operator
-          value: gte:500
-        ltOperator:
-          summary: Example of less than operator
-          value: lt:600
-        lteOperator:
-          summary: Example of less than or equals operator
-          value: lte:700
+      description: Whether to include balance information or not
+      example: true
       schema:
-        type: string
-        format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
+        type: boolean
+        default: true
     contractIdQueryParam:
       name: contract.id
       description: The ID of the contract to return information for
@@ -1738,14 +1746,6 @@ components:
       description: Contract entity id
       schema:
         $ref: '#/components/schemas/EntityId'
-    includeBalanceQueryParam:
-      name: includebalance
-      in: query
-      description: Whether to include balance information or not
-      example: true
-      schema:
-        type: boolean
-        default: true
     limitQueryParam:
       name: limit
       in: query
