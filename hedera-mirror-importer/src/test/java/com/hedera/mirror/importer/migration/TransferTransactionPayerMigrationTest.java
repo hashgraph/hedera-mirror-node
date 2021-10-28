@@ -138,23 +138,23 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         Entity contract = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(50L)
                 .timestampRange(Range.atLeast(50L))
-                .type(EntityTypeEnum.CONTRACT.getId())).get();
+                .type(EntityTypeEnum.CONTRACT)).get();
         Entity file = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(60L)
                 .timestampRange(Range.atLeast(60L))
-                .type(EntityTypeEnum.FILE.getId())).get();
+                .type(EntityTypeEnum.FILE)).get();
         Entity topic = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(70L)
                 .timestampRange(Range.atLeast(70L))
-                .type(EntityTypeEnum.TOPIC.getId())).get();
+                .type(EntityTypeEnum.TOPIC)).get();
         Entity token = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(80L)
                 .timestampRange(Range.atLeast(80L))
-                .type(TOKEN.getId())).get();
+                .type(TOKEN)).get();
         Entity schedule = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(90L)
                 .timestampRange(Range.atLeast(90L))
-                .type(EntityTypeEnum.SCHEDULE.getId())).get();
+                .type(EntityTypeEnum.SCHEDULE)).get();
 
         // given
         entityRepository.saveAll(List.of(
