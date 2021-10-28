@@ -97,7 +97,7 @@ public class DomainBuilder {
                 .realm(0L)
                 .shard(0L)
                 .timestampRange(Range.atLeast(timestamp))
-                .type(CONTRACT.getId());
+                .type(CONTRACT);
 
         return new DomainPersister<>(getRepository(Contract.class), builder, builder::build);
     }
@@ -156,7 +156,7 @@ public class DomainBuilder {
                 .shard(0L)
                 .submitKey(key)
                 .timestampRange(Range.atLeast(timestamp))
-                .type(ACCOUNT.getId());
+                .type(ACCOUNT);
 
         return new DomainPersister<>(getRepository(Entity.class), builder, builder::build);
     }

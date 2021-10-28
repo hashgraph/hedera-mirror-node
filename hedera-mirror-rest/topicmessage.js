@@ -92,18 +92,16 @@ const validateGetTopicMessagesParams = (topicId) => {
  */
 const validateTopicId = async (topicId, origTopicIdStr) => {
   const encodedId = topicId.getEncodedId();
-  const pgSqlQuery = `SELECT tet.name
+  const pgSqlQuery = `SELECT te.type
                       FROM entity te
-                             JOIN t_entity_types tet
-                                  ON te.type = tet.id
-                      WHERE te.id = $1`;
+                      WHERE te.id = $1;`;
 
   const {rows} = await pool.queryQuietly(pgSqlQuery, encodedId);
   if (_.isEmpty(rows)) {
     throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
   }
 
-  if (rows[0].name !== 'topic') {
+  if (rows[0].type !== constants.entityTypes.TOPIC) {
     throw new InvalidArgumentError(`${origTopicIdStr} is not a topic id`);
   }
 };

@@ -98,7 +98,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 .add(transaction(20, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum.FILECREATE));
+                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                        .FILECREATE));
         transactionList
                 .add(transaction(40, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
@@ -135,7 +136,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 .add(transaction(20, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum.FILECREATE));
+                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                        .FILECREATE));
         transactionList
                 .add(transaction(40, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
@@ -158,15 +160,15 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
         assertAll(
                 () -> assertThat(findEntityById(typeMismatchedAccountEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.ACCOUNT.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.ACCOUNT),
                 () -> assertThat(findEntityById(typeMismatchedContractEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.CONTRACT.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.CONTRACT),
                 () -> assertThat(findEntityById(typeMismatchedFileEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.FILE.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.FILE),
                 () -> assertThat(findEntityById(typeMismatchedTopicEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOPIC.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOPIC),
                 () -> assertThat(findEntityById(typeMismatchedTokenEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOKEN.getId())
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOKEN)
         );
     }
 
@@ -197,7 +199,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 .add(transaction(20, 2, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum.FILECREATE));
+                .add(transaction(30, 3, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                        .FILECREATE));
         transactionList
                 .add(transaction(40, 4, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
@@ -211,7 +214,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 .add(transaction(70, 7, EntityTypeEnum.CONTRACT, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(80, 8, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum.FILECREATE));
+                .add(transaction(80, 8, EntityTypeEnum.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                        .FILECREATE));
         transactionList
                 .add(transaction(90, 9, EntityTypeEnum.TOPIC, ResponseCodeEnum.SUCCESS,
                         TransactionTypeEnum.CONSENSUSCREATETOPIC));
@@ -234,15 +238,15 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
         assertAll(
                 () -> assertThat(findEntityById(typeMismatchedAccountEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.ACCOUNT.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.ACCOUNT),
                 () -> assertThat(findEntityById(typeMismatchedContractEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.CONTRACT.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.CONTRACT),
                 () -> assertThat(findEntityById(typeMismatchedFileEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.FILE.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.FILE),
                 () -> assertThat(findEntityById(typeMismatchedTopicEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOPIC.getId()),
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOPIC),
                 () -> assertThat(findEntityById(typeMismatchedTokenEntityId.getId()))
-                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOKEN.getId())
+                        .extracting(Entity::getType).isEqualTo(EntityTypeEnum.TOKEN)
         );
     }
 
@@ -328,7 +332,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                         entity.getShard(),
                         entity.getPublicKey(),
                         entity.getExpirationTimestamp(),
-                        entity.getType(),
+                        entity.getType().getId(),
                         entity.getId(),
                         entity.getKey(),
                         entity.getMemo(),
@@ -360,7 +364,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                     entity.setProxyAccountId(EntityIdEndec
                             .decode(rs.getLong("proxy_account_id"), EntityTypeEnum.ACCOUNT));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
-                    entity.setType(rs.getInt("fk_entity_type_id"));
+                    entity.setType(EntityTypeEnum.fromId(rs.getInt("fk_entity_type_id")));
                     return entity;
                 });
     }

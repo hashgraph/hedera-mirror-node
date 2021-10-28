@@ -124,7 +124,7 @@ class AccountBalanceLineParserV2Test {
 
                     assertThat(actualId.getTokenId().getShardNum()).isEqualTo(mirrorProperties.getShard());
                     assertThat(actualId.getTokenId().getRealmNum()).isEqualTo(expectedRealm);
-                    assertThat(actualId.getTokenId().getType()).isEqualTo(EntityTypeEnum.TOKEN.getId());
+                    assertThat(actualId.getTokenId().getType()).isEqualTo(EntityTypeEnum.TOKEN);
                 }
             } else {
                 assertThat(actualTokenBalanceList.size()).isEqualTo(0);

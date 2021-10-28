@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
+import com.hedera.mirror.importer.converter.EntityTypeSerializer;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
 /**
@@ -50,7 +52,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EntityId implements Serializable, Comparable<EntityId> {
 
-    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT.getId());
+    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT);
     private static final Comparator<EntityId> COMPARATOR = Comparator
             .nullsFirst(Comparator.comparingLong(EntityId::getId));
     private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
@@ -64,9 +66,10 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     private final Long shardNum;
     private final Long realmNum;
     private final Long entityNum;
-    private final Integer type;
+    @JsonSerialize(using = EntityTypeSerializer.class)
+    private final EntityTypeEnum type;
 
-    public EntityId(Long shardNum, Long realmNum, Long entityNum, Integer type) {
+    public EntityId(Long shardNum, Long realmNum, Long entityNum, EntityTypeEnum type) {
         id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
         this.shardNum = shardNum;
         this.realmNum = realmNum;
@@ -117,7 +120,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
             return EMPTY;
         }
-        return new EntityId(entityShard, entityRealm, entityNum, type.getId());
+        return new EntityId(entityShard, entityRealm, entityNum, type);
     }
 
     public static EntityId of(long encodedEntityId, EntityTypeEnum type) {
@@ -145,7 +148,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     private <T extends AbstractEntity> T createEntity() {
-        if (type == EntityTypeEnum.CONTRACT.getId()) {
+        if (type == EntityTypeEnum.CONTRACT) {
             return (T) new Contract();
         } else {
             return (T) new Entity();

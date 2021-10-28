@@ -71,8 +71,6 @@ select create_hypertable('record_file', 'consensus_end', chunk_time_interval => 
 select create_hypertable('schedule', 'schedule_id', chunk_time_interval => ${chunkTimeInterval},
                          create_default_indexes => false, if_not_exists => true);
 
--- t_entity_types hyper table creation skipped as it serves only as a reference table and rarely gets updated
-
 -- t_transaction_results hyper table creation skipped as it serves only as a reference table and rarely gets updated
 
 -- t_transaction_types hyper table creation skipped as it serves only as a reference table and rarely gets updated

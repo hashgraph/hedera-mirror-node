@@ -156,7 +156,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setRealm(contract.getRealm());
         entity.setShard(contract.getShard());
         entity.setModifiedTimestamp(contract.getModifiedTimestamp() + 10L);
-        entity.setType(ACCOUNT.getId());
+        entity.setType(ACCOUNT);
 
         // when
         sqlEntityListener.onEntityId(entity.toEntityId()); // Removed after onContract
@@ -1201,7 +1201,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setReceiverSigRequired(receiverSigRequired);
         entity.setShard(0L);
         entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
-        entity.setType(ACCOUNT.getId());
+        entity.setType(ACCOUNT);
         if (memo != null) {
             entity.setMemo(memo);
         }

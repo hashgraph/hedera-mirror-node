@@ -16,7 +16,7 @@
       },
       {
         "num": 90000,
-        "type": 5
+        "type": "TOKEN"
       }
     ],
     "balances": [],

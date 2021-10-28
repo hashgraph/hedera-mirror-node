@@ -4,7 +4,7 @@
     "accounts": [
       {
         "num": 7,
-        "type": 4
+        "type": "TOPIC"
       }
     ],
     "balances": [],

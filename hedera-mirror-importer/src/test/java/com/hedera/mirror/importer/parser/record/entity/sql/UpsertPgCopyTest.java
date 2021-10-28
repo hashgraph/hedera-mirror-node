@@ -707,7 +707,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         entity.setNum(id);
         entity.setRealm(0L);
         entity.setShard(0L);
-        entity.setType(1);
+        entity.setType(ACCOUNT);
         entity.setMemo(memo);
         return entity;
     }
