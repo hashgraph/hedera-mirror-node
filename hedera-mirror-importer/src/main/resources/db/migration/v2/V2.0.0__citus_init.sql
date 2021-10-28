@@ -81,23 +81,23 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- contract
 create table if not exists contract
 (
-    auto_renew_period    bigint             null,
-    created_timestamp    bigint             null,
-    deleted              boolean            null,
-    expiration_timestamp bigint             null,
-    file_id              bigint             null,
-    id                   bigint             not null,
-    key                  bytea              null,
-    memo                 text    default '' not null,
-    num                  bigint             not null,
-    obtainer_id          bigint             null,
-    parent_id            bigint             null,
-    proxy_account_id     bigint             null,
-    public_key           character varying  null,
-    realm                bigint             not null,
-    shard                bigint             not null,
-    timestamp_range      int8range          not null,
-    type                 integer default 2  not null
+    auto_renew_period    bigint                         null,
+    created_timestamp    bigint                         null,
+    deleted              boolean                        null,
+    expiration_timestamp bigint                         null,
+    file_id              bigint                         null,
+    id                   bigint                         not null,
+    key                  bytea                          null,
+    memo                 text       default ''          not null,
+    num                  bigint                         not null,
+    obtainer_id          bigint                         null,
+    parent_id            bigint                         null,
+    proxy_account_id     bigint                         null,
+    public_key           character  varying             null,
+    realm                bigint                         not null,
+    shard                bigint                         not null,
+    timestamp_range      int8range                      not null,
+    type                 entity_type default 'CONTRACT' not null
 );
 comment on table contract is 'Contract entity';
 
@@ -189,7 +189,7 @@ create table if not exists entity
     shard                            bigint            not null,
     submit_key                       bytea             null,
     timestamp_range                  int8range         not null,
-    type                             integer           not null
+    type                             entity_type       not null
 );
 comment on table entity is 'Network entity with state';
 
@@ -315,15 +315,16 @@ comment on table t_entity_types is 'Network entity types';
 -- t_transaction_results
 create table if not exists t_transaction_results
 (
-    proto_id integer not null,
-    result   character varying(100)
+    proto_id    integer not null,
+    result      character varying(100),
+    entity_type entity_type null
 );
 comment on table t_transaction_results is 'Transaction result types';
 
 -- t_transaction_types
 create table if not exists t_transaction_types
 (
-    entity_type integer null,
+    entity_type entity_type null,
     name        character varying(30),
     proto_id    integer not null
 );

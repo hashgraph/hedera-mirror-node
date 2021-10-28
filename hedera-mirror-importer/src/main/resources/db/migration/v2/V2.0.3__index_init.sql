@@ -137,13 +137,6 @@ alter table if exists schedule
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
-<<<<<<< HEAD:hedera-mirror-importer/src/main/resources/db/migration/v2/V2.0.2__time_scale_index_init.sql
-=======
--- t_entity_types
-alter table t_entity_types
-    add constraint t_entity_types__pk primary key (id);
-
->>>>>>> 2cf80bb70 (Repalced timescale with citus db):hedera-mirror-importer/src/main/resources/db/migration/v2/V2.0.3__index_init.sql
 -- t_transaction_results
 alter table t_transaction_results
     add constraint transac_res__pk primary key (proto_id);
