@@ -21,7 +21,13 @@
 'use strict';
 
 const _ = require('lodash');
-const {shard: systemShard} = require('./config');
+const mem = require('mem');
+const quickLru = require('quick-lru');
+
+const {
+  cache: {entityId: entityIdCacheConfig},
+  shard: systemShard,
+} = require('./config');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 // format: |0|15-bit shard|16-bit realm|32-bit num|
@@ -40,10 +46,14 @@ class EntityId {
   }
 
   /**
-   * @returns {string} encoded id corresponding to this EntityId.
+   * @returns {string|null} encoded id corresponding to this EntityId.
    */
   getEncodedId() {
-    return this.num === null ? null : ((this.shard << shardOffset) | (this.realm << numBits) | this.num).toString();
+    if (this.encodedId === undefined) {
+      this.encodedId =
+        this.num === null ? null : ((this.shard << shardOffset) | (this.realm << numBits) | this.num).toString();
+    }
+    return this.encodedId;
   }
 
   /**
@@ -81,6 +91,64 @@ const of = (shard, realm, num) => {
   return new EntityId(shard, realm, num);
 };
 
+// shared entityId cache options, note this makes fromEncodedId and fromString share the same cache
+const entityIdCacheOptions = {
+  cache: new quickLru({maxSize: entityIdCacheConfig.maxSize}),
+  maxAge: entityIdCacheConfig.maxAge * 1000, // in millis
+};
+
+const defaultNullEntityIdError = new InvalidArgumentError('Null entity ID');
+const nullEntityId = of(null, null, null);
+
+/**
+ * Checks if the id is null. When null, returns the nullEntityId if allowed, otherwise throws error; When not
+ * null, returns undefined
+ * @param id
+ * @param isNullable
+ * @param error
+ * @return {EntityId}
+ */
+const checkNullId = (id, isNullable, error = () => defaultNullEntityIdError) => {
+  if (_.isNil(id)) {
+    if (isNullable) {
+      return nullEntityId;
+    }
+
+    throw error();
+  }
+};
+
+/**
+ * The memorized fromEncodedId. Note the cache key is the id string, so that only one EntityId object will be cached
+ * for the same id no matter it's created from the BigInt id or the encoded ID string.
+ */
+const fromEncodedIdMemoized = mem(
+  (id) => {
+    // Javascript's precision limit is 2^53 - 1. Precision needed to handle encoded ids is 2^63 - 1 (highest number
+    // for java's long and postgres' bigint). Limit use of BigInt types to this function, everything returned by this
+    // function should be normal JS number for compatibility.
+    const message = `Invalid entity ID "${id}"`;
+    if (!/^\d+$/.test(id)) {
+      throw new InvalidArgumentError(message);
+    }
+
+    const encodedId = BigInt(id);
+    if (encodedId < 0n || encodedId > maxEncodedId) {
+      throw new InvalidArgumentError(message);
+    }
+
+    const num = encodedId & numMask;
+    const shardRealm = encodedId >> numBits;
+    const realm = shardRealm & realmMask;
+    const shard = shardRealm >> realmBits;
+    return of(shard, realm, num);
+  },
+  {
+    ...entityIdCacheOptions,
+    cacheKey: (arguments_) => `${arguments_[0]}`,
+  }
+);
+
 /**
  * Converts encoded entity ID (BigInt, int, or string) to EntityId object.
  *
@@ -89,54 +157,13 @@ const of = (shard, realm, num) => {
  * @return {EntityId}
  */
 const fromEncodedId = (id, isNullable = false) => {
-  if (_.isNil(id)) {
-    if (isNullable) {
-      return of(null, null, null);
-    }
-
-    throw new InvalidArgumentError('Null entity ID');
-  }
-
-  // Javascript's precision limit is 2^53 - 1. Precision needed to handle encoded ids is 2^63 - 1 (highest number
-  // for java's long and postgres' bigint). Limit use of BigInt types to this function, everything returned by this
-  // function should be normal JS number for compatibility.
-  const message = `Invalid entity ID "${id}"`;
-  if (!/^\d+$/.test(id)) {
-    throw new InvalidArgumentError(message);
-  }
-
-  const encodedId = BigInt(id);
-  if (encodedId < 0n || encodedId > maxEncodedId) {
-    throw new InvalidArgumentError(message);
-  }
-
-  const num = encodedId & numMask;
-  const shardRealm = encodedId >> numBits;
-  const realm = shardRealm & realmMask;
-  const shard = shardRealm >> realmBits;
-  return of(shard, realm, num);
+  return checkNullId(id, isNullable) || fromEncodedIdMemoized(id);
 };
 
 /**
- * Converts entity ID string to EntityId object. Supports 'shard.realm.num', 'realm.num', and 'num'.
- *
- * @param {string} entityIdStr
- * @param {string} paramName
- * @param {boolean} isNullable
- * @return {EntityId}
+ * The memorized fromString.
  */
-const fromString = (entityIdStr, paramName = '', isNullable = false) => {
-  const error = (message) =>
-    paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(message);
-
-  if (_.isNil(entityIdStr)) {
-    if (isNullable) {
-      return of(null, null, null);
-    }
-
-    throw error('Null entity ID');
-  }
-
+const fromStringMemoized = mem((entityIdStr, error) => {
   if (!isValidEntityId(entityIdStr)) {
     throw error(`invalid entity ID string "${entityIdStr}"`);
   }
@@ -156,11 +183,26 @@ const fromString = (entityIdStr, paramName = '', isNullable = false) => {
       return num;
     })
   );
+}, entityIdCacheOptions);
+
+/**
+ * Converts entity ID string to EntityId object. Supports 'shard.realm.num', 'realm.num', and 'num'.
+ *
+ * @param {string} entityIdStr
+ * @param {string} paramName
+ * @param {boolean} isNullable
+ * @return {EntityId}
+ */
+const fromString = (entityIdStr, paramName = '', isNullable = false) => {
+  const error = (message) =>
+    paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(message);
+
+  return checkNullId(entityIdStr, isNullable, () => error('Null entity ID')) || fromStringMemoized(entityIdStr, error);
 };
 
 module.exports = {
-  isValidEntityId,
-  of,
   fromEncodedId,
   fromString,
+  isValidEntityId,
+  of,
 };

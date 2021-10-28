@@ -28,6 +28,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const httpContext = require('express-http-context');
 const log4js = require('log4js');
+const compression = require('compression');
 
 // local files
 const accounts = require('./accounts');
@@ -127,6 +128,10 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(cors());
+
+if (config.response.compression) {
+  app.use(compression());
+}
 
 // logging middleware
 app.use(httpContext.middleware);

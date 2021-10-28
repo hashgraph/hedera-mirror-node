@@ -33,6 +33,9 @@ const custom = {
     mirror: {
       rest: {
         maxLimit: 10,
+        response: {
+          compression: false,
+        },
         shard: 1,
       },
     },
@@ -51,6 +54,17 @@ afterEach(() => {
   cleanup();
 });
 
+const assertCustomConfig = (config, custom) => {
+  // fields custom doesn't override
+  expect(config.includeHostInLink).toBeFalsy();
+  expect(config.log.level).toBe('debug');
+
+  // fields overridden by custom
+  expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
+  expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
+  expect(config.response.compression).toBe(custom.hedera.mirror.rest.response.compression);
+};
+
 describe('Load YAML configuration:', () => {
   test('./config/application.yml', () => {
     const config = require('../config');
@@ -62,31 +76,19 @@ describe('Load YAML configuration:', () => {
   test('./application.yml', () => {
     fs.writeFileSync(path.join('.', 'application.yml'), yaml.dump(custom));
     const config = require('../config');
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.includeHostInLink).toBeFalsy();
-    expect(config.log.level).toBe('debug');
+    assertCustomConfig(config, custom);
   });
 
   test('CONFIG_PATH/application.yml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(custom));
     const config = require('../config');
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.includeHostInLink).toBeFalsy();
-    expect(config.log.level).toBe('debug');
+    assertCustomConfig(config, custom);
   });
 
   test('CONFIG_PATH/application.yaml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yaml'), yaml.dump(custom));
     const config = require('../config');
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.includeHostInLink).toBeFalsy();
-    expect(config.log.level).toBe('debug');
+    assertCustomConfig(config, custom);
   });
 });
 
@@ -148,9 +150,7 @@ describe('Custom CONFIG_NAME:', () => {
 
   test('CONFIG_PATH/CONFIG_NAME.yml', () => {
     const config = loadConfigFromCustomObject(custom);
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
+    assertCustomConfig(config, custom);
   });
 });
 

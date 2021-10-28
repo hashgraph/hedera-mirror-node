@@ -2,6 +2,10 @@
 hedera:
   mirror:
     rest:
+      cache:
+        entityId:
+          maxAge: 300
+          maxSize: 10000
       db:
         host: 127.0.0.1
         name: mirror_node
@@ -20,7 +24,7 @@ hedera:
       includeHostInLink: false
       log:
         level: debug
-      maxLimit: 500
+      maxLimit: 100
       maxRepeatedQueryParameters: 100
       metrics:
         enabled: true
@@ -92,6 +96,8 @@ hedera:
         specFileName: 'openapi'
         swaggerUIPath: 'docs'
       port: 5551
+      response:
+        compression: true
       shard: 0
       stateproof:
         addressBookHistory: false

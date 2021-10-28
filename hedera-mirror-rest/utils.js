@@ -623,7 +623,7 @@ const secNsToSeconds = (secNs) => {
 const randomString = async (length) => {
   return new Promise((resolve, reject) => {
     crypto.randomBytes(Math.max(2, length) / 2, (err, data) => {
-      if (err) return reject(err);
+      if (err) reject(err);
       resolve(data.toString('hex'));
     });
   });

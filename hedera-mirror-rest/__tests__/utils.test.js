@@ -157,7 +157,7 @@ describe('Utils isValidLimitNum tests', () => {
     expect(utils.isValidLimitNum(0)).toBe(false);
   });
   test('Verify valid for valid number', () => {
-    expect(utils.isValidLimitNum(123)).toBe(true);
+    expect(utils.isValidLimitNum(99)).toBe(true);
   });
   test(`Verify valid for max limit or ${config.maxLimit}`, () => {
     expect(utils.isValidLimitNum(config.maxLimit)).toBe(true);
