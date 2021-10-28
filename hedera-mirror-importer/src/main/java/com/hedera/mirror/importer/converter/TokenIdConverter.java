@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.converter;
 import javax.inject.Named;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 @Named
 @javax.persistence.Converter
@@ -31,6 +31,6 @@ import com.hedera.mirror.importer.domain.EntityTypeEnum;
 public class TokenIdConverter extends AbstractEntityIdConverter {
 
     public TokenIdConverter() {
-        super(EntityTypeEnum.TOKEN);
+        super(EntityType.TOKEN);
     }
 }

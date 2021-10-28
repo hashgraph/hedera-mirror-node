@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.from;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -40,7 +41,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -86,9 +86,9 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void existingEntitiesFromBeforeReset() throws Exception {
-        Entity entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
-        Entity entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.ACCOUNT, false);
-        Entity entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.ACCOUNT, false);
+        Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.ACCOUNT, false);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.ACCOUNT, false);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll())
                 .hasSize(COUNT)
@@ -101,9 +101,9 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void existingEntitiesAfterReset() throws Exception {
-        Entity entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
-        Entity entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.FILE, true);
-        Entity entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.FILE, true);
+        Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, true);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.FILE, true);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.FILE, true);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3); // No update
     }
@@ -181,7 +181,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void update() {
-        createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
+        createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
         AccountInfo.Builder accountInfo = accountInfo();
         String publicKey = Utility.convertSimpleKeyToHex(accountInfo.getKey().toByteArray());
 
@@ -243,7 +243,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void skipExisting() {
         AccountInfo.Builder accountInfo = accountInfo();
-        Entity entity = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
+        Entity entity = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, true);
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isFalse();
         assertThat(entityRepository.findAll()).hasSize(1).containsExactly(entity);
     }
@@ -263,7 +263,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build());
     }
 
-    private Entity createEntity(long num, EntityTypeEnum type, boolean afterReset) {
+    private Entity createEntity(long num, EntityType type, boolean afterReset) {
         Entity entity = new Entity();
         entity.setNum(num);
         entity.setRealm(0L);
@@ -280,7 +280,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
             entity.setExpirationTimestamp(1L);
             entity.setKey(key.toByteArray());
             entity.setMemo("Bar");
-            entity.setProxyAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
+            entity.setProxyAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
         }
 
         entityRepository.save(entity);

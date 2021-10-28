@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 @ExtendWith(MockitoExtension.class)
 class EntityTypeSerializerTest {
@@ -28,9 +28,9 @@ class EntityTypeSerializerTest {
     @Test
     void testEntityType() throws Exception {
         // when
-        new EntityTypeSerializer().serialize(EntityTypeEnum.TOKEN, jsonGenerator, null);
+        new EntityTypeSerializer().serialize(EntityType.TOKEN, jsonGenerator, null);
 
         // then
-        verify(jsonGenerator).writeNumber(EntityTypeEnum.TOKEN.getId());
+        verify(jsonGenerator).writeNumber(EntityType.TOKEN.getId());
     }
 }

@@ -31,7 +31,7 @@ import java.util.List;
 
 import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -53,8 +53,8 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.ACCOUNT;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.ACCOUNT;
     }
 
     @Override

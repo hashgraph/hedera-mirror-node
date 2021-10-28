@@ -83,7 +83,7 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
@@ -686,7 +686,7 @@ public abstract class AbstractDownloaderTest {
     protected static AddressBook loadAddressBook(String filename) throws IOException {
         Path addressBookPath = ResourceUtils.getFile(String.format("classpath:addressbook/%s", filename)).toPath();
         byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
-        EntityId entityId = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityType.FILE);
         long now = Instant.now().getEpochSecond();
         return AddressBookServiceImpl.buildAddressBook(new FileData(
                 now,

@@ -29,7 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 @ExtendWith(MockitoExtension.class)
 class EntityIdSerializerTest {
@@ -57,7 +57,7 @@ class EntityIdSerializerTest {
     @Test
     void testEntity() throws Exception {
         // when
-        var entity = EntityId.of(10L, 20L, 30L, EntityTypeEnum.ACCOUNT);
+        var entity = EntityId.of(10L, 20L, 30L, EntityType.ACCOUNT);
         new EntityIdSerializer().serialize(entity, jsonGenerator, null);
 
         // then

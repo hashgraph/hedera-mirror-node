@@ -52,7 +52,7 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EntityId implements Serializable, Comparable<EntityId> {
 
-    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityTypeEnum.ACCOUNT);
+    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityType.ACCOUNT);
     private static final Comparator<EntityId> COMPARATOR = Comparator
             .nullsFirst(Comparator.comparingLong(EntityId::getId));
     private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
@@ -67,9 +67,9 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     private final Long realmNum;
     private final Long entityNum;
     @JsonSerialize(using = EntityTypeSerializer.class)
-    private final EntityTypeEnum type;
+    private final EntityType type;
 
-    public EntityId(Long shardNum, Long realmNum, Long entityNum, EntityTypeEnum type) {
+    public EntityId(Long shardNum, Long realmNum, Long entityNum, EntityType type) {
         id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
         this.shardNum = shardNum;
         this.realmNum = realmNum;
@@ -78,32 +78,32 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     public static EntityId of(AccountID accountID) {
-        return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), EntityTypeEnum.ACCOUNT);
+        return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), EntityType.ACCOUNT);
     }
 
     public static EntityId of(ContractID contractID) {
         return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum(),
-                EntityTypeEnum.CONTRACT);
+                EntityType.CONTRACT);
     }
 
     public static EntityId of(FileID fileID) {
-        return of(fileID.getShardNum(), fileID.getRealmNum(), fileID.getFileNum(), EntityTypeEnum.FILE);
+        return of(fileID.getShardNum(), fileID.getRealmNum(), fileID.getFileNum(), EntityType.FILE);
     }
 
     public static EntityId of(TopicID topicID) {
-        return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum(), EntityTypeEnum.TOPIC);
+        return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum(), EntityType.TOPIC);
     }
 
     public static EntityId of(TokenID tokenID) {
-        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), EntityTypeEnum.TOKEN);
+        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), EntityType.TOKEN);
     }
 
     public static EntityId of(ScheduleID scheduleID) {
         return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID
-                .getScheduleNum(), EntityTypeEnum.SCHEDULE);
+                .getScheduleNum(), EntityType.SCHEDULE);
     }
 
-    public static EntityId of(String entityId, EntityTypeEnum type) {
+    public static EntityId of(String entityId, EntityType type) {
         List<Long> parts = SPLITTER.splitToStream(Objects.requireNonNullElse(entityId, ""))
                 .map(Long::valueOf)
                 .filter(n -> n >= 0)
@@ -116,14 +116,14 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         return of(parts.get(0), parts.get(1), parts.get(2), type);
     }
 
-    public static EntityId of(long entityShard, long entityRealm, long entityNum, EntityTypeEnum type) {
+    public static EntityId of(long entityShard, long entityRealm, long entityNum, EntityType type) {
         if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
             return EMPTY;
         }
         return new EntityId(entityShard, entityRealm, entityNum, type);
     }
 
-    public static EntityId of(long encodedEntityId, EntityTypeEnum type) {
+    public static EntityId of(long encodedEntityId, EntityType type) {
         return EntityIdEndec.decode(encodedEntityId, type);
     }
 
@@ -148,7 +148,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     private <T extends AbstractEntity> T createEntity() {
-        if (type == EntityTypeEnum.CONTRACT) {
+        if (type == EntityType.CONTRACT) {
             return (T) new Contract();
         } else {
             return (T) new Entity();

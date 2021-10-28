@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -54,7 +55,6 @@ import com.hedera.mirror.importer.converter.KeyConverter;
 import com.hedera.mirror.importer.converter.TopicIdArgumentConverter;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -114,7 +114,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .returns("".getBytes(), from(Entity::getSubmitKey))
                 .returns("", from(Entity::getMemo))
                 .returns(false, from(Entity::getDeleted))
-                .returns(EntityTypeEnum.TOPIC, from(Entity::getType));
+                .returns(EntityType.TOPIC, from(Entity::getType));
     }
 
     // https://github.com/hashgraph/hedera-mirror-node/issues/501
@@ -137,7 +137,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .returns("".getBytes(), from(Entity::getSubmitKey))
                 .returns("", from(Entity::getMemo))
                 .returns(false, from(Entity::getDeleted))
-                .returns(EntityTypeEnum.TOPIC, from(Entity::getType))
+                .returns(EntityType.TOPIC, from(Entity::getType))
                 .returns(autoRenewAccountId, e -> e.getAutoRenewAccountId().getId());
     }
 
@@ -239,7 +239,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var consensusTimestamp = 6_000_000L;
         var responseCode = SUCCESS;
         var memo = "updated-memo";
-        var autoRenewAccount = EntityId.of(0L, 0L, 1L, EntityTypeEnum.ACCOUNT);
+        var autoRenewAccount = EntityId.of(0L, 0L, 1L, EntityType.ACCOUNT);
         // Topic does not get stored in the repository beforehand.
 
         var transaction = createUpdateTopicTransaction(TOPIC_ID, 11L, 0, adminKey, submitKey, memo,
@@ -284,7 +284,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         entityRepository.save(topic);
 
         if (updatedAutoRenewAccountNum != null) {
-            topic.setAutoRenewAccountId(EntityId.of(0, 0, updatedAutoRenewAccountNum, EntityTypeEnum.ACCOUNT));
+            topic.setAutoRenewAccountId(EntityId.of(0, 0, updatedAutoRenewAccountNum, EntityType.ACCOUNT));
         }
         if (updatedAutoRenewPeriod != null) {
             topic.setAutoRenewPeriod(updatedAutoRenewPeriod);
@@ -317,7 +317,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         }
         if (updatedAutoRenewAccountNum != null) {
             ++entityCount;
-            topic.setAutoRenewAccountId(EntityId.of(0L, 0L, updatedAutoRenewAccountNum, EntityTypeEnum.ACCOUNT));
+            topic.setAutoRenewAccountId(EntityId.of(0L, 0L, updatedAutoRenewAccountNum, EntityType.ACCOUNT));
         }
         topic.setDeleted(false);
         topic.setModifiedTimestamp(consensusTimestamp);
@@ -636,7 +636,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                                      Long autoRenewPeriod) {
         Entity topic = EntityId.of(topicId).toEntity();
         if (autoRenewAccountNum != null) {
-            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityTypeEnum.ACCOUNT);
+            var autoRenewAccount = EntityId.of(0L, 0L, autoRenewAccountNum, EntityType.ACCOUNT);
             entityRepository.findById(autoRenewAccount.getId())
                     .orElse(entityRepository.save(getEntityWithDefaultMemo(autoRenewAccount)));
             topic.setAutoRenewAccountId(autoRenewAccount);
@@ -654,7 +654,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             topic.setSubmitKey(submitKey.toByteArray());
         }
         topic.setMemo(memo);
-        topic.setType(EntityTypeEnum.TOPIC);
+        topic.setType(EntityType.TOPIC);
         return topic;
     }
 
@@ -664,7 +664,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
-        topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum(), EntityTypeEnum.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum(), EntityType.TOPIC));
         topicMessage.setMessage(message.getBytes());
         topicMessage.setSequenceNumber(sequenceNumber);
         topicMessage.setRunningHash(runningHash.getBytes());

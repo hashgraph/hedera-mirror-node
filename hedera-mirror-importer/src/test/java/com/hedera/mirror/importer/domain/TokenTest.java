@@ -33,9 +33,9 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 
 class TokenTest {
 
-    private static final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
+    private static final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityType.TOKEN);
     private static final String KEY = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-    private static final EntityId TREASURY = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private static final EntityId TREASURY = EntityId.of("0.0.102", EntityType.ACCOUNT);
 
     @Test
     void createValidToken() throws DecoderException {
@@ -78,7 +78,7 @@ class TokenTest {
 
     @Test
     void of() {
-        EntityId tokenId = EntityIdEndec.decode(1057, EntityTypeEnum.TOKEN);
+        EntityId tokenId = EntityIdEndec.decode(1057, EntityType.TOKEN);
         Token expected = new Token();
         expected.setTokenId(new TokenId(tokenId));
 

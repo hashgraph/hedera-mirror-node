@@ -31,7 +31,7 @@ import reactor.test.StepVerifier;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TopicMessage;
 
 @RequiredArgsConstructor
@@ -138,11 +138,11 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         topicMessage.setChunkTotal(2);
         topicMessage.setConsensusTimestamp(consensusTimestamp++);
         topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityType.ACCOUNT));
         topicMessage.setRunningHash("running hash".getBytes());
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(sequenceNumber++);
-        topicMessage.setTopicId(EntityId.of("0.0.101", EntityTypeEnum.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0.101", EntityType.TOPIC));
         topicMessage.setValidStartTimestamp(4L);
         return topicMessage;
     }

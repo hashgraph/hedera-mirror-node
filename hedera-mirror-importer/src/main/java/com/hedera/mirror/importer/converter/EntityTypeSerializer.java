@@ -26,15 +26,15 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 @Named
-public class EntityTypeSerializer extends JsonSerializer<EntityTypeEnum> {
+public class EntityTypeSerializer extends JsonSerializer<EntityType> {
     public static final EntityTypeSerializer INSTANCE = new EntityTypeSerializer();
 
     //EntityType serializes to a String, for a PubSubMessage we want it to be an int to be consistent with old data
     @Override
-    public void serialize(EntityTypeEnum value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(EntityType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         if (value != null) {
             gen.writeNumber(value.getId());
         } else {

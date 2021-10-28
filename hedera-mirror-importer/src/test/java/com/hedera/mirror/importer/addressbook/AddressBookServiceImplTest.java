@@ -61,7 +61,7 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
@@ -324,15 +324,15 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @Test
     void isAddressBook() {
-        EntityId fileID = EntityId.of(0, 0, 234, EntityTypeEnum.FILE);
+        EntityId fileID = EntityId.of(0, 0, 234, EntityType.FILE);
         boolean isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isFalse();
 
-        fileID = EntityId.of(0, 0, 101, EntityTypeEnum.FILE);
+        fileID = EntityId.of(0, 0, 101, EntityType.FILE);
         isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isTrue();
 
-        fileID = EntityId.of(0, 0, 102, EntityTypeEnum.FILE);
+        fileID = EntityId.of(0, 0, 102, EntityType.FILE);
         isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isTrue();
     }
