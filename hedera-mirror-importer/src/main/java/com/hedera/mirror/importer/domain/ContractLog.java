@@ -32,6 +32,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
+import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.ContractIdConverter;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
@@ -57,6 +58,9 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     @javax.persistence.Id
     private int index;
 
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
+
     private String topic0;
 
     private String topic1;
@@ -65,6 +69,7 @@ public class ContractLog implements Persistable<ContractLog.Id> {
 
     private String topic3;
 
+    @Override
     @JsonIgnore
     public Id getId() {
         Id id = new Id();
@@ -81,6 +86,7 @@ public class ContractLog implements Persistable<ContractLog.Id> {
 
     @Data
     public static class Id implements Serializable {
+        private static final long serialVersionUID = -6192177810161178246L;
         private long consensusTimestamp;
         private int index;
     }

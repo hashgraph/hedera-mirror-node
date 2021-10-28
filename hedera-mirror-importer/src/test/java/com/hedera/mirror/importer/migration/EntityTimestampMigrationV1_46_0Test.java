@@ -24,8 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.domain.EntityType;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.util.List;
@@ -43,6 +41,7 @@ import org.springframework.test.context.TestPropertySource;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -126,13 +125,13 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private MigrationEntity entity(long id, EntityType entityTypeEnum) {
-        return entity(id, entityTypeEnum, null, false, null);
+    private MigrationEntity entity(long id, EntityType EntityType) {
+        return entity(id, EntityType, null, false, null);
     }
 
-    private MigrationEntity entity(long id, EntityType entityTypeEnum, Long createdTimestamp,
+    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp,
                                    Long modifiedTimestamp) {
-        return entity(id, entityTypeEnum, createdTimestamp, false, modifiedTimestamp);
+        return entity(id, EntityType, createdTimestamp, false, modifiedTimestamp);
     }
 
     private MigrationEntity entity(long id, EntityType entityType, Long createdTimestamp, boolean deleted,

@@ -36,6 +36,7 @@ var (
 	account                     = domain.MustDecodeEntityId(9000)
 	account2                    = domain.MustDecodeEntityId(9001)
 	treasury                    = domain.MustDecodeEntityId(9500)
+	payer                       = domain.MustDecodeEntityId(2002)
 	consensusTimestamp    int64 = 200
 	snapshotTimestamp     int64 = 100
 	cryptoTransferAmounts       = []int64{150, -178}
@@ -134,16 +135,19 @@ var (
 			EntityId:           account,
 			Amount:             cryptoTransferAmounts[0],
 			ConsensusTimestamp: snapshotTimestamp + 1,
+			PayerAccountId:     payer,
 		},
 		{
 			EntityId:           account,
 			Amount:             cryptoTransferAmounts[1],
 			ConsensusTimestamp: snapshotTimestamp + 5,
+			PayerAccountId:     payer,
 		},
 		{
 			EntityId:           account,
 			Amount:             155,
 			ConsensusTimestamp: consensusTimestamp + 1,
+			PayerAccountId:     payer,
 		},
 	}
 	// crypto transfers at or before snapshot timestamp
@@ -152,11 +156,13 @@ var (
 			EntityId:           account,
 			Amount:             110,
 			ConsensusTimestamp: snapshotTimestamp - 1,
+			PayerAccountId:     payer,
 		},
 		{
 			EntityId:           account,
 			Amount:             170,
 			ConsensusTimestamp: snapshotTimestamp,
+			PayerAccountId:     payer,
 		},
 	}
 	// the last transfer of each token is after consensusTimestamp
@@ -165,36 +171,42 @@ var (
 			AccountId:          account,
 			Amount:             token1TransferAmounts[0],
 			ConsensusTimestamp: snapshotTimestamp + 2,
+			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token1TransferAmounts[1],
 			ConsensusTimestamp: snapshotTimestamp + 4,
+			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             153,
 			ConsensusTimestamp: consensusTimestamp + 1,
+			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token2TransferAmounts[0],
 			ConsensusTimestamp: snapshotTimestamp + 5,
+			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token2TransferAmounts[1],
 			ConsensusTimestamp: snapshotTimestamp + 8,
+			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             157,
 			ConsensusTimestamp: consensusTimestamp + 1,
+			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 	}
@@ -204,24 +216,28 @@ var (
 			AccountId:          account,
 			Amount:             17,
 			ConsensusTimestamp: snapshotTimestamp - 1,
+			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             -2,
 			ConsensusTimestamp: snapshotTimestamp,
+			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             25,
 			ConsensusTimestamp: snapshotTimestamp - 1,
+			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             -9,
 			ConsensusTimestamp: snapshotTimestamp,
+			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 	}
@@ -229,6 +245,7 @@ var (
 	nftTransfers = []domain.NftTransfer{
 		{
 			ConsensusTimestamp: snapshotTimestamp + 1,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
 			SerialNumber:       3,
@@ -236,6 +253,7 @@ var (
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 2,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
 			SerialNumber:       4,
@@ -243,6 +261,7 @@ var (
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 3,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
 			SerialNumber:       5,
@@ -250,6 +269,7 @@ var (
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 4,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SenderAccountId:    &account,
 			SerialNumber:       5,
@@ -258,36 +278,42 @@ var (
 		// nft transfers for token4 between account2 and treasury which should not affect query for account
 		{
 			ConsensusTimestamp: snapshotTimestamp + 5,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       1,
 			TokenId:            token4.TokenId,
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 5,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       2,
 			TokenId:            token4.TokenId,
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 5,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       3,
 			TokenId:            token4.TokenId,
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 5,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       4,
 			TokenId:            token4.TokenId,
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 5,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       5,
 			TokenId:            token4.TokenId,
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 6,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &account2,
 			SenderAccountId:    &treasury,
 			SerialNumber:       1,
@@ -295,6 +321,7 @@ var (
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 6,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &account2,
 			SenderAccountId:    &treasury,
 			SerialNumber:       2,
@@ -302,6 +329,7 @@ var (
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp + 7,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SenderAccountId:    &account2,
 			SerialNumber:       1,
@@ -312,6 +340,7 @@ var (
 	nftTransfersLTESnapshot = []domain.NftTransfer{
 		{
 			ConsensusTimestamp: snapshotTimestamp - 2,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
 			SerialNumber:       1,
@@ -319,6 +348,7 @@ var (
 		},
 		{
 			ConsensusTimestamp: snapshotTimestamp - 2,
+			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
 			SerialNumber:       2,

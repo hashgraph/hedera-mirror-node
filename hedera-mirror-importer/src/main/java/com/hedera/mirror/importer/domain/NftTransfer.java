@@ -26,19 +26,29 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
 @Data
 @Entity
+@NoArgsConstructor
 public class NftTransfer implements Persistable<NftTransferId> {
 
-    @JsonUnwrapped
     @EmbeddedId
+    @JsonUnwrapped
     private NftTransferId id;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
 
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)

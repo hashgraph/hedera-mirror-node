@@ -122,14 +122,14 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         return entity(id, entityType, null, null);
     }
 
-    private MigrationEntity entity(long id, EntityType entityTypeEnum, Long createdTimestamp,
+    private MigrationEntity entity(long id, EntityType EntityType, Long createdTimestamp,
                                    Long modifiedTimestamp) {
         MigrationEntity entity = new MigrationEntity();
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setId(id);
         entity.setModifiedTimestamp(modifiedTimestamp);
         entity.setNum(id);
-        entity.setType(entityTypeEnum.getId());
+        entity.setType(EntityType.getId());
         return entity;
     }
 
