@@ -103,9 +103,9 @@ const nullEntityId = of(null, null, null);
 /**
  * Checks if the id is null. When null, returns the nullEntityId if allowed, otherwise throws error; When not
  * null, returns undefined
- * @param id
- * @param isNullable
- * @param error
+ * @param {BigInt|int|string} id
+ * @param {boolean} isNullable
+ * @param {function} error
  * @return {EntityId}
  */
 const checkNullId = (id, isNullable, error = () => defaultNullEntityIdError) => {
@@ -123,6 +123,11 @@ const checkNullId = (id, isNullable, error = () => defaultNullEntityIdError) => 
  * for the same id no matter it's created from the BigInt id or the encoded ID string.
  */
 const fromEncodedIdMemoized = mem(
+  /**
+   * Converts a non-null encoded entity ID (BigInt, int, or string) to EntityId object.
+   * @param id
+   * @return {EntityId}
+   */
   (id) => {
     // Javascript's precision limit is 2^53 - 1. Precision needed to handle encoded ids is 2^63 - 1 (highest number
     // for java's long and postgres' bigint). Limit use of BigInt types to this function, everything returned by this
@@ -145,7 +150,7 @@ const fromEncodedIdMemoized = mem(
   },
   {
     ...entityIdCacheOptions,
-    cacheKey: (arguments_) => `${arguments_[0]}`,
+    cacheKey: (arguments_) => `${arguments_[0]}`, // use the id string as the cache key
   }
 );
 
@@ -163,27 +168,36 @@ const fromEncodedId = (id, isNullable = false) => {
 /**
  * The memorized fromString.
  */
-const fromStringMemoized = mem((entityIdStr, error) => {
-  if (!isValidEntityId(entityIdStr)) {
-    throw error(`invalid entity ID string "${entityIdStr}"`);
-  }
+const fromStringMemoized = mem(
+  /**
+   * Converts a non-null entity ID string to EntityId object. Supports 'shard.realm.num', 'realm.num', and 'num'.
+   * @param {string} entityIdStr
+   * @param {function} error
+   * @return {EntityId}
+   */
+  (entityIdStr, error) => {
+    if (!isValidEntityId(entityIdStr)) {
+      throw error(`invalid entity ID string "${entityIdStr}"`);
+    }
 
-  const defaultShardRealm = [systemShard, '0'];
-  const parts = entityIdStr.split('.');
-  if (parts.length < 3) {
-    parts.unshift(...defaultShardRealm.slice(0, 3 - parts.length));
-  }
+    const defaultShardRealm = [systemShard, '0'];
+    const parts = entityIdStr.split('.');
+    if (parts.length < 3) {
+      parts.unshift(...defaultShardRealm.slice(0, 3 - parts.length));
+    }
 
-  return of(
-    ...parts.map((part) => {
-      const num = BigInt(part);
-      if (num < 0n) {
-        throw error(`invalid entity ID string "${entityIdStr}"`);
-      }
-      return num;
-    })
-  );
-}, entityIdCacheOptions);
+    return of(
+      ...parts.map((part) => {
+        const num = BigInt(part);
+        if (num < 0n) {
+          throw error(`invalid entity ID string "${entityIdStr}"`);
+        }
+        return num;
+      })
+    );
+  },
+  entityIdCacheOptions
+);
 
 /**
  * Converts entity ID string to EntityId object. Supports 'shard.realm.num', 'realm.num', and 'num'.
