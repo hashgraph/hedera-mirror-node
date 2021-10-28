@@ -21,13 +21,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Cloner;
 
@@ -54,7 +54,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.CONTRACT;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.CONTRACT;
     }
 }

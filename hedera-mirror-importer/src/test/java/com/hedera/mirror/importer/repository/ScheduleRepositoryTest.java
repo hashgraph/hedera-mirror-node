@@ -27,7 +27,7 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Schedule;
 
 class ScheduleRepositoryTest extends AbstractRepositoryTest {
@@ -53,9 +53,9 @@ class ScheduleRepositoryTest extends AbstractRepositoryTest {
     private Schedule schedule(long consensusTimestamp) {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(consensusTimestamp);
-        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
-        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
-        schedule.setScheduleId(EntityId.of("0.0.789", EntityTypeEnum.SCHEDULE));
+        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityType.ACCOUNT));
+        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityType.ACCOUNT));
+        schedule.setScheduleId(EntityId.of("0.0.789", EntityType.SCHEDULE));
         schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }

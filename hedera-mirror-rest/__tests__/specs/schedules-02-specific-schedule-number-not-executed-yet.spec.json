@@ -9,7 +9,7 @@
     "entities": [
       {
         "num": 2000,
-        "type": 6,
+        "type": "SCHEDULE",
         "memo": "Created per council decision dated 02/01/21"
       }
     ],

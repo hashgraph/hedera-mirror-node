@@ -20,10 +20,10 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.CONTRACT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.FILE;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.CONTRACT;
+import static com.hedera.mirror.importer.domain.EntityType.FILE;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -97,7 +97,7 @@ public class DomainBuilder {
                 .realm(0L)
                 .shard(0L)
                 .timestampRange(Range.atLeast(timestamp))
-                .type(CONTRACT.getId());
+                .type(CONTRACT);
 
         return new DomainPersister<>(getRepository(Contract.class), builder, builder::build);
     }
@@ -156,7 +156,7 @@ public class DomainBuilder {
                 .shard(0L)
                 .submitKey(key)
                 .timestampRange(Range.atLeast(timestamp))
-                .type(ACCOUNT.getId());
+                .type(ACCOUNT);
 
         return new DomainPersister<>(getRepository(Entity.class), builder, builder::build);
     }
@@ -197,7 +197,7 @@ public class DomainBuilder {
         return bytes;
     }
 
-    private EntityId entityId(EntityTypeEnum type) {
+    private EntityId entityId(EntityType type) {
         return EntityId.of(0L, 0L, id(), type);
     }
 

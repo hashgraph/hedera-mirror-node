@@ -9,21 +9,21 @@
     "entities": [
       {
         "num": 2000,
-        "type": 6,
+        "type": "SCHEDULE",
         "memo": "Created per council decision dated 02/01/21",
         "public_key": "7a3c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [1, 1, 1]
       },
       {
         "num": 3000,
-        "type": 6,
+        "type": "SCHEDULE",
         "memo": "Created per mirror team decision dated 02/02/21",
         "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [2, 2, 2]
       },
       {
         "num": 4000,
-        "type": 6,
+        "type": "SCHEDULE",
         "memo": "Created per product team decision dated 02/03/21",
         "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [3, 3, 3]
@@ -31,7 +31,7 @@
       {
         "num": 4001,
         "deleted": true,
-        "type": 6,
+        "type": "SCHEDULE",
         "memo": "Created per product team decision dated 02/03/21",
         "public_key": "8a4c7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc",
         "key": [3, 3, 3]

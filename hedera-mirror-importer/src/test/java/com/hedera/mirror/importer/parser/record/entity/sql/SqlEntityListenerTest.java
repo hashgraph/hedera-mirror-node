@@ -20,12 +20,15 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.domain.EntityType;
+
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -50,7 +53,6 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
@@ -156,7 +158,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setRealm(contract.getRealm());
         entity.setShard(contract.getShard());
         entity.setModifiedTimestamp(contract.getModifiedTimestamp() + 10L);
-        entity.setType(ACCOUNT.getId());
+        entity.setType(ACCOUNT);
 
         // when
         sqlEntityListener.onEntityId(entity.toEntityId()); // Removed after onContract
@@ -211,7 +213,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContractWithParent() {
         // given
         Contract parent = domainBuilder.contract().persist();
-        Contract contract = EntityId.of(0L, 0L, 100L, EntityTypeEnum.CONTRACT).toEntity();
+        Contract contract = EntityId.of(0L, 0L, 100L, EntityType.CONTRACT).toEntity();
         contract.setCreatedTimestamp(1L);
         contract.setDeleted(false);
         contract.setModifiedTimestamp(1L);
@@ -242,12 +244,12 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContractWithMissingParent() {
         // given
-        Contract contract = EntityId.of(0L, 0L, 101L, EntityTypeEnum.CONTRACT).toEntity();
+        Contract contract = EntityId.of(0L, 0L, 101L, EntityType.CONTRACT).toEntity();
         contract.setCreatedTimestamp(1L);
         contract.setDeleted(false);
         contract.setMemo("");
         contract.setModifiedTimestamp(1L);
-        contract.setParentId(EntityId.of(0L, 0L, 100L, EntityTypeEnum.CONTRACT));
+        contract.setParentId(EntityId.of(0L, 0L, 100L, EntityType.CONTRACT));
 
         // when
         sqlEntityListener.onContract(contract);
@@ -348,7 +350,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onFileData() {
         // given
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
-                .of(0, 0, 111, EntityTypeEnum.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
+                .of(0, 0, 111, EntityType.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
 
         // when
         sqlEntityListener.onFileData(expectedFileData);
@@ -1071,8 +1073,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onSchedule() {
-        EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
-        EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
+        EntityId entityId1 = EntityId.of("0.0.100", EntityType.SCHEDULE);
+        EntityId entityId2 = EntityId.of("0.0.200", EntityType.SCHEDULE);
 
         Schedule schedule1 = getSchedule(1, entityId1.entityIdToString());
         Schedule schedule2 = getSchedule(2, entityId2.entityIdToString());
@@ -1089,9 +1091,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onScheduleSignature() {
-        EntityId entityId1 = EntityId.of("0.0.100", EntityTypeEnum.SCHEDULE);
-        EntityId entityId2 = EntityId.of("0.0.200", EntityTypeEnum.SCHEDULE);
-        EntityId entityId3 = EntityId.of("0.0.300", EntityTypeEnum.SCHEDULE);
+        EntityId entityId1 = EntityId.of("0.0.100", EntityType.SCHEDULE);
+        EntityId entityId2 = EntityId.of("0.0.200", EntityType.SCHEDULE);
+        EntityId entityId3 = EntityId.of("0.0.300", EntityType.SCHEDULE);
         byte[] pubKeyPrefix1 = "pubKeyPrefix1".getBytes();
         byte[] pubKeyPrefix2 = "pubKeyPrefix2".getBytes();
         byte[] pubKeyPrefix3 = "pubKeyPrefix3".getBytes();
@@ -1118,13 +1120,13 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onScheduleMerge() {
         String scheduleId = "0.0.100";
-        EntityId entityId = EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE);
+        EntityId entityId = EntityId.of(scheduleId, EntityType.SCHEDULE);
 
         Schedule schedule = getSchedule(1, entityId.entityIdToString());
         sqlEntityListener.onSchedule(schedule);
 
         Schedule scheduleUpdated = new Schedule();
-        scheduleUpdated.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        scheduleUpdated.setScheduleId(EntityId.of(scheduleId, EntityType.SCHEDULE));
         scheduleUpdated.setExecutedTimestamp(5L);
         sqlEntityListener.onSchedule(scheduleUpdated);
 
@@ -1201,7 +1203,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setReceiverSigRequired(receiverSigRequired);
         entity.setShard(0L);
         entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
-        entity.setType(ACCOUNT.getId());
+        entity.setType(ACCOUNT);
         if (memo != null) {
             entity.setMemo(memo);
         }
@@ -1235,11 +1237,11 @@ class SqlEntityListenerTest extends IntegrationTest {
         topicMessage.setChunkTotal(2);
         topicMessage.setConsensusTimestamp(1L);
         topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityType.ACCOUNT));
         topicMessage.setRunningHash("running hash".getBytes());
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityTypeEnum.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
         topicMessage.setValidStartTimestamp(4L);
 
         return topicMessage;
@@ -1335,10 +1337,10 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     private Schedule getSchedule(long consensusTimestamp, String scheduleId) {
         Schedule schedule = new Schedule();
-        schedule.setScheduleId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        schedule.setScheduleId(EntityId.of(scheduleId, EntityType.SCHEDULE));
         schedule.setConsensusTimestamp(consensusTimestamp);
-        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityTypeEnum.ACCOUNT));
-        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityTypeEnum.ACCOUNT));
+        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityType.ACCOUNT));
+        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityType.ACCOUNT));
         schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }
@@ -1349,7 +1351,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         transactionSignature.setId(new TransactionSignature.Id(
                 consensusTimestamp,
                 pubKeyPrefix));
-        transactionSignature.setEntityId(EntityId.of(scheduleId, EntityTypeEnum.SCHEDULE));
+        transactionSignature.setEntityId(EntityId.of(scheduleId, EntityType.SCHEDULE));
         transactionSignature.setSignature("scheduled transaction signature".getBytes());
         return transactionSignature;
     }

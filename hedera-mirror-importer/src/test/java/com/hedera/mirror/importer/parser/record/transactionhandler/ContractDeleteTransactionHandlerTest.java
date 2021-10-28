@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
@@ -41,7 +41,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.CONTRACT;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.CONTRACT;
     }
 }

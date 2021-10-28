@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 
 class TokenAccountTest {
 
-    private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
-    private final EntityId ACCOUNT_ID = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityType.TOKEN);
+    private final EntityId ACCOUNT_ID = EntityId.of("0.0.102", EntityType.ACCOUNT);
 
     @Test
     void createValidTokenAccount() {

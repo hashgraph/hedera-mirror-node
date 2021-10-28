@@ -44,7 +44,7 @@ class AssessedCustomFeeTest {
 
         // when
         assessedCustomFee.setEffectivePayerEntityIds(ids.stream()
-                .map(id -> EntityIdEndec.decode(id, EntityTypeEnum.ACCOUNT))
+                .map(id -> EntityIdEndec.decode(id, EntityType.ACCOUNT))
                 .collect(Collectors.toList()));
 
         // then

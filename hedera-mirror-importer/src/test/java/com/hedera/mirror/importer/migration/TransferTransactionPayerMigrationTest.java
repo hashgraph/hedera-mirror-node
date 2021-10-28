@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
+import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.NftTransfer;
 import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
@@ -72,9 +72,9 @@ import com.hedera.mirror.importer.util.EntityIdEndec;
 @TestPropertySource(properties = "spring.flyway.target=1.46.6")
 class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
-    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityTypeEnum.ACCOUNT);
+    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityType.ACCOUNT);
 
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT);
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
 
     @Resource
     private JdbcOperations jdbcOperations;
@@ -138,26 +138,26 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         Entity contract = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(50L)
                 .timestampRange(Range.atLeast(50L))
-                .type(EntityTypeEnum.CONTRACT.getId())).get();
+                .type(EntityType.CONTRACT)).get();
         Entity file = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(60L)
                 .timestampRange(Range.atLeast(60L))
-                .type(EntityTypeEnum.FILE.getId())).get();
+                .type(EntityType.FILE)).get();
         Entity topic = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(70L)
                 .timestampRange(Range.atLeast(70L))
-                .type(EntityTypeEnum.TOPIC.getId())).get();
+                .type(EntityType.TOPIC)).get();
         Entity token = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(80L)
                 .timestampRange(Range.atLeast(80L))
-                .type(TOKEN.getId())).get();
+                .type(TOKEN)).get();
         Entity schedule = domainBuilder.entity().customize(e -> e
                 .createdTimestamp(90L)
                 .timestampRange(Range.atLeast(90L))
-                .type(EntityTypeEnum.SCHEDULE.getId())).get();
+                .type(EntityType.SCHEDULE)).get();
 
         // given
-        entityRepository.saveAll(List.of(
+        persistEntities(List.of(
                 node,
                 treasury,
                 sender,
@@ -166,8 +166,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 file,
                 topic,
                 token,
-                schedule
-        ));
+                schedule));
 
         Transaction transfer1 = transaction(schedule
                 .getCreatedTimestamp() + 200L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
@@ -420,7 +419,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                                     TransactionTypeEnum type) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityTypeEnum.UNKNOWN));
+        transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setPayerAccountId(PAYER_ID);
         transaction.setResult(result.getNumber());
@@ -512,13 +511,13 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     List<Long> effectivePayers = Arrays
                             .asList((Long[]) rs.getArray("effective_payer_account_ids").getArray());
                     EntityId sender = ObjectUtils.isNotEmpty(effectivePayers) ? EntityIdEndec
-                            .decode(effectivePayers.get(0), EntityTypeEnum.ACCOUNT) : null;
+                            .decode(effectivePayers.get(0), EntityType.ACCOUNT) : null;
                     EntityId receiver = EntityIdEndec
-                            .decode(rs.getLong("collector_account_id"), EntityTypeEnum.ACCOUNT);
+                            .decode(rs.getLong("collector_account_id"), EntityType.ACCOUNT);
                     SharedTransfer sharedTransfer = new SharedTransfer(
                             rs.getLong("amount"),
                             rs.getLong("consensus_timestamp"),
-                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityTypeEnum.ACCOUNT),
+                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
                             receiver,
                             sender);
                     return sharedTransfer;
@@ -531,13 +530,13 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 (rs, rowNum) -> {
                     Long amount = rs.getLong("amount");
                     EntityId sender = amount < 0 ? EntityIdEndec
-                            .decode(rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT) : null;
+                            .decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
                     EntityId receiver = amount > 0 ? EntityIdEndec
-                            .decode(rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT) : null;
+                            .decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
                     SharedTransfer sharedTransfer = new SharedTransfer(
                             amount,
                             rs.getLong("consensus_timestamp"),
-                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityTypeEnum.ACCOUNT),
+                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
                             receiver,
                             sender);
                     return sharedTransfer;
@@ -551,9 +550,9 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     SharedTransfer sharedTransfer = new SharedTransfer(
                             rs.getLong("serial_number"),
                             rs.getLong("consensus_timestamp"),
-                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityTypeEnum.ACCOUNT),
-                            EntityIdEndec.decode(rs.getLong("receiver_account_id"), EntityTypeEnum.ACCOUNT),
-                            EntityIdEndec.decode(rs.getLong("sender_account_id"), EntityTypeEnum.ACCOUNT));
+                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
+                            EntityIdEndec.decode(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
+                            EntityIdEndec.decode(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
                     return sharedTransfer;
                 });
     }
@@ -564,13 +563,13 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 (rs, rowNum) -> {
                     Long amount = rs.getLong("amount");
                     EntityId sender = amount < 0 ? EntityIdEndec
-                            .decode(rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT) : null;
+                            .decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
                     EntityId receiver = amount > 0 ? EntityIdEndec
-                            .decode(rs.getLong("entity_id"), EntityTypeEnum.ACCOUNT) : null;
+                            .decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
                     SharedTransfer sharedTransfer = new SharedTransfer(
                             amount,
                             rs.getLong("consensus_timestamp"),
-                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityTypeEnum.ACCOUNT),
+                            EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
                             receiver,
                             sender);
                     return sharedTransfer;
@@ -583,9 +582,9 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 (rs, rowNum) -> {
                     Long amount = rs.getLong("amount");
                     EntityId sender = amount < 0 ? EntityIdEndec
-                            .decode(rs.getLong("account_id"), EntityTypeEnum.ACCOUNT) : null;
+                            .decode(rs.getLong("account_id"), EntityType.ACCOUNT) : null;
                     EntityId receiver = amount > 0 ? EntityIdEndec
-                            .decode(rs.getLong("account_id"), EntityTypeEnum.ACCOUNT) : null;
+                            .decode(rs.getLong("account_id"), EntityType.ACCOUNT) : null;
                     SharedTransfer sharedTransfer = new SharedTransfer(
                             amount,
                             rs.getLong("consensus_timestamp"),
@@ -594,6 +593,23 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                             sender);
                     return sharedTransfer;
                 });
+    }
+
+    private void persistEntities(List<Entity> entities) {
+        for (Entity entity : entities) {
+            jdbcOperations.update(
+                    "insert into entity (id, created_timestamp, num, realm, shard, type, timestamp_range) values (?," +
+                            "?,?,?,?,?,?::int8range)",
+                    entity.getId(),
+                    entity.getCreatedTimestamp(),
+                    entity.getNum(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    entity.getType().getId(),
+                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
+                            .lowerEndpoint())
+            );
+        }
     }
 
     /**

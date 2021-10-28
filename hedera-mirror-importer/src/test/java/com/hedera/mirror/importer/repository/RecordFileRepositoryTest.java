@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.RecordFile;
 
 class RecordFileRepositoryTest extends AbstractRepositoryTest {
@@ -60,7 +60,7 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
                 .loadEnd(id)
                 .loadStart(id)
                 .name(id + ".rcd")
-                .nodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT))
+                .nodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT))
                 .previousHash("previousHash" + (id - 1))
                 .version(1)
                 .build();

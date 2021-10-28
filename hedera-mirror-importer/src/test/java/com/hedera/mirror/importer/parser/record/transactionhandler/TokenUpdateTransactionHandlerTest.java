@@ -37,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.NftRepository;
@@ -74,8 +74,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.TOKEN;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.TOKEN;
     }
 
     @Test

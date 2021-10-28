@@ -32,11 +32,11 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
 
-    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
+    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityType.FILE);
 
     @Resource
     protected AddressBookEntryRepository addressBookEntryRepository;
@@ -87,7 +87,7 @@ class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
                 .id(new AddressBookEntry.Id(consensusTimestamp, nodeAccountId - 3))
                 .publicKey("rsa+public/key")
                 .memo(nodeAccountIdString)
-                .nodeAccountId(EntityId.of(nodeAccountIdString, EntityTypeEnum.ACCOUNT))
+                .nodeAccountId(EntityId.of(nodeAccountIdString, EntityType.ACCOUNT))
                 .nodeCertHash("nodeCertHash".getBytes());
 
         if (nodeAddressCustomizer != null) {

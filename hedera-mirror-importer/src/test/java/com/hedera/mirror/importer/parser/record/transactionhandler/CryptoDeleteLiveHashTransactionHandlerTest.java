@@ -20,11 +20,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class CryptoDeleteLiveHashTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -40,7 +39,7 @@ class CryptoDeleteLiveHashTransactionHandlerTest extends AbstractTransactionHand
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.ACCOUNT;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.ACCOUNT;
     }
 }

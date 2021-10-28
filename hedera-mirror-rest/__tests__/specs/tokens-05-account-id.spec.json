@@ -12,21 +12,21 @@
     "entities": [
       {
         "num": 3,
-        "type": 5
+        "type": "TOKEN"
       },
       {
         "num": 4,
-        "type": 5
+        "type": "TOKEN"
       },
       {
         "realm": 7,
         "num": 25301,
-        "type": 5
+        "type": "TOKEN"
       },
       {
         "realm": 23,
         "num": 45678,
-        "type": 5
+        "type": "TOKEN"
       }
     ],
     "tokens": [

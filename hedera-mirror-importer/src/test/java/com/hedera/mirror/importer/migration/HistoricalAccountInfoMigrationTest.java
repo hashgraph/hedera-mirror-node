@@ -42,7 +42,7 @@ import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -95,10 +95,10 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void existingEntitiesFromBeforeReset() throws Exception {
-        Entity entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
-        Entity entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.ACCOUNT, false);
-        Entity entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.ACCOUNT, false);
-        Contract contract1 = createEntity(CONTRACT_ID1, EntityTypeEnum.CONTRACT, false);
+        Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.ACCOUNT, false);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.ACCOUNT, false);
+        Contract contract1 = createEntity(CONTRACT_ID1, EntityType.CONTRACT, false);
 
         historicalAccountInfoMigration.doMigrate();
 
@@ -119,10 +119,10 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void existingEntitiesAfterReset() throws Exception {
-        Entity entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
-        Entity entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.ACCOUNT, true);
-        Entity entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.ACCOUNT, true);
-        Contract contract1 = createEntity(CONTRACT_ID1, EntityTypeEnum.CONTRACT, true);
+        Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, true);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.ACCOUNT, true);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.ACCOUNT, true);
+        Contract contract1 = createEntity(CONTRACT_ID1, EntityType.CONTRACT, true);
 
         historicalAccountInfoMigration.doMigrate();
 
@@ -132,17 +132,17 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void existingEntitiesWrongType() throws Exception {
-        Entity entity1 = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
-        Entity entity2 = createEntity(ACCOUNT_ID2, EntityTypeEnum.ACCOUNT, true);
-        Entity entity3 = createEntity(ACCOUNT_ID3, EntityTypeEnum.ACCOUNT, true);
-        Entity entity4 = createEntity(CONTRACT_ID1, EntityTypeEnum.ACCOUNT, true);
+        Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, true);
+        Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.ACCOUNT, true);
+        Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.ACCOUNT, true);
+        Entity entity4 = createEntity(CONTRACT_ID1, EntityType.ACCOUNT, true);
 
         historicalAccountInfoMigration.doMigrate();
 
         assertThat(contractRepository.findAll())
                 .hasSize(CONTRACT_COUNT)
                 .first()
-                .returns(EntityTypeEnum.CONTRACT.getId(), Contract::getType)
+                .returns(EntityType.CONTRACT, Contract::getType)
                 .returns(entity4.getNum(), Contract::getNum);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3);
     }
@@ -232,7 +232,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     @Test
     void update() {
-        createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, false);
+        createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
         AccountInfo.Builder accountInfo = accountInfo();
         String publicKey = Utility.convertSimpleKeyToHex(accountInfo.getKey().toByteArray());
 
@@ -294,7 +294,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void skipExisting() {
         AccountInfo.Builder accountInfo = accountInfo();
-        Entity entity = createEntity(ACCOUNT_ID1, EntityTypeEnum.ACCOUNT, true);
+        Entity entity = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, true);
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isFalse();
         assertThat(entityRepository.findAll()).hasSize(1).containsExactly(entity);
     }
@@ -314,8 +314,13 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build());
     }
 
-    private <T extends AbstractEntity> T createEntity(long num, EntityTypeEnum type, boolean afterReset) {
+    private <T extends AbstractEntity> T createEntity(long num, EntityType type, boolean afterReset) {
         T entity = EntityId.of(0L, 0L, num, type).toEntity();
+        entity.setNum(num);
+        entity.setRealm(0L);
+        entity.setShard(0L);
+        entity.setType(type);
+        entity.setId(num);
         entity.setDeleted(false);
         entity.setMemo("");
         entity.setTimestampRange(Range.atLeast(0L));
@@ -326,10 +331,10 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
             entity.setExpirationTimestamp(1L);
             entity.setKey(key.toByteArray());
             entity.setMemo("Bar");
-            entity.setProxyAccountId(EntityId.of(0, 0, 3, EntityTypeEnum.ACCOUNT));
+            entity.setProxyAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
         }
 
-        if (type == EntityTypeEnum.CONTRACT) {
+        if (type == EntityType.CONTRACT) {
             contractRepository.save((Contract) entity);
         } else {
             entityRepository.save((Entity) entity);

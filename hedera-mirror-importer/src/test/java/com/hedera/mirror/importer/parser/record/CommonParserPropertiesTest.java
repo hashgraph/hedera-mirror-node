@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.parser.record;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
+
+import com.hedera.mirror.importer.domain.EntityType;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
@@ -130,14 +131,14 @@ class CommonParserPropertiesTest {
             return null;
         }
 
-        return EntityId.of(entityId, EntityTypeEnum.ACCOUNT);
+        return EntityId.of(entityId, EntityType.ACCOUNT);
     }
 
     private TransactionFilter filter(String entity, TransactionTypeEnum type) {
         TransactionFilter transactionFilter = new TransactionFilter();
 
         if (StringUtils.isNotBlank(entity)) {
-            transactionFilter.setEntity(Arrays.asList(EntityId.of(entity, EntityTypeEnum.ACCOUNT)));
+            transactionFilter.setEntity(Arrays.asList(EntityId.of(entity, EntityType.ACCOUNT)));
         }
 
         if (type != null) {

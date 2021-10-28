@@ -50,7 +50,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -169,11 +169,11 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
     }
 
     boolean process(AccountInfo accountInfo) {
-        EntityTypeEnum entityType = EntityTypeEnum.ACCOUNT;
+        EntityType entityType = EntityType.ACCOUNT;
         long id = EntityId.of(accountInfo.getAccountID()).getId();
 
         if (contractIds.contains(id)) {
-            entityType = EntityTypeEnum.CONTRACT;
+            entityType = EntityType.CONTRACT;
         }
 
         EntityId entityId = EntityIdEndec.decode(id, entityType);
@@ -232,8 +232,8 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         return updated;
     }
 
-    private <T extends AbstractEntity> CrudRepository<T, Long> getRepository(EntityTypeEnum type) {
-        if (type == EntityTypeEnum.CONTRACT) {
+    private <T extends AbstractEntity> CrudRepository<T, Long> getRepository(EntityType type) {
+        if (type == EntityType.CONTRACT) {
             return (CrudRepository<T, Long>) contractRepository;
         } else {
             return (CrudRepository<T, Long>) entityRepository;

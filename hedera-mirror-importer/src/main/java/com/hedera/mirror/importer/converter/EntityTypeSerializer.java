@@ -20,17 +20,25 @@ package com.hedera.mirror.importer.converter;
  * ‍
  */
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import java.io.IOException;
 import javax.inject.Named;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
 import com.hedera.mirror.importer.domain.EntityType;
 
 @Named
-@javax.persistence.Converter
-@ConfigurationPropertiesBinding
-public class TopicIdConverter extends AbstractEntityIdConverter {
+public class EntityTypeSerializer extends JsonSerializer<EntityType> {
+    public static final EntityTypeSerializer INSTANCE = new EntityTypeSerializer();
 
-    public TopicIdConverter() {
-        super(EntityType.TOPIC);
+    //EntityType serializes to a String, for a PubSubMessage we want it to be an int to be consistent with old data
+    @Override
+    public void serialize(EntityType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        if (value != null) {
+            gen.writeNumber(value.getId());
+        } else {
+            gen.writeNull();
+        }
     }
 }

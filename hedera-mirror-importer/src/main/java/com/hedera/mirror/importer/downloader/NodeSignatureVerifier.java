@@ -41,7 +41,7 @@ import org.springframework.util.CollectionUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
@@ -213,7 +213,7 @@ public class NodeSignatureVerifier {
     }
 
     private Counter newStatusMetric(String entityIdString, String streamType, String status) {
-        EntityId entityId = EntityId.of(entityIdString, EntityTypeEnum.ACCOUNT);
+        EntityId entityId = EntityId.of(entityIdString, EntityType.ACCOUNT);
         return Counter.builder("hedera.mirror.download.signature.verification")
                 .description("The number of signatures verified from a particular node")
                 .tag("nodeAccount", entityId.getEntityNum().toString())

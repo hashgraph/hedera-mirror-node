@@ -20,11 +20,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -41,7 +40,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.TOPIC;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.TOPIC;
     }
 }

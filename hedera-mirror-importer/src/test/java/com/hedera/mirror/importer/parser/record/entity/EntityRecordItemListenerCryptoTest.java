@@ -55,7 +55,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.util.Utility;
@@ -501,8 +501,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
                 , () -> assertEntities(EntityId
-                        .of(String.format("0.0.%d", additionalTransfers[0]), EntityTypeEnum.ACCOUNT), EntityId
-                        .of(String.format("0.0.%d", additionalTransfers[1]), EntityTypeEnum.ACCOUNT), EntityId
+                        .of(String.format("0.0.%d", additionalTransfers[0]), EntityType.ACCOUNT), EntityId
+                        .of(String.format("0.0.%d", additionalTransfers[1]), EntityType.ACCOUNT), EntityId
                         .of(PAYER), EntityId
                         .of(NODE), EntityId.of(TREASURY))
                 , () -> assertEquals(5, cryptoTransferRepository.count())

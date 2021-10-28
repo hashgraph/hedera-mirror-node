@@ -20,11 +20,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -41,7 +40,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.CONTRACT;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.CONTRACT;
     }
 }

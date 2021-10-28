@@ -5,7 +5,7 @@
       {
         "num": 3,
         "realm": 2,
-        "type": 4
+        "type": "TOPIC"
       }
     ],
     "balances": [],

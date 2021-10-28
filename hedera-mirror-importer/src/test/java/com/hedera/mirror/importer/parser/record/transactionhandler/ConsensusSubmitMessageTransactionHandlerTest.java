@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -40,7 +40,7 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
     }
 
     @Override
-    protected EntityTypeEnum getExpectedEntityIdType() {
-        return EntityTypeEnum.TOPIC;
+    protected EntityType getExpectedEntityIdType() {
+        return EntityType.TOPIC;
     }
 }

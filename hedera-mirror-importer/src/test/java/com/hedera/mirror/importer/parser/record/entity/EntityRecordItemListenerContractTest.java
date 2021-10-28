@@ -57,7 +57,7 @@ import com.hedera.mirror.importer.domain.ContractLog;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperation;
@@ -499,7 +499,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, Contract::getObtainerId)
                 .returns(null, Contract::getParentId)
                 .returns(Utility.convertSimpleKeyToHex(adminKey), Contract::getPublicKey)
-                .returns(EntityTypeEnum.CONTRACT.getId(), Contract::getType)
+                .returns(EntityType.CONTRACT, Contract::getType)
                 .extracting(Contract::getProxyAccountId)
                 .isEqualTo(EntityId.of(transactionBody.getProxyAccountID()))
                 .extracting(this::getEntity)

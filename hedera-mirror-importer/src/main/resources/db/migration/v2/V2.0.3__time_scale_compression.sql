@@ -88,8 +88,6 @@ alter table record_file
 
 -- entity skipped as update on compressed chunk is not allowed
 
--- t_entity_types skipped as not a hyper table
-
 -- t_transaction_results skipped as not a hyper table
 
 -- t_transaction_types skipped as not a hyper table

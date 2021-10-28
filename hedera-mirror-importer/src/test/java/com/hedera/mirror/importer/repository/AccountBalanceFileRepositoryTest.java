@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 
 class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
 
@@ -55,7 +55,7 @@ class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
                 .loadEnd(id)
                 .loadStart(id)
                 .name(id + ".csv")
-                .nodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT))
+                .nodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT))
                 .build();
     }
 }

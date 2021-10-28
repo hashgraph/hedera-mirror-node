@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,20 +36,20 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class AssessedCustomFeePgCopyTest extends IntegrationTest {
 
     private static final long CONSENSUS_TIMESTAMP = 10L;
-    private static final EntityId FEE_COLLECTOR_1 = EntityId.of("0.0.2000", EntityTypeEnum.ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_2 = EntityId.of("0.0.2001", EntityTypeEnum.ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_1 = EntityId.of("0.0.2000", EntityType.ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_2 = EntityId.of("0.0.2001", EntityType.ACCOUNT);
     private static final long FEE_PAYER_1 = 3000L;
-    private static final EntityId FEE_PAYER_1_ID = EntityId.of(FEE_PAYER_1, EntityTypeEnum.ACCOUNT);
+    private static final EntityId FEE_PAYER_1_ID = EntityId.of(FEE_PAYER_1, EntityType.ACCOUNT);
     private static final long FEE_PAYER_2 = 3001L;
-    private static final EntityId TOKEN_ID_1 = EntityId.of("0.0.5000", EntityTypeEnum.TOKEN);
-    private static final EntityId TOKEN_ID_2 = EntityId.of("0.0.5001", EntityTypeEnum.TOKEN);
+    private static final EntityId TOKEN_ID_1 = EntityId.of("0.0.5000", EntityType.TOKEN);
+    private static final EntityId TOKEN_ID_2 = EntityId.of("0.0.5001", EntityType.TOKEN);
 
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
