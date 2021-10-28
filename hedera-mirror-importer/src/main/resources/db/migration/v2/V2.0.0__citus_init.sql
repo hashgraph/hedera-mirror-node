@@ -304,14 +304,6 @@ create table if not exists schedule
 );
 comment on table schedule is 'Schedule entity entries';
 
--- t_entity_types
-create table if not exists t_entity_types
-(
-    id   integer not null,
-    name character varying(8)
-);
-comment on table t_entity_types is 'Network entity types';
-
 -- t_transaction_results
 create table if not exists t_transaction_results
 (
