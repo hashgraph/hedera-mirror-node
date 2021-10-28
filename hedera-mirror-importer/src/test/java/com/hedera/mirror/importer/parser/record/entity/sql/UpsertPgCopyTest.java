@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
@@ -119,6 +120,9 @@ class UpsertPgCopyTest extends IntegrationTest {
 
     @Resource
     private RecordParserProperties recordParserProperties;
+
+    @Resource
+    private DomainBuilder domainBuilder;
 
     @BeforeEach
     void beforeEach() {
@@ -649,8 +653,17 @@ class UpsertPgCopyTest extends IntegrationTest {
 
         long consensusTimestamp = 30L;
         EntityId ftId = EntityId.of("0.0.217", TOKEN);
-        TokenTransfer fungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -10, ftId, accountId, true);
-        TokenTransfer nonFungibleTokenTransfer = new TokenTransfer(consensusTimestamp, -2, tokenId1, accountId, true);
+        EntityId payerId = EntityId.of("0.0.2002", ACCOUNT);
+        TokenTransfer fungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(-10)
+                .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
+                .payerAccountId(payerId)
+                .tokenDissociate(true)).get();
+        TokenTransfer nonFungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
+                .amount(-2)
+                .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
+                .payerAccountId(payerId)
+                .tokenDissociate(true)).get();
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
 
         // when
@@ -664,10 +677,13 @@ class UpsertPgCopyTest extends IntegrationTest {
                 nft4,
                 nft5
         );
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(
-                getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp),
-                getNftTransfer(tokenId1, accountId, 3L, consensusTimestamp)
-        );
+
+        NftTransfer serial2Transfer = getNftTransfer(tokenId1, accountId, 2L, consensusTimestamp);
+        serial2Transfer.setPayerAccountId(payerId);
+        NftTransfer serial3Transfer = getNftTransfer(tokenId1, accountId, 3L, consensusTimestamp);
+        serial3Transfer.setPayerAccountId(payerId);
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(serial2Transfer, serial3Transfer);
+
         assertThat(tokenTransferRepository.findAll())
                 .usingElementComparatorIgnoringFields("tokenDissociate")
                 .containsOnly(fungibleTokenTransfer);
