@@ -4,8 +4,8 @@ hedera:
     rest:
       cache:
         entityId:
-          maxAge: 300
-          maxSize: 10000
+          maxAge: 1800
+          maxSize: 100000
       db:
         host: 127.0.0.1
         name: mirror_node

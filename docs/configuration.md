@@ -303,8 +303,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 | Name                                                     | Default                 | Description                                                                                    |
 | -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `hedera.mirror.rest.cache.entityId.maxAge`               | 300                     | The number of seconds until the entityId cache entry expires                                   |
-| `hedera.mirror.rest.cache.entityId.maxSize`              | 10000                   | The maximum number of entries in the entityId cache                                            |
+| `hedera.mirror.rest.cache.entityId.maxAge`               | 1800                    | The number of seconds until the entityId cache entry expires                                   |
+| `hedera.mirror.rest.cache.entityId.maxSize`              | 100000                  | The maximum number of entries in the entityId cache                                            |
 | `hedera.mirror.rest.db.host`                             | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
 | `hedera.mirror.rest.db.name`                             | mirror_node             | The name of the database                                                                       |
 | `hedera.mirror.rest.db.password`                         | mirror_api_pass         | The database password the processor uses to connect.                                           |
