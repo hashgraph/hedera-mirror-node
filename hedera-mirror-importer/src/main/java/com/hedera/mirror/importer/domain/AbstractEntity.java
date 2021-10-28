@@ -32,11 +32,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.converter.RangeToStringDeserializer;
 import com.hedera.mirror.importer.converter.RangeToStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
@@ -65,7 +63,6 @@ public abstract class AbstractEntity {
     @ToString.Exclude
     private byte[] key;
 
-    @JsonSerialize(using = NullableStringSerializer.class)
     private String memo;
 
     private Long num;
@@ -73,7 +70,6 @@ public abstract class AbstractEntity {
     @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
 
-    @JsonSerialize(using = NullableStringSerializer.class)
     private String publicKey;
 
     private Long realm;
@@ -101,7 +97,7 @@ public abstract class AbstractEntity {
     }
 
     public void setMemo(String memo) {
-        this.memo = StringUtils.isEmpty(memo) ? "" : Utility.sanitize(memo);
+        this.memo = Utility.sanitize(memo);
     }
 
     public EntityId toEntityId() {
@@ -117,7 +113,7 @@ public abstract class AbstractEntity {
         }
 
         public B memo(String memo) {
-            this.memo = StringUtils.isEmpty(memo) ? "" : Utility.sanitize(memo);
+            this.memo = Utility.sanitize(memo);
             return (B) this;
         }
     }

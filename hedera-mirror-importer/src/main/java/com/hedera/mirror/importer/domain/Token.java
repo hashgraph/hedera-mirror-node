@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.domain;
  */
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -36,7 +35,6 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
-import com.hedera.mirror.importer.converter.NullableStringSerializer;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -61,7 +59,6 @@ public class Token {
     private byte[] feeScheduleKey;
 
     @Column(name = "fee_schedule_key_ed25519_hex")
-    @JsonSerialize(using = NullableStringSerializer.class)
     private String feeScheduleKeyEd25519Hex;
 
     private Boolean freezeDefault;
@@ -69,7 +66,6 @@ public class Token {
     private byte[] freezeKey;
 
     @Column(name = "freeze_key_ed25519_hex")
-    @JsonSerialize(using = NullableStringSerializer.class)
     private String freezeKeyEd25519Hex;
 
     private Long initialSupply;
@@ -77,7 +73,6 @@ public class Token {
     private byte[] kycKey;
 
     @Column(name = "kyc_key_ed25519_hex")
-    @JsonSerialize(using = NullableStringSerializer.class)
     private String kycKeyEd25519Hex;
 
     private long maxSupply;
@@ -95,7 +90,6 @@ public class Token {
     private byte[] supplyKey;
 
     @Column(name = "supply_key_ed25519_hex")
-    @JsonSerialize(using = NullableStringSerializer.class)
     private String supplyKeyEd25519Hex;
 
     @Enumerated(EnumType.STRING)
@@ -116,7 +110,6 @@ public class Token {
     private byte[] wipeKey;
 
     @Column(name = "wipe_key_ed25519_hex")
-    @JsonSerialize(using = NullableStringSerializer.class)
     private String wipeKeyEd25519Hex;
 
     public static Token of(EntityId tokenId) {
