@@ -1357,6 +1357,7 @@ components:
         - TOKENFREEZE
         - TOKENGRANTKYC
         - TOKENMINT
+        - TOKENPAUSE
         - TOKENREVOKEKYC
         - TOKENUNFREEZE
         - TOKENUNPAUSE
