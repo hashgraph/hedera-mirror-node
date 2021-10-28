@@ -5,3 +5,5 @@ chart-repos:
   - timescaledb=https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
   - traefik=https://helm.traefik.io/traefik
 check-version-increment: false
+validate-maintainers: false
+

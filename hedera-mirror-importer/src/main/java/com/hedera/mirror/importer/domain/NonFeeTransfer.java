@@ -27,17 +27,20 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
 public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
 
     private Long amount;
@@ -45,6 +48,9 @@ public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
     @EmbeddedId
     @JsonUnwrapped
     private NonFeeTransfer.Id id;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
 
     @JsonIgnore
     @Override
@@ -57,7 +63,6 @@ public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Id implements Serializable {
-
         private static final long serialVersionUID = 1338656168003907379L;
 
         private long consensusTimestamp;

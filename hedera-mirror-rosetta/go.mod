@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/hashgraph/hedera-sdk-go/v2 v2.2.0
+	github.com/hashgraph/hedera-sdk-go/v2 v2.3.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/lib/pq v1.10.3
 	github.com/onrik/gorm-logrus v0.3.0
@@ -97,7 +97,7 @@ require (
 	golang.org/x/sys v0.0.0-20210906170528-6f6e22806c34 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83 // indirect
-	google.golang.org/grpc v1.40.0 // indirect
+	google.golang.org/grpc v1.41.0 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

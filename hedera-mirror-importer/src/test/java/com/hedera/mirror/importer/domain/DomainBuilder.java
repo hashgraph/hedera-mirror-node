@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.CONTRACT;
 import static com.hedera.mirror.importer.domain.EntityTypeEnum.FILE;
+import static com.hedera.mirror.importer.domain.EntityTypeEnum.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -62,13 +63,13 @@ public class DomainBuilder {
 
     @Autowired
     public DomainBuilder(Collection<CrudRepository<?, ?>> crudRepositories) {
-        this.repositories = new HashMap<>();
+        repositories = new HashMap<>();
 
         for (CrudRepository<?, ?> crudRepository : crudRepositories) {
             try {
                 Class<?> domainClass = GenericTypeResolver.resolveTypeArguments(crudRepository.getClass(),
                         CrudRepository.class)[0];
-                this.repositories.put(domainClass, crudRepository);
+                repositories.put(domainClass, crudRepository);
             } catch (Exception e) {
                 log.warn("Unable to map repository {} to domain class", crudRepository.getClass());
             }
@@ -108,6 +109,7 @@ public class DomainBuilder {
                 .contractId(entityId(CONTRACT))
                 .data(bytes(128))
                 .index((int) id())
+                .payerAccountId(entityId(ACCOUNT))
                 .topic0("0x00")
                 .topic1("0x01")
                 .topic2("0x02")
@@ -127,7 +129,8 @@ public class DomainBuilder {
                 .functionParameters(bytes(64))
                 .functionResult(bytes(128))
                 .gasLimit(200L)
-                .gasUsed(100L);
+                .gasUsed(100L)
+                .payerAccountId(entityId(ACCOUNT));
         return new DomainPersister<>(getRepository(ContractResult.class), builder, builder::build);
     }
 
@@ -156,6 +159,35 @@ public class DomainBuilder {
                 .type(ACCOUNT);
 
         return new DomainPersister<>(getRepository(Entity.class), builder, builder::build);
+    }
+
+    public DomainPersister<NftTransfer, NftTransfer.NftTransferBuilder> nftTransfer() {
+        NftTransfer.NftTransferBuilder builder = NftTransfer.builder()
+                .id(new NftTransferId(timestamp(), 1L, entityId(TOKEN)))
+                .receiverAccountId(entityId(ACCOUNT))
+                .payerAccountId(entityId(ACCOUNT))
+                .senderAccountId(entityId(ACCOUNT));
+
+        return new DomainPersister<>(getRepository(NftTransfer.class), builder, builder::build);
+    }
+
+    public DomainPersister<NonFeeTransfer, NonFeeTransfer.NonFeeTransferBuilder> nonFeeTransfer() {
+        NonFeeTransfer.NonFeeTransferBuilder builder = NonFeeTransfer.builder()
+                .amount(100L)
+                .id(new NonFeeTransfer.Id(timestamp(), entityId(ACCOUNT)))
+                .payerAccountId(entityId(ACCOUNT));
+
+        return new DomainPersister<>(getRepository(NonFeeTransfer.class), builder, builder::build);
+    }
+
+    public DomainPersister<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
+        TokenTransfer.TokenTransferBuilder builder = TokenTransfer.builder()
+                .amount(100L)
+                .id(new TokenTransfer.Id(timestamp(), entityId(TOKEN), entityId(ACCOUNT)))
+                .payerAccountId(entityId(ACCOUNT))
+                .tokenDissociate(false);
+
+        return new DomainPersister<>(getRepository(TokenTransfer.class), builder, builder::build);
     }
 
     // Helper methods
