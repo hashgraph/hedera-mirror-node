@@ -131,9 +131,6 @@ class UpsertPgCopyTest extends IntegrationTest {
     @Resource
     private RecordParserProperties recordParserProperties;
 
-    @Resource
-    private DomainBuilder domainBuilder;
-
     @BeforeEach
     void beforeEach() {
         contractPgCopy = new UpsertPgCopy<>(Contract.class, meterRegistry, recordParserProperties,

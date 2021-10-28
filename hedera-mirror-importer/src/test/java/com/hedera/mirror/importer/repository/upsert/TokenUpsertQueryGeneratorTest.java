@@ -59,12 +59,10 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     protected String getUpdateQuery() {
         return "update token set " +
                 "  fee_schedule_key = coalesce(token_temp.fee_schedule_key, token.fee_schedule_key), " +
-                "  fee_schedule_key_ed25519_hex = coalesce(token_temp.fee_schedule_key_ed25519_hex, token" +
-                ".fee_schedule_key_ed25519_hex), " +
-                "  freeze_key = coalesce(token_temp.freeze_key, token.freeze_key)," +
-                "  freeze_key_ed25519_hex = coalesce(token_temp.freeze_key_ed25519_hex, token.freeze_key_ed25519_hex)" +
-                ", " +
-                "  kyc_key = coalesce(token_temp.kyc_key, token.kyc_key)," +
+                "  fee_schedule_key_ed25519_hex = coalesce(token_temp.fee_schedule_key_ed25519_hex, " +
+                "  token.fee_schedule_key_ed25519_hex), freeze_key = coalesce(token_temp.freeze_key, " +
+                "  token.freeze_key), freeze_key_ed25519_hex = coalesce(token_temp.freeze_key_ed25519_hex, " +
+                "  token.freeze_key_ed25519_hex), kyc_key = coalesce(token_temp.kyc_key, token.kyc_key)," +
                 "  kyc_key_ed25519_hex = coalesce(token_temp.kyc_key_ed25519_hex, token.kyc_key_ed25519_hex), " +
                 "  modified_timestamp = coalesce(token_temp.modified_timestamp, token.modified_timestamp)," +
                 "  name = coalesce(token_temp.name, token.name), " +
@@ -72,8 +70,7 @@ class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "  pause_status = coalesce(token_temp.pause_status, token.pause_status)," +
                 "  supply_key = coalesce(token_temp.supply_key, token.supply_key), " +
                 "  supply_key_ed25519_hex = coalesce(token_temp.supply_key_ed25519_hex, token.supply_key_ed25519_hex)" +
-                ", " +
-                "  symbol = coalesce(token_temp.symbol, token.symbol), " +
+                "  , symbol = coalesce(token_temp.symbol, token.symbol), " +
                 "  total_supply = " +
                 "     case when token_temp.total_supply >= 0 then token_temp.total_supply" +
                 "          else token.total_supply + coalesce(token_temp.total_supply, 0)" +
