@@ -163,6 +163,9 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.BALANCE:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
     case constants.filterKeys.CONTRACT_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -623,15 +626,6 @@ const randomString = (length) => {
 };
 
 /**
- * Returns the limit on how many result entries should be in the API
- * @param {String} type of API (e.g. transactions, balances, etc.). Currently unused.
- * @return {Number} limit Max # entries to be returned.
- */
-const returnEntriesLimit = (type) => {
-  return config.maxLimit;
-};
-
-/**
  * Converts the byte array returned by SQL queries into hex string
  * @param {Array} byteArray Array of bytes to be converted to hex string
  * @param {boolean} addPrefix Whether to add the '0x' prefix to the hex string
@@ -927,11 +921,30 @@ const ipMask = (ip) => {
  */
 const getPoolClass = (mock = false) => {
   const Pool = mock ? require('./__tests__/mockpool') : require('pg').Pool;
-  Pool.prototype.queryQuietly = async function (query, ...params) {
+  Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
+    let client;
+    let result;
+    params = Array.isArray(params) ? params : [params];
     try {
-      return await this.query(query, params);
+      if (!preQueryHint) {
+        result = await this.query(query, params);
+      } else {
+        client = await this.connect();
+        await client.query(`begin; ${preQueryHint}`);
+        result = await client.query(query, params);
+        await client.query('commit');
+      }
+
+      return result;
     } catch (err) {
+      if (client !== undefined) {
+        await client.query('rollback');
+      }
       throw new DbError(err.message);
+    } finally {
+      if (client !== undefined) {
+        client.release();
+      }
     }
   };
 
@@ -973,28 +986,27 @@ module.exports = {
   isValidTimestampParam,
   isValidTransactionType,
   loadPgRange,
-  parseCreditDebitParams,
-  parseLimitAndOrderParams,
-  parseBalanceQueryParam,
-  parsePublicKey,
-  parsePublicKeyQueryParam,
-  parseAccountIdQueryParam,
-  parseTimestampQueryParam,
-  parseParams,
-  parseResultParams,
-  parseBooleanValue,
-  parseTimestampParam,
   nsToSecNs,
   nsToSecNsWithHyphen,
+  opsMap,
+  parseAccountIdQueryParam,
+  parseBalanceQueryParam,
+  parseBooleanValue,
+  parseCreditDebitParams,
+  parseLimitAndOrderParams,
+  parseParams,
+  parsePublicKey,
+  parsePublicKeyQueryParam,
+  parseResultParams,
+  parseTimestampParam,
+  parseTimestampQueryParam,
+  parseTokenBalances,
   randomString,
-  returnEntriesLimit,
   secNsToNs,
   secNsToSeconds,
   toHexString,
   TRANSACTION_RESULT_SUCCESS,
   validateReq,
-  parseTokenBalances,
-  opsMap,
 };
 
 if (isTestEnv()) {
