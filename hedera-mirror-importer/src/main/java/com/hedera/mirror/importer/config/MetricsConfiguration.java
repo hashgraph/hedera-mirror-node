@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.config;
 
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.db.DatabaseTableMetrics;
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics;
@@ -37,23 +36,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.support.management.micrometer.MicrometerMetricsCaptor;
 
 import com.hedera.mirror.importer.db.DBProperties;
 
 @Log4j2
 @Configuration
 @RequiredArgsConstructor
-public class MetricsConfiguration {
+class MetricsConfiguration {
 
     private final DataSource dataSource;
     private final DataSourceProperties dataSourceProperties;
-
-    // Spring Integration channel and handler metrics
-    @Bean(MicrometerMetricsCaptor.MICROMETER_CAPTOR_NAME)
-    MicrometerMetricsCaptor micrometerMetricsCaptor(MeterRegistry meterRegistry) {
-        return new MicrometerMetricsCaptor(meterRegistry);
-    }
 
     @Bean
     MeterBinder processMemoryMetrics() {

@@ -23,7 +23,8 @@ package domain
 const tableNameNftTransfer = "nft_transfer"
 
 type NftTransfer struct {
-	ConsensusTimestamp int64     `json:"consensus_timestamp"`
+	ConsensusTimestamp int64 `json:"consensus_timestamp"`
+	PayerAccountId     EntityId
 	ReceiverAccountId  *EntityId `json:"receiver_account_id"`
 	SenderAccountId    *EntityId `json:"sender_account_id"`
 	SerialNumber       int64     `json:"serial_number"`

@@ -154,7 +154,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                     entity.setRealm(rs.getLong("realm"));
                     entity.setShard(rs.getLong("shard"));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
-                    entity.setType(rs.getInt("type"));
+                    entity.setType(EntityTypeEnum.fromId(rs.getInt("type")));
 
                     return entity;
                 }));
@@ -388,7 +388,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         entity.setNum(id);
         entity.setRealm(0L);
         entity.setShard(0L);
-        entity.setType(entityType.getId());
+        entity.setType(entityType);
         entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityTypeEnum.ACCOUNT));
         entity.setProxyAccountId(EntityId.of("4.5.6", EntityTypeEnum.ACCOUNT));
         return entity;
@@ -417,7 +417,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                         entity.getShard(),
                         entity.getPublicKey(),
                         entity.getExpirationTimestamp(),
-                        entity.getType(),
+                        entity.getType().getId(),
                         entity.getId(),
                         entity.getKey(),
                         entity.getMemo(),

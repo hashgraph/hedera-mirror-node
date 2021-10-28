@@ -499,7 +499,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, Contract::getObtainerId)
                 .returns(null, Contract::getParentId)
                 .returns(Utility.convertSimpleKeyToHex(adminKey), Contract::getPublicKey)
-                .returns(EntityTypeEnum.CONTRACT.getId(), Contract::getType)
+                .returns(EntityTypeEnum.CONTRACT, Contract::getType)
                 .extracting(Contract::getProxyAccountId)
                 .isEqualTo(EntityId.of(transactionBody.getProxyAccountID()))
                 .extracting(this::getEntity)

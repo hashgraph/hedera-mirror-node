@@ -36,6 +36,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.AbstractEntity;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -100,8 +101,10 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transaction.setEntityId(entity.toEntityId());
         transactionHandler.updateTransaction(transaction, recordItem);
 
+        TransactionBody body = recordItem.getTransactionBody();
+        var payerAccount = EntityId.of(body.getTransactionID().getAccountID()).toEntity().getId();
         Mockito.verify(nftRepository).updateTreasury(tokenID.getTokenNum(), previousAccountId.getAccountNum(),
-                newAccountId.getAccountNum(), consensusTimestamp);
+                newAccountId.getAccountNum(), consensusTimestamp, payerAccount);
     }
 
     @Test

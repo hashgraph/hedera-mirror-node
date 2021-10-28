@@ -114,7 +114,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .returns("".getBytes(), from(Entity::getSubmitKey))
                 .returns("", from(Entity::getMemo))
                 .returns(false, from(Entity::getDeleted))
-                .returns(EntityTypeEnum.TOPIC.getId(), from(Entity::getType));
+                .returns(EntityTypeEnum.TOPIC, from(Entity::getType));
     }
 
     // https://github.com/hashgraph/hedera-mirror-node/issues/501
@@ -137,7 +137,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .returns("".getBytes(), from(Entity::getSubmitKey))
                 .returns("", from(Entity::getMemo))
                 .returns(false, from(Entity::getDeleted))
-                .returns(EntityTypeEnum.TOPIC.getId(), from(Entity::getType))
+                .returns(EntityTypeEnum.TOPIC, from(Entity::getType))
                 .returns(autoRenewAccountId, e -> e.getAutoRenewAccountId().getId());
     }
 
@@ -654,7 +654,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             topic.setSubmitKey(submitKey.toByteArray());
         }
         topic.setMemo(memo);
-        topic.setType(EntityTypeEnum.TOPIC.getId());
+        topic.setType(EntityTypeEnum.TOPIC);
         return topic;
     }
 

@@ -33,8 +33,6 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const TransactionTypeService = require('./service/transactionTypeService');
 
-const ENTITY_TYPE_ACCOUNT = 1;
-const ENTITY_TYPE_FILE = 3;
 const TRANSACTION_RESULT_SUCCESS = 22;
 
 const opsMap = {
@@ -972,8 +970,6 @@ module.exports = {
   encodeBinary,
   encodeUtf8,
   encodeKey,
-  ENTITY_TYPE_ACCOUNT,
-  ENTITY_TYPE_FILE,
   filterValidityChecks,
   getNullableNumber,
   getPaginationLink,

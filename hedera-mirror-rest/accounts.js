@@ -73,7 +73,13 @@ const getAccountQuery = (
   limitAndOrderQuery = {query: '', params: [], order: ''},
   includeBalance = true
 ) => {
-  const entityWhereFilter = ['type < 3', entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
+  const entityWhereFilter = [
+    `e.type in ('${constants.entityTypes.ACCOUNT}', '${constants.entityTypes.CONTRACT}')`,
+    entityAccountQuery.query,
+    pubKeyQuery.query,
+  ]
+    .filter((x) => !!x)
+    .join(' and ');
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
   const entityQuery = `select
       id,

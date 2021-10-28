@@ -7,6 +7,7 @@
 create type token_pause_status as enum ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
 create type token_supply_type as enum ('INFINITE', 'FINITE');
 create type token_type as enum ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
+create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 
 -- assessed_custom_fee
 create table if not exists assessed_custom_fee
@@ -15,6 +16,7 @@ create table if not exists assessed_custom_fee
     collector_account_id        bigint   not null,
     consensus_timestamp         bigint   not null,
     effective_payer_account_ids bigint[] not null,
+    payer_account_id            bigint   not null,
     token_id                    bigint
 );
 comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactions';
@@ -79,23 +81,23 @@ comment on table address_book_service_endpoint is 'Network address book node ser
 -- contract
 create table if not exists contract
 (
-    auto_renew_period    bigint             null,
-    created_timestamp    bigint             null,
-    deleted              boolean            null,
-    expiration_timestamp bigint             null,
-    file_id              bigint             null,
-    id                   bigint             not null,
-    key                  bytea              null,
-    memo                 text    default '' not null,
-    num                  bigint             not null,
-    obtainer_id          bigint             null,
-    parent_id            bigint             null,
-    proxy_account_id     bigint             null,
-    public_key           character varying  null,
-    realm                bigint             not null,
-    shard                bigint             not null,
-    timestamp_range      int8range          not null,
-    type                 integer default 2  not null
+    auto_renew_period    bigint                         null,
+    created_timestamp    bigint                         null,
+    deleted              boolean                        null,
+    expiration_timestamp bigint                         null,
+    file_id              bigint                         null,
+    id                   bigint                         not null,
+    key                  bytea                          null,
+    memo                 text       default ''          not null,
+    num                  bigint                         not null,
+    obtainer_id          bigint                         null,
+    parent_id            bigint                         null,
+    proxy_account_id     bigint                         null,
+    public_key           character  varying             null,
+    realm                bigint                         not null,
+    shard                bigint                         not null,
+    timestamp_range      int8range                      not null,
+    type                 entity_type default 'CONTRACT' not null
 );
 comment on table contract is 'Contract entity';
 
@@ -114,6 +116,7 @@ create table if not exists contract_log
     contract_id         bigint      not null,
     data                bytea       not null,
     index               int         not null,
+    payer_account_id    bigint      not null,
     topic0              varchar(64) null,
     topic1              varchar(64) null,
     topic2              varchar(64) null,
@@ -134,7 +137,8 @@ create table if not exists contract_result
     function_parameters  bytea        not null,
     function_result      bytea        null,
     gas_limit            bigint       not null,
-    gas_used             bigint       not null
+    gas_used             bigint       not null,
+    payer_account_id     bigint       not null
 );
 comment on table contract_result is 'Crypto contract execution results';
 
@@ -143,7 +147,8 @@ create table if not exists crypto_transfer
 (
     entity_id           bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    payer_account_id    bigint not null
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
@@ -184,7 +189,7 @@ create table if not exists entity
     shard                            bigint            not null,
     submit_key                       bytea             null,
     timestamp_range                  int8range         not null,
-    type                             integer           not null
+    type                             entity_type       not null
 );
 comment on table entity is 'Network entity with state';
 
@@ -246,6 +251,7 @@ comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 create table if not exists nft_transfer
 (
     consensus_timestamp bigint not null,
+    payer_account_id    bigint not null,
     receiver_account_id bigint,
     sender_account_id   bigint,
     serial_number       bigint not null,
@@ -258,7 +264,8 @@ create table if not exists non_fee_transfer
 (
     entity_id           bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    payer_account_id    bigint not null
 );
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
@@ -307,14 +314,6 @@ create table if not exists transaction_signature
 );
 comment on table transaction_signature is 'Transaction signatories';
 
--- t_entity_types
-create table if not exists t_entity_types
-(
-    id   integer not null,
-    name character varying(8)
-);
-comment on table t_entity_types is 'Network entity types';
-
 -- t_transaction_results
 create table if not exists t_transaction_results
 (
@@ -328,7 +327,7 @@ create table if not exists t_transaction_types
 (
     proto_id    integer not null,
     name        character varying(30),
-    entity_type integer null
+    entity_type entity_type null
 );
 comment on table t_transaction_types is 'Transaction types';
 
@@ -393,7 +392,8 @@ create table if not exists token_transfer
     token_id            bigint not null,
     account_id          bigint not null,
     consensus_timestamp bigint not null,
-    amount              bigint not null
+    amount              bigint not null,
+    payer_account_id    bigint not null
 );
 comment on table token_transfer is 'Crypto account token transfers';
 

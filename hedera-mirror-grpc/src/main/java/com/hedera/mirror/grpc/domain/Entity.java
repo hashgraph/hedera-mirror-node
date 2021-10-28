@@ -21,12 +21,16 @@ package com.hedera.mirror.grpc.domain;
  */
 
 import com.google.common.collect.Range;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 @Builder
@@ -37,6 +41,10 @@ import org.hibernate.annotations.TypeDef;
 @TypeDef(
         defaultForType = Range.class,
         typeClass = PostgreSQLGuavaRangeType.class
+)
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
 )
 public class Entity {
     @Id
@@ -50,5 +58,7 @@ public class Entity {
 
     private Range<Long> timestampRange;
 
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
     private EntityType type;
 }

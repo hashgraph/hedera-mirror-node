@@ -29,7 +29,9 @@ import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Transient;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
@@ -38,21 +40,12 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.converter.TokenIdConverter;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
 public class TokenTransfer implements Persistable<TokenTransfer.Id> {
-
-    public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
-        this(consensusTimestamp, amount, tokenId, accountId, false);
-    }
-
-    public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId,
-            boolean tokenDissociate) {
-        id = new TokenTransfer.Id(consensusTimestamp, tokenId, accountId);
-        this.amount = amount;
-        this.tokenDissociate = tokenDissociate;
-    }
 
     @EmbeddedId
     @JsonUnwrapped
@@ -60,9 +53,23 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
 
     private long amount;
 
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
+
     @JsonIgnore
     @Transient
     private boolean tokenDissociate;
+
+    public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
+        this(consensusTimestamp, amount, tokenId, accountId, false);
+    }
+
+    public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId,
+                         boolean tokenDissociate) {
+        id = new TokenTransfer.Id(consensusTimestamp, tokenId, accountId);
+        this.amount = amount;
+        this.tokenDissociate = tokenDissociate;
+    }
 
     @JsonIgnore
     @Override

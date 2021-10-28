@@ -97,7 +97,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         EntityId tokenId = nft1.getId().getTokenId();
         EntityId previousAccountId = nft1.getAccountId();
         nftRepository
-                .updateTreasury(tokenId.getId(), previousAccountId.getId(), newAccountId.getId(), consensusTimestamp);
+                .updateTreasury(tokenId.getId(), previousAccountId.getId(), newAccountId.getId(), consensusTimestamp,
+                        EntityId.of("0.0.200", EntityTypeEnum.ACCOUNT).getId());
 
         assertAccountUpdated(nft1, newAccountId);
         assertAccountUpdated(nft2, newAccountId);

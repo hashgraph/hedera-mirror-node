@@ -20,6 +20,10 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -36,4 +40,12 @@ public enum EntityTypeEnum {
     SCHEDULE(6);
 
     private final int id;
+
+    private static final Map<Integer, EntityTypeEnum> ID_MAP = Arrays.stream(values())
+            .collect(Collectors.toUnmodifiableMap(EntityTypeEnum::getId, Function
+                    .identity()));
+
+    public static EntityTypeEnum fromId(int id) {
+        return ID_MAP.getOrDefault(id, UNKNOWN);
+    }
 }

@@ -170,7 +170,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .extracting(AccountID::getShardNum, AccountID::getRealmNum, AccountID::getAccountNum)
                 .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
         assertThat(dbEntity.getType())
-                .isEqualTo(EntityTypeEnum.ACCOUNT.getId());
+                .isEqualTo(EntityTypeEnum.ACCOUNT);
     }
 
     protected final void assertFile(FileID fileId, Entity dbEntity) {
@@ -179,7 +179,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .extracting(FileID::getShardNum, FileID::getRealmNum, FileID::getFileNum)
                 .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
         assertThat(dbEntity.getType())
-                .isEqualTo(EntityTypeEnum.FILE.getId());
+                .isEqualTo(EntityTypeEnum.FILE);
     }
 
     protected final void assertContract(ContractID contractId, Contract dbEntity) {
@@ -188,7 +188,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
                 .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
         assertThat(dbEntity.getType())
-                .isEqualTo(EntityTypeEnum.CONTRACT.getId());
+                .isEqualTo(EntityTypeEnum.CONTRACT);
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
