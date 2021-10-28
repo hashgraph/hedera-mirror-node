@@ -1,6 +1,6 @@
 embedded:
   postgresql:
-    docker-image: citusdata/citus:10.2.2-alpine
+    docker-image: citusdata/citus:10.2.1-alpine
 spring:
   flyway:
     baselineVersion: 1.999.999

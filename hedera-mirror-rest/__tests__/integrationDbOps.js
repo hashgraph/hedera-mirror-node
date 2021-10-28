@@ -55,7 +55,7 @@ const v1SchemaConfigs = {
 const v2SchemaConfigs = {
   docker: {
     imageName: 'citusdata/citus',
-    tagName: '10.2.2-alpine',
+    tagName: '10.2.1-alpine',
   },
   flyway: {
     baselineVersion: '1.999.999',
