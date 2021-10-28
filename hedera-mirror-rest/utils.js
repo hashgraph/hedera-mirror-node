@@ -24,6 +24,8 @@ const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
 const math = require('mathjs');
+const util = require('util');
+
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
@@ -620,13 +622,11 @@ const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
 };
 
+const randomBytesAsync = util.promisify(crypto.randomBytes);
+
 const randomString = async (length) => {
-  return new Promise((resolve, reject) => {
-    crypto.randomBytes(Math.max(2, length) / 2, (err, data) => {
-      if (err) reject(err);
-      resolve(data.toString('hex'));
-    });
-  });
+  const bytes = await randomBytesAsync(Math.max(2, length) / 2);
+  return bytes.toString('hex');
 };
 
 /**

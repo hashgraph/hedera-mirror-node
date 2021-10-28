@@ -109,13 +109,15 @@ const nullEntityId = of(null, null, null);
  * @return {EntityId}
  */
 const checkNullId = (id, isNullable, error = () => defaultNullEntityIdError) => {
+  let entityId;
   if (_.isNil(id)) {
-    if (isNullable) {
-      return nullEntityId;
+    entityId = nullEntityId;
+    if (!isNullable) {
+      throw error();
     }
-
-    throw error();
   }
+
+  return entityId;
 };
 
 /**
@@ -150,7 +152,7 @@ const fromEncodedIdMemoized = mem(
   },
   {
     ...entityIdCacheOptions,
-    cacheKey: (arguments_) => `${arguments_[0]}`, // use the id string as the cache key
+    cacheKey: (args) => `${args[0]}`, // use the id string as the cache key
   }
 );
 

@@ -54,15 +54,15 @@ afterEach(() => {
   cleanup();
 });
 
-const assertCustomConfig = (config, custom) => {
+const assertCustomConfig = (actual, customConfig) => {
   // fields custom doesn't override
-  expect(config.includeHostInLink).toBeFalsy();
-  expect(config.log.level).toBe('debug');
+  expect(actual.includeHostInLink).toBeFalsy();
+  expect(actual.log.level).toBe('debug');
 
   // fields overridden by custom
-  expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-  expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-  expect(config.response.compression).toBe(custom.hedera.mirror.rest.response.compression);
+  expect(actual.shard).toBe(customConfig.hedera.mirror.rest.shard);
+  expect(actual.maxLimit).toBe(customConfig.hedera.mirror.rest.maxLimit);
+  expect(actual.response.compression).toBe(customConfig.hedera.mirror.rest.response.compression);
 };
 
 describe('Load YAML configuration:', () => {
