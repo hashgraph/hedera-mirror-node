@@ -121,8 +121,8 @@ const checkNullId = (id, isNullable, error = () => defaultNullEntityIdError) => 
 };
 
 /**
- * The memorized fromEncodedId. Note the cache key is the id string, so that only one EntityId object will be cached
- * for the same id no matter it's created from the BigInt id or the encoded ID string.
+ * The memoized fromEncodedId. Note the cache key is the id string, so that only one EntityId object will be cached
+ * for the same id no matter it's created from the BigInt id or the encoded ID string by fromString.
  */
 const fromEncodedIdMemoized = mem(
   /**
@@ -168,7 +168,7 @@ const fromEncodedId = (id, isNullable = false) => {
 };
 
 /**
- * The memorized fromString.
+ * The memoized fromString.
  */
 const fromStringMemoized = mem(
   /**
