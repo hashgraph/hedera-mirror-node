@@ -30,11 +30,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.importer.domain.AddressBookEntry;
+import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 
 class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
