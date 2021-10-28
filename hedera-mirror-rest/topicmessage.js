@@ -101,7 +101,7 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
     throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
   }
 
-  if (rows[0].type !== 'TOPIC') {
+  if (rows[0].type !== constants.entityTypes.TOPIC) {
     throw new InvalidArgumentError(`${origTopicIdStr} is not a topic id`);
   }
 };
