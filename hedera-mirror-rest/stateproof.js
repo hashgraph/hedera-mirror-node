@@ -51,7 +51,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
     logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
   }
 
-  const {rows} = await pool.queryQuietly(sqlQuery, ...sqlParams);
+  const {rows} = await pool.queryQuietly(sqlQuery, sqlParams);
   if (_.isEmpty(rows)) {
     throw new NotFoundError('Transaction not found');
   } else if (rows.length > 1) {

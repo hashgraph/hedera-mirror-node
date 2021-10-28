@@ -23,18 +23,19 @@ package com.hedera.mirror.importer.repository;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.EntityType;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 
 class FileDataRepositoryTest extends AbstractRepositoryTest {
 
-    private static final EntityId ADDRESS_BOOK_101 = EntityId.of("0.0.101", EntityTypeEnum.FILE);
-    private static final EntityId ADDRESS_BOOK_102 = EntityId.of("0.0.102", EntityTypeEnum.FILE);
+    private static final EntityId ADDRESS_BOOK_101 = EntityId.of("0.0.101", EntityType.FILE);
+    private static final EntityId ADDRESS_BOOK_102 = EntityId.of("0.0.102", EntityType.FILE);
 
     @Resource
     private FileDataRepository fileDataRepository;
@@ -130,7 +131,7 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(consensusTimestamp);
         fileData.setFileData("some file data".getBytes());
-        fileData.setEntityId(EntityId.of(0, 0, fileId, EntityTypeEnum.FILE));
+        fileData.setEntityId(EntityId.of(0, 0, fileId, EntityType.FILE));
         fileData.setTransactionType(transactionType);
         return fileData;
     }

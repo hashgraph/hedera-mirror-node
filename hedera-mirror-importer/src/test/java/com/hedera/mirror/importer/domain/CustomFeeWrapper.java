@@ -42,11 +42,11 @@ public class CustomFeeWrapper {
         customFee.setAmountDenominator(amountDenominator);
 
         if (collectorAccountId != null) {
-            customFee.setCollectorAccountId(EntityIdEndec.decode(collectorAccountId, EntityTypeEnum.ACCOUNT));
+            customFee.setCollectorAccountId(EntityIdEndec.decode(collectorAccountId, EntityType.ACCOUNT));
         }
 
         if (denominatingTokenId != null) {
-            customFee.setDenominatingTokenId(EntityIdEndec.decode(denominatingTokenId, EntityTypeEnum.TOKEN));
+            customFee.setDenominatingTokenId(EntityIdEndec.decode(denominatingTokenId, EntityType.TOKEN));
         }
 
         customFee.setMaximumAmount(maximumAmount);
@@ -54,6 +54,6 @@ public class CustomFeeWrapper {
         customFee.setNetOfTransfers(netOfTransfers);
         customFee.setRoyaltyDenominator(royaltyDenominator);
         customFee.setRoyaltyNumerator(royaltyNumerator);
-        customFee.setId(new CustomFee.Id(createdTimestamp, EntityIdEndec.decode(tokenId, EntityTypeEnum.TOKEN)));
+        customFee.setId(new CustomFee.Id(createdTimestamp, EntityIdEndec.decode(tokenId, EntityType.TOKEN)));
     }
 }

@@ -25,6 +25,7 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  BALANCE: 'balance',
   CONTRACTID: 'contractid',
   CONTRACT_ID: 'contract.id',
   CREDIT_TYPE: 'type',
@@ -52,6 +53,15 @@ const entityColumns = {
   ENTITY_REALM: 'realm',
   ENTITY_SHARD: 'shard',
   PUBLIC_KEY: 'public_key',
+};
+
+const entityTypes = {
+  ACCOUNT: 'ACCOUNT',
+  CONTRACT: 'CONTRACT',
+  FILE: 'FILE',
+  TOKEN: 'TOKEN',
+  TOPIC: 'TOPIC',
+  SCHEDULE: 'SCHEDULE',
 };
 
 const transactionColumns = {
@@ -116,6 +126,8 @@ const tokenTypeFilter = {
   NON_FUNGIBLE_UNIQUE: 'non_fungible_unique',
 };
 
+const zeroRandomPageCostQueryHint = 'set local random_page_cost = 0';
+
 class StatusCode {
   constructor(code, message) {
     this.code = code;
@@ -149,6 +161,7 @@ module.exports = {
   defaultBucketNames,
   defaultCloudProviderEndpoints,
   entityColumns,
+  entityTypes,
   filterKeys,
   httpStatusCodes,
   networks,
@@ -159,4 +172,5 @@ module.exports = {
   tokenTypeFilter,
   transactionColumns,
   transactionResultFilter,
+  zeroRandomPageCostQueryHint,
 };

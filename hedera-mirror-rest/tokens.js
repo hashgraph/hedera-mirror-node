@@ -484,7 +484,7 @@ const getTokens = async (pgSqlQuery, pgSqlParams) => {
     logger.trace(`getTokens query: ${pgSqlQuery}, params: ${pgSqlParams}`);
   }
 
-  const {rows} = await pool.queryQuietly(pgSqlQuery, ...pgSqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
   logger.debug(`getTokens returning ${rows.length} entries`);
   return rows;
 };
@@ -527,7 +527,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
     switch (filter.key) {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         joinEntityClause = `join entity e
-          on e.type = ${utils.ENTITY_TYPE_ACCOUNT}
+          on e.type = '${constants.entityTypes.ACCOUNT}'
           and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
           and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
         break;
@@ -591,7 +591,7 @@ const getTokenBalances = async (req, res) => {
     logger.trace(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await pool.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, params);
   const response = {
     timestamp: rows.length > 0 ? utils.nsToSecNs(rows[0].consensus_timestamp) : null,
     balances: rows.map((row) => formatTokenBalanceRow(row)),
@@ -710,7 +710,7 @@ const getNftTokensRequest = async (req, res) => {
     logger.trace(`getNftTokens query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await pool.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, params);
   const response = {
     nfts: [],
     links: {
@@ -766,7 +766,7 @@ const getNftTokenInfoRequest = async (req, res) => {
     logger.trace(`getNftTokenInfo query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await pool.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
@@ -781,7 +781,7 @@ const getTokenInfo = async (query, params) => {
     logger.trace(`getTokenInfo query: ${query}, params: ${params}`);
   }
 
-  const {rows} = await pool.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
@@ -950,7 +950,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
     logger.trace(`getNftTransferHistory query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await pool.queryQuietly(query, ...params);
+  const {rows} = await pool.queryQuietly(query, params);
   const response = {
     transactions: [],
     links: {

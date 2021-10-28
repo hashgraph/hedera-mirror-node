@@ -32,7 +32,7 @@ abstract class AbstractEntityConverterTest {
     @Test
     void testToDatabaseColumn() {
         assertThat(converter.convertToDatabaseColumn(null)).isNull();
-        assertThat(converter.convertToDatabaseColumn(EntityId.of(10L, 10L, 10L, converter.getEntityTypeEnum())))
+        assertThat(converter.convertToDatabaseColumn(EntityId.of(10L, 10L, 10L, converter.getEntityType())))
                 .isEqualTo(2814792716779530L);
     }
 
@@ -40,6 +40,6 @@ abstract class AbstractEntityConverterTest {
     void testToEntityAttribute() {
         assertThat(converter.convertToEntityAttribute(null)).isNull();
         assertThat(converter.convertToEntityAttribute(9223372036854775807L))
-                .isEqualTo(EntityId.of(32767L, 65535L, 4294967295L, converter.getEntityTypeEnum()));
+                .isEqualTo(EntityId.of(32767L, 65535L, 4294967295L, converter.getEntityType()));
     }
 }

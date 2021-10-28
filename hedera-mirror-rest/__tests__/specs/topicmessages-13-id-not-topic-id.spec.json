@@ -4,7 +4,7 @@
     "accounts": [
       {
         "num": 7,
-        "type": 3
+        "type": "FILE"
       }
     ],
     "balances": [],

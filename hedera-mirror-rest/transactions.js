@@ -576,7 +576,7 @@ const getTransactions = async (req, res) => {
   }
 
   // Execute query
-  const {rows, sqlQuery} = await pool.queryQuietly(query.query, ...query.params);
+  const {rows, sqlQuery} = await pool.queryQuietly(query.query, query.params);
   const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,
@@ -658,7 +658,7 @@ const getOneTransaction = async (req, res) => {
   }
 
   // Execute query
-  const {rows} = await pool.queryQuietly(pgSqlQuery, ...sqlParams);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, sqlParams);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }

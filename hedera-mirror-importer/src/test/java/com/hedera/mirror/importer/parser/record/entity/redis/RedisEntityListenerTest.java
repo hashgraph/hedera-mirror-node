@@ -43,7 +43,7 @@ import reactor.test.StepVerifier;
 
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.StreamMessage;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
@@ -140,11 +140,11 @@ class RedisEntityListenerTest {
         topicMessage.setChunkTotal(2);
         topicMessage.setConsensusTimestamp(consensusTimestamp++);
         topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityTypeEnum.ACCOUNT));
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityType.ACCOUNT));
         topicMessage.setRunningHash("running hash".getBytes());
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(1);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityTypeEnum.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
         topicMessage.setValidStartTimestamp(4L);
         return topicMessage;
     }

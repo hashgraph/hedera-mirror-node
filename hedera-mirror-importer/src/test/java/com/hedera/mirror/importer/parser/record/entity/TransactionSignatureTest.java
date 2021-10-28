@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -61,7 +62,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -77,7 +77,7 @@ import com.hedera.mirror.importer.util.Utility;
 class TransactionSignatureTest {
 
     private static final long CONSENSUS_TIMESTAMP = 10L;
-    private static final EntityId ENTITY_ID = EntityId.of("0.0.123", EntityTypeEnum.UNKNOWN);
+    private static final EntityId ENTITY_ID = EntityId.of("0.0.123", EntityType.UNKNOWN);
 
     @Mock
     private AddressBookService addressBookService;

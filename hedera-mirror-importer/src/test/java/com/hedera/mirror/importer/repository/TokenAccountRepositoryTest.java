@@ -26,7 +26,7 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TokenAccount;
 import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
 import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
@@ -36,8 +36,8 @@ class TokenAccountRepositoryTest extends AbstractRepositoryTest {
     @Resource
     protected TokenAccountRepository tokenAccountRepository;
 
-    private final EntityId tokenId = EntityId.of("0.0.101", EntityTypeEnum.TOKEN);
-    private final EntityId accountId = EntityId.of("0.0.102", EntityTypeEnum.ACCOUNT);
+    private final EntityId tokenId = EntityId.of("0.0.101", EntityType.TOKEN);
+    private final EntityId accountId = EntityId.of("0.0.102", EntityType.ACCOUNT);
 
     @Test
     void save() {

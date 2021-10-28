@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityTypeEnum.ACCOUNT;
+import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
@@ -37,7 +37,9 @@ class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
     @Test
     void findByConsensusTimestampAndEntityNum() {
         EntityId entity = EntityId.of(0L, 1L, 2L, ACCOUNT);
+        EntityId payerEntity = EntityId.of(0L, 1L, 3L, ACCOUNT);
         CryptoTransfer cryptoTransfer = new CryptoTransfer(1L, 40L, entity);
+        cryptoTransfer.setPayerAccountId(payerEntity);
 
         cryptoTransferRepository.save(cryptoTransfer);
 

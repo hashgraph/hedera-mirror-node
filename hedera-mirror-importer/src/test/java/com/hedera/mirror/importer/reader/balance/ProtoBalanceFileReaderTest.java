@@ -41,7 +41,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
@@ -147,9 +147,9 @@ class ProtoBalanceFileReaderTest {
         long tokenBalance = 6000;
 
         List<AccountBalance> accountBalances = IntStream.range(0, 10).mapToObj(i -> {
-            EntityId accountId = EntityId.of(0, 0, accountNum + i, EntityTypeEnum.ACCOUNT);
+            EntityId accountId = EntityId.of(0, 0, accountNum + i, EntityType.ACCOUNT);
             List<TokenBalance> tokenBalances = IntStream.range(0, 5).mapToObj(j -> {
-                EntityId tokenId = EntityId.of(0, 0, tokenNum + i * 5 + j, EntityTypeEnum.TOKEN);
+                EntityId tokenId = EntityId.of(0, 0, tokenNum + i * 5 + j, EntityType.TOKEN);
                 return new TokenBalance(tokenBalance + i * 5 + j,
                         new TokenBalance.Id(consensusTimestamp, accountId, tokenId));
             })

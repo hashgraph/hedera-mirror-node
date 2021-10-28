@@ -31,7 +31,7 @@ class NftService {
   static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
 
   async getNft(tokenId, serialNumber) {
-    const {rows} = await pool.queryQuietly(NftService.nftByIdQuery, tokenId, serialNumber);
+    const {rows} = await pool.queryQuietly(NftService.nftByIdQuery, [tokenId, serialNumber]);
     return _.isEmpty(rows) ? null : new Nft(rows[0]);
   }
 }

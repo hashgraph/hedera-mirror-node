@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamType;
@@ -59,7 +59,7 @@ class NodeSignatureVerifierTest {
     private static PrivateKey privateKey;
     private static PublicKey publicKey;
 
-    private static final EntityId nodeId = new EntityId(0L, 0L, 3L, EntityTypeEnum.ACCOUNT.getId());
+    private static final EntityId nodeId = new EntityId(0L, 0L, 3L, EntityType.ACCOUNT);
     private static final MeterRegistry meterRegistry = new LoggingMeterRegistry();
     private Signature signer;
 
@@ -241,10 +241,10 @@ class NodeSignatureVerifierTest {
         //Node 4 and 5 will not verify due to missing signature, but 1/3 verified will confirm consensus reached
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(fileHash, null,
                 null, null);
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityTypeEnum.ACCOUNT.getId()));
+        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature(fileHash, null,
                 null, null);
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityTypeEnum.ACCOUNT.getId()));
+        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
 
         nodeSignatureVerifier
                 .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
@@ -264,15 +264,15 @@ class NodeSignatureVerifierTest {
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
-        fileStreamSignatureNode3.setNodeAccountId(new EntityId(0L, 0L, 3L, EntityTypeEnum.ACCOUNT.getId()));
+        fileStreamSignatureNode3.setNodeAccountId(new EntityId(0L, 0L, 3L, EntityType.ACCOUNT));
 
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityTypeEnum.ACCOUNT.getId()));
+        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
 
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityTypeEnum.ACCOUNT.getId()));
+        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
 
         nodeSignatureVerifier
                 .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));

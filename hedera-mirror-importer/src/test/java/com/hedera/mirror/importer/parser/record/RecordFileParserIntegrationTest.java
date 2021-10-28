@@ -28,6 +28,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.EntityType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +39,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -51,7 +52,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @RequiredArgsConstructor
 class RecordFileParserIntegrationTest extends IntegrationTest {
 
-    private final static EntityId NODE_ACCOUNT_ID = EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT);
+    private final static EntityId NODE_ACCOUNT_ID = EntityId.of("0.0.3", EntityType.ACCOUNT);
 
     @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_00.419072Z.rcd")
     Path recordFilePath1;

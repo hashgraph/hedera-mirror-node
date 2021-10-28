@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.domain.AddressBook;
 import com.hedera.mirror.importer.domain.AddressBookEntry;
 import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -127,7 +127,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
                     j,
                     "127.0.0.1",
                     443,
-                    EntityId.of(0, 0, 100, EntityTypeEnum.ACCOUNT)));
+                    EntityId.of(0, 0, 100, EntityType.ACCOUNT)));
         }
         assertThat(missingAddressBooksMigration.skipMigration(getConfiguration())).isEqualTo(result);
     }
@@ -141,7 +141,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
             addressBookEntryList
                     .add(addressBookEntry(a -> a.id(new AddressBookEntry.Id(startConsensusTimestamp, nodeId))
                             .memo("0.0." + nodeId)
-                            .nodeAccountId(EntityId.of("0.0." + nodeId, EntityTypeEnum.ACCOUNT))));
+                            .nodeAccountId(EntityId.of("0.0." + nodeId, EntityType.ACCOUNT))));
         }
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
@@ -164,7 +164,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
                 .description("address book entry")
                 .publicKey("rsa+public/key")
                 .memo("0.0.3")
-                .nodeAccountId(EntityId.of("0.0.5", EntityTypeEnum.ACCOUNT))
+                .nodeAccountId(EntityId.of("0.0.5", EntityType.ACCOUNT))
                 .nodeCertHash("nodeCertHash".getBytes())
                 .stake(5L);
 

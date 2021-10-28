@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import com.hedera.mirror.importer.domain.EntityType;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -42,7 +43,6 @@ import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
 import com.hedera.mirror.importer.domain.StreamType;
 
 /**
@@ -132,7 +132,7 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
         Matcher matcher = ENTITY_ID_PATTERN.matcher(uri);
 
         if (matcher.find() && matcher.groupCount() == 1) {
-            return EntityId.of(matcher.group(1), EntityTypeEnum.ACCOUNT);
+            return EntityId.of(matcher.group(1), EntityType.ACCOUNT);
         }
 
         throw new IllegalStateException("Could not detect a node account ID in URI: " + uri);

@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AccountBalance;
 import com.hedera.mirror.importer.domain.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityTypeEnum;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
@@ -157,13 +157,13 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .loadEnd(null)
                 .loadStart(timestamp)
                 .name(filename)
-                .nodeAccountId(EntityId.of("0.0.3", EntityTypeEnum.ACCOUNT))
+                .nodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT))
                 .build();
     }
 
     private AccountBalance accountBalance(long timestamp, int offset) {
-        EntityId accountId = EntityId.of(0, 0, offset + 1000, EntityTypeEnum.ACCOUNT);
-        EntityId tokenId = EntityId.of(0, 0, offset + 2000, EntityTypeEnum.ACCOUNT);
+        EntityId accountId = EntityId.of(0, 0, offset + 1000, EntityType.ACCOUNT);
+        EntityId tokenId = EntityId.of(0, 0, offset + 2000, EntityType.ACCOUNT);
 
         TokenBalance tokenBalance = new TokenBalance();
         tokenBalance.setBalance(offset);

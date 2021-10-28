@@ -70,7 +70,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         Supplier<Contract> inheritedContract = Contract::new;
 
         if (!EntityId.isEmpty(entityId) && recordItem.isSuccessful()) {
-            final Contract contract = entityId.toEntity();
+            Contract contract = entityId.toEntity();
             contract.setCreatedTimestamp(consensusTimestamp);
             contract.setDeleted(false);
             contract.setModifiedTimestamp(consensusTimestamp);
@@ -87,13 +87,14 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             contractResult.setContractId(EntityId.of(transactionRecord.getReceipt().getContractID()));
             contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
+            contractResult.setPayerAccountId(transaction.getPayerAccountId());
 
             onContractResult(recordItem, inheritedContract, contractResult, functionResult);
         }
     }
 
     @Override
-    protected void doUpdateEntity(Contract contract, final RecordItem recordItem) {
+    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewPeriod()) {
