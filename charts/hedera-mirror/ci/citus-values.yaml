@@ -1,0 +1,7 @@
+monitor:
+  enabled: false
+postgresql:
+  enabled: true
+  postgresqlImage:
+    repository: citusdata/citus
+    tag: 10.2.1-alpine
