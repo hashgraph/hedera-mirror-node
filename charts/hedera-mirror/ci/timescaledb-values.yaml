@@ -1,6 +1,10 @@
 monitor:
   enabled: false
 postgresql:
-  enabled: false
-timescaledb:
   enabled: true
+  postgresqlImage:
+    debug: true
+    tag: citusdata/citus:10.2.1-alpine
+# timescaledb section to be swapped for citus, default to postgres for now
+timescaledb:
+  enabled: false
