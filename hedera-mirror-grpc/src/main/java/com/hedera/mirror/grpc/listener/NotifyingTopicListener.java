@@ -21,7 +21,7 @@ package com.hedera.mirror.grpc.listener;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.vertx.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.pubsub.PgChannel;
@@ -47,7 +47,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
         super(listenerProperties);
 
-        objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setDatabase(dbProperties.getName())
                 .setHost(dbProperties.getHost())
@@ -82,7 +82,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
                 .share()
-                .doOnTerminate(this::unlisten);
+                .doOnTerminate(this::unListen);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
         return sink.asFlux();
     }
 
-    private void unlisten() {
+    private void unListen() {
         channel.handler(null);
         log.info("Stopped listening for messages");
     }
