@@ -1,0 +1,33 @@
+{
+  "description": "Get messages with non existing topic id but sequence number found (partial mirror node)",
+  "setup": {
+    "accounts": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": [
+      {
+        "timestamp": "1234567890000000001",
+        "topic_id": 7,
+        "seq_num": 1
+      }
+    ]
+  },
+  "url": "/api/v1/topics/7/messages",
+  "responseStatus": 200,
+  "responseJson": {
+    "messages": [
+      {
+        "consensus_timestamp": "1234567890.000000001",
+        "topic_id": "0.0.7",
+        "message": "bWVzc2FnZQ==",
+        "running_hash": "cnVubmluZ19oYXNo",
+        "running_hash_version": 2,
+        "sequence_number": 1
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

@@ -47,14 +47,6 @@ const filterKeys = {
   TRANSACTION_TYPE: 'transactiontype',
 };
 
-// sql table columns
-const entityColumns = {
-  ENTITY_NUM: 'num',
-  ENTITY_REALM: 'realm',
-  ENTITY_SHARD: 'shard',
-  PUBLIC_KEY: 'public_key',
-};
-
 const entityTypes = {
   ACCOUNT: 'ACCOUNT',
   CONTRACT: 'CONTRACT',
@@ -160,7 +152,6 @@ module.exports = {
   cryptoTransferType,
   defaultBucketNames,
   defaultCloudProviderEndpoints,
-  entityColumns,
   entityTypes,
   filterKeys,
   httpStatusCodes,
