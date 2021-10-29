@@ -58,6 +58,7 @@ import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -178,7 +179,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 .getCreatedTimestamp() + 500L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
         Transaction transfer5 = transaction(schedule
                 .getCreatedTimestamp() + 600L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
-        transactionRepository.saveAll(List.of(
+        persistTransactions(List.of(
                 transaction(contract.getCreatedTimestamp(), contract
                         .getId(), SUCCESS, TransactionTypeEnum.CONTRACTCREATEINSTANCE),
                 transaction(contract.getCreatedTimestamp() + 1, contract
@@ -422,7 +423,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setPayerAccountId(PAYER_ID);
-        transaction.setResult(result.getNumber());
+        transaction.setResult(TransactionResult.fromId(result.getNumber()));
         transaction.setType(type.getProtoId());
         transaction.setValidStartNs(consensusNs - 10);
         return transaction;
@@ -609,6 +610,35 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
                             .lowerEndpoint())
             );
+        }
+    }
+
+    private void persistTransactions(List<Transaction> transactions) {
+        for (Transaction transaction : transactions) {
+            jdbcOperations
+                    .update("insert into transaction (charged_tx_fee, consensus_timestamp, entity_id, " +
+                                    "initial_balance, " +
+                                    "max_fee, " +
+                                    "memo, " +
+                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
+                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
+                                    " values" +
+                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            transaction.getChargedTxFee(),
+                            transaction.getConsensusTimestamp(),
+                            transaction.getEntityId().getId(),
+                            transaction.getInitialBalance(),
+                            transaction.getMaxFee(),
+                            transaction.getMemo(),
+                            transaction.getNodeAccountId().getId(),
+                            transaction.getPayerAccountId().getId(),
+                            transaction.getResult().getId(),
+                            transaction.isScheduled(),
+                            transaction.getTransactionBytes(),
+                            transaction.getTransactionHash(),
+                            transaction.getType().intValue(),
+                            transaction.getValidDurationSeconds(),
+                            transaction.getValidStartNs());
         }
     }
 
