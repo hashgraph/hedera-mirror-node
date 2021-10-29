@@ -308,8 +308,7 @@ comment on table schedule is 'Schedule entity entries';
 create table if not exists t_transaction_results
 (
     proto_id    integer not null,
-    result      character varying(100),
-    entity_type entity_type null
+    result      character varying(100)
 );
 comment on table t_transaction_results is 'Transaction result types';
 
