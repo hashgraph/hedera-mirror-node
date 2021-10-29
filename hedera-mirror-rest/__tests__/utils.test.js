@@ -25,6 +25,10 @@ const config = require('../config.js');
 const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
+const {getLimitParamValue} = require('../utils');
+const {orderFilterValues} = require('../constants');
+
+const responseLimit = config.response.limit;
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -116,6 +120,50 @@ describe('Utils isValidTimestampParam tests', () => {
   });
 });
 
+describe('Utils parseLimitAndOrderParams tests', () => {
+  const defaultResult = {
+    query: 'limit ? ',
+    params: [responseLimit.default],
+    order: constants.orderFilterValues.DESC,
+    limit: responseLimit.default,
+  };
+
+  test('no query params', () => {
+    expect(utils.parseLimitAndOrderParams({query: {}})).toEqual(defaultResult);
+  });
+
+  test('default order asc', () => {
+    expect(utils.parseLimitAndOrderParams({query: {}}, constants.orderFilterValues.ASC)).toEqual({
+      ...defaultResult,
+      order: constants.orderFilterValues.ASC,
+    });
+  });
+
+  test('both limit and order params', () => {
+    const query = {
+      limit: '20',
+      order: constants.orderFilterValues.ASC,
+    };
+    expect(utils.parseLimitAndOrderParams({query})).toEqual({
+      ...defaultResult,
+      params: [20],
+      order: constants.orderFilterValues.ASC,
+      limit: 20,
+    });
+  });
+
+  test('limit capped at max', () => {
+    const query = {
+      limit: `${responseLimit.max + 1}`,
+    };
+    expect(utils.parseLimitAndOrderParams({query})).toEqual({
+      ...defaultResult,
+      params: [responseLimit.max],
+      limit: responseLimit.max,
+    });
+  });
+});
+
 describe('Utils parseTimestampParam tests', () => {
   test('Verify empty response for null', () => {
     expect(utils.parseTimestampParam(null)).toBe('');
@@ -151,7 +199,7 @@ describe('Utils isValidLimitNum tests', () => {
     expect(utils.isValidLimitNum('-1')).toBe(false);
   });
   test('Verify invalid above max limit', () => {
-    expect(utils.isValidLimitNum(config.maxLimit + 1)).toBe(false);
+    expect(utils.isValidLimitNum(responseLimit.max + 1)).toBe(false);
   });
   test('Verify invalid for 0', () => {
     expect(utils.isValidLimitNum(0)).toBe(false);
@@ -159,8 +207,8 @@ describe('Utils isValidLimitNum tests', () => {
   test('Verify valid for valid number', () => {
     expect(utils.isValidLimitNum(99)).toBe(true);
   });
-  test(`Verify valid for max limit or ${config.maxLimit}`, () => {
-    expect(utils.isValidLimitNum(config.maxLimit)).toBe(true);
+  test(`Verify valid for max limit or ${responseLimit.max}`, () => {
+    expect(utils.isValidLimitNum(responseLimit.max)).toBe(true);
   });
 });
 
@@ -777,5 +825,21 @@ describe('Utils toHexString tests', () => {
     test(`addPrefix true - ${spec.input}`, () => {
       expect(utils.toHexString(spec.input, true)).toEqual(`0x${spec.expected}`);
     });
+  });
+});
+
+describe('Utils getLimitParamValue', () => {
+  const responseLimit = config.response.limit;
+
+  test('undefined', () => {
+    expect(getLimitParamValue(undefined)).toEqual(responseLimit.default);
+  });
+
+  test('larger than max', () => {
+    expect(getLimitParamValue(`${responseLimit.max + 1}`)).toEqual(responseLimit.max);
+  });
+
+  test('NaN', () => {
+    expect(getLimitParamValue('bad')).toEqual(responseLimit.default);
   });
 });

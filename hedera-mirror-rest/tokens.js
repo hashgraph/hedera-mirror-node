@@ -22,7 +22,11 @@
 
 const _ = require('lodash');
 
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -135,7 +139,7 @@ const tokenIdMatchQuery = 'where token_id = $1';
  */
 const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
   // add filters
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
   conditions = conditions || [];
   for (const filter of filters) {
@@ -516,7 +520,7 @@ const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
   let joinEntityClause = '';
   const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
@@ -623,7 +627,7 @@ const getTokenBalances = async (req, res) => {
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
   const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`];
   const params = [tokenId];
@@ -805,7 +809,7 @@ const successTransactionResult = 'SUCCESS';
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transferQuery, deleteQuery, filters) => {
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
 
   const params = [tokenId, serialNumber];

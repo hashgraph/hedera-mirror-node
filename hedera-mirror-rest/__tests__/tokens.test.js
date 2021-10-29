@@ -22,7 +22,11 @@
 
 const tokens = require('../tokens');
 const {filterKeys, orderFilterValues} = require('../constants');
-const {maxLimit} = require('../config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
 const {TransactionResultService, TransactionTypeService} = require('../service');
@@ -63,9 +67,9 @@ describe('token extractSqlFromTokenRequest tests', () => {
 
     const expectedquery =
       'select t.token_id, symbol, e.key, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
-    const expectedparams = [maxLimit];
+    const expectedparams = [defaultLimit];
     const expectedorder = orderFilterValues.ASC;
-    const expectedlimit = maxLimit;
+    const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
@@ -96,9 +100,9 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            where e.public_key = $1
                            order by t.token_id asc
                            limit $2`;
-    const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', maxLimit];
+    const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', defaultLimit];
     const expectedorder = orderFilterValues.ASC;
-    const expectedlimit = maxLimit;
+    const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
@@ -141,9 +145,9 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            where ta.associated is true
                            order by t.token_id asc
                            limit $2`;
-    const expectedparams = [5, maxLimit];
+    const expectedparams = [5, defaultLimit];
     const expectedorder = orderFilterValues.ASC;
-    const expectedlimit = maxLimit;
+    const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
@@ -187,9 +191,9 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            where ta.associated is true and t.type = $2
                            order by t.token_id asc
                            limit $3`;
-    const expectedparams = [5, tokenType, maxLimit];
+    const expectedparams = [5, tokenType, defaultLimit];
     const expectedorder = orderFilterValues.ASC;
-    const expectedlimit = maxLimit;
+    const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
@@ -335,9 +339,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           )
           order by tb.account_id desc
           limit $2`,
-        params: [tokenId, maxLimit],
+        params: [tokenId, defaultLimit],
         order: orderFilterValues.DESC,
-        limit: maxLimit,
+        limit: defaultLimit,
       },
     },
     {
@@ -373,9 +377,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           )
           order by tb.account_id desc
           limit $4`,
-        params: [tokenId, timestampNsLow, timestampNsHigh, maxLimit],
+        params: [tokenId, timestampNsLow, timestampNsHigh, defaultLimit],
         order: orderFilterValues.DESC,
-        limit: maxLimit,
+        limit: defaultLimit,
       },
     },
     ...operators.map((op) => {
@@ -406,27 +410,25 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               limit 1)
             order by tb.account_id desc
             limit $3`,
-          params: [tokenId, timestampNsLow, maxLimit],
+          params: [tokenId, timestampNsLow, defaultLimit],
           order: orderFilterValues.DESC,
-          limit: maxLimit,
+          limit: defaultLimit,
         },
       };
     }),
-    ...[maxLimit - 1, maxLimit + 1].map((limit) => {
-      const expectedLimit = Math.min(limit, maxLimit);
-      return {
-        name: `limit = ${limit}, maxLimit = ${maxLimit}`,
-        tokenId,
-        initialQuery,
-        filters: [
-          {
-            key: filterKeys.LIMIT,
-            operator: opsMap.eq,
-            value: expectedLimit,
-          },
-        ],
-        expected: {
-          query: `
+    {
+      name: 'limit = 30',
+      tokenId,
+      initialQuery,
+      filters: [
+        {
+          key: filterKeys.LIMIT,
+          operator: opsMap.eq,
+          value: 30,
+        },
+      ],
+      expected: {
+        query: `
             select tb.consensus_timestamp,
                    tb.account_id,
                    tb.balance
@@ -440,12 +442,11 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             )
             order by tb.account_id desc
             limit $2`,
-          params: [tokenId, expectedLimit],
-          order: orderFilterValues.DESC,
-          limit: expectedLimit,
-        },
-      };
-    }),
+        params: [tokenId, 30],
+        order: orderFilterValues.DESC,
+        limit: 30,
+      },
+    },
     ...operators.map((op) => {
       return {
         name: `account.id ${op} ${accountId}`,
@@ -474,9 +475,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               )
             order by tb.account_id desc
             limit $3`,
-          params: [tokenId, accountId, maxLimit],
+          params: [tokenId, accountId, defaultLimit],
           order: orderFilterValues.DESC,
-          limit: maxLimit,
+          limit: defaultLimit,
         },
       };
     }),
@@ -508,9 +509,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               )
             order by tb.account_id desc
             limit $3`,
-          params: [tokenId, balance, maxLimit],
+          params: [tokenId, balance, defaultLimit],
           order: orderFilterValues.DESC,
-          limit: maxLimit,
+          limit: defaultLimit,
         },
       };
     }),
@@ -541,9 +542,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             )
             order by tb.account_id ${order}
             limit $2`,
-          params: [tokenId, maxLimit],
+          params: [tokenId, defaultLimit],
           order,
-          limit: maxLimit,
+          limit: defaultLimit,
         },
       };
     }),
@@ -577,9 +578,9 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           )
           order by tb.account_id desc
           limit $3`,
-        params: [tokenId, publicKey, maxLimit],
+        params: [tokenId, publicKey, defaultLimit],
         order: orderFilterValues.DESC,
-        limit: maxLimit,
+        limit: defaultLimit,
       },
     },
     {
@@ -952,9 +953,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                            where nft.token_id = $1
                            order by nft.serial_number desc
                            limit $2`;
-    const expectedParams = [tokenId, maxLimit];
+    const expectedParams = [tokenId, defaultLimit];
     const expectedOrder = orderFilterValues.DESC;
-    const expectedLimit = maxLimit;
+    const expectedLimit = defaultLimit;
 
     verifyExtractSqlFromNftTokensRequest(
       tokenId,
@@ -992,9 +993,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                              and nft.account_id = $2
                            order by nft.serial_number desc
                            limit $3`;
-    const expectedParams = [tokenId, accountId, maxLimit];
+    const expectedParams = [tokenId, accountId, defaultLimit];
     const expectedOrder = orderFilterValues.DESC;
-    const expectedLimit = maxLimit;
+    const expectedLimit = defaultLimit;
     verifyExtractSqlFromNftTokensRequest(
       tokenId,
       initialQuery,
@@ -1031,9 +1032,9 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                              and nft.serial_number = $2
                            order by nft.serial_number desc
                            limit $3`;
-    const expectedParams = [tokenId, serialFilter, maxLimit];
+    const expectedParams = [tokenId, serialFilter, defaultLimit];
     const expectedOrder = orderFilterValues.DESC;
-    const expectedLimit = maxLimit;
+    const expectedLimit = defaultLimit;
     verifyExtractSqlFromNftTokensRequest(
       tokenId,
       initialQuery,
@@ -1251,7 +1252,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       where t.entity_id = $1 and t.type = 35 and t.result = 22
       order by consensus_timestamp desc
       limit $3`;
-    const expectedParams = [tokenId, serialNumber, maxLimit];
+    const expectedParams = [tokenId, serialNumber, defaultLimit];
     verifyExtractSqlFromNftTransferHistoryRequest(
       tokenId,
       serialNumber,
@@ -1381,7 +1382,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       where t.entity_id = $1 and t.type = 35 and t.result = 22 and t.consensus_timestamp > $3
       order by consensus_timestamp desc
       limit $4`;
-    const expectedParams = [tokenId, serialNumber, timestamp, maxLimit];
+    const expectedParams = [tokenId, serialNumber, timestamp, defaultLimit];
     verifyExtractSqlFromNftTransferHistoryRequest(
       tokenId,
       serialNumber,

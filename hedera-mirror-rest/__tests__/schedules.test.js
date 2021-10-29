@@ -20,7 +20,11 @@
 
 'use strict';
 
-const config = require('../config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('../config');
 const constants = require('../constants');
 const schedules = require('../schedules');
 const utils = require('../utils');
@@ -166,9 +170,9 @@ describe('schedule extractSqlFromScheduleFilters tests', () => {
     const filters = [];
 
     const expectedquery = '';
-    const expectedparams = [config.maxLimit];
+    const expectedparams = [defaultLimit];
     const expectedorder = constants.orderFilterValues.ASC;
-    const expectedlimit = config.maxLimit;
+    const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromScheduleFilters(filters, expectedquery, expectedparams, expectedorder, expectedlimit);
   });

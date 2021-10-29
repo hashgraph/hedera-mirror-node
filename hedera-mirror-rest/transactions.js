@@ -23,7 +23,6 @@
 const _ = require('lodash');
 
 const utils = require('./utils');
-const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
@@ -35,6 +34,8 @@ const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel'
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
  * @param {boolean} includeExtraInfo - include extra info: the nft transfer list, the assessed custom fees, and etc
+ * @param innerQuery
+ * @param order
  * @return {string}
  */
 const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'desc') => {
@@ -631,7 +632,7 @@ const getOneTransaction = async (req, res) => {
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduledQuery = getScheduledQuery(req.query);
-  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), config.maxLimit];
+  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause(
     `${Transaction.PAYER_ACCOUNT_ID_FULL_NAME} = ?`,
     `${Transaction.VALID_START_NS_FULL_NAME} = ?`,
@@ -642,8 +643,7 @@ const getOneTransaction = async (req, res) => {
   const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
                       from ${Transaction.tableName} AS ${Transaction.tableAlias}
                         ${whereClause}
-                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc
-                      limit $3`;
+                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc`;
 
   const sqlQuery = `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}

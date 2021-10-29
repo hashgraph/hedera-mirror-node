@@ -21,7 +21,11 @@
 'use strict';
 
 const _ = require('lodash');
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -215,7 +219,7 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   const pgSqlParams = [topicId.getEncodedId()];
 
   // add filters
-  let limit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
@@ -243,7 +247,6 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
-  limit = limit === undefined ? config.maxLimit : limit;
   pgSqlParams.push(limit);
 
   // close query

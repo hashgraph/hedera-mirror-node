@@ -32,9 +32,11 @@ const custom = {
   hedera: {
     mirror: {
       rest: {
-        maxLimit: 10,
         response: {
           compression: false,
+          limit: {
+            max: 30,
+          },
         },
         shard: 1,
       },
@@ -61,7 +63,7 @@ const assertCustomConfig = (actual, customConfig) => {
 
   // fields overridden by custom
   expect(actual.shard).toBe(customConfig.hedera.mirror.rest.shard);
-  expect(actual.maxLimit).toBe(customConfig.hedera.mirror.rest.maxLimit);
+  expect(actual.response.limit.max).toBe(customConfig.hedera.mirror.rest.response.limit.max);
   expect(actual.response.compression).toBe(customConfig.hedera.mirror.rest.response.compression);
 };
 
@@ -107,15 +109,15 @@ describe('Load environment configuration:', () => {
   });
 
   test('Boolean', () => {
-    process.env = {HEDERA_MIRROR_REST_INCLUDEHOSTINLINK: 'true'};
+    process.env = {HEDERA_MIRROR_REST_RESPONSE_INCLUDEHOSTINLINK: 'true'};
     const config = require('../config');
-    expect(config.includeHostInLink).toBe(true);
+    expect(config.response.includeHostInLink).toBe(true);
   });
 
   test('Camel case', () => {
-    process.env = {HEDERA_MIRROR_REST_MAXLIMIT: '10'};
+    process.env = {HEDERA_MIRROR_REST_MAXREPEATEDQUERYPARAMETERS: '50'};
     const config = require('../config');
-    expect(config.maxLimit).toBe(10);
+    expect(config.maxRepeatedQueryParameters).toBe(50);
   });
 
   test('Unknown property', () => {

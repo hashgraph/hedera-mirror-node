@@ -20,7 +20,11 @@
 
 'use strict';
 
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -131,20 +135,20 @@ const getScheduleById = async (req, res) => {
 };
 
 /**
- * Extract the sql where clause, params, order and limit values to be used from the provided schedule query param filters
- * If no modifying filters are provided the default of no where clause, the config maxLimit and asc order will be returned
+ * Extract the sql where clause, params, order and limit values from the provided schedule query param filters
+ * If no modifying filters are provided the default of no where clause, the defaultLimit and asc order will be returned
  * @param filters
  * @returns {{limit: Number, params: [*], filterQuery: string, order: string}}
  */
 const extractSqlFromScheduleFilters = (filters) => {
   const filterQuery = {
     filterQuery: '',
-    params: [config.maxLimit],
+    params: [defaultLimit],
     order: constants.orderFilterValues.ASC,
-    limit: config.maxLimit,
+    limit: defaultLimit,
   };
 
-  // if no filters return default filter of no where clause, maxLimit and asc order
+  // if no filters return default filter of no where clause, defaultLimit and asc order
   if (filters && filters.length === 0) {
     return filterQuery;
   }

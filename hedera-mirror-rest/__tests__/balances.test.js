@@ -199,7 +199,7 @@ const singletests = {
     urlparam: `timestamp=${timeOneHourAgo}`,
     checks: [{field: 'consensus_timestamp', operator: '<=', value: `${timeOneHourAgo}000000000`}],
     checkFunctions: [
-      {func: validateTsRange, args: [timeOneHourAgo - config.maxLimit, timeOneHourAgo]},
+      {func: validateTsRange, args: [timeOneHourAgo - config.response.limit.max, timeOneHourAgo]},
       {func: validateFields, args: []},
     ],
   },

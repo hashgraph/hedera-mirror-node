@@ -24,7 +24,11 @@ const math = require('mathjs');
 const path = require('path');
 const EntityId = require('../entityId');
 const testutils = require('./testutils');
-const {maxLimit} = require('../config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('../config');
 
 /**
  * This is a mock database for unit testing.
@@ -163,8 +167,8 @@ class Pool {
       high: this.toNs(this.timeNow),
     };
     let limit = {
-      low: maxLimit,
-      high: maxLimit,
+      low: defaultLimit,
+      high: defaultLimit,
     };
     let order = 'desc';
 
@@ -246,8 +250,8 @@ class Pool {
       high: this.TEST_DATA_MAX_BALANCE,
     };
     let limit = {
-      low: maxLimit,
-      high: maxLimit,
+      low: defaultLimit,
+      high: defaultLimit,
     };
     let order = 'desc';
 
@@ -315,8 +319,8 @@ class Pool {
       high: this.TEST_DATA_MAX_BALANCE,
     };
     let limit = {
-      low: maxLimit,
-      high: maxLimit,
+      low: defaultLimit,
+      high: defaultLimit,
     };
     let order = 'desc';
 
@@ -408,9 +412,9 @@ class Pool {
         break;
     }
     if (param.field === 'limit') {
-      if (param.high > maxLimit) {
-        param.low = maxLimit;
-        param.high = maxLimit;
+      if (param.high > defaultLimit) {
+        param.low = defaultLimit;
+        param.high = defaultLimit;
       }
     }
     return pVar;

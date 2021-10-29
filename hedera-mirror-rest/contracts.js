@@ -23,7 +23,11 @@
 const _ = require('lodash');
 const {Range} = require('pg-range');
 
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -83,13 +87,13 @@ const fileDataQuery = `select
 const extractSqlFromContractFilters = (filters) => {
   const filterQuery = {
     filterQuery: '',
-    params: [config.maxLimit],
+    params: [defaultLimit],
     order: constants.orderFilterValues.ASC,
-    limit: config.maxLimit,
+    limit: defaultLimit,
     limitQuery: 'limit $1',
   };
 
-  // if no filters return default filter of no where clause, maxLimit and asc order
+  // if no filters return default filter of no where clause, defaultLimit and asc order
   if (filters && filters.length === 0) {
     return filterQuery;
   }

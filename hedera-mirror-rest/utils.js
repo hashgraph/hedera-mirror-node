@@ -34,6 +34,7 @@ const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const TransactionTypeService = require('./service/transactionTypeService');
+const responseLimit = config.response.limit;
 
 const TRANSACTION_RESULT_SUCCESS = 22;
 
@@ -65,7 +66,7 @@ const isValidTimestampParam = (timestamp) => {
 };
 
 const isValidLimitNum = (limit) => {
-  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= config.maxLimit;
+  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= responseLimit.max;
 };
 
 const isValidNum = (num) => {
@@ -301,19 +302,19 @@ const parseOperatorAndValueFromQueryParam = (paramValue) => {
 };
 
 /**
- * Error/bound checking helper to get an integer parmeter from the query string
- * @param {String} param Value of the integer parameter as present in the query string
- * @param {Integer} limit Optional- max value
- * @return {String} Param value
+ * Gets the limit param value, if not exists, return the default; otherwise cap it at max
+ * @param {string} value Value of the limit param
+ * @return {number}
  */
-const getIntegerParam = (param, limit = undefined) => {
-  if (param !== undefined && !Number.isNaN(Number(param))) {
-    if (limit !== undefined && param > limit) {
-      param = limit;
+const getLimitParamValue = (value) => {
+  let ret = responseLimit.default;
+  if (value !== undefined) {
+    value = Number(value);
+    if (!Number.isNaN(value)) {
+      ret = Math.min(value, responseLimit.max);
     }
-    return param;
   }
-  return '';
+  return ret;
 };
 
 /**
@@ -468,20 +469,17 @@ const parseResultParams = (req, columnName) => {
  */
 const parseLimitAndOrderParams = (req, defaultOrder = constants.orderFilterValues.DESC) => {
   // Parse the limit parameter
-  let limitQuery = '';
-  const limitParams = [];
-  const lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.maxLimit);
-  const limitValue = lVal === '' ? config.maxLimit : lVal;
-  limitQuery = `${constants.filterKeys.LIMIT} ? `;
-  limitParams.push(limitValue);
+  const limitQuery = `${constants.filterKeys.LIMIT} ? `;
+  const limitValue = getLimitParamValue(req.query[constants.filterKeys.LIMIT]);
 
   // Parse the order parameters (default: descending)
   let order = defaultOrder;
-  if (Object.values(constants.orderFilterValues).includes(req.query[constants.filterKeys.ORDER])) {
-    order = req.query[constants.filterKeys.ORDER];
+  const value = req.query[constants.filterKeys.ORDER];
+  if (value === constants.orderFilterValues.ASC || value === constants.orderFilterValues.DESC) {
+    order = value;
   }
 
-  return buildPgSqlObject(limitQuery, limitParams, order, limitValue);
+  return buildPgSqlObject(limitQuery, [limitValue], order, limitValue);
 };
 
 const buildPgSqlObject = (query, params, order, limit) => {
@@ -1019,6 +1017,7 @@ if (isTestEnv()) {
     buildFilters,
     formatComparator,
     formatFilters,
+    getLimitParamValue,
     validateAndParseFilters,
     validateFilters,
   });
