@@ -302,13 +302,15 @@ const parseOperatorAndValueFromQueryParam = (paramValue) => {
 };
 
 /**
- * Gets the limit param value, if not exists, return the default; otherwise cap it at max
- * @param {string} value Value of the limit param
+ * Gets the limit param value, if not exists, return the default; otherwise cap it at max. Note if values is an array,
+ * the last one is honored.
+ * @param {string[]} values Values of the limit param
  * @return {number}
  */
-const getLimitParamValue = (value) => {
+const getLimitParamValue = (values) => {
   let ret = responseLimit.default;
-  if (value !== undefined) {
+  if (values !== undefined) {
+    let value = Array.isArray(values) ? values[values.length - 1] : values;
     value = Number(value);
     if (!Number.isNaN(value)) {
       ret = Math.min(value, responseLimit.max);

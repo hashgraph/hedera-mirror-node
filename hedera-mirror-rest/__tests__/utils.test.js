@@ -162,6 +162,17 @@ describe('Utils parseLimitAndOrderParams tests', () => {
       limit: responseLimit.max,
     });
   });
+
+  test('limit array', () => {
+    const query = {
+      limit: [1, 15],
+    };
+    expect(utils.parseLimitAndOrderParams({query})).toEqual({
+      ...defaultResult,
+      params: [15],
+      limit: 15,
+    });
+  });
 });
 
 describe('Utils parseTimestampParam tests', () => {
@@ -841,5 +852,9 @@ describe('Utils getLimitParamValue', () => {
 
   test('NaN', () => {
     expect(getLimitParamValue('bad')).toEqual(responseLimit.default);
+  });
+
+  test('values array', () => {
+    expect(getLimitParamValue(['1', '50'])).toEqual(50);
   });
 });

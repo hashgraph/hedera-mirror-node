@@ -1755,7 +1755,7 @@ components:
       example: 2
       schema:
         type: integer
-        default: 100
+        default: 25
         minimum: 1
         maximum: 100
     orderQueryParam:
