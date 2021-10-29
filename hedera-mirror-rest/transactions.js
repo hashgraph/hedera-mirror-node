@@ -524,23 +524,23 @@ const getTransactionsInnerQuery = function (
 const reqToSql = function (req) {
   // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
   const parsedQueryParams = req.query;
-  let sqlParams = [];
+  const sqlParams = [];
   let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
   accountQuery = utils.convertMySqlStyleQueryToPostgres(accountQuery, sqlParams.length + 1);
-  sqlParams = sqlParams.concat(accountParams);
+  sqlParams.push(...accountParams);
   let [tsQuery, tsParams] = utils.parseTimestampQueryParam(
     parsedQueryParams,
     Transaction.CONSENSUS_TIMESTAMP_FULL_NAME
   );
   tsQuery = utils.convertMySqlStyleQueryToPostgres(tsQuery, sqlParams.length + 1);
-  sqlParams = sqlParams.concat(tsParams);
+  sqlParams.push(...tsParams);
   let [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   creditDebitQuery = utils.convertMySqlStyleQueryToPostgres(creditDebitQuery, sqlParams.length + 1);
-  sqlParams = sqlParams.concat(creditDebitParams);
+  sqlParams.push(...creditDebitParams);
   const resultTypeQuery = utils.parseResultParams(req, Transaction.RESULT_FULL_NAME);
   const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  sqlParams = sqlParams.concat(params);
+  sqlParams.push(...params);
 
   const innerQuery = getTransactionsInnerQuery(
     accountQuery,

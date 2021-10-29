@@ -100,7 +100,7 @@ const getAccountQuery = (
   if (!includeBalance) {
     return {
       query: entityQuery,
-      params: entityAccountQuery.params.concat(pubKeyQuery.params).concat(limitParams),
+      params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitParams),
     };
   }
 
@@ -158,13 +158,15 @@ const getAccountQuery = (
     order by coalesce(balances.account_id, e.id) ${order || ''}
     ${limitQuery || ''}`;
 
-  const params = balancesAccountQuery.params
-    .concat(balanceQuery.params)
-    .concat(limitParams)
-    .concat(entityAccountQuery.params)
-    .concat(pubKeyQuery.params)
-    .concat(limitParams)
-    .concat(limitParams);
+  const params = utils.mergeParams(
+    balancesAccountQuery.params,
+    balanceQuery.params,
+    limitParams,
+    entityAccountQuery.params,
+    pubKeyQuery.params,
+    limitParams,
+    limitParams
+  );
 
   return {query, params};
 };
@@ -301,7 +303,7 @@ const getOneAccount = async (req, res) => {
     order
   );
 
-  const innerParams = accountParams.concat(tsParams).concat(params);
+  const innerParams = utils.mergeParams(accountParams, tsParams, params);
   const transactionsQuery = await transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 

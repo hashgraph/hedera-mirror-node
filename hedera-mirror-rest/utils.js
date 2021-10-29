@@ -337,7 +337,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     paramValues = new Set(paramValues);
   }
   const partialQueries = [];
-  let values = [];
+  const values = [];
   // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
   const equalValues = new Set();
   for (const paramValue of paramValues) {
@@ -353,14 +353,16 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
       const queryAndValues = processQuery(opAndValue.op, processedValue);
       if (queryAndValues !== null) {
         partialQueries.push(queryAndValues[0]);
-        values = values.concat(queryAndValues[1]);
+        if (queryAndValues[1]) {
+          values.push(...queryAndValues[1]);
+        }
       }
     }
   }
   if (equalValues.size !== 0) {
     const queryAndValues = processQuery(opsMap.eq, Array.from(equalValues));
     partialQueries.push(queryAndValues[0]);
-    values = values.concat(queryAndValues[1]);
+    values.push(...queryAndValues[1]);
   }
   const fullClause = partialQueries.join(' and ');
   validateClauseAndValues(fullClause, values);
@@ -581,6 +583,19 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
     next = urlPrefix + req.path + next;
   }
   return next === '' ? null : next;
+};
+
+/**
+ * Merges params arrays. Pass [] as initial if the params arrays should stay unmodified. Note every params should be
+ * an array.
+ * @param {any[]} initial
+ * @param {any[]} params
+ */
+const mergeParams = (initial, ...params) => {
+  return params.reduce((previous, current) => {
+    previous.push(...current);
+    return previous;
+  }, initial);
 };
 
 /**
@@ -991,6 +1006,7 @@ module.exports = {
   isValidTimestampParam,
   isValidTransactionType,
   loadPgRange,
+  mergeParams,
   nsToSecNs,
   nsToSecNsWithHyphen,
   opsMap,

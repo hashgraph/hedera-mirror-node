@@ -43,24 +43,31 @@ const requestLogger = async (req, res, next) => {
  * @returns Query string map object
  */
 const requestQueryParser = (queryString) => {
+  const merge = (current, next) => {
+    if (!Array.isArray(current)) {
+      current = [current];
+    }
+
+    if (Array.isArray(next)) {
+      current.push(...next);
+    } else {
+      current.push(next);
+    }
+
+    return current;
+  };
+
   // parse first to benefit from qs query handling
   const parsedQueryString = qs.parse(queryString);
 
   const caseInsensitiveQueryString = {};
-  for (const key of Object.keys(parsedQueryString)) {
+  for (const [key, value] of Object.entries(parsedQueryString)) {
     const lowerKey = key.toLowerCase();
-    let currentValue = caseInsensitiveQueryString[lowerKey];
-    if (currentValue) {
-      // handle repeated values. Add to array if applicable or convert to array
-      if (!Array.isArray(currentValue)) {
-        // create a new array of current value
-        currentValue = [currentValue];
-      }
-
-      // assign value as concat of current value array and new value which may also be an array
-      caseInsensitiveQueryString[lowerKey] = currentValue.concat(parsedQueryString[key]);
+    if (lowerKey in caseInsensitiveQueryString) {
+      // handle repeated values, merge into an array
+      caseInsensitiveQueryString[lowerKey] = merge(caseInsensitiveQueryString[lowerKey], value);
     } else {
-      caseInsensitiveQueryString[lowerKey] = parsedQueryString[key];
+      caseInsensitiveQueryString[lowerKey] = value;
     }
   }
 

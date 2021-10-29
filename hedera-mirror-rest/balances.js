@@ -129,7 +129,7 @@ const getBalances = async (req, res) => {
       ORDER BY ab.account_id ${order}
       ${query}`;
 
-  const sqlParams = tsParams.concat(accountParams).concat(pubKeyParams).concat(balanceParams).concat(params);
+  const sqlParams = utils.mergeParams(tsParams, accountParams, pubKeyParams, balanceParams, params);
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
 
   if (logger.isTraceEnabled()) {
