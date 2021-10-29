@@ -29,9 +29,8 @@ import io.vertx.pgclient.pubsub.PgSubscriber;
 import java.time.Duration;
 import java.util.Objects;
 import javax.inject.Named;
-import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Sinks;
 import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.DbProperties;
@@ -48,12 +47,13 @@ public class NotifyingTopicListener extends SharedTopicListener {
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
         super(listenerProperties);
 
-        this.objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setDatabase(dbProperties.getName())
                 .setHost(dbProperties.getHost())
                 .setPassword(dbProperties.getPassword())
                 .setPort(dbProperties.getPort())
+                .setSslMode(dbProperties.getSslMode())
                 .setUser(dbProperties.getUsername());
 
         Duration interval = listenerProperties.getInterval();
@@ -81,7 +81,8 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .metrics()
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
-                .share();
+                .share()
+                .doOnTerminate(this::unlisten);
     }
 
     @Override
@@ -89,12 +90,11 @@ public class NotifyingTopicListener extends SharedTopicListener {
         return topicMessages;
     }
 
-    private Flux<String> listen() {
-        EmitterProcessor<String> emitterProcessor = EmitterProcessor.create();
-        FluxSink<String> sink = emitterProcessor.sink().onDispose(this::unlisten);
-        channel.handler(sink::next);
+    private Flux<Object> listen() {
+        Sinks.Many<Object> sink = Sinks.many().multicast().onBackpressureBuffer();
+        channel.handler(sink::tryEmitNext);
         log.info("Listening for messages");
-        return emitterProcessor;
+        return sink.asFlux();
     }
 
     private void unlisten() {
@@ -102,9 +102,9 @@ public class NotifyingTopicListener extends SharedTopicListener {
         log.info("Stopped listening for messages");
     }
 
-    private TopicMessage toTopicMessage(String payload) {
+    private TopicMessage toTopicMessage(Object payload) {
         try {
-            return objectMapper.readValue(payload, TopicMessage.class);
+            return objectMapper.readValue((String) payload, TopicMessage.class);
         } catch (Exception ex) {
             // Discard invalid messages. No need to propagate error and cause a reconnect.
             log.error("Error parsing message {}", payload, ex);

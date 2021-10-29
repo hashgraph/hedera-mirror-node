@@ -20,8 +20,10 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
+import io.vertx.pgclient.SslMode;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -41,6 +43,9 @@ public class DbProperties {
 
     @Min(0)
     private int port = 5432;
+
+    @NotNull
+    private SslMode sslMode = SslMode.DISABLE;
 
     @NotBlank
     private String username = "";
