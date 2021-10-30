@@ -66,7 +66,7 @@ const fromString = (transactionIdStr) => {
     throw new InvalidArgumentError(message);
   }
 
-  const entityId = EntityId.fromString(`${txIdMatches[1]}.${txIdMatches[2]}.${txIdMatches[3]}`);
+  const entityId = EntityId.parse(`${txIdMatches[1]}.${txIdMatches[2]}.${txIdMatches[3]}`);
   const seconds = long.fromString(txIdMatches[4]);
   const nanos = parseInt(txIdMatches[5], 10);
   if (seconds.lessThan(0)) {

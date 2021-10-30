@@ -237,7 +237,7 @@ const createCryptoTransferList = (cryptoTransferList) => {
   return cryptoTransferList.map((transfer) => {
     const {entity_id: accountId, amount} = transfer;
     return {
-      account: EntityId.fromEncodedId(accountId).toString(),
+      account: EntityId.parse(accountId).toString(),
       amount,
     };
   });
@@ -257,8 +257,8 @@ const createTokenTransferList = (tokenTransferList) => {
   return tokenTransferList.map((transfer) => {
     const {token_id: tokenId, account_id: accountId, amount} = transfer;
     return {
-      token_id: EntityId.fromEncodedId(tokenId).toString(),
-      account: EntityId.fromEncodedId(accountId).toString(),
+      token_id: EntityId.parse(tokenId).toString(),
+      account: EntityId.parse(accountId).toString(),
       amount,
     };
   });
@@ -290,16 +290,16 @@ const createNftTransferList = (nftTransferList) => {
 const createTransferLists = (rows) => {
   const transactions = rows.map((row) => {
     const validStartTimestamp = row.valid_start_ns;
-    const payerAccountId = EntityId.fromEncodedId(row.payer_account_id).toString();
+    const payerAccountId = EntityId.parse(row.payer_account_id).toString();
     return {
       charged_tx_fee: Number(row.charged_tx_fee),
       consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
-      entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
+      entity_id: EntityId.parse(row.entity_id, true).toString(),
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: row.name,
       nft_transfers: createNftTransferList(row.nft_transfer_list),
-      node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
+      node: EntityId.parse(row.node_account_id, true).toString(),
       result: row.result,
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),

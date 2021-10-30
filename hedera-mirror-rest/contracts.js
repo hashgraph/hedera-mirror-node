@@ -277,7 +277,7 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
  * @returns {Promise<void>}
  */
 const getContractById = async (req, res) => {
-  const contractId = EntityId.fromString(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
+  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
   const params = [contractId];
 
   // extract filters from query param

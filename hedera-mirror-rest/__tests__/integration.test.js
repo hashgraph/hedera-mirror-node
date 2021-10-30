@@ -174,7 +174,7 @@ const mapTransactionResults = (rows) => {
     const cryptoTransfers = v.crypto_transfer_list.map((transfer) => {
       return {
         amount: transfer.amount,
-        account: EntityId.fromEncodedId(transfer.entity_id).toString(),
+        account: EntityId.parse(transfer.entity_id).toString(),
       };
     });
     return {

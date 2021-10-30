@@ -1,21 +1,21 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`EntityId fromString -1 1`] = `"invalid entity ID string \\"-1\\""`;
+exports[`EntityId parse from entityId string -1 1`] = `"Invalid entity ID \\"-1\\""`;
 
-exports[`EntityId fromString -1.-1.-1 1`] = `"invalid entity ID string \\"-1.-1.-1\\""`;
+exports[`EntityId parse from entityId string -1.-1.-1 1`] = `"Invalid entity ID \\"-1.-1.-1\\""`;
 
-exports[`EntityId fromString 0.1.2.3 1`] = `"invalid entity ID string \\"0.1.2.3\\""`;
+exports[`EntityId parse from entityId string 0.1.2.3 1`] = `"Invalid entity ID \\"0.1.2.3\\""`;
 
-exports[`EntityId fromString 0.1.x 1`] = `
+exports[`EntityId parse from entityId string 0.1.x 1`] = `
 Array [
   "Invalid parameter: demo param",
 ]
 `;
 
-exports[`EntityId fromString a 1`] = `"invalid entity ID string \\"a\\""`;
+exports[`EntityId parse from entityId string a 1`] = `"Invalid entity ID \\"a\\""`;
 
-exports[`EntityId fromString a.b.c 1`] = `"invalid entity ID string \\"a.b.c\\""`;
+exports[`EntityId parse from entityId string a.b.c 1`] = `"Invalid entity ID \\"a.b.c\\""`;
 
-exports[`EntityId fromString null 1`] = `"Null entity ID"`;
+exports[`EntityId parse from entityId string null 1`] = `"Null entity ID"`;
 
-exports[`EntityId fromString undefined 1`] = `"Null entity ID"`;
+exports[`EntityId parse from entityId string undefined 1`] = `"Null entity ID"`;

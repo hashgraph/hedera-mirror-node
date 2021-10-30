@@ -42,6 +42,12 @@ describe('EntityId isValidEntityId tests', () => {
   test('Verify invalid for negative entity_num', () => {
     expect(EntityId.isValidEntityId('0.0.-1')).toBe(false);
   });
+  test('Verify invalid for shard too big', () => {
+    expect(EntityId.isValidEntityId('100000.65535.000000001')).toBe(false);
+  });
+  test('Verify invalid for realm too big', () => {
+    expect(EntityId.isValidEntityId('100000.000000001')).toBe(false);
+  });
   test('Verify invalid for negative num', () => {
     expect(EntityId.isValidEntityId('-1')).toBe(false);
   });
@@ -52,7 +58,7 @@ describe('EntityId isValidEntityId tests', () => {
     expect(EntityId.isValidEntityId('3')).toBe(true);
   });
   test('Verify valid for realm.num', () => {
-    expect(EntityId.isValidEntityId('1234567890.000000001')).toBe(true);
+    expect(EntityId.isValidEntityId('65535.000000001')).toBe(true);
   });
   test('Verify valid for full entity', () => {
     expect(EntityId.isValidEntityId('1.2.3')).toBe(true);
@@ -63,9 +69,15 @@ describe('EntityId isValidEntityId tests', () => {
   test('Verify valid for integer number', () => {
     expect(EntityId.isValidEntityId(123)).toBe(true);
   });
+  test('Verify valid for encoded ID', () => {
+    expect(EntityId.isValidEntityId('2814792716779530')).toBe(true);
+  });
+  test('Verify valid for max encoded ID', () => {
+    expect(EntityId.isValidEntityId(2n ** 63n - 1n)).toBe(true);
+  });
 });
 
-describe('EntityId fromString', () => {
+describe('EntityId parse from entityId string', () => {
   const specs = [
     {
       entityIdStr: '0.0.0',
@@ -90,6 +102,10 @@ describe('EntityId fromString', () => {
     {
       entityIdStr: '4294967295',
       expected: EntityId.of(0, 0, 4294967295),
+    },
+    {
+      entityIdStr: '24294967295',
+      expected: EntityId.of(0, 5, 2820130815),
     },
     {
       entityIdStr: '0.1',
@@ -144,73 +160,17 @@ describe('EntityId fromString', () => {
     const {entityIdStr, paramName, isNullable, expectErr, expected} = spec;
     test(`${entityIdStr}`, () => {
       if (!expectErr) {
-        expect(EntityId.fromString(entityIdStr, paramName, isNullable).toString()).toEqual(expected.toString());
+        expect(EntityId.parse(entityIdStr, paramName, isNullable).toString()).toEqual(expected.toString());
       } else {
         expect(() => {
-          EntityId.fromString(entityIdStr, paramName, isNullable);
+          EntityId.parse(entityIdStr, paramName, isNullable);
         }).toThrowErrorMatchingSnapshot();
       }
     });
   }
 });
 
-describe('EntityId toSolidityAddress', () => {
-  test('0.0.0', () => {
-    expect(EntityId.of(0n, 0n, 0n).toSolidityAddress()).toEqual('0x0000000000000000000000000000000000000000');
-  });
-
-  test('0.0.7', () => {
-    expect(EntityId.of(1n, 2n, 7n).toSolidityAddress()).toEqual('0x0000000100000000000000020000000000000007');
-  });
-
-  test('32767.65535.4294967295', () => {
-    expect(EntityId.of(32767n, 65535n, 4294967295n).toSolidityAddress()).toEqual(
-      '0x00007fff000000000000ffff00000000ffffffff'
-    );
-  });
-});
-
-describe('EntityId toString', () => {
-  test('0.0.0', () => {
-    expect(EntityId.of(0n, 0n, 0n).toString()).toEqual('0.0.0');
-  });
-
-  test('32767.65535.4294967295', () => {
-    expect(EntityId.of(32767n, 65535n, 4294967295n).toString()).toEqual('32767.65535.4294967295');
-  });
-});
-
-describe('EntityId encoding', () => {
-  test('0.0.0', () => {
-    expect(EntityId.fromString('0.0.0').getEncodedId()).toBe('0');
-  });
-
-  test('0.0.10', () => {
-    expect(EntityId.fromString('0.0.10').getEncodedId()).toBe('10');
-  });
-
-  test('0.0.4294967295', () => {
-    expect(EntityId.fromString('0.0.4294967295').getEncodedId()).toBe('4294967295');
-  });
-
-  test('10.10.10', () => {
-    expect(EntityId.fromString('10.10.10').getEncodedId()).toBe('2814792716779530');
-  });
-
-  test('32767.65535.4294967295', () => {
-    expect(EntityId.fromString('32767.65535.4294967295').getEncodedId()).toBe('9223372036854775807');
-  });
-
-  test('32767.0.0', () => {
-    expect(EntityId.fromString('32767.0.0').getEncodedId()).toBe('9223090561878065152');
-  });
-
-  test('nullable', () => {
-    expect(EntityId.fromString(null, '', true).getEncodedId()).toBeNull();
-  });
-});
-
-describe('EntityId fromEncodedId', () => {
+describe('EntityId parse from encoded entityId', () => {
   const specs = [
     {
       encodedId: 0,
@@ -241,11 +201,11 @@ describe('EntityId fromEncodedId', () => {
       expected: EntityId.of(10, 10, 10),
     },
     {
-      encodedId: BigInt('9223372036854775807'),
+      encodedId: 9223372036854775807n,
       expected: EntityId.of(32767, 65535, 4294967295),
     },
     {
-      encodedId: 9223090561878065152,
+      encodedId: 9223090561878065152n,
       expected: EntityId.of(32767, 0, 0),
     },
     {
@@ -282,12 +242,68 @@ describe('EntityId fromEncodedId', () => {
     const {encodedId, isNullable, expectErr, expected} = spec;
     test(`${encodedId}`, () => {
       if (!expectErr) {
-        expect(EntityId.fromEncodedId(encodedId, isNullable).toString()).toEqual(expected.toString());
+        expect(EntityId.parse(encodedId, '', isNullable).toString()).toEqual(expected.toString());
       } else {
         expect(() => {
-          EntityId.fromEncodedId(encodedId, isNullable);
+          EntityId.parse(encodedId, isNullable);
         }).toThrowError(InvalidArgumentError);
       }
     });
   }
+});
+
+describe('EntityId toSolidityAddress', () => {
+  test('0.0.0', () => {
+    expect(EntityId.of(0n, 0n, 0n).toSolidityAddress()).toEqual('0x0000000000000000000000000000000000000000');
+  });
+
+  test('0.0.7', () => {
+    expect(EntityId.of(1n, 2n, 7n).toSolidityAddress()).toEqual('0x0000000100000000000000020000000000000007');
+  });
+
+  test('32767.65535.4294967295', () => {
+    expect(EntityId.of(32767n, 65535n, 4294967295n).toSolidityAddress()).toEqual(
+      '0x00007fff000000000000ffff00000000ffffffff'
+    );
+  });
+});
+
+describe('EntityId toString', () => {
+  test('0.0.0', () => {
+    expect(EntityId.of(0n, 0n, 0n).toString()).toEqual('0.0.0');
+  });
+
+  test('32767.65535.4294967295', () => {
+    expect(EntityId.of(32767n, 65535n, 4294967295n).toString()).toEqual('32767.65535.4294967295');
+  });
+});
+
+describe('EntityId encoding', () => {
+  test('0.0.0', () => {
+    expect(EntityId.parse('0.0.0').getEncodedId()).toBe('0');
+  });
+
+  test('0.0.10', () => {
+    expect(EntityId.parse('0.0.10').getEncodedId()).toBe('10');
+  });
+
+  test('0.0.4294967295', () => {
+    expect(EntityId.parse('0.0.4294967295').getEncodedId()).toBe('4294967295');
+  });
+
+  test('10.10.10', () => {
+    expect(EntityId.parse('10.10.10').getEncodedId()).toBe('2814792716779530');
+  });
+
+  test('32767.65535.4294967295', () => {
+    expect(EntityId.parse('32767.65535.4294967295').getEncodedId()).toBe('9223372036854775807');
+  });
+
+  test('32767.0.0', () => {
+    expect(EntityId.parse('32767.0.0').getEncodedId()).toBe('9223090561878065152');
+  });
+
+  test('nullable', () => {
+    expect(EntityId.parse(null, true).getEncodedId()).toBeNull();
+  });
 });

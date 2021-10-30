@@ -89,7 +89,7 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
   return {
     bytes: info.bytes,
     name: info.name,
-    nodeAccountId: EntityId.fromEncodedId(info.node_account_id).toString(),
+    nodeAccountId: EntityId.parse(info.node_account_id).toString(),
     version: info.version,
   };
 };
@@ -134,7 +134,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   const lastAddressBook = _.last(rows);
   let nodeAccountIds = [];
   if (lastAddressBook.node_account_ids) {
-    nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (id) => EntityId.fromEncodedId(id).toString());
+    nodeAccountIds = _.map(lastAddressBook.node_account_ids.split(','), (id) => EntityId.parse(id).toString());
   } else if (lastAddressBook.memos) {
     nodeAccountIds = lastAddressBook.memos.split(',');
   }

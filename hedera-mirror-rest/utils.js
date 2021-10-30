@@ -380,7 +380,7 @@ const validateClauseAndValues = (clause, values) => {
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
-    (value) => EntityId.fromString(value).getEncodedId(),
+    (value) => EntityId.parse(value).getEncodedId(),
     (op, value) => {
       return Array.isArray(value)
         ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
@@ -821,14 +821,14 @@ const formatComparator = (comparator) => {
     switch (comparator.key) {
       case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or encoded ID string
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.CONTRACT_ID:
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
@@ -842,14 +842,14 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.SCHEDULE_ID:
         // Accepted forms: shard.realm.num or num
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
       case constants.filterKeys.TOKEN_ID:
         // Accepted forms: shard.realm.num or num
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
@@ -884,7 +884,7 @@ const parseTokenBalances = (tokenBalances) => {
     .map((tokenBalance) => {
       const {token_id: tokenId, balance} = tokenBalance;
       return {
-        token_id: EntityId.fromString(tokenId).toString(),
+        token_id: EntityId.parse(tokenId).toString(),
         balance,
       };
     });

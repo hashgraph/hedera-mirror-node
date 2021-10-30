@@ -280,7 +280,7 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
     assessedCustomFee;
   const effectivePayerAccountIds = [
     '{',
-    effective_payer_account_ids.map((payer) => EntityId.fromString(payer).getEncodedId()).join(','),
+    effective_payer_account_ids.map((payer) => EntityId.parse(payer).getEncodedId()).join(','),
     '}',
   ].join('');
 
@@ -290,11 +290,11 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
      values ($1, $2, $3, $4, $5, $6);`,
     [
       amount,
-      EntityId.fromString(collector_account_id).getEncodedId(),
+      EntityId.parse(collector_account_id).getEncodedId(),
       consensus_timestamp.toString(),
       effectivePayerAccountIds,
-      EntityId.fromString(token_id, 'tokenId', true).getEncodedId(),
-      EntityId.fromString(payer_account_id).getEncodedId(),
+      EntityId.parse(token_id, 'tokenId', true).getEncodedId(),
+      EntityId.parse(payer_account_id).getEncodedId(),
     ]
   );
 };
@@ -322,15 +322,15 @@ const addCustomFee = async (customFee) => {
     [
       customFee.amount || null,
       customFee.amount_denominator || null,
-      EntityId.fromString(customFee.collector_account_id, 'collectorAccountId', true).getEncodedId(),
+      EntityId.parse(customFee.collector_account_id, 'collectorAccountId', true).getEncodedId(),
       customFee.created_timestamp.toString(),
-      EntityId.fromString(customFee.denominating_token_id, 'denominatingTokenId', true).getEncodedId(),
+      EntityId.parse(customFee.denominating_token_id, 'denominatingTokenId', true).getEncodedId(),
       customFee.maximum_amount || null,
       customFee.minimum_amount || '0',
       netOfTransfers != null ? netOfTransfers : null,
       customFee.royalty_denominator || null,
       customFee.royalty_numerator || null,
-      EntityId.fromString(customFee.token_id).getEncodedId(),
+      EntityId.parse(customFee.token_id).getEncodedId(),
     ]
   );
 };
@@ -392,9 +392,9 @@ const addTransaction = async (transaction) => {
   if (transaction.valid_start_timestamp === undefined) {
     transaction.valid_start_timestamp = transaction.consensus_timestamp.minus(1);
   }
-  const payerAccount = EntityId.fromString(transaction.payerAccountId).getEncodedId();
-  const nodeAccount = EntityId.fromString(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId();
-  const entityId = EntityId.fromString(transaction.entity_id, 'entity_id', true);
+  const payerAccount = EntityId.parse(transaction.payerAccountId).getEncodedId();
+  const nodeAccount = EntityId.parse(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId();
+  const entityId = EntityId.parse(transaction.entity_id, 'entity_id', true);
   await sqlConnection.query(
     `INSERT INTO transaction (consensus_timestamp, valid_start_ns, payer_account_id, node_account_id, result, type,
                               valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id,
@@ -466,12 +466,7 @@ const insertTransfers = async (
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id)
        VALUES ($1, $2, $3, $4);`,
-      [
-        consensusTimestamp.toString(),
-        transfer.amount,
-        EntityId.fromString(transfer.account).getEncodedId(),
-        payerAccountId,
-      ]
+      [consensusTimestamp.toString(), transfer.amount, EntityId.parse(transfer.account).getEncodedId(), payerAccountId]
     );
   }
 };
@@ -484,8 +479,8 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
   const tokenTransfers = transfers.map((transfer) => {
     return [
       `${consensusTimestamp}`,
-      EntityId.fromString(transfer.token_id).getEncodedId(),
-      EntityId.fromString(transfer.account).getEncodedId(),
+      EntityId.parse(transfer.token_id).getEncodedId(),
+      EntityId.parse(transfer.account).getEncodedId(),
       transfer.amount,
       payerAccountId,
     ];
@@ -507,10 +502,10 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
   const nftTransfers = nftTransferList.map((transfer) => {
     return [
       `${consensusTimestamp}`,
-      EntityId.fromString(transfer.receiver_account_id, '', true).getEncodedId(),
-      EntityId.fromString(transfer.sender_account_id, '', true).getEncodedId(),
+      EntityId.parse(transfer.receiver_account_id, '', true).getEncodedId(),
+      EntityId.parse(transfer.sender_account_id, '', true).getEncodedId(),
       transfer.serial_number,
-      EntityId.fromString(transfer.token_id).getEncodedId().toString(),
+      EntityId.parse(transfer.token_id).getEncodedId().toString(),
       payerAccountId,
     ];
   });
@@ -629,10 +624,10 @@ const addSchedule = async (schedule) => {
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [
       schedule.consensus_timestamp,
-      EntityId.fromString(schedule.creator_account_id).getEncodedId().toString(),
+      EntityId.parse(schedule.creator_account_id).getEncodedId().toString(),
       schedule.executed_timestamp,
-      EntityId.fromString(schedule.payer_account_id).getEncodedId().toString(),
-      EntityId.fromString(schedule.schedule_id).getEncodedId().toString(),
+      EntityId.parse(schedule.payer_account_id).getEncodedId().toString(),
+      EntityId.parse(schedule.schedule_id).getEncodedId().toString(),
       schedule.transaction_body,
     ]
   );
@@ -648,7 +643,7 @@ const addTransactionSignature = async (transactionSignature) => {
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
-      EntityId.fromString(transactionSignature.entity_id, '', true).getEncodedId().toString(),
+      EntityId.parse(transactionSignature.entity_id, '', true).getEncodedId().toString(),
       Buffer.from(transactionSignature.signature),
     ]
   );
@@ -719,7 +714,7 @@ const addToken = async (token) => {
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23,
              $24);`,
     [
-      EntityId.fromString(token.token_id).getEncodedId(),
+      EntityId.parse(token.token_id).getEncodedId(),
       token.created_timestamp,
       token.decimals,
       token.fee_schedule_key,
@@ -739,7 +734,7 @@ const addToken = async (token) => {
       token.supply_type,
       token.symbol,
       token.total_supply,
-      EntityId.fromString(token.treasury_account_id).getEncodedId(),
+      EntityId.parse(token.treasury_account_id).getEncodedId(),
       token.type,
       token.wipe_key,
       token.wipe_key_ed25519_hex,
@@ -780,14 +775,14 @@ const addTokenAccount = async (tokenAccount) => {
                                 kyc_status, modified_timestamp, token_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
     [
-      EntityId.fromString(tokenAccount.account_id).getEncodedId(),
+      EntityId.parse(tokenAccount.account_id).getEncodedId(),
       tokenAccount.associated,
       tokenAccount.automatic_association,
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,
       tokenAccount.modified_timestamp,
-      EntityId.fromString(tokenAccount.token_id).getEncodedId(),
+      EntityId.parse(tokenAccount.token_id).getEncodedId(),
     ]
   );
 };
@@ -813,13 +808,13 @@ const addNft = async (nft) => {
     `INSERT INTO nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7);`,
     [
-      EntityId.fromString(nft.account_id, '', true).getEncodedId(),
+      EntityId.parse(nft.account_id, '', true).getEncodedId(),
       nft.created_timestamp,
       nft.deleted,
       nft.modified_timestamp,
       nft.metadata,
       nft.serial_number,
-      EntityId.fromString(nft.token_id).getEncodedId(),
+      EntityId.parse(nft.token_id).getEncodedId(),
     ]
   );
 };

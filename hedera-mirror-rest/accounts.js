@@ -42,7 +42,7 @@ const processRow = (row) => {
           tokens: utils.parseTokenBalances(row.token_balances),
         };
   return {
-    account: EntityId.fromEncodedId(row.id).toString(),
+    account: EntityId.parse(row.id).toString(),
     auto_renew_period: row.auto_renew_period === null ? null : Number(row.auto_renew_period),
     balance,
     deleted: row.deleted,
@@ -262,7 +262,7 @@ const getOneAccount = async (req, res) => {
   utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
-  const accountId = EntityId.fromString(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+  const accountId = EntityId.parse(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();
   const parsedQueryParams = req.query;
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_timestamp');
   const resultTypeQuery = utils.parseResultParams(req);

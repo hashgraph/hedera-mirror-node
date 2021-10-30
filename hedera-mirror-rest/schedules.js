@@ -105,11 +105,11 @@ const formatScheduleRow = (row) => {
     admin_key: utils.encodeKey(row.key),
     deleted: row.deleted,
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
-    creator_account_id: EntityId.fromEncodedId(row.creator_account_id).toString(),
+    creator_account_id: EntityId.parse(row.creator_account_id).toString(),
     executed_timestamp: utils.nsToSecNs(row.executed_timestamp),
     memo: row.memo,
-    payer_account_id: EntityId.fromEncodedId(row.payer_account_id).toString(),
-    schedule_id: EntityId.fromEncodedId(row.schedule_id).toString(),
+    payer_account_id: EntityId.parse(row.payer_account_id).toString(),
+    schedule_id: EntityId.parse(row.schedule_id).toString(),
     signatures,
     transaction_body: utils.encodeBase64(row.transaction_body),
   };
@@ -122,7 +122,7 @@ const formatScheduleRow = (row) => {
  * @returns {Promise<void>}
  */
 const getScheduleById = async (req, res) => {
-  const scheduleId = EntityId.fromString(req.params.scheduleId, constants.filterKeys.SCHEDULEID).getEncodedId();
+  const scheduleId = EntityId.parse(req.params.scheduleId, constants.filterKeys.SCHEDULEID).getEncodedId();
   if (logger.isTraceEnabled()) {
     logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
   }

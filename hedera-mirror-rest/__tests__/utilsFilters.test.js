@@ -238,7 +238,7 @@ describe('utils formatComparator tests', () => {
 
   test('Verify formatComparator for account.id=0.2.5', () => {
     const entityIdStr = '0.2.5';
-    const entityId = EntityId.fromString(entityIdStr);
+    const entityId = EntityId.parse(entityIdStr);
     const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, entityIdStr);
     utils.formatComparator(filter);
     verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', entityId.getEncodedId());

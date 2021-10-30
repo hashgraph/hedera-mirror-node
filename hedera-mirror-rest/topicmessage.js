@@ -111,7 +111,7 @@ const validateTopicId = async (topicId, origTopicIdStr) => {
 const formatTopicMessageRow = (row, messageEncoding) => {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
-    topic_id: EntityId.fromEncodedId(row[topicMessageColumns.TOPIC_ID]).toString(),
+    topic_id: EntityId.parse(row[topicMessageColumns.TOPIC_ID]).toString(),
     message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     running_hash_version: parseInt(row[topicMessageColumns.RUNNING_HASH_VERSION]),
@@ -149,7 +149,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const topicIdStr = req.params.topicId;
   const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
-  const topicId = EntityId.fromString(topicIdStr);
+  const topicId = EntityId.parse(topicIdStr);
   await validateTopicId(topicId, topicIdStr);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
@@ -172,7 +172,7 @@ const getTopicMessages = async (req, res) => {
   validateGetTopicMessagesParams(topicIdStr);
   const filters = utils.buildAndValidateFilters(req.query);
 
-  const topicId = EntityId.fromString(topicIdStr);
+  const topicId = EntityId.parse(topicIdStr);
   await validateTopicId(topicId, topicIdStr);
 
   // build sql query validated param and filters

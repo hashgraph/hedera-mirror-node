@@ -31,11 +31,11 @@ class NftTransactionHistoryViewModel {
   constructor(nftTransferModel, transactionModel) {
     this.consensus_timestamp = utils.nsToSecNs(nftTransferModel.consensusTimestamp);
     this.transaction_id = utils.createTransactionId(
-      EntityId.fromEncodedId(transactionModel.payerAccountId).toString(),
+      EntityId.parse(transactionModel.payerAccountId).toString(),
       transactionModel.validStartNs
     );
-    this.receiver_account_id = EntityId.fromEncodedId(nftTransferModel.receiverAccountId, true).toString();
-    this.sender_account_id = EntityId.fromEncodedId(nftTransferModel.senderAccountId, true).toString();
+    this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
+    this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
     this.type = TransactionTypeService.getName(transactionModel.type);
   }
 }

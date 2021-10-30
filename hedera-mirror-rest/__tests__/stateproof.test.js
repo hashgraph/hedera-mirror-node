@@ -141,9 +141,9 @@ describe('getRCDFileInfoByConsensusNs', () => {
 });
 
 describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
-  const nodeAccountId3 = EntityId.fromString('0.0.3');
-  const nodeAccountId4 = EntityId.fromString('0.0.4');
-  const nodeAccountId5 = EntityId.fromString('0.0.5');
+  const nodeAccountId3 = EntityId.parse('0.0.3');
+  const nodeAccountId4 = EntityId.parse('0.0.4');
+  const nodeAccountId5 = EntityId.parse('0.0.5');
   const nodeAccountIds = [nodeAccountId3, nodeAccountId4, nodeAccountId5];
   const validNodeAccountIds = _.join(
     _.map(nodeAccountIds, (id) => id.getEncodedId()),
@@ -210,7 +210,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
       let expectedNodeAccountIds;
       const lastRow = _.last(queryResult.rows);
       if (lastRow.node_account_ids) {
-        expectedNodeAccountIds = _.map(lastRow.node_account_ids.split(','), (id) => EntityId.fromString(id).toString());
+        expectedNodeAccountIds = _.map(lastRow.node_account_ids.split(','), (id) => EntityId.parse(id).toString());
       } else {
         expectedNodeAccountIds = lastRow.memos.split(',');
       }

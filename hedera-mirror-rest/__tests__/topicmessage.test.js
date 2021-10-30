@@ -150,10 +150,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
     {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
   ];
 
-  const {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest(
-    EntityId.fromString('7'),
-    filters
-  );
+  const {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest(EntityId.parse('7'), filters);
 
   const expectedQuery = `select *
                          from topic_message
