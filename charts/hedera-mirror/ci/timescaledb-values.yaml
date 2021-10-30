@@ -1,6 +1,0 @@
-monitor:
-  enabled: false
-postgresql:
-  enabled: false
-timescaledb:
-  enabled: true
