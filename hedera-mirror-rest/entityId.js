@@ -21,7 +21,8 @@
 'use strict';
 
 const _ = require('lodash');
-const memoize = require('memoizee');
+const mem = require('mem');
+const quickLru = require('quick-lru');
 
 const {
   cache: {entityId: entityIdCacheConfig},
@@ -122,14 +123,13 @@ const checkNullId = (id, isNullable) => {
 /**
  * Parses shard, realm, num from encoded ID string.
  * @param {string} id
- * @param {Error} error
+ * @param {Function} error
  * @return {bigint[3]}
  */
 const parseFromEncodedId = (id, error) => {
-  // encoded ID string
   const encodedId = BigInt(id);
   if (encodedId > maxEncodedId) {
-    throw error;
+    throw error();
   }
 
   const num = encodedId & numMask;
@@ -153,30 +153,34 @@ const parseFromString = (id) => {
   return parts.map((part) => BigInt(part));
 };
 
-const parseMemoized = memoize(
+const entityIdCacheOptions = {
+  cache: new quickLru({
+    maxSize: entityIdCacheConfig.maxSize,
+  }),
+  cacheKey: (args) => args[0],
+  maxAge: entityIdCacheConfig.maxAge * 1000, // in millis
+};
+
+const parseMemoized = mem(
   /**
    * Parses entity ID string, can be shard.realm.num, realm.num, or the encoded entity ID.
    * @param {string} id
-   * @param {Error} error
+   * @param {Function} error
    * @return {EntityId}
    */
   (id, error) => {
     if (!isValidEntityId(id)) {
-      throw error;
+      throw error();
     }
 
     const [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
     if (num > maxNum || realm > maxRealm || shard > maxShard) {
-      throw error;
+      throw error();
     }
 
     return of(shard, realm, num);
   },
-  {
-    max: entityIdCacheConfig.maxSize,
-    maxAge: entityIdCacheConfig.maxAge * 1000, // in millis
-    normalizer: (args) => args[0],
-  }
+  entityIdCacheOptions
 );
 
 /**
@@ -202,9 +206,9 @@ const parse = (id, ...rest) => {
     }
   }
 
-  const error = paramName
-    ? InvalidArgumentError.forParams(paramName)
-    : new InvalidArgumentError(`Invalid entity ID "${id}"`);
+  // lazily create error object
+  const error = () =>
+    paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(`Invalid entity ID "${id}"`);
 
   return checkNullId(id, isNullable) || parseMemoized(`${id}`, error);
 };

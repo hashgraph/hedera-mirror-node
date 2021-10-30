@@ -533,7 +533,7 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  */
 const getPaginationLink = (req, isEnd, field, lastValue, order) => {
   let urlPrefix;
-  if (config.port !== undefined && config.includeHostInLink === 1) {
+  if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
   } else {
     urlPrefix = '';

@@ -58,7 +58,7 @@ afterEach(() => {
 
 const assertCustomConfig = (actual, customConfig) => {
   // fields custom doesn't override
-  expect(actual.includeHostInLink).toBeFalsy();
+  expect(actual.response.includeHostInLink).toBe(false);
   expect(actual.log.level).toBe('debug');
 
   // fields overridden by custom
@@ -71,7 +71,7 @@ describe('Load YAML configuration:', () => {
   test('./config/application.yml', () => {
     const config = require('../config');
     expect(config.shard).toBe(0);
-    expect(config.includeHostInLink).toBeFalsy();
+    expect(config.response.includeHostInLink).toBe(false);
     expect(config.log.level).toBe('debug');
   });
 
