@@ -59,7 +59,6 @@ import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -349,7 +348,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         transaction.setEntityId(payer);
         transaction.setPayerAccountId(payer);
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
-        transaction.setResult(TransactionResult.SUCCESS.getId());
+        transaction.setResult(22);
         transaction.setType(TRANSACTION_TYPE_TOKEN_DISSOCIATE);
         transaction.setValidStartNs(consensusNs - 5);
         return transaction;

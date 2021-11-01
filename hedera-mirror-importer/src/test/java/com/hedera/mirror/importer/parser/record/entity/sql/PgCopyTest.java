@@ -53,7 +53,6 @@ import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.PgCopy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
@@ -191,7 +190,7 @@ class PgCopyTest extends IntegrationTest {
         transaction.setNodeAccountId(entityId);
         transaction.setMemo("memo".getBytes());
         transaction.setType(14);
-        transaction.setResult(TransactionResult.SUCCESS.getId());
+        transaction.setResult(22);
         transaction.setTransactionHash("transaction hash".getBytes());
         transaction.setTransactionBytes("transaction bytes".getBytes());
         transaction.setPayerAccountId(entityId);
