@@ -116,6 +116,7 @@ const (
 	selectTransactionsInTimestampRangeOrdered = selectTransactionsInTimestampRange + orderByConsensusTimestamp
 )
 
+//TODO Fill out
 var transactionResults = map[int]string{
 	22: "SUCCESS",
 }
@@ -494,6 +495,10 @@ func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) *
 	})
 
 	return nil
+}
+
+func IsTransactionResultSuccessful(result int) bool {
+	return result == transactionResultSuccess
 }
 
 func constructAccount(encodedId int64) (types.Account, *rTypes.Error) {

@@ -39,30 +39,31 @@ type networkAPIService struct {
 	version              *types.Version
 }
 
+//TODO Fill out
+var transactionResults = map[int]string{
+	22: "SUCCESS",
+}
+
 // NetworkList implements the /network/list endpoint.
 func (n *networkAPIService) NetworkList(
-	ctx context.Context,
-	request *types.MetadataRequest,
+		ctx context.Context,
+		request *types.MetadataRequest,
 ) (*types.NetworkListResponse, *types.Error) {
 	return &types.NetworkListResponse{NetworkIdentifiers: []*types.NetworkIdentifier{n.network}}, nil
 }
 
 // NetworkOptions implements the /network/options endpoint.
 func (n *networkAPIService) NetworkOptions(
-	ctx context.Context,
-	request *types.NetworkRequest,
+		ctx context.Context,
+		request *types.NetworkRequest,
 ) (*types.NetworkOptionsResponse, *types.Error) {
 	operationTypes, err := n.TypesAsArray(ctx)
 	if err != nil {
 		return nil, err
 	}
-	results, err := n.Results(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	operationStatuses := make([]*types.OperationStatus, 0, len(results))
-	for value, name := range results {
+	//TODO Replace the 2 with a length of the enum
+	operationStatuses := make([]*types.OperationStatus, 0, 2)
+	for value, name := range transactionResults {
 		operationStatuses = append(operationStatuses, &types.OperationStatus{
 			Status:     name,
 			Successful: persistence.IsTransactionResultSuccessful(value),
@@ -82,8 +83,8 @@ func (n *networkAPIService) NetworkOptions(
 
 // NetworkStatus implements the /network/status endpoint.
 func (n *networkAPIService) NetworkStatus(
-	ctx context.Context,
-	request *types.NetworkRequest,
+		ctx context.Context,
+		request *types.NetworkRequest,
 ) (*types.NetworkStatusResponse, *types.Error) {
 	genesisBlock, err := n.RetrieveGenesis(ctx)
 	if err != nil {
@@ -116,10 +117,10 @@ func (n *networkAPIService) NetworkStatus(
 
 // NewNetworkAPIService creates a new instance of a networkAPIService.
 func NewNetworkAPIService(
-	baseService BaseService,
-	addressBookEntryRepo interfaces.AddressBookEntryRepository,
-	network *types.NetworkIdentifier,
-	version *types.Version,
+		baseService BaseService,
+		addressBookEntryRepo interfaces.AddressBookEntryRepository,
+		network *types.NetworkIdentifier,
+		version *types.Version,
 ) server.NetworkAPIServicer {
 	return &networkAPIService{
 		BaseService:          baseService,
