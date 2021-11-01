@@ -496,10 +496,6 @@ func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) *
 	return nil
 }
 
-func IsTransactionResultSuccessful(result int) bool {
-	return result == transactionResultSuccess
-}
-
 func constructAccount(encodedId int64) (types.Account, *rTypes.Error) {
 	account, err := types.NewAccountFromEncodedID(encodedId)
 	if err != nil {
