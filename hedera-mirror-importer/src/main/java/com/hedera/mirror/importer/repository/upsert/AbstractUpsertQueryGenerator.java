@@ -45,14 +45,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 
-import com.hedera.mirror.importer.converter.NullableStringSerializer;
-
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
+    protected static final String EMPTY_STRING = "''";
     private static final String EMPTY_CLAUSE = "";
-    private static final String EMPTY_STRING = "''";
-    private static final String NULL_STRING = "null";
-    private static final String RESERVED_CHAR = "'" + NullableStringSerializer.NULLABLE_STRING_REPLACEMENT + "'";
     private static final String V1_DIRECTORY = "/v1";
     private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
@@ -97,8 +93,8 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
         // default implementations per type
-        if (attributeType == String.class) {
-            return getStringColumnTypeSelect(attributeName);
+        if (attributeType == String.class && !isNullableColumn(attributeName)) {
+            return getSelectCoalesceQuery(attributeName, EMPTY_STRING);
         } else {
             return getFullTempTableColumnName(attributeName);
         }
@@ -164,7 +160,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         );
     }
 
-    private boolean isNullableColumn(String columnName) {
+    protected final boolean isNullableColumn(String columnName) {
         return getNullableColumns() != null && getNullableColumns().contains(columnName);
     }
 
@@ -216,16 +212,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return String.format("coalesce(%s, %s)", formattedColumnName, defaultValue);
     }
 
-    private String getSelectCaseQuery(String column, String expectedValue, String value, String defaultValue) {
-        // e.g. "case when entity_temp.memo = ' ' then '' else <value> end"
-        String formattedColumnName = getFullTempTableColumnName(column);
-        return String.format("case when %s = %s then %s else %s end",
-                formattedColumnName,
-                expectedValue,
-                value,
-                defaultValue);
-    }
-
     private String getUpdateCoalesceAssign(String column) {
         // e.g. "memo = coalesce(entity_temp.memo, entity.memo)"
         String formattedColumnName = getFullFinalTableColumnName(column);
@@ -233,19 +219,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
                 getFormattedColumnName(column),
                 getFullTempTableColumnName(column),
                 formattedColumnName);
-    }
-
-    private String getUpdateNullableStringCaseCoalesceAssign(String column) {
-        // e.g. "case when entity_temp.memo = <uuid> then '' else coalesce(entity_temp.memo, entity.memo) end"
-        String finalFormattedColumnName = getFullFinalTableColumnName(column);
-        String tempFormattedColumnName = getFullTempTableColumnName(column);
-        return String.format(
-                "%s = case when %s = %s then '' else coalesce(%s, %s) end",
-                getFormattedColumnName(column),
-                tempFormattedColumnName,
-                RESERVED_CHAR,
-                tempFormattedColumnName,
-                finalFormattedColumnName);
     }
 
     private String getDoNothingConflictClause() {
@@ -302,24 +275,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return parameterizedTypes[1];
     }
 
-    protected String getStringColumnTypeSelect(String attributeName) {
-        // String columns need extra logic since their default value and empty value are both serialized as null
-        // Domain serializer adds a special scenario to set a placeholder for an empty. Null is null
-        if (isNullableColumn(attributeName)) {
-            return getSelectCaseQuery(
-                    attributeName,
-                    RESERVED_CHAR,
-                    EMPTY_STRING,
-                    getSelectCoalesceQuery(attributeName, NULL_STRING));
-        } else {
-            return getSelectCaseQuery(
-                    attributeName,
-                    RESERVED_CHAR,
-                    EMPTY_STRING,
-                    getSelectCoalesceQuery(attributeName, EMPTY_STRING));
-        }
-    }
-
     private String getUpdateClause() {
         StringBuilder updateQueryBuilder = new StringBuilder();
 
@@ -335,8 +290,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
             String columnSelectQuery = getAttributeUpdateQuery(d.getName());
             if (!StringUtils.isEmpty(columnSelectQuery)) {
                 attributeUpdateQuery = columnSelectQuery;
-            } else if (d.getType() == String.class) {
-                attributeUpdateQuery = getUpdateNullableStringCaseCoalesceAssign(d.getName());
             } else {
                 attributeUpdateQuery = getUpdateCoalesceAssign(d.getName());
             }

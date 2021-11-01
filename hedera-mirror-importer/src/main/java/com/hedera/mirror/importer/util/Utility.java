@@ -46,6 +46,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Log4j2
 @UtilityClass
@@ -255,7 +256,7 @@ public class Utility {
      * @return the cleaned string
      */
     public static String sanitize(String input) {
-        return input != null ? input.replace(NULL_CHARACTER, NULL_REPLACEMENT) : null;
+        return StringUtils.isNotEmpty(input) ? input.replace(NULL_CHARACTER, NULL_REPLACEMENT) : input;
     }
 
     /**

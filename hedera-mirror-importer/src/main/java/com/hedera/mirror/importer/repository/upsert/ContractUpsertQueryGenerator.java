@@ -48,9 +48,9 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
 
     @Override
     protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
-        if (attributeType == String.class) {
-            return getStringColumnTypeSelect(attributeName);
-        } else if (nullableColumns.contains(attributeName)) {
+        if (attributeType == String.class && !isNullableColumn(attributeName)) {
+            return getSelectCoalesceQuery(attributeName, EMPTY_STRING);
+        } else if (isNullableColumn(attributeName)) {
             return getSelectCoalesceQuery(attributeName, null);
         } else {
             return getFullTempTableColumnName(attributeName);

@@ -42,14 +42,12 @@ class ContractUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
                 "null), coalesce(contract_temp.created_timestamp, parent.created_timestamp, null), " +
                 "coalesce(contract_temp.deleted, parent.deleted, null), coalesce(contract_temp.expiration_timestamp, " +
                 "parent.expiration_timestamp, null), coalesce(contract_temp.file_id, parent.file_id, null), " +
-                "contract_temp.id, " +
-                "coalesce(contract_temp.key, parent.key, null), case when contract_temp.memo = '<uuid>' then '' else " +
-                "coalesce(contract_temp.memo, parent.memo, '') end, contract_temp.num, coalesce(contract_temp" +
+                "contract_temp.id, coalesce(contract_temp.key, parent.key, null), " +
+                "coalesce(contract_temp.memo, parent.memo, ''), contract_temp.num, coalesce(contract_temp" +
                 ".obtainer_id, parent.obtainer_id, null), " +
                 "contract_temp.parent_id, coalesce(contract_temp.proxy_account_id, " +
-                "parent.proxy_account_id, null), case when " +
-                "contract_temp.public_key = '<uuid>' then '' else coalesce(contract_temp.public_key, parent" +
-                ".public_key, null) end, contract_temp.realm, contract_temp.shard, " +
+                "parent.proxy_account_id, null), coalesce(contract_temp.public_key, parent" +
+                ".public_key, null), contract_temp.realm, contract_temp.shard, " +
                 "coalesce(contract_temp.timestamp_range, parent.timestamp_range, null), contract_temp.type from " +
                 "contract_temp left join contract parent on parent.id = contract_temp.parent_id " +
                 "on conflict (id) do nothing";
@@ -63,12 +61,10 @@ class ContractUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
                 "expiration_timestamp = coalesce(contract_temp.expiration_timestamp, contract.expiration_timestamp), " +
                 "file_id = coalesce(contract_temp.file_id, contract.file_id), " +
                 "key = coalesce(contract_temp.key, contract.key), " +
-                "memo = case when contract_temp.memo = '<uuid>' then '' else " +
-                "coalesce(contract_temp.memo, contract.memo) end, " +
+                "memo = coalesce(contract_temp.memo, contract.memo), " +
                 "obtainer_id = coalesce(contract_temp.obtainer_id, contract.obtainer_id), " +
                 "proxy_account_id = coalesce(contract_temp.proxy_account_id, contract.proxy_account_id), " +
-                "public_key = case when contract_temp.public_key = '<uuid>' then '' else " +
-                "coalesce(contract_temp.public_key, contract.public_key) end, " +
+                "public_key = coalesce(contract_temp.public_key, contract.public_key), " +
                 "timestamp_range = coalesce(contract_temp.timestamp_range, contract.timestamp_range) " +
                 "from contract_temp where contract.id = contract_temp.id and contract_temp.created_timestamp is null " +
                 "and lower(contract_temp.timestamp_range) > 0";
