@@ -12,9 +12,6 @@
         "num": 19
       },
       {
-        "num": 20
-      },
-      {
         "num": 21
       }
     ],
@@ -55,6 +52,11 @@
         "timestamp": 2345,
         "id": 21,
         "balance": 300
+      }
+    ],
+    "contracts": [
+      {
+        "num": 20
       }
     ],
     "transactions": [],

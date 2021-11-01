@@ -30,6 +30,17 @@
         "timestamp": 2345,
         "id": 9,
         "balance": 90
+      },
+      {
+        "timestamp": 2345,
+        "id": 10,
+        "balance": 115
+      }
+    ],
+    "contracts": [
+      {
+        "num": 10,
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       }
     ],
     "transactions": [],
@@ -40,6 +51,11 @@
   "responseJson": {
     "timestamp": "0.000002345",
     "balances": [
+      {
+        "account": "0.0.10",
+        "balance": 115,
+        "tokens": []
+      },
       {
         "account": "0.0.8",
         "balance": 80,

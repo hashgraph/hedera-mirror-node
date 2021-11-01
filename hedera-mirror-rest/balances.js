@@ -20,7 +20,6 @@
 
 'use strict';
 
-const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -82,7 +81,7 @@ const getBalances = async (req, res) => {
     [utils.opsMap.eq]: utils.opsMap.lte,
   });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.public_key');
+  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'public_key');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
@@ -95,21 +94,29 @@ const getBalances = async (req, res) => {
       LIMIT 1`;
 
   const whereClause = `
-      WHERE ${[`ab.consensus_timestamp = (${innerQuery})`, accountQuery, pubKeyQuery, balanceQuery]
+      WHERE ${[`ab.consensus_timestamp = (${innerQuery})`, accountQuery, balanceQuery]
         .filter((q) => q !== '')
         .join(' AND ')}`;
 
-  // Only need to join entity if we're selecting on publickey.
-  const joinEntityClause =
+  // Only need the pubKeyCte and the corresponding join if we're selecting on publickey.
+  const pubKeyCte =
     pubKeyQuery !== ''
-      ? `
-      JOIN entity e
-        ON e.id = ab.account_id
-          AND e.type < ${utils.ENTITY_TYPE_FILE}`
+      ? `with entity_id (id) as (
+      select id
+      from entity
+      where type = ${utils.ENTITY_TYPE_ACCOUNT} and ${pubKeyQuery}
+      union
+      select id
+      from contract
+      where ${pubKeyQuery}
+    )`
       : '';
+
+  const joinEntityClause = pubKeyQuery !== '' ? 'JOIN entity_id on entity_id.id = ab.account_id' : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
   const sqlQuery = `
+      ${pubKeyCte}
       SELECT
         ab.consensus_timestamp,
         ab.account_id,
@@ -130,7 +137,13 @@ const getBalances = async (req, res) => {
       ORDER BY ab.account_id ${order}
       ${query}`;
 
-  const sqlParams = tsParams.concat(accountParams).concat(pubKeyParams).concat(balanceParams).concat(params);
+  const sqlParams = [pubKeyParams, pubKeyParams, tsParams, accountParams, balanceParams, params].reduce(
+    (previous, next) => {
+      previous.push(...next);
+      return previous;
+    },
+    []
+  );
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
 
   if (logger.isTraceEnabled()) {

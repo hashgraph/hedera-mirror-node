@@ -11,14 +11,6 @@
         "realm": 15
       },
       {
-        "num": 3,
-        "realm": 15
-      },
-      {
-        "num": 4,
-        "realm": 15
-      },
-      {
         "num": 5,
         "realm": 15
       },
@@ -129,6 +121,16 @@
         "id": 10,
         "realm_num": 15,
         "balance": 100
+      }
+    ],
+    "contracts": [
+      {
+        "num": 3,
+        "realm": 15
+      },
+      {
+        "num": 4,
+        "realm": 15
       }
     ],
     "transactions": [],

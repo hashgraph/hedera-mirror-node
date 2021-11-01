@@ -33,6 +33,7 @@ alter table address_book_service_endpoint
 -- contract
 alter table if exists contract
     add primary key (id);
+create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
 -- contract_history
 alter table if exists contract_history
