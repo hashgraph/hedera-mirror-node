@@ -206,7 +206,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                             transaction.isScheduled(),
                             transaction.getTransactionBytes(),
                             transaction.getTransactionHash(),
-                            transaction.getType().intValue(),
+                            transaction.getType(),
                             transaction.getValidDurationSeconds(),
                             transaction.getValidStartNs());
         }
