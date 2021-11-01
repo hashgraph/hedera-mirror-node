@@ -476,7 +476,7 @@ func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) *
 	defer cancel()
 
 	var typeArray []transactionType
-	if err := db.Raw(selectTransactionTypes).Find(&transactionTypes).Error; err != nil {
+	if err := db.Raw(selectTransactionTypes).Find(&typeArray).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return hErrors.ErrDatabaseError
 	}
