@@ -52,6 +52,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             EntityId contractId = EntityId.of(createdContractId);
             createdContractIds.add(contractId.getId());
 
+            // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
             if (isSuccessful && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
                 Contract contract = inheritedContract.get();
                 contract.setCreatedTimestamp(consensusTimestamp);
@@ -77,7 +78,6 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
-            var topics = contractLoginfo.getTopicList();
 
             ContractLog contractLog = new ContractLog();
             contractLog.setBloom(Utility.toBytes(contractLoginfo.getBloom()));

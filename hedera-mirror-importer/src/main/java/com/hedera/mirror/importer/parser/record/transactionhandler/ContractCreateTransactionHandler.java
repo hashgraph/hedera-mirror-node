@@ -106,9 +106,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            EntityId proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
-            contract.setProxyAccountId(proxyAccountId);
-            entityListener.onEntityId(proxyAccountId);
+            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
         if (transactionBody.hasFileID()) {

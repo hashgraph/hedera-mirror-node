@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
@@ -247,35 +246,31 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     }
 
     private void assertRecord(TransactionRecord record, Transaction dbTransaction) {
-        // record inputs
-        assertEquals(record.getTransactionFee(), dbTransaction.getChargedTxFee());
-        // transaction id
-        assertEquals(Utility.timeStampInNanos(record.getTransactionID().getTransactionValidStart()),
-                dbTransaction.getValidStartNs());
-        // receipt
-        assertEquals(record.getReceipt().getStatusValue(), dbTransaction.getResult());
-        assertArrayEquals(record.getTransactionHash().toByteArray(), dbTransaction.getTransactionHash());
-        // assert crypto transfer list
+        assertThat(dbTransaction)
+                .isNotNull()
+                .returns(Utility.timeStampInNanos(record.getConsensusTimestamp()), Transaction::getConsensusTimestamp)
+                .returns(record.getTransactionFee(), Transaction::getChargedTxFee)
+                .returns(record.getReceipt().getStatusValue(), Transaction::getResult)
+                .returns(record.getTransactionHash().toByteArray(), Transaction::getTransactionHash)
+                .returns(record.hasScheduleRef(), Transaction::isScheduled);
         assertRecordTransfers(record);
     }
 
     private void assertTransaction(TransactionBody transactionBody, Transaction dbTransaction) {
-        Entity dbNodeEntity = getEntity(dbTransaction.getNodeAccountId());
-        Entity dbPayerEntity = getEntity(dbTransaction.getPayerAccountId());
+        var transactionId = transactionBody.getTransactionID();
+        var validDurationSeconds = transactionBody.getTransactionValidDuration().getSeconds();
+        var validStart = Utility.timeStampInNanos(transactionId.getTransactionValidStart());
 
-        assertAll(
-                () -> assertArrayEquals(transactionBody.getMemoBytes().toByteArray(), dbTransaction.getMemo())
-                , () -> assertAccount(transactionBody.getNodeAccountID(), dbNodeEntity)
-                , () -> assertAccount(transactionBody.getTransactionID().getAccountID(), dbPayerEntity)
-                , () -> assertEquals(
-                        Utility.timeStampInNanos(transactionBody.getTransactionID().getTransactionValidStart()),
-                        dbTransaction.getValidStartNs())
-                , () -> assertEquals(transactionBody.getTransactionValidDuration().getSeconds(),
-                        dbTransaction.getValidDurationSeconds())
-                , () -> assertEquals(transactionBody.getTransactionFee(), dbTransaction.getMaxFee())
-                // By default the raw bytes are not stored
-                , () -> assertEquals(null, dbTransaction.getTransactionBytes())
-        );
+        assertThat(dbTransaction)
+                .isNotNull()
+                .returns(transactionBody.getTransactionFee(), Transaction::getMaxFee)
+                .returns(transactionBody.getMemoBytes().toByteArray(), Transaction::getMemo)
+                .returns(EntityId.of(transactionBody.getNodeAccountID()), Transaction::getNodeAccountId)
+                .returns(EntityId.of(transactionId.getAccountID()), Transaction::getPayerAccountId)
+                .returns(null, Transaction::getTransactionBytes)
+                .returns(transactionBody.getDataCase().getNumber(), Transaction::getType)
+                .returns(validStart, Transaction::getValidStartNs)
+                .returns(validDurationSeconds, Transaction::getValidDurationSeconds);
     }
 
     protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder,
