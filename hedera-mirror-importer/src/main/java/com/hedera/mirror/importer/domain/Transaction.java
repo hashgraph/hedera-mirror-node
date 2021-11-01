@@ -64,7 +64,7 @@ public class Transaction implements Persistable<Long> {
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
-≈
+
     private Integer result;
 
     private boolean scheduled;
