@@ -19,7 +19,7 @@
     <properties>
         <commons-compress.version>1.21</commons-compress.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <s3proxy.version>1.8.0</s3proxy.version>
+        <s3proxy.version>1.9.0</s3proxy.version>
         <sql-formatter.version>2.0.2</sql-formatter.version>
         <testcontainers.version>1.16.2</testcontainers.version>
     </properties>
