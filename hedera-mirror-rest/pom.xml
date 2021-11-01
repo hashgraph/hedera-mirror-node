@@ -95,9 +95,6 @@
                         </goals>
                         <configuration>
                             <arguments>test -- --maxWorkers 2</arguments>
-                            <environmentVariables>
-                                <DEBUG>testcontainers*</DEBUG>
-                            </environmentVariables>
                             <skip>${skipTests}</skip>
                         </configuration>
                         <phase>test</phase>
