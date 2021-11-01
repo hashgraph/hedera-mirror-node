@@ -66,7 +66,7 @@ const isValidTimestampParam = (timestamp) => {
 };
 
 const isValidLimitNum = (limit) => {
-  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= responseLimit.max;
+  return /^\d{1,4}$/.test(limit) && limit > 0;
 };
 
 const isValidNum = (num) => {

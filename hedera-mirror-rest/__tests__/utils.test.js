@@ -208,9 +208,6 @@ describe('Utils isValidLimitNum tests', () => {
   test('Verify invalid for negative num', () => {
     expect(utils.isValidLimitNum('-1')).toBe(false);
   });
-  test('Verify invalid above max limit', () => {
-    expect(utils.isValidLimitNum(responseLimit.max + 1)).toBe(false);
-  });
   test('Verify invalid for 0', () => {
     expect(utils.isValidLimitNum(0)).toBe(false);
   });
@@ -219,6 +216,9 @@ describe('Utils isValidLimitNum tests', () => {
   });
   test(`Verify valid for max limit or ${responseLimit.max}`, () => {
     expect(utils.isValidLimitNum(responseLimit.max)).toBe(true);
+  });
+  test('Verify valid above max limit', () => {
+    expect(utils.isValidLimitNum(responseLimit.max + 1)).toBe(true);
   });
 });
 

@@ -170,6 +170,28 @@ describe('EntityId parse from entityId string', () => {
   }
 });
 
+describe('EntityId cache', function () {
+  test('cache hit from entity ID string', () => {
+    const original = EntityId.parse('0.1.158');
+    const cached = EntityId.parse('0.1.158');
+    expect(cached).toBe(original);
+  });
+
+  test('cache hit from encoded entity ID', () => {
+    const original = EntityId.parse(4294967454);
+    const cached = EntityId.parse(4294967454);
+    expect(cached).toBe(original);
+  });
+
+  test('cache hit from BigInt / number / string', () => {
+    const original = EntityId.parse('2005');
+
+    expect(EntityId.parse(2005n)).toBe(original);
+    expect(EntityId.parse(2005)).toBe(original);
+    expect(EntityId.parse('2005')).toBe(original);
+  });
+});
+
 describe('EntityId parse from encoded entityId', () => {
   const specs = [
     {
