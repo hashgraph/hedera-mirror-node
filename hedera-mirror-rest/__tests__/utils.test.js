@@ -26,7 +26,6 @@ const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
 const {getLimitParamValue} = require('../utils');
-const {orderFilterValues} = require('../constants');
 
 const responseLimit = config.response.limit;
 
@@ -840,8 +839,6 @@ describe('Utils toHexString tests', () => {
 });
 
 describe('Utils getLimitParamValue', () => {
-  const responseLimit = config.response.limit;
-
   test('undefined', () => {
     expect(getLimitParamValue(undefined)).toEqual(responseLimit.default);
   });

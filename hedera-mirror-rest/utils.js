@@ -304,7 +304,7 @@ const parseOperatorAndValueFromQueryParam = (paramValue) => {
 /**
  * Gets the limit param value, if not exists, return the default; otherwise cap it at max. Note if values is an array,
  * the last one is honored.
- * @param {string[]} values Values of the limit param
+ * @param {string[]|string} values Values of the limit param
  * @return {number}
  */
 const getLimitParamValue = (values) => {
