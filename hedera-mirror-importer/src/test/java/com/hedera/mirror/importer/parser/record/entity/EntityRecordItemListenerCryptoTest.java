@@ -568,7 +568,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertThat(transactionRepository.findAll())
                 .hasSize(1)
-                .extracting(t -> com.hedera.mirror.importer.domain.Transaction::getResult)
+                .extracting(com.hedera.mirror.importer.domain.Transaction::getResult)
                 .containsOnly(unknownResult);
     }
 

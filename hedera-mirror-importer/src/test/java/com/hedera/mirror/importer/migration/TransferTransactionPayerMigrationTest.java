@@ -178,7 +178,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 .getCreatedTimestamp() + 500L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
         Transaction transfer5 = transaction(schedule
                 .getCreatedTimestamp() + 600L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
-        persistTransactions(List.of(
+        transactionRepository.saveAll(List.of(
                 transaction(contract.getCreatedTimestamp(), contract
                         .getId(), SUCCESS, TransactionTypeEnum.CONTRACTCREATEINSTANCE),
                 transaction(contract.getCreatedTimestamp() + 1, contract
@@ -609,35 +609,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
                             .lowerEndpoint())
             );
-        }
-    }
-
-    private void persistTransactions(List<Transaction> transactions) {
-        for (Transaction transaction : transactions) {
-            jdbcOperations
-                    .update("insert into transaction (charged_tx_fee, consensus_timestamp, entity_id, " +
-                                    "initial_balance, " +
-                                    "max_fee, " +
-                                    "memo, " +
-                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
-                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            transaction.getChargedTxFee(),
-                            transaction.getConsensusTimestamp(),
-                            transaction.getEntityId().getId(),
-                            transaction.getInitialBalance(),
-                            transaction.getMaxFee(),
-                            transaction.getMemo(),
-                            transaction.getNodeAccountId().getId(),
-                            transaction.getPayerAccountId().getId(),
-                            transaction.getResult(),
-                            transaction.isScheduled(),
-                            transaction.getTransactionBytes(),
-                            transaction.getTransactionHash(),
-                            transaction.getType().intValue(),
-                            transaction.getValidDurationSeconds(),
-                            transaction.getValidStartNs());
         }
     }
 
