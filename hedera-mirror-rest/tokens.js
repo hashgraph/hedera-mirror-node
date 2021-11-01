@@ -813,7 +813,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const deleteConditions = [
     `${Transaction.ENTITY_ID_FULL_NAME} = $1`,
     `${Transaction.TYPE_FULL_NAME} = ${TransactionTypeService.getProtoId(tokenDeleteTransactionType)}`,
-    `${Transaction.RESULT_FULL_NAME} = ${constants.transactionResultsNameToProto.SUCCESS}`,
+    `${Transaction.RESULT_FULL_NAME} = ${constants.transactionResultSuccessId}`,
   ];
 
   // add applicable filters
