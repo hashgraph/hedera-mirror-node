@@ -51,11 +51,6 @@ const processRow = (row) => {
   return accRecord;
 };
 
-const commonEntityFields = ['id', 'expiration_timestamp', 'auto_renew_period', 'key', 'deleted', 'type', 'memo'];
-const accountFields = ['max_automatic_token_associations', 'receiver_sig_required'];
-const entityFields = [...commonEntityFields, accountFields].join(',');
-const contractFields = [...commonEntityFields, ...accountFields.map((f) => `null ${f}`)].join(',');
-
 /**
  * Creates account query and params from filters with limit and order
  *
@@ -73,10 +68,7 @@ const getAccountQuery = (
   pubKeyQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: ''}
 ) => {
-  const contractWhereFilter = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
-  const entityWhereFilter = [`type = ${utils.ENTITY_TYPE_ACCOUNT}`, contractWhereFilter]
-    .filter((x) => !!x)
-    .join(' and ');
+  const entityWhereFilter = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
   const balanceWhereFilter = [
     'ab.consensus_timestamp = (select max(consensus_timestamp) as time_stamp_max from account_balance)',
     balancesAccountQuery.query,
@@ -128,13 +120,18 @@ const getAccountQuery = (
        balances.token_balances
     from balances
     ${joinType} join (
-      select ${entityFields}
-      from entity
-      where ${entityWhereFilter}
-      union
-      select ${contractFields}
-      from contract
-      ${contractWhereFilter && 'where ' + contractWhereFilter}
+      select
+        id,
+        expiration_timestamp,
+        auto_renew_period,
+        key,
+        deleted,
+        type,
+        max_automatic_token_associations,
+        memo,
+        receiver_sig_required
+      from account_contract
+      ${entityWhereFilter && 'where ' + entityWhereFilter}
       order by id ${order || ''}
       ${limitQuery || ''}
     ) e on e.id = balances.account_id
@@ -145,8 +142,6 @@ const getAccountQuery = (
     balancesAccountQuery.params,
     balanceQuery.params,
     limitParams,
-    entityAccountQuery.params,
-    pubKeyQuery.params,
     entityAccountQuery.params,
     pubKeyQuery.params,
     limitParams,
