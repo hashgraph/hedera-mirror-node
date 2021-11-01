@@ -349,7 +349,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         transaction.setEntityId(payer);
         transaction.setPayerAccountId(payer);
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
-        transaction.setResult(TransactionResult.SUCCESS);
+        transaction.setResult(TransactionResult.SUCCESS.getId());
         transaction.setType(TRANSACTION_TYPE_TOKEN_DISSOCIATE);
         transaction.setValidStartNs(consensusNs - 5);
         return transaction;
@@ -390,7 +390,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                             transaction.getMemo(),
                             transaction.getNodeAccountId().getId(),
                             transaction.getPayerAccountId().getId(),
-                            transaction.getResult().getId(),
+                            transaction.getResult(),
                             transaction.isScheduled(),
                             transaction.getTransactionBytes(),
                             transaction.getTransactionHash(),
@@ -442,7 +442,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityType.ACCOUNT));
                 transaction
                         .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityType.ACCOUNT));
-                transaction.setResult(TransactionResult.fromId(rs.getInt("result")));
+                transaction.setResult(rs.getInt("result"));
                 transaction.setType(rs.getInt("type"));
                 transaction.setValidStartNs(rs.getLong("valid_start_ns"));
                 return transaction;

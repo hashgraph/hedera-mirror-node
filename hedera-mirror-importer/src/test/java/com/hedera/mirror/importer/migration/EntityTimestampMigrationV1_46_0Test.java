@@ -43,7 +43,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -154,7 +153,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setPayerAccountId(PAYER_ID);
-        transaction.setResult(TransactionResult.fromId(result.getNumber()));
+        transaction.setResult(result.getNumber());
         transaction.setType(type.getProtoId());
         transaction.setValidStartNs(consensusNs - 10);
         return transaction;
@@ -203,7 +202,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
                             transaction.getMemo(),
                             transaction.getNodeAccountId().getId(),
                             transaction.getPayerAccountId().getId(),
-                            transaction.getResult().getId(),
+                            transaction.getResult(),
                             transaction.isScheduled(),
                             transaction.getTransactionBytes(),
                             transaction.getTransactionHash(),

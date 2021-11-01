@@ -191,7 +191,7 @@ class PgCopyTest extends IntegrationTest {
         transaction.setNodeAccountId(entityId);
         transaction.setMemo("memo".getBytes());
         transaction.setType(14);
-        transaction.setResult(TransactionResult.SUCCESS);
+        transaction.setResult(TransactionResult.SUCCESS.getId());
         transaction.setTransactionHash("transaction hash".getBytes());
         transaction.setTransactionBytes("transaction bytes".getBytes());
         transaction.setPayerAccountId(entityId);

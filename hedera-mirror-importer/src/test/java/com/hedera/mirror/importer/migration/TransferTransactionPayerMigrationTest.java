@@ -58,7 +58,6 @@ import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionResult;
 import com.hedera.mirror.importer.domain.TransactionTypeEnum;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -423,7 +422,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setPayerAccountId(PAYER_ID);
-        transaction.setResult(TransactionResult.fromId(result.getNumber()));
+        transaction.setResult(result.getNumber());
         transaction.setType(type.getProtoId());
         transaction.setValidStartNs(consensusNs - 10);
         return transaction;
@@ -632,7 +631,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                             transaction.getMemo(),
                             transaction.getNodeAccountId().getId(),
                             transaction.getPayerAccountId().getId(),
-                            transaction.getResult().getId(),
+                            transaction.getResult(),
                             transaction.isScheduled(),
                             transaction.getTransactionBytes(),
                             transaction.getTransactionHash(),
