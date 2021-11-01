@@ -176,7 +176,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     Transaction.MEMO_FULL_NAME,
     Transaction.CONSENSUS_TIMESTAMP_FULL_NAME,
     Transaction.VALID_START_NS_FULL_NAME,
-    `coalesce(ttr.result, 'UNKNOWN') AS result`,
+    Transaction.RESULT_FULL_NAME,
     `coalesce(ttt.name, 'UNKNOWN') AS name`,
     Transaction.NODE_ACCOUNT_ID_FULL_NAME,
     Transaction.CHARGED_TX_FEE_FULL_NAME,
@@ -299,7 +299,9 @@ const createTransferLists = (rows) => {
       name: row.name,
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
-      result: row.result,
+      result: constants.transactionResultsProtoToName.hasOwnProperty(row.result)
+        ? constants.transactionResultsProtoToName[row.result]
+        : 'UNKNOWN',
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
       bytes: utils.encodeBase64(row.transaction_bytes),
@@ -336,7 +338,6 @@ const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) 
   return `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery, order)}
     FROM transfer_list t
-       LEFT OUTER JOIN t_transaction_results ttr ON ttr.proto_id = ${Transaction.RESULT_FULL_NAME}
        LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = ${Transaction.TYPE_FULL_NAME}
      ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}`;
 };
@@ -649,7 +650,6 @@ const getOneTransaction = async (req, res) => {
   const sqlQuery = `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
     FROM transfer_list t
-    JOIN t_transaction_results ttr ON ttr.proto_id = ${Transaction.RESULT_FULL_NAME}
     JOIN t_transaction_types ttt ON ttt.proto_id = ${Transaction.TYPE_FULL_NAME}
     ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ASC`;
 

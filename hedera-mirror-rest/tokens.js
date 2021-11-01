@@ -38,7 +38,7 @@ const {CustomFee, Nft, NftTransfer, Token, Transaction} = require('./model');
 const {httpStatusCodes} = require('./constants');
 
 // services
-const {NftService, TokenService, TransactionResultService, TransactionTypeService} = require('./service');
+const {NftService, TokenService, TransactionTypeService} = require('./service');
 
 // view models
 const {CustomFeeViewModel, NftViewModel, NftTransactionHistoryViewModel} = require('./viewmodel');
@@ -791,7 +791,6 @@ const getTokenInfo = async (query, params) => {
 };
 
 const tokenDeleteTransactionType = 'TOKENDELETION';
-const successTransactionResult = 'SUCCESS';
 
 /**
  * Extracts SQL query, params, order, and limit
@@ -814,7 +813,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const deleteConditions = [
     `${Transaction.ENTITY_ID_FULL_NAME} = $1`,
     `${Transaction.TYPE_FULL_NAME} = ${TransactionTypeService.getProtoId(tokenDeleteTransactionType)}`,
-    `${Transaction.RESULT_FULL_NAME} = ${TransactionResultService.getProtoId(successTransactionResult)}`,
+    `${Transaction.RESULT_FULL_NAME} = ${constants.transactionResultsNameToProto.SUCCESS}`,
   ];
 
   // add applicable filters

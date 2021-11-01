@@ -25,7 +25,7 @@ const {filterKeys, orderFilterValues} = require('../constants');
 const {maxLimit} = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
-const {TransactionResultService, TransactionTypeService} = require('../service');
+const {TransactionTypeService} = require('../service');
 const {formatSqlQueryString} = require('./testutils');
 const constants = require('../constants');
 
@@ -1177,7 +1177,6 @@ describe('token validateTokenIdParam tests', () => {
 
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
   TransactionTypeService.populateTransactionTypeMaps([{entityType: 5, name: 'TOKENDELETION', protoId: 35}]);
-  TransactionResultService.populateTransactionResultMaps([{result: 'SUCCESS', protoId: 22}]);
 
   const verifyExtractSqlFromNftTransferHistoryRequest = (
     tokenId,

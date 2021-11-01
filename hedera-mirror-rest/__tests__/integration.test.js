@@ -57,7 +57,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions');
-const {TransactionResultService, TransactionTypeService} = require('../service');
+const {TransactionTypeService} = require('../service');
 const utils = require('../utils');
 
 jest.setTimeout(40000);
@@ -72,7 +72,6 @@ beforeAll(async () => {
 
   // set items that required db connection but weren't available due to integration db setup logic
   await TransactionTypeService.loadTransactionTypes();
-  await TransactionResultService.loadTransactionResults();
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
@@ -320,7 +319,7 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
 
   const sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['UNKNOWN, UNKNOWN']);
+  expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['UNKNOWN, -1']);
 });
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
