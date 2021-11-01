@@ -64,8 +64,9 @@ jest.setTimeout(40000);
 
 let sqlConnection;
 
-// set timeout for beforeAll to 4 minutes as downloading docker image if not exists can take quite some time
-const defaultBeforeAllTimeoutMillis = 240 * 1000;
+// set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
+// it's 12 minutes for CI to workaround possible DockerHub rate limit.
+const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 * 1000;
 
 beforeAll(async () => {
   sqlConnection = await integrationDbOps.instantiateDatabase();
