@@ -557,21 +557,20 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         );
     }
 
-    //TODO is this test feasible anymore?
-//    @Test
-//    void unknownTransactionResult() {
-//        int unknownResult = -1000;
-//        Transaction transaction = cryptoCreateTransaction();
-//        TransactionBody transactionBody = getTransactionBody(transaction);
-//        TransactionRecord record = transactionRecord(transactionBody, unknownResult);
-//
-//        parseRecordItemAndCommit(new RecordItem(transaction, record));
-//
-//        assertThat(transactionRepository.findAll())
-//                .hasSize(1)
-//                .extracting(t -> com.hedera.mirror.importer.domain.Transaction::getResult)
-//                .containsOnly(unknownResult);
-//    }
+    @Test
+    void unknownTransactionResult() {
+        int unknownResult = -1000;
+        Transaction transaction = cryptoCreateTransaction();
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = transactionRecord(transactionBody, unknownResult);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .extracting(t -> com.hedera.mirror.importer.domain.Transaction::getResult)
+                .containsOnly(unknownResult);
+    }
 
     private void createAccount() {
         Transaction createTransaction = cryptoCreateTransaction();
