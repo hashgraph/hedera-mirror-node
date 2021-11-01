@@ -1,4 +1,4 @@
--- Remove t_transaction_types table
+-- Remove t_transaction_results table
 
--- Drop t_transaction_types
+-- Drop t_transaction_results
 drop table t_transaction_results;

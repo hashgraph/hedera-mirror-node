@@ -299,8 +299,8 @@ const createTransferLists = (rows) => {
       name: row.name,
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
-      result: constants.transactionResultsProtoToName.hasOwnProperty(row.result)
-        ? constants.transactionResultsProtoToName[row.result]
+      result: constants.transactionResultProtoToName.hasOwnProperty(row.result)
+        ? constants.transactionResultProtoToName[row.result]
         : 'UNKNOWN',
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
