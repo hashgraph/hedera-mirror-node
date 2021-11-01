@@ -25,7 +25,7 @@ const {GenericContainer} = require('testcontainers');
 const {isDockerInstalled} = require('./integrationUtils');
 
 const localstackImageName = 'localstack/localstack';
-const localstackImageTag = '0.11.3';
+const localstackImageTag = '0.12.19.1';
 const defaultS3Port = 4566;
 
 class S3Ops {
@@ -42,7 +42,7 @@ class S3Ops {
         .withEnv('SERVICES', 's3')
         .withExposedPorts(defaultS3Port)
         .start();
-      logger.info('Started dockerized localStack');
+      logger.info('Started dockerized localstack');
       this.container = container;
       this.hostname = 'localhost';
       this.port = container.getMappedPort(defaultS3Port);
