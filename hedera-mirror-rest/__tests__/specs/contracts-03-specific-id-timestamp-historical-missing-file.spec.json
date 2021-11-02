@@ -10,15 +10,15 @@
         "auto_renew_period": 1500,
         "created_timestamp": "987654000123456",
         "file_id": "5001",
-        "id": "8001",
         "key": [1, 1, 1],
+        "num": "8001",
         "timestamp_range": "[987654000123456, 997654000123456]"
       },
       {
         "created_timestamp": "987654000123456",
         "file_id": "5001",
-        "id": "8001",
         "key": [1, 1, 1],
+        "num": "8001",
         "timestamp_range": "[997654000123457,)"
       }
     ],
