@@ -474,3 +474,4 @@ select
     type,
     null as receiver_sig_required
 from contract;
+comment on view account_contract is 'A view for accounts and contracts entities with common columns';
