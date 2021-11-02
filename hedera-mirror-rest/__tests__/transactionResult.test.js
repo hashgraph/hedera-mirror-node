@@ -29,7 +29,7 @@ const {TransactionResult} = require('../model');
 
 describe('transactionResult constants are up to date', () => {
   test('transactionResult constants are up to date', () => {
-    for (let responseCode in proto.proto.ResponseCodeEnum) {
+    for (const responseCode in proto.proto.ResponseCodeEnum) {
       if (isNaN(Number(responseCode))) {
         expect(TransactionResult.getTransactionResultProtoId(responseCode)).toBeTruthy();
       } else {
