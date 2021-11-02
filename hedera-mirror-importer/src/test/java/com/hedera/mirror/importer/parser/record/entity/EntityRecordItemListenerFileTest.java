@@ -207,7 +207,6 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCount(1, 3, 1),
-                () -> assertRowCount(1, 3, 1),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileData(transactionBody.getFileAppend().getContents(), record.getConsensusTimestamp())
         );

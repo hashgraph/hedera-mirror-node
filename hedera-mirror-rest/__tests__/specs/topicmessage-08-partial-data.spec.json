@@ -13,21 +13,14 @@
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages",
+  "url": "/api/v1/topics/7/messages/1",
   "responseStatus": 200,
   "responseJson": {
-    "messages": [
-      {
-        "consensus_timestamp": "1234567890.000000001",
-        "topic_id": "0.0.7",
-        "message": "bWVzc2FnZQ==",
-        "running_hash": "cnVubmluZ19oYXNo",
-        "running_hash_version": 2,
-        "sequence_number": 1
-      }
-    ],
-    "links": {
-      "next": null
-    }
+    "consensus_timestamp": "1234567890.000000001",
+    "topic_id": "0.0.7",
+    "message": "bWVzc2FnZQ==",
+    "running_hash": "cnVubmluZ19oYXNo",
+    "running_hash_version": 2,
+    "sequence_number": 1
   }
 }
