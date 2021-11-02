@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for transactions with fail result type",
+  "description": "Transaction api calls for transactions with unknown result type",
   "setup": {
     "accounts": [
       {
