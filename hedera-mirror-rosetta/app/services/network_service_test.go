@@ -172,12 +172,9 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 		},
 		Allow: &rTypes.Allow{
 			OperationStatuses: []*rTypes.OperationStatus{
+				//TODO This will need a full list
 				{
-					Status:     "Pending",
-					Successful: false,
-				},
-				{
-					Status:     "Success",
+					Status:     "SUCCESS",
 					Successful: true,
 				},
 			},
@@ -187,9 +184,6 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 		},
 	}
 
-	suite.mockTransactionRepo.
-		On("Results").
-		Return(map[int]string{1: "Pending", 22: "Success"}, mocks.NilError)
 	suite.mockTransactionRepo.On("TypesAsArray").Return([]string{"Transfer"}, mocks.NilError)
 
 	// when:
@@ -202,18 +196,6 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 	assert.ElementsMatch(suite.T(), expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
 	assert.ElementsMatch(suite.T(), expectedResult.Allow.Errors, res.Allow.Errors)
 	assert.Nil(suite.T(), e)
-}
-
-func (suite *networkServiceSuite) TestNetworkOptionsThrowsWhenStatusesFails() {
-	var nilStatuses map[int]string = nil
-	suite.mockTransactionRepo.On("TypesAsArray").Return([]string{"Transfer"}, mocks.NilError)
-	suite.mockTransactionRepo.On("Results").Return(nilStatuses, &rTypes.Error{})
-
-	// when:
-	res, e := suite.networkService.NetworkOptions(nil, nil)
-
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
 }
 
 func (suite *networkServiceSuite) TestNetworkOptionsThrowsWhenTypesAsArrayFails() {
