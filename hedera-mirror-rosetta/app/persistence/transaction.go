@@ -492,7 +492,7 @@ func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) *
 	return nil
 }
 
-func IsTransactionResultSuccessful(result int) bool {
+func IsTransactionResultSuccessful(result int32) bool {
 	return result == transactionResultSuccess
 }
 
