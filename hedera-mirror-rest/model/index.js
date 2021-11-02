@@ -33,5 +33,6 @@ module.exports = {
   TokenKycStatus: require('./tokenKycStatus'),
   TokenTransfer: require('./tokenTransfer'),
   Transaction: require('./transaction'),
+  TransactionResult: require('./transactionResult'),
   TransactionType: require('./transactionType'),
 };

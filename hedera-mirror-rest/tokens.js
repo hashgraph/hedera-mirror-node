@@ -32,7 +32,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // models
-const {CustomFee, Nft, NftTransfer, Token, Transaction} = require('./model');
+const {CustomFee, Nft, NftTransfer, Token, Transaction, TransactionResult} = require('./model');
 
 // middleware
 const {httpStatusCodes} = require('./constants');
@@ -813,7 +813,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const deleteConditions = [
     `${Transaction.ENTITY_ID_FULL_NAME} = $1`,
     `${Transaction.TYPE_FULL_NAME} = ${TransactionTypeService.getProtoId(tokenDeleteTransactionType)}`,
-    `${Transaction.RESULT_FULL_NAME} = ${constants.transactionResultSuccessId}`,
+    `${Transaction.RESULT_FULL_NAME} = ${TransactionResult.getSuccessTransactionProtoId()}`,
   ];
 
   // add applicable filters

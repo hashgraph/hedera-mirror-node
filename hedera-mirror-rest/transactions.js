@@ -28,7 +28,14 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
 const {NotFoundError} = require('./errors/notFoundError');
-const {AssessedCustomFee, CryptoTransfer, NftTransfer, TokenTransfer, Transaction} = require('./model');
+const {
+  AssessedCustomFee,
+  CryptoTransfer,
+  NftTransfer,
+  TokenTransfer,
+  Transaction,
+  TransactionResult,
+} = require('./model');
 const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
 
 /**
@@ -299,9 +306,7 @@ const createTransferLists = (rows) => {
       name: row.name,
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
-      result: constants.transactionResultProtoToName.hasOwnProperty(row.result)
-        ? constants.transactionResultProtoToName[row.result]
-        : 'UNKNOWN',
+      result: TransactionResult.getTransactionResultName(row.result),
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
       bytes: utils.encodeBase64(row.transaction_bytes),
