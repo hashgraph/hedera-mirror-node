@@ -172,10 +172,13 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 		},
 		Allow: &rTypes.Allow{
 			OperationStatuses: []*rTypes.OperationStatus{
-				//TODO This will need a full list
 				{
 					Status:     "SUCCESS",
 					Successful: true,
+				},
+				{
+					Status:     "OK",
+					Successful: false,
 				},
 			},
 			OperationTypes:          []string{"Transfer"},

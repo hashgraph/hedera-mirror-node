@@ -57,8 +57,7 @@ func (n *networkAPIService) NetworkOptions(
 	if err != nil {
 		return nil, err
 	}
-	//TODO Replace the 2 with a length of the enum
-	operationStatuses := make([]*types.OperationStatus, 0, 2)
+	operationStatuses := make([]*types.OperationStatus, 0, len(hTypes.TransactionResults))
 	for value, name := range hTypes.TransactionResults {
 		operationStatuses = append(operationStatuses, &types.OperationStatus{
 			Status:     name,
