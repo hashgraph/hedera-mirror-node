@@ -467,8 +467,8 @@ func NewTransactionRepository(dbClient interfaces.DbClient) interfaces.Transacti
 }
 
 func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int64) (
-		[]*types.Transaction,
-		*rTypes.Error,
+	[]*types.Transaction,
+	*rTypes.Error,
 ) {
 	if start > end {
 		return nil, hErrors.ErrStartMustNotBeAfterEnd
@@ -524,10 +524,10 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 }
 
 func (tr *transactionRepository) FindByHashInBlock(
-		ctx context.Context,
-		hashStr string,
-		consensusStart int64,
-		consensusEnd int64,
+	ctx context.Context,
+	hashStr string,
+	consensusStart int64,
+	consensusEnd int64,
 ) (*types.Transaction, *rTypes.Error) {
 	var transactions []*transaction
 	transactionHash, err := hex.DecodeString(tools.SafeRemoveHexPrefix(hashStr))
@@ -578,8 +578,8 @@ func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *r
 }
 
 func (tr *transactionRepository) constructTransaction(ctx context.Context, sameHashTransactions []*transaction) (
-		*types.Transaction,
-		*rTypes.Error,
+	*types.Transaction,
+	*rTypes.Error,
 ) {
 	if err := tr.retrieveTransactionTypes(ctx); err != nil {
 		return nil, err
@@ -642,10 +642,10 @@ func (tr *transactionRepository) constructTransaction(ctx context.Context, sameH
 }
 
 func (tr *transactionRepository) appendHbarTransferOperations(
-		transactionResult string,
-		transactionType string,
-		hbarTransfers []hbarTransfer,
-		operations []*types.Operation,
+	transactionResult string,
+	transactionType string,
+	hbarTransfers []hbarTransfer,
+	operations []*types.Operation,
 ) []*types.Operation {
 	transfers := make([]transfer, 0, len(hbarTransfers))
 	for _, hbarTransfer := range hbarTransfers {
@@ -656,10 +656,10 @@ func (tr *transactionRepository) appendHbarTransferOperations(
 }
 
 func (tr *transactionRepository) appendNftTransferOperations(
-		transactionResult string,
-		transactionType string,
-		nftTransfers []domain.NftTransfer,
-		operations []*types.Operation,
+	transactionResult string,
+	transactionType string,
+	nftTransfers []domain.NftTransfer,
+	operations []*types.Operation,
 ) []*types.Operation {
 	transfers := make([]transfer, 0, 2*len(nftTransfers))
 	for _, nftTransfer := range nftTransfers {
@@ -670,10 +670,10 @@ func (tr *transactionRepository) appendNftTransferOperations(
 }
 
 func (tr *transactionRepository) appendTokenTransferOperations(
-		transactionResult string,
-		transactionType string,
-		tokenTransfers []tokenTransfer,
-		operations []*types.Operation,
+	transactionResult string,
+	transactionType string,
+	tokenTransfers []tokenTransfer,
+	operations []*types.Operation,
 ) []*types.Operation {
 	transfers := make([]transfer, 0, len(tokenTransfers))
 	for _, tokenTransfer := range tokenTransfers {
@@ -690,10 +690,10 @@ func (tr *transactionRepository) appendTokenTransferOperations(
 }
 
 func (tr *transactionRepository) appendTransferOperations(
-		transactionResult string,
-		transactionType string,
-		transfers []transfer,
-		operations []*types.Operation,
+	transactionResult string,
+	transactionType string,
+	transfers []transfer,
+	operations []*types.Operation,
 ) []*types.Operation {
 	for _, transfer := range transfers {
 		operations = append(operations, &types.Operation{
@@ -746,8 +746,8 @@ func constructAccount(encodedId int64) (types.Account, *rTypes.Error) {
 }
 
 func adjustCryptoTransfers(
-		cryptoTransfers []hbarTransfer,
-		nonFeeTransferMap map[int64]int64,
+	cryptoTransfers []hbarTransfer,
+	nonFeeTransferMap map[int64]int64,
 ) []hbarTransfer {
 	cryptoTransferMap := make(map[int64]hbarTransfer)
 	for _, transfer := range cryptoTransfers {
@@ -806,11 +806,11 @@ func getSingleNftTransfers(nftTransfer domain.NftTransfer) []transfer {
 }
 
 func getTokenOperation(
-		index int,
-		token domain.Token,
-		transaction *transaction,
-		transactionResult string,
-		transactionType string,
+	index int,
+	token domain.Token,
+	transaction *transaction,
+	transactionResult string,
+	transactionType string,
 ) (*types.Operation, *rTypes.Error) {
 	payerId, err := constructAccount(transaction.PayerAccountId)
 	if err != nil {
