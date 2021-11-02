@@ -66,8 +66,7 @@ class ContractUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
                 "proxy_account_id = coalesce(contract_temp.proxy_account_id, contract.proxy_account_id), " +
                 "public_key = coalesce(contract_temp.public_key, contract.public_key), " +
                 "timestamp_range = coalesce(contract_temp.timestamp_range, contract.timestamp_range) " +
-                "from contract_temp where contract.id = contract_temp.id and contract_temp.created_timestamp is null " +
-                "and lower(contract_temp.timestamp_range) > 0";
+                "from contract_temp where contract.id = contract_temp.id and contract_temp.created_timestamp is null";
     }
 
     @Test

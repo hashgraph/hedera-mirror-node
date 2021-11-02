@@ -61,8 +61,7 @@ class EntityUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
                 "receiver_sig_required = coalesce(entity_temp.receiver_sig_required, entity.receiver_sig_required), " +
                 "submit_key = coalesce(entity_temp.submit_key, entity.submit_key), " +
                 "timestamp_range = coalesce(entity_temp.timestamp_range, entity.timestamp_range) " +
-                "from entity_temp where entity.id = entity_temp.id and entity_temp.created_timestamp is null and " +
-                "lower(entity_temp.timestamp_range) > 0";
+                "from entity_temp where entity.id = entity_temp.id and entity_temp.created_timestamp is null";
     }
 
     @Test

@@ -67,9 +67,7 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            EntityId proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
-            entity.setProxyAccountId(proxyAccountId);
-            entityListener.onEntityId(proxyAccountId);
+            entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
         if (transactionBody.hasReceiverSigRequiredWrapper()) {
