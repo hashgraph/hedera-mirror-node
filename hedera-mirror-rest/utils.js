@@ -65,12 +65,16 @@ const isValidTimestampParam = (timestamp) => {
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
-const isValidLimitNum = (limit) => {
-  return /^\d{1,4}$/.test(limit) && limit > 0;
-};
-
-const isValidNum = (num) => {
-  return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
+/**
+ * Validates that num is a safe positive integer.
+ * @param {number|string} num
+ * @return {boolean}
+ */
+const isValidPositiveInt = (num) => {
+  // if num is not a number, parsed will be NaN; if num is a number but not an integer, the strings of num and parsed
+  // will be different
+  const parsed = parseInt(num, 10);
+  return `${num}` === `${parsed}` && parsed > 0 && Number.isSafeInteger(parsed);
 };
 
 const isValidOperatorQuery = (query) => {
@@ -185,8 +189,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.LIMIT:
-      // Acceptable forms: upto 4 digits
-      ret = isValidLimitNum(val);
+      ret = isValidPositiveInt(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -207,7 +210,7 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
-      ret = isValidNum(val);
+      ret = isValidPositiveInt(val);
       break;
     case constants.filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
@@ -986,8 +989,7 @@ module.exports = {
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,
-  isValidLimitNum,
-  isValidNum,
+  isValidPositiveInt,
   isValidTimestampParam,
   isValidTransactionType,
   loadPgRange,

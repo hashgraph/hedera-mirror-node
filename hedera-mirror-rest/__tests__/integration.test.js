@@ -40,6 +40,7 @@
  * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
  * in the specs/ dir.
  */
+const yaml = require('js-yaml');
 // external libraries
 const S3 = require('aws-sdk/clients/s3');
 const crypto = require('crypto');
@@ -501,12 +502,7 @@ describe('DB integration test - spec based', () => {
 
   const restoreConfig = () => {
     if (configOverridden) {
-      Object.assign(config, configClone);
-      Object.keys(config).forEach((key) => {
-        if (!(key in configClone)) {
-          delete config[key];
-        }
-      });
+      _.merge(config, configClone);
       configOverridden = false;
     }
   };

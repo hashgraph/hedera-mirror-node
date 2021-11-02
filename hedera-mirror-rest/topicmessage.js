@@ -64,7 +64,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
     badParams.push(constants.filterKeys.TOPIC_ID);
   }
 
-  if (!utils.isValidNum(seqNum)) {
+  if (!utils.isValidPositiveInt(seqNum)) {
     badParams.push(constants.filterKeys.SEQUENCE_NUMBER);
   }
 
