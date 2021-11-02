@@ -264,12 +264,10 @@ const transactionResultProtoToName = {
 
 const successTransactionResult = 'SUCCESS';
 
-const transactionResultNameToProto = _.reverse(transactionResultProtoToName);
+const transactionResultNameToProto = _.invert(transactionResultProtoToName);
 
 const getTransactionResultName = (protoId) => {
-  return transactionResultProtoToName.hasOwnProperty(protoId)
-    ? constants.transactionResultProtoToName[protoId]
-    : 'UNKNOWN';
+  return transactionResultProtoToName.hasOwnProperty(protoId) ? transactionResultProtoToName[protoId] : 'UNKNOWN';
 };
 
 const getTransactionResultProtoId = (resultName) => {

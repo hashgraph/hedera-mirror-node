@@ -20,9 +20,7 @@
 
 'use strict';
 
-const constants = require('../mod');
 const proto = require('@hashgraph/proto/lib/proto');
-const _ = require('lodash');
 
 // models
 const {TransactionResult} = require('../model');
@@ -31,6 +29,7 @@ describe('transactionResult constants are up to date', () => {
   test('transactionResult constants are up to date', () => {
     for (const responseCode in proto.proto.ResponseCodeEnum) {
       if (isNaN(Number(responseCode))) {
+        console.log(responseCode);
         expect(TransactionResult.getTransactionResultProtoId(responseCode)).toBeTruthy();
       } else {
         expect(TransactionResult.getTransactionResultName(responseCode)).toBeTruthy();
@@ -45,10 +44,10 @@ describe('transactionResults getters work as expected', () => {
   });
 
   test('getTransactionResultProtoId handles unknown', () => {
-    expect(TransactionResult.getTransactionResultProtoId('XYZ')).tobeFalsy();
+    expect(TransactionResult.getTransactionResultProtoId('XYZ')).toBeFalsy();
   });
 
   test('getTransactionResultProtoId handles unknown', () => {
-    expect(TransactionResult.getSuccessTransactionProtoId('XYZ')).toEqual(22);
+    expect(TransactionResult.getSuccessTransactionProtoId()).toEqual('22');
   });
 });
