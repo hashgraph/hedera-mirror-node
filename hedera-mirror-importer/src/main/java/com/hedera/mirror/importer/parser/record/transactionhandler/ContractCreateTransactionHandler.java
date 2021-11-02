@@ -38,12 +38,10 @@ import com.hedera.mirror.importer.util.Utility;
 class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
 
     private final Cloner cloner;
-    private final EntityProperties entityProperties;
 
     ContractCreateTransactionHandler(Cloner cloner, EntityListener entityListener, EntityProperties entityProperties) {
-        super(entityListener);
+        super(entityListener, entityProperties);
         this.cloner = cloner;
-        this.entityProperties = entityProperties;
     }
 
     @Override
@@ -69,7 +67,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         transaction.setInitialBalance(transactionBody.getInitialBalance());
         Supplier<Contract> inheritedContract = Contract::new;
 
-        if (!EntityId.isEmpty(entityId) && recordItem.isSuccessful()) {
+        if (!EntityId.isEmpty(entityId) && recordItem.isSuccessful() && entityProperties.getPersist().isContracts()) {
             Contract contract = entityId.toEntity();
             contract.setCreatedTimestamp(consensusTimestamp);
             contract.setDeleted(false);

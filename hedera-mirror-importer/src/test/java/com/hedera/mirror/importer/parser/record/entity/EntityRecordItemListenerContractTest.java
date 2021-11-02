@@ -157,11 +157,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count())
-                , () -> assertEntities(EntityId.of(CONTRACT_ID))
                 , () -> assertEquals(0, contractResultRepository.count())
                 , () -> assertEquals(3, cryptoTransferRepository.count())
+                , () -> assertEntities()
                 , () -> assertTransactionAndRecord(transactionBody, record)
-                , () -> assertContractEntity(recordItem)
                 , () -> assertFalse(getContractResult(record.getConsensusTimestamp()).isPresent())
         );
     }

@@ -34,12 +34,14 @@ import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor
 abstract class AbstractContractCallTransactionHandler implements TransactionHandler {
 
     protected final EntityListener entityListener;
+    protected final EntityProperties entityProperties;
 
     protected final void onContractResult(RecordItem recordItem, Supplier<Contract> inheritedContract,
                                           ContractResult contractResult,
@@ -53,7 +55,8 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             createdContractIds.add(contractId.getId());
 
             // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-            if (isSuccessful && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
+            if (isSuccessful && !EntityId.isEmpty(contractId) && entityProperties.getPersist().isContracts() &&
+                    !contractId.equals(contractResult.getContractId())) {
                 Contract contract = inheritedContract.get();
                 contract.setCreatedTimestamp(consensusTimestamp);
                 contract.setDeleted(false);
