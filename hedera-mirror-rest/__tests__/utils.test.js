@@ -192,36 +192,39 @@ describe('Utils parseTimestampParam tests', () => {
   });
 });
 
-describe('Utils isValidPositiveInt tests', () => {
+describe('Utils isPositiveLong', () => {
   test('Verify invalid for null', () => {
-    expect(utils.isValidPositiveInt(null)).toBe(false);
+    expect(utils.isPositiveLong(null)).toBe(false);
   });
   test('Verify invalid for empty input', () => {
-    expect(utils.isValidPositiveInt('')).toBe(false);
+    expect(utils.isPositiveLong('')).toBe(false);
   });
   test('Verify invalid for invalid input', () => {
-    expect(utils.isValidPositiveInt('1234567890.000000001')).toBe(false);
+    expect(utils.isPositiveLong('1234567890.000000001')).toBe(false);
   });
   test('Verify invalid for entity format shard', () => {
-    expect(utils.isValidPositiveInt('1.0.1')).toBe(false);
+    expect(utils.isPositiveLong('1.0.1')).toBe(false);
   });
   test('Verify invalid for negative num', () => {
-    expect(utils.isValidPositiveInt(-1)).toBe(false);
+    expect(utils.isPositiveLong(-1)).toBe(false);
   });
   test('Verify invalid for 0', () => {
-    expect(utils.isValidPositiveInt(0)).toBe(false);
+    expect(utils.isPositiveLong(0)).toBe(false);
   });
-  test(`Verify invalid for number > MAX_SAFE_INTEGER: 9007199254740992`, () => {
-    expect(utils.isValidPositiveInt('9007199254740992')).toBe(false);
+  test(`Verify invalid for unsigned long 9223372036854775808`, () => {
+    expect(utils.isPositiveLong('9223372036854775808')).toBe(false);
+  });
+  test('Verify invalid for 0 with allowZero=true', () => {
+    expect(utils.isPositiveLong(0, true)).toBe(true);
   });
   test('Verify valid for valid number string', () => {
-    expect(utils.isValidPositiveInt('123')).toBe(true);
+    expect(utils.isPositiveLong('123')).toBe(true);
   });
   test('Verify valid for valid number', () => {
-    expect(utils.isValidPositiveInt(123)).toBe(true);
+    expect(utils.isPositiveLong(123)).toBe(true);
   });
-  test(`Verify valid for Number.MAX_SAFE_INTEGER: ${Number.MAX_SAFE_INTEGER}`, () => {
-    expect(utils.isValidPositiveInt(Number.MAX_SAFE_INTEGER)).toBe(true);
+  test(`Verify valid for max unsigned long: 9223372036854775807`, () => {
+    expect(utils.isPositiveLong('9223372036854775807')).toBe(true);
   });
 });
 
@@ -820,8 +823,8 @@ describe('Utils getLimitParamValue', () => {
     expect(getLimitParamValue(`${responseLimit.max + 1}`)).toEqual(responseLimit.max);
   });
 
-  test('NaN', () => {
-    expect(getLimitParamValue('bad')).toEqual(responseLimit.default);
+  test('max signed long', () => {
+    expect(getLimitParamValue('9223372036854775807')).toEqual(responseLimit.max);
   });
 
   test('values array', () => {

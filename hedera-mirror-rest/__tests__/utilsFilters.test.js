@@ -480,7 +480,7 @@ describe('utils validateAndParseFilters account balance key tests', () => {
   const filters = [
     utils.buildComparatorFilter(key, '0'),
     utils.buildComparatorFilter(key, '1000000000'),
-    utils.buildComparatorFilter(key, '1234567890123456789'),
+    utils.buildComparatorFilter(key, '9223372036854775807'),
   ];
 
   verifyValidAndInvalidFilters(invalidFilters, filters);

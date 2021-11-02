@@ -276,14 +276,14 @@ const validateTokenQueryFilter = (param, op, val) => {
       ret = utils.isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.LIMIT:
-      ret = utils.isValidPositiveInt(val);
+      ret = utils.isPositiveLong(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
       ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
       break;
     case constants.filterKeys.SERIAL_NUMBER:
-      ret = utils.isValidPositiveInt(val);
+      ret = utils.isPositiveLong(val);
       break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
@@ -681,7 +681,7 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
  * Verify serialnumber meets expected integer format and range
  */
 const validateSerialNumberParam = (serialNumber) => {
-  if (!utils.isValidPositiveInt(serialNumber)) {
+  if (!utils.isPositiveLong(serialNumber)) {
     throw InvalidArgumentError.forParams(constants.filterKeys.SERIAL_NUMBER);
   }
 };

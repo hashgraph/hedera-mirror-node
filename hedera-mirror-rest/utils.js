@@ -23,6 +23,7 @@
 const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
+const long = require('long');
 const math = require('mathjs');
 const util = require('util');
 
@@ -56,6 +57,20 @@ const isNumeric = (n) => {
   return !isNaN(parseFloat(n)) && isFinite(n);
 };
 
+// The max signed long has 19 digits
+const positiveLongRegex = /^\d{1,19}$/;
+
+/**
+ * Validates that num is a positive long.
+ * @param {number|string} num
+ * @param {boolean} allowZero
+ * @return {boolean}
+ */
+const isPositiveLong = (num, allowZero = false) => {
+  const min = allowZero ? 0 : 1;
+  return positiveLongRegex.test(num) && long.fromValue(num).greaterThanOrEqual(min);
+};
+
 const isValidBooleanOpAndValue = (op, val) => {
   return op === 'eq' && /^(true|false)$/i.test(val);
 };
@@ -65,24 +80,8 @@ const isValidTimestampParam = (timestamp) => {
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
-/**
- * Validates that num is a safe positive integer.
- * @param {number|string} num
- * @return {boolean}
- */
-const isValidPositiveInt = (num) => {
-  // if num is not a number, parsed will be NaN; if num is a number but not an integer, the strings of num and parsed
-  // will be different
-  const parsed = parseInt(num, 10);
-  return `${num}` === `${parsed}` && parsed > 0 && Number.isSafeInteger(parsed);
-};
-
 const isValidOperatorQuery = (query) => {
   return /^(gte?|lte?|eq|ne)$/.test(query);
-};
-
-const isValidAccountBalanceQuery = (query) => {
-  return /^\d{1,19}$/.test(query);
 };
 
 const isValidPublicKeyQuery = (query) => {
@@ -160,8 +159,7 @@ const filterValidityChecks = (param, op, val) => {
   // Validate the value
   switch (param) {
     case constants.filterKeys.ACCOUNT_BALANCE:
-      // Accepted forms: Upto 50 billion
-      ret = isValidAccountBalanceQuery(val);
+      ret = isPositiveLong(val, true);
       break;
     case constants.filterKeys.ACCOUNT_ID:
       ret = EntityId.isValidEntityId(val);
@@ -189,7 +187,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.LIMIT:
-      ret = isValidPositiveInt(val);
+      ret = isPositiveLong(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -209,8 +207,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
-      // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
-      ret = isValidPositiveInt(val);
+      ret = isPositiveLong(val);
       break;
     case constants.filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
@@ -313,11 +310,9 @@ const parseOperatorAndValueFromQueryParam = (paramValue) => {
 const getLimitParamValue = (values) => {
   let ret = responseLimit.default;
   if (values !== undefined) {
-    let value = Array.isArray(values) ? values[values.length - 1] : values;
-    value = Number(value);
-    if (!Number.isNaN(value)) {
-      ret = Math.min(value, responseLimit.max);
-    }
+    const value = Array.isArray(values) ? values[values.length - 1] : values;
+    const parsed = long.fromValue(value);
+    ret = parsed.greaterThan(responseLimit.max) ? responseLimit.max : parsed.toNumber();
   }
   return ret;
 };
@@ -986,10 +981,10 @@ module.exports = {
   ipMask,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
+  isPositiveLong,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,
-  isValidPositiveInt,
   isValidTimestampParam,
   isValidTransactionType,
   loadPgRange,
