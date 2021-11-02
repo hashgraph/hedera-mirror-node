@@ -171,8 +171,6 @@ module.exports = {
   responseDataLabel,
   tokenTypeFilter,
   transactionColumns,
-  transactionResultSuccessId,
-  transactionResultProtoToName,
   transactionResultFilter,
   zeroRandomPageCostQueryHint,
 };
