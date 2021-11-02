@@ -2,4 +2,5 @@
 
 delete
 from entity
-where id in (select id from contract);
+where lower(timestamp_range) <= 0
+  and id in (select id from contract);

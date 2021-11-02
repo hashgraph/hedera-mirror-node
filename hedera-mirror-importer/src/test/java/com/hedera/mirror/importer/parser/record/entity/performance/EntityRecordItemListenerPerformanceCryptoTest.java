@@ -78,7 +78,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
     @Timeout(2)
     void insertHighCreateEntityCount() {
         parseRecordItemsAndCommit(insertRecordItemList);
-        assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size() + CONNECTED_ENTITY_COUNT);
+        assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size());
     }
 
     @Test
@@ -88,7 +88,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
         parseRecordItemsAndCommit(insertRecordItemList);
         log.info("Inserting {} entities took {} ms", insertRecordItemList.size(),
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
-        assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size() + CONNECTED_ENTITY_COUNT);
+        assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size());
 
         startTime = Instant.now();
         parseRecordItemsAndCommit(updateRecordItemList);
@@ -96,7 +96,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
         log.info("Inserting {} entities with {} updates took {} ms", updateRecordItemList.size(), updateCount,
                 java.time.Duration.between(startTime, Instant.now()).getNano() / 1000000);
         assertThat(entityRepository.findAll())
-                .hasSize(insertRecordItemList.size() + updateCount + CONNECTED_ENTITY_COUNT);
+                .hasSize(insertRecordItemList.size() + updateCount);
     }
 
     private RecordItem getCreateAccountRecordItem(int accountNum) throws Exception {
