@@ -20,16 +20,15 @@
 
 'use strict';
 
-const proto = require('@hashgraph/proto/lib/proto');
+const {proto} = require('@hashgraph/proto/lib/proto');
 
 // models
 const {TransactionResult} = require('../model');
 
 describe('transactionResult constants are up to date', () => {
   test('transactionResult constants are up to date', () => {
-    for (const responseCode in proto.proto.ResponseCodeEnum) {
+    for (const responseCode in proto.ResponseCodeEnum) {
       if (isNaN(Number(responseCode))) {
-        console.log(responseCode);
         expect(TransactionResult.getTransactionResultProtoId(responseCode)).toBeTruthy();
       } else {
         expect(TransactionResult.getTransactionResultName(responseCode)).toBeTruthy();
