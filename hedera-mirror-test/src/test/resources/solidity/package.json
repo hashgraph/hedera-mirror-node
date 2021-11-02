@@ -1,0 +1,22 @@
+{
+  "name": "hedera-mirror-test-smart-contracts",
+  "version": "1.0.0",
+  "description": "A collection of smart contracts used for E2E Hedera network and mirror node testing",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test"
+  },
+  "author": "Hedera Mirror Node Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "chai": "^4.3.4",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.5.1",
+    "hardhat": "^2.6.7"
+  },
+  "dependencies": {
+    "chai-as-promised": "^7.1.1"
+  }
+}
