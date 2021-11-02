@@ -83,29 +83,6 @@ const validateGetTopicMessagesParams = (topicId) => {
 };
 
 /**
- * Verify topicId exists and is a topic id
- *
- * @param {EntityId} topicId the topic ID object
- * @param {string} origTopicIdStr the original topic ID string
- * @return {Promise<void>}
- */
-const validateTopicId = async (topicId, origTopicIdStr) => {
-  const encodedId = topicId.getEncodedId();
-  const pgSqlQuery = `SELECT te.type
-                      FROM entity te
-                      WHERE te.id = $1;`;
-
-  const {rows} = await pool.queryQuietly(pgSqlQuery, encodedId);
-  if (_.isEmpty(rows)) {
-    throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
-  }
-
-  if (rows[0].type !== constants.entityTypes.TOPIC) {
-    throw new InvalidArgumentError(`${origTopicIdStr} is not a topic id`);
-  }
-};
-
-/**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
 const formatTopicMessageRow = (row, messageEncoding) => {
@@ -150,7 +127,6 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
   const topicId = EntityId.parse(topicIdStr);
-  await validateTopicId(topicId, topicIdStr);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
   const pgSqlQuery = `select *
@@ -173,7 +149,6 @@ const getTopicMessages = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
 
   const topicId = EntityId.parse(topicIdStr);
-  await validateTopicId(topicId, topicIdStr);
 
   // build sql query validated param and filters
   const {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);

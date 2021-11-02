@@ -26,9 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.importer.domain.EntityType;
-
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -53,6 +50,7 @@ import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
 import com.hedera.mirror.importer.domain.LiveHash;
 import com.hedera.mirror.importer.domain.Nft;
@@ -161,7 +159,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setType(ACCOUNT);
 
         // when
-        sqlEntityListener.onEntityId(entity.toEntityId()); // Removed after onContract
+        sqlEntityListener.onEntity(entity); // Removed after onContract
         sqlEntityListener.onContract(contract);
         sqlEntityListener.onEntity(entity); // Ignored
         completeFileAndCommit();
@@ -178,10 +176,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
 
         // when
-        sqlEntityListener.onEntityId(contract.toEntityId());
         sqlEntityListener.onContract(contract);
         sqlEntityListener.onContract(contract);
-        sqlEntityListener.onEntityId(contract.toEntityId());
         completeFileAndCommit();
 
         // then
@@ -401,18 +397,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(getEntityWithDefaultMemo(entityId));
-        assertThat(contractRepository.count()).isZero();
-    }
-
-    @Test
-    void onEntityIdEmpty() {
-        // when
-        sqlEntityListener.onEntityId(EntityId.EMPTY);
-        completeFileAndCommit();
-
-        // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertThat(entityRepository.count()).isZero();
         assertThat(contractRepository.count()).isZero();
     }
 

@@ -82,14 +82,14 @@ const nftFilterColumnMap = {
 const nftSelectFields = [
   'nft.account_id',
   'nft.created_timestamp',
-  'nft.deleted or e.deleted as deleted',
+  'nft.deleted or coalesce(e.deleted, false) as deleted',
   'nft.metadata',
   'nft.modified_timestamp',
   'nft.serial_number',
   'nft.token_id',
 ];
 const nftSelectQuery = ['select', nftSelectFields.join(',\n'), 'from nft'].join('\n');
-const entityNftsJoinQuery = 'join entity e on e.id = nft.token_id';
+const entityNftsJoinQuery = 'left join entity e on e.id = nft.token_id';
 
 // token discovery sql queries
 const tokenAccountCte = `with ta as (

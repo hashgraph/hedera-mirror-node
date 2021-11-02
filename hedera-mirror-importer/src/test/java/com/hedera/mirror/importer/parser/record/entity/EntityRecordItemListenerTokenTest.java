@@ -123,16 +123,22 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
     private static final long TRANSFER_TIMESTAMP = 15L;
     private static final EntityId PAYER_ACCOUNT_ID = EntityId.of(PAYER);
+
     @Resource
-    protected TokenRepository tokenRepository;
+    private TokenRepository tokenRepository;
+
     @Resource
-    protected TokenAccountRepository tokenAccountRepository;
+    private TokenAccountRepository tokenAccountRepository;
+
     @Resource
-    protected TokenTransferRepository tokenTransferRepository;
+    private TokenTransferRepository tokenTransferRepository;
+
     @Resource
-    protected NftRepository nftRepository;
+    private NftRepository nftRepository;
+
     @Resource
-    protected NftTransferRepository nftTransferRepository;
+    private NftTransferRepository nftTransferRepository;
+
     @Resource
     private JdbcTemplate jdbcTemplate;
 
@@ -417,8 +423,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // given
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
-        // node, token, autorenew, and the number of accounts associated with the token (including the treasury)
-        long expectedEntityCount = 3 + expectedTokenAccounts.size();
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(TokenAccount::getId)
                 .map(TokenAccountId::getAccountId)
@@ -429,7 +433,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 kycKey, pauseKey, customFees, autoAssociatedAccounts);
 
         // then
-        assertEquals(expectedEntityCount, entityRepository.count());
+        assertEquals(1L, entityRepository.count());
         assertEntity(expected);
 
         // verify token
@@ -570,7 +574,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 true, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, deleteTimeStamp);
-        assertEquals(5, entityRepository.count()); // Node, payer (treasury), token, autorenew, and payer2
+        assertEquals(1L, entityRepository.count());
         assertEntity(expected);
 
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
@@ -618,7 +622,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
                 TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null, CREATE_TIMESTAMP,
                 updateTimeStamp);
-        assertEquals(5, entityRepository.count()); // Node, payer, token, old autorenew, and new autorenew
+        assertEquals(1L, entityRepository.count());
         assertEntity(expected);
 
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, updateTimeStamp, newSymbol, INITIAL_SUPPLY,
@@ -1214,15 +1218,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // given
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
-        // node, token, autorenew, and the number of accounts associated with the token (including the treasury)
-        long expectedEntityCount = 3 + expectedTokenAccounts.size();
 
         // when
         createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, freezeDefault, freezeKey,
                 kycKey, pauseKey, customFees, autoAssociatedAccounts);
 
         // then
-        assertEquals(expectedEntityCount, entityRepository.count());
+        assertEquals(1L, entityRepository.count());
         assertEntity(expected);
 
         // verify token
