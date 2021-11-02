@@ -28,7 +28,7 @@
         "amount": 10,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
-        "result": 9999999
+        "result": 32767
       }
     ]
   },
