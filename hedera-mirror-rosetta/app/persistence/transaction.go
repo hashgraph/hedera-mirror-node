@@ -375,7 +375,7 @@ func (tr *transactionRepository) constructTransaction(ctx context.Context, sameH
 			return nil, hErrors.ErrInternalServerError
 		}
 
-		transactionResult := types.TransactionResults[int(transaction.Result)]
+		transactionResult := types.TransactionResults[int32(transaction.Result)]
 		transactionType := tr.types[int(transaction.Type)]
 
 		nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
