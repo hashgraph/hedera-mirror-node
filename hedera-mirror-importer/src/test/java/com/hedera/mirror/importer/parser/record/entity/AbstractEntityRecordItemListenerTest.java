@@ -69,7 +69,6 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
@@ -106,8 +105,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected CryptoTransferRepository cryptoTransferRepository;
     @Resource
     protected LiveHashRepository liveHashRepository;
-    @Resource
-    protected FileDataRepository fileDataRepository;
     @Resource
     protected TopicMessageRepository topicMessageRepository;
     @Resource
@@ -351,11 +348,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected Entity createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
                                   Boolean deleted, Long expiryTimeNs, String memo, Key submitKey,
                                   Long createdTimestamp, Long modifiedTimestamp) {
-        if (autoRenewAccountId != null) {
-            Entity entity = getEntityWithDefaultMemo(autoRenewAccountId);
-            entityRepository.save(entity);
-        }
-
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
         byte[] submitKeyBytes = rawBytesFromKey(submitKey);
 
