@@ -46,16 +46,11 @@ public class EntityUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Ent
         return "";
     }
 
-    /**
-     * Only EntityId entries will have a timestamp range as [0,) so those are only relevant for insert flow and can be
-     * discarded.
-     */
     @Override
     public String getUpdateWhereClause() {
-        return String.format(" where %s = %s and %s is null and lower(%s) > 0",
+        return String.format(" where %s = %s and %s is null",
                 getFullFinalTableColumnName(Entity_.ID),
                 getFullTempTableColumnName(Entity_.ID),
-                getFullTempTableColumnName(Entity_.CREATED_TIMESTAMP),
-                getFullTempTableColumnName(Entity_.TIMESTAMP_RANGE));
+                getFullTempTableColumnName(Entity_.CREATED_TIMESTAMP));
     }
 }

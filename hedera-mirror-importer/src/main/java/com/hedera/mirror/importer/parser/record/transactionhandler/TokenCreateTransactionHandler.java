@@ -50,9 +50,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasAutoRenewAccount()) {
-            EntityId autoRenewAccountId = EntityId.of(transactionBody.getAutoRenewAccount());
-            entity.setAutoRenewAccountId(autoRenewAccountId);
-            entityListener.onEntityId(autoRenewAccountId);
+            entity.setAutoRenewAccountId(EntityId.of(transactionBody.getAutoRenewAccount()));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

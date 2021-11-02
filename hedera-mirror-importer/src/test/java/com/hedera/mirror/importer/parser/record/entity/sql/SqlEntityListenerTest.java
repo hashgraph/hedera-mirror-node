@@ -159,7 +159,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setType(ACCOUNT);
 
         // when
-        sqlEntityListener.onEntityId(entity.toEntityId()); // Removed after onContract
+        sqlEntityListener.onEntity(entity); // Removed after onContract
         sqlEntityListener.onContract(contract);
         sqlEntityListener.onEntity(entity); // Ignored
         completeFileAndCommit();
@@ -176,10 +176,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
 
         // when
-        sqlEntityListener.onEntityId(contract.toEntityId());
         sqlEntityListener.onContract(contract);
         sqlEntityListener.onContract(contract);
-        sqlEntityListener.onEntityId(contract.toEntityId());
         completeFileAndCommit();
 
         // then
@@ -399,18 +397,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(getEntityWithDefaultMemo(entityId));
-        assertThat(contractRepository.count()).isZero();
-    }
-
-    @Test
-    void onEntityIdEmpty() {
-        // when
-        sqlEntityListener.onEntityId(EntityId.EMPTY);
-        completeFileAndCommit();
-
-        // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertThat(entityRepository.count()).isZero();
         assertThat(contractRepository.count()).isZero();
     }
 

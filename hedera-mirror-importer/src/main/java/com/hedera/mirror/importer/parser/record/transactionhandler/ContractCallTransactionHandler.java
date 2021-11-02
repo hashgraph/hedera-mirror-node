@@ -35,11 +35,8 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 class ContractCallTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    private final EntityProperties entityProperties;
-
     ContractCallTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(entityListener);
-        this.entityProperties = entityProperties;
+        super(entityListener, entityProperties);
     }
 
     @Override

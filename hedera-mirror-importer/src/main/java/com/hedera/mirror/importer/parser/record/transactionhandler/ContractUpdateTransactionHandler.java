@@ -73,9 +73,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            EntityId proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
-            contract.setProxyAccountId(proxyAccountId);
-            entityListener.onEntityId(proxyAccountId);
+            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
         entityListener.onContract(contract);
