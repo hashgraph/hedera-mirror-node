@@ -24,8 +24,8 @@ import (
 	"context"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
-	"github.com/coinbase/rosetta-sdk-go/types"
-	hTypes "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence"
@@ -36,38 +36,38 @@ import (
 type networkAPIService struct {
 	BaseService
 	addressBookEntryRepo interfaces.AddressBookEntryRepository
-	network              *types.NetworkIdentifier
-	version              *types.Version
+	network              *rTypes.NetworkIdentifier
+	version              *rTypes.Version
 }
 
 // NetworkList implements the /network/list endpoint.
 func (n *networkAPIService) NetworkList(
-	ctx context.Context,
-	request *types.MetadataRequest,
-) (*types.NetworkListResponse, *types.Error) {
-	return &types.NetworkListResponse{NetworkIdentifiers: []*types.NetworkIdentifier{n.network}}, nil
+		ctx context.Context,
+		request *rTypes.MetadataRequest,
+) (*rTypes.NetworkListResponse, *rTypes.Error) {
+	return &rTypes.NetworkListResponse{NetworkIdentifiers: []*rTypes.NetworkIdentifier{n.network}}, nil
 }
 
 // NetworkOptions implements the /network/options endpoint.
 func (n *networkAPIService) NetworkOptions(
-	ctx context.Context,
-	request *types.NetworkRequest,
-) (*types.NetworkOptionsResponse, *types.Error) {
+		ctx context.Context,
+		request *rTypes.NetworkRequest,
+) (*rTypes.NetworkOptionsResponse, *rTypes.Error) {
 	operationTypes, err := n.TypesAsArray(ctx)
 	if err != nil {
 		return nil, err
 	}
-	operationStatuses := make([]*types.OperationStatus, 0, len(hTypes.TransactionResults))
-	for value, name := range hTypes.TransactionResults {
-		operationStatuses = append(operationStatuses, &types.OperationStatus{
+	operationStatuses := make([]*rTypes.OperationStatus, 0, len(types.TransactionResults))
+	for value, name := range types.TransactionResults {
+		operationStatuses = append(operationStatuses, &rTypes.OperationStatus{
 			Status:     name,
 			Successful: persistence.IsTransactionResultSuccessful(value),
 		})
 	}
 
-	return &types.NetworkOptionsResponse{
+	return &rTypes.NetworkOptionsResponse{
 		Version: n.version,
-		Allow: &types.Allow{
+		Allow: &rTypes.Allow{
 			OperationStatuses:       operationStatuses,
 			OperationTypes:          operationTypes,
 			Errors:                  errors.Errors,
@@ -78,9 +78,9 @@ func (n *networkAPIService) NetworkOptions(
 
 // NetworkStatus implements the /network/status endpoint.
 func (n *networkAPIService) NetworkStatus(
-	ctx context.Context,
-	request *types.NetworkRequest,
-) (*types.NetworkStatusResponse, *types.Error) {
+		ctx context.Context,
+		request *rTypes.NetworkRequest,
+) (*rTypes.NetworkStatusResponse, *rTypes.Error) {
 	genesisBlock, err := n.RetrieveGenesis(ctx)
 	if err != nil {
 		return nil, err
@@ -96,13 +96,13 @@ func (n *networkAPIService) NetworkStatus(
 		return nil, err
 	}
 
-	return &types.NetworkStatusResponse{
-		CurrentBlockIdentifier: &types.BlockIdentifier{
+	return &rTypes.NetworkStatusResponse{
+		CurrentBlockIdentifier: &rTypes.BlockIdentifier{
 			Index: currentBlock.Index,
 			Hash:  tools.SafeAddHexPrefix(currentBlock.Hash),
 		},
 		CurrentBlockTimestamp: currentBlock.GetTimestampMillis(),
-		GenesisBlockIdentifier: &types.BlockIdentifier{
+		GenesisBlockIdentifier: &rTypes.BlockIdentifier{
 			Index: genesisBlock.Index,
 			Hash:  tools.SafeAddHexPrefix(genesisBlock.Hash),
 		},
@@ -112,10 +112,10 @@ func (n *networkAPIService) NetworkStatus(
 
 // NewNetworkAPIService creates a new instance of a networkAPIService.
 func NewNetworkAPIService(
-	baseService BaseService,
-	addressBookEntryRepo interfaces.AddressBookEntryRepository,
-	network *types.NetworkIdentifier,
-	version *types.Version,
+		baseService BaseService,
+		addressBookEntryRepo interfaces.AddressBookEntryRepository,
+		network *rTypes.NetworkIdentifier,
+		version *rTypes.Version,
 ) server.NetworkAPIServicer {
 	return &networkAPIService{
 		BaseService:          baseService,
