@@ -45,7 +45,7 @@ const (
 	currencyDecimals = 8
 )
 
-var TransactionResults = map[int]string{
+var TransactionResults = map[int32]string{
 	0:   "OK",
 	1:   "INVALID_TRANSACTION",
 	2:   "PAYER_ACCOUNT_NOT_FOUND",
