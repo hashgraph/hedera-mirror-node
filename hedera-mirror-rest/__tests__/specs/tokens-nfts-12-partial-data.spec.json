@@ -1,5 +1,5 @@
 {
-  "description": "Token NFTs with missing entity and token but valid NFTs (partial mirror node)",
+  "description": "Token NFTs with missing entity but valid NFTs (partial mirror node)",
   "setup": {
     "entities": [
       {

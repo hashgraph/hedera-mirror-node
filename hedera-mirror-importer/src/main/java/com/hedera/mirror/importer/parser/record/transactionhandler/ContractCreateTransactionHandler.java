@@ -67,7 +67,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         transaction.setInitialBalance(transactionBody.getInitialBalance());
         Supplier<Contract> inheritedContract = Contract::new;
 
-        if (!EntityId.isEmpty(entityId) && recordItem.isSuccessful() && entityProperties.getPersist().isContracts()) {
+        if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
             Contract contract = entityId.toEntity();
             contract.setCreatedTimestamp(consensusTimestamp);
             contract.setDeleted(false);

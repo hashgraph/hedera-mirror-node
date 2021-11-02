@@ -48,15 +48,14 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                                           ContractFunctionResult functionResult) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         List<Long> createdContractIds = new ArrayList<>();
-        boolean isSuccessful = recordItem.isSuccessful();
+        boolean persist = recordItem.isSuccessful() && entityProperties.getPersist().isContracts();
 
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
             EntityId contractId = EntityId.of(createdContractId);
             createdContractIds.add(contractId.getId());
 
             // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-            if (isSuccessful && !EntityId.isEmpty(contractId) && entityProperties.getPersist().isContracts() &&
-                    !contractId.equals(contractResult.getContractId())) {
+            if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
                 Contract contract = inheritedContract.get();
                 contract.setCreatedTimestamp(consensusTimestamp);
                 contract.setDeleted(false);
