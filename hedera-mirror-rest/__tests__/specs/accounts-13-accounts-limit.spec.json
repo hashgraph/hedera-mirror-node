@@ -9,9 +9,6 @@
         "num": 18
       },
       {
-        "num": 19
-      },
-      {
         "num": 20
       },
       {
@@ -69,6 +66,11 @@
         "balance": 110
       }
     ],
+    "contracts": [
+      {
+        "num": 19
+      }
+    ],
     "transactions": [],
     "cryptotransfers": []
   },
@@ -111,9 +113,9 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
-        "max_automatic_token_associations": 0,
-        "memo": "entity memo",
-        "receiver_sig_required": false
+        "max_automatic_token_associations": null,
+        "memo": "contract memo",
+        "receiver_sig_required": null
       }
     ],
     "links": {

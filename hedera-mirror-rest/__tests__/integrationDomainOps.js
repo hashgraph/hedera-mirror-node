@@ -515,6 +515,7 @@ const addContract = async (contract) => {
     'memo',
     'num',
     'obtainer_id',
+    'public_key',
     'proxy_account_id',
     'realm',
     'shard',
@@ -530,13 +531,14 @@ const addContract = async (contract) => {
     expiration_timestamp: null,
     key: null,
     memo: 'contract memo',
-    num: contract.id,
     public_key: null,
     realm: 0,
     shard: 0,
+    timestamp_range: '[0,)',
     type: 2,
     ...contract,
   };
+  contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
   // use 'contract' table if the range is open-ended, otherwise use 'contract_history'

@@ -21,12 +21,6 @@
         "num": 6
       },
       {
-        "num": 7
-      },
-      {
-        "num": 8
-      },
-      {
         "num": 9,
         "expiration_timestamp": "-9223372036854775808",
         "max_automatic_token_associations": 150,
@@ -124,6 +118,14 @@
         "timestamp": 2000,
         "id": 10,
         "balance": 100
+      }
+    ],
+    "contracts": [
+      {
+        "num": 7
+      },
+      {
+        "num": 8
       }
     ],
     "transactions": [],
@@ -261,9 +263,9 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
-        "max_automatic_token_associations": 0,
-        "memo": "entity memo",
-        "receiver_sig_required": false
+        "max_automatic_token_associations": null,
+        "memo": "contract memo",
+        "receiver_sig_required": null
       },
       {
         "balance": {
@@ -276,9 +278,9 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
-        "max_automatic_token_associations": 0,
-        "memo": "entity memo",
-        "receiver_sig_required": false
+        "max_automatic_token_associations": null,
+        "memo": "contract memo",
+        "receiver_sig_required": null
       },
       {
         "balance": {
