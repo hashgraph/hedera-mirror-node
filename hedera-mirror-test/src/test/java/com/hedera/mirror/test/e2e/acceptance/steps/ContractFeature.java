@@ -107,7 +107,6 @@ public class ContractFeature {
         switch (contractName) {
             case MIRROR_NODE:
                 executeContractSubmitTransaction();
-//                callContractSubmitTransaction();
                 callContractGetShardCount(1);
                 callContractGetTransactionCount(1);
                 break;
@@ -116,10 +115,7 @@ public class ContractFeature {
                 callGetBalance(0);
                 callGetChildBalance(0);
                 executeDonateTransaction(10000000);
-                int initialParentBalance = callGetBalance(1);
-//                callTransferToChild(1234);
-//                int childBalance = callGetChildBalance(1);
-//                assertThat(callGetBalance(1)).isGreaterThanOrEqualTo(initialParentBalance - childBalance);
+                callGetBalance(1);
                 break;
             default:
                 break;
