@@ -201,20 +201,6 @@ func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
 	assert.NotNil(suite.T(), t)
 }
 
-func (suite *transactionRepositorySuite) TestTypes() {
-	t := NewTransactionRepository(dbClient)
-	actual, err := t.Types(defaultContext)
-	assert.Nil(suite.T(), err)
-	assert.NotEmpty(suite.T(), actual)
-}
-
-func (suite *transactionRepositorySuite) TestTypesDbConnectionError() {
-	t := NewTransactionRepository(invalidDbClient)
-	actual, err := t.Types(defaultContext)
-	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
-	assert.Nil(suite.T(), actual)
-}
-
 func (suite *transactionRepositorySuite) TestTypesAsArray() {
 	t := NewTransactionRepository(dbClient)
 	actual, err := t.TypesAsArray(defaultContext)
