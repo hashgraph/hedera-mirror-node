@@ -36,7 +36,7 @@ alter table if exists contract
     add constraint contract__pk primary key (id);
 alter table if exists contract
     add constraint contract__type_check
-    check (type = 'CONTRACT');
+        check (type = 'CONTRACT');
 create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
 -- contract_history
@@ -44,7 +44,7 @@ alter table if exists contract_history
     add constraint contract_history__pk primary key (id, timestamp_range);
 alter table if exists contract_history
     add constraint contract_history__type_check
-    check (type = 'CONTRACT');
+        check (type = 'CONTRACT');
 create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
 
 -- contract_log
@@ -76,7 +76,7 @@ alter table entity
         check (public_key = lower(public_key));
 alter table if exists entity
     add constraint entity__type_check
-    check (type <> 'CONTRACT');
+        check (type <> 'CONTRACT');
 create index if not exists entity__id_type
     on entity (id, type);
 create index if not exists entity__public_key_type
@@ -90,7 +90,7 @@ alter table if exists entity_history
     add primary key (id, timestamp_range);
 alter table if exists entity_history
     add constraint entity_history__type_check
-    check (type <> 'CONTRACT');
+        check (type <> 'CONTRACT');
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
 -- event_file
@@ -137,18 +137,6 @@ alter table if exists schedule
     add primary key (schedule_id);
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
-
--- t_transaction_results
-alter table t_transaction_results
-    add constraint transac_res__pk primary key (proto_id);
-create unique index if not exists t_transaction_results_name
-    on t_transaction_results (result);
-
--- t_transaction_types
-alter table t_transaction_types
-    add constraint transact_types__pk primary key (proto_id);
-create unique index if not exists t_transaction_types_name
-    on t_transaction_types (name);
 
 -- token
 alter table token
