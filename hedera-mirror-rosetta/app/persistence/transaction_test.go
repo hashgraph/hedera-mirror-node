@@ -208,13 +208,6 @@ func (suite *transactionRepositorySuite) TestTypesAsArray() {
 	assert.NotEmpty(suite.T(), actual)
 }
 
-func (suite *transactionRepositorySuite) TestTypesAsArrayDbConnectionError() {
-	t := NewTransactionRepository(invalidDbClient)
-	actual, err := t.TypesAsArray(defaultContext)
-	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
-	assert.Nil(suite.T(), actual)
-}
-
 func (suite *transactionRepositorySuite) TestFindBetween() {
 	// given
 	expected := suite.setupDb(true)

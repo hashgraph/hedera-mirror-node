@@ -347,7 +347,7 @@ func (tr *transactionRepository) constructTransaction(ctx context.Context, sameH
 		}
 
 		transactionResult := types.TransactionResults[int32(transaction.Result)]
-		transactionType := tr.types[int(transaction.Type)]
+		transactionType := types.TransactionTypes[int32(transaction.Type)]
 
 		nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
 		adjustedCryptoTransfers := adjustCryptoTransfers(cryptoTransfers, nonFeeTransferMap)
