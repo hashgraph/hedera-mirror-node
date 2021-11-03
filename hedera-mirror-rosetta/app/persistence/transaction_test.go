@@ -50,10 +50,6 @@ var (
 	tokenInitialSupply int64 = 50000
 )
 
-func TestShouldSuccessReturnTransactionTypesTableName(t *testing.T) {
-	assert.Equal(t, tableNameTransactionTypes, transactionType{}.TableName())
-}
-
 func TestTransactionGetHashString(t *testing.T) {
 	tx := transaction{Hash: []byte{1, 2, 3, 0xaa, 0xff}}
 	assert.Equal(t, "0x010203aaff", tx.getHashString())

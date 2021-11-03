@@ -21,6 +21,7 @@
 package types
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hashgraph/hedera-sdk-go/v2/proto"
@@ -32,4 +33,13 @@ func TestResponseCodeUpToDate(t *testing.T) {
 	for code, name := range proto.ResponseCodeEnum_name {
 		assert.Equal(t, name, TransactionResults[code])
 	}
+
+}
+
+func TestResponseTypesUpToDate(t *testing.T) {
+	// given
+	for code, name := range proto.HederaFunctionality_name {
+		assert.Equal(t, strings.ToUpper(name), TransactionResults[code])
+	}
+
 }

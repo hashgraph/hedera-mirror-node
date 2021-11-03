@@ -37,15 +37,13 @@ import (
 )
 
 const (
-	batchSize                 = 2000
-	tableNameTransactionTypes = "t_transaction_types"
-	transactionResultSuccess  = 22
+	batchSize                = 2000
+	transactionResultSuccess = 22
 )
 
 const (
 	andTransactionHashFilter  = " and transaction_hash = @hash"
 	orderByConsensusTimestamp = " order by consensus_timestamp"
-	selectTransactionTypes    = "select * from " + tableNameTransactionTypes
 	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json, non-fee transfers
 	// in json, token transfers in json, and optionally the token information when the transaction is token create,
 	// token delete, or token update. Note the three token transactions are the ones the entity_id in the transaction
@@ -119,16 +117,6 @@ const (
 type transactionType struct {
 	ProtoID int    `gorm:"type:integer;primaryKey"`
 	Name    string `gorm:"size:30"`
-}
-
-type transactionResult struct {
-	ProtoID int    `gorm:"type:integer;primaryKey"`
-	Result  string `gorm:"size:100"`
-}
-
-// TableName - Set table name of the Transaction Types to be `t_transaction_types`
-func (transactionType) TableName() string {
-	return tableNameTransactionTypes
 }
 
 // transaction maps to the transaction query which returns the required transaction fields, CryptoTransfers json string,
@@ -320,31 +308,14 @@ func (tr *transactionRepository) FindByHashInBlock(
 	return transaction, nil
 }
 
-func (tr *transactionRepository) Types(ctx context.Context) (map[int]string, *rTypes.Error) {
-	if tr.types == nil {
-		if err := tr.retrieveTransactionTypes(ctx); err != nil {
-			return nil, err
-		}
-	}
-	return tr.types, nil
-}
-
 func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
-	transactionTypes, err := tr.Types(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return tools.GetStringValuesFromIntStringMap(transactionTypes), nil
+	return tools.GetStringValuesFromIntStringMap(TransactionTypes), nil
 }
 
 func (tr *transactionRepository) constructTransaction(ctx context.Context, sameHashTransactions []*transaction) (
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	if err := tr.retrieveTransactionTypes(ctx); err != nil {
-		return nil, err
-	}
-
 	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
 	operations := make([]*types.Operation, 0)
 	success := types.TransactionResults[transactionResultSuccess]
@@ -465,31 +436,6 @@ func (tr *transactionRepository) appendTransferOperations(
 		})
 	}
 	return operations
-}
-
-func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) *rTypes.Error {
-	db, cancel := tr.dbClient.GetDbWithContext(ctx)
-	defer cancel()
-
-	var typeArray []transactionType
-	if err := db.Raw(selectTransactionTypes).Find(&typeArray).Error; err != nil {
-		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
-		return hErrors.ErrDatabaseError
-	}
-
-	if len(typeArray) == 0 {
-		log.Warn("No Transaction Types were found in the database.")
-		return hErrors.ErrOperationTypesNotFound
-	}
-
-	tr.once.Do(func() {
-		tr.types = make(map[int]string)
-		for _, t := range typeArray {
-			tr.types[t.ProtoID] = t.Name
-		}
-	})
-
-	return nil
 }
 
 func IsTransactionResultSuccessful(result int32) bool {
