@@ -429,19 +429,19 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       ],
       expected: {
         query: `
-            select tb.consensus_timestamp,
-                   tb.account_id,
-                   tb.balance
+          select tb.consensus_timestamp,
+                 tb.account_id,
+                 tb.balance
+          from token_balance tb
+          where tb.token_id = $1
+            and tb.consensus_timestamp = (
+            select tb.consensus_timestamp
             from token_balance tb
-            where tb.token_id = $1
-              and tb.consensus_timestamp = (
-              select tb.consensus_timestamp
-              from token_balance tb
-              order by tb.consensus_timestamp desc
-              limit 1
-            )
-            order by tb.account_id desc
-            limit $2`,
+            order by tb.consensus_timestamp desc
+            limit 1
+          )
+          order by tb.account_id desc
+          limit $2`,
         params: [tokenId, 30],
         order: orderFilterValues.DESC,
         limit: 30,
@@ -1254,7 +1254,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                              and t.result = 22
                            order by consensus_timestamp desc
                            limit $3`;
-    const expectedParams = [tokenId, serialNumber, maxLimit];
+    const expectedParams = [tokenId, serialNumber, defaultLimit];
     verifyExtractSqlFromNftTransferHistoryRequest(
       tokenId,
       serialNumber,
@@ -1396,7 +1396,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
                              and t.consensus_timestamp > $3
                            order by consensus_timestamp desc
                            limit $4`;
-    const expectedParams = [tokenId, serialNumber, timestamp, maxLimit];
+    const expectedParams = [tokenId, serialNumber, timestamp, defaultLimit];
     verifyExtractSqlFromNftTransferHistoryRequest(
       tokenId,
       serialNumber,
