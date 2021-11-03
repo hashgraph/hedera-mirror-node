@@ -50,6 +50,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -93,40 +94,18 @@ public class ContractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
         contractId = networkTransactionResponse.getReceipt().contractId;
         assertNotNull(contractId);
+
+        // verify contract state through getters
+        callContractGetStorageFee(5);
+        callContractGetApiFee(1);
+        callContractGetShardCount(0);
+        callContractGetTransactionCount(0);
     }
 
     @Given("I successfully call the contract")
     public void callContract() {
-
-        networkTransactionResponse = contractClient.callExecuteContract(
-                contractId,
-                750000,
-                "submitTransaction",
-                new ContractFunctionParameters()
-                        .addInt256(BigInteger.valueOf(1234))
-                        .addString("CRYPTOTRANSFER")
-                        .addInt8((byte) 1),
-                Hbar.fromTinybars(10000000));
-
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-//        var contractFunctionResult = contractClient.callContract(
-//                contractId,
-//                750000,
-//                "submitTransaction",
-//                new ContractFunctionParameters()
-//                        .addInt256(BigInteger.valueOf(1234))
-//                        .addString("CRYPTOTRANSFER")
-//                        .addInt8((byte) 1),
-//                Hbar.fromTinybars(10000000));
-//
-//        assertNotNull(contractFunctionResult);
-//        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
-//        assertThat(contractFunctionResult.getBool(0)).isTrue();
-//        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
-//        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
-//        assertThat(contractFunctionResult.logs).hasSizeGreaterThanOrEqualTo(1);
+//        executeContractSubmitTransaction();
+        callContractSubmitTransaction();
     }
 
     @Given("I successfully update the contract")
@@ -161,13 +140,8 @@ public class ContractFeature {
 
     @Then("the network confirms contract call")
     public void verifyNetworkContractCallResponse() {
-        var contractFunctionResult = contractClient.getContractCallInfo(contractId, null);
-
-        assertNotNull(contractFunctionResult);
-        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
-        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
-        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
-        assertThat(contractFunctionResult.logs).hasSizeGreaterThanOrEqualTo(1);
+        callContractGetShardCount(1);
+        callContractGetTransactionCount(1);
     }
 
     @Then("the network confirms contract update")
@@ -198,6 +172,16 @@ public class ContractFeature {
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
     }
 
+    @Then("the mirror node REST API should verify the deployed contract entity")
+    public void verifyDeployedContractMirror() {
+        verifyContractFromMirror(false);
+    }
+
+    @Then("the mirror node REST API should verify the deleted contract entity")
+    public void verifyDeletedContractMirror() {
+        verifyContractFromMirror(true);
+    }
+
     private void verifyContractInfo(ContractInfo contractInfo) {
         assertThat(contractInfo.contractMemo).isNotEmpty();
         assertThat(contractInfo.contractAccountId).isNotNull();
@@ -222,6 +206,17 @@ public class ContractFeature {
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
 
         return mirrorTransaction;
+    }
+
+    private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {
+        MirrorContractResponse mirrorContract = mirrorClient.getContractInfo(contractId.toString());
+
+        assertNotNull(mirrorContract);
+        assertThat(mirrorContract.getContractId()).isEqualTo(contractId.toString());
+        assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
+        assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
+
+        return mirrorContract;
     }
 
     private void persistContractBytes(String contractContents) {
@@ -253,5 +248,109 @@ public class ContractFeature {
             fileCreateOrUpdate = false;
             byteIndex += MAX_FILE_SIZE;
         }
+    }
+
+    private void executeContractSubmitTransaction() {
+        networkTransactionResponse = contractClient.callExecuteContract(
+                contractId,
+                750000,
+                "submitTransaction",
+                new ContractFunctionParameters()
+                        .addInt256(BigInteger.valueOf(1234))
+                        .addString("CRYPTOTRANSFER")
+                        .addInt8((byte) 1),
+                Hbar.fromTinybars(10000000));
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void callContractSubmitTransaction() {
+        log.debug("Confirm contract '{}' submitTransaction function creates new contract and update storage",
+                contractId);
+        var contractFunctionResult = contractClient.callContract(
+                contractId,
+                750000,
+                "submitTransaction",
+                new ContractFunctionParameters()
+                        .addInt256(BigInteger.valueOf(1234))
+                        .addString("CRYPTOTRANSFER")
+                        .addInt8((byte) 1),
+                Hbar.from(1));
+
+        assertNotNull(contractFunctionResult);
+        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
+        assertThat(contractFunctionResult.getBool(0)).isTrue();
+        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
+        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
+        assertThat(contractFunctionResult.logs.size()).isEqualTo(2); // events NewMirrorNodeShard and TransactionParsed
+    }
+
+    private void callContractGetTransactionCount(int expectedCount) {
+        log.debug("Confirm contract '{}' transaction count is {}", contractId, expectedCount);
+        var contractFunctionResult = contractClient.callContract(
+                contractId,
+                750000,
+                "getTransactionCount",
+                null,
+                null);
+
+        assertNotNull(contractFunctionResult);
+        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
+        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedCount);
+        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
+        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
+        assertThat(contractFunctionResult.logs.size()).isZero();
+    }
+
+    private void callContractGetApiFee(int expectedCount) {
+        log.debug("Confirm contract '{}' api fee is {}", contractId, expectedCount);
+        var contractFunctionResult = contractClient.callContract(
+                contractId,
+                750000,
+                "getApiFee",
+                null,
+                null);
+
+        assertNotNull(contractFunctionResult);
+        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
+        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedCount);
+        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
+        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
+        assertThat(contractFunctionResult.logs.size()).isZero();
+    }
+
+    private void callContractGetStorageFee(int expectedAmount) {
+        log.debug("Confirm contract '{}' storage fee is {}", contractId, expectedAmount);
+        var contractFunctionResult = contractClient.callContract(
+                contractId,
+                750000,
+                "getStorageFee",
+                null,
+                null);
+
+        assertNotNull(contractFunctionResult);
+        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
+        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedAmount);
+        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
+        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
+        assertThat(contractFunctionResult.logs.size()).isZero();
+    }
+
+    private void callContractGetShardCount(int expectedAmount) {
+        log.debug("Confirm contract '{}' shard count is {}", contractId, expectedAmount);
+        var contractFunctionResult = contractClient.callContract(
+                contractId,
+                750000,
+                "getShardCount",
+                null,
+                null);
+
+        assertNotNull(contractFunctionResult);
+        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
+        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedAmount);
+        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
+        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
+        assertThat(contractFunctionResult.logs.size()).isZero();
     }
 }

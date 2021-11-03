@@ -134,25 +134,8 @@ public class ContractClient extends AbstractNetworkClient {
 
     @SneakyThrows
     public ContractFunctionResult callContract(ContractId contractId, long gas, String functionName,
-                                               ContractFunctionParameters parameters, Hbar maxQueryPayment) {
+                                               ContractFunctionParameters parameters, Hbar payableAmount) {
         log.debug("Call contract function {}", functionName);
-
-        String memo = String.format("Call contract %s", Instant.now());
-        ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
-                .setContractId(contractId)
-                .setGas(gas)
-                .setTransactionMemo(memo);
-
-        if (parameters == null) {
-            contractExecuteTransaction.setFunction(functionName);
-        } else {
-            contractExecuteTransaction.setFunction(functionName, parameters);
-        }
-
-        if (maxQueryPayment != null) {
-            contractExecuteTransaction.setPayableAmount(maxQueryPayment);
-        }
-
         return retryTemplate.execute(x -> {
             ContractCallQuery contractCallQuery = new ContractCallQuery()
                     .setContractId(contractId)
@@ -164,8 +147,8 @@ public class ContractClient extends AbstractNetworkClient {
                 contractCallQuery.setFunction(functionName, parameters);
             }
 
-            if (maxQueryPayment != null) {
-                contractCallQuery.setMaxQueryPayment(maxQueryPayment);
+            if (payableAmount != null) {
+                contractCallQuery.setQueryPayment(payableAmount);
             }
 
             try {

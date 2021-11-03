@@ -36,6 +36,7 @@ import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
@@ -117,6 +118,34 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
+    public MirrorContractResponse getContractInfo(String contractId) {
+        log.debug("Verify contract '{}' is returned by Mirror Node", contractId);
+        return callRestEndpoint("/contracts/{contractId}", MirrorContractResponse.class, contractId);
+    }
+
+    public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {
+        log.debug("Verify serial number '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
+        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}", MirrorNftResponse.class, tokenId,
+                serialNumber);
+    }
+
+    public MirrorNftTransactionsResponse getNftTransactions(TokenId tokenId, Long serialNumber) {
+        log.debug("Get list of transactions for token '{}' and serial number '{}' from Mirror Node", tokenId,
+                serialNumber);
+        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}/transactions",
+                MirrorNftTransactionsResponse.class, tokenId, serialNumber);
+    }
+
+    public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
+        log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
+        return callRestEndpoint("/schedules/{scheduleId}", MirrorScheduleResponse.class, scheduleId);
+    }
+
+    public MirrorTokenResponse getTokenInfo(String tokenId) {
+        log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
+        return callRestEndpoint("/tokens/{tokenId}", MirrorTokenResponse.class, tokenId);
+    }
+
     public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
         return callRestEndpoint("/transactions?timestamp={timestamp}",
@@ -129,30 +158,18 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 MirrorTransactionsResponse.class, transactionId);
     }
 
-    public MirrorNftTransactionsResponse getNftTransactions(TokenId tokenId, Long serialNumber) {
-        log.debug("Get list of transactions for token '{}' and serial number '{}' from Mirror Node", tokenId,
-                serialNumber);
-        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}/transactions",
-                MirrorNftTransactionsResponse.class, tokenId, serialNumber);
+    public void unSubscribeFromTopic(SubscriptionHandle subscription) {
+        subscription.unsubscribe();
+        log.info("Unsubscribed from {}", subscription);
     }
 
-    public MirrorTokenResponse getTokenInfo(String tokenId) {
-        log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
-        return callRestEndpoint("/tokens/{tokenId}", MirrorTokenResponse.class, tokenId);
+    protected boolean shouldRetryRestCall(Throwable t) {
+        return sdkClient.getAcceptanceTestProperties().getRestPollingProperties().getRetryableExceptions()
+                .stream()
+                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
     }
 
-    public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {
-        log.debug("Verify serial number '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
-        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}", MirrorNftResponse.class, tokenId,
-                serialNumber);
-    }
-
-    public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
-        log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
-        return callRestEndpoint("/schedules/{scheduleId}", MirrorScheduleResponse.class, scheduleId);
-    }
-
-    public <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
+    private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
         T response = webClient.get()
                 .uri(uri, uriVariables)
                 .accept(MediaType.APPLICATION_JSON)
@@ -164,16 +181,5 @@ public class MirrorNodeClient extends AbstractNetworkClient {
                 .block();
 
         return response;
-    }
-
-    public void unSubscribeFromTopic(SubscriptionHandle subscription) {
-        subscription.unsubscribe();
-        log.info("Unsubscribed from {}", subscription);
-    }
-
-    protected boolean shouldRetryRestCall(Throwable t) {
-        return sdkClient.getAcceptanceTestProperties().getRestPollingProperties().getRetryableExceptions()
-                .stream()
-                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
     }
 }
