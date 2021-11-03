@@ -81,7 +81,7 @@ const getBalances = async (req, res) => {
     [utils.opsMap.eq]: utils.opsMap.lte,
   });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.public_key');
+  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'ac.public_key');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
@@ -99,13 +99,7 @@ const getBalances = async (req, res) => {
         .join(' AND ')}`;
 
   // Only need to join entity if we're selecting on publickey.
-  const joinEntityClause =
-    pubKeyQuery !== ''
-      ? `
-      JOIN entity e
-        ON e.id = ab.account_id
-          AND e.type in ('${constants.entityTypes.ACCOUNT}', '${constants.entityTypes.CONTRACT}')`
-      : '';
+  const joinEntityClause = pubKeyQuery !== '' ? 'JOIN account_contract ac on ac.id = ab.account_id' : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
   const sqlQuery = `
@@ -129,7 +123,10 @@ const getBalances = async (req, res) => {
       ORDER BY ab.account_id ${order}
       ${query}`;
 
-  const sqlParams = tsParams.concat(accountParams).concat(pubKeyParams).concat(balanceParams).concat(params);
+  const sqlParams = [tsParams, accountParams, pubKeyParams, balanceParams, params].reduce((previous, next) => {
+    previous.push(...next);
+    return previous;
+  }, []);
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
 
   if (logger.isTraceEnabled()) {
