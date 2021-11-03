@@ -238,7 +238,7 @@ describe('utils formatComparator tests', () => {
 
   test('Verify formatComparator for account.id=0.2.5', () => {
     const entityIdStr = '0.2.5';
-    const entityId = EntityId.fromString(entityIdStr);
+    const entityId = EntityId.parse(entityIdStr);
     const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, entityIdStr);
     utils.formatComparator(filter);
     verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', entityId.getEncodedId());
@@ -480,7 +480,7 @@ describe('utils validateAndParseFilters account balance key tests', () => {
   const filters = [
     utils.buildComparatorFilter(key, '0'),
     utils.buildComparatorFilter(key, '1000000000'),
-    utils.buildComparatorFilter(key, '1234567890123456789'),
+    utils.buildComparatorFilter(key, '9223372036854775807'),
   ];
 
   verifyValidAndInvalidFilters(invalidFilters, filters);

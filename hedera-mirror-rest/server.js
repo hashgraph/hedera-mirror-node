@@ -127,8 +127,12 @@ app.use(
   })
 );
 app.use(bodyParser.json());
-app.use(compression());
 app.use(cors());
+
+if (config.response.compression) {
+  logger.info('Response compression is enabled');
+  app.use(compression());
+}
 
 // logging middleware
 app.use(httpContext.middleware);

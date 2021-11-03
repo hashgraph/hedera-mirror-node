@@ -23,7 +23,6 @@
 const _ = require('lodash');
 
 const utils = require('./utils');
-const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const TransactionId = require('./transactionId');
@@ -35,6 +34,8 @@ const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel'
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
  * @param {boolean} includeExtraInfo - include extra info: the nft transfer list, the assessed custom fees, and etc
+ * @param innerQuery
+ * @param order
  * @return {string}
  */
 const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'desc') => {
@@ -236,7 +237,7 @@ const createCryptoTransferList = (cryptoTransferList) => {
   return cryptoTransferList.map((transfer) => {
     const {entity_id: accountId, amount} = transfer;
     return {
-      account: EntityId.fromEncodedId(accountId).toString(),
+      account: EntityId.parse(accountId).toString(),
       amount,
     };
   });
@@ -256,8 +257,8 @@ const createTokenTransferList = (tokenTransferList) => {
   return tokenTransferList.map((transfer) => {
     const {token_id: tokenId, account_id: accountId, amount} = transfer;
     return {
-      token_id: EntityId.fromEncodedId(tokenId).toString(),
-      account: EntityId.fromEncodedId(accountId).toString(),
+      token_id: EntityId.parse(tokenId).toString(),
+      account: EntityId.parse(accountId).toString(),
       amount,
     };
   });
@@ -289,16 +290,16 @@ const createNftTransferList = (nftTransferList) => {
 const createTransferLists = (rows) => {
   const transactions = rows.map((row) => {
     const validStartTimestamp = row.valid_start_ns;
-    const payerAccountId = EntityId.fromEncodedId(row.payer_account_id).toString();
+    const payerAccountId = EntityId.parse(row.payer_account_id).toString();
     return {
       charged_tx_fee: Number(row.charged_tx_fee),
       consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
-      entity_id: EntityId.fromEncodedId(row.entity_id, true).toString(),
+      entity_id: EntityId.parse(row.entity_id, true).toString(),
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: row.name,
       nft_transfers: createNftTransferList(row.nft_transfer_list),
-      node: EntityId.fromEncodedId(row.node_account_id, true).toString(),
+      node: EntityId.parse(row.node_account_id, true).toString(),
       result: row.result,
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
@@ -459,7 +460,7 @@ const getTransactionsInnerQuery = function (
   const transactionOnlyLimitQuery = _.isNil(namedLimitQuery) ? '' : namedLimitQuery;
   const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
     ? undefined
-    : `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.VALID_START_NS}
+    : `select ${Transaction.CONSENSUS_TIMESTAMP}
     from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
     order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
@@ -467,10 +468,10 @@ const getTransactionsInnerQuery = function (
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(
-      'crypto_transfer',
+      CryptoTransfer.tableName,
       'ctl',
       namedTsQuery,
-      Transaction.CONSENSUS_TIMESTAMP,
+      CryptoTransfer.CONSENSUS_TIMESTAMP,
       resultTypeQuery,
       transactionTypeQuery,
       namedAccountQuery,
@@ -482,10 +483,10 @@ const getTransactionsInnerQuery = function (
     const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
     const namedTtlCreditDebitQuery = namedCreditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount');
     const ttlQuery = getTransferDistinctTimestampsQuery(
-      'token_transfer',
+      TokenTransfer.tableName,
       'ttl',
       namedTsQuery,
-      Transaction.CONSENSUS_TIMESTAMP,
+      TokenTransfer.CONSENSUS_TIMESTAMP,
       resultTypeQuery,
       transactionTypeQuery,
       namedTtlAccountQuery,
@@ -515,7 +516,6 @@ const getTransactionsInnerQuery = function (
       ON ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = ctl.consensus_timestamp
       FULL OUTER JOIN (${ttlQuery}) AS ttl
       ON coalesce(${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}, ctl.consensus_timestamp) = ttl.consensus_timestamp
-      ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
       ${namedLimitQuery}`;
   }
 
@@ -632,7 +632,7 @@ const getOneTransaction = async (req, res) => {
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const scheduledQuery = getScheduledQuery(req.query);
-  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), config.maxLimit];
+  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause(
     `${Transaction.PAYER_ACCOUNT_ID_FULL_NAME} = ?`,
     `${Transaction.VALID_START_NS_FULL_NAME} = ?`,
@@ -640,11 +640,10 @@ const getOneTransaction = async (req, res) => {
   );
   const includeExtraInfo = true;
 
-  const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.VALID_START_NS}
+  const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
                       from ${Transaction.tableName} AS ${Transaction.tableAlias}
                         ${whereClause}
-                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc
-                      limit $3`;
+                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc`;
 
   const sqlQuery = `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
