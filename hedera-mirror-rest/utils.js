@@ -34,7 +34,7 @@ const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
-const TransactionTypeService = require('./service/transactionTypeService');
+const {TransactionType} = require('./model');
 const responseLimit = config.response.limit;
 
 const TRANSACTION_RESULT_SUCCESS = 22;
@@ -103,13 +103,9 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
+//TODO this can be removed, just trying to do this in stages
 const isValidTransactionType = (transactionType) => {
-  try {
-    TransactionTypeService.getProtoId(transactionType);
-    return true;
-  } catch (err) {
-    return false;
-  }
+  return TransactionType.isValidTransactionType(transactionType);
 };
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
@@ -917,7 +913,7 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  const protoId = TransactionTypeService.getProtoId(transactionType);
+  const protoId = TransactionType.getTransactionTypeProtoId(transactionType);
   return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 

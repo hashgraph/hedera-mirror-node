@@ -29,7 +29,6 @@ const {
 } = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
-const {TransactionTypeService} = require('../service');
 const {formatSqlQueryString} = require('./testutils');
 const constants = require('../constants');
 
@@ -133,11 +132,11 @@ describe('token extractSqlFromTokenRequest tests', () => {
     ];
 
     const expectedquery = `with ta as (
-                             select distinct on (account_id, token_id) *
-                             from token_account
-                             where account_id = $1
-                             order by account_id, token_id, modified_timestamp desc
-                           )
+      select distinct on (account_id, token_id) *
+      from token_account
+      where account_id = $1
+      order by account_id, token_id, modified_timestamp desc
+    )
                            select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
@@ -179,16 +178,17 @@ describe('token extractSqlFromTokenRequest tests', () => {
     ];
 
     const expectedquery = `with ta as (
-                             select distinct on (account_id, token_id) *
-                             from token_account
-                             where account_id = $1
-                             order by account_id, token_id, modified_timestamp desc
-                           )
+      select distinct on (account_id, token_id) *
+      from token_account
+      where account_id = $1
+      order by account_id, token_id, modified_timestamp desc
+    )
                            select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
-                           where ta.associated is true and t.type = $2
+                           where ta.associated is true
+                             and t.type = $2
                            order by t.token_id asc
                            limit $3`;
     const expectedparams = [5, tokenType, defaultLimit];
@@ -238,11 +238,11 @@ describe('token extractSqlFromTokenRequest tests', () => {
     ];
 
     const expectedquery = `with ta as (
-                             select distinct on (account_id, token_id) *
-                             from token_account
-                             where account_id = $1
-                             order by account_id, token_id, modified_timestamp desc
-                           )
+      select distinct on (account_id, token_id) *
+      from token_account
+      where account_id = $1
+      order by account_id, token_id, modified_timestamp desc
+    )
                            select t.token_id, symbol, e.key, t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
@@ -1127,7 +1127,7 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
                                   nft.serial_number,
                                   nft.token_id
                            from nft
-                           left join entity e on e.id = nft.token_id
+                                  left join entity e on e.id = nft.token_id
                            where nft.token_id = $1
                              and nft.serial_number = $2`;
     const expectedParams = [tokenId, serialNumber];
@@ -1177,8 +1177,6 @@ describe('token validateTokenIdParam tests', () => {
 });
 
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
-  TransactionTypeService.populateTransactionTypeMaps([{entityType: 5, name: 'TOKENDELETION', protoId: 35}]);
-
   const verifyExtractSqlFromNftTransferHistoryRequest = (
     tokenId,
     serialNumber,
@@ -1208,50 +1206,55 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
     const filters = [];
 
     const expectedQuery = `with serial_transfers as (
-        select nft_tr.consensus_timestamp,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          nft_tr.token_id
-        from nft_transfer nft_tr
-        where nft_tr.token_id = $1 and nft_tr.serial_number = $2
-      ),
-      token_transactions as (
-        select nft_tr.consensus_timestamp,
-          t.payer_account_id,
-          t.valid_start_ns,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          t.type
-        from serial_transfers nft_tr
-        join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and nft_tr.token_id = t.entity_id
-      ),
-      token_transfers as (
-        select nft_tr.consensus_timestamp,
-          t.payer_account_id,
-          t.valid_start_ns,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          t.type
-        from serial_transfers nft_tr
-        join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and t.entity_id is null
-      )
-      select *
-      from token_transactions
-      union
-      select *
-      from token_transfers
-      union
-      select t.consensus_timestamp as consensus_timestamp,
-        t.payer_account_id,
-        t.valid_start_ns,
-        null as receiver_account_id,
-        null as sender_account_id,
-        t.type
-      from transaction t
-      where t.entity_id = $1 and t.type = 35 and t.result = 22
-      order by consensus_timestamp desc
-      limit $3`;
-    const expectedParams = [tokenId, serialNumber, defaultLimit];
+      select nft_tr.consensus_timestamp,
+             nft_tr.receiver_account_id,
+             nft_tr.sender_account_id,
+             nft_tr.token_id
+      from nft_transfer nft_tr
+      where nft_tr.token_id = $1
+        and nft_tr.serial_number = $2
+    ),
+                                token_transactions as (
+                                  select nft_tr.consensus_timestamp,
+                                         t.payer_account_id,
+                                         t.valid_start_ns,
+                                         nft_tr.receiver_account_id,
+                                         nft_tr.sender_account_id,
+                                         t.type
+                                  from serial_transfers nft_tr
+                                         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and
+                                                               nft_tr.token_id = t.entity_id
+                                ),
+                                token_transfers as (
+                                  select nft_tr.consensus_timestamp,
+                                         t.payer_account_id,
+                                         t.valid_start_ns,
+                                         nft_tr.receiver_account_id,
+                                         nft_tr.sender_account_id,
+                                         t.type
+                                  from serial_transfers nft_tr
+                                         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and
+                                                               t.entity_id is null
+                                )
+                           select *
+                           from token_transactions
+                           union
+                           select *
+                           from token_transfers
+                           union
+                           select t.consensus_timestamp as consensus_timestamp,
+                                  t.payer_account_id,
+                                  t.valid_start_ns,
+                                  null                  as receiver_account_id,
+                                  null                  as sender_account_id,
+                                  t.type
+                           from transaction t
+                           where t.entity_id = $1
+                             and t.type = 35
+                             and t.result = 22
+                           order by consensus_timestamp desc
+                           limit $3`;
+    const expectedParams = [tokenId, serialNumber, maxLimit];
     verifyExtractSqlFromNftTransferHistoryRequest(
       tokenId,
       serialNumber,
@@ -1275,49 +1278,54 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       {key: filterKeys.ORDER, operator: ' = ', value: order},
     ];
     const expectedQuery = `with serial_transfers as (
-        select nft_tr.consensus_timestamp,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          nft_tr.token_id
-        from nft_transfer nft_tr
-        where nft_tr.token_id = $1 and nft_tr.serial_number = $2
-      ),
-      token_transactions as (
-        select nft_tr.consensus_timestamp,
-          t.payer_account_id,
-          t.valid_start_ns,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          t.type
-        from serial_transfers nft_tr
-        join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and nft_tr.token_id = t.entity_id
-      ),
-      token_transfers as (
-        select nft_tr.consensus_timestamp,
-          t.payer_account_id,
-          t.valid_start_ns,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          t.type
-        from serial_transfers nft_tr
-        join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and t.entity_id is null
-      )
-      select *
-      from token_transactions
-      union
-      select *
-      from token_transfers
-      union
-      select t.consensus_timestamp as consensus_timestamp,
-        t.payer_account_id,
-        t.valid_start_ns,
-        null as receiver_account_id,
-        null as sender_account_id,
-        t.type
-      from transaction t
-      where t.entity_id = $1 and t.type = 35 and t.result = 22
-      order by consensus_timestamp asc
-      limit $3`;
+      select nft_tr.consensus_timestamp,
+             nft_tr.receiver_account_id,
+             nft_tr.sender_account_id,
+             nft_tr.token_id
+      from nft_transfer nft_tr
+      where nft_tr.token_id = $1
+        and nft_tr.serial_number = $2
+    ),
+                                token_transactions as (
+                                  select nft_tr.consensus_timestamp,
+                                         t.payer_account_id,
+                                         t.valid_start_ns,
+                                         nft_tr.receiver_account_id,
+                                         nft_tr.sender_account_id,
+                                         t.type
+                                  from serial_transfers nft_tr
+                                         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and
+                                                               nft_tr.token_id = t.entity_id
+                                ),
+                                token_transfers as (
+                                  select nft_tr.consensus_timestamp,
+                                         t.payer_account_id,
+                                         t.valid_start_ns,
+                                         nft_tr.receiver_account_id,
+                                         nft_tr.sender_account_id,
+                                         t.type
+                                  from serial_transfers nft_tr
+                                         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and
+                                                               t.entity_id is null
+                                )
+                           select *
+                           from token_transactions
+                           union
+                           select *
+                           from token_transfers
+                           union
+                           select t.consensus_timestamp as consensus_timestamp,
+                                  t.payer_account_id,
+                                  t.valid_start_ns,
+                                  null                  as receiver_account_id,
+                                  null                  as sender_account_id,
+                                  t.type
+                           from transaction t
+                           where t.entity_id = $1
+                             and t.type = 35
+                             and t.result = 22
+                           order by consensus_timestamp asc
+                           limit $3`;
     const expectedParams = [tokenId, serialNumber, limit];
     verifyExtractSqlFromNftTransferHistoryRequest(
       tokenId,
@@ -1338,50 +1346,57 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
     const timestamp = 5;
     const filters = [{key: filterKeys.TIMESTAMP, operator: ' > ', value: timestamp}];
     const expectedQuery = `with serial_transfers as (
-        select nft_tr.consensus_timestamp,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          nft_tr.token_id
-        from nft_transfer nft_tr
-        where nft_tr.token_id = $1 and nft_tr.serial_number = $2 and nft_tr.consensus_timestamp > $3
-      ),
-      token_transactions as (
-        select nft_tr.consensus_timestamp,
-          t.payer_account_id,
-          t.valid_start_ns,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          t.type
-        from serial_transfers nft_tr
-        join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and nft_tr.token_id = t.entity_id
-      ),
-      token_transfers as (
-        select nft_tr.consensus_timestamp,
-          t.payer_account_id,
-          t.valid_start_ns,
-          nft_tr.receiver_account_id,
-          nft_tr.sender_account_id,
-          t.type
-        from serial_transfers nft_tr
-        join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and t.entity_id is null
-      )
-      select *
-      from token_transactions
-      union
-      select *
-      from token_transfers
-      union
-      select t.consensus_timestamp as consensus_timestamp,
-        t.payer_account_id,
-        t.valid_start_ns,
-        null as receiver_account_id,
-        null as sender_account_id,
-        t.type
-      from transaction t
-      where t.entity_id = $1 and t.type = 35 and t.result = 22 and t.consensus_timestamp > $3
-      order by consensus_timestamp desc
-      limit $4`;
-    const expectedParams = [tokenId, serialNumber, timestamp, defaultLimit];
+      select nft_tr.consensus_timestamp,
+             nft_tr.receiver_account_id,
+             nft_tr.sender_account_id,
+             nft_tr.token_id
+      from nft_transfer nft_tr
+      where nft_tr.token_id = $1
+        and nft_tr.serial_number = $2
+        and nft_tr.consensus_timestamp > $3
+    ),
+                                token_transactions as (
+                                  select nft_tr.consensus_timestamp,
+                                         t.payer_account_id,
+                                         t.valid_start_ns,
+                                         nft_tr.receiver_account_id,
+                                         nft_tr.sender_account_id,
+                                         t.type
+                                  from serial_transfers nft_tr
+                                         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and
+                                                               nft_tr.token_id = t.entity_id
+                                ),
+                                token_transfers as (
+                                  select nft_tr.consensus_timestamp,
+                                         t.payer_account_id,
+                                         t.valid_start_ns,
+                                         nft_tr.receiver_account_id,
+                                         nft_tr.sender_account_id,
+                                         t.type
+                                  from serial_transfers nft_tr
+                                         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and
+                                                               t.entity_id is null
+                                )
+                           select *
+                           from token_transactions
+                           union
+                           select *
+                           from token_transfers
+                           union
+                           select t.consensus_timestamp as consensus_timestamp,
+                                  t.payer_account_id,
+                                  t.valid_start_ns,
+                                  null                  as receiver_account_id,
+                                  null                  as sender_account_id,
+                                  t.type
+                           from transaction t
+                           where t.entity_id = $1
+                             and t.type = 35
+                             and t.result = 22
+                             and t.consensus_timestamp > $3
+                           order by consensus_timestamp desc
+                           limit $4`;
+    const expectedParams = [tokenId, serialNumber, timestamp, maxLimit];
     verifyExtractSqlFromNftTransferHistoryRequest(
       tokenId,
       serialNumber,
@@ -1423,18 +1438,19 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    t.type,
                    wipe_key,
                    (select jsonb_agg(jsonb_build_object(
-                     'amount', amount,
-                     'amount_denominator', amount_denominator,
-                     'collector_account_id', collector_account_id::text,
-                     'created_timestamp', created_timestamp::text,
-                     'denominating_token_id', denominating_token_id::text,
-                     'maximum_amount', maximum_amount,
-                     'minimum_amount', minimum_amount,
-                     'net_of_transfers', net_of_transfers,
-                     'royalty_denominator', royalty_denominator,
-                     'royalty_numerator', royalty_numerator,
-                     'token_id', token_id::text
-                    ) order by collector_account_id, denominating_token_id, amount, royalty_numerator)
+                                       'amount', amount,
+                                       'amount_denominator', amount_denominator,
+                                       'collector_account_id', collector_account_id::text,
+                                       'created_timestamp', created_timestamp::text,
+                                       'denominating_token_id', denominating_token_id::text,
+                                       'maximum_amount', maximum_amount,
+                                       'minimum_amount', minimum_amount,
+                                       'net_of_transfers', net_of_transfers,
+                                       'royalty_denominator', royalty_denominator,
+                                       'royalty_numerator', royalty_numerator,
+                                       'token_id', token_id::text
+                                       )
+                                     order by collector_account_id, denominating_token_id, amount, royalty_numerator)
                     from custom_fee cf
                     where token_id = $1 ${timestampCondition && 'and ' + timestampCondition}
                     group by cf.created_timestamp
@@ -1442,7 +1458,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                     limit 1
                    ) as custom_fees
             from token t
-            join entity e on e.id = t.token_id
+                   join entity e on e.id = t.token_id
             where token_id = $1`;
   };
 
