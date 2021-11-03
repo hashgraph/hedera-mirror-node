@@ -252,7 +252,7 @@ test('DB integration test - transactions.reqToSql - Unknown transaction result a
 
   const sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['UNKNOWN, -1']);
+  expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['undefined, -1']);
 });
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {

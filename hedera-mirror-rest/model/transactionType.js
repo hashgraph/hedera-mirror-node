@@ -69,7 +69,6 @@ const transactionTypeProtoToName = {
 const transactionTypeNameToProto = _.invert(transactionTypeProtoToName);
 
 const getTransactionTypeName = (protoId) => {
-  //TODO Do we need the unknown?
   return transactionTypeProtoToName.hasOwnProperty(protoId) ? transactionTypeProtoToName[protoId] : 'UNKNOWN';
 };
 
