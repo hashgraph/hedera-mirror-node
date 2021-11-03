@@ -21,7 +21,11 @@
 'use strict';
 
 const _ = require('lodash');
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -60,7 +64,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
     badParams.push(constants.filterKeys.TOPIC_ID);
   }
 
-  if (!utils.isValidNum(seqNum)) {
+  if (!utils.isPositiveLong(seqNum)) {
     badParams.push(constants.filterKeys.SEQUENCE_NUMBER);
   }
 
@@ -84,7 +88,7 @@ const validateGetTopicMessagesParams = (topicId) => {
 const formatTopicMessageRow = (row, messageEncoding) => {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
-    topic_id: EntityId.fromEncodedId(row[topicMessageColumns.TOPIC_ID]).toString(),
+    topic_id: EntityId.parse(row[topicMessageColumns.TOPIC_ID]).toString(),
     message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     running_hash_version: parseInt(row[topicMessageColumns.RUNNING_HASH_VERSION]),
@@ -122,7 +126,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const topicIdStr = req.params.topicId;
   const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
-  const topicId = EntityId.fromString(topicIdStr);
+  const topicId = EntityId.parse(topicIdStr);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
   const pgSqlQuery = `select *
@@ -143,7 +147,8 @@ const getTopicMessages = async (req, res) => {
   const topicIdStr = req.params.topicId;
   validateGetTopicMessagesParams(topicIdStr);
   const filters = utils.buildAndValidateFilters(req.query);
-  const topicId = EntityId.fromString(topicIdStr);
+
+  const topicId = EntityId.parse(topicIdStr);
 
   // build sql query validated param and filters
   const {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
@@ -189,7 +194,7 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   const pgSqlParams = [topicId.getEncodedId()];
 
   // add filters
-  let limit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
@@ -217,7 +222,6 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
-  limit = limit === undefined ? config.maxLimit : limit;
   pgSqlParams.push(limit);
 
   // close query

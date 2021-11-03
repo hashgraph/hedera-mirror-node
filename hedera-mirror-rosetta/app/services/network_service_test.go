@@ -195,9 +195,7 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 	// then:
 	assert.Equal(suite.T(), expectedResult.Version, res.Version)
 	assert.Equal(suite.T(), expectedResult.Allow.HistoricalBalanceLookup, res.Allow.HistoricalBalanceLookup)
-	for _, value := range expectedResult.Allow.OperationStatuses {
-		assert.Contains(suite.T(), res.Allow.OperationStatuses, value)
-	}
+	assert.Subset(suite.T(), res.Allow.OperationStatuses, expectedResult.Allow.OperationStatuses)
 	assert.ElementsMatch(suite.T(), expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
 	assert.ElementsMatch(suite.T(), expectedResult.Allow.Errors, res.Allow.Errors)
 	assert.Nil(suite.T(), e)

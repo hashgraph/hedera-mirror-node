@@ -27,9 +27,7 @@ const {NotFoundError} = require('./errors/notFoundError');
 const utils = require('./utils');
 
 const totalSupply = 5000000000000000000n;
-const unreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts.map((a) =>
-  entityId.fromString(a).getEncodedId()
-);
+const unreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts.map((a) => entityId.parse(a).getEncodedId());
 
 const formatResponse = (result) => {
   const {rows} = result;

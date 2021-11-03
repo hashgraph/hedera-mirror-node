@@ -32,7 +32,12 @@ const custom = {
   hedera: {
     mirror: {
       rest: {
-        maxLimit: 10,
+        response: {
+          compression: false,
+          limit: {
+            max: 30,
+          },
+        },
         shard: 1,
       },
     },
@@ -51,42 +56,41 @@ afterEach(() => {
   cleanup();
 });
 
+const assertCustomConfig = (actual, customConfig) => {
+  // fields custom doesn't override
+  expect(actual.response.includeHostInLink).toBe(false);
+  expect(actual.log.level).toBe('debug');
+
+  // fields overridden by custom
+  expect(actual.shard).toBe(customConfig.hedera.mirror.rest.shard);
+  expect(actual.response.limit.max).toBe(customConfig.hedera.mirror.rest.response.limit.max);
+  expect(actual.response.compression).toBe(customConfig.hedera.mirror.rest.response.compression);
+};
+
 describe('Load YAML configuration:', () => {
   test('./config/application.yml', () => {
     const config = require('../config');
     expect(config.shard).toBe(0);
-    expect(config.includeHostInLink).toBeFalsy();
+    expect(config.response.includeHostInLink).toBe(false);
     expect(config.log.level).toBe('debug');
   });
 
   test('./application.yml', () => {
     fs.writeFileSync(path.join('.', 'application.yml'), yaml.dump(custom));
     const config = require('../config');
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.includeHostInLink).toBeFalsy();
-    expect(config.log.level).toBe('debug');
+    assertCustomConfig(config, custom);
   });
 
   test('CONFIG_PATH/application.yml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(custom));
     const config = require('../config');
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.includeHostInLink).toBeFalsy();
-    expect(config.log.level).toBe('debug');
+    assertCustomConfig(config, custom);
   });
 
   test('CONFIG_PATH/application.yaml', () => {
     fs.writeFileSync(path.join(tempDir, 'application.yaml'), yaml.dump(custom));
     const config = require('../config');
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
-    expect(config.includeHostInLink).toBeFalsy();
-    expect(config.log.level).toBe('debug');
+    assertCustomConfig(config, custom);
   });
 });
 
@@ -105,15 +109,15 @@ describe('Load environment configuration:', () => {
   });
 
   test('Boolean', () => {
-    process.env = {HEDERA_MIRROR_REST_INCLUDEHOSTINLINK: 'true'};
+    process.env = {HEDERA_MIRROR_REST_RESPONSE_INCLUDEHOSTINLINK: 'true'};
     const config = require('../config');
-    expect(config.includeHostInLink).toBe(true);
+    expect(config.response.includeHostInLink).toBe(true);
   });
 
   test('Camel case', () => {
-    process.env = {HEDERA_MIRROR_REST_MAXLIMIT: '10'};
+    process.env = {HEDERA_MIRROR_REST_MAXREPEATEDQUERYPARAMETERS: '50'};
     const config = require('../config');
-    expect(config.maxLimit).toBe(10);
+    expect(config.maxRepeatedQueryParameters).toBe(50);
   });
 
   test('Unknown property', () => {
@@ -148,9 +152,7 @@ describe('Custom CONFIG_NAME:', () => {
 
   test('CONFIG_PATH/CONFIG_NAME.yml', () => {
     const config = loadConfigFromCustomObject(custom);
-
-    expect(config.shard).toBe(custom.hedera.mirror.rest.shard);
-    expect(config.maxLimit).toBe(custom.hedera.mirror.rest.maxLimit);
+    assertCustomConfig(config, custom);
   });
 });
 

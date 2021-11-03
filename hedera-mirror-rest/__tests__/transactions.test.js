@@ -256,7 +256,7 @@ const singleTests = {
   },
   limit: {
     urlparam: 'limit=99',
-    checks: [{field: 'limit', operator: '=', value: '99'}],
+    checks: [{field: 'limit', operator: '=', value: 99}],
     checkFunctions: [
       {func: validateLen, args: [99]},
       {func: validateFields, args: []},

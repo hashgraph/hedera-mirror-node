@@ -23,7 +23,10 @@
 const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
+const long = require('long');
 const math = require('mathjs');
+const util = require('util');
+
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
@@ -32,6 +35,7 @@ const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const TransactionTypeService = require('./service/transactionTypeService');
+const responseLimit = config.response.limit;
 
 const TRANSACTION_RESULT_SUCCESS = 22;
 
@@ -53,6 +57,20 @@ const isNumeric = (n) => {
   return !isNaN(parseFloat(n)) && isFinite(n);
 };
 
+// The max signed long has 19 digits
+const positiveLongRegex = /^\d{1,19}$/;
+
+/**
+ * Validates that num is a positive long.
+ * @param {number|string} num
+ * @param {boolean} allowZero
+ * @return {boolean}
+ */
+const isPositiveLong = (num, allowZero = false) => {
+  const min = allowZero ? 0 : 1;
+  return positiveLongRegex.test(num) && long.fromValue(num).greaterThanOrEqual(min);
+};
+
 const isValidBooleanOpAndValue = (op, val) => {
   return op === 'eq' && /^(true|false)$/i.test(val);
 };
@@ -62,20 +80,8 @@ const isValidTimestampParam = (timestamp) => {
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
-const isValidLimitNum = (limit) => {
-  return /^\d{1,4}$/.test(limit) && limit > 0 && limit <= config.maxLimit;
-};
-
-const isValidNum = (num) => {
-  return /^\d{1,16}$/.test(num) && num > 0 && num <= Number.MAX_SAFE_INTEGER;
-};
-
 const isValidOperatorQuery = (query) => {
   return /^(gte?|lte?|eq|ne)$/.test(query);
-};
-
-const isValidAccountBalanceQuery = (query) => {
-  return /^\d{1,19}$/.test(query);
 };
 
 const isValidPublicKeyQuery = (query) => {
@@ -153,8 +159,7 @@ const filterValidityChecks = (param, op, val) => {
   // Validate the value
   switch (param) {
     case constants.filterKeys.ACCOUNT_BALANCE:
-      // Accepted forms: Upto 50 billion
-      ret = isValidAccountBalanceQuery(val);
+      ret = isPositiveLong(val, true);
       break;
     case constants.filterKeys.ACCOUNT_ID:
       ret = EntityId.isValidEntityId(val);
@@ -182,8 +187,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.LIMIT:
-      // Acceptable forms: upto 4 digits
-      ret = isValidLimitNum(val);
+      ret = isPositiveLong(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -203,8 +207,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
-      // Acceptable range: 0 < x <= Number.MAX_SAFE_INTEGER
-      ret = isValidNum(val);
+      ret = isPositiveLong(val);
       break;
     case constants.filterKeys.TIMESTAMP:
       ret = isValidTimestampParam(val);
@@ -299,19 +302,19 @@ const parseOperatorAndValueFromQueryParam = (paramValue) => {
 };
 
 /**
- * Error/bound checking helper to get an integer parmeter from the query string
- * @param {String} param Value of the integer parameter as present in the query string
- * @param {Integer} limit Optional- max value
- * @return {String} Param value
+ * Gets the limit param value, if not exists, return the default; otherwise cap it at max. Note if values is an array,
+ * the last one is honored.
+ * @param {string[]|string} values Values of the limit param
+ * @return {number}
  */
-const getIntegerParam = (param, limit = undefined) => {
-  if (param !== undefined && !Number.isNaN(Number(param))) {
-    if (limit !== undefined && param > limit) {
-      param = limit;
-    }
-    return param;
+const getLimitParamValue = (values) => {
+  let ret = responseLimit.default;
+  if (values !== undefined) {
+    const value = Array.isArray(values) ? values[values.length - 1] : values;
+    const parsed = long.fromValue(value);
+    ret = parsed.greaterThan(responseLimit.max) ? responseLimit.max : parsed.toNumber();
   }
-  return '';
+  return ret;
 };
 
 /**
@@ -335,7 +338,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
     paramValues = new Set(paramValues);
   }
   const partialQueries = [];
-  let values = [];
+  const values = [];
   // Iterate for each value of param. For a url '..?q=val1&q=val2', paramValues for 'q' are [val1, val2].
   const equalValues = new Set();
   for (const paramValue of paramValues) {
@@ -351,14 +354,16 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
       const queryAndValues = processQuery(opAndValue.op, processedValue);
       if (queryAndValues !== null) {
         partialQueries.push(queryAndValues[0]);
-        values = values.concat(queryAndValues[1]);
+        if (queryAndValues[1]) {
+          values.push(...queryAndValues[1]);
+        }
       }
     }
   }
   if (equalValues.size !== 0) {
     const queryAndValues = processQuery(opsMap.eq, Array.from(equalValues));
     partialQueries.push(queryAndValues[0]);
-    values = values.concat(queryAndValues[1]);
+    values.push(...queryAndValues[1]);
   }
   const fullClause = partialQueries.join(' and ');
   validateClauseAndValues(fullClause, values);
@@ -375,7 +380,7 @@ const validateClauseAndValues = (clause, values) => {
 const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_ID],
-    (value) => EntityId.fromString(value).getEncodedId(),
+    (value) => EntityId.parse(value).getEncodedId(),
     (op, value) => {
       return Array.isArray(value)
         ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
@@ -466,20 +471,17 @@ const parseResultParams = (req, columnName) => {
  */
 const parseLimitAndOrderParams = (req, defaultOrder = constants.orderFilterValues.DESC) => {
   // Parse the limit parameter
-  let limitQuery = '';
-  const limitParams = [];
-  const lVal = getIntegerParam(req.query[constants.filterKeys.LIMIT], config.maxLimit);
-  const limitValue = lVal === '' ? config.maxLimit : lVal;
-  limitQuery = `${constants.filterKeys.LIMIT} ? `;
-  limitParams.push(limitValue);
+  const limitQuery = `${constants.filterKeys.LIMIT} ? `;
+  const limitValue = getLimitParamValue(req.query[constants.filterKeys.LIMIT]);
 
   // Parse the order parameters (default: descending)
   let order = defaultOrder;
-  if (Object.values(constants.orderFilterValues).includes(req.query[constants.filterKeys.ORDER])) {
-    order = req.query[constants.filterKeys.ORDER];
+  const value = req.query[constants.filterKeys.ORDER];
+  if (value === constants.orderFilterValues.ASC || value === constants.orderFilterValues.DESC) {
+    order = value;
   }
 
-  return buildPgSqlObject(limitQuery, limitParams, order, limitValue);
+  return buildPgSqlObject(limitQuery, [limitValue], order, limitValue);
 };
 
 const buildPgSqlObject = (query, params, order, limit) => {
@@ -531,7 +533,7 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  */
 const getPaginationLink = (req, isEnd, field, lastValue, order) => {
   let urlPrefix;
-  if (config.port !== undefined && config.includeHostInLink === 1) {
+  if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
   } else {
     urlPrefix = '';
@@ -582,6 +584,19 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
 };
 
 /**
+ * Merges params arrays. Pass [] as initial if the params arrays should stay unmodified. Note every params should be
+ * an array.
+ * @param {any[]} initial
+ * @param {any[]} params
+ */
+const mergeParams = (initial, ...params) => {
+  return params.reduce((previous, current) => {
+    previous.push(...current);
+    return previous;
+  }, initial);
+};
+
+/**
  * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
  *
  * @param {String} ns Nanoseconds since epoch
@@ -621,8 +636,11 @@ const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
 };
 
-const randomString = (length) => {
-  return crypto.randomBytes(Math.max(2, length) / 2).toString('hex');
+const randomBytesAsync = util.promisify(crypto.randomBytes);
+
+const randomString = async (length) => {
+  const bytes = await randomBytesAsync(Math.max(2, length) / 2);
+  return bytes.toString('hex');
 };
 
 /**
@@ -816,14 +834,14 @@ const formatComparator = (comparator) => {
     switch (comparator.key) {
       case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or encoded ID string
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.CONTRACT_ID:
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
@@ -837,14 +855,14 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.SCHEDULE_ID:
         // Accepted forms: shard.realm.num or num
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
       case constants.filterKeys.TOKEN_ID:
         // Accepted forms: shard.realm.num or num
-        comparator.value = EntityId.fromString(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
@@ -879,7 +897,7 @@ const parseTokenBalances = (tokenBalances) => {
     .map((tokenBalance) => {
       const {token_id: tokenId, balance} = tokenBalance;
       return {
-        token_id: EntityId.fromString(tokenId).toString(),
+        token_id: EntityId.parse(tokenId).toString(),
         balance,
       };
     });
@@ -978,14 +996,14 @@ module.exports = {
   ipMask,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
+  isPositiveLong,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,
-  isValidLimitNum,
-  isValidNum,
   isValidTimestampParam,
   isValidTransactionType,
   loadPgRange,
+  mergeParams,
   nsToSecNs,
   nsToSecNsWithHyphen,
   opsMap,
@@ -1014,6 +1032,7 @@ if (isTestEnv()) {
     buildFilters,
     formatComparator,
     formatFilters,
+    getLimitParamValue,
     validateAndParseFilters,
     validateFilters,
   });

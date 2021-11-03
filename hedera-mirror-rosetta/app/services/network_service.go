@@ -42,16 +42,16 @@ type networkAPIService struct {
 
 // NetworkList implements the /network/list endpoint.
 func (n *networkAPIService) NetworkList(
-		ctx context.Context,
-		request *rTypes.MetadataRequest,
+	ctx context.Context,
+	request *rTypes.MetadataRequest,
 ) (*rTypes.NetworkListResponse, *rTypes.Error) {
 	return &rTypes.NetworkListResponse{NetworkIdentifiers: []*rTypes.NetworkIdentifier{n.network}}, nil
 }
 
 // NetworkOptions implements the /network/options endpoint.
 func (n *networkAPIService) NetworkOptions(
-		ctx context.Context,
-		request *rTypes.NetworkRequest,
+	ctx context.Context,
+	request *rTypes.NetworkRequest,
 ) (*rTypes.NetworkOptionsResponse, *rTypes.Error) {
 	operationTypes, err := n.TypesAsArray(ctx)
 	if err != nil {
@@ -78,8 +78,8 @@ func (n *networkAPIService) NetworkOptions(
 
 // NetworkStatus implements the /network/status endpoint.
 func (n *networkAPIService) NetworkStatus(
-		ctx context.Context,
-		request *rTypes.NetworkRequest,
+	ctx context.Context,
+	request *rTypes.NetworkRequest,
 ) (*rTypes.NetworkStatusResponse, *rTypes.Error) {
 	genesisBlock, err := n.RetrieveGenesis(ctx)
 	if err != nil {
@@ -112,10 +112,10 @@ func (n *networkAPIService) NetworkStatus(
 
 // NewNetworkAPIService creates a new instance of a networkAPIService.
 func NewNetworkAPIService(
-		baseService BaseService,
-		addressBookEntryRepo interfaces.AddressBookEntryRepository,
-		network *rTypes.NetworkIdentifier,
-		version *rTypes.Version,
+	baseService BaseService,
+	addressBookEntryRepo interfaces.AddressBookEntryRepository,
+	network *rTypes.NetworkIdentifier,
+	version *rTypes.Version,
 ) server.NetworkAPIServicer {
 	return &networkAPIService{
 		BaseService:          baseService,

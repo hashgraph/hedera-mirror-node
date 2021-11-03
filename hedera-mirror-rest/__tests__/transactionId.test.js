@@ -85,11 +85,11 @@ describe('TransactionId getEntityId', () => {
   const testSpecs = [
     {
       transactionIdStr: '0.0.1-1234567891-000000000',
-      entityId: EntityId.fromString('0.0.1'),
+      entityId: EntityId.parse('0.0.1'),
     },
     {
       transactionIdStr: '32767.65535.4294967295-9223372036854775807-999999999',
-      entityId: EntityId.fromString('32767.65535.4294967295'),
+      entityId: EntityId.parse('32767.65535.4294967295'),
     },
   ];
 
