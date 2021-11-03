@@ -28,13 +28,13 @@ const EntityId = require('../entityId');
  */
 class NftViewModel {
   constructor(nftModel) {
-    this.account_id = EntityId.fromEncodedId(nftModel.accountId, true).toString();
+    this.account_id = EntityId.parse(nftModel.accountId, true).toString();
     this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
     this.deleted = nftModel.deleted;
     this.metadata = utils.encodeBase64(nftModel.metadata);
     this.modified_timestamp = utils.nsToSecNs(nftModel.modifiedTimestamp);
     this.serial_number = Number(nftModel.serialNumber);
-    this.token_id = EntityId.fromEncodedId(nftModel.tokenId).toString();
+    this.token_id = EntityId.parse(nftModel.tokenId).toString();
   }
 }
 

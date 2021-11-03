@@ -25,6 +25,9 @@ const config = require('../config.js');
 const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
+const {getLimitParamValue} = require('../utils');
+
+const responseLimit = config.response.limit;
 
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
@@ -116,6 +119,61 @@ describe('Utils isValidTimestampParam tests', () => {
   });
 });
 
+describe('Utils parseLimitAndOrderParams tests', () => {
+  const defaultResult = {
+    query: 'limit ? ',
+    params: [responseLimit.default],
+    order: constants.orderFilterValues.DESC,
+    limit: responseLimit.default,
+  };
+
+  test('no query params', () => {
+    expect(utils.parseLimitAndOrderParams({query: {}})).toEqual(defaultResult);
+  });
+
+  test('default order asc', () => {
+    expect(utils.parseLimitAndOrderParams({query: {}}, constants.orderFilterValues.ASC)).toEqual({
+      ...defaultResult,
+      order: constants.orderFilterValues.ASC,
+    });
+  });
+
+  test('both limit and order params', () => {
+    const query = {
+      limit: '20',
+      order: constants.orderFilterValues.ASC,
+    };
+    expect(utils.parseLimitAndOrderParams({query})).toEqual({
+      ...defaultResult,
+      params: [20],
+      order: constants.orderFilterValues.ASC,
+      limit: 20,
+    });
+  });
+
+  test('limit capped at max', () => {
+    const query = {
+      limit: `${responseLimit.max + 1}`,
+    };
+    expect(utils.parseLimitAndOrderParams({query})).toEqual({
+      ...defaultResult,
+      params: [responseLimit.max],
+      limit: responseLimit.max,
+    });
+  });
+
+  test('limit array', () => {
+    const query = {
+      limit: [1, 15],
+    };
+    expect(utils.parseLimitAndOrderParams({query})).toEqual({
+      ...defaultResult,
+      params: [15],
+      limit: 15,
+    });
+  });
+});
+
 describe('Utils parseTimestampParam tests', () => {
   test('Verify empty response for null', () => {
     expect(utils.parseTimestampParam(null)).toBe('');
@@ -134,63 +192,39 @@ describe('Utils parseTimestampParam tests', () => {
   });
 });
 
-describe('Utils isValidLimitNum tests', () => {
+describe('Utils isPositiveLong', () => {
   test('Verify invalid for null', () => {
-    expect(utils.isValidLimitNum(null)).toBe(false);
+    expect(utils.isPositiveLong(null)).toBe(false);
   });
   test('Verify invalid for empty input', () => {
-    expect(utils.isValidLimitNum('')).toBe(false);
+    expect(utils.isPositiveLong('')).toBe(false);
   });
   test('Verify invalid for invalid input', () => {
-    expect(utils.isValidLimitNum('1234567890.000000001')).toBe(false);
+    expect(utils.isPositiveLong('1234567890.000000001')).toBe(false);
   });
   test('Verify invalid for entity format shard', () => {
-    expect(utils.isValidLimitNum('1.0.1')).toBe(false);
+    expect(utils.isPositiveLong('1.0.1')).toBe(false);
   });
   test('Verify invalid for negative num', () => {
-    expect(utils.isValidLimitNum('-1')).toBe(false);
-  });
-  test('Verify invalid above max limit', () => {
-    expect(utils.isValidLimitNum(config.maxLimit + 1)).toBe(false);
+    expect(utils.isPositiveLong(-1)).toBe(false);
   });
   test('Verify invalid for 0', () => {
-    expect(utils.isValidLimitNum(0)).toBe(false);
+    expect(utils.isPositiveLong(0)).toBe(false);
+  });
+  test(`Verify invalid for unsigned long 9223372036854775808`, () => {
+    expect(utils.isPositiveLong('9223372036854775808')).toBe(false);
+  });
+  test('Verify invalid for 0 with allowZero=true', () => {
+    expect(utils.isPositiveLong(0, true)).toBe(true);
+  });
+  test('Verify valid for valid number string', () => {
+    expect(utils.isPositiveLong('123')).toBe(true);
   });
   test('Verify valid for valid number', () => {
-    expect(utils.isValidLimitNum(123)).toBe(true);
+    expect(utils.isPositiveLong(123)).toBe(true);
   });
-  test(`Verify valid for max limit or ${config.maxLimit}`, () => {
-    expect(utils.isValidLimitNum(config.maxLimit)).toBe(true);
-  });
-});
-
-describe('Utils isValidNum tests', () => {
-  test('Verify invalid for null', () => {
-    expect(utils.isValidNum(null)).toBe(false);
-  });
-  test('Verify invalid for empty input', () => {
-    expect(utils.isValidNum('')).toBe(false);
-  });
-  test('Verify invalid for invalid input', () => {
-    expect(utils.isValidNum('1234567890.000000001')).toBe(false);
-  });
-  test('Verify invalid for entity format shard', () => {
-    expect(utils.isValidNum('1.0.1')).toBe(false);
-  });
-  test('Verify invalid for negative num', () => {
-    expect(utils.isValidNum(-1)).toBe(false);
-  });
-  test('Verify invalid for 0', () => {
-    expect(utils.isValidNum(0)).toBe(false);
-  });
-  test('Verify valid for valid number', () => {
-    expect(utils.isValidNum(123)).toBe(true);
-  });
-  test('Verify valid above max limit', () => {
-    expect(utils.isValidNum(12345678901)).toBe(true);
-  });
-  test(`Verify valid for Number.MAX_SAFE_INTEGER: ${Number.MAX_SAFE_INTEGER}`, () => {
-    expect(utils.isValidNum(Number.MAX_SAFE_INTEGER)).toBe(true);
+  test(`Verify valid for max unsigned long: 9223372036854775807`, () => {
+    expect(utils.isPositiveLong('9223372036854775807')).toBe(true);
   });
 });
 
@@ -311,16 +345,16 @@ describe('Utils convertMySqlStyleQueryToPostgres tests', () => {
 });
 
 describe('Utils randomString tests', () => {
-  test('Negative', () => {
-    const val = utils.randomString(-4);
+  test('Negative', async () => {
+    const val = await utils.randomString(-4);
     expect(val).toMatch(/^[0-9a-z]{2}$/);
   });
-  test('Zero', () => {
-    const val = utils.randomString(0);
+  test('Zero', async () => {
+    const val = await utils.randomString(0);
     expect(val).toMatch(/^[0-9a-z]{2}$/);
   });
-  test('Positive', () => {
-    const val = utils.randomString(8);
+  test('Positive', async () => {
+    const val = await utils.randomString(8);
     expect(val).toMatch(/^[0-9a-z]{8}$/);
   });
 });
@@ -777,5 +811,23 @@ describe('Utils toHexString tests', () => {
     test(`addPrefix true - ${spec.input}`, () => {
       expect(utils.toHexString(spec.input, true)).toEqual(`0x${spec.expected}`);
     });
+  });
+});
+
+describe('Utils getLimitParamValue', () => {
+  test('undefined', () => {
+    expect(getLimitParamValue(undefined)).toEqual(responseLimit.default);
+  });
+
+  test('larger than max', () => {
+    expect(getLimitParamValue(`${responseLimit.max + 1}`)).toEqual(responseLimit.max);
+  });
+
+  test('max signed long', () => {
+    expect(getLimitParamValue('9223372036854775807')).toEqual(responseLimit.max);
+  });
+
+  test('values array', () => {
+    expect(getLimitParamValue(['1', '50'])).toEqual(50);
   });
 });

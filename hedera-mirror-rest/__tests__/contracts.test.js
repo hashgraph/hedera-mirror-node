@@ -22,7 +22,11 @@
 
 const {Range} = require('pg-range');
 
-const config = require('../config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('../config');
 const constants = require('../constants');
 const contracts = require('../contracts');
 const {formatSqlQueryString} = require('./testutils');
@@ -50,9 +54,9 @@ const assertSqlQueryEqual = (actual, expected) => {
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
     filterQuery: '',
-    params: [config.maxLimit],
+    params: [defaultLimit],
     order: constants.orderFilterValues.ASC,
-    limit: config.maxLimit,
+    limit: defaultLimit,
     limitQuery: 'limit $1',
   };
 
@@ -113,7 +117,7 @@ describe('extractSqlFromContractFilters', () => {
       expected: {
         ...defaultExpected,
         filterQuery: 'where c.id > $1 and c.id in ($2,$3)',
-        params: ['1000', '1001', '1002', config.maxLimit],
+        params: ['1000', '1001', '1002', defaultLimit],
         limitQuery: 'limit $4',
       },
     },

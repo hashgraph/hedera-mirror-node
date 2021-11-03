@@ -37,6 +37,7 @@ alter table if exists contract
 alter table if exists contract
     add constraint contract__type_check
     check (type = 'CONTRACT');
+create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
 -- contract_history
 alter table if exists contract_history
@@ -78,8 +79,8 @@ alter table if exists entity
     check (type <> 'CONTRACT');
 create index if not exists entity__id_type
     on entity (id, type);
-create index if not exists entity__public_key
-    on entity (public_key) where public_key is not null;
+create index if not exists entity__public_key_type
+    on entity (public_key, type) where public_key is not null;
 create unique index if not exists entity__shard_realm_num
     on entity (shard, realm, num, id);
 -- have to add id when creating unique indexes due to partitioning

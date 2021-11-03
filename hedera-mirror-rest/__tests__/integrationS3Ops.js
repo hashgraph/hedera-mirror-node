@@ -25,31 +25,26 @@ const {GenericContainer} = require('testcontainers');
 const {isDockerInstalled} = require('./integrationUtils');
 
 const localstackImageName = 'localstack/localstack';
-const localstackImageTag = '0.11.3';
+const localstackImageTag = '0.12.19.1';
 const defaultS3Port = 4566;
 
 class S3Ops {
   async start() {
-    if (!process.env.TEST_S3_HOST) {
-      const isInstalled = await isDockerInstalled();
-      if (!isInstalled) {
-        throw new Error('docker is not installed, cannot start localstack container for mock s3 service');
-      }
-
-      const image = `${localstackImageName}:${localstackImageTag}`;
-      logger.info(`Starting localstack docker container with image ${image}`);
-      const container = await new GenericContainer(image)
-        .withEnv('SERVICES', 's3')
-        .withExposedPorts(defaultS3Port)
-        .start();
-      logger.info('Started dockerized localStack');
-      this.container = container;
-      this.hostname = 'localhost';
-      this.port = container.getMappedPort(defaultS3Port);
-    } else {
-      this.hostname = process.env.TEST_S3_HOST;
-      this.port = defaultS3Port;
+    const isInstalled = await isDockerInstalled();
+    if (!isInstalled) {
+      throw new Error('docker is not installed, cannot start localstack container for mock s3 service');
     }
+
+    const image = `${localstackImageName}:${localstackImageTag}`;
+    logger.info(`Starting localstack docker container with image ${image}`);
+    const container = await new GenericContainer(image)
+      .withEnv('SERVICES', 's3')
+      .withExposedPorts(defaultS3Port)
+      .start();
+    logger.info('Started dockerized localstack');
+    this.container = container;
+    this.hostname = 'localhost';
+    this.port = container.getMappedPort(defaultS3Port);
 
     logger.info(`S3Ops endpoint: ${this.getEndpointUrl()}`);
     const {CancelToken} = axios;

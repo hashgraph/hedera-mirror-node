@@ -20,6 +20,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const {execSync} = require('child_process');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -40,7 +41,7 @@ let sqlConnection;
 
 dbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
 const dbAdminUser = process.env.POSTGRES_USER || `${dbConfig.username}_admin`;
-const dbAdminPassword = process.env.POSTGRES_PASSWORD || randomString(16);
+const dbAdminPassword = process.env.POSTGRES_PASSWORD || crypto.randomBytes(16).toString('hex');
 
 const v1SchemaConfigs = {
   docker: {

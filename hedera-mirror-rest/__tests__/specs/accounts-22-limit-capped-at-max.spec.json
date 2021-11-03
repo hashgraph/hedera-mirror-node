@@ -1,6 +1,18 @@
 {
-  "description": "Account api calls for all accounts",
+  "description": "Account api calls with limit capped at max (6)",
+  "extendedDescription": [
+    "The default and max limits in config are overridden to 3 and 6 respectively. With limit=10 in the query, the ",
+    "number of accounts in the response should be capped at 6 and there should be a next link"
+  ],
   "setup": {
+    "config": {
+      "response": {
+        "limit": {
+          "default": 3,
+          "max": 6
+        }
+      }
+    },
     "accounts": [
       {
         "num": 1
@@ -19,6 +31,12 @@
       },
       {
         "num": 6
+      },
+      {
+        "num": 7
+      },
+      {
+        "num": 8
       },
       {
         "num": 9,
@@ -120,18 +138,10 @@
         "balance": 100
       }
     ],
-    "contracts": [
-      {
-        "num": 7
-      },
-      {
-        "num": 8
-      }
-    ],
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts",
+  "url": "/api/v1/accounts?limit=10",
   "responseStatus": 200,
   "responseJson": {
     "accounts": [
@@ -251,70 +261,10 @@
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
-      },
-      {
-        "balance": {
-          "timestamp": "0.000002000",
-          "balance": 70,
-          "tokens": []
-        },
-        "account": "0.0.7",
-        "expiry_timestamp": null,
-        "auto_renew_period": null,
-        "key": null,
-        "deleted": false,
-        "max_automatic_token_associations": null,
-        "memo": "contract memo",
-        "receiver_sig_required": null
-      },
-      {
-        "balance": {
-          "timestamp": "0.000002000",
-          "balance": 80,
-          "tokens": []
-        },
-        "account": "0.0.8",
-        "expiry_timestamp": null,
-        "auto_renew_period": null,
-        "key": null,
-        "deleted": false,
-        "max_automatic_token_associations": null,
-        "memo": "contract memo",
-        "receiver_sig_required": null
-      },
-      {
-        "balance": {
-          "timestamp": "0.000002000",
-          "balance": 90,
-          "tokens": []
-        },
-        "account": "0.0.9",
-        "expiry_timestamp": "-9223372036.854775808",
-        "auto_renew_period": null,
-        "key": null,
-        "deleted": false,
-        "max_automatic_token_associations": 150,
-        "memo": "entity memo",
-        "receiver_sig_required": null
-      },
-      {
-        "balance": {
-          "timestamp": "0.000002000",
-          "balance": 100,
-          "tokens": []
-        },
-        "account": "0.0.10",
-        "expiry_timestamp": "9223372036.854775807",
-        "auto_renew_period": null,
-        "key": null,
-        "deleted": false,
-        "max_automatic_token_associations": 0,
-        "memo": "entity memo",
-        "receiver_sig_required": true
       }
     ],
     "links": {
-      "next": null
+      "next": "/api/v1/accounts?limit=10&account.id=gt:0.0.6"
     }
   }
 }

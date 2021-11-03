@@ -33,7 +33,7 @@ class ContractViewModel {
    * @param {Contract} contract
    */
   constructor(contract) {
-    const contractId = EntityId.fromEncodedId(contract.id);
+    const contractId = EntityId.parse(contract.id);
     Object.assign(this, {
       admin_key: utils.encodeKey(contract.key),
       auto_renew_period: contract.autoRenewPeriod && Number(contract.autoRenewPeriod),
@@ -41,10 +41,10 @@ class ContractViewModel {
       created_timestamp: utils.nsToSecNs(contract.createdTimestamp),
       deleted: contract.deleted,
       expiration_timestamp: utils.nsToSecNs(contract.expirationTimestamp),
-      file_id: EntityId.fromEncodedId(contract.fileId, true).toString(),
+      file_id: EntityId.parse(contract.fileId, true).toString(),
       memo: contract.memo,
-      obtainer_id: EntityId.fromEncodedId(contract.obtainerId, true).toString(),
-      proxy_account_id: EntityId.fromEncodedId(contract.proxyAccountId, true).toString(),
+      obtainer_id: EntityId.parse(contract.obtainerId, true).toString(),
+      proxy_account_id: EntityId.parse(contract.proxyAccountId, true).toString(),
       solidity_address: contractId.toSolidityAddress(),
       timestamp: {
         from: utils.nsToSecNs(contract.timestampRange.begin),

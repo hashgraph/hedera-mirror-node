@@ -43,7 +43,7 @@ class CustomFeeViewModel {
         denominator: customFee.amountDenominator,
       };
 
-      this.denominating_token_id = EntityId.fromEncodedId(customFee.tokenId).toString();
+      this.denominating_token_id = EntityId.parse(customFee.tokenId).toString();
       this.maximum = customFee.maximumAmount || undefined;
       this.minimum = customFee.minimumAmount;
       this.net_of_transfers = customFee.netOfTransfers;
@@ -62,7 +62,7 @@ class CustomFeeViewModel {
       Object.assign(this, this._parseFixedFee(customFee));
     }
 
-    this.collector_account_id = EntityId.fromEncodedId(customFee.collectorAccountId, true).toString();
+    this.collector_account_id = EntityId.parse(customFee.collectorAccountId, true).toString();
   }
 
   hasFee() {
@@ -84,7 +84,7 @@ class CustomFeeViewModel {
   _parseFixedFee(customFee) {
     return {
       amount: customFee.amount,
-      denominating_token_id: EntityId.fromEncodedId(customFee.denominatingTokenId, true).toString(),
+      denominating_token_id: EntityId.parse(customFee.denominatingTokenId, true).toString(),
     };
   }
 }
