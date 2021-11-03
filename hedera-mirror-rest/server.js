@@ -139,7 +139,6 @@ app.use(httpContext.middleware);
 app.useAsync(requestLogger);
 app.useAsync(async (req, res, next) => {
   try {
-    await TransactionResultService.loadTransactionResults();
     await TransactionTypeService.loadTransactionTypes();
   } catch (err) {
     logger.warn('Failed to load transaction results / types', err);

@@ -23,6 +23,5 @@
 module.exports = {
   NftService: require('./nftService'),
   TokenService: require('./tokenService'),
-  TransactionResultService: require('./transactionResultService'),
   TransactionTypeService: require('./transactionTypeService'),
 };

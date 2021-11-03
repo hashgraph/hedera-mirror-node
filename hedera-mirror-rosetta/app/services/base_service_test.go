@@ -314,32 +314,6 @@ func (suite *baseServiceSuite) TestFindBetweenThrows() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestStatuses() {
-	// given:
-	suite.mockTransactionRepo.On("Results").Return(exampleMap, mocks.NilError)
-
-	// when:
-	res, e := suite.baseService.Results(defaultContext)
-
-	// then:
-	assert.Nil(suite.T(), e)
-	assert.Equal(suite.T(), exampleMap, res)
-	suite.mockBlockRepo.AssertExpectations(suite.T())
-}
-
-func (suite *baseServiceSuite) TestStatusesThrows() {
-	// given:
-	suite.mockTransactionRepo.On("Results").Return(nilMap, &rTypes.Error{})
-
-	// when:
-	res, e := suite.baseService.Results(defaultContext)
-
-	// then:
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
-	suite.mockBlockRepo.AssertExpectations(suite.T())
-}
-
 func (suite *baseServiceSuite) TestTypesAsArray() {
 	// given:
 	suite.mockTransactionRepo.On("TypesAsArray").Return(exampleTypesArray, mocks.NilError)

@@ -54,10 +54,6 @@ func TestShouldSuccessReturnTransactionTypesTableName(t *testing.T) {
 	assert.Equal(t, tableNameTransactionTypes, transactionType{}.TableName())
 }
 
-func TestShouldSuccessReturnTransactionResultsTableName(t *testing.T) {
-	assert.Equal(t, tableNameTransactionResults, transactionResult{}.TableName())
-}
-
 func TestTransactionGetHashString(t *testing.T) {
 	tx := transaction{Hash: []byte{1, 2, 3, 0xaa, 0xff}}
 	assert.Equal(t, "0x010203aaff", tx.getHashString())
@@ -219,20 +215,6 @@ func (suite *transactionRepositorySuite) TestTypes() {
 func (suite *transactionRepositorySuite) TestTypesDbConnectionError() {
 	t := NewTransactionRepository(invalidDbClient)
 	actual, err := t.Types(defaultContext)
-	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
-	assert.Nil(suite.T(), actual)
-}
-
-func (suite *transactionRepositorySuite) TestResults() {
-	t := NewTransactionRepository(dbClient)
-	actual, err := t.Results(defaultContext)
-	assert.Nil(suite.T(), err)
-	assert.NotEmpty(suite.T(), actual)
-}
-
-func (suite *transactionRepositorySuite) TestResultsDbConnectionError() {
-	t := NewTransactionRepository(invalidDbClient)
-	actual, err := t.Results(defaultContext)
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
 }

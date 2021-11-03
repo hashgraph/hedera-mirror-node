@@ -1,0 +1,74 @@
+{
+  "description": "Transaction api calls for transactions with unknown result type",
+  "setup": {
+    "accounts": [
+      {
+        "num": 3
+      },
+      {
+        "num": 8
+      },
+      {
+        "num": 9
+      },
+      {
+        "num": 10
+      },
+      {
+        "num": 98
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [
+      {
+        "consensus_timestamp": "1565779111711927001",
+        "payerAccountId": "0.0.10",
+        "recipientAccountId": "0.0.9",
+        "amount": 10,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98",
+        "result": 32767
+      }
+    ]
+  },
+  "url": "/api/v1/transactions",
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [
+      {
+        "bytes": "Ynl0ZXM=",
+        "consensus_timestamp": "1565779111.711927001",
+        "entity_id": null,
+        "valid_start_timestamp": "1565779111.711927000",
+        "charged_tx_fee": 7,
+        "memo_base64": null,
+        "result": "UNKNOWN",
+        "scheduled": false,
+        "transaction_hash": "aGFzaA==",
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "transaction_id": "0.0.10-1565779111-711927000",
+        "valid_duration_seconds": "11",
+        "max_fee": "33",
+        "transfers": [
+          {
+            "account": "0.0.9",
+            "amount": 10
+          },
+          {
+            "account": "0.0.10",
+            "amount": -11
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1
+          }
+        ]
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

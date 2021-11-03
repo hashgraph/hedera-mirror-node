@@ -37,16 +37,14 @@ import (
 )
 
 const (
-	batchSize                   = 2000
-	tableNameTransactionResults = "t_transaction_results"
-	tableNameTransactionTypes   = "t_transaction_types"
-	transactionResultSuccess    = 22
+	batchSize                 = 2000
+	tableNameTransactionTypes = "t_transaction_types"
+	transactionResultSuccess  = 22
 )
 
 const (
 	andTransactionHashFilter  = " and transaction_hash = @hash"
 	orderByConsensusTimestamp = " order by consensus_timestamp"
-	selectTransactionResults  = "select * from " + tableNameTransactionResults
 	selectTransactionTypes    = "select * from " + tableNameTransactionTypes
 	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json, non-fee transfers
 	// in json, token transfers in json, and optionally the token information when the transaction is token create,
@@ -67,7 +65,7 @@ const (
                                             case
                                               when t.type = 14 then coalesce((
                                                   select json_agg(json_build_object(
-                                                      'account_id', entity_id, 
+                                                      'account_id', entity_id,
                                                       'amount', amount
                                                     ))
                                                   from non_fee_transfer
@@ -131,11 +129,6 @@ type transactionResult struct {
 // TableName - Set table name of the Transaction Types to be `t_transaction_types`
 func (transactionType) TableName() string {
 	return tableNameTransactionTypes
-}
-
-// TableName - Set table name of the Transaction Results to be `t_transaction_results`
-func (transactionResult) TableName() string {
-	return tableNameTransactionResults
 }
 
 // transaction maps to the transaction query which returns the required transaction fields, CryptoTransfers json string,
@@ -225,7 +218,6 @@ func (t tokenTransfer) getAmount() types.Amount {
 type transactionRepository struct {
 	once     sync.Once
 	dbClient interfaces.DbClient
-	results  map[int]string
 	types    map[int]string
 }
 
@@ -328,18 +320,9 @@ func (tr *transactionRepository) FindByHashInBlock(
 	return transaction, nil
 }
 
-func (tr *transactionRepository) Results(ctx context.Context) (map[int]string, *rTypes.Error) {
-	if tr.results == nil {
-		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
-			return nil, err
-		}
-	}
-	return tr.results, nil
-}
-
 func (tr *transactionRepository) Types(ctx context.Context) (map[int]string, *rTypes.Error) {
 	if tr.types == nil {
-		if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
+		if err := tr.retrieveTransactionTypes(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -354,41 +337,17 @@ func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *r
 	return tools.GetStringValuesFromIntStringMap(transactionTypes), nil
 }
 
-func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) ([]transactionType, *rTypes.Error) {
-	db, cancel := tr.dbClient.GetDbWithContext(ctx)
-	defer cancel()
-
-	var transactionTypes []transactionType
-	if err := db.Raw(selectTransactionTypes).Find(&transactionTypes).Error; err != nil {
-		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
-		return nil, hErrors.ErrDatabaseError
-	}
-	return transactionTypes, nil
-}
-
-func (tr *transactionRepository) retrieveTransactionResults(ctx context.Context) ([]transactionResult, *rTypes.Error) {
-	db, cancel := tr.dbClient.GetDbWithContext(ctx)
-	defer cancel()
-
-	var tResults []transactionResult
-	if err := db.Raw(selectTransactionResults).Find(&tResults).Error; err != nil {
-		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
-		return nil, hErrors.ErrDatabaseError
-	}
-	return tResults, nil
-}
-
 func (tr *transactionRepository) constructTransaction(ctx context.Context, sameHashTransactions []*transaction) (
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	if err := tr.retrieveTransactionTypesAndResults(ctx); err != nil {
+	if err := tr.retrieveTransactionTypes(ctx); err != nil {
 		return nil, err
 	}
 
 	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
 	operations := make([]*types.Operation, 0)
-	success := tr.results[transactionResultSuccess]
+	success := types.TransactionResults[transactionResultSuccess]
 
 	for _, transaction := range sameHashTransactions {
 		cryptoTransfers := make([]hbarTransfer, 0)
@@ -416,7 +375,7 @@ func (tr *transactionRepository) constructTransaction(ctx context.Context, sameH
 			return nil, hErrors.ErrInternalServerError
 		}
 
-		transactionResult := tr.results[int(transaction.Result)]
+		transactionResult := types.TransactionResults[int32(transaction.Result)]
 		transactionType := tr.types[int(transaction.Type)]
 
 		nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
@@ -508,15 +467,14 @@ func (tr *transactionRepository) appendTransferOperations(
 	return operations
 }
 
-func (tr *transactionRepository) retrieveTransactionTypesAndResults(ctx context.Context) *rTypes.Error {
-	typeArray, err := tr.retrieveTransactionTypes(ctx)
-	if err != nil {
-		return err
-	}
+func (tr *transactionRepository) retrieveTransactionTypes(ctx context.Context) *rTypes.Error {
+	db, cancel := tr.dbClient.GetDbWithContext(ctx)
+	defer cancel()
 
-	resultArray, err := tr.retrieveTransactionResults(ctx)
-	if err != nil {
-		return err
+	var typeArray []transactionType
+	if err := db.Raw(selectTransactionTypes).Find(&typeArray).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return hErrors.ErrDatabaseError
 	}
 
 	if len(typeArray) == 0 {
@@ -524,27 +482,17 @@ func (tr *transactionRepository) retrieveTransactionTypesAndResults(ctx context.
 		return hErrors.ErrOperationTypesNotFound
 	}
 
-	if len(resultArray) == 0 {
-		log.Warn("No Transaction Results were found in the database.")
-		return hErrors.ErrOperationResultsNotFound
-	}
-
 	tr.once.Do(func() {
 		tr.types = make(map[int]string)
 		for _, t := range typeArray {
 			tr.types[t.ProtoID] = t.Name
-		}
-
-		tr.results = make(map[int]string)
-		for _, s := range resultArray {
-			tr.results[s.ProtoID] = s.Result
 		}
 	})
 
 	return nil
 }
 
-func IsTransactionResultSuccessful(result int) bool {
+func IsTransactionResultSuccessful(result int32) bool {
 	return result == transactionResultSuccess
 }
 
