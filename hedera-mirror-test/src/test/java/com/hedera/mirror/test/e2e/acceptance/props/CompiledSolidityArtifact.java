@@ -29,11 +29,9 @@ public class CompiledSolidityArtifact {
     private Object[] abi;
     private String bytecode;
     private String contractName;
-    @JsonIgnore
     private String deployedBytecode;
     @JsonIgnore
     private Object deployedLinkReferences;
-    @JsonIgnore
     private String _format;
     @JsonIgnore
     private Object linkReferences;

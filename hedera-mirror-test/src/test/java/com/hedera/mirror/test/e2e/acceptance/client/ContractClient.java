@@ -32,6 +32,7 @@ import org.springframework.retry.support.RetryTemplate;
 import com.hedera.hashgraph.sdk.ContractCallQuery;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractDeleteTransaction;
+import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.hashgraph.sdk.ContractId;
@@ -39,6 +40,7 @@ import com.hedera.hashgraph.sdk.ContractInfo;
 import com.hedera.hashgraph.sdk.ContractInfoQuery;
 import com.hedera.hashgraph.sdk.ContractUpdateTransaction;
 import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -54,7 +56,6 @@ public class ContractClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse createContract(FileId fileId, long gas,
                                                      ContractFunctionParameters contractFunctionParameters) {
-
         log.debug("Create new contract");
         String memo = String.format("Create contract %s", Instant.now());
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
@@ -75,8 +76,7 @@ public class ContractClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateContract(ContractId contractId, FileId fileId) {
-
-        log.debug("Update contract");
+        log.debug("Update contract {}", contractId);
         String memo = String.format("Update contract %s", Instant.now());
         ContractUpdateTransaction contractUpdateTransaction = new ContractUpdateTransaction()
                 .setContractId(contractId)
@@ -86,14 +86,13 @@ public class ContractClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(contractUpdateTransaction);
-        log.debug("Updated contract {}", fileId);
+        log.debug("Updated contract {}", contractId);
 
         return networkTransactionResponse;
     }
 
     public NetworkTransactionResponse deleteContract(ContractId contractId) {
-
-        log.debug("Delete contract");
+        log.debug("Delete contract {}", contractId);
         String memo = String.format("delete contract %s", Instant.now());
         ContractDeleteTransaction contractDeleteTransaction = new ContractDeleteTransaction()
                 .setContractId(contractId)
@@ -106,26 +105,75 @@ public class ContractClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    public NetworkTransactionResponse callExecuteContract(ContractId contractId, long gas, String functionName,
+                                                          ContractFunctionParameters parameters, Hbar payableAmount) {
+        log.debug("Call contract function {}", functionName);
+
+        String memo = String.format("Call contract %s", Instant.now());
+        ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
+                .setContractId(contractId)
+                .setGas(gas)
+                .setTransactionMemo(memo);
+
+        if (parameters == null) {
+            contractExecuteTransaction.setFunction(functionName);
+        } else {
+            contractExecuteTransaction.setFunction(functionName, parameters);
+        }
+
+        if (payableAmount != null) {
+            contractExecuteTransaction.setPayableAmount(payableAmount);
+        }
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(contractExecuteTransaction);
+        log.debug("Called contract {}", contractId);
+
+        return networkTransactionResponse;
+    }
+
     @SneakyThrows
     public ContractFunctionResult callContract(ContractId contractId, long gas, String functionName,
-                                               ContractFunctionParameters parameters) {
+                                               ContractFunctionParameters parameters, Hbar maxQueryPayment) {
+        log.debug("Call contract function {}", functionName);
+
+        String memo = String.format("Call contract %s", Instant.now());
+        ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
+                .setContractId(contractId)
+                .setGas(gas)
+                .setTransactionMemo(memo);
+
+        if (parameters == null) {
+            contractExecuteTransaction.setFunction(functionName);
+        } else {
+            contractExecuteTransaction.setFunction(functionName, parameters);
+        }
+
+        if (maxQueryPayment != null) {
+            contractExecuteTransaction.setPayableAmount(maxQueryPayment);
+        }
+
         return retryTemplate.execute(x -> {
+            ContractCallQuery contractCallQuery = new ContractCallQuery()
+                    .setContractId(contractId)
+                    .setGas(gas);
+
+            if (parameters == null) {
+                contractCallQuery.setFunction(functionName);
+            } else {
+                contractCallQuery.setFunction(functionName, parameters);
+            }
+
+            if (maxQueryPayment != null) {
+                contractCallQuery.setMaxQueryPayment(maxQueryPayment);
+            }
+
             try {
-                ContractCallQuery contractCallQuery = new ContractCallQuery()
-                        .setContractId(contractId)
-                        .setGas(gas);
-
-                if (parameters == null) {
-                    contractCallQuery.setFunction(functionName);
-                } else {
-                    contractCallQuery.setFunction(functionName, parameters);
-                }
-
                 return contractCallQuery.execute(client);
             } catch (TimeoutException e) {
-                e.printStackTrace();
+                log.error("TimeoutException: {}", e.getMessage());
             } catch (PrecheckStatusException e) {
-                e.printStackTrace();
+                log.error("PrecheckStatusException: {}", e.getMessage());
             }
             return null;
         });

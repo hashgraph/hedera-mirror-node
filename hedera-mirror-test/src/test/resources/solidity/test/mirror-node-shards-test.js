@@ -6,7 +6,7 @@ const { ethers } = require("hardhat");
 
 describe("MirrorNode", function () {
   it("Should set defaults on deployment", async function () {
-    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNode");
+    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNode");
     const mirrornode = await MirrorNode.deploy(3, 100, 5, 1);
     await mirrornode.deployed();
 
@@ -22,7 +22,7 @@ describe("MirrorNode", function () {
   });
 
   it("Should not contain valid shards and transactions post deployment", async function () {
-    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNode");
+    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNode");
     const mirrornode = await MirrorNode.deploy(3, 100, 5, 1);
     await mirrornode.deployed();
 
@@ -32,7 +32,7 @@ describe("MirrorNode", function () {
   });
 
   it("Should fail when submitTransaction called with insufficient gas", async function () {
-    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNode");
+    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNode");
     const mirrornode = await MirrorNode.deploy(3, 100, 5, 1);
     await mirrornode.deployed();
 
@@ -40,7 +40,7 @@ describe("MirrorNode", function () {
   });
 
   it("Should contain valid shards and transactions post submitTransaction", async function () {
-    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNode");
+    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNode");
     const mirrornode = await MirrorNode.deploy(3, 100, 5, 1);
     await mirrornode.deployed();
 
@@ -61,7 +61,7 @@ describe("MirrorNode", function () {
   });
 
   it("Should support multi shard scenario", async function () {
-    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNode");
+    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNode");
     const mirrornode = await MirrorNode.deploy(3, 100, 5, 1);
     await mirrornode.deployed();
 
@@ -87,7 +87,7 @@ describe("MirrorNode", function () {
   });
 
   it("Should fail when shard transaction query gas is insufficient", async function () {
-    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNode");
+    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNode");
     const mirrornode = await MirrorNode.deploy(3, 100, 5, 1);
     await mirrornode.deployed();
 
@@ -98,14 +98,14 @@ describe("MirrorNode", function () {
 
     // verify query call
     var address = await mirrornode.getShardAddress(1)
-    const MirrorNodeShard = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNodeShard");
+    const MirrorNodeShard = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNodeShard");
     const mirrornodeshard = MirrorNodeShard.attach(address);
     
     await expect(mirrornodeshard.getTransactionInfo(1234)).to.be.rejectedWith('MirrorNodeShard: getTransactionInfo gas exceeds networkFee');
   });
 
   it("Should support transaction query to shard", async function () {
-    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNode");
+    const MirrorNode = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNode");
     const mirrornode = await MirrorNode.deploy(3, 100, 5, 1);
     await mirrornode.deployed();
 
@@ -116,7 +116,7 @@ describe("MirrorNode", function () {
 
     // verify query call
     var address = await mirrornode.getShardAddress(1)
-    const MirrorNodeShard = await ethers.getContractFactory("contracts/MirrorNodeShards.sol:MirrorNodeShard");
+    const MirrorNodeShard = await ethers.getContractFactory("contracts/MirrorNode.sol:MirrorNodeShard");
     const mirrornodeshard = MirrorNodeShard.attach(address);
 
 

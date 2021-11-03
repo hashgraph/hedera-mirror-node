@@ -13,7 +13,7 @@ Feature: File Base Coverage Feature
             | httpStatusCode | bytesLength |
             | 200            | "FULL"      |
 
-    @critical @release @acceptance @update @fileappend
+    @critical @release @acceptance @update
     Scenario Outline: Validate File Flow - FileCreate, FileUpdate and FileAppend
         Given I successfully create a file
         When the network confirms file presence

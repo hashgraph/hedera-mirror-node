@@ -58,7 +58,7 @@ public class FileFeature {
 
     @Given("I successfully create a file")
     public void createNewFile() {
-        networkTransactionResponse = fileClient.createFile(originalFileContents);
+        networkTransactionResponse = fileClient.createFile(originalFileContents.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -81,7 +81,7 @@ public class FileFeature {
                 break;
         }
 
-        networkTransactionResponse = fileClient.updateFile(fileId, updateContents);
+        networkTransactionResponse = fileClient.updateFile(fileId, updateContents.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -89,7 +89,7 @@ public class FileFeature {
 
     @Given("I successfully append to the file")
     public void appendFile() {
-        networkTransactionResponse = fileClient.appendFile(fileId, appendFileContents);
+        networkTransactionResponse = fileClient.appendFile(fileId, appendFileContents.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
