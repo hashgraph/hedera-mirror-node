@@ -781,6 +781,7 @@ components:
           $ref: '#/components/schemas/Balance'
         deleted:
           type: boolean
+          nullable: true
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         key:
@@ -788,8 +789,10 @@ components:
         max_automatic_token_associations:
           type: integer
           format: int32
+          nullable: true
         memo:
           type: string
+          nullable: true
         receiver_sig_required:
           nullable: true
           type: boolean
@@ -897,7 +900,7 @@ components:
         contract_id:
           $ref: '#/components/schemas/EntityId'
         created_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         deleted:
           type: boolean
           example: false
@@ -944,7 +947,7 @@ components:
       example: "0.1.2"
     EntityIdQuery:
       type: string
-      format: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
+      pattern: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
     Error:
       type: object
       properties:
@@ -1039,7 +1042,7 @@ components:
         account_id:
           $ref: '#/components/schemas/EntityId'
         created_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         deleted:
           description: whether the nft or the token it belongs to has been deleted
           type: boolean
@@ -1048,7 +1051,7 @@ components:
           type: string
           format: byte
         modified_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         serial_number:
           type: number
         token_id:
@@ -1626,7 +1629,7 @@ components:
           value: lte:700
       schema:
         type: string
-        format: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
+        pattern: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
     accountIdQueryParam:
       name: account.id
       in: query
@@ -1755,7 +1758,7 @@ components:
       example: 2
       schema:
         type: integer
-        default: 100
+        default: 25
         minimum: 1
         maximum: 100
     orderQueryParam:
@@ -1831,7 +1834,7 @@ components:
       schema:
         $ref: '#/components/schemas/EntityIdQuery'
     serialNumberPathParam:
-      name: serialnumber
+      name: serialNumber
       in: path
       required: true
       description: The nft serial number
@@ -1904,7 +1907,7 @@ components:
         type: array
         items:
           type: string
-          format: ^((eq|gt|gte|lt|lte|ne):)?\d{1,10}(.\d{1,9})?$
+          pattern: ^((eq|gt|gte|lt|lte|ne):)?\d{1,10}(.\d{1,9})?$
     tokenInfoTimestampQueryParam:
       name: timestamp
       in: query
@@ -1936,7 +1939,7 @@ components:
           value: lte:1234567890.000000700
       schema:
         type: string
-        format: ^((eq|lt|lte):)?\d{1,10}(.\d{1,9})?$
+        pattern: ^((eq|lt|lte):)?\d{1,10}(.\d{1,9})?$
     transactionTypeQueryParam:
       name: transactiontype
       in: query

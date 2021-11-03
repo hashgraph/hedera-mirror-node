@@ -20,21 +20,20 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.github.vertical_blank.sqlformatter.languages.Dialect;
+import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+
+import javax.annotation.Resource;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Resource;
-import javax.sql.DataSource;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.converter.NullableStringSerializer;
-import com.hedera.mirror.importer.repository.AbstractRepositoryTest;
+import static org.assertj.core.api.Assertions.assertThat;
 
 abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
 
@@ -49,20 +48,18 @@ abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
 
     protected String getUpdateQuery() {
         return "";
-    };
+    }
 
     @Test
     void insert() {
-        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery()
-                .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
+        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery();
         assertEqual(insertQuery, getInsertQuery());
     }
 
     @Test
     void insertContainsAllFields() {
         // verify all fields in a domain are captured to ensure we don't miss schema updates
-        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery()
-                .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
+        String insertQuery = getUpdatableDomainRepositoryCustom().getInsertQuery();
 
         // get tables from db
         List<String> columnsFromDb = new ArrayList<>();
@@ -83,8 +80,7 @@ abstract class AbstractUpsertQueryGeneratorTest extends AbstractRepositoryTest {
 
     @Test
     void update() {
-        String updateQuery = getUpdatableDomainRepositoryCustom().getUpdateQuery()
-                .replaceAll(NullableStringSerializer.NULLABLE_STRING_REPLACEMENT, "<uuid>");
+        String updateQuery = getUpdatableDomainRepositoryCustom().getUpdateQuery();
         assertEqual(updateQuery, getUpdateQuery());
     }
 

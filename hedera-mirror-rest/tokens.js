@@ -22,7 +22,11 @@
 
 const _ = require('lodash');
 
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -78,14 +82,14 @@ const nftFilterColumnMap = {
 const nftSelectFields = [
   'nft.account_id',
   'nft.created_timestamp',
-  'nft.deleted or e.deleted as deleted',
+  'nft.deleted or coalesce(e.deleted, false) as deleted',
   'nft.metadata',
   'nft.modified_timestamp',
   'nft.serial_number',
   'nft.token_id',
 ];
 const nftSelectQuery = ['select', nftSelectFields.join(',\n'), 'from nft'].join('\n');
-const entityNftsJoinQuery = 'join entity e on e.id = nft.token_id';
+const entityNftsJoinQuery = 'left join entity e on e.id = nft.token_id';
 
 // token discovery sql queries
 const tokenAccountCte = `with ta as (
@@ -135,7 +139,7 @@ const tokenIdMatchQuery = 'where token_id = $1';
  */
 const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
   // add filters
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
   conditions = conditions || [];
   for (const filter of filters) {
@@ -181,7 +185,7 @@ const formatTokenRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
     symbol: row.symbol,
-    token_id: EntityId.fromEncodedId(row.token_id).toString(),
+    token_id: EntityId.parse(row.token_id).toString(),
     type: row.type,
   };
 };
@@ -221,7 +225,7 @@ const createCustomFeesObject = (customFees, tokenType) => {
 const formatTokenInfoRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
-    auto_renew_account: EntityId.fromEncodedId(row.auto_renew_account_id, true).toString(),
+    auto_renew_account: EntityId.parse(row.auto_renew_account_id, true).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
     custom_fees: createCustomFeesObject(row.custom_fees, row.type),
@@ -242,9 +246,9 @@ const formatTokenInfoRow = (row) => {
     supply_key: utils.encodeKey(row.supply_key),
     supply_type: row.supply_type,
     symbol: row.symbol,
-    token_id: EntityId.fromEncodedId(row.token_id).toString(),
+    token_id: EntityId.parse(row.token_id).toString(),
     total_supply: row.total_supply,
-    treasury_account_id: EntityId.fromEncodedId(row.treasury_account_id).toString(),
+    treasury_account_id: EntityId.parse(row.treasury_account_id).toString(),
     type: row.type,
     wipe_key: utils.encodeKey(row.wipe_key),
   };
@@ -272,15 +276,14 @@ const validateTokenQueryFilter = (param, op, val) => {
       ret = utils.isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.LIMIT:
-      // Acceptable forms: upto 4 digits
-      ret = utils.isValidLimitNum(val);
+      ret = utils.isPositiveLong(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
       ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
       break;
     case constants.filterKeys.SERIAL_NUMBER:
-      ret = utils.isValidNum(val);
+      ret = utils.isPositiveLong(val);
       break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
@@ -314,7 +317,7 @@ const getTokensRequest = async (req, res) => {
     conditions.push('ta.associated is true');
     getTokensSqlQuery.unshift(tokenAccountCte);
     getTokensSqlQuery.push(tokenAccountJoinQuery);
-    getTokenSqlParams.push(EntityId.fromString(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
+    getTokenSqlParams.push(EntityId.parse(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
   }
 
   // add join with entities table to sql query
@@ -361,7 +364,7 @@ const validateTokenIdParam = (tokenId) => {
 const getAndValidateTokenIdRequestPathParam = (req) => {
   const tokenIdString = req.params.tokenId;
   validateTokenIdParam(tokenIdString);
-  return EntityId.fromString(tokenIdString, constants.filterKeys.TOKENID).getEncodedId();
+  return EntityId.parse(tokenIdString, constants.filterKeys.TOKENID).getEncodedId();
 };
 
 /**
@@ -516,7 +519,7 @@ const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
   let joinEntityClause = '';
   const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
@@ -571,7 +574,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
 
 const formatTokenBalanceRow = (row) => {
   return {
-    account: EntityId.fromEncodedId(row.account_id).toString(),
+    account: EntityId.parse(row.account_id).toString(),
     balance: Number(row.balance),
   };
 };
@@ -623,7 +626,7 @@ const getTokenBalances = async (req, res) => {
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
   const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`];
   const params = [tokenId];
@@ -678,7 +681,7 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
  * Verify serialnumber meets expected integer format and range
  */
 const validateSerialNumberParam = (serialNumber) => {
-  if (!utils.isValidNum(serialNumber)) {
+  if (!utils.isPositiveLong(serialNumber)) {
     throw InvalidArgumentError.forParams(constants.filterKeys.SERIAL_NUMBER);
   }
 };
@@ -805,7 +808,7 @@ const successTransactionResult = 'SUCCESS';
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
 const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transferQuery, deleteQuery, filters) => {
-  let limit = config.maxLimit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
 
   const params = [tokenId, serialNumber];

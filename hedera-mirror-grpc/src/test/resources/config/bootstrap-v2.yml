@@ -1,6 +1,6 @@
 embedded:
   postgresql:
-    docker-image: timescale/timescaledb-ha:pg13.4-ts2.4.1-latest
+    docker-image: citusdata/citus:10.2.1-alpine
 spring:
   flyway:
     baselineVersion: 1.999.999

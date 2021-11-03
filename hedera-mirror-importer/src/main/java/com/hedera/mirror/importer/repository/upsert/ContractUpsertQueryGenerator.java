@@ -48,9 +48,9 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
 
     @Override
     protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
-        if (attributeType == String.class) {
-            return getStringColumnTypeSelect(attributeName);
-        } else if (nullableColumns.contains(attributeName)) {
+        if (attributeType == String.class && !isNullableColumn(attributeName)) {
+            return getSelectCoalesceQuery(attributeName, EMPTY_STRING);
+        } else if (isNullableColumn(attributeName)) {
             return getSelectCoalesceQuery(attributeName, null);
         } else {
             return getFullTempTableColumnName(attributeName);
@@ -73,16 +73,11 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
                 getFullTempTableColumnName(Contract_.PARENT_ID));
     }
 
-    /**
-     * Only EntityId entries will have a timestamp range as [0,) so those are only relevant for insert flow and can be
-     * discarded.
-     */
     @Override
     public String getUpdateWhereClause() {
-        return String.format(" where %s = %s and %s is null and lower(%s) > 0",
+        return String.format(" where %s = %s and %s is null",
                 getFullFinalTableColumnName(AbstractEntity_.ID),
                 getFullTempTableColumnName(AbstractEntity_.ID),
-                getFullTempTableColumnName(AbstractEntity_.CREATED_TIMESTAMP),
-                getFullTempTableColumnName(AbstractEntity_.TIMESTAMP_RANGE));
+                getFullTempTableColumnName(AbstractEntity_.CREATED_TIMESTAMP));
     }
 }

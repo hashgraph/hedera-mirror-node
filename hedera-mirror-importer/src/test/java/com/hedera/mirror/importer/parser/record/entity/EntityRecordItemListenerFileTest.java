@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -47,12 +46,10 @@ import javax.annotation.Resource;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.domain.AddressBook;
@@ -66,17 +63,21 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
+
     private static final FileID ADDRESS_BOOK_FILEID = FileID.newBuilder().setShardNum(0).setRealmNum(0)
             .setFileNum(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getEntityNum()).build();
     private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();
     private static final byte[] FILE_CONTENTS = {'a', 'b', 'c'};
     private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
 
-    @TempDir
-    Path dataPath;
+    @Resource
+    private AddressBookRepository addressBookRepository;
 
     @Resource
-    private MirrorProperties mirrorProperties;
+    private AddressBookEntryRepository addressBookEntryRepository;
+
+    @Resource
+    private FileDataRepository fileDataRepository;
 
     @Resource
     private AddressBookService addressBookService;
@@ -87,16 +88,8 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     @Value("classpath:addressbook/testnet")
     private File addressBookSmall;
 
-    @Resource
-    protected AddressBookRepository addressBookRepository;
-    @Resource
-    protected AddressBookEntryRepository addressBookEntryRepository;
-    @Resource
-    protected FileDataRepository fileDataRepository;
-
     @BeforeEach
     void before() {
-        mirrorProperties.setDataPath(dataPath);
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
@@ -112,7 +105,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnSuccess(FILE_ID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(transactionBody.getFileCreate(), record.getConsensusTimestamp())
         );
     }
@@ -129,7 +122,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(FILE_ID),
-                () -> assertFileTransaction(transactionBody, record, false)
+                () -> assertTransactionAndRecord(transactionBody, record)
         );
     }
 
@@ -145,7 +138,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnSuccess(fileID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(transactionBody.getFileCreate(), record.getConsensusTimestamp())
         );
     }
@@ -162,7 +155,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(fileID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntity(transactionBody.getFileCreate(), record.getConsensusTimestamp())
         );
     }
@@ -186,52 +179,17 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     }
 
     @Test
-    void fileAppendToExisting() {
-        // first create the file
-        Transaction fileCreateTransaction = fileCreateTransaction();
-        TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
-        TransactionRecord recordCreate = transactionRecord(createTransactionBody);
-
-        parseRecordItemAndCommit(new RecordItem(fileCreateTransaction, recordCreate));
-
-        // now append
+    void fileAppend() {
         Transaction transaction = fileAppendTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
-
         assertAll(
-                () -> assertRowCountOnTwoFileTransactions()
-                , () -> assertFileTransaction(transactionBody, record, false)
-                , () -> assertFileData(transactionBody.getFileAppend().getContents(), record.getConsensusTimestamp())
-                // Additional entity checks
-                , () -> assertNotNull(actualFile.getExpirationTimestamp())
-                , () -> assertNull(actualFile.getAutoRenewPeriod())
-                , () -> assertNull(actualFile.getProxyAccountId())
-        );
-    }
-
-    @Test
-    void fileAppendToNew() {
-        Transaction transaction = fileAppendTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecord(transactionBody);
-
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
-
-        Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
-
-        assertAll(
-                () -> assertRowCountOnSuccess(FILE_ID)
-                , () -> assertFileTransaction(transactionBody, record, false)
-                , () -> assertFileData(transactionBody.getFileAppend().getContents(), record.getConsensusTimestamp())
-                // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpirationTimestamp())
-                , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
-                , () -> assertNull(dbFileEntity.getProxyAccountId())
+                () -> assertRowCount(1, 3, 1),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFileData(transactionBody.getFileAppend().getContents(), record.getConsensusTimestamp())
         );
     }
 
@@ -248,9 +206,8 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         assertAll(
-                () -> assertRowCountOnSuccess(fileID),
-                () -> assertFileTransaction(transactionBody, record, false),
-                () -> assertFileEntityHasNullFields(record.getConsensusTimestamp()),
+                () -> assertRowCount(1, 3, 1),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileData(transactionBody.getFileAppend().getContents(), record.getConsensusTimestamp())
         );
     }
@@ -273,7 +230,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnTwoFileTransactions(),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
         );
     }
@@ -297,13 +254,10 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEntities(EntityId.of(FILE_ID), EntityId.of(PAYER), EntityId.of(NODE), EntityId
-                        .of(TREASURY))
-                , () -> assertEquals(0, contractResultRepository.count())
+                , () -> assertEntities(EntityId.of(FILE_ID))
                 , () -> assertEquals(6, cryptoTransferRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
                 , () -> assertEquals(1, fileDataRepository.count())
-                , () -> assertFileTransaction(transactionBody, record, false)
+                , () -> assertTransactionAndRecord(transactionBody, record)
                 , () -> assertFileEntity(createTransactionBody.getFileCreate(), record.getConsensusTimestamp())
         );
     }
@@ -344,8 +298,8 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnAddressBookTransactions()
-                , () -> assertFileTransaction(transactionBodyUpdate, recordUpdate, false)
-                , () -> assertFileTransaction(transactionBodyAppend, recordAppend, false)
+                , () -> assertTransactionAndRecord(transactionBodyUpdate, recordUpdate)
+                , () -> assertTransactionAndRecord(transactionBodyAppend, recordAppend)
                 , () -> assertFileData(fileAppendTransactionBody.getContents(), recordAppend.getConsensusTimestamp())
                 , () -> assertFileData(fileUpdateTransactionBody.getContents(), recordUpdate.getConsensusTimestamp())
                 , () -> assertAddressBookData(addressBook, recordAppend.getConsensusTimestamp())
@@ -419,7 +373,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnSuccess(FILE_ID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
         );
     }
@@ -444,14 +398,15 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
-                () -> assertRowCountOnTwoFileTransactions()
-                , () -> assertFileTransaction(transactionBody, record, false)
-                , () -> assertFileData(transactionBody.getFileUpdate().getContents(), record.getConsensusTimestamp())
+                () -> assertRowCountOnTwoFileTransactions(),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFileData(transactionBody.getFileUpdate().getContents(), record.getConsensusTimestamp()),
                 // Additional entity checks
-                , () -> assertNotNull(actualFile.getExpirationTimestamp())
-                , () -> assertNotNull(actualFile.getKey())
-                , () -> assertNull(actualFile.getAutoRenewPeriod())
-                , () -> assertNull(actualFile.getProxyAccountId())
+                () -> assertFalse(actualFile.getDeleted()),
+                () -> assertNotNull(actualFile.getExpirationTimestamp()),
+                () -> assertNotNull(actualFile.getKey()),
+                () -> assertNull(actualFile.getAutoRenewPeriod()),
+                () -> assertNull(actualFile.getProxyAccountId())
         );
     }
 
@@ -466,13 +421,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
-                () -> assertRowCountOnSuccess(FILE_ID)
-                , () -> assertFileTransaction(transactionBody, record, false)
-                , () -> assertFileData(transactionBody.getFileUpdate().getContents(), record.getConsensusTimestamp())
+                () -> assertRowCountOnSuccess(FILE_ID),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFileData(transactionBody.getFileUpdate().getContents(), record.getConsensusTimestamp()),
                 // Additional entity checks
-                , () -> assertNull(actualFile.getKey())
-                , () -> assertNull(actualFile.getAutoRenewPeriod())
-                , () -> assertNull(actualFile.getProxyAccountId())
+                () -> assertFalse(actualFile.getDeleted()),
+                () -> assertNull(actualFile.getKey()),
+                () -> assertNull(actualFile.getAutoRenewPeriod()),
+                () -> assertNull(actualFile.getProxyAccountId())
         );
     }
 
@@ -496,14 +452,15 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 //TODO: Review row count of fileDataRepository with issue #294, probably should be 1
-                () -> assertRowCountOnTwoFileTransactions()
-                , () -> assertFileTransaction(transactionBody, record, false)
+                () -> assertRowCountOnTwoFileTransactions(),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
-                , () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
-                        actualFile.getExpirationTimestamp())
-                , () -> assertNotNull(actualFile.getKey())
-                , () -> assertNull(actualFile.getAutoRenewPeriod())
-                , () -> assertNull(actualFile.getProxyAccountId())
+                () -> assertFalse(actualFile.getDeleted()),
+                () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
+                        actualFile.getExpirationTimestamp()),
+                () -> assertNotNull(actualFile.getKey()),
+                () -> assertNull(actualFile.getAutoRenewPeriod()),
+                () -> assertNull(actualFile.getProxyAccountId())
         );
     }
 
@@ -519,14 +476,15 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 //TODO: Review row count in fileDataRepository with issue #294, probably should be 0
-                () -> assertRowCountOnSuccess(FILE_ID)
-                , () -> assertFileTransaction(transactionBody, record, false)
+                () -> assertRowCountOnSuccess(FILE_ID),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
-                , () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
-                        actualFile.getExpirationTimestamp())
-                , () -> assertNull(actualFile.getKey())
-                , () -> assertNull(actualFile.getAutoRenewPeriod())
-                , () -> assertNull(actualFile.getProxyAccountId())
+                () -> assertFalse(actualFile.getDeleted()),
+                () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
+                        actualFile.getExpirationTimestamp()),
+                () -> assertNull(actualFile.getKey()),
+                () -> assertNull(actualFile.getAutoRenewPeriod()),
+                () -> assertNull(actualFile.getProxyAccountId())
         );
     }
 
@@ -551,13 +509,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 //TODO: Review row count of fileDataRepository with issue #294, probably should be 1
-                () -> assertRowCountOnTwoFileTransactions()
-                , () -> assertFileTransaction(transactionBody, record, false)
+                () -> assertRowCountOnTwoFileTransactions(),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
-                , () -> assertNotNull(dbFileEntity.getExpirationTimestamp())
-                , () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
-                , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
-                , () -> assertNull(dbFileEntity.getProxyAccountId())
+                () -> assertFalse(dbFileEntity.getDeleted()),
+                () -> assertNotNull(dbFileEntity.getExpirationTimestamp()),
+                () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey()),
+                () -> assertNull(dbFileEntity.getAutoRenewPeriod()),
+                () -> assertNull(dbFileEntity.getProxyAccountId())
         );
     }
 
@@ -574,13 +533,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 //TODO: Review row count in fileDataRepository with issue #294, probably should be 0
-                () -> assertRowCountOnSuccess(FILE_ID)
-                , () -> assertFileTransaction(transactionBody, record, false)
+                () -> assertRowCountOnSuccess(FILE_ID),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
-                , () -> assertNull(dbFileEntity.getExpirationTimestamp())
-                , () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey())
-                , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
-                , () -> assertNull(dbFileEntity.getProxyAccountId())
+                () -> assertFalse(dbFileEntity.getDeleted()),
+                () -> assertNull(dbFileEntity.getExpirationTimestamp()),
+                () -> assertArrayEquals(fileUpdateTransactionBody.getKeys().toByteArray(), dbFileEntity.getKey()),
+                () -> assertNull(dbFileEntity.getAutoRenewPeriod()),
+                () -> assertNull(dbFileEntity.getProxyAccountId())
         );
     }
 
@@ -599,7 +559,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnSuccess(fileID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp())
         );
     }
@@ -621,7 +581,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         addressBookService.getCurrent();
         assertAll(
                 () -> assertRowCountOnSuccess(ADDRESS_BOOK_FILEID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertEquals(1, addressBookRepository.count()),
                 () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count()),
@@ -647,15 +607,15 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         AddressBook currentAddressBook = addressBookService.getCurrent();
         assertAll(
                 () -> assertRowCountOnSuccess(ADDRESS_BOOK_FILEID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertAddressBookData(addressBook, record.getConsensusTimestamp()),
                 () -> assertThat(currentAddressBook.getStartConsensusTimestamp())
                         .isEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp()) + 1),
-                () -> assertThat(currentAddressBook.getEntries()).hasSize(4)
-                , () -> assertEquals(2, addressBookRepository.count())
-                , () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + 4, addressBookEntryRepository.count())
-                , () -> assertEquals(1, fileDataRepository.count())
+                () -> assertThat(currentAddressBook.getEntries()).hasSize(4),
+                () -> assertEquals(2, addressBookRepository.count()),
+                () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + 4, addressBookEntryRepository.count()),
+                () -> assertEquals(1, fileDataRepository.count())
         );
     }
 
@@ -678,19 +638,19 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
-                () -> assertEquals(2, transactionRepository.count())
-                , () -> assertEntities(EntityId.of(FILE_ID), EntityId.of(PAYER), EntityId.of(NODE), EntityId
-                        .of(TREASURY))
-                , () -> assertEquals(0, contractResultRepository.count())
-                , () -> assertEquals(6, cryptoTransferRepository.count())
-                , () -> assertEquals(0, liveHashRepository.count())
-                , () -> assertEquals(1, fileDataRepository.count())
-                , () -> assertFileTransaction(transactionBody, record, true)
+                () -> assertEquals(2, transactionRepository.count()),
+                () -> assertEntities(EntityId.of(FILE_ID)),
+                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(6, cryptoTransferRepository.count()),
+                () -> assertEquals(0, liveHashRepository.count()),
+                () -> assertEquals(1, fileDataRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
-                , () -> assertNotNull(dbFileEntity.getKey())
-                , () -> assertNotNull(dbFileEntity.getExpirationTimestamp())
-                , () -> assertNull(dbFileEntity.getAutoRenewPeriod())
-                , () -> assertNull(dbFileEntity.getProxyAccountId())
+                () -> assertTrue(dbFileEntity.getDeleted()),
+                () -> assertNotNull(dbFileEntity.getKey()),
+                () -> assertNotNull(dbFileEntity.getExpirationTimestamp()),
+                () -> assertNull(dbFileEntity.getAutoRenewPeriod()),
+                () -> assertNull(dbFileEntity.getProxyAccountId())
         );
     }
 
@@ -701,11 +661,13 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(fileDeleteTransaction, record));
+        Entity fileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(FILE_ID),
-                () -> assertFileTransaction(transactionBody, record, true),
-                () -> assertFileEntityHasNullFields(record.getConsensusTimestamp())
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFileEntityHasNullFields(record.getConsensusTimestamp()),
+                () -> assertTrue(fileEntity.getDeleted())
         );
     }
 
@@ -730,11 +692,12 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionRecord record = transactionRecord(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(systemDeleteTransaction, record));
+        Entity fileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(FILE_ID),
-                () -> assertFileTransaction(transactionBody, record, true),
-                () -> assertFileEntityHasNullFields(record.getConsensusTimestamp())
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertThat(fileEntity).isNotNull().extracting(Entity::getDeleted).isEqualTo(true)
         );
     }
 
@@ -748,7 +711,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(FILE_ID),
-                () -> assertFileTransaction(transactionBody, record, false),
+                () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFileEntityHasNullFields(record.getConsensusTimestamp())
         );
     }
@@ -761,10 +724,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(new RecordItem(systemDeleteTransaction, record));
 
-        assertAll(
-                () -> assertFailedFileTransaction(transactionBody, record),
-                () -> assertTransactionAndRecord(transactionBody, record)
-        );
+        assertFailedFileTransaction(transactionBody, record);
     }
 
     @Test
@@ -775,18 +735,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(new RecordItem(systemUndeleteTransaction, record));
 
-        assertAll(
-                () -> assertFailedFileTransaction(transactionBody, record),
-                () -> assertTransactionAndRecord(transactionBody, record)
-        );
-    }
-
-    private void assertFileTransaction(TransactionBody transactionBody, TransactionRecord record, boolean deleted) {
-        Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
-        assertAll(
-                () -> assertTransactionAndRecord(transactionBody, record),
-                () -> assertFile(record.getReceipt().getFileID(), actualFile),
-                () -> assertEntity(actualFile));
+        assertFailedFileTransaction(transactionBody, record);
     }
 
     private void assertFailedFileTransaction(TransactionBody transactionBody, TransactionRecord record) {
@@ -799,6 +748,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     private void assertFileEntity(FileCreateTransactionBody expected, Timestamp consensusTimestamp) {
         Entity actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
+                () -> assertFalse(actualFile.getDeleted()),
                 () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
                         .getExpirationTimestamp()),
                 () -> assertEquals(expected.getMemo(), actualFile.getMemo()),
@@ -818,6 +768,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         assertAll(
                 () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
                         .getExpirationTimestamp()),
+                () -> assertFalse(actualFile.getDeleted()),
                 () -> assertEquals(expected.getMemo().getValue(), actualFile.getMemo()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
@@ -855,35 +806,34 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         assertRowCount(1,
                 3, // 3 fee transfers
                 1,
-                EntityId.of(fileID), EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY));
+                EntityId.of(fileID));
     }
 
     private void assertRowCountOnTwoFileTransactions() {
         assertRowCount(2,
                 6, // 3 + 3 fee transfers
                 2,
-                EntityId.of(FILE_ID), EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY));
+                EntityId.of(FILE_ID));
     }
 
     private void assertRowCountOnSuccessNoData(FileID fileID) {
         assertRowCount(1,
                 3, // 3 fee transfers
                 0,
-                EntityId.of(fileID), EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY));
+                EntityId.of(fileID));
     }
 
     private void assertRowCountOnFailureNoData() {
         assertRowCount(1,
                 3, // 3 fee transfers
-                0,
-                EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY));
+                0);
     }
 
     private void assertRowCountOnAddressBookTransactions() {
         assertRowCount(2,
                 6, // 3 + 3 fee transfers
                 2,
-                EntityId.of(ADDRESS_BOOK_FILEID), EntityId.of(PAYER), EntityId.of(NODE), EntityId.of(TREASURY));
+                EntityId.of(ADDRESS_BOOK_FILEID));
     }
 
     private void assertRowCount(int numTransactions, int numCryptoTransfers, int numFileData, EntityId... entityIds) {

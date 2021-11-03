@@ -34,25 +34,28 @@ import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor
 abstract class AbstractContractCallTransactionHandler implements TransactionHandler {
 
     protected final EntityListener entityListener;
+    protected final EntityProperties entityProperties;
 
     protected final void onContractResult(RecordItem recordItem, Supplier<Contract> inheritedContract,
                                           ContractResult contractResult,
                                           ContractFunctionResult functionResult) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         List<Long> createdContractIds = new ArrayList<>();
-        boolean isSuccessful = recordItem.isSuccessful();
+        boolean persist = recordItem.isSuccessful() && entityProperties.getPersist().isContracts();
 
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
             EntityId contractId = EntityId.of(createdContractId);
             createdContractIds.add(contractId.getId());
 
-            if (isSuccessful && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
+            // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
+            if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
                 Contract contract = inheritedContract.get();
                 contract.setCreatedTimestamp(consensusTimestamp);
                 contract.setDeleted(false);
@@ -77,7 +80,6 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
-            var topics = contractLoginfo.getTopicList();
 
             ContractLog contractLog = new ContractLog();
             contractLog.setBloom(Utility.toBytes(contractLoginfo.getBloom()));

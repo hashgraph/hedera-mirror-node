@@ -40,7 +40,7 @@ const formatBalancesResult = (req, result, limit, order) => {
 
   ret.balances = rows.map((row) => {
     return {
-      account: EntityId.fromEncodedId(row.account_id).toString(),
+      account: EntityId.parse(row.account_id).toString(),
       balance: Number(row.balance),
       tokens: utils.parseTokenBalances(row.token_balances),
     };
@@ -81,7 +81,7 @@ const getBalances = async (req, res) => {
     [utils.opsMap.eq]: utils.opsMap.lte,
   });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
-  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'e.public_key');
+  const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'ac.public_key');
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
@@ -99,13 +99,7 @@ const getBalances = async (req, res) => {
         .join(' AND ')}`;
 
   // Only need to join entity if we're selecting on publickey.
-  const joinEntityClause =
-    pubKeyQuery !== ''
-      ? `
-      JOIN entity e
-        ON e.id = ab.account_id
-          AND e.type in ('${constants.entityTypes.ACCOUNT}', '${constants.entityTypes.CONTRACT}')`
-      : '';
+  const joinEntityClause = pubKeyQuery !== '' ? 'JOIN account_contract ac on ac.id = ab.account_id' : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
   const sqlQuery = `

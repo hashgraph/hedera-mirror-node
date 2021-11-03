@@ -72,7 +72,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/1500/nfts?account.id=me&serialnumber=-1&order=random&limit=-1"],
+  "urls": [
+    "/api/v1/tokens/1500/nfts?account.id=me&serialnumber=2_2&order=random&limit=-1",
+    "/api/v1/tokens/1500/nfts?account.id=me&serialnumber=-1&order=random&limit=-1",
+    "/api/v1/tokens/1500/nfts?account.id=me&serialnumber=9223372036854775808&order=random&limit=-1"
+  ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {

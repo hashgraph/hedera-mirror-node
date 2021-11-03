@@ -42,7 +42,7 @@ const processRow = (row) => {
           tokens: utils.parseTokenBalances(row.token_balances),
         };
   return {
-    account: EntityId.fromEncodedId(row.id).toString(),
+    account: EntityId.parse(row.id).toString(),
     auto_renew_period: row.auto_renew_period === null ? null : Number(row.auto_renew_period),
     balance,
     deleted: row.deleted,
@@ -73,13 +73,7 @@ const getAccountQuery = (
   limitAndOrderQuery = {query: '', params: [], order: ''},
   includeBalance = true
 ) => {
-  const entityWhereFilter = [
-    `e.type in ('${constants.entityTypes.ACCOUNT}', '${constants.entityTypes.CONTRACT}')`,
-    entityAccountQuery.query,
-    pubKeyQuery.query,
-  ]
-    .filter((x) => !!x)
-    .join(' and ');
+  const entityWhereFilter = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
   const entityQuery = `select
       id,
@@ -88,13 +82,12 @@ const getAccountQuery = (
       key,
       deleted,
       type,
-      public_key,
       max_automatic_token_associations,
       memo,
       receiver_sig_required
-    from entity e
-    where ${entityWhereFilter}
-    order by e.id ${order || ''}
+    from account_contract
+    ${entityWhereFilter && 'where ' + entityWhereFilter}
+    order by id ${order || ''}
     ${limitQuery || ''}`;
 
   if (!includeBalance) {
@@ -196,11 +189,11 @@ const getAccounts = async (req, res) => {
   utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
-  const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
+  const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'id'));
   const balancesAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
   const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'ab.balance'));
   const includeBalance = getBalanceParamValue(req.query);
-  const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'e.public_key'));
+  const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'public_key'));
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
 
   const {query, params} = getAccountQuery(
@@ -264,7 +257,7 @@ const getOneAccount = async (req, res) => {
   utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
-  const accountId = EntityId.fromString(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+  const accountId = EntityId.parse(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();
   const parsedQueryParams = req.query;
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_timestamp');
   const resultTypeQuery = utils.parseResultParams(req);
@@ -276,7 +269,7 @@ const getOneAccount = async (req, res) => {
 
   const accountIdParams = [accountId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
-    {query: 'e.id = ?', params: accountIdParams},
+    {query: 'id = ?', params: accountIdParams},
     {query: 'ab.account_id = ?', params: accountIdParams}
   );
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);

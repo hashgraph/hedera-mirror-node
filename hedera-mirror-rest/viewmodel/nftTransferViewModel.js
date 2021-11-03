@@ -27,10 +27,10 @@ const EntityId = require('../entityId');
  */
 class NftTransferViewModel {
   constructor(nftTransferModel) {
-    this.receiver_account_id = EntityId.fromEncodedId(nftTransferModel.receiverAccountId, true).toString();
-    this.sender_account_id = EntityId.fromEncodedId(nftTransferModel.senderAccountId, true).toString();
+    this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
+    this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
     this.serial_number = nftTransferModel.serialNumber;
-    this.token_id = EntityId.fromEncodedId(nftTransferModel.tokenId).toString();
+    this.token_id = EntityId.parse(nftTransferModel.tokenId).toString();
   }
 }
 

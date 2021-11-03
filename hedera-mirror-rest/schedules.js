@@ -20,7 +20,11 @@
 
 'use strict';
 
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -101,11 +105,11 @@ const formatScheduleRow = (row) => {
     admin_key: utils.encodeKey(row.key),
     deleted: row.deleted,
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
-    creator_account_id: EntityId.fromEncodedId(row.creator_account_id).toString(),
+    creator_account_id: EntityId.parse(row.creator_account_id).toString(),
     executed_timestamp: utils.nsToSecNs(row.executed_timestamp),
     memo: row.memo,
-    payer_account_id: EntityId.fromEncodedId(row.payer_account_id).toString(),
-    schedule_id: EntityId.fromEncodedId(row.schedule_id).toString(),
+    payer_account_id: EntityId.parse(row.payer_account_id).toString(),
+    schedule_id: EntityId.parse(row.schedule_id).toString(),
     signatures,
     transaction_body: utils.encodeBase64(row.transaction_body),
   };
@@ -118,7 +122,7 @@ const formatScheduleRow = (row) => {
  * @returns {Promise<void>}
  */
 const getScheduleById = async (req, res) => {
-  const scheduleId = EntityId.fromString(req.params.scheduleId, constants.filterKeys.SCHEDULEID).getEncodedId();
+  const scheduleId = EntityId.parse(req.params.scheduleId, constants.filterKeys.SCHEDULEID).getEncodedId();
   if (logger.isTraceEnabled()) {
     logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
   }
@@ -131,20 +135,20 @@ const getScheduleById = async (req, res) => {
 };
 
 /**
- * Extract the sql where clause, params, order and limit values to be used from the provided schedule query param filters
- * If no modifying filters are provided the default of no where clause, the config maxLimit and asc order will be returned
+ * Extract the sql where clause, params, order and limit values from the provided schedule query param filters
+ * If no modifying filters are provided the default of no where clause, the defaultLimit and asc order will be returned
  * @param filters
  * @returns {{limit: Number, params: [*], filterQuery: string, order: string}}
  */
 const extractSqlFromScheduleFilters = (filters) => {
   const filterQuery = {
     filterQuery: '',
-    params: [config.maxLimit],
+    params: [defaultLimit],
     order: constants.orderFilterValues.ASC,
-    limit: config.maxLimit,
+    limit: defaultLimit,
   };
 
-  // if no filters return default filter of no where clause, maxLimit and asc order
+  // if no filters return default filter of no where clause, defaultLimit and asc order
   if (filters && filters.length === 0) {
     return filterQuery;
   }

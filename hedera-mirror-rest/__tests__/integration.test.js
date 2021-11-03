@@ -40,6 +40,7 @@
  * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
  * in the specs/ dir.
  */
+const yaml = require('js-yaml');
 // external libraries
 const S3 = require('aws-sdk/clients/s3');
 const crypto = require('crypto');
@@ -64,8 +65,9 @@ jest.setTimeout(40000);
 
 let sqlConnection;
 
-// set timeout for beforeAll to 4 minutes as downloading docker image if not exists can take quite some time
-const defaultBeforeAllTimeoutMillis = 240 * 1000;
+// set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
+// it's 12 minutes for CI to workaround possible DockerHub rate limit.
+const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 * 1000;
 
 beforeAll(async () => {
   sqlConnection = await integrationDbOps.instantiateDatabase();
@@ -174,7 +176,7 @@ const mapTransactionResults = (rows) => {
     const cryptoTransfers = v.crypto_transfer_list.map((transfer) => {
       return {
         amount: transfer.amount,
-        account: EntityId.fromEncodedId(transfer.entity_id).toString(),
+        account: EntityId.parse(transfer.entity_id).toString(),
       };
     });
     return {
@@ -500,12 +502,7 @@ describe('DB integration test - spec based', () => {
 
   const restoreConfig = () => {
     if (configOverridden) {
-      Object.assign(config, configClone);
-      Object.keys(config).forEach((key) => {
-        if (!(key in configClone)) {
-          delete config[key];
-        }
-      });
+      _.merge(config, configClone);
       configOverridden = false;
     }
   };

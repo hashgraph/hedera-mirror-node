@@ -54,10 +54,21 @@
             "balance": 99
           }
         ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 10,
+        "balance": 115
       }
     ],
-    "transactions": [],
-    "cryptotransfers": []
+    "contracts": [
+      {
+        "num": 10,
+        "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be"
+      }
+    ],
+    "cryptotransfers": [],
+    "transactions": []
   },
   "urls": [
     "/api/v1/accounts?account.publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
@@ -93,6 +104,21 @@
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
+      },
+      {
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 115,
+          "tokens": []
+        },
+        "account": "0.0.10",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false,
+        "max_automatic_token_associations": null,
+        "memo": "contract memo",
+        "receiver_sig_required": null
       }
     ],
     "links": {

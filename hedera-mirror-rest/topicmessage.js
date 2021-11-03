@@ -21,7 +21,11 @@
 'use strict';
 
 const _ = require('lodash');
-const config = require('./config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -60,7 +64,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
     badParams.push(constants.filterKeys.TOPIC_ID);
   }
 
-  if (!utils.isValidNum(seqNum)) {
+  if (!utils.isPositiveLong(seqNum)) {
     badParams.push(constants.filterKeys.SEQUENCE_NUMBER);
   }
 
@@ -79,35 +83,12 @@ const validateGetTopicMessagesParams = (topicId) => {
 };
 
 /**
- * Verify topicId exists and is a topic id
- *
- * @param {EntityId} topicId the topic ID object
- * @param {string} origTopicIdStr the original topic ID string
- * @return {Promise<void>}
- */
-const validateTopicId = async (topicId, origTopicIdStr) => {
-  const encodedId = topicId.getEncodedId();
-  const pgSqlQuery = `SELECT te.type
-                      FROM entity te
-                      WHERE te.id = $1;`;
-
-  const {rows} = await pool.queryQuietly(pgSqlQuery, encodedId);
-  if (_.isEmpty(rows)) {
-    throw new NotFoundError(`No such topic id - ${origTopicIdStr}`);
-  }
-
-  if (rows[0].type !== constants.entityTypes.TOPIC) {
-    throw new InvalidArgumentError(`${origTopicIdStr} is not a topic id`);
-  }
-};
-
-/**
  * Format row in postgres query's result to object which is directly returned to user as json.
  */
 const formatTopicMessageRow = (row, messageEncoding) => {
   return {
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
-    topic_id: EntityId.fromEncodedId(row[topicMessageColumns.TOPIC_ID]).toString(),
+    topic_id: EntityId.parse(row[topicMessageColumns.TOPIC_ID]).toString(),
     message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     running_hash_version: parseInt(row[topicMessageColumns.RUNNING_HASH_VERSION]),
@@ -145,8 +126,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const topicIdStr = req.params.topicId;
   const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
-  const topicId = EntityId.fromString(topicIdStr);
-  await validateTopicId(topicId, topicIdStr);
+  const topicId = EntityId.parse(topicIdStr);
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
   const pgSqlQuery = `select *
@@ -168,8 +148,7 @@ const getTopicMessages = async (req, res) => {
   validateGetTopicMessagesParams(topicIdStr);
   const filters = utils.buildAndValidateFilters(req.query);
 
-  const topicId = EntityId.fromString(topicIdStr);
-  await validateTopicId(topicId, topicIdStr);
+  const topicId = EntityId.parse(topicIdStr);
 
   // build sql query validated param and filters
   const {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
@@ -215,7 +194,7 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   const pgSqlParams = [topicId.getEncodedId()];
 
   // add filters
-  let limit;
+  let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
@@ -243,7 +222,6 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
-  limit = limit === undefined ? config.maxLimit : limit;
   pgSqlParams.push(limit);
 
   // close query

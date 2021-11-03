@@ -20,6 +20,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const {execSync} = require('child_process');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -40,7 +41,7 @@ let sqlConnection;
 
 dbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
 const dbAdminUser = process.env.POSTGRES_USER || `${dbConfig.username}_admin`;
-const dbAdminPassword = process.env.POSTGRES_PASSWORD || randomString(16);
+const dbAdminPassword = process.env.POSTGRES_PASSWORD || crypto.randomBytes(16).toString('hex');
 
 const v1SchemaConfigs = {
   docker: {
@@ -54,8 +55,8 @@ const v1SchemaConfigs = {
 };
 const v2SchemaConfigs = {
   docker: {
-    imageName: 'timescale/timescaledb-ha',
-    tagName: 'pg13.4-ts2.4.1-latest',
+    imageName: 'citusdata/citus',
+    tagName: '10.2.1-alpine',
   },
   flyway: {
     baselineVersion: '1.999.999',
@@ -111,11 +112,6 @@ const instantiateDatabase = async () => {
 
 /**
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
- * Note that even though we use Flyway 7 in the other modules, we have to use Flyway 6 here because of an
- * incompatibility issue. Flyway 7 with node-flywaydb causes the below issue when ran against TimescaleDB:
- *
- * ERROR: function create_hypertable(unknown, unknown, chunk_time_interval => bigint, ...) does not exist
- * Hint: No function matches the given name and argument types. You might need to add explicit type casts.
  */
 const flywayMigrate = () => {
   logger.info('Using flyway CLI to construct schema');
@@ -145,7 +141,7 @@ const flywayMigrate = () => {
     "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}",
     "user": "${dbAdminUser}"
   },
-  "version": "6.5.7",
+  "version": "7.7.3",
   "downloads": {
     "storageDirectory": "${flywayDataPath}"
   }
