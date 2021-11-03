@@ -37,8 +37,8 @@ type BaseService struct {
 
 // NewBaseService - Service containing common functions that are shared between other services
 func NewBaseService(
-		blockRepo interfaces.BlockRepository,
-		transactionRepo interfaces.TransactionRepository,
+	blockRepo interfaces.BlockRepository,
+	transactionRepo interfaces.TransactionRepository,
 ) BaseService {
 	return BaseService{
 		blockRepo:       blockRepo,
@@ -48,8 +48,8 @@ func NewBaseService(
 
 // RetrieveBlock - Retrieves Block by a given PartialBlockIdentifier
 func (c *BaseService) RetrieveBlock(ctx context.Context, bIdentifier *rTypes.PartialBlockIdentifier) (
-		*types.Block,
-		*rTypes.Error,
+	*types.Block,
+	*rTypes.Error,
 ) {
 	if bIdentifier.Hash != nil && bIdentifier.Index != nil {
 		h := tools.SafeRemoveHexPrefix(*bIdentifier.Hash)
@@ -77,10 +77,10 @@ func (c *BaseService) FindByIdentifier(ctx context.Context, index int64, hash st
 }
 
 func (c *BaseService) FindByHashInBlock(
-		ctx context.Context,
-		identifier string,
-		consensusStart int64,
-		consensusEnd int64,
+	ctx context.Context,
+	identifier string,
+	consensusStart int64,
+	consensusEnd int64,
 ) (*types.Transaction, *rTypes.Error) {
 	return c.transactionRepo.FindByHashInBlock(ctx, identifier, consensusStart, consensusEnd)
 }
