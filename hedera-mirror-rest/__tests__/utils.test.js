@@ -52,6 +52,24 @@ describe('Utils getNullableNumber tests', () => {
   });
 });
 
+describe('Utils mergeParams tests', () => {
+  test('one params array', () => {
+    expect(utils.mergeParams([1, 2])).toEqual([1, 2]);
+  });
+
+  test('two params arrays', () => {
+    expect(utils.mergeParams([1, 2], ['a', 'b'])).toEqual([1, 2, 'a', 'b']);
+  });
+
+  test('with initial []', () => {
+    const params1 = [1, 2];
+    const params2 = ['a', 'b'];
+    expect(utils.mergeParams([], params1, params2)).toEqual([1, 2, 'a', 'b']);
+    expect(params1).toEqual([1, 2]); // assert params1 isn't changed
+    expect(params2).toEqual(['a', 'b']); // assert param2 isn't changed
+  });
+});
+
 describe('Utils nsToSecNs tests', () => {
   const validStartNs = '9223372036854775837';
   test('Verify nsToSecNs returns correct result for valid validStartNs', () => {
