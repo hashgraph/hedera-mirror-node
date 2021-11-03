@@ -67,26 +67,26 @@ contract MirrorNodeShard {
                 abi.encodePacked("called storeTransaction with ", transaction)
             )
         );
-        // require(
-        //     transactionStoredCount + 1 <= maxTransactionsCount,
-        //     "MirrorNodeShard: storeTransaction max transaction count"
-        // );
-        // emit StoreTransactionLog(
-        //     shard,
-        //     timestamp,
-        //     "transaction count is acceptable"
-        // );
+        require(
+            transactionStoredCount + 1 <= maxTransactionsCount,
+            "MirrorNodeShard: storeTransaction max transaction count"
+        );
+        emit StoreTransactionLog(
+            shard,
+            timestamp,
+            "transaction count is acceptable"
+        );
 
-        // // update counters and mappings
-        // transactions[timestamp] = transaction;
-        // transactionStoredCount += 1;
-        // emit StoreTransactionLog(
-        //     shard,
-        //     timestamp,
-        //     "stored and updated mappings"
-        // );
+        // update counters and mappings
+        transactions[timestamp] = transaction;
+        transactionStoredCount += 1;
+        emit StoreTransactionLog(
+            shard,
+            timestamp,
+            "stored and updated mappings"
+        );
 
-        // emit TransactionStorage(shard, timestamp, address(this));
+        emit TransactionStorage(shard, timestamp, address(this));
         return true;
     }
 
@@ -233,82 +233,82 @@ contract MirrorNode {
                 abi.encodePacked("submitTransaction called with ", transaction)
             )
         );
-        // require(
-        //     msg.value >= storageFee,
-        //     "MirrorNode: submitTransaction with inadequate storageFee payment"
-        // );
-        // emit SubmitTransactionLog(shard, timestamp, "storageFee acceptable");
-        // require(
-        //     msg.sender != address(0),
-        //     "MirrorNode: submitTransaction from the zero address"
-        // );
-        // emit SubmitTransactionLog(shard, timestamp, "address acceptable");
-        // require(
-        //     timestamp > 0,
-        //     "MirrorNode: timestamp should be greater than 0"
-        // );
-        // emit SubmitTransactionLog(shard, timestamp, "timestamp acceptable");
+        require(
+            msg.value >= storageFee,
+            "MirrorNode: submitTransaction with inadequate storageFee payment"
+        );
+        emit SubmitTransactionLog(shard, timestamp, "storageFee acceptable");
+        require(
+            msg.sender != address(0),
+            "MirrorNode: submitTransaction from the zero address"
+        );
+        emit SubmitTransactionLog(shard, timestamp, "address acceptable");
+        require(
+            timestamp > 0,
+            "MirrorNode: timestamp should be greater than 0"
+        );
+        emit SubmitTransactionLog(shard, timestamp, "timestamp acceptable");
 
-        // // check if shard contract exist, if not create and cache address
-        // if (shardAddresses[shard] == address(0)) {
-        //     emit SubmitTransactionLog(
-        //         shard,
-        //         timestamp,
-        //         "shard doesn't exist, will create"
-        //     );
-        //     shardAddresses[shard] = address(
-        //         new MirrorNodeShard(
-        //             owner,
-        //             address(this),
-        //             apiFee,
-        //             shard,
-        //             maxTransactionsPerShard
-        //         )
-        //     );
-        //     emit SubmitTransactionLog(
-        //         shard,
-        //         timestamp,
-        //         string(
-        //             abi.encodePacked(
-        //                 "new MirrorNodeShard contract create at ",
-        //                 shardAddresses[shard]
-        //             )
-        //         )
-        //     );
+        // check if shard contract exist, if not create and cache address
+        if (shardAddresses[shard] == address(0)) {
+            emit SubmitTransactionLog(
+                shard,
+                timestamp,
+                "shard doesn't exist, will create"
+            );
+            shardAddresses[shard] = address(
+                new MirrorNodeShard(
+                    owner,
+                    address(this),
+                    apiFee,
+                    shard,
+                    maxTransactionsPerShard
+                )
+            );
+            emit SubmitTransactionLog(
+                shard,
+                timestamp,
+                string(
+                    abi.encodePacked(
+                        "new MirrorNodeShard contract create at ",
+                        shardAddresses[shard]
+                    )
+                )
+            );
 
-        //     shardCount += 1;
-        //     emit NewMirrorNodeShard(shard, timestamp);
-        // }
+            shardCount += 1;
+            emit NewMirrorNodeShard(shard, timestamp);
+        }
 
-        // // pass transaction to appropriate shard
-        // address mirrorAddress = shardAddresses[shard];
-        // emit SubmitTransactionLog(
-        //     shard,
-        //     timestamp,
-        //     string(
-        //         abi.encodePacked(
-        //             "storing new transaction in MirrorNodeShard at ",
-        //             mirrorAddress
-        //         )
-        //     )
-        // );
-        // MirrorNodeShard(mirrorAddress).storeTransaction{value: msg.value / 2}(
-        //     timestamp,
-        //     transaction
-        // );
-        // emit SubmitTransactionLog(shard, timestamp, "stored transaction");
+        // pass transaction to appropriate shard
+        address mirrorAddress = shardAddresses[shard];
+        emit SubmitTransactionLog(
+            shard,
+            timestamp,
+            string(
+                abi.encodePacked(
+                    "storing new transaction in MirrorNodeShard at ",
+                    mirrorAddress
+                )
+            )
+        );
+        MirrorNodeShard(mirrorAddress).storeTransaction{value: msg.value / 2}(
+            timestamp,
+            transaction
+        );
+        emit SubmitTransactionLog(shard, timestamp, "stored transaction");
 
-        // // update counters and mappings
-        // timestampShards[timestamp] = shard;
-        // transactionCount += 1;
-        // emit SubmitTransactionLog(
-        //     shard,
-        //     timestamp,
-        //     "updated counts and mappings"
-        // );
+        // update counters and mappings
+        timestampShards[timestamp] = shard;
+        transactionCount += 1;
+        emit SubmitTransactionLog(
+            shard,
+            timestamp,
+            "updated counts and mappings"
+        );
 
         // share half the fee with shard for storage maintenance
-        // payable(mirrorAddress).transfer(msg.value / 2);
+        payable(mirrorAddress).transfer(msg.value / 2);
 
         emit TransactionParsed(timestamp, shard);
         return true;
