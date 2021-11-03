@@ -309,7 +309,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 }
 
 func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
-	return tools.GetStringValuesFromIntStringMap(TransactionTypes), nil
+	return tools.GetStringValuesFromIntStringMap(types.TransactionTypes), nil
 }
 
 func (tr *transactionRepository) constructTransaction(ctx context.Context, sameHashTransactions []*transaction) (

@@ -35,8 +35,8 @@ type TransactionRepository interface {
 
 	// FindByHashInBlock retrieves a transaction by its hash in the block identified by [consensusStart, consensusEnd]
 	FindByHashInBlock(ctx context.Context, hash string, consensusStart, consensusEnd int64) (
-			*types.Transaction,
-			*rTypes.Error,
+		*types.Transaction,
+		*rTypes.Error,
 	)
 
 	// TypesAsArray returns all Transaction type names as an array
