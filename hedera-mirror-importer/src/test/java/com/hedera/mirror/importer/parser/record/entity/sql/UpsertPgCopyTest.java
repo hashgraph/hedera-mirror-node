@@ -28,8 +28,6 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,7 +38,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Contract;
@@ -105,6 +103,8 @@ class UpsertPgCopyTest extends IntegrationTest {
     @Resource
     private DataSource dataSource;
     @Resource
+    private TransactionOperations transactionOperations;
+    @Resource
     private ContractRepository contractRepository;
     @Resource
     private EntityRepository entityRepository;
@@ -133,24 +133,25 @@ class UpsertPgCopyTest extends IntegrationTest {
 
     @BeforeEach
     void beforeEach() {
-        contractPgCopy = new UpsertPgCopy<>(Contract.class, meterRegistry, recordParserProperties,
+        contractPgCopy = new UpsertPgCopy<>(Contract.class, dataSource, meterRegistry, recordParserProperties,
                 contractUpsertQueryGenerator);
-        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
+        entityPgCopy = new UpsertPgCopy<>(Entity.class, dataSource, meterRegistry, recordParserProperties,
                 entityUpsertQueryGenerator);
-        nftPgCopy = new UpsertPgCopy<>(Nft.class, meterRegistry, recordParserProperties,
+        nftPgCopy = new UpsertPgCopy<>(Nft.class, dataSource, meterRegistry, recordParserProperties,
                 nftUpsertQueryGenerator);
-        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
+        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, dataSource, meterRegistry, recordParserProperties,
                 scheduleUpsertQueryGenerator);
-        tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
+        tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, dataSource, meterRegistry, recordParserProperties,
                 tokenAccountUpsertQueryGenerator);
-        tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
+        tokenPgCopy = new UpsertPgCopy<>(Token.class, dataSource, meterRegistry, recordParserProperties,
                 tokenUpsertQueryGenerator);
-        tokenDissociateTransferPgCopy = new UpsertPgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties,
+        tokenDissociateTransferPgCopy = new UpsertPgCopy<>(TokenTransfer.class, dataSource, meterRegistry,
+                recordParserProperties,
                 new TokenDissociateTransferUpsertQueryGenerator());
     }
 
     @Test
-    void contract() throws Exception {
+    void contract() {
         Contract contract1 = domainBuilder.contract().get();
         Contract contract2 = domainBuilder.contract().get();
         Contract contract3 = domainBuilder.contract().get();
@@ -176,7 +177,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void entityInsertOnly() throws SQLException {
+    void entityInsertOnly() {
         var entities = new ArrayList<Entity>();
         long consensusTimestamp = 1;
         entities.add(getEntity(1, consensusTimestamp, consensusTimestamp, "memo-1"));
@@ -190,7 +191,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void entityInsertAndUpdate() throws SQLException {
+    void entityInsertAndUpdate() {
         var entities = new ArrayList<Entity>();
         long consensusTimestamp = 1;
         entities.add(getEntity(1, consensusTimestamp, consensusTimestamp, "memo-1"));
@@ -224,7 +225,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void entityInsertAndUpdateBatched() throws SQLException {
+    void entityInsertAndUpdateBatched() {
         var entities = new ArrayList<Entity>();
         long consensusTimestamp = 1;
         entities.add(getEntity(1, consensusTimestamp, consensusTimestamp, "memo-1"));
@@ -255,7 +256,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenInsertOnly() throws SQLException {
+    void tokenInsertOnly() {
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
         tokens.add(getToken("0.0.3000", "0.0.1001", 2L));
@@ -267,7 +268,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenInsertAndUpdate() throws SQLException {
+    void tokenInsertAndUpdate() {
         // insert
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -297,7 +298,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenUpdateNegativeTotalSupply() throws SQLException {
+    void tokenUpdateNegativeTotalSupply() {
         // given
         Token token = getToken("0.0.2000", "0.0.1001", 3L);
         tokenRepository.save(token);
@@ -316,7 +317,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertOnly() throws SQLException {
+    void tokenAccountInsertOnly() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -348,7 +349,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertFreezeStatus() throws SQLException {
+    void tokenAccountInsertFreezeStatus() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null, null));
@@ -396,7 +397,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertKycStatus() throws SQLException {
+    void tokenAccountInsertKycStatus() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null, null));
@@ -436,7 +437,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertWithMissingToken() throws SQLException {
+    void tokenAccountInsertWithMissingToken() {
         var tokenAccounts = new ArrayList<TokenAccount>();
         tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, false, 1L));
         tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, false, 2L));
@@ -448,7 +449,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertAndUpdate() throws SQLException {
+    void tokenAccountInsertAndUpdate() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -491,7 +492,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void scheduleInsertOnly() throws SQLException {
+    void scheduleInsertOnly() {
         var schedules = new ArrayList<Schedule>();
         schedules.add(getSchedule(1L, "0.0.1001", null));
         schedules.add(getSchedule(2L, "0.0.1002", null));
@@ -503,7 +504,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void scheduleInsertAndUpdate() throws SQLException {
+    void scheduleInsertAndUpdate() {
         var schedules = new ArrayList<Schedule>();
         schedules.add(getSchedule(1L, "0.0.1001", null));
         schedules.add(getSchedule(2L, "0.0.1002", null));
@@ -531,7 +532,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertMissingToken() throws SQLException {
+    void nftInsertMissingToken() {
         // mint
         var nfts = new ArrayList<Nft>();
         nfts.add(getNft("0.0.2000", 1, null, 1L, 1L, "nft1", false));
@@ -544,7 +545,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftMint() throws SQLException {
+    void nftMint() {
         // inserts tokens first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -574,7 +575,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertAndUpdate() throws SQLException {
+    void nftInsertAndUpdate() {
         // inserts tokens first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -616,7 +617,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertTransferBurnWipe() throws SQLException {
+    void nftInsertTransferBurnWipe() {
         // inserts tokens first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -668,7 +669,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenDissociateTransfer() throws SQLException {
+    void tokenDissociateTransfer() {
         // given
         EntityId accountId = EntityId.of("0.0.215", ACCOUNT);
         EntityId accountId2 = EntityId.of("0.0.216", ACCOUNT);
@@ -724,14 +725,12 @@ class UpsertPgCopyTest extends IntegrationTest {
                 .containsOnly(fungibleTokenTransfer);
     }
 
-    private void copyWithTransactionSupport(UpsertPgCopy upsertPgCopy, Collection<?>... items) throws SQLException {
-        try (Connection connection = DataSourceUtils.getConnection(dataSource)) {
-            connection.setAutoCommit(false); // for tests have to set auto commit to false or temp table gets lost
+    private void copyWithTransactionSupport(UpsertPgCopy upsertPgCopy, Collection<?>... items) {
+        transactionOperations.executeWithoutResult(t -> {
             for (Collection batch : items) {
-                upsertPgCopy.copy(batch, connection);
+                upsertPgCopy.persist(batch);
             }
-            connection.commit();
-        }
+        });
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {

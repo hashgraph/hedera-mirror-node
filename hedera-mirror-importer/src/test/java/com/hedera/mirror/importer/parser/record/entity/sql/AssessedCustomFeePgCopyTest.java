@@ -67,7 +67,7 @@ class AssessedCustomFeePgCopyTest extends IntegrationTest {
     @Test
     void copy() throws SQLException {
         // given
-        assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, parserProperties);
+        assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, dataSource, meterRegistry, parserProperties);
 
         // fee paid in HBAR with empty effective payer list
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
@@ -98,7 +98,7 @@ class AssessedCustomFeePgCopyTest extends IntegrationTest {
         );
 
         // when
-        assessedCustomFeePgCopy.copy(assessedCustomFees, dataSource.getConnection());
+        assessedCustomFeePgCopy.persist(assessedCustomFees);
 
         // then
         List<AssessedCustomFeeWrapper> actual = jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY,

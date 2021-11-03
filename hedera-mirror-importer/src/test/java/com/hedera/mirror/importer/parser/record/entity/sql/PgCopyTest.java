@@ -89,14 +89,14 @@ class PgCopyTest extends IntegrationTest {
 
     @BeforeEach
     void beforeEach() {
-        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, properties);
-        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, properties);
-        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, properties);
-        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, properties);
+        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, dataSource, meterRegistry, properties);
+        transactionPgCopy = new PgCopy<>(Transaction.class, dataSource, meterRegistry, properties);
+        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, dataSource, meterRegistry, properties);
+        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, dataSource, meterRegistry, properties);
     }
 
     @Test
-    void testCopy() throws SQLException {
+    void testCopy() {
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
         cryptoTransfers.add(cryptoTransfer(2));
@@ -107,22 +107,22 @@ class PgCopyTest extends IntegrationTest {
         tokenTransfers.add(tokenTransfer(2));
         tokenTransfers.add(tokenTransfer(3));
 
-        cryptoTransferPgCopy.copy(cryptoTransfers, dataSource.getConnection());
-        tokenTransferPgCopy.copy(tokenTransfers, dataSource.getConnection());
+        cryptoTransferPgCopy.persist(cryptoTransfers);
+        tokenTransferPgCopy.persist(tokenTransfers);
 
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoTransfers);
         assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenTransfers);
     }
 
     @Test
-    void testCopyDuplicates() throws SQLException {
+    void testCopyDuplicates() {
         var transactions = new HashSet<Transaction>();
         transactions.add(transaction(1));
         transactions.add(transaction(2));
         transactions.add(transaction(2));// duplicate transaction to be ignored with no error on attempted copy
         transactions.add(transaction(3));
 
-        transactionPgCopy.copy(transactions, dataSource.getConnection());
+        transactionPgCopy.persist(transactions);
 
         assertThat(transactionRepository.findAll()).hasSize(3).containsExactlyInAnyOrderElementsOf(transactions);
     }
@@ -138,30 +138,30 @@ class PgCopyTest extends IntegrationTest {
         Connection conn = mock(Connection.class);
         doReturn(conn).when(dataSource).getConnection();
         doReturn(pgConnection).when(conn).unwrap(any());
-        var cryptoTransferPgCopy2 = new PgCopy<>(CryptoTransfer.class, meterRegistry, properties);
+        var cryptoTransferPgCopy2 = new PgCopy<>(CryptoTransfer.class, dataSource, meterRegistry, properties);
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
 
         // when
-        assertThatThrownBy(() -> cryptoTransferPgCopy2.copy(cryptoTransfers, dataSource.getConnection()))
+        assertThatThrownBy(() -> cryptoTransferPgCopy2.persist(cryptoTransfers))
                 .isInstanceOf(ParserException.class);
     }
 
     @Test
-    void testNullItems() throws SQLException {
-        cryptoTransferPgCopy.copy(null, dataSource.getConnection());
+    void testNullItems() {
+        cryptoTransferPgCopy.persist(null);
         assertThat(cryptoTransferRepository.count()).isEqualTo(0);
     }
 
     @Test
-    void testLargeConsensusSubmitMessage() throws SQLException {
+    void testLargeConsensusSubmitMessage() {
         var topicMessages = new HashSet<TopicMessage>();
         topicMessages.add(topicMessage(1, 6000)); // max 6KiB
         topicMessages.add(topicMessage(2, 6000));
         topicMessages.add(topicMessage(3, 6000));
         topicMessages.add(topicMessage(4, 6000));
 
-        topicMessagePgCopy.copy(topicMessages, dataSource.getConnection());
+        topicMessagePgCopy.persist(topicMessages);
 
         assertThat(topicMessageRepository.findAll()).hasSize(4).containsExactlyInAnyOrderElementsOf(topicMessages);
     }

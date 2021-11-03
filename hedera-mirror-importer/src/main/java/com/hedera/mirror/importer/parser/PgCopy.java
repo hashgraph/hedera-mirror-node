@@ -35,15 +35,18 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.PGCopyOutputStream;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.batch.BatchPersister;
 
 /**
  * Stateless writer to insert rows into PostgreSQL using COPY.
@@ -51,8 +54,9 @@ import com.hedera.mirror.importer.exception.ParserException;
  * @param <T> domain object
  */
 @Log4j2
-public class PgCopy<T> {
+public class PgCopy<T> implements BatchPersister {
 
+    protected final DataSource dataSource;
     protected final MeterRegistry meterRegistry;
     protected final String tableName;
     protected final Timer insertDurationMetric;
@@ -60,11 +64,14 @@ public class PgCopy<T> {
     private final ObjectWriter writer;
     private final ParserProperties properties;
 
-    public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties) {
-        this(entityClass, meterRegistry, properties, entityClass.getSimpleName());
+    public PgCopy(Class<T> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
+                  ParserProperties properties) {
+        this(entityClass, dataSource, meterRegistry, properties, entityClass.getSimpleName());
     }
 
-    public PgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties, String tableName) {
+    public PgCopy(Class<T> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
+                  ParserProperties properties, String tableName) {
+        this.dataSource = dataSource;
         this.properties = properties;
         this.meterRegistry = meterRegistry;
         this.tableName = CaseFormat.UPPER_CAMEL.to(
@@ -90,10 +97,12 @@ public class PgCopy<T> {
                 .register(meterRegistry);
     }
 
-    public void copy(Collection<T> items, Connection connection) {
+    public void persist(Collection<? extends Object> items) {
         if (items == null || items.isEmpty()) {
             return;
         }
+
+        Connection connection = DataSourceUtils.getConnection(dataSource);
 
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
@@ -102,10 +111,12 @@ public class PgCopy<T> {
             log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
+        } finally {
+            DataSourceUtils.releaseConnection(connection, dataSource);
         }
     }
 
-    protected void persistItems(Collection<T> items, Connection connection) throws SQLException, IOException {
+    protected void persistItems(Collection<?> items, Connection connection) throws SQLException, IOException {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
         CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 

@@ -31,6 +31,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Entity
 @NoArgsConstructor
+@Upsertable
 public class TokenAccount {
 
     @EmbeddedId

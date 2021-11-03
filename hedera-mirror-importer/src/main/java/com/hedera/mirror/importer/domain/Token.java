@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.util.Utility;
 @ToString(exclude = {"feeScheduleKey", "feeScheduleKeyEd25519Hex", "freezeKey", "freezeKeyEd25519Hex",
         "kycKey", "kycKeyEd25519Hex", "pauseKey", "supplyKey", "supplyKeyEd25519Hex", "wipeKey",
         "wipeKeyEd25519Hex"})
+@Upsertable
 public class Token {
     @EmbeddedId
     @JsonUnwrapped

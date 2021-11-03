@@ -76,26 +76,28 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         accountBalanceFileParser.parse(accountBalanceFile);
 
         // then
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+        assertAccountBalanceFile(accountBalanceFile, Flux.empty());
     }
 
     @Test
     void success() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        Flux<AccountBalance> items = accountBalanceFile.getItems();
         accountBalanceFileParser.parse(accountBalanceFile);
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+        assertAccountBalanceFile(accountBalanceFile, items);
     }
 
     @Test
     void duplicateFile() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         AccountBalanceFile duplicate = accountBalanceFile(1);
+        Flux<AccountBalance> items = accountBalanceFile.getItems();
 
         accountBalanceFileParser.parse(accountBalanceFile);
         accountBalanceFileParser.parse(duplicate); // Will be ignored
 
         assertThat(accountBalanceFileRepository.count()).isEqualTo(1L);
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+        assertAccountBalanceFile(accountBalanceFile, items);
     }
 
     @Test
@@ -107,40 +109,30 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .usingElementComparatorIgnoringFields("bytes", "items")
                 .containsExactly(accountBalanceFile);
         assertThat(accountBalanceRepository.count()).isZero();
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+        assertAccountBalanceFile(accountBalanceFile, Flux.empty());
     }
 
-    void assertPostParseAccountBalanceFile(AccountBalanceFile accountBalanceFile, boolean success) {
-        if (success) {
-            assertThat(accountBalanceFile.getBytes()).isNull();
-            assertThat(accountBalanceFile.getItems()).isNull();
-        } else {
-            assertThat(accountBalanceFile.getBytes()).isNotNull();
-            assertThat(accountBalanceFile.getItems()).isNotNull();
-        }
-    }
+    void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, Flux<AccountBalance> accountBalances) {
+        assertThat(accountBalanceFile.getBytes()).isNull();
+        assertThat(accountBalanceFile.getItems()).isNull();
 
-    void assertAccountBalances(AccountBalanceFile... accountBalanceFiles) {
-        assertThat(accountBalanceFileRepository.count()).isEqualTo(accountBalanceFiles.length);
+        accountBalances.doOnNext(accountBalance -> {
+            assertThat(accountBalanceRepository.findById(accountBalance.getId())).get().isEqualTo(accountBalance);
 
-        for (AccountBalanceFile accountBalanceFile : accountBalanceFiles) {
-            accountBalanceFile.getItems().doOnNext(accountBalance -> {
-                assertThat(accountBalanceRepository.findById(accountBalance.getId())).get().isEqualTo(accountBalance);
+            for (TokenBalance tokenBalance : accountBalance.getTokenBalances()) {
+                assertThat(tokenBalanceRepository.findById(tokenBalance.getId())).get().isEqualTo(tokenBalance);
+            }
+        }).blockLast();
 
-                for (TokenBalance tokenBalance : accountBalance.getTokenBalances()) {
-                    assertThat(tokenBalanceRepository.findById(tokenBalance.getId())).get().isEqualTo(tokenBalance);
-                }
-            }).blockLast();
+        assertThat(accountBalanceRepository.findByIdConsensusTimestamp(accountBalanceFile.getConsensusTimestamp()))
+                .hasSize(Math.toIntExact(accountBalances.count().block()));
 
-            assertThat(accountBalanceRepository.findByIdConsensusTimestamp(accountBalanceFile.getConsensusTimestamp()))
-                    .hasSize(accountBalanceFile.getCount().intValue())
-                    .hasSize(Math.toIntExact(accountBalanceFile.getItems().count().block()));
-
+        if (parserProperties.isEnabled()) {
             assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()))
                     .get()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
-                    .ignoringFields("items", "loadEnd")
+                    .ignoringFields("bytes", "count", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
     }
@@ -151,7 +143,6 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         return AccountBalanceFile.builder()
                 .bytes(Longs.toByteArray(timestamp))
                 .consensusTimestamp(timestamp)
-                .count(2L)
                 .fileHash("fileHash" + timestamp)
                 .items(Flux.just(accountBalance(timestamp, 1), accountBalance(timestamp, 2)))
                 .loadEnd(null)

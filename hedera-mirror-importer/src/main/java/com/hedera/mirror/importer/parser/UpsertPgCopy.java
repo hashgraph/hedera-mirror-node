@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
+import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
@@ -42,6 +43,7 @@ import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
  */
 @Log4j2
 public class UpsertPgCopy<T> extends PgCopy<T> {
+
     private static final String TABLE = "table";
     private final String createTempTableSql;
     private final String finalTableName;
@@ -52,9 +54,10 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private final Timer updateDurationMetric;
     private final String truncateSql;
 
-    public UpsertPgCopy(Class<T> entityClass, MeterRegistry meterRegistry, ParserProperties properties,
+    public UpsertPgCopy(Class<T> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
+                        ParserProperties properties,
                         UpsertQueryGenerator upsertQueryGenerator) {
-        super(entityClass, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
+        super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
         truncateSql = String
                 .format("truncate table %s restart identity cascade", upsertQueryGenerator.getTemporaryTableName());
@@ -80,7 +83,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     }
 
     @Override
-    protected void persistItems(Collection<T> items, Connection connection) {
+    protected void persistItems(Collection<?> items, Connection connection) {
         if (CollectionUtils.isEmpty(items)) {
             return;
         }
@@ -134,7 +137,7 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
         log.trace("Created temp table {}", tableName);
     }
 
-    private void copyItems(Collection<T> items, Connection connection) throws SQLException, IOException {
+    private void copyItems(Collection<?> items, Connection connection) throws SQLException, IOException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         super.persistItems(items, connection);
         recordMetric(copyDurationMetric, stopwatch);
