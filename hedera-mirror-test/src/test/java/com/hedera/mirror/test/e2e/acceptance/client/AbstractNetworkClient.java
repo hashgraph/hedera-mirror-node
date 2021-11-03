@@ -94,7 +94,13 @@ public abstract class AbstractNetworkClient {
                                                                            ExpandedAccountId payer) {
         long startBalance = getBalance();
         TransactionId transactionId = executeTransaction(transaction, keyList, payer);
-        TransactionReceipt transactionReceipt = getTransactionReceipt(transactionId);
+        TransactionReceipt transactionReceipt = null;
+
+        try {
+            transactionReceipt = getTransactionReceipt(transactionId);
+        } catch (Exception e) {
+            log.error("TransactionReceipt retrieval Exception: {}", e.getMessage());
+        }
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }

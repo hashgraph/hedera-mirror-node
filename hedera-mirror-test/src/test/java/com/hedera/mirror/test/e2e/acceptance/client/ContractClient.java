@@ -43,6 +43,7 @@ import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
@@ -51,7 +52,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 public class ContractClient extends AbstractNetworkClient {
     public ContractClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
-        log.debug("Creating File Client");
+        log.debug("Creating Contract Client");
     }
 
     public NetworkTransactionResponse createContract(FileId fileId, long gas,
@@ -61,10 +62,13 @@ public class ContractClient extends AbstractNetworkClient {
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
                 .setAdminKey(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setGas(gas)
-                .setConstructorParameters(contractFunctionParameters)
                 .setBytecodeFileId(fileId)
                 .setContractMemo(memo)
                 .setTransactionMemo(memo);
+
+        if (contractFunctionParameters != null) {
+            contractCreateTransaction.setConstructorParameters(contractFunctionParameters);
+        }
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 contractCreateTransaction,
@@ -105,15 +109,16 @@ public class ContractClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse callExecuteContract(ContractId contractId, long gas, String functionName,
-                                                          ContractFunctionParameters parameters, Hbar payableAmount) {
-        log.debug("Call contract function {}", functionName);
+    public NetworkTransactionResponse executeContract(ContractId contractId, long gas, String functionName,
+                                                      ContractFunctionParameters parameters, Hbar payableAmount) {
+        log.debug("Call contract {}'s function {}", contractId, functionName);
 
-        String memo = String.format("Call contract %s", Instant.now());
+        String memo = String.format("Execute contract %s", Instant.now());
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(gas)
-                .setTransactionMemo(memo);
+                .setTransactionMemo(memo)
+                .setMaxTransactionFee(Hbar.from(100));
 
         if (parameters == null) {
             contractExecuteTransaction.setFunction(functionName);
@@ -127,15 +132,17 @@ public class ContractClient extends AbstractNetworkClient {
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(contractExecuteTransaction);
-        log.debug("Called contract {}", contractId);
+
+        TransactionRecord transactionRecord = getTransactionRecord(networkTransactionResponse.getTransactionId());
+        log.trace("contractFunctionResult for {}: {}", functionName, transactionRecord.contractFunctionResult);
 
         return networkTransactionResponse;
     }
 
     @SneakyThrows
-    public ContractFunctionResult callContract(ContractId contractId, long gas, String functionName,
-                                               ContractFunctionParameters parameters, Hbar payableAmount) {
-        log.debug("Call contract function {}", functionName);
+    public ContractFunctionResult callContractFunction(ContractId contractId, long gas, String functionName,
+                                                       ContractFunctionParameters parameters, Hbar payableAmount) {
+        log.debug("Call contract {}'s function {}", contractId, functionName);
         return retryTemplate.execute(x -> {
             ContractCallQuery contractCallQuery = new ContractCallQuery()
                     .setContractId(contractId)

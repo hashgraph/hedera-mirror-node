@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +64,8 @@ public class ContractFeature {
     private final ObjectMapper mapper = new ObjectMapper();
     @Value("classpath:solidity/artifacts/contracts/MirrorNode.sol/MirrorNode.json")
     Path mirrorNodeContract;
+    @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
+    Path parentContract;
     @Autowired
     private ContractClient contractClient;
     @Autowired
@@ -73,39 +76,54 @@ public class ContractFeature {
     private NetworkTransactionResponse networkTransactionResponse;
     private ContractId contractId;
     private FileId fileId;
+    private ContractName contractName;
 
-    @Given("I successfully create a contract from contracts bytes")
-    public void createNewContract() throws IOException {
-        CompiledSolidityArtifact compiledSolidityArtifact = mapper.readValue(
-                ResourceUtils.getFile(mirrorNodeContract.toUri()),
-                CompiledSolidityArtifact.class);
-        persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-
-        log.info("Created file with contract init code, creating contract");
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                750000,
-                new ContractFunctionParameters()
-                        .addInt8((byte) 3)
-                        .addInt256(BigInteger.valueOf(100))
-                        .addInt256(BigInteger.valueOf(5))
-                        .addInt256(BigInteger.valueOf(1)));
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-
-        // verify contract state through getters
-        callContractGetStorageFee(5);
-        callContractGetApiFee(1);
-        callContractGetShardCount(0);
-        callContractGetTransactionCount(0);
+    @Given("I successfully create a contract from {string} contract bytes")
+    public void createNewContract(String contractFile) throws IOException {
+        switch (ContractName.valueOf(contractFile)) {
+            case MIRROR_NODE:
+                CompiledSolidityArtifact compiledMirrorNodeArtifact = mapper.readValue(
+                        ResourceUtils.getFile(mirrorNodeContract.toUri()),
+                        CompiledSolidityArtifact.class);
+                createMirrorNodeContract(compiledMirrorNodeArtifact.getBytecode());
+                contractName = ContractName.MIRROR_NODE;
+                break;
+            case PARENT:
+                CompiledSolidityArtifact compiledParentArtifact = mapper.readValue(
+                        ResourceUtils.getFile(parentContract.toUri()),
+                        CompiledSolidityArtifact.class);
+                createParentContract(compiledParentArtifact.getBytecode());
+                contractName = ContractName.PARENT;
+                break;
+            default:
+                createDefaultContract(SMART_CONTRACT_BYTECODE);
+                contractName = ContractName.DEFAULT;
+                break;
+        }
     }
 
     @Given("I successfully call the contract")
     public void callContract() {
-//        executeContractSubmitTransaction();
-        callContractSubmitTransaction();
+        switch (contractName) {
+            case MIRROR_NODE:
+                executeContractSubmitTransaction();
+//                callContractSubmitTransaction();
+                callContractGetShardCount(1);
+                callContractGetTransactionCount(1);
+                break;
+            case PARENT:
+                executeCreateChildTransaction();
+                callGetBalance(0);
+                callGetChildBalance(0);
+                executeDonateTransaction(10000000);
+                int initialParentBalance = callGetBalance(1);
+//                callTransferToChild(1234);
+//                int childBalance = callGetChildBalance(1);
+//                assertThat(callGetBalance(1)).isGreaterThanOrEqualTo(initialParentBalance - childBalance);
+                break;
+            default:
+                break;
+        }
     }
 
     @Given("I successfully update the contract")
@@ -136,12 +154,6 @@ public class ContractFeature {
         verifyContractInfo(contractInfo);
         assertThat(contractInfo.balance.toTinybars()).isEqualTo(0);
         assertThat(contractInfo.isDeleted).isFalse();
-    }
-
-    @Then("the network confirms contract call")
-    public void verifyNetworkContractCallResponse() {
-        callContractGetShardCount(1);
-        callContractGetTransactionCount(1);
     }
 
     @Then("the network confirms contract update")
@@ -182,6 +194,85 @@ public class ContractFeature {
         verifyContractFromMirror(true);
     }
 
+    private void verifyCreateContractNetworkResponse() {
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        contractId = networkTransactionResponse.getReceipt().contractId;
+        assertNotNull(contractId);
+    }
+
+    private void persistContractBytes(String contractContents) {
+        byte[] contractBytes = contractContents.getBytes(StandardCharsets.UTF_8);
+        int byteIndex = 0;
+        boolean fileCreateOrUpdate = true;
+        while (byteIndex <= contractBytes.length) {
+            int stopIndex = byteIndex + MAX_FILE_SIZE;
+            if (stopIndex > contractBytes.length) {
+                stopIndex = contractBytes.length;
+            }
+
+            byte[] fileContents = Arrays.copyOfRange(contractBytes, byteIndex, stopIndex);
+            if (fileCreateOrUpdate) {
+                networkTransactionResponse = fileClient.createFile(fileContents);
+            } else {
+                networkTransactionResponse = fileClient.appendFile(fileId, fileContents);
+            }
+
+            assertNotNull(networkTransactionResponse.getTransactionId());
+            assertNotNull(networkTransactionResponse.getReceipt());
+
+            if (fileCreateOrUpdate) {
+                fileId = networkTransactionResponse.getReceipt().fileId;
+                assertNotNull(fileId);
+                log.info("Created file {} to hold contract init code", fileId);
+            }
+
+            fileCreateOrUpdate = false;
+            byteIndex += MAX_FILE_SIZE;
+        }
+    }
+
+    private void createDefaultContract(String byteCode) {
+        persistContractBytes(byteCode);
+        networkTransactionResponse = contractClient.createContract(
+                fileId,
+                750000,
+                null);
+
+        verifyCreateContractNetworkResponse();
+    }
+
+    private void createParentContract(String byteCode) {
+        persistContractBytes(byteCode.replaceFirst("0x", ""));
+        networkTransactionResponse = contractClient.createContract(
+                fileId,
+                750000,
+                null);
+
+        verifyCreateContractNetworkResponse();
+
+        callGetBalance(0);
+    }
+
+    private void createMirrorNodeContract(String byteCode) {
+        persistContractBytes(byteCode.replaceFirst("0x", ""));
+        networkTransactionResponse = contractClient.createContract(
+                fileId,
+                750000,
+                new ContractFunctionParameters()
+                        .addInt8((byte) 3)
+                        .addInt256(BigInteger.valueOf(100))
+                        .addInt256(BigInteger.valueOf(5))
+                        .addInt256(BigInteger.valueOf(1)));
+
+        verifyCreateContractNetworkResponse();
+
+        callContractGetStorageFee(5);
+        callContractGetApiFee(1);
+        callContractGetShardCount(0);
+        callContractGetTransactionCount(0);
+    }
+
     private void verifyContractInfo(ContractInfo contractInfo) {
         assertThat(contractInfo.contractMemo).isNotEmpty();
         assertThat(contractInfo.contractAccountId).isNotNull();
@@ -219,39 +310,8 @@ public class ContractFeature {
         return mirrorContract;
     }
 
-    private void persistContractBytes(String contractContents) {
-        byte[] contractBytes = contractContents.getBytes(StandardCharsets.UTF_8);
-        int byteIndex = 0;
-        boolean fileCreateOrUpdate = true;
-        while (byteIndex <= contractBytes.length) {
-            int stopIndex = byteIndex + MAX_FILE_SIZE;
-            if (stopIndex > contractBytes.length) {
-                stopIndex = contractBytes.length;
-            }
-
-            byte[] fileContents = Arrays.copyOfRange(contractBytes, byteIndex, stopIndex);
-            if (fileCreateOrUpdate) {
-                networkTransactionResponse = fileClient.createFile(fileContents);
-            } else {
-                networkTransactionResponse = fileClient.appendFile(fileId, fileContents);
-            }
-
-            assertNotNull(networkTransactionResponse.getTransactionId());
-            assertNotNull(networkTransactionResponse.getReceipt());
-
-            if (fileCreateOrUpdate) {
-                fileId = networkTransactionResponse.getReceipt().fileId;
-                assertNotNull(fileId);
-                log.info("Created file {} to hold contract init code", fileId);
-            }
-
-            fileCreateOrUpdate = false;
-            byteIndex += MAX_FILE_SIZE;
-        }
-    }
-
     private void executeContractSubmitTransaction() {
-        networkTransactionResponse = contractClient.callExecuteContract(
+        networkTransactionResponse = contractClient.executeContract(
                 contractId,
                 750000,
                 "submitTransaction",
@@ -265,30 +325,98 @@ public class ContractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void callContractSubmitTransaction() {
-        log.debug("Confirm contract '{}' submitTransaction function creates new contract and update storage",
+    private void executeCreateChildTransaction() {
+        networkTransactionResponse = contractClient.executeContract(
+                contractId,
+                75000000,
+                "createChild",
+                null,
+                null);
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void executeDonateTransaction(int sponsorAmount) {
+        networkTransactionResponse = contractClient.executeContract(
+                contractId,
+                75000000,
+                "donate",
+                null,
+                Hbar.fromTinybars(sponsorAmount));
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void callTransferToChild(int transferAmount) {
+        networkTransactionResponse = contractClient.executeContract(
+                contractId,
+                75000000,
+                "transferToChild",
+                new ContractFunctionParameters()
+                        .addInt256(BigInteger.valueOf(transferAmount)),
+                null);
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private int callGetBalance(int balanceFloor) {
+        log.debug("Confirm contract '{}' parent callGetBalance gets a valid balance",
                 contractId);
-        var contractFunctionResult = contractClient.callContract(
+        var contractFunctionResult = contractClient.callContractFunction(
                 contractId,
                 750000,
-                "submitTransaction",
-                new ContractFunctionParameters()
-                        .addInt256(BigInteger.valueOf(1234))
-                        .addString("CRYPTOTRANSFER")
-                        .addInt8((byte) 1),
-                Hbar.from(1));
+                "getBalance",
+                null,
+                null);
 
         assertNotNull(contractFunctionResult);
+        log.debug("getBalance contractFunctionResult, contractId: {}, gasUsed: {}, logCount: {}",
+                contractFunctionResult.contractId,
+                contractFunctionResult.gasUsed,
+                contractFunctionResult.logs.size());
         assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
-        assertThat(contractFunctionResult.getBool(0)).isTrue();
         assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
         assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
-        assertThat(contractFunctionResult.logs.size()).isEqualTo(2); // events NewMirrorNodeShard and TransactionParsed
+        assertThat(contractFunctionResult.logs.size()).isEqualTo(0);
+
+        int balance = contractFunctionResult.getInt256(0).intValue();
+        assertThat(balance).isGreaterThanOrEqualTo(balanceFloor);
+        log.trace("getBalance parent balance is {}", balance);
+        return balance;
+    }
+
+    private int callGetChildBalance(int balanceFloor) {
+        log.debug("Confirm contract '{}' getChildBalance gets a valid balance",
+                contractId);
+        var contractFunctionResult = contractClient.callContractFunction(
+                contractId,
+                750000,
+                "getChildBalance",
+                null,
+                null);
+
+        assertNotNull(contractFunctionResult);
+        log.debug("getChildBalance contractFunctionResult, contractId: {}, gasUsed: {}, logCount: {}",
+                contractFunctionResult.contractId,
+                contractFunctionResult.gasUsed,
+                contractFunctionResult.logs.size());
+        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
+        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
+        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
+        assertThat(contractFunctionResult.logs.size()).isEqualTo(0);
+
+        int balance = contractFunctionResult.getInt256(0).intValue();
+        assertThat(balance).isGreaterThanOrEqualTo(balanceFloor);
+        log.trace("getChildBalance child balance is {}", balance);
+        return balance;
     }
 
     private void callContractGetTransactionCount(int expectedCount) {
         log.debug("Confirm contract '{}' transaction count is {}", contractId, expectedCount);
-        var contractFunctionResult = contractClient.callContract(
+        var contractFunctionResult = contractClient.callContractFunction(
                 contractId,
                 750000,
                 "getTransactionCount",
@@ -305,7 +433,7 @@ public class ContractFeature {
 
     private void callContractGetApiFee(int expectedCount) {
         log.debug("Confirm contract '{}' api fee is {}", contractId, expectedCount);
-        var contractFunctionResult = contractClient.callContract(
+        var contractFunctionResult = contractClient.callContractFunction(
                 contractId,
                 750000,
                 "getApiFee",
@@ -322,7 +450,7 @@ public class ContractFeature {
 
     private void callContractGetStorageFee(int expectedAmount) {
         log.debug("Confirm contract '{}' storage fee is {}", contractId, expectedAmount);
-        var contractFunctionResult = contractClient.callContract(
+        var contractFunctionResult = contractClient.callContractFunction(
                 contractId,
                 750000,
                 "getStorageFee",
@@ -339,7 +467,7 @@ public class ContractFeature {
 
     private void callContractGetShardCount(int expectedAmount) {
         log.debug("Confirm contract '{}' shard count is {}", contractId, expectedAmount);
-        var contractFunctionResult = contractClient.callContract(
+        var contractFunctionResult = contractClient.callContractFunction(
                 contractId,
                 750000,
                 "getShardCount",
@@ -352,5 +480,12 @@ public class ContractFeature {
         assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
         assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
         assertThat(contractFunctionResult.logs.size()).isZero();
+    }
+
+    @RequiredArgsConstructor
+    public enum ContractName {
+        DEFAULT,
+        MIRROR_NODE,
+        PARENT
     }
 }
