@@ -53,12 +53,10 @@ const integrationDbOps = require('./integrationDbOps');
 const integrationDomainOps = require('./integrationDomainOps');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
-const {cloudProviders, filterKeys} = require('../constants');
+const {cloudProviders} = require('../constants');
 const EntityId = require('../entityId');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions');
-const utils = require('../utils');
 
 jest.setTimeout(40000);
 

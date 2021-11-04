@@ -538,7 +538,7 @@ const reqToSql = function (req) {
   creditDebitQuery = utils.convertMySqlStyleQueryToPostgres(creditDebitQuery, sqlParams.length + 1);
   sqlParams.push(...creditDebitParams);
   const resultTypeQuery = utils.parseResultParams(req, Transaction.RESULT_FULL_NAME);
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   sqlParams.push(...params);
 

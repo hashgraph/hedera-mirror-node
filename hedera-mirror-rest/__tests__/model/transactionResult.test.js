@@ -23,7 +23,7 @@
 const {proto} = require('@hashgraph/proto/lib/proto');
 
 // models
-const {TransactionResult} = require('../model');
+const {TransactionResult} = require('../../model');
 
 describe('transactionResult constants are up to date', () => {
   test('transactionResult constants are up to date', () => {

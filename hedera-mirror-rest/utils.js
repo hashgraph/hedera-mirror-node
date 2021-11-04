@@ -904,7 +904,7 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
-const getTransactionTypeQuery = (parsedQueryParams) => {
+const parseTransactionTypeParam = (parsedQueryParams) => {
   if (_.isNil(parsedQueryParams)) {
     return '';
   }
@@ -988,7 +988,6 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getPoolClass,
-  getTransactionTypeQuery,
   ipMask,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
@@ -1015,6 +1014,7 @@ module.exports = {
   parseTimestampParam,
   parseTimestampQueryParam,
   parseTokenBalances,
+  parseTransactionTypeParam,
   randomString,
   secNsToNs,
   secNsToSeconds,

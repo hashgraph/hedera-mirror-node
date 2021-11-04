@@ -74,7 +74,7 @@ const getTransactionTypeName = (protoId) => {
 
 const getTransactionTypeProtoId = (transactionTypeName) => {
   if (!_.isString(transactionTypeName)) {
-    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName.toUpperCase()} is not a string`);
+    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
   }
 
   const type = transactionTypeNameToProto[transactionTypeName.toUpperCase()];
@@ -85,6 +85,9 @@ const getTransactionTypeProtoId = (transactionTypeName) => {
 };
 
 const isValidTransactionType = (transactionTypeName) => {
+  if (!_.isString(transactionTypeName)) {
+    return false;
+  }
   return transactionTypeNameToProto.hasOwnProperty(transactionTypeName.toUpperCase());
 };
 

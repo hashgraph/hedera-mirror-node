@@ -75,20 +75,18 @@ const getAccountQuery = (
 ) => {
   const entityWhereFilter = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
-  const entityQuery = `select
-      id,
-      expiration_timestamp,
-      auto_renew_period,
-      key,
-      deleted,
-      type,
-      max_automatic_token_associations,
-      memo,
-      receiver_sig_required
-    from account_contract
-    ${entityWhereFilter && 'where ' + entityWhereFilter}
-    order by id ${order || ''}
-    ${limitQuery || ''}`;
+  const entityQuery = `select id,
+                              expiration_timestamp,
+                              auto_renew_period,
+                              key,
+                              deleted,
+                              type,
+                              max_automatic_token_associations,
+                              memo,
+                              receiver_sig_required
+                       from account_contract ${entityWhereFilter && 'where ' + entityWhereFilter}
+                       order by id ${order || ''}
+                         ${limitQuery || ''}`;
 
   if (!includeBalance) {
     return {
@@ -118,38 +116,38 @@ const getAccountQuery = (
   const query = `
     with balances as (
       select json_agg(
-          json_build_object(
-            'token_id', tb.token_id::text,
-            'balance', tb.balance
-          ) order by tb.token_id ${order || ''}
-        ) as token_balances,
-        ab.balance             as balance,
-        ab.consensus_timestamp as consensus_timestamp,
-        ab.account_id          as account_id
+               json_build_object(
+                 'token_id', tb.token_id::text,
+                 'balance', tb.balance
+                 ) order by tb.token_id ${order || ''}
+               )                    as token_balances,
+             ab.balance             as balance,
+             ab.consensus_timestamp as consensus_timestamp,
+             ab.account_id          as account_id
       from account_balance ab
-      left outer join token_balance tb
-        on ab.account_id = tb.account_id and ab.consensus_timestamp = tb.consensus_timestamp
+             left outer join token_balance tb
+                             on ab.account_id = tb.account_id and ab.consensus_timestamp = tb.consensus_timestamp
       where ${balanceWhereFilter}
       group by ab.consensus_timestamp, ab.account_id, ab.balance
       order by ab.account_id ${order || ''}
-      ${limitQuery || ''}
+        ${limitQuery || ''}
     )
-    select balances.balance as account_balance,
-      balances.consensus_timestamp as consensus_timestamp,
-       coalesce(balances.account_id, e.id) as id,
-       e.expiration_timestamp,
-       e.auto_renew_period,
-       e.key,
-       e.deleted,
-       e.max_automatic_token_associations,
-       e.memo,
-       e.receiver_sig_required,
-       balances.token_balances
-    from balances
-    ${joinType} join (${entityQuery}) e
-      on e.id = balances.account_id
+    select balances.balance                    as account_balance,
+           balances.consensus_timestamp        as consensus_timestamp,
+           coalesce(balances.account_id, e.id) as id,
+           e.expiration_timestamp,
+           e.auto_renew_period,
+           e.key,
+           e.deleted,
+           e.max_automatic_token_associations,
+           e.memo,
+           e.receiver_sig_required,
+           balances.token_balances
+    from balances ${joinType}
+           join (${entityQuery}) e
+                on e.id = balances.account_id
     order by coalesce(balances.account_id, e.id) ${order || ''}
-    ${limitQuery || ''}`;
+      ${limitQuery || ''}`;
 
   const params = utils.mergeParams(
     balancesAccountQuery.params,
@@ -284,7 +282,7 @@ const getOneAccount = async (req, res) => {
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [accountId];
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
   const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,
