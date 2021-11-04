@@ -103,11 +103,6 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
-//TODO this can be removed, just trying to do this in stages
-const isValidTransactionType = (transactionType) => {
-  return TransactionType.isValidTransactionType(transactionType);
-};
-
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 /**
@@ -213,7 +208,7 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
-      ret = isValidTransactionType(val);
+      ret = TransactionType.isValidTransactionType(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -996,7 +991,6 @@ module.exports = {
   isValidOperatorQuery,
   isValidValueIgnoreCase,
   isValidTimestampParam,
-  isValidTransactionType,
   loadPgRange,
   mergeParams,
   nsToSecNs,

@@ -32,5 +32,4 @@ func TestResponseCodeUpToDate(t *testing.T) {
 	for code, name := range proto.ResponseCodeEnum_name {
 		assert.Equal(t, name, TransactionResults[code])
 	}
-
 }
