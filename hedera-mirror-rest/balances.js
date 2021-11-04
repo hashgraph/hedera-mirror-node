@@ -20,6 +20,7 @@
 
 'use strict';
 
+const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -99,7 +100,8 @@ const getBalances = async (req, res) => {
         .join(' AND ')}`;
 
   // Only need to join entity if we're selecting on publickey.
-  const joinEntityClause = pubKeyQuery !== '' ? 'JOIN account_contract ac on ac.id = ab.account_id' : '';
+  const joinEntityClause =
+    pubKeyQuery !== '' ? `JOIN (${getAccountContractUnionQueryWithOrder()}) ac on ac.id = ab.account_id` : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
   const sqlQuery = `
