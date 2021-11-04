@@ -97,6 +97,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     @Test
     void multipleBatches() {
         // given
+        int batchSize = parserProperties.getBatchSize();
         parserProperties.setBatchSize(2);
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
@@ -106,6 +107,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
         // then
         assertAccountBalanceFile(accountBalanceFile, items);
+        parserProperties.setBatchSize(batchSize);
     }
 
     @Test
@@ -180,21 +182,16 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     private AccountBalance accountBalance(long timestamp, int offset) {
         EntityId accountId = EntityId.of(0, 0, offset + 1000, EntityType.ACCOUNT);
-        EntityId tokenId1 = EntityId.of(0, 0, offset + 2000, EntityType.ACCOUNT);
-        EntityId tokenId2 = EntityId.of(0, 0, offset + 3000, EntityType.ACCOUNT);
+        EntityId tokenId = EntityId.of(0, 0, offset + 2000, EntityType.ACCOUNT);
 
-        TokenBalance tokenBalance1 = new TokenBalance();
-        tokenBalance1.setBalance(offset);
-        tokenBalance1.setId(new TokenBalance.Id(timestamp, accountId, tokenId1));
-
-        TokenBalance tokenBalance2 = new TokenBalance();
-        tokenBalance2.setBalance(offset);
-        tokenBalance2.setId(new TokenBalance.Id(timestamp, accountId, tokenId2));
+        TokenBalance tokenBalance = new TokenBalance();
+        tokenBalance.setBalance(offset);
+        tokenBalance.setId(new TokenBalance.Id(timestamp, accountId, tokenId));
 
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(offset);
         accountBalance.setId(new AccountBalance.Id(timestamp, accountId));
-        accountBalance.setTokenBalances(List.of(tokenBalance1));
+        accountBalance.setTokenBalances(List.of(tokenBalance));
         return accountBalance;
     }
 }

@@ -63,7 +63,7 @@ public class MirrorDateRangePropertiesProcessor {
     private final Map<StreamType, DateRangeFilter> filters = new ConcurrentHashMap<>();
 
     // Clear cache between test runs
-    void clear() {
+    public void clear() {
         filters.clear();
     }
 

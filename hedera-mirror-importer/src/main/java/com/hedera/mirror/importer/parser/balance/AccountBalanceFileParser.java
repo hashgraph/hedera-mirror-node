@@ -83,14 +83,12 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         long count = 0L;
 
         if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
-            log.info("Passed filter: {}", accountBalanceFile.getItems());
             List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
             List<TokenBalance> tokenBalances = new ArrayList<>(batchSize);
 
             count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
                 accountBalances.add(accountBalance);
                 tokenBalances.addAll(accountBalance.getTokenBalances());
-                log.info("Processing item: {}", accountBalance);
 
                 if (accountBalances.size() >= batchSize) {
                     batchPersister.persist(accountBalances);
@@ -105,8 +103,6 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
 
             batchPersister.persist(accountBalances);
             batchPersister.persist(tokenBalances);
-        } else {
-            log.info("Did not pass filter: {}", filter);
         }
 
         Instant loadEnd = Instant.now();

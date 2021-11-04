@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
-import com.google.common.collect.Iterables;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.HashMap;
@@ -71,7 +70,7 @@ public class CompositeBatchPersister implements BatchPersister {
             return;
         }
 
-        Object item = Iterables.getFirst(items, null);
+        Object item = items.iterator().next();
         BatchPersister batchPersister = batchInserters.get(item.getClass());
 
         if (batchPersister == null) {
