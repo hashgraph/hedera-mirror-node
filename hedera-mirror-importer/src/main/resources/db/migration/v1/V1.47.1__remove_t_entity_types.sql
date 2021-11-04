@@ -1,8 +1,5 @@
 -- Remove t_entity_types and alter tables referencing it to use a entity_type value instead.
 
--- drop the account_contract view otherwise can't drop type column
-drop view if exists account_contract;
-
 -- Create the enum entity_type to replace the foreign key with
 create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 
@@ -81,44 +78,3 @@ alter table contract_history
 
 -- Drop t_entity_types
 drop table t_entity_types;
-
--- recreate the view for accounts and contracts
-create or replace view account_contract as
-select
-    auto_renew_period,
-    created_timestamp,
-    deleted,
-    expiration_timestamp,
-    id,
-    key,
-    max_automatic_token_associations,
-    memo,
-    num,
-    public_key,
-    proxy_account_id,
-    realm,
-    shard,
-    timestamp_range,
-    type,
-    receiver_sig_required
-from entity
-where type = 'ACCOUNT'
-union all
-select
-    auto_renew_period,
-    created_timestamp,
-    deleted,
-    expiration_timestamp,
-    id,
-    key,
-    null as max_automatic_token_associations,
-    memo,
-    num,
-    public_key,
-    proxy_account_id,
-    realm,
-    shard,
-    timestamp_range,
-    type,
-    null as receiver_sig_required
-from contract;

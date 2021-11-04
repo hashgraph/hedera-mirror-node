@@ -20,6 +20,7 @@
 
 'use strict';
 
+const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -75,6 +76,7 @@ const getAccountQuery = (
 ) => {
   const entityWhereFilter = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
+  const accountContractOrderOption = {field: 'id', order: order || 'asc'};
   const entityQuery = `select
       id,
       expiration_timestamp,
@@ -85,7 +87,7 @@ const getAccountQuery = (
       max_automatic_token_associations,
       memo,
       receiver_sig_required
-    from account_contract
+    from (${getAccountContractUnionQueryWithOrder(accountContractOrderOption)}) account_contract
     ${entityWhereFilter && 'where ' + entityWhereFilter}
     order by id ${order || ''}
     ${limitQuery || ''}`;
