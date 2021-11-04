@@ -20,13 +20,11 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
@@ -43,17 +41,14 @@ import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
 @Named
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
     private static final long SMALL_INITIAL_BALANCE = 1_000L; // 1000 tℏ
-
-    private ExpandedAccountId tokenTreasuryAccount = null;
-
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
+    private ExpandedAccountId tokenTreasuryAccount = null;
 
     public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -111,7 +106,7 @@ public class AccountClient extends AbstractNetworkClient {
                 .addHbarTransfer(sender, hbarAmount.negated())
                 .addHbarTransfer(recipient, hbarAmount)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("transfer test");
+                .setTransactionMemo(getMemo("Crypto transfer"));
     }
 
     public NetworkTransactionResponse sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
@@ -132,7 +127,8 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,
-                                                                boolean receiverSigRequired, String memo) {
+                                                                boolean receiverSigRequired, String customMemo) {
+        String memo = getMemo("Create Crypto Account" + customMemo);
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
@@ -173,7 +169,7 @@ public class AccountClient extends AbstractNetworkClient {
                 initialBalance,
                 publicKeyList,
                 receiverSigRequired,
-                String.format("Mirror new crypto account: %s_%s", memo == null ? "" : memo, Instant.now()));
+                memo == null ? "" : memo);
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(accountCreateTransaction,

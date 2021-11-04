@@ -20,9 +20,11 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.time.Instant;
 import lombok.Data;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
@@ -38,11 +40,11 @@ import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
 @Data
 public abstract class AbstractNetworkClient {
-    protected final SDKClient sdkClient;
     protected final Client client;
+    protected final Logger log = LogManager.getLogger(getClass());
+    protected final SDKClient sdkClient;
     protected final RetryTemplate retryTemplate;
 
     public AbstractNetworkClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
@@ -135,5 +137,9 @@ public abstract class AbstractNetworkClient {
                 .execute(client)
                 .hbars
                 .toTinybars();
+    }
+
+    protected String getMemo(String message) {
+        return String.format("Hedera Mirror Node acceptance test: %s %s", message, Instant.now());
     }
 }

@@ -23,7 +23,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.junit.platform.engine.Cucumber;
@@ -61,7 +63,9 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 public class ContractFeature {
     private static final int MAX_FILE_SIZE = 5500; // ensure transaction bytes are under 6144 (6kb)
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
     private NetworkTransactionResponse networkTransactionResponse;
     private ContractId contractId;

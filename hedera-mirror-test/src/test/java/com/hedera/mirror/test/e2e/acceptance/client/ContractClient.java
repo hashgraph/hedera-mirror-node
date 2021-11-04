@@ -20,11 +20,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
@@ -41,12 +39,10 @@ import com.hedera.hashgraph.sdk.ContractInfoQuery;
 import com.hedera.hashgraph.sdk.ContractUpdateTransaction;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
 @Named
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ContractClient extends AbstractNetworkClient {
@@ -58,7 +54,7 @@ public class ContractClient extends AbstractNetworkClient {
     public NetworkTransactionResponse createContract(FileId fileId, long gas,
                                                      ContractFunctionParameters contractFunctionParameters) {
         log.debug("Create new contract");
-        String memo = String.format("Create contract %s", Instant.now());
+        String memo = getMemo("Create contract");
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
                 .setAdminKey(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setGas(gas)
@@ -70,9 +66,8 @@ public class ContractClient extends AbstractNetworkClient {
             contractCreateTransaction.setConstructorParameters(contractFunctionParameters);
         }
 
-        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
-                contractCreateTransaction,
-                KeyList.of(sdkClient.getExpandedOperatorAccountId().getPrivateKey()));
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(contractCreateTransaction);
         ContractId contractId = networkTransactionResponse.getReceipt().contractId;
         log.debug("Created new contract {}", contractId);
 
@@ -81,7 +76,7 @@ public class ContractClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse updateContract(ContractId contractId) {
         log.debug("Update contract {}", contractId);
-        String memo = String.format("Update contract %s", Instant.now());
+        String memo = getMemo("Update contract");
         ContractUpdateTransaction contractUpdateTransaction = new ContractUpdateTransaction()
                 .setContractId(contractId)
                 .setContractMemo(memo)
@@ -96,7 +91,7 @@ public class ContractClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse deleteContract(ContractId contractId) {
         log.debug("Delete contract {}", contractId);
-        String memo = String.format("delete contract %s", Instant.now());
+        String memo = getMemo("Delete contract");
         ContractDeleteTransaction contractDeleteTransaction = new ContractDeleteTransaction()
                 .setContractId(contractId)
                 .setTransactionMemo(memo);
@@ -112,7 +107,7 @@ public class ContractClient extends AbstractNetworkClient {
                                                       ContractFunctionParameters parameters, Hbar payableAmount) {
         log.debug("Call contract {}'s function {}", contractId, functionName);
 
-        String memo = String.format("Execute contract %s", Instant.now());
+        String memo = getMemo("Execute contract");
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(gas)

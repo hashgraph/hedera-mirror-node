@@ -20,10 +20,8 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.time.Instant;
 import javax.inject.Named;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
@@ -38,7 +36,6 @@ import com.hedera.hashgraph.sdk.FileUpdateTransaction;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
 @Named
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FileClient extends AbstractNetworkClient {
@@ -49,7 +46,7 @@ public class FileClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse createFile(byte[] byteCode) {
         log.debug("Create new file");
-        String memo = String.format("Create file %s", Instant.now());
+        String memo = getMemo("Create file");
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
                 .setKeys(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setContents(byteCode)
@@ -67,7 +64,7 @@ public class FileClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse updateFile(FileId fileId, byte[] byteCode) {
         log.debug("Update file");
-        String memo = String.format("Update file %s", Instant.now());
+        String memo = getMemo("Update file");
         FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
                 .setFileId(fileId)
                 .setFileMemo(memo)
@@ -89,7 +86,7 @@ public class FileClient extends AbstractNetworkClient {
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
                 .setContents(byteCode)
-                .setTransactionMemo(String.format("Append file %s", Instant.now()));
+                .setTransactionMemo(getMemo("Append file"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileAppendTransaction);
@@ -100,7 +97,7 @@ public class FileClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse deleteFile(FileId fileId) {
         log.debug("Delete file");
-        String memo = String.format("delete file %s", Instant.now());
+        String memo = getMemo("Delete file");
         FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
                 .setFileId(fileId)
                 .setTransactionMemo(memo);

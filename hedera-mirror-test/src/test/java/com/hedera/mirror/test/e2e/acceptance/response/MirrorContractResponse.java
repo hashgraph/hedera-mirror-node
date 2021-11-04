@@ -29,16 +29,16 @@ public class MirrorContractResponse {
     private Integer autoRenewPeriod;
     private String contractId;
     private String createdTimestamp;
+    private String creatorAccountId;
     private boolean deleted;
+    private String executedTimestamp;
     private String expirationTimestamp;
     private String fileId;
     private String memo;
     private String obtainerId;
-    private String proxyAccountId;
-    private String solidityAddress;
-    private String creatorAccountId;
-    private String executedTimestamp;
     private String payerAccountId;
+    private String proxyAccountId;
     private String scheduleId;
+    private String solidityAddress;
     private MirrorTimestampRange timestamp;
 }

@@ -29,7 +29,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -123,7 +122,7 @@ public class ScheduleFeature {
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
                         KeyList.of(alice.getPublicKey()),
                         true,
-                        "scheduled account create");
+                        "scheduled case");
 
         createNewSchedule(scheduledTransaction, null);
     }
@@ -244,7 +243,6 @@ public class ScheduleFeature {
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
                 transaction,
-                "New Mirror Acceptance Schedule_" + Instant.now(),
                 innerSignatureKeyList);
         assertNotNull(networkTransactionResponse.getTransactionId());
 

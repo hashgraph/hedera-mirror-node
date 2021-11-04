@@ -199,7 +199,7 @@ contract MirrorNode {
 
     /**
      * Simple storage function.
-     * A few edge cases remain, such as duplicate transction handling, ensuring timestampt increase with time etc
+     * A few edge cases remain, such as duplicate transaction handling, ensuring timestamps increase with time etc
      */
     function submitTransaction(
         uint256 timestamp,

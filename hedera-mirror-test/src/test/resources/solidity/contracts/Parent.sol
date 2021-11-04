@@ -6,13 +6,22 @@ contract Child {
         return address(this).balance;
     }
 
+    function spend(uint256 _amount) public returns (bool) {
+        require(address(this).balance >= _amount);
+        payable(address(0)).transfer(_amount);
+        emit Transfer(address(this), address(0), _amount);
+        return true;
+    }
+
     receive() external payable {}
+
+    event Transfer(address indexed _from, address indexed _to, uint256 amount);
 }
 
 contract Parent {
     Child private myChild;
 
-    constructor() {}
+    constructor() payable {}
 
     function createChild() public {
         myChild = new Child();
@@ -20,30 +29,23 @@ contract Parent {
     }
 
     function donate() public payable {
-        emit ParentActivityLog(
-            string(abi.encodePacked("Accepted donation ", msg.value))
-        );
+        emit Transfer(msg.sender, address(this), msg.value);
     }
 
     function transferToChild(uint256 _amount) public returns (bool) {
         require(address(this).balance >= _amount);
         address childAddress = address(myChild);
         payable(childAddress).transfer(_amount);
-        emit ParentActivityLog(
-            string(
-                abi.encodePacked(
-                    "Successfully transferred ",
-                    _amount,
-                    " to child contract ",
-                    childAddress
-                )
-            )
-        );
+        emit Transfer(address(this), childAddress, _amount);
         return true;
     }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function getChildAddress() public view returns (address) {
+        return address(myChild);
     }
 
     function getChildBalance() public view returns (uint256) {
@@ -53,4 +55,5 @@ contract Parent {
     receive() external payable {}
 
     event ParentActivityLog(string message);
+    event Transfer(address indexed _from, address indexed _to, uint256 amount);
 }

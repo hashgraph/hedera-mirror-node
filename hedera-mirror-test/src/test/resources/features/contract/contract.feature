@@ -15,7 +15,7 @@ Feature: Contract Base Coverage Feature
             | httpStatusCode | contractName  |
             | 200            | "MIRROR_NODE" |
 
-    @critical @release @acceptance @contract
+    @critical @release @acceptance
     Scenario Outline: Validate Contract Call - ContractCreate and ContractCall
         Given I successfully create a contract from <contractName> contract bytes
         When the network confirms contract presence

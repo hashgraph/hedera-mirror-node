@@ -24,16 +24,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 @Data
+// POJO content options defined by https://hardhat.org/guides/compile-contracts.html#artifacts
 public class CompiledSolidityArtifact {
     @JsonIgnore
     private Object[] abi;
     private String bytecode;
-    private String contractName;
-    private String deployedBytecode;
-    @JsonIgnore
-    private Object deployedLinkReferences;
-    private String _format;
-    @JsonIgnore
-    private Object linkReferences;
-    private String sourceName;
 }
