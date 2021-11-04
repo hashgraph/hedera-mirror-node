@@ -30,6 +30,7 @@ import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
+import com.hedera.mirror.importer.config.ResetCacheTestExecutionListener;
 
 @TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)

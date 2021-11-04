@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer;
+package com.hedera.mirror.importer.config;
 
 /*-
  * ‌
@@ -32,5 +32,6 @@ public class ResetCacheTestExecutionListener implements TestExecutionListener {
                 (cacheManagerName, cacheManager) ->
                         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear())
         );
+        testContext.getApplicationContext().getBean(MirrorDateRangePropertiesProcessor.class).clear();
     }
 }

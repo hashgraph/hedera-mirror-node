@@ -105,6 +105,8 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
 
             batchPersister.persist(accountBalances);
             batchPersister.persist(tokenBalances);
+        } else {
+            log.info("Did not pass filter: {}", filter);
         }
 
         Instant loadEnd = Instant.now();
