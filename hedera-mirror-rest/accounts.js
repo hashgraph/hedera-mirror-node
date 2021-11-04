@@ -20,6 +20,7 @@
 
 'use strict';
 
+const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
@@ -77,7 +78,7 @@ const getAccountQuery = (
     .filter((x) => !!x)
     .join(' and ');
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
-  const accountContractView = (order && `account_contract_${order}`) || 'account_contract_asc';
+  const accountContractOrderOption = {field: 'id', order: order || 'asc'};
 
   // balanceQuery and pubKeyQuery are applied in the two sub queries; depending on the presence, use different joins
   let joinType = 'full outer';
@@ -131,7 +132,7 @@ const getAccountQuery = (
         max_automatic_token_associations,
         memo,
         receiver_sig_required
-      from ${accountContractView}
+      from (${getAccountContractUnionQueryWithOrder(accountContractOrderOption)}) account_contract
       ${entityWhereFilter && 'where ' + entityWhereFilter}
       order by id ${order || ''}
       ${limitQuery || ''}
