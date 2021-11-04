@@ -240,11 +240,12 @@ const getTransactionsWithTimeAndLimitParams = async (server) => {
 };
 
 /**
- * Verify single transactions can be retrieved
+ * Verify there is only one successful non-scheduled transaction for the latest successful transaction
  * @param {Object} server API host endpoint
  */
-const getSingleTransactionsById = async (server) => {
-  let url = getUrl(server, transactionsPath, {limit: 1});
+const getSingleSuccessfulNonScheduledTransactionById = async (server) => {
+  // look for the latest successful transaction
+  let url = getUrl(server, transactionsPath, {limit: 1, result: 'success'});
   const transactions = await getAPIResponse(url, jsonRespKey);
 
   const checkRunner = new CheckRunner()
@@ -263,10 +264,12 @@ const getSingleTransactionsById = async (server) => {
     return {url, ...result};
   }
 
-  url = getUrl(server, `${transactionsPath}/${transactions[0].transaction_id}`);
+  // filter the scheduled transaction
+  url = getUrl(server, `${transactionsPath}/${transactions[0].transaction_id}`, {scheduled: false});
   const singleTransactions = await getAPIResponse(url, jsonRespKey);
 
-  result = checkRunner.run(singleTransactions);
+  // only verify the single successful transaction
+  result = checkRunner.run(singleTransactions.filter((tx) => tx.result === 'SUCCESS'));
   if (!result.passed) {
     return {url, ...result};
   }
@@ -299,7 +302,7 @@ const runTests = async (server, testResult) => {
     runTest(getTransactionsWithOrderParam),
     runTest(getTransactionsWithLimitParams),
     runTest(getTransactionsWithTimeAndLimitParams),
-    runTest(getSingleTransactionsById),
+    runTest(getSingleSuccessfulNonScheduledTransactionById),
     runTest(checkTransactionFreshness),
   ]);
 };
