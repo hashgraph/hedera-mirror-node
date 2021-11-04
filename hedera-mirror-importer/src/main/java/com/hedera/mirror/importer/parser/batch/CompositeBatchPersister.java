@@ -35,9 +35,7 @@ import org.springframework.data.util.AnnotatedTypeScanner;
 
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.Upsertable;
-import com.hedera.mirror.importer.parser.PgCopy;
-import com.hedera.mirror.importer.parser.UpsertPgCopy;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 
 @Named
@@ -48,7 +46,7 @@ public class CompositeBatchPersister implements BatchPersister {
 
     public CompositeBatchPersister(DataSource dataSource,
                                    MeterRegistry meterRegistry,
-                                   RecordParserProperties properties,
+                                   CommonParserProperties properties,
                                    Collection<UpsertQueryGenerator> upsertQueryGenerators) {
         AnnotatedTypeScanner annotatedTypeScanner = new AnnotatedTypeScanner(Entity.class);
         Set<Class<?>> domainClasses = annotatedTypeScanner.findTypes(Transaction.class.getPackageName());
@@ -58,10 +56,10 @@ public class CompositeBatchPersister implements BatchPersister {
 
             if (upsertable != null) {
                 UpsertQueryGenerator generator = getUpsertQueryGenerator(upsertQueryGenerators, domainClass);
-                batchInserters.put(domainClass, new UpsertPgCopy(domainClass, dataSource, meterRegistry, properties,
+                batchInserters.put(domainClass, new BatchUpserter(domainClass, dataSource, meterRegistry, properties,
                         generator));
             } else {
-                batchInserters.put(domainClass, new PgCopy(domainClass, dataSource, meterRegistry, properties));
+                batchInserters.put(domainClass, new BatchInserter(domainClass, dataSource, meterRegistry, properties));
             }
         }
     }

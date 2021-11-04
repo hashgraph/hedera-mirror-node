@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -46,15 +46,13 @@ import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.converter.EntityIdSerializer;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.batch.BatchPersister;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
 
 /**
  * Stateless writer to insert rows into PostgreSQL using COPY.
- *
- * @param <T> domain object
  */
 @Log4j2
-public class PgCopy<T> implements BatchPersister {
+public class BatchInserter implements BatchPersister {
 
     protected final DataSource dataSource;
     protected final MeterRegistry meterRegistry;
@@ -62,15 +60,15 @@ public class PgCopy<T> implements BatchPersister {
     protected final Timer insertDurationMetric;
     private final String sql;
     private final ObjectWriter writer;
-    private final ParserProperties properties;
+    private final CommonParserProperties properties;
 
-    public PgCopy(Class<T> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
-                  ParserProperties properties) {
+    public BatchInserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
+                         CommonParserProperties properties) {
         this(entityClass, dataSource, meterRegistry, properties, entityClass.getSimpleName());
     }
 
-    public PgCopy(Class<T> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
-                  ParserProperties properties, String tableName) {
+    public BatchInserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
+                         CommonParserProperties properties, String tableName) {
         this.dataSource = dataSource;
         this.properties = properties;
         this.meterRegistry = meterRegistry;

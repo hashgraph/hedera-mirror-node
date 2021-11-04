@@ -29,23 +29,25 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.List;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.RandomUtils;
 import org.bouncycastle.util.Strings;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.domain.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.EntityId;
@@ -54,49 +56,39 @@ import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.PgCopy;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.parser.batch.BatchInserter;
+import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-class PgCopyTest extends IntegrationTest {
-
-    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+class BatchInserterTest extends IntegrationTest {
 
     @Resource
-    private DataSource dataSource;
+    private BatchPersister batchInserter;
+
     @Resource
     private CryptoTransferRepository cryptoTransferRepository;
-    @Resource
-    private TransactionRepository transactionRepository;
-    @Resource
-    private TopicMessageRepository topicMessageRepository;
-    @Resource
-    private TokenTransferRepository tokenTransferRepository;
-
-    private PgCopy<CryptoTransfer> cryptoTransferPgCopy;
-    private PgCopy<Transaction> transactionPgCopy;
-    private PgCopy<TopicMessage> topicMessagePgCopy;
-    private PgCopy<TokenTransfer> tokenTransferPgCopy;
-
-    @Resource
-    private RecordParserProperties properties;
 
     @Resource
     private DomainBuilder domainBuilder;
 
-    @BeforeEach
-    void beforeEach() {
-        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, dataSource, meterRegistry, properties);
-        transactionPgCopy = new PgCopy<>(Transaction.class, dataSource, meterRegistry, properties);
-        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, dataSource, meterRegistry, properties);
-        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, dataSource, meterRegistry, properties);
-    }
+    @Resource
+    private JdbcTemplate jdbcTemplate;
+
+    @Resource
+    private TopicMessageRepository topicMessageRepository;
+
+    @Resource
+    private TokenTransferRepository tokenTransferRepository;
+
+    @Resource
+    private TransactionRepository transactionRepository;
 
     @Test
-    void testCopy() {
+    void persist() {
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
         cryptoTransfers.add(cryptoTransfer(2));
@@ -107,22 +99,22 @@ class PgCopyTest extends IntegrationTest {
         tokenTransfers.add(tokenTransfer(2));
         tokenTransfers.add(tokenTransfer(3));
 
-        cryptoTransferPgCopy.persist(cryptoTransfers);
-        tokenTransferPgCopy.persist(tokenTransfers);
+        batchInserter.persist(cryptoTransfers);
+        batchInserter.persist(tokenTransfers);
 
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoTransfers);
         assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenTransfers);
     }
 
     @Test
-    void testCopyDuplicates() {
+    void persistDuplicates() {
         var transactions = new HashSet<Transaction>();
         transactions.add(transaction(1));
         transactions.add(transaction(2));
         transactions.add(transaction(2));// duplicate transaction to be ignored with no error on attempted copy
         transactions.add(transaction(3));
 
-        transactionPgCopy.persist(transactions);
+        batchInserter.persist(transactions);
 
         assertThat(transactionRepository.findAll()).hasSize(3).containsExactlyInAnyOrderElementsOf(transactions);
     }
@@ -138,32 +130,81 @@ class PgCopyTest extends IntegrationTest {
         Connection conn = mock(Connection.class);
         doReturn(conn).when(dataSource).getConnection();
         doReturn(pgConnection).when(conn).unwrap(any());
-        var cryptoTransferPgCopy2 = new PgCopy<>(CryptoTransfer.class, dataSource, meterRegistry, properties);
+        var cryptoTransferBatchInserter2 = new BatchInserter(CryptoTransfer.class, dataSource,
+                new SimpleMeterRegistry(),
+                new CommonParserProperties());
         var cryptoTransfers = new HashSet<CryptoTransfer>();
         cryptoTransfers.add(cryptoTransfer(1));
 
         // when
-        assertThatThrownBy(() -> cryptoTransferPgCopy2.persist(cryptoTransfers))
+        assertThatThrownBy(() -> cryptoTransferBatchInserter2.persist(cryptoTransfers))
                 .isInstanceOf(ParserException.class);
     }
 
     @Test
-    void testNullItems() {
-        cryptoTransferPgCopy.persist(null);
+    void persistNull() {
+        batchInserter.persist(null);
         assertThat(cryptoTransferRepository.count()).isEqualTo(0);
     }
 
     @Test
-    void testLargeConsensusSubmitMessage() {
+    void largeConsensusSubmitMessage() {
         var topicMessages = new HashSet<TopicMessage>();
         topicMessages.add(topicMessage(1, 6000)); // max 6KiB
         topicMessages.add(topicMessage(2, 6000));
         topicMessages.add(topicMessage(3, 6000));
         topicMessages.add(topicMessage(4, 6000));
 
-        topicMessagePgCopy.persist(topicMessages);
+        batchInserter.persist(topicMessages);
 
         assertThat(topicMessageRepository.findAll()).hasSize(4).containsExactlyInAnyOrderElementsOf(topicMessages);
+    }
+
+    @Test
+    void assessedCustomFees() {
+        long consensusTimestamp = 10L;
+        EntityId collectorId1 = EntityId.of("0.0.2000", EntityType.ACCOUNT);
+        EntityId collectorId2 = EntityId.of("0.0.2001", EntityType.ACCOUNT);
+        EntityId payerId1 = EntityId.of("0.0.3000", EntityType.ACCOUNT);
+        EntityId payerId2 = EntityId.of("0.0.3001", EntityType.ACCOUNT);
+        EntityId tokenId1 = EntityId.of("0.0.5000", EntityType.TOKEN);
+        EntityId tokenId2 = EntityId.of("0.0.5001", EntityType.TOKEN);
+
+        // fee paid in HBAR with empty effective payer list
+        AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
+        assessedCustomFee1.setAmount(10L);
+        assessedCustomFee1.setId(new AssessedCustomFee.Id(collectorId1, consensusTimestamp));
+        assessedCustomFee1.setPayerAccountId(payerId1);
+
+        AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
+        assessedCustomFee2.setAmount(20L);
+        assessedCustomFee2.setEffectivePayerAccountIds(List.of(payerId1.getId()));
+        assessedCustomFee2.setTokenId(tokenId1);
+        assessedCustomFee2.setId(new AssessedCustomFee.Id(collectorId2, consensusTimestamp));
+        assessedCustomFee2.setPayerAccountId(payerId1);
+
+        AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
+        assessedCustomFee3.setAmount(30L);
+        assessedCustomFee3.setEffectivePayerAccountIds(List.of(payerId1.getId(), payerId2.getId()));
+        assessedCustomFee3.setTokenId(tokenId2);
+        assessedCustomFee3.setId(new AssessedCustomFee.Id(collectorId2, consensusTimestamp));
+        assessedCustomFee3.setPayerAccountId(payerId2);
+
+        List<AssessedCustomFee> assessedCustomFees = List.of(
+                assessedCustomFee1,
+                assessedCustomFee2,
+                assessedCustomFee3
+        );
+
+        // when
+        batchInserter.persist(assessedCustomFees);
+
+        // then
+        List<AssessedCustomFeeWrapper> actual = jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY,
+                AssessedCustomFeeWrapper.ROW_MAPPER);
+        assertThat(actual)
+                .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
+                .containsExactlyInAnyOrderElementsOf(assessedCustomFees);
     }
 
     private CryptoTransfer cryptoTransfer(long consensusTimestamp) {

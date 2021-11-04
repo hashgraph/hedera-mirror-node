@@ -20,16 +20,17 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
+
 import com.google.common.base.Stopwatch;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Named;
-import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 
@@ -58,16 +59,13 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.UpsertPgCopy;
 import com.hedera.mirror.importer.parser.batch.BatchPersister;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpsertQueryGenerator;
 
 @Log4j2
 @Named
@@ -79,7 +77,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final ApplicationEventPublisher eventPublisher;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
-    private final UpsertPgCopy<TokenTransfer> tokenDissociateTransferPgCopy;
+    private final BatchPersister tokenDissociateTransferBatchPersister;
 
     // lists of insert only domains
     private final Collection<AssessedCustomFee> assessedCustomFees;
@@ -107,24 +105,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.
-    // during upsert pgcopy, the merged state at time T is again merged with the initial state before the batch to
+    // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
 
     public SqlEntityListener(BatchPersister batchPersister,
-                             DataSource dataSource,
                              ApplicationEventPublisher eventPublisher,
-                             MeterRegistry meterRegistry,
                              RecordFileRepository recordFileRepository,
-                             RecordParserProperties recordParserProperties,
-                             SqlProperties sqlProperties) {
+                             SqlProperties sqlProperties,
+                             @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
         this.batchPersister = batchPersister;
         this.eventPublisher = eventPublisher;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-
-        tokenDissociateTransferPgCopy = new UpsertPgCopy<>(TokenTransfer.class, dataSource, meterRegistry,
-                recordParserProperties, new TokenDissociateTransferUpsertQueryGenerator());
+        this.tokenDissociateTransferBatchPersister = tokenDissociateTransferBatchPersister;
 
         assessedCustomFees = new ArrayList<>();
         contractLogs = new ArrayList<>();
@@ -235,7 +229,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(tokenTransfers);
 
             // handle the transfers from token dissociate transactions after nft is processed
-            tokenDissociateTransferPgCopy.persist(tokenDissociateTransfers);
+            tokenDissociateTransferBatchPersister.persist(tokenDissociateTransfers);
 
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {

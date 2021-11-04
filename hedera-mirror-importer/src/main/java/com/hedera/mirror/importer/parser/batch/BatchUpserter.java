@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -34,15 +34,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 
 /**
  * Stateless writer to upsert rows into PostgreSQL using COPY into a temp table then insert and update into final table
- *
- * @param <T> domain object
  */
 @Log4j2
-public class UpsertPgCopy<T> extends PgCopy<T> {
+public class BatchUpserter extends BatchInserter {
 
     private static final String TABLE = "table";
     private final String createTempTableSql;
@@ -54,9 +53,9 @@ public class UpsertPgCopy<T> extends PgCopy<T> {
     private final Timer updateDurationMetric;
     private final String truncateSql;
 
-    public UpsertPgCopy(Class<T> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
-                        ParserProperties properties,
-                        UpsertQueryGenerator upsertQueryGenerator) {
+    public BatchUpserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
+                         CommonParserProperties properties,
+                         UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
         truncateSql = String

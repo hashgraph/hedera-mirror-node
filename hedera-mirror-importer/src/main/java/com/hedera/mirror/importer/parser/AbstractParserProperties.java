@@ -33,9 +33,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public abstract class AbstractParserProperties implements ParserProperties {
 
-    @Min(8192)
-    private int bufferSize = 32768; // tested max byte size of buffer used by PGCopyOutputStream
-
     protected boolean enabled = true;
 
     @DurationMin(millis = 10L)

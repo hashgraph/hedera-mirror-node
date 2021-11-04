@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.reader;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -32,7 +32,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.parser.batch.CompositeBatchPersister;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
