@@ -66,13 +66,15 @@ const transactionTypeProtoToName = {
   47: 'TOKENUNPAUSE',
 };
 
+const UKNOWN = 'UNKNOWN';
+
 const transactionTypeNameToProto = _.invert(transactionTypeProtoToName);
 
-const getTransactionTypeName = (protoId) => {
-  return transactionTypeProtoToName.hasOwnProperty(protoId) ? transactionTypeProtoToName[protoId] : 'UNKNOWN';
+const getName = (protoId) => {
+  return transactionTypeProtoToName.hasOwnProperty(protoId) ? transactionTypeProtoToName[protoId] : UKNOWN;
 };
 
-const getTransactionTypeProtoId = (transactionTypeName) => {
+const getProtoId = (transactionTypeName) => {
   if (!_.isString(transactionTypeName)) {
     throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
   }
@@ -84,7 +86,7 @@ const getTransactionTypeProtoId = (transactionTypeName) => {
   return type;
 };
 
-const isValidTransactionType = (transactionTypeName) => {
+const isValid = (transactionTypeName) => {
   if (!_.isString(transactionTypeName)) {
     return false;
   }
@@ -92,7 +94,7 @@ const isValidTransactionType = (transactionTypeName) => {
 };
 
 module.exports = {
-  isValidTransactionType,
-  getTransactionTypeName,
-  getTransactionTypeProtoId,
+  isValid,
+  getName,
+  getProtoId,
 };

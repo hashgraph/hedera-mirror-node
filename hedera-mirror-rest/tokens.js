@@ -430,20 +430,21 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
 
   const aggregateCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
-        'amount', ${CustomFee.AMOUNT},
-        'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR},
-        'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID}::text,
-        'created_timestamp', ${CustomFee.CREATED_TIMESTAMP}::text,
-        'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID}::text,
-        'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT},
-        'minimum_amount', ${CustomFee.MINIMUM_AMOUNT},
-        'net_of_transfers', ${CustomFee.NET_OF_TRANSFERS},
-        'royalty_denominator', ${CustomFee.ROYALTY_DENOMINATOR},
-        'royalty_numerator', ${CustomFee.ROYALTY_NUMERATOR},
-        'token_id', ${CustomFee.TOKEN_ID}::text
-    ) order by ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID}, ${CustomFee.AMOUNT}, ${
-    CustomFee.ROYALTY_NUMERATOR
-  })
+                       'amount', ${CustomFee.AMOUNT},
+                       'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR},
+                       'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID}::text,
+                       'created_timestamp', ${CustomFee.CREATED_TIMESTAMP}::text,
+                       'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID}::text,
+                       'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT},
+                       'minimum_amount', ${CustomFee.MINIMUM_AMOUNT},
+                       'net_of_transfers', ${CustomFee.NET_OF_TRANSFERS},
+                       'royalty_denominator', ${CustomFee.ROYALTY_DENOMINATOR},
+                       'royalty_numerator', ${CustomFee.ROYALTY_NUMERATOR},
+                       'token_id', ${CustomFee.TOKEN_ID}::text
+                       )
+                     order by ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID}, ${
+    CustomFee.AMOUNT
+  }, ${CustomFee.ROYALTY_NUMERATOR})
     from ${CustomFee.tableName} ${CustomFee.tableAlias}
     where ${conditions.join(' and ')}
     group by ${CustomFee.CREATED_TIMESTAMP_FULL_NAME}
@@ -815,8 +816,8 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
 
   const deleteConditions = [
     `${Transaction.ENTITY_ID_FULL_NAME} = $1`,
-    `${Transaction.TYPE_FULL_NAME} = ${TransactionType.getTransactionTypeProtoId(tokenDeleteTransactionType)}`,
-    `${Transaction.RESULT_FULL_NAME} = ${TransactionResult.getSuccessTransactionProtoId()}`,
+    `${Transaction.TYPE_FULL_NAME} = ${TransactionType.getProtoId(tokenDeleteTransactionType)}`,
+    `${Transaction.RESULT_FULL_NAME} = ${TransactionResult.getSuccessProtoId()}`,
   ];
 
   // add applicable filters

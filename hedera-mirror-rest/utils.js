@@ -208,7 +208,7 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
-      ret = TransactionType.isValidTransactionType(val);
+      ret = TransactionType.isValid(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -908,7 +908,7 @@ const parseTransactionTypeParam = (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  const protoId = TransactionType.getTransactionTypeProtoId(transactionType);
+  const protoId = TransactionType.getProtoId(transactionType);
   return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 

@@ -262,24 +262,26 @@ const transactionResultProtoToName = {
   278: 'UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED',
 };
 
+const UNKNOWN = 'UNKNOWN';
+
 const successTransactionResult = 'SUCCESS';
 
 const transactionResultNameToProto = _.invert(transactionResultProtoToName);
 
-const getTransactionResultName = (protoId) => {
-  return transactionResultProtoToName.hasOwnProperty(protoId) ? transactionResultProtoToName[protoId] : 'UNKNOWN';
+const getName = (protoId) => {
+  return transactionResultProtoToName.hasOwnProperty(protoId) ? transactionResultProtoToName[protoId] : UNKNOWN;
 };
 
-const getTransactionResultProtoId = (resultName) => {
+const getProtoId = (resultName) => {
   return transactionResultNameToProto[resultName];
 };
 
-const getSuccessTransactionProtoId = () => {
-  return getTransactionResultProtoId(successTransactionResult);
+const getSuccessProtoId = () => {
+  return getProtoId(successTransactionResult);
 };
 
 module.exports = {
-  getSuccessTransactionProtoId,
-  getTransactionResultName,
-  getTransactionResultProtoId,
+  getSuccessProtoId,
+  getName,
+  getProtoId,
 };

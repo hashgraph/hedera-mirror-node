@@ -36,7 +36,7 @@ class NftTransactionHistoryViewModel {
     );
     this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
     this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
-    this.type = TransactionType.getTransactionTypeName(transactionModel.type);
+    this.type = TransactionType.getName(transactionModel.type);
   }
 }
 

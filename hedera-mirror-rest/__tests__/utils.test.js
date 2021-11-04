@@ -873,17 +873,17 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
   });
   test('Utils test - utils.parseTransactionTypeParam - Verify applicable TOKENCREATION transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${TransactionType.getTransactionTypeProtoId('TOKENCREATION')}`
+      `type = ${TransactionType.getProtoId('TOKENCREATION')}`
     );
   });
   test('Utils test - utils.parseTransactionTypeParam - Verify applicable TOKENASSOCIATE transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${TransactionType.getTransactionTypeProtoId('TOKENASSOCIATE')}`
+      `type = ${TransactionType.getProtoId('TOKENASSOCIATE')}`
     );
   });
   test('Utils test - utils.parseTransactionTypeParam - Verify applicable consensussubmitmessage transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${TransactionType.getTransactionTypeProtoId('CONSENSUSSUBMITMESSAGE')}`
+      `type = ${TransactionType.getProtoId('CONSENSUSSUBMITMESSAGE')}`
     );
   });
 });

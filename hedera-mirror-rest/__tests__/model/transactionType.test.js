@@ -24,48 +24,48 @@
 const {TransactionType} = require('../../model');
 const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 
-describe('getTransactionResultName', () => {
+describe('getName', () => {
   test('Return valid name', () => {
-    expect(TransactionType.getTransactionTypeName(11)).toEqual('CRYPTOCREATEACCOUNT');
+    expect(TransactionType.getName(11)).toEqual('CRYPTOCREATEACCOUNT');
   });
   test('Return UNKNOWN for future proto id', () => {
-    expect(TransactionType.getTransactionTypeName(9999999)).toEqual('UNKNOWN');
+    expect(TransactionType.getName(9999999)).toEqual('UNKNOWN');
   });
   test('Return UNKNOWN for invalid proto id', () => {
-    expect(TransactionType.getTransactionTypeName('')).toEqual('UNKNOWN');
+    expect(TransactionType.getName('')).toEqual('UNKNOWN');
   });
 });
 
-describe('getTransactionTypeProtoId', () => {
+describe('getProtoId', () => {
   test('Return valid proto id', () => {
-    expect(TransactionType.getTransactionTypeProtoId('CRYPTOCREATEACCOUNT')).toEqual('11');
+    expect(TransactionType.getProtoId('CRYPTOCREATEACCOUNT')).toEqual('11');
   });
   test('Return valid proto id for camel case', () => {
-    expect(TransactionType.getTransactionTypeProtoId('cryptoCreateAccount')).toEqual('11');
+    expect(TransactionType.getProtoId('cryptoCreateAccount')).toEqual('11');
   });
   test('Throw error for invalid name', () => {
     expect(() => {
-      TransactionType.getTransactionTypeProtoId(22);
+      TransactionType.getProtoId(22);
     }).toThrowError(InvalidArgumentError);
   });
   test('Throw error for unknown name', () => {
     expect(() => {
-      TransactionType.getTransactionTypeProtoId('UNKNOWN');
+      TransactionType.getProtoId('UNKNOWN');
     }).toThrowError(InvalidArgumentError);
   });
 
-  describe('isValidTransactionType', () => {
+  describe('isValid', () => {
     test('Return valid proto id', () => {
-      expect(TransactionType.isValidTransactionType('CRYPTOCREATEACCOUNT')).toBeTruthy();
+      expect(TransactionType.isValid('CRYPTOCREATEACCOUNT')).toBeTruthy();
     });
     test('Return valid proto id for camel case', () => {
-      expect(TransactionType.isValidTransactionType('cryptoCreateAccount')).toBeTruthy();
+      expect(TransactionType.isValid('cryptoCreateAccount')).toBeTruthy();
     });
     test('Throw error for invalid name', () => {
-      expect(TransactionType.isValidTransactionType(22)).toBeFalsy();
+      expect(TransactionType.isValid(22)).toBeFalsy();
     });
     test('Throw error for unknown name', () => {
-      expect(TransactionType.isValidTransactionType('')).toBeFalsy();
+      expect(TransactionType.isValid('')).toBeFalsy();
     });
   });
 });
