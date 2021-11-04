@@ -79,12 +79,11 @@ public class ContractClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse updateContract(ContractId contractId, FileId fileId) {
+    public NetworkTransactionResponse updateContract(ContractId contractId) {
         log.debug("Update contract {}", contractId);
         String memo = String.format("Update contract %s", Instant.now());
         ContractUpdateTransaction contractUpdateTransaction = new ContractUpdateTransaction()
                 .setContractId(contractId)
-                .setBytecodeFileId(fileId)
                 .setContractMemo(memo)
                 .setTransactionMemo(memo);
 
@@ -134,7 +133,7 @@ public class ContractClient extends AbstractNetworkClient {
                 executeTransactionAndRetrieveReceipt(contractExecuteTransaction);
 
         TransactionRecord transactionRecord = getTransactionRecord(networkTransactionResponse.getTransactionId());
-        log.trace("contractFunctionResult for {}: {}", functionName, transactionRecord.contractFunctionResult);
+        logContractFunctionResult(functionName, transactionRecord.contractFunctionResult);
 
         return networkTransactionResponse;
     }
@@ -159,7 +158,9 @@ public class ContractClient extends AbstractNetworkClient {
             }
 
             try {
-                return contractCallQuery.execute(client);
+                ContractFunctionResult contractFunctionResult = contractCallQuery.execute(client);
+                logContractFunctionResult(functionName, contractFunctionResult);
+                return contractFunctionResult;
             } catch (TimeoutException e) {
                 log.error("TimeoutException: {}", e.getMessage());
             } catch (PrecheckStatusException e) {
@@ -174,5 +175,13 @@ public class ContractClient extends AbstractNetworkClient {
         return retryTemplate.execute(x -> new ContractInfoQuery()
                 .setContractId(contractId)
                 .execute(client));
+    }
+
+    private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
+        log.trace("ContractFunctionResult for function {}, contractId: {}, gasUsed: {}, logCount: {}",
+                functionName,
+                contractFunctionResult.contractId,
+                contractFunctionResult.gasUsed,
+                contractFunctionResult.logs.size());
     }
 }

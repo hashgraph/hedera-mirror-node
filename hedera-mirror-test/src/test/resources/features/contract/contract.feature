@@ -25,8 +25,9 @@ Feature: Contract Base Coverage Feature
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deployed contract entity
         Examples:
-            | httpStatusCode | contractName |
-            | 200            | "PARENT"     |
+            | httpStatusCode | contractName  |
+            | 200            | "PARENT"      |
+            | 200            | "MIRROR_NODE" |
 
     @critical @release @acceptance @delete
     Scenario Outline: Validate Contract Flow - ContractCreate and ContractDelete
@@ -40,4 +41,4 @@ Feature: Contract Base Coverage Feature
         And the mirror node REST API should verify the deleted contract entity
         Examples:
             | httpStatusCode | contractName |
-            | 200            | "DEFAULT"    |
+            | 200            | "PARENT"     |

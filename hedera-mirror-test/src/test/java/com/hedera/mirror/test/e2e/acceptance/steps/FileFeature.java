@@ -112,14 +112,6 @@ public class FileFeature {
 
     @Then("the network confirms file update")
     public void verifyNetworkFileUpdateResponse() {
-//        var newFileInfo = fileClient.getFileInfo(fileId);
-//
-//        verifyFileInfo(newFileInfo, updatedFileContents);
-//
-//        assertThat(fileInfo.fileMemo).isNotEqualTo(newFileInfo.fileMemo);
-//        assertThat(fileInfo.size).isNotEqualTo(newFileInfo.size);
-//
-//        fileInfo = newFileInfo;
         verifyNetworkUpdateResponse(false);
     }
 
@@ -137,14 +129,6 @@ public class FileFeature {
 
     @Then("the network confirms an append update")
     public void verifyNetworkFileAppendResponse() {
-//        var newFileInfo = fileClient.getFileInfo(fileId);
-//
-//        verifyFileInfo(newFileInfo, updatedFileContents);
-//
-//        assertThat(fileInfo.fileMemo).isEqualTo(newFileInfo.fileMemo);
-//        assertThat(fileInfo.size).isNotEqualTo(newFileInfo.size);
-//
-//        fileInfo = newFileInfo;
         verifyNetworkUpdateResponse(true);
     }
 
