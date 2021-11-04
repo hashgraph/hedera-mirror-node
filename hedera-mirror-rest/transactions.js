@@ -467,9 +467,9 @@ const getTransactionsInnerQuery = function (
   const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
     ? undefined
     : `select ${Transaction.CONSENSUS_TIMESTAMP}
-    from ${Transaction.tableName} as ${Transaction.tableAlias} 
+    from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
-    order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order} 
+    order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
     ${transactionOnlyLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
