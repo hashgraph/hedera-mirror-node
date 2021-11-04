@@ -60,22 +60,28 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Cucumber
 public class ContractFeature {
     private static final int MAX_FILE_SIZE = 5500; // ensure transaction bytes are under 6144 (6kb)
+
     private final ObjectMapper mapper = new ObjectMapper();
-    @Value("classpath:solidity/artifacts/contracts/MirrorNode.sol/MirrorNode.json")
-    Path mirrorNodeContract;
-    @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
-    Path parentContract;
-    @Autowired
-    private ContractClient contractClient;
-    @Autowired
-    private FileClient fileClient;
-    @Autowired
-    private MirrorNodeClient mirrorClient;
 
     private NetworkTransactionResponse networkTransactionResponse;
     private ContractId contractId;
     private FileId fileId;
     private ContractName contractName;
+
+    @Value("classpath:solidity/artifacts/contracts/MirrorNode.sol/MirrorNode.json")
+    private Path mirrorNodeContract;
+
+    @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
+    private Path parentContract;
+
+    @Autowired
+    private ContractClient contractClient;
+
+    @Autowired
+    private FileClient fileClient;
+
+    @Autowired
+    private MirrorNodeClient mirrorClient;
 
     @Given("I successfully create a contract from {string} contract bytes")
     public void createNewContract(String contractFile) throws IOException {
@@ -122,7 +128,7 @@ public class ContractFeature {
                 int initialParentBalance = callGetBalance(donationAmount);
                 callTransferToChild(transferAmount);
                 int childBalance = callGetChildBalance(transferAmount);
-                callGetBalance(donationAmount - transferAmount);
+                callGetBalance(initialParentBalance - childBalance);
                 break;
             default:
                 break;
@@ -149,7 +155,6 @@ public class ContractFeature {
         var contractInfo = contractClient.getContractInfo(contractId);
 
         verifyContractInfo(contractInfo);
-        assertThat(contractInfo.balance.toTinybars()).isEqualTo(0);
         assertThat(contractInfo.isDeleted).isFalse();
     }
 
@@ -158,7 +163,6 @@ public class ContractFeature {
         var contractInfo = contractClient.getContractInfo(contractId);
 
         verifyContractInfo(contractInfo);
-        assertThat(contractInfo.balance.toTinybars()).isEqualTo(0);
         assertThat(contractInfo.isDeleted).isFalse();
     }
 
@@ -263,7 +267,7 @@ public class ContractFeature {
     private void verifyContractInfo(ContractInfo contractInfo) {
         assertThat(contractInfo.contractMemo).isNotEmpty();
         assertThat(contractInfo.contractAccountId).isNotNull();
-        assertThat(contractInfo.storage).isGreaterThan(0);
+        assertThat(contractInfo.storage).isPositive();
         assertThat(contractInfo.balance).isNotNull();
     }
 
@@ -282,6 +286,7 @@ public class ContractFeature {
         assertThat(mirrorTransaction.getName()).isNotNull();
         assertThat(mirrorTransaction.getResult()).isNotNull();
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
+        assertThat(mirrorTransaction.getEntityId()).isEqualTo(contractId.toString());
 
         return mirrorTransaction;
     }
@@ -440,7 +445,7 @@ public class ContractFeature {
         assertNotNull(contractFunctionResult);
         assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
         assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
-        assertThat(contractFunctionResult.gasUsed).isGreaterThan(0);
+        assertThat(contractFunctionResult.gasUsed).isPositive();
         assertThat(contractFunctionResult.logs.size()).isZero();
     }
 

@@ -81,7 +81,11 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 public class TokenFeature {
     private static final int INITIAL_SUPPLY = 1_000_000;
     private static final int MAX_SUPPLY = 1;
-
+    private final List<ExpandedAccountId> recipients = new ArrayList<>();
+    private final List<ExpandedAccountId> senders = new ArrayList<>();
+    private final Map<TokenId, List<CustomFee>> tokenCustomFees = new HashMap<>();
+    private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
+    private final List<TokenId> tokenIds = new ArrayList<>();
     @Autowired
     private TokenClient tokenClient;
     @Autowired
@@ -90,13 +94,7 @@ public class TokenFeature {
     private MirrorNodeClient mirrorClient;
     @Autowired
     private TopicClient topicClient;
-
     private NetworkTransactionResponse networkTransactionResponse;
-    private final List<ExpandedAccountId> recipients = new ArrayList<>();
-    private final List<ExpandedAccountId> senders = new ArrayList<>();
-    private final Map<TokenId, List<CustomFee>> tokenCustomFees = new HashMap<>();
-    private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
-    private final List<TokenId> tokenIds = new ArrayList<>();
 
     @Given("I successfully create a new token")
     public void createNewToken() {

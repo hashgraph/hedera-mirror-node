@@ -190,6 +190,7 @@ public class FileFeature {
         assertThat(mirrorTransaction.getName()).isNotNull();
         assertThat(mirrorTransaction.getResult()).isNotNull();
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
+        assertThat(mirrorTransaction.getEntityId()).isEqualTo(fileId.toString());
 
         return mirrorTransaction;
     }

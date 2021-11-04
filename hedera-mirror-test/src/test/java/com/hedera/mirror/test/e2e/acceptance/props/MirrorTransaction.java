@@ -26,25 +26,15 @@ import lombok.Data;
 
 @Data
 public class MirrorTransaction {
-
     private List<MirrorAssessedCustomFee> assessedCustomFees = new ArrayList<>();
-
     private String consensusTimestamp;
-
+    private String entityId;
     private String name;
-
+    private List<MirrorNftTransfer> nftTransfers;
     private String result;
-
     private boolean scheduled;
-
     private List<MirrorTokenTransfer> tokenTransfers;
-
-    List<MirrorNftTransfer> nftTransfers;
-
     private String transactionId;
-
     private List<MirrorTransfer> transfers;
-
     private String validStartTimestamp;
-
 }

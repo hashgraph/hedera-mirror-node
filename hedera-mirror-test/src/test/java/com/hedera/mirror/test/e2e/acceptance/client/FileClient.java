@@ -48,7 +48,6 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createFile(byte[] byteCode) {
-
         log.debug("Create new file");
         String memo = String.format("Create file %s", Instant.now());
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
@@ -67,7 +66,6 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateFile(FileId fileId, byte[] byteCode) {
-
         log.debug("Update file");
         String memo = String.format("Update file %s", Instant.now());
         FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
@@ -87,7 +85,6 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse appendFile(FileId fileId, byte[] byteCode) {
-
         log.debug("Append file");
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
@@ -102,7 +99,6 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse deleteFile(FileId fileId) {
-
         log.debug("Delete file");
         String memo = String.format("delete file %s", Instant.now());
         FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
