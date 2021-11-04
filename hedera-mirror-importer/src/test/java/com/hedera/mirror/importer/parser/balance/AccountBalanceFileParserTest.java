@@ -25,7 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.primitives.Longs;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,13 +78,13 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         accountBalanceFileParser.parse(accountBalanceFile);
 
         // then
-        assertAccountBalanceFile(accountBalanceFile, Flux.empty());
+        assertAccountBalanceFile(accountBalanceFile, List.of());
     }
 
     @Test
     void success() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        Flux<AccountBalance> items = accountBalanceFile.getItems();
+        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
         accountBalanceFileParser.parse(accountBalanceFile);
         assertAccountBalanceFile(accountBalanceFile, items);
     }
@@ -91,7 +93,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     void duplicateFile() {
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         AccountBalanceFile duplicate = accountBalanceFile(1);
-        Flux<AccountBalance> items = accountBalanceFile.getItems();
+        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
 
         accountBalanceFileParser.parse(accountBalanceFile);
         accountBalanceFileParser.parse(duplicate); // Will be ignored
@@ -109,23 +111,19 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .usingElementComparatorIgnoringFields("bytes", "items")
                 .containsExactly(accountBalanceFile);
         assertThat(accountBalanceRepository.count()).isZero();
-        assertAccountBalanceFile(accountBalanceFile, Flux.empty());
+        assertAccountBalanceFile(accountBalanceFile, List.of());
     }
 
-    void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, Flux<AccountBalance> accountBalances) {
+    void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {
+        List<TokenBalance> tokenBalances = accountBalances.stream()
+                .map(AccountBalance::getTokenBalances)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
         assertThat(accountBalanceFile.getBytes()).isNull();
         assertThat(accountBalanceFile.getItems()).isNull();
-
-        accountBalances.doOnNext(accountBalance -> {
-            assertThat(accountBalanceRepository.findById(accountBalance.getId())).get().isEqualTo(accountBalance);
-
-            for (TokenBalance tokenBalance : accountBalance.getTokenBalances()) {
-                assertThat(tokenBalanceRepository.findById(tokenBalance.getId())).get().isEqualTo(tokenBalance);
-            }
-        }).blockLast();
-
-        assertThat(accountBalanceRepository.findByIdConsensusTimestamp(accountBalanceFile.getConsensusTimestamp()))
-                .hasSize(Math.toIntExact(accountBalances.count().block()));
+        assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(accountBalances);
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenBalances);
 
         if (parserProperties.isEnabled()) {
             assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()))

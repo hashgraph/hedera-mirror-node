@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.sql;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -57,8 +57,6 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
-import com.hedera.mirror.importer.parser.batch.BatchInserter;
-import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;

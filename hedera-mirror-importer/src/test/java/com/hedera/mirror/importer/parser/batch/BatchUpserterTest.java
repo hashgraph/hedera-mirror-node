@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.sql;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -58,7 +58,6 @@ import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
-import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
