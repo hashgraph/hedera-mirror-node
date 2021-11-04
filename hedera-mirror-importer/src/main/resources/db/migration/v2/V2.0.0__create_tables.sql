@@ -423,3 +423,13 @@ create table if not exists transaction
     valid_duration_seconds bigint
 );
 comment on table transaction is 'Submitted network transactions';
+
+-- transaction_signature
+create table if not exists transaction_signature
+(
+    consensus_timestamp bigint not null,
+    entity_id           bigint null,
+    public_key_prefix   bytea  not null,
+    signature           bytea  not null
+);
+comment on table transaction_signature is 'Transaction signatories';
