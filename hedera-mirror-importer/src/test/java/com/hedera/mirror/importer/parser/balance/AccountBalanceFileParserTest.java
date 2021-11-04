@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -46,6 +47,7 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
+@Transactional
 class AccountBalanceFileParserTest extends IntegrationTest {
 
     @Resource
