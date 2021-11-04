@@ -35,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +42,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.ResourceUtils;
 
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
-import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.ContractInfo;
 import com.hedera.hashgraph.sdk.FileId;
@@ -70,10 +68,6 @@ public class ContractFeature {
     private NetworkTransactionResponse networkTransactionResponse;
     private ContractId contractId;
     private FileId fileId;
-    private ContractName contractName;
-
-    @Value("classpath:solidity/artifacts/contracts/MirrorNode.sol/MirrorNode.json")
-    private Path mirrorNodeContract;
 
     @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
     private Path parentContract;
@@ -87,56 +81,20 @@ public class ContractFeature {
     @Autowired
     private MirrorNodeClient mirrorClient;
 
-    @Given("I successfully create a contract from {string} contract bytes")
-    public void createNewContract(String contractFile) throws IOException {
-        switch (ContractName.valueOf(contractFile)) {
-            case MIRROR_NODE:
-                CompiledSolidityArtifact compiledMirrorNodeArtifact = mapper.readValue(
-                        ResourceUtils.getFile(mirrorNodeContract.toUri()),
-                        CompiledSolidityArtifact.class);
-                createMirrorNodeContract(compiledMirrorNodeArtifact.getBytecode());
-                contractName = ContractName.MIRROR_NODE;
-                break;
-            case PARENT:
-            default:
-                CompiledSolidityArtifact compiledParentArtifact = mapper.readValue(
-                        ResourceUtils.getFile(parentContract.toUri()),
-                        CompiledSolidityArtifact.class);
-                createParentContract(compiledParentArtifact.getBytecode());
-                contractName = ContractName.PARENT;
-                break;
-        }
+    @Given("I successfully create a contract from contract bytes")
+    public void createNewContract() throws IOException {
+        CompiledSolidityArtifact compiledParentArtifact = mapper.readValue(
+                ResourceUtils.getFile(parentContract.toUri()),
+                CompiledSolidityArtifact.class);
+        createContract(compiledParentArtifact.getBytecode());
     }
 
     @Given("I successfully call the contract")
     public void callContract() {
-        switch (contractName) {
-            case MIRROR_NODE:
-                // submit a transaction and verify shard and transaction count are increased
-                executeContractSubmitTransaction(
-                        1234,
-                        "CRYPTOTRANSFER",
-                        1,
-                        Hbar.fromTinybars(10000000));
-                callContractGetShardCount(1);
-                callContractGetTransactionCount(1);
-                break;
-            case PARENT:
-                // create child contract, verify balance, transfer amount and verify update balance
-                callGetBalance(0);
-                executeCreateChildTransaction();
-                callGetChildBalance(0);
-                int donationAmount = 10000000;
-                int transferAmount = 1234;
-                executeDonateTransaction(donationAmount);
-                int initialParentBalance = callGetBalance(donationAmount);
-                callTransferToChild(transferAmount);
-                int childBalance = callGetChildBalance(transferAmount);
-                callGetBalance(initialParentBalance - childBalance);
-                break;
-            default:
-                break;
-        }
+        // log and results to be verified
+        executeCreateChildTransaction();
+        executeDonateTransaction(10000000);
+        executeTransferToChild(1234);
     }
 
     @Given("I successfully update the contract")
@@ -237,7 +195,7 @@ public class ContractFeature {
         }
     }
 
-    private void createParentContract(String byteCode) {
+    private void createContract(String byteCode) {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
@@ -245,27 +203,6 @@ public class ContractFeature {
                 null);
 
         verifyCreateContractNetworkResponse();
-
-        callGetBalance(0);
-    }
-
-    private void createMirrorNodeContract(String byteCode) {
-        persistContractBytes(byteCode.replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                750000,
-                new ContractFunctionParameters()
-                        .addInt8((byte) 3)
-                        .addInt256(BigInteger.valueOf(100))
-                        .addInt256(BigInteger.valueOf(5))
-                        .addInt256(BigInteger.valueOf(1)));
-
-        verifyCreateContractNetworkResponse();
-
-        callContractGetStorageFee(5);
-        callContractGetApiFee(1);
-        callContractGetShardCount(0);
-        callContractGetTransactionCount(0);
     }
 
     private void verifyContractInfo(ContractInfo contractInfo) {
@@ -306,22 +243,6 @@ public class ContractFeature {
         return mirrorContract;
     }
 
-    private void executeContractSubmitTransaction(long timestamp, String transactionType, int shard,
-                                                  Hbar paymentAmount) {
-        networkTransactionResponse = contractClient.executeContract(
-                contractId,
-                300000L,
-                "submitTransaction",
-                new ContractFunctionParameters()
-                        .addUint256(BigInteger.valueOf(timestamp))
-                        .addString(transactionType)
-                        .addUint32(shard),
-                paymentAmount);
-
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
     private void executeCreateChildTransaction() {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
@@ -346,7 +267,7 @@ public class ContractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void callTransferToChild(int transferAmount) {
+    private void executeTransferToChild(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
                 20000,
@@ -357,105 +278,5 @@ public class ContractFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private int callGetBalance(int balanceFloor) {
-        log.debug("Confirm contract '{}' parent callGetBalance gets a valid balance",
-                contractId);
-        var contractFunctionResult = contractClient.callContractFunction(
-                contractId,
-                500,
-                "getBalance",
-                null,
-                null);
-
-        verifyContractFunctionResult(contractFunctionResult);
-        int balance = contractFunctionResult.getInt256(0).intValue();
-        assertThat(balance).isGreaterThanOrEqualTo(balanceFloor);
-        log.trace("getBalance parent balance is {}", balance);
-        return balance;
-    }
-
-    private int callGetChildBalance(int balanceFloor) {
-        log.debug("Confirm contract '{}' getChildBalance gets a valid balance",
-                contractId);
-        var contractFunctionResult = contractClient.callContractFunction(
-                contractId,
-                7000,
-                "getChildBalance",
-                null,
-                null);
-
-        verifyContractFunctionResult(contractFunctionResult);
-        int balance = contractFunctionResult.getInt256(0).intValue();
-        assertThat(balance).isGreaterThanOrEqualTo(balanceFloor);
-        log.trace("getChildBalance child balance is {}", balance);
-        return balance;
-    }
-
-    private void callContractGetTransactionCount(int expectedCount) {
-        log.debug("Confirm contract '{}' transaction count is {}", contractId, expectedCount);
-        var contractFunctionResult = contractClient.callContractFunction(
-                contractId,
-                750000,
-                "getTransactionCount",
-                null,
-                null);
-
-        verifyContractFunctionResult(contractFunctionResult);
-        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedCount);
-    }
-
-    private void callContractGetApiFee(int expectedCount) {
-        log.debug("Confirm contract '{}' api fee is {}", contractId, expectedCount);
-        var contractFunctionResult = contractClient.callContractFunction(
-                contractId,
-                750000,
-                "getApiFee",
-                null,
-                null);
-
-        verifyContractFunctionResult(contractFunctionResult);
-        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedCount);
-    }
-
-    private void callContractGetStorageFee(int expectedAmount) {
-        log.debug("Confirm contract '{}' storage fee is {}", contractId, expectedAmount);
-        var contractFunctionResult = contractClient.callContractFunction(
-                contractId,
-                750000,
-                "getStorageFee",
-                null,
-                null);
-
-        verifyContractFunctionResult(contractFunctionResult);
-        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedAmount);
-    }
-
-    private void callContractGetShardCount(int expectedAmount) {
-        log.debug("Confirm contract '{}' shard count is {}", contractId, expectedAmount);
-        var contractFunctionResult = contractClient.callContractFunction(
-                contractId,
-                750000,
-                "getShardCount",
-                null,
-                null);
-
-        verifyContractFunctionResult(contractFunctionResult);
-        assertThat(contractFunctionResult.getInt256(0)).isEqualTo(expectedAmount);
-    }
-
-    private void verifyContractFunctionResult(ContractFunctionResult contractFunctionResult) {
-        assertNotNull(contractFunctionResult);
-        assertThat(contractFunctionResult.contractId).isEqualTo(contractId);
-        assertThat(contractFunctionResult.errorMessage).isNullOrEmpty();
-        assertThat(contractFunctionResult.gasUsed).isPositive();
-        assertThat(contractFunctionResult.logs.size()).isZero();
-    }
-
-    @RequiredArgsConstructor
-    public enum ContractName {
-        MIRROR_NODE,
-        PARENT
     }
 }

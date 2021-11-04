@@ -3,7 +3,7 @@ Feature: Contract Base Coverage Feature
 
     @critical @release @acceptance @update
     Scenario Outline: Validate Contract Flow - ContractCreate and ContractUpdate
-        Given I successfully create a contract from <contractName> contract bytes
+        Given I successfully create a contract from contract bytes
         When the network confirms contract presence
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deployed contract entity
@@ -12,12 +12,12 @@ Feature: Contract Base Coverage Feature
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deployed contract entity
         Examples:
-            | httpStatusCode | contractName  |
-            | 200            | "MIRROR_NODE" |
+            | httpStatusCode |
+            | 200            |
 
     @critical @release @acceptance
     Scenario Outline: Validate Contract Call - ContractCreate and ContractCall
-        Given I successfully create a contract from <contractName> contract bytes
+        Given I successfully create a contract from contract bytes
         When the network confirms contract presence
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deployed contract entity
@@ -25,13 +25,12 @@ Feature: Contract Base Coverage Feature
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deployed contract entity
         Examples:
-            | httpStatusCode | contractName  |
-            | 200            | "PARENT"      |
-            | 200            | "MIRROR_NODE" |
+            | httpStatusCode |
+            | 200            |
 
     @critical @release @acceptance @delete
     Scenario Outline: Validate Contract Flow - ContractCreate and ContractDelete
-        Given I successfully create a contract from <contractName> contract bytes
+        Given I successfully create a contract from contract bytes
         When the network confirms contract presence
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deployed contract entity
@@ -40,5 +39,5 @@ Feature: Contract Base Coverage Feature
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deleted contract entity
         Examples:
-            | httpStatusCode | contractName |
-            | 200            | "PARENT"     |
+            | httpStatusCode |
+            | 200            |
