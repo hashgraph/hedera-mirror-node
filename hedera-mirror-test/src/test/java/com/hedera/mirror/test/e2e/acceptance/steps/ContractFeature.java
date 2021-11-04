@@ -43,10 +43,8 @@ import org.springframework.util.ResourceUtils;
 
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.ContractInfo;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -110,28 +108,6 @@ public class ContractFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @Then("the network confirms contract presence")
-    public void verifyNetworkContractCreateResponse() {
-        var contractInfo = contractClient.getContractInfo(contractId);
-
-        verifyContractInfo(contractInfo);
-        assertThat(contractInfo.isDeleted).isFalse();
-    }
-
-    @Then("the network confirms contract update")
-    public void verifyNetworkContractUpdateResponse() {
-        var contractInfo = contractClient.getContractInfo(contractId);
-
-        verifyContractInfo(contractInfo);
-        assertThat(contractInfo.isDeleted).isFalse();
-    }
-
-    @Then("the network confirms contract absence")
-    public void verifyNetworkContractDeleteResponse() {
-        assertThrows(PrecheckStatusException.class, () -> contractClient
-                .getContractInfo(contractId), "CONTRACT_DELETED");
     }
 
     @Then("the mirror node REST API should return status {int} for the contract transaction")
@@ -203,13 +179,6 @@ public class ContractFeature {
                 null);
 
         verifyCreateContractNetworkResponse();
-    }
-
-    private void verifyContractInfo(ContractInfo contractInfo) {
-        assertThat(contractInfo.contractMemo).isNotEmpty();
-        assertThat(contractInfo.contractAccountId).isNotNull();
-        assertThat(contractInfo.storage).isPositive();
-        assertThat(contractInfo.balance).isNotNull();
     }
 
     private MirrorTransaction verifyMirrorTransactionsResponse(MirrorTransactionsResponse mirrorTransactionsResponse,

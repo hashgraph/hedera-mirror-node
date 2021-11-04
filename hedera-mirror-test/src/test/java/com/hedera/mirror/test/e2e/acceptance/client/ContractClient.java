@@ -20,26 +20,20 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
-import lombok.SneakyThrows;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.hedera.hashgraph.sdk.ContractCallQuery;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractDeleteTransaction;
 import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.ContractInfo;
-import com.hedera.hashgraph.sdk.ContractInfoQuery;
 import com.hedera.hashgraph.sdk.ContractUpdateTransaction;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -131,45 +125,6 @@ public class ContractClient extends AbstractNetworkClient {
         logContractFunctionResult(functionName, transactionRecord.contractFunctionResult);
 
         return networkTransactionResponse;
-    }
-
-    @SneakyThrows
-    public ContractFunctionResult callContractFunction(ContractId contractId, long gas, String functionName,
-                                                       ContractFunctionParameters parameters, Hbar payableAmount) {
-        log.debug("Call contract {}'s function {}", contractId, functionName);
-        return retryTemplate.execute(x -> {
-            ContractCallQuery contractCallQuery = new ContractCallQuery()
-                    .setContractId(contractId)
-                    .setGas(gas);
-
-            if (parameters == null) {
-                contractCallQuery.setFunction(functionName);
-            } else {
-                contractCallQuery.setFunction(functionName, parameters);
-            }
-
-            if (payableAmount != null) {
-                contractCallQuery.setQueryPayment(payableAmount);
-            }
-
-            try {
-                ContractFunctionResult contractFunctionResult = contractCallQuery.execute(client);
-                logContractFunctionResult(functionName, contractFunctionResult);
-                return contractFunctionResult;
-            } catch (TimeoutException e) {
-                log.error("TimeoutException: {}", e.getMessage());
-            } catch (PrecheckStatusException e) {
-                log.error("PrecheckStatusException: {}", e.getMessage());
-            }
-            return null;
-        });
-    }
-
-    @SneakyThrows
-    public ContractInfo getContractInfo(ContractId contractId) {
-        return retryTemplate.execute(x -> new ContractInfoQuery()
-                .setContractId(contractId)
-                .execute(client));
     }
 
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
