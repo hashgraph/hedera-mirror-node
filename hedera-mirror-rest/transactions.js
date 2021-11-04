@@ -60,19 +60,19 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     }
 
     const tquery = `select ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME},
-                           ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME},
-                           ${Transaction.VALID_START_NS_FULL_NAME},
-                           ${Transaction.MEMO_FULL_NAME},
-                           ${Transaction.NODE_ACCOUNT_ID_FULL_NAME},
-                           ${Transaction.CHARGED_TX_FEE_FULL_NAME},
-                           ${Transaction.VALID_DURATION_SECONDS_FULL_NAME},
-                           ${Transaction.MAX_FEE_FULL_NAME},
-                           ${Transaction.TRANSACTION_HASH_FULL_NAME},
-                           ${Transaction.SCHEDULED_FULL_NAME},
-                           ${Transaction.ENTITY_ID_FULL_NAME},
-                           ${Transaction.TRANSACTION_BYTES_FULL_NAME},
-                           ${Transaction.RESULT_FULL_NAME},
-                           ${Transaction.TYPE_FULL_NAME}
+                      ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME},
+                      ${Transaction.VALID_START_NS_FULL_NAME},
+                      ${Transaction.MEMO_FULL_NAME},
+                      ${Transaction.NODE_ACCOUNT_ID_FULL_NAME},
+                      ${Transaction.CHARGED_TX_FEE_FULL_NAME},
+                      ${Transaction.VALID_DURATION_SECONDS_FULL_NAME},
+                      ${Transaction.MAX_FEE_FULL_NAME},
+                      ${Transaction.TRANSACTION_HASH_FULL_NAME},
+                      ${Transaction.SCHEDULED_FULL_NAME},
+                      ${Transaction.ENTITY_ID_FULL_NAME},
+                      ${Transaction.TRANSACTION_BYTES_FULL_NAME},
+                      ${Transaction.RESULT_FULL_NAME},
+                      ${Transaction.TYPE_FULL_NAME}
                     from ${Transaction.tableName} as ${Transaction.tableAlias} ${timestampFilterJoin}
                     order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order} ${limitQuery}`;
 
