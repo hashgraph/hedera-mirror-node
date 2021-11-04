@@ -95,6 +95,7 @@ public class BatchInserter implements BatchPersister {
                 .register(meterRegistry);
     }
 
+    @Override
     public void persist(Collection<? extends Object> items) {
         if (items == null || items.isEmpty()) {
             return;

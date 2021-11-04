@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -47,7 +46,6 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
-@Transactional
 class AccountBalanceFileParserTest extends IntegrationTest {
 
     @Resource
@@ -85,30 +83,56 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     @Test
     void success() {
+        // given
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+
+        // when
         accountBalanceFileParser.parse(accountBalanceFile);
+
+        // then
+        assertAccountBalanceFile(accountBalanceFile, items);
+    }
+
+    @Test
+    void multipleBatches() {
+        // given
+        parserProperties.setBatchSize(2);
+        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+
+        // when
+        accountBalanceFileParser.parse(accountBalanceFile);
+
+        // then
         assertAccountBalanceFile(accountBalanceFile, items);
     }
 
     @Test
     void duplicateFile() {
+        // given
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         AccountBalanceFile duplicate = accountBalanceFile(1);
         List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
 
+        // when
         accountBalanceFileParser.parse(accountBalanceFile);
         accountBalanceFileParser.parse(duplicate); // Will be ignored
 
+        // then
         assertThat(accountBalanceFileRepository.count()).isEqualTo(1L);
         assertAccountBalanceFile(accountBalanceFile, items);
     }
 
     @Test
     void beforeStartDate() {
+        // given
         AccountBalanceFile accountBalanceFile = accountBalanceFile(-1L);
+
+        // when
         accountBalanceFileParser.parse(accountBalanceFile);
 
+        // then
         assertThat(accountBalanceFileRepository.findAll())
                 .usingElementComparatorIgnoringFields("bytes", "items")
                 .containsExactly(accountBalanceFile);
@@ -132,7 +156,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                     .get()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
-                    .ignoringFields("bytes", "count", "items", "loadEnd")
+                    .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
     }
@@ -144,7 +168,9 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .bytes(Longs.toByteArray(timestamp))
                 .consensusTimestamp(timestamp)
                 .fileHash("fileHash" + timestamp)
-                .items(Flux.just(accountBalance(timestamp, 1), accountBalance(timestamp, 2)))
+                .items(Flux.just(accountBalance(timestamp, 1),
+                        accountBalance(timestamp, 2),
+                        accountBalance(timestamp, 3)))
                 .loadEnd(null)
                 .loadStart(timestamp)
                 .name(filename)
@@ -154,16 +180,21 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     private AccountBalance accountBalance(long timestamp, int offset) {
         EntityId accountId = EntityId.of(0, 0, offset + 1000, EntityType.ACCOUNT);
-        EntityId tokenId = EntityId.of(0, 0, offset + 2000, EntityType.ACCOUNT);
+        EntityId tokenId1 = EntityId.of(0, 0, offset + 2000, EntityType.ACCOUNT);
+        EntityId tokenId2 = EntityId.of(0, 0, offset + 3000, EntityType.ACCOUNT);
 
-        TokenBalance tokenBalance = new TokenBalance();
-        tokenBalance.setBalance(offset);
-        tokenBalance.setId(new TokenBalance.Id(timestamp, accountId, tokenId));
+        TokenBalance tokenBalance1 = new TokenBalance();
+        tokenBalance1.setBalance(offset);
+        tokenBalance1.setId(new TokenBalance.Id(timestamp, accountId, tokenId1));
+
+        TokenBalance tokenBalance2 = new TokenBalance();
+        tokenBalance2.setBalance(offset);
+        tokenBalance2.setId(new TokenBalance.Id(timestamp, accountId, tokenId2));
 
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(offset);
         accountBalance.setId(new AccountBalance.Id(timestamp, accountId));
-        accountBalance.setTokenBalances(List.of(tokenBalance));
+        accountBalance.setTokenBalances(List.of(tokenBalance1));
         return accountBalance;
     }
 }
