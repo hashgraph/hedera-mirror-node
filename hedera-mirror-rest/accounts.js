@@ -77,6 +77,7 @@ const getAccountQuery = (
     .filter((x) => !!x)
     .join(' and ');
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
+  const accountContractView = (order && `account_contract_${order}`) || 'account_contract_asc';
 
   // balanceQuery and pubKeyQuery are applied in the two sub queries; depending on the presence, use different joins
   let joinType = 'full outer';
@@ -130,7 +131,7 @@ const getAccountQuery = (
         max_automatic_token_associations,
         memo,
         receiver_sig_required
-      from account_contract
+      from ${accountContractView}
       ${entityWhereFilter && 'where ' + entityWhereFilter}
       order by id ${order || ''}
       ${limitQuery || ''}
