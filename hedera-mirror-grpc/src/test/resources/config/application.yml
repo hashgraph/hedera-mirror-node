@@ -16,6 +16,7 @@ hedera:
         port: ${embedded.postgresql.port}
         name: ${embedded.postgresql.schema}
         username: ${embedded.postgresql.user}
+        sslMode: DISABLE
         password: ${embedded.postgresql.password}
       endTimeInterval: 100ms
       listener:
@@ -28,7 +29,7 @@ spring:
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
-    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
+    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?sslmode=${hedera.mirror.grpc.db.sslMode}
     username: ${hedera.mirror.grpc.db.username}
   flyway:
     baselineOnMigrate: true
