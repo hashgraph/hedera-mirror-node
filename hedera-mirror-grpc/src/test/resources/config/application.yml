@@ -16,7 +16,6 @@ hedera:
         port: ${embedded.postgresql.port}
         name: ${embedded.postgresql.schema}
         username: ${embedded.postgresql.user}
-        sslMode: DISABLE
         password: ${embedded.postgresql.password}
       endTimeInterval: 100ms
       listener:

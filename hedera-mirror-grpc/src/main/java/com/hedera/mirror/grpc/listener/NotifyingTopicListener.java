@@ -81,7 +81,6 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .metrics()
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
-                .doOnTerminate(this::unListen)
                 .share();
     }
 
@@ -91,10 +90,10 @@ public class NotifyingTopicListener extends SharedTopicListener {
     }
 
     private Flux<String> listen() {
-        Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
+        Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
         channel.handler(sink::tryEmitNext);
         log.info("Listening for messages");
-        return sink.asFlux();
+        return sink.asFlux().doFinally(x -> unListen());
     }
 
     private void unListen() {
