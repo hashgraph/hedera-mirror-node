@@ -25,6 +25,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractDeleteTransaction;
 import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
@@ -45,19 +46,23 @@ public class ContractClient extends AbstractNetworkClient {
         log.debug("Creating Contract Client");
     }
 
-    public NetworkTransactionResponse createContract(FileId fileId, long gas,
+    public NetworkTransactionResponse createContract(FileId fileId, long gas, Hbar payableAmount,
                                                      ContractFunctionParameters contractFunctionParameters) {
         log.debug("Create new contract");
         String memo = getMemo("Create contract");
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
                 .setAdminKey(sdkClient.getExpandedOperatorAccountId().getPublicKey())
-                .setGas(gas)
                 .setBytecodeFileId(fileId)
                 .setContractMemo(memo)
+                .setGas(gas)
                 .setTransactionMemo(memo);
 
         if (contractFunctionParameters != null) {
             contractCreateTransaction.setConstructorParameters(contractFunctionParameters);
+        }
+
+        if (payableAmount != null) {
+            contractCreateTransaction.setInitialBalance(payableAmount);
         }
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -83,12 +88,22 @@ public class ContractClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    public NetworkTransactionResponse deleteContract(ContractId contractId) {
+    public NetworkTransactionResponse deleteContract(ContractId contractId, AccountId transferAccountId,
+                                                     ContractId transferContractId) {
         log.debug("Delete contract {}", contractId);
         String memo = getMemo("Delete contract");
         ContractDeleteTransaction contractDeleteTransaction = new ContractDeleteTransaction()
                 .setContractId(contractId)
                 .setTransactionMemo(memo);
+
+        // either AccountId or ContractId, not both
+        if (transferAccountId != null) {
+            contractDeleteTransaction.setTransferAccountId(transferAccountId);
+        }
+
+        if (transferContractId != null) {
+            contractDeleteTransaction.setTransferContractId(transferContractId);
+        }
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(contractDeleteTransaction);

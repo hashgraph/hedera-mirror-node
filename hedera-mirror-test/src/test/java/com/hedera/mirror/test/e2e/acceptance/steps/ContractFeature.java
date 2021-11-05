@@ -33,12 +33,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.util.ResourceUtils;
 
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
@@ -56,7 +53,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 
 @Log4j2
 @Cucumber
-public class ContractFeature {
+public class ContractFeature extends StepDefinitions {
     private static final int MAX_FILE_SIZE = 5500; // ensure transaction bytes are under 6144 (6kb)
 
     private final ObjectMapper mapper = new ObjectMapper()
@@ -104,7 +101,10 @@ public class ContractFeature {
 
     @Given("I successfully delete the contract")
     public void deleteContract() {
-        networkTransactionResponse = contractClient.deleteContract(contractId);
+        networkTransactionResponse = contractClient.deleteContract(
+                contractId,
+                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId(),
+                null);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -117,6 +117,7 @@ public class ContractFeature {
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status);
+        assertThat(mirrorTransaction.getEntityId()).isEqualTo(contractId.toString());
 
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
@@ -141,34 +142,46 @@ public class ContractFeature {
     }
 
     private void persistContractBytes(String contractContents) {
-        byte[] contractBytes = contractContents.getBytes(StandardCharsets.UTF_8);
-        int byteIndex = 0;
-        boolean fileCreateOrUpdate = true;
-        while (byteIndex <= contractBytes.length) {
-            int stopIndex = byteIndex + MAX_FILE_SIZE;
-            if (stopIndex > contractBytes.length) {
-                stopIndex = contractBytes.length;
-            }
+        // rely on SDK chunking feature to upload larger files
+        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        fileId = networkTransactionResponse.getReceipt().fileId;
+        assertNotNull(fileId);
+        log.info("Created file {} to hold contract init code", fileId);
 
-            byte[] fileContents = Arrays.copyOfRange(contractBytes, byteIndex, stopIndex);
-            if (fileCreateOrUpdate) {
-                networkTransactionResponse = fileClient.createFile(fileContents);
-            } else {
-                networkTransactionResponse = fileClient.appendFile(fileId, fileContents);
-            }
+        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
 
-            assertNotNull(networkTransactionResponse.getTransactionId());
-            assertNotNull(networkTransactionResponse.getReceipt());
-
-            if (fileCreateOrUpdate) {
-                fileId = networkTransactionResponse.getReceipt().fileId;
-                assertNotNull(fileId);
-                log.info("Created file {} to hold contract init code", fileId);
-            }
-
-            fileCreateOrUpdate = false;
-            byteIndex += MAX_FILE_SIZE;
-        }
+//        byte[] contractBytes = contractContents.getBytes(StandardCharsets.UTF_8);
+//        int byteIndex = 0;
+//        boolean fileCreateOrUpdate = true;
+//        while (byteIndex <= contractBytes.length) {
+//            int stopIndex = byteIndex + MAX_FILE_SIZE;
+//            if (stopIndex > contractBytes.length) {
+//                stopIndex = contractBytes.length;
+//            }
+//
+//            byte[] fileContents = Arrays.copyOfRange(contractBytes, byteIndex, stopIndex);
+//            if (fileCreateOrUpdate) {
+//                networkTransactionResponse = fileClient.createFile(fileContents);
+//            } else {
+//                networkTransactionResponse = fileClient.appendFile(fileId, fileContents);
+//            }
+//
+//            assertNotNull(networkTransactionResponse.getTransactionId());
+//            assertNotNull(networkTransactionResponse.getReceipt());
+//
+//            if (fileCreateOrUpdate) {
+//                fileId = networkTransactionResponse.getReceipt().fileId;
+//                assertNotNull(fileId);
+//                log.info("Created file {} to hold contract init code", fileId);
+//            }
+//
+//            fileCreateOrUpdate = false;
+//            byteIndex += MAX_FILE_SIZE;
+//        }
     }
 
     private void createContract(String byteCode, int initialBalance) {
@@ -182,37 +195,23 @@ public class ContractFeature {
         verifyCreateContractNetworkResponse();
     }
 
-    private MirrorTransaction verifyMirrorTransactionsResponse(MirrorTransactionsResponse mirrorTransactionsResponse,
-                                                               int status) {
-        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
-        assertNotNull(transactions);
-        assertThat(transactions).isNotEmpty();
-        MirrorTransaction mirrorTransaction = transactions.get(0);
-
-        if (status == HttpStatus.OK.value()) {
-            assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
-        }
-
-        assertThat(mirrorTransaction.getValidStartTimestamp()).isNotNull();
-        assertThat(mirrorTransaction.getName()).isNotNull();
-        assertThat(mirrorTransaction.getResult()).isNotNull();
-        assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
-        assertThat(mirrorTransaction.getEntityId()).isEqualTo(contractId.toString());
-
-        return mirrorTransaction;
-    }
-
     private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {
         MirrorContractResponse mirrorContract = mirrorClient.getContractInfo(contractId.toString());
 
         assertNotNull(mirrorContract);
+        assertThat(mirrorContract.getAdminKey()).isNotNull();
+        assertThat(mirrorContract.getAutoRenewPeriod()).isNotNull();
+        assertThat(mirrorContract.getBytecode()).isNotBlank();
         assertThat(mirrorContract.getContractId()).isEqualTo(contractId.toString());
-        assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
+        assertThat(mirrorContract.getCreatedTimestamp()).isNotBlank();
         assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
+        assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
+        assertThat(mirrorContract.getMemo()).isNotBlank();
         String address = mirrorContract.getSolidityAddress();
         assertThat(address).isNotBlank();
         assertThat(address).isNotEqualTo("0x");
         assertThat(address).isNotEqualTo("0x0000000000000000000000000000000000000000");
+        assertThat(mirrorContract.getTimestamp()).isNotNull();
 
         return mirrorContract;
     }
