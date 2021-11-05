@@ -251,7 +251,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractDeleteToExisting() {
         EntityId contractId = EntityId.of(CONTRACT_ID);
         Contract contract = domainBuilder.contract()
-                .customize(c -> c.id(contractId.getId()).num(contractId.getEntityNum()))
+                .customize(c -> c.obtainerId(null).id(contractId.getId()).num(contractId.getEntityNum()))
                 .persist();
 
         Transaction transaction = contractDeleteTransaction();
@@ -273,8 +273,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .isNotNull()
                         .returns(true, Contract::getDeleted)
                         .returns(recordItem.getConsensusTimestamp(), Contract::getModifiedTimestamp)
+                        .returns(EntityId.of(PAYER), Contract::getObtainerId)
                         .usingRecursiveComparison()
-                        .ignoringFields("deleted", "timestampRange")
+                        .ignoringFields("deleted", "obtainerId", "timestampRange")
                         .isEqualTo(contract)
         );
     }
@@ -284,8 +285,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Transaction transaction = contractDeleteTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = createOrUpdateRecord(transactionBody);
+        RecordItem recordItem = new RecordItem(transaction, record);
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(recordItem);
+        Contract contract = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -294,7 +297,15 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertContractTransaction(transactionBody, record, true),
-                () -> assertContractEntityHasNullFields(record.getConsensusTimestamp())
+                () -> assertThat(contract)
+                        .isNotNull()
+                        .returns(true, Contract::getDeleted)
+                        .returns(recordItem.getConsensusTimestamp(), Contract::getModifiedTimestamp)
+                        .returns(null, Contract::getAutoRenewPeriod)
+                        .returns(null, Contract::getExpirationTimestamp)
+                        .returns(null, Contract::getKey)
+                        .returns(EntityId.of(PAYER), Contract::getObtainerId)
+                        .returns(null, Contract::getProxyAccountId)
         );
     }
 
@@ -684,6 +695,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         return buildTransaction(builder -> {
             ContractDeleteTransactionBody.Builder contractDelete = builder.getContractDeleteInstanceBuilder();
             contractDelete.setContractID(CONTRACT_ID);
+            contractDelete.setTransferAccountID(PAYER);
         });
     }
 
