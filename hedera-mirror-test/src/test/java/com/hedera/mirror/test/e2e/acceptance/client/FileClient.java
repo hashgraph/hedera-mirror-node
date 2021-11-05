@@ -44,12 +44,12 @@ public class FileClient extends AbstractNetworkClient {
         log.debug("Creating File Client");
     }
 
-    public NetworkTransactionResponse createFile(byte[] byteCode) {
+    public NetworkTransactionResponse createFile(byte[] content) {
         log.debug("Create new file");
         String memo = getMemo("Create file");
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
                 .setKeys(sdkClient.getExpandedOperatorAccountId().getPublicKey())
-                .setContents(byteCode)
+                .setContents(content)
                 .setFileMemo(memo)
                 .setTransactionMemo(memo);
 
