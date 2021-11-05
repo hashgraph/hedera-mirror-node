@@ -181,6 +181,13 @@ public class ContractFeature extends StepDefinitions {
         assertThat(address).isNotEqualTo("0x");
         assertThat(address).isNotEqualTo("0x0000000000000000000000000000000000000000");
         assertThat(mirrorContract.getTimestamp()).isNotNull();
+        assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
+
+        if (isDeleted) {
+            // add obtainerId check when set is supported
+        } else {
+            assertThat(mirrorContract.getObtainerId()).isNull();
+        }
 
         return mirrorContract;
     }
@@ -188,7 +195,7 @@ public class ContractFeature extends StepDefinitions {
     private void executeCreateChildTransaction(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                65000,
+                67000,
                 "createChild",
                 new ContractFunctionParameters()
                         .addUint256(BigInteger.valueOf(transferAmount)),
