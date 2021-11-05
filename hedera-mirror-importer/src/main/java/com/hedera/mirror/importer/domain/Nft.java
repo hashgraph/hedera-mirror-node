@@ -34,6 +34,7 @@ import com.hedera.mirror.importer.converter.EntityIdSerializer;
 @Data
 @Entity
 @NoArgsConstructor
+@Upsertable
 public class Nft {
 
     @JsonUnwrapped

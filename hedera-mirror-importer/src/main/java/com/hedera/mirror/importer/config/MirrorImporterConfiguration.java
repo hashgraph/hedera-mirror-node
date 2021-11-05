@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import io.micrometer.core.instrument.MeterRegistry;
 import javax.annotation.PostConstruct;
+import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +40,13 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 import com.hedera.mirror.importer.leader.LeaderService;
+import com.hedera.mirror.importer.parser.CommonParserProperties;
+import com.hedera.mirror.importer.parser.batch.BatchPersister;
+import com.hedera.mirror.importer.parser.batch.BatchUpserter;
+import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpsertQueryGenerator;
 
 @Configuration
 @EnableAsync
@@ -47,6 +54,8 @@ import com.hedera.mirror.importer.leader.LeaderService;
 @RequiredArgsConstructor
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
 public class MirrorImporterConfiguration {
+
+    public static final String TOKEN_DISSOCIATE_BATCH_PERSISTER = "tokenDissociateTransferBatchPersister";
 
     private final MirrorProperties mirrorProperties;
 
@@ -87,6 +96,13 @@ public class MirrorImporterConfiguration {
             }
             configuration.getPlaceholders().put("topicRunningHashV2AddedTimestamp", timestamp.toString());
         };
+    }
+
+    @Bean(name = TOKEN_DISSOCIATE_BATCH_PERSISTER)
+    BatchPersister tokenDissociateTransferBatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
+                                                         CommonParserProperties parserProperties) {
+        return new BatchUpserter(TokenTransfer.class, dataSource, meterRegistry, parserProperties,
+                new TokenDissociateTransferUpsertQueryGenerator());
     }
 
     @Configuration

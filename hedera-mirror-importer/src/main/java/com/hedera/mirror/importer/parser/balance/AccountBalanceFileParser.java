@@ -23,13 +23,10 @@ package com.hedera.mirror.importer.parser.balance;
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import java.sql.Connection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Named;
-import javax.sql.DataSource;
-import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +38,7 @@ import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
-import com.hedera.mirror.importer.parser.PgCopy;
+import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 /**
@@ -50,20 +47,17 @@ import com.hedera.mirror.importer.repository.StreamFileRepository;
 @Named
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
-    private final DataSource dataSource;
+    private final BatchPersister batchPersister;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
-    private final PgCopy<AccountBalance> pgCopyAccountBalance;
-    private final PgCopy<TokenBalance> pgCopyTokenBalance;
 
-    public AccountBalanceFileParser(MeterRegistry meterRegistry, BalanceParserProperties parserProperties,
+    public AccountBalanceFileParser(BatchPersister batchPersister,
+                                    MeterRegistry meterRegistry,
+                                    BalanceParserProperties parserProperties,
                                     StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
-                                    DataSource dataSource,
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(meterRegistry, parserProperties, accountBalanceFileRepository);
-        this.dataSource = dataSource;
+        this.batchPersister = batchPersister;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
-        pgCopyAccountBalance = new PgCopy<>(AccountBalance.class, meterRegistry, parserProperties);
-        pgCopyTokenBalance = new PgCopy<>(TokenBalance.class, meterRegistry, parserProperties);
     }
 
     /**
@@ -85,40 +79,35 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
     protected void doParse(AccountBalanceFile accountBalanceFile) {
         log.info("Starting processing account balances file {}", accountBalanceFile.getName());
         DateRangeFilter filter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(StreamType.BALANCE);
-        Connection connection = DataSourceUtils.getConnection(dataSource);
         int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
-
         long count = 0L;
-        List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
-        List<TokenBalance> tokenBalances = new ArrayList<>(batchSize);
 
-        try {
-            if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
-                count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
-                    accountBalances.add(accountBalance);
-                    tokenBalances.addAll(accountBalance.getTokenBalances());
+        if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
+            List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
+            List<TokenBalance> tokenBalances = new ArrayList<>(batchSize);
 
-                    if (accountBalances.size() >= batchSize) {
-                        pgCopyAccountBalance.copy(accountBalances, connection);
-                        accountBalances.clear();
-                    }
+            count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
+                accountBalances.add(accountBalance);
+                tokenBalances.addAll(accountBalance.getTokenBalances());
 
-                    if (tokenBalances.size() >= batchSize) {
-                        pgCopyTokenBalance.copy(tokenBalances, connection);
-                        tokenBalances.clear();
-                    }
-                }).count().block();
+                if (accountBalances.size() >= batchSize) {
+                    batchPersister.persist(accountBalances);
+                    accountBalances.clear();
+                }
 
-                pgCopyAccountBalance.copy(accountBalances, connection);
-                pgCopyTokenBalance.copy(tokenBalances, connection);
-            }
+                if (tokenBalances.size() >= batchSize) {
+                    batchPersister.persist(tokenBalances);
+                    tokenBalances.clear();
+                }
+            }).count().block();
 
-            Instant loadEnd = Instant.now();
-            accountBalanceFile.setCount(count);
-            accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
-            streamFileRepository.save(accountBalanceFile);
-        } finally {
-            DataSourceUtils.releaseConnection(connection, dataSource);
+            batchPersister.persist(accountBalances);
+            batchPersister.persist(tokenBalances);
         }
+
+        Instant loadEnd = Instant.now();
+        accountBalanceFile.setCount(count);
+        accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
+        streamFileRepository.save(accountBalanceFile);
     }
 }

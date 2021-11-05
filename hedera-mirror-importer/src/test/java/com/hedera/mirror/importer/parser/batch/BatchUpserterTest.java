@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.sql;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -20,27 +20,23 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
 import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
 import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Resource;
-import javax.sql.DataSource;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.Contract;
@@ -62,8 +58,6 @@ import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
 import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.TokenTypeEnum;
-import com.hedera.mirror.importer.parser.UpsertPgCopy;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
@@ -72,91 +66,57 @@ import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
-import com.hedera.mirror.importer.repository.upsert.ContractUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.NftUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.TokenAccountUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
-class UpsertPgCopyTest extends IntegrationTest {
+class BatchUpserterTest extends IntegrationTest {
 
     private static final Key KEY = Key.newBuilder()
             .setEd25519(ByteString.copyFromUtf8("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c"))
             .build();
 
     @Resource
-    private DomainBuilder domainBuilder;
-    @Resource
-    private MeterRegistry meterRegistry;
-    @Resource
-    private ContractUpsertQueryGenerator contractUpsertQueryGenerator;
-    @Resource
-    private EntityUpsertQueryGenerator entityUpsertQueryGenerator;
-    @Resource
-    private NftUpsertQueryGenerator nftUpsertQueryGenerator;
-    @Resource
-    private ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
-    @Resource
-    private TokenUpsertQueryGenerator tokenUpsertQueryGenerator;
-    @Resource
-    private TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator;
-    @Resource
-    private DataSource dataSource;
+    private BatchPersister batchPersister;
+
     @Resource
     private ContractRepository contractRepository;
+
+    @Resource
+    private DomainBuilder domainBuilder;
+
     @Resource
     private EntityRepository entityRepository;
+
     @Resource
     private NftRepository nftRepository;
+
     @Resource
     private NftTransferRepository nftTransferRepository;
-    @Resource
-    private TokenRepository tokenRepository;
-    @Resource
-    private TokenAccountRepository tokenAccountRepository;
-    @Resource
-    private TokenTransferRepository tokenTransferRepository;
+
     @Resource
     private ScheduleRepository scheduleRepository;
-    private UpsertPgCopy<Contract> contractPgCopy;
-    private UpsertPgCopy<Entity> entityPgCopy;
-    private UpsertPgCopy<Nft> nftPgCopy;
-    private UpsertPgCopy<Schedule> schedulePgCopy;
-    private UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
-    private UpsertPgCopy<Token> tokenPgCopy;
-    private UpsertPgCopy<TokenTransfer> tokenDissociateTransferPgCopy;
 
     @Resource
-    private RecordParserProperties recordParserProperties;
+    private TokenRepository tokenRepository;
 
-    @BeforeEach
-    void beforeEach() {
-        contractPgCopy = new UpsertPgCopy<>(Contract.class, meterRegistry, recordParserProperties,
-                contractUpsertQueryGenerator);
-        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
-                entityUpsertQueryGenerator);
-        nftPgCopy = new UpsertPgCopy<>(Nft.class, meterRegistry, recordParserProperties,
-                nftUpsertQueryGenerator);
-        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
-                scheduleUpsertQueryGenerator);
-        tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
-                tokenAccountUpsertQueryGenerator);
-        tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
-                tokenUpsertQueryGenerator);
-        tokenDissociateTransferPgCopy = new UpsertPgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties,
-                new TokenDissociateTransferUpsertQueryGenerator());
-    }
+    @Resource
+    private TokenAccountRepository tokenAccountRepository;
+
+    @Resource(name = TOKEN_DISSOCIATE_BATCH_PERSISTER)
+    private BatchPersister tokenDissociateTransferBatchUpserter;
+
+    @Resource
+    private TokenTransferRepository tokenTransferRepository;
+
+    @Resource
+    private TransactionOperations transactionOperations;
 
     @Test
-    void contract() throws Exception {
+    void contract() {
         Contract contract1 = domainBuilder.contract().get();
         Contract contract2 = domainBuilder.contract().get();
         Contract contract3 = domainBuilder.contract().get();
         var contracts = List.of(contract1, contract2, contract3);
 
-        copyWithTransactionSupport(contractPgCopy, contracts);
+        persist(batchPersister, contracts);
         assertThat(contractRepository.findAll()).containsExactlyInAnyOrderElementsOf(contracts);
 
         String contract2Memo = contract2.getMemo();
@@ -167,7 +127,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         contract3.setCreatedTimestamp(null);
         contract3.setMemo("");
 
-        copyWithTransactionSupport(contractPgCopy, contracts);
+        persist(batchPersister, contracts);
 
         assertThat(contractRepository.findAll())
                 .hasSize(3)
@@ -176,7 +136,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void entityInsertOnly() throws SQLException {
+    void entityInsertOnly() {
         var entities = new ArrayList<Entity>();
         long consensusTimestamp = 1;
         entities.add(getEntity(1, consensusTimestamp, consensusTimestamp, "memo-1"));
@@ -184,13 +144,13 @@ class UpsertPgCopyTest extends IntegrationTest {
         entities.add(getEntity(3, consensusTimestamp, consensusTimestamp, "memo-3"));
         entities.add(getEntity(4, consensusTimestamp, consensusTimestamp, ""));
 
-        copyWithTransactionSupport(entityPgCopy, entities);
+        persist(batchPersister, entities);
         entities.get(1).setMemo("");
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrderElementsOf(entities);
     }
 
     @Test
-    void entityInsertAndUpdate() throws SQLException {
+    void entityInsertAndUpdate() {
         var entities = new ArrayList<Entity>();
         long consensusTimestamp = 1;
         entities.add(getEntity(1, consensusTimestamp, consensusTimestamp, "memo-1"));
@@ -198,7 +158,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         entities.add(getEntity(3, consensusTimestamp, consensusTimestamp, "memo-3"));
         entities.add(getEntity(4, consensusTimestamp, consensusTimestamp, "memo-4"));
 
-        copyWithTransactionSupport(entityPgCopy, entities);
+        persist(batchPersister, entities);
 
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrderElementsOf(entities);
 
@@ -215,7 +175,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         updatedEntities.add(getEntity(5, null, updateTimestamp, "memo-5"));
         updatedEntities.add(getEntity(6, null, updateTimestamp, "memo-6"));
 
-        copyWithTransactionSupport(entityPgCopy, updatedEntities); // copy inserts and updates
+        persist(batchPersister, updatedEntities); // copy inserts and updates
 
         assertThat(entityRepository.findAll())
                 .hasSize(6)
@@ -224,7 +184,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void entityInsertAndUpdateBatched() throws SQLException {
+    void entityInsertAndUpdateBatched() {
         var entities = new ArrayList<Entity>();
         long consensusTimestamp = 1;
         entities.add(getEntity(1, consensusTimestamp, consensusTimestamp, "memo-1"));
@@ -244,7 +204,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         updateEntities.add(getEntity(5, null, updateTimestamp, "memo-5"));
         updateEntities.add(getEntity(6, null, updateTimestamp, "memo-6"));
 
-        copyWithTransactionSupport(entityPgCopy, entities, updateEntities); // copy inserts and updates
+        persist(batchPersister, entities, updateEntities); // copy inserts and updates
 
         assertThat(entityRepository
                 .findAll())
@@ -255,19 +215,19 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenInsertOnly() throws SQLException {
+    void tokenInsertOnly() {
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
         tokens.add(getToken("0.0.3000", "0.0.1001", 2L));
         tokens.add(getToken("0.0.4000", "0.0.1001", 3L));
         tokens.add(getToken("0.0.5000", "0.0.1001", 4L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
     }
 
     @Test
-    void tokenInsertAndUpdate() throws SQLException {
+    void tokenInsertAndUpdate() {
         // insert
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -275,7 +235,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokens.add(getToken("0.0.4000", "0.0.1003", 3L));
         tokens.add(getToken("0.0.5000", "0.0.1004", 4L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         // updates
@@ -285,7 +245,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokens.add(getToken("0.0.6000", "0.0.2005", 5L));
         tokens.add(getToken("0.0.7000", "0.0.2006", 6L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
 
         assertThat(tokenRepository
                 .findAll())
@@ -297,7 +257,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenUpdateNegativeTotalSupply() throws SQLException {
+    void tokenUpdateNegativeTotalSupply() {
         // given
         Token token = getToken("0.0.2000", "0.0.1001", 3L);
         tokenRepository.save(token);
@@ -307,7 +267,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         update.setModifiedTimestamp(8L);
         update.setTokenId(token.getTokenId());
         update.setTotalSupply(-50L);
-        copyWithTransactionSupport(tokenPgCopy, List.of(update));
+        persist(batchPersister, List.of(update));
 
         // then
         token.setTotalSupply(token.getTotalSupply() - 50L);
@@ -316,14 +276,14 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertOnly() throws SQLException {
+    void tokenAccountInsertOnly() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
         tokens.add(getToken("0.0.2001", "0.0.1001", 2L));
         tokens.add(getToken("0.0.3000", "0.0.1001", 3L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
@@ -332,7 +292,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, true, 3L));
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, true, 4L));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository
@@ -348,14 +308,14 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertFreezeStatus() throws SQLException {
+    void tokenAccountInsertFreezeStatus() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null, null));
         tokens.add(getToken("0.0.3000", "0.0.1001", 2L, true, KEY, null, null));
         tokens.add(getToken("0.0.4000", "0.0.1001", 3L, false, KEY, null, null));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         // associate
@@ -364,7 +324,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, 6L));
         tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", 7L, true, 7L));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
@@ -382,7 +342,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", null, null, 11L,
                 TokenFreezeStatusEnum.FROZEN, null));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
                 .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getFreezeStatus)
@@ -396,20 +356,20 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertKycStatus() throws SQLException {
+    void tokenAccountInsertKycStatus() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L, false, null, null, null));
         tokens.add(getToken("0.0.3000", "0.0.1001", 2L, false, null, KEY, null));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
         tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, 5L));
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, 6L));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
@@ -424,7 +384,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null, 11L,
                 null, TokenKycStatusEnum.GRANTED));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
                 .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getKycStatus)
@@ -436,19 +396,19 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenAccountInsertWithMissingToken() throws SQLException {
+    void tokenAccountInsertWithMissingToken() {
         var tokenAccounts = new ArrayList<TokenAccount>();
         tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, false, 1L));
         tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, false, 2L));
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, false, 3L));
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, false, 4L));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
         assertThat(tokenAccountRepository.findAll()).isEmpty();
     }
 
     @Test
-    void tokenAccountInsertAndUpdate() throws SQLException {
+    void tokenAccountInsertAndUpdate() {
         // inserts token first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.1001", 1L));
@@ -456,7 +416,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokens.add(getToken("0.0.3000", "0.0.1001", 3L));
         tokens.add(getToken("0.0.4000", "0.0.1001", 4L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
@@ -465,7 +425,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 7L, true, 8L));
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 8L, true, 9L));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
 
         // update
         tokenAccounts.clear();
@@ -474,7 +434,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7001", 10L, true, 12L));
         tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7002", 11L, true, 13L));
 
-        copyWithTransactionSupport(tokenAccountPgCopy, tokenAccounts);
+        persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
                 .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getId().getModifiedTimestamp())
@@ -491,26 +451,26 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void scheduleInsertOnly() throws SQLException {
+    void scheduleInsertOnly() {
         var schedules = new ArrayList<Schedule>();
         schedules.add(getSchedule(1L, "0.0.1001", null));
         schedules.add(getSchedule(2L, "0.0.1002", null));
         schedules.add(getSchedule(3L, "0.0.1003", null));
         schedules.add(getSchedule(4L, "0.0.1004", null));
 
-        copyWithTransactionSupport(schedulePgCopy, schedules);
+        persist(batchPersister, schedules);
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrderElementsOf(schedules);
     }
 
     @Test
-    void scheduleInsertAndUpdate() throws SQLException {
+    void scheduleInsertAndUpdate() {
         var schedules = new ArrayList<Schedule>();
         schedules.add(getSchedule(1L, "0.0.1001", null));
         schedules.add(getSchedule(2L, "0.0.1002", null));
         schedules.add(getSchedule(3L, "0.0.1003", null));
         schedules.add(getSchedule(4L, "0.0.1004", null));
 
-        copyWithTransactionSupport(schedulePgCopy, schedules);
+        persist(batchPersister, schedules);
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrderElementsOf(schedules);
 
         // update
@@ -521,7 +481,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         schedules.add(getSchedule(7L, "0.0.1005", null));
         schedules.add(getSchedule(8L, "0.0.1006", null));
 
-        copyWithTransactionSupport(schedulePgCopy, schedules);
+        persist(batchPersister, schedules);
         assertThat(scheduleRepository
                 .findAll())
                 .isNotEmpty()
@@ -531,7 +491,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertMissingToken() throws SQLException {
+    void nftInsertMissingToken() {
         // mint
         var nfts = new ArrayList<Nft>();
         nfts.add(getNft("0.0.2000", 1, null, 1L, 1L, "nft1", false));
@@ -539,12 +499,12 @@ class UpsertPgCopyTest extends IntegrationTest {
         nfts.add(getNft("0.0.4000", 3, null, 3L, 3L, "nft3", false));
         nfts.add(getNft("0.0.5000", 4, null, 4L, 4L, "nft4", false));
 
-        copyWithTransactionSupport(nftPgCopy, nfts);
+        persist(batchPersister, nfts);
         assertThat(nftRepository.findAll()).isEmpty();
     }
 
     @Test
-    void nftMint() throws SQLException {
+    void nftMint() {
         // inserts tokens first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -552,7 +512,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokens.add(getToken("0.0.4000", "0.0.98", 3L));
         tokens.add(getToken("0.0.5000", "0.0.98", 4L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         // insert due to mint
@@ -562,7 +522,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         nfts.add(getNft("0.0.4000", 3, "0.0.1003", 12L, 12L, "nft3", false));
         nfts.add(getNft("0.0.5000", 4, "0.0.1004", 13L, 13L, "nft4", false));
 
-        copyWithTransactionSupport(nftPgCopy, nfts);
+        persist(batchPersister, nfts);
 
         assertThat(nftRepository
                 .findAll())
@@ -574,7 +534,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertAndUpdate() throws SQLException {
+    void nftInsertAndUpdate() {
         // inserts tokens first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -584,7 +544,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokens.add(getToken("0.0.6000", "0.0.98", 5L));
         tokens.add(getToken("0.0.7000", "0.0.98", 6L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         // insert due to mint
@@ -594,7 +554,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         nfts.add(getNft("0.0.4000", 3, "0.0.1003", 12L, 12L, "nft3", false));
         nfts.add(getNft("0.0.5000", 4, "0.0.1004", 13L, 13L, "nft4", false));
 
-        copyWithTransactionSupport(nftPgCopy, nfts);
+        persist(batchPersister, nfts);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(nfts);
 
         // updates with transfer
@@ -604,7 +564,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         nfts.add(getNft("0.0.6000", 5, "0.0.1015", 17L, 17L, "nft5", false));
         nfts.add(getNft("0.0.7000", 6, "0.0.1016", 18L, 18L, "nft6", false));
 
-        copyWithTransactionSupport(nftPgCopy, nfts);
+        persist(batchPersister, nfts);
 
         assertThat(nftRepository
                 .findAll())
@@ -616,7 +576,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertTransferBurnWipe() throws SQLException {
+    void nftInsertTransferBurnWipe() {
         // inserts tokens first
         var tokens = new ArrayList<Token>();
         tokens.add(getToken("0.0.2000", "0.0.98", 1L));
@@ -624,7 +584,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         tokens.add(getToken("0.0.4000", "0.0.98", 3L));
         tokens.add(getToken("0.0.5000", "0.0.98", 4L));
 
-        copyWithTransactionSupport(tokenPgCopy, tokens);
+        persist(batchPersister, tokens);
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         // insert due to mint
@@ -634,7 +594,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         nfts.add(getNft("0.0.4000", 3, "0.0.1003", 12L, 12L, "nft3", false));
         nfts.add(getNft("0.0.5000", 4, "0.0.1004", 13L, 13L, "nft4", false));
 
-        copyWithTransactionSupport(nftPgCopy, nfts);
+        persist(batchPersister, nfts);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(nfts);
 
         // updates with mint transfers
@@ -644,7 +604,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         nfts.add(getNft("0.0.4000", 3, "0.0.1007", null, 17L, null, false));
         nfts.add(getNft("0.0.5000", 4, "0.0.1008", null, 18L, null, false));
 
-        copyWithTransactionSupport(nftPgCopy, nfts);
+        persist(batchPersister, nfts);
         assertThat(nftRepository
                 .findAll())
                 .isNotEmpty()
@@ -657,7 +617,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         nfts.clear();
         nfts.add(getNft("0.0.3000", 2, "0.0.0", null, 21L, null, true));
         nfts.add(getNft("0.0.5000", 4, "0.0.0", null, 23L, null, true));
-        copyWithTransactionSupport(nftPgCopy, nfts);
+        persist(batchPersister, nfts);
 
         assertThat(nftRepository
                 .findAll())
@@ -668,7 +628,7 @@ class UpsertPgCopyTest extends IntegrationTest {
     }
 
     @Test
-    void tokenDissociateTransfer() throws SQLException {
+    void tokenDissociateTransfer() {
         // given
         EntityId accountId = EntityId.of("0.0.215", ACCOUNT);
         EntityId accountId2 = EntityId.of("0.0.216", ACCOUNT);
@@ -702,7 +662,7 @@ class UpsertPgCopyTest extends IntegrationTest {
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
 
         // when
-        copyWithTransactionSupport(tokenDissociateTransferPgCopy, tokenTransfers);
+        persist(tokenDissociateTransferBatchUpserter, tokenTransfers);
 
         // then
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(
@@ -724,14 +684,12 @@ class UpsertPgCopyTest extends IntegrationTest {
                 .containsOnly(fungibleTokenTransfer);
     }
 
-    private void copyWithTransactionSupport(UpsertPgCopy upsertPgCopy, Collection<?>... items) throws SQLException {
-        try (Connection connection = DataSourceUtils.getConnection(dataSource)) {
-            connection.setAutoCommit(false); // for tests have to set auto commit to false or temp table gets lost
+    private void persist(BatchPersister batchPersister, Collection<?>... items) {
+        transactionOperations.executeWithoutResult(t -> {
             for (Collection batch : items) {
-                upsertPgCopy.copy(batch, connection);
+                batchPersister.persist(batch);
             }
-            connection.commit();
-        }
+        });
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {

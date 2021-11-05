@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,21 +20,25 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import java.time.Duration;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.hedera.mirror.importer.domain.StreamType;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public interface ParserProperties {
+/**
+ * Marks the domain class as using upsert logic when persisting.
+ */
+@Documented
+@Target(TYPE)
+@Retention(RUNTIME)
+public @interface Upsertable {
 
-    Duration getFrequency();
-
-    Duration getProcessingTimeout();
-
-    StreamType getStreamType();
-
-    int getQueueCapacity();
-
-    boolean isEnabled();
-
-    void setEnabled(boolean enabled);
+    /**
+     * Controls whether a history entry should be added whenever this domain changes
+     *
+     * @return whether history is enabled
+     */
+    boolean history() default false;
 }

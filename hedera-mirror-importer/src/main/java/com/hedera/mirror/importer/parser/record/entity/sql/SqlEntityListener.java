@@ -20,20 +20,19 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
+
 import com.google.common.base.Stopwatch;
-import io.micrometer.core.instrument.MeterRegistry;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Named;
-import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
-import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.Contract;
@@ -60,22 +59,13 @@ import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.PgCopy;
-import com.hedera.mirror.importer.parser.UpsertPgCopy;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.upsert.ContractUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.EntityUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.NftUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.ScheduleUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.TokenAccountUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpsertQueryGenerator;
-import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 
 @Log4j2
 @Named
@@ -83,33 +73,11 @@ import com.hedera.mirror.importer.repository.upsert.TokenUpsertQueryGenerator;
 @ConditionOnEntityRecordParser
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
-    private final DataSource dataSource;
+    private final BatchPersister batchPersister;
+    private final ApplicationEventPublisher eventPublisher;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
-    private final ApplicationEventPublisher eventPublisher;
-
-    // init schemas, writers, etc once per process
-    private final PgCopy<AssessedCustomFee> assessedCustomFeePgCopy;
-    private final PgCopy<ContractLog> contractLogPgCopy;
-    private final PgCopy<ContractResult> contractResultPgCopy;
-    private final PgCopy<CryptoTransfer> cryptoTransferPgCopy;
-    private final PgCopy<CustomFee> customFeePgCopy;
-    private final PgCopy<FileData> fileDataPgCopy;
-    private final PgCopy<LiveHash> liveHashPgCopy;
-    private final PgCopy<NftTransfer> nftTransferPgCopy;
-    private final PgCopy<NonFeeTransfer> nonFeeTransferPgCopy;
-    private final PgCopy<TokenTransfer> tokenTransferPgCopy;
-    private final PgCopy<TopicMessage> topicMessagePgCopy;
-    private final PgCopy<Transaction> transactionPgCopy;
-    private final PgCopy<TransactionSignature> transactionSignaturePgCopy;
-
-    private final UpsertPgCopy<Contract> contractPgCopy;
-    private final UpsertPgCopy<Entity> entityPgCopy;
-    private final UpsertPgCopy<Nft> nftPgCopy;
-    private final UpsertPgCopy<Schedule> schedulePgCopy;
-    private final UpsertPgCopy<TokenAccount> tokenAccountPgCopy;
-    private final UpsertPgCopy<TokenTransfer> tokenDissociateTransferPgCopy;
-    private final UpsertPgCopy<Token> tokenPgCopy;
+    private final BatchPersister tokenDissociateTransferBatchPersister;
 
     // lists of insert only domains
     private final Collection<AssessedCustomFee> assessedCustomFees;
@@ -137,55 +105,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.
-    // during upsert pgcopy, the merged state at time T is again merged with the initial state before the batch to
+    // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
 
-    public SqlEntityListener(RecordParserProperties recordParserProperties, SqlProperties sqlProperties,
-                             DataSource dataSource,
-                             RecordFileRepository recordFileRepository, MeterRegistry meterRegistry,
+    public SqlEntityListener(BatchPersister batchPersister,
                              ApplicationEventPublisher eventPublisher,
-                             ContractUpsertQueryGenerator contractUpsertQueryGenerator,
-                             EntityUpsertQueryGenerator entityUpsertQueryGenerator,
-                             ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator,
-                             TokenUpsertQueryGenerator tokenUpsertQueryGenerator,
-                             TokenAccountUpsertQueryGenerator tokenAccountUpsertQueryGenerator,
-                             NftUpsertQueryGenerator nftUpsertQueryGenerator) {
-        this.dataSource = dataSource;
+                             RecordFileRepository recordFileRepository,
+                             SqlProperties sqlProperties,
+                             @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
+        this.batchPersister = batchPersister;
+        this.eventPublisher = eventPublisher;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
-        this.eventPublisher = eventPublisher;
-
-        // insert only tables
-        assessedCustomFeePgCopy = new PgCopy<>(AssessedCustomFee.class, meterRegistry, recordParserProperties);
-        contractLogPgCopy = new PgCopy<>(ContractLog.class, meterRegistry, recordParserProperties);
-        contractResultPgCopy = new PgCopy<>(ContractResult.class, meterRegistry, recordParserProperties);
-        cryptoTransferPgCopy = new PgCopy<>(CryptoTransfer.class, meterRegistry, recordParserProperties);
-        customFeePgCopy = new PgCopy<>(CustomFee.class, meterRegistry, recordParserProperties);
-        fileDataPgCopy = new PgCopy<>(FileData.class, meterRegistry, recordParserProperties);
-        liveHashPgCopy = new PgCopy<>(LiveHash.class, meterRegistry, recordParserProperties);
-        nftTransferPgCopy = new PgCopy<>(NftTransfer.class, meterRegistry, recordParserProperties);
-        nonFeeTransferPgCopy = new PgCopy<>(NonFeeTransfer.class, meterRegistry, recordParserProperties);
-        tokenTransferPgCopy = new PgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties);
-        topicMessagePgCopy = new PgCopy<>(TopicMessage.class, meterRegistry, recordParserProperties);
-        transactionPgCopy = new PgCopy<>(Transaction.class, meterRegistry, recordParserProperties);
-        transactionSignaturePgCopy = new PgCopy<>(TransactionSignature.class, meterRegistry, recordParserProperties);
-
-        // updatable tables
-        contractPgCopy = new UpsertPgCopy<>(Contract.class, meterRegistry, recordParserProperties,
-                contractUpsertQueryGenerator);
-        entityPgCopy = new UpsertPgCopy<>(Entity.class, meterRegistry, recordParserProperties,
-                entityUpsertQueryGenerator);
-        nftPgCopy = new UpsertPgCopy<>(Nft.class, meterRegistry, recordParserProperties,
-                nftUpsertQueryGenerator);
-        schedulePgCopy = new UpsertPgCopy<>(Schedule.class, meterRegistry, recordParserProperties,
-                scheduleUpsertQueryGenerator);
-        tokenAccountPgCopy = new UpsertPgCopy<>(TokenAccount.class, meterRegistry, recordParserProperties,
-                tokenAccountUpsertQueryGenerator);
-        tokenDissociateTransferPgCopy = new UpsertPgCopy<>(TokenTransfer.class, meterRegistry, recordParserProperties,
-                new TokenDissociateTransferUpsertQueryGenerator());
-        tokenPgCopy = new UpsertPgCopy<>(Token.class, meterRegistry, recordParserProperties,
-                tokenUpsertQueryGenerator);
+        this.tokenDissociateTransferBatchPersister = tokenDissociateTransferBatchPersister;
 
         assessedCustomFees = new ArrayList<>();
         contractLogs = new ArrayList<>();
@@ -263,43 +196,40 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void executeBatches() {
-        Connection connection = null;
-
         try {
             // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
 
-            connection = DataSourceUtils.getConnection(dataSource);
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // insert only operations
-            assessedCustomFeePgCopy.copy(assessedCustomFees, connection);
-            contractLogPgCopy.copy(contractLogs, connection);
-            contractResultPgCopy.copy(contractResults, connection);
-            cryptoTransferPgCopy.copy(cryptoTransfers, connection);
-            customFeePgCopy.copy(customFees, connection);
-            fileDataPgCopy.copy(fileData, connection);
-            liveHashPgCopy.copy(liveHashes, connection);
-            topicMessagePgCopy.copy(topicMessages, connection);
-            transactionPgCopy.copy(transactions, connection);
-            transactionSignaturePgCopy.copy(transactionSignatures, connection);
+            batchPersister.persist(assessedCustomFees);
+            batchPersister.persist(contractLogs);
+            batchPersister.persist(contractResults);
+            batchPersister.persist(cryptoTransfers);
+            batchPersister.persist(customFees);
+            batchPersister.persist(fileData);
+            batchPersister.persist(liveHashes);
+            batchPersister.persist(topicMessages);
+            batchPersister.persist(transactions);
+            batchPersister.persist(transactionSignatures);
 
             // insert operations with conflict management
-            contractPgCopy.copy(contracts.values(), connection);
-            entityPgCopy.copy(entities.values(), connection);
-            tokenPgCopy.copy(tokens.values(), connection);
+            batchPersister.persist(contracts.values());
+            batchPersister.persist(entities.values());
+            batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            tokenAccountPgCopy.copy(tokenAccounts, connection);
-            nftPgCopy.copy(nfts.values(), connection); // persist nft after token entity
-            schedulePgCopy.copy(schedules.values(), connection);
+            batchPersister.persist(tokenAccounts);
+            batchPersister.persist(nfts.values()); // persist nft after token entity
+            batchPersister.persist(schedules.values());
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            nonFeeTransferPgCopy.copy(nonFeeTransfers, connection);
-            nftTransferPgCopy.copy(nftTransfers, connection);
-            tokenTransferPgCopy.copy(tokenTransfers, connection);
+            batchPersister.persist(nonFeeTransfers);
+            batchPersister.persist(nftTransfers);
+            batchPersister.persist(tokenTransfers);
 
             // handle the transfers from token dissociate transactions after nft is processed
-            tokenDissociateTransferPgCopy.copy(tokenDissociateTransfers, connection);
+            tokenDissociateTransferBatchPersister.persist(tokenDissociateTransfers);
 
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
@@ -308,7 +238,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserException(e);
         } finally {
             cleanup();
-            DataSourceUtils.releaseConnection(connection, dataSource);
         }
     }
 

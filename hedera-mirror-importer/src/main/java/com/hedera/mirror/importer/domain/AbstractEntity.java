@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.util.Utility;
         name = "pgsql_enum",
         typeClass = PostgreSQLEnumType.class
 )
+@Upsertable(history = true)
 public abstract class AbstractEntity {
 
     private Long autoRenewPeriod;

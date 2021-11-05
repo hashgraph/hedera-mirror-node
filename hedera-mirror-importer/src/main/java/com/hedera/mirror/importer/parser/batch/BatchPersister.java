@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -20,21 +20,15 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import java.time.Duration;
+import java.util.Collection;
 
-import com.hedera.mirror.importer.domain.StreamType;
+/**
+ * Performs bulk insertion of domain objects to the database. For some domain types it might be insert-only while others
+ * may use upsert logic.
+ *
+ * @param <T> the domain type to batch persist
+ */
+public interface BatchPersister {
 
-public interface ParserProperties {
-
-    Duration getFrequency();
-
-    Duration getProcessingTimeout();
-
-    StreamType getStreamType();
-
-    int getQueueCapacity();
-
-    boolean isEnabled();
-
-    void setEnabled(boolean enabled);
+    void persist(Collection<? extends Object> items);
 }
