@@ -51,7 +51,7 @@ public class CompositeBatchPersister implements BatchPersister {
 
         for (Class<?> domainClass : domainClasses) {
             Upsertable upsertable = AnnotationUtils.findAnnotation(domainClass, Upsertable.class);
-            BatchPersister batchPersister = null;
+            BatchPersister batchPersister;
 
             if (upsertable != null) {
                 UpsertQueryGenerator generator = getUpsertQueryGenerator(upsertQueryGenerators, domainClass);
@@ -71,10 +71,11 @@ public class CompositeBatchPersister implements BatchPersister {
         }
 
         Object item = items.iterator().next();
-        BatchPersister batchPersister = batchInserters.get(item.getClass());
+        Class<?> itemClass = item != null ? item.getClass() :null;
+        BatchPersister batchPersister = batchInserters.get(itemClass);
 
         if (batchPersister == null) {
-            throw new UnsupportedOperationException("Object does not support batch insertion: " + item.getClass());
+            throw new UnsupportedOperationException("Object does not support batch insertion: " + itemClass);
         }
 
         batchPersister.persist(items);

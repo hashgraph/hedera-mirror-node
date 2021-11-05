@@ -23,8 +23,15 @@ package com.hedera.mirror.importer.parser.batch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.ContractResult;
+
+import com.hedera.mirror.importer.repository.ContractResultRepository;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,25 +54,33 @@ class CompositeBatchPersisterTest extends IntegrationTest {
     private ContractRepository contractRepository;
 
     @Resource
-    private EntityRepository entityRepository;
+    private ContractResultRepository contractResultRepository;
 
     @Test
     @Transactional
     void persist() {
         Contract contract = domainBuilder.contract().get();
-        Entity entity = domainBuilder.entity().get();
+        ContractResult contractResult = domainBuilder.contractResult().get();
 
         compositeBatchInserter.persist(List.of(contract));
-        compositeBatchInserter.persist(List.of(entity));
+        compositeBatchInserter.persist(List.of(contractResult));
 
         assertThat(contractRepository.findAll()).containsExactly(contract);
-        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(contractResultRepository.findAll()).containsExactly(contractResult);
     }
 
     @Test
     void persistEmpty() {
         compositeBatchInserter.persist(null);
         compositeBatchInserter.persist(List.of());
+    }
+
+    @Test
+    void persistNullItem() {
+        List<Object> items = new ArrayList<>();
+        items.add(null);
+        assertThatThrownBy(() -> compositeBatchInserter.persist(items))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
