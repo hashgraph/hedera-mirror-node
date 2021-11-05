@@ -79,20 +79,20 @@ public class ContractFeature {
     @Autowired
     private MirrorNodeClient mirrorClient;
 
-    @Given("I successfully create a contract from contract bytes")
-    public void createNewContract() throws IOException {
+    @Given("I successfully create a contract from contract bytes with {int} balance")
+    public void createNewContract(int initialBalance) throws IOException {
         CompiledSolidityArtifact compiledParentArtifact = mapper.readValue(
                 ResourceUtils.getFile(parentContract.toUri()),
                 CompiledSolidityArtifact.class);
-        createContract(compiledParentArtifact.getBytecode());
+        createContract(compiledParentArtifact.getBytecode(), initialBalance);
     }
 
     @Given("I successfully call the contract")
     public void callContract() {
         // log and results to be verified
         executeCreateChildTransaction();
-        executeDonateTransaction(10000000);
-        executeTransferToChild(1234);
+        executeDonateTransaction(1000);
+        executeTransferToChild(500);
     }
 
     @Given("I successfully update the contract")
@@ -171,11 +171,12 @@ public class ContractFeature {
         }
     }
 
-    private void createContract(String byteCode) {
+    private void createContract(String byteCode, int initialBalance) {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
                 750000,
+                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
                 null);
 
         verifyCreateContractNetworkResponse();
@@ -208,6 +209,10 @@ public class ContractFeature {
         assertThat(mirrorContract.getContractId()).isEqualTo(contractId.toString());
         assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
         assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
+        String address = mirrorContract.getSolidityAddress();
+        assertThat(address).isNotBlank();
+        assertThat(address).isNotEqualTo("0x");
+        assertThat(address).isNotEqualTo("0x0000000000000000000000000000000000000000");
 
         return mirrorContract;
     }
@@ -215,7 +220,7 @@ public class ContractFeature {
     private void executeCreateChildTransaction() {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                70000,
+                57000,
                 "createChild",
                 null,
                 null);
@@ -227,7 +232,7 @@ public class ContractFeature {
     private void executeDonateTransaction(int sponsorAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                5000,
+                2500,
                 "donate",
                 null,
                 Hbar.fromTinybars(sponsorAmount));
@@ -239,7 +244,7 @@ public class ContractFeature {
     private void executeTransferToChild(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                20000,
+                15000,
                 "transferToChild",
                 new ContractFunctionParameters()
                         .addUint256(BigInteger.valueOf(transferAmount)),
