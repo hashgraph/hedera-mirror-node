@@ -81,8 +81,8 @@ public class NotifyingTopicListener extends SharedTopicListener {
                 .metrics()
                 .doOnError(t -> log.error("Error listening for messages", t))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, interval).maxBackoff(interval.multipliedBy(4L)))
-                .share()
-                .doOnTerminate(this::unListen);
+                .doOnTerminate(this::unListen)
+                .share();
     }
 
     @Override
@@ -90,8 +90,8 @@ public class NotifyingTopicListener extends SharedTopicListener {
         return topicMessages;
     }
 
-    private Flux<Object> listen() {
-        Sinks.Many<Object> sink = Sinks.many().multicast().onBackpressureBuffer();
+    private Flux<String> listen() {
+        Sinks.Many<String> sink = Sinks.many().multicast().onBackpressureBuffer();
         channel.handler(sink::tryEmitNext);
         log.info("Listening for messages");
         return sink.asFlux();
@@ -102,9 +102,9 @@ public class NotifyingTopicListener extends SharedTopicListener {
         log.info("Stopped listening for messages");
     }
 
-    private TopicMessage toTopicMessage(Object payload) {
+    private TopicMessage toTopicMessage(String payload) {
         try {
-            return objectMapper.readValue((String) payload, TopicMessage.class);
+            return objectMapper.readValue(payload, TopicMessage.class);
         } catch (Exception ex) {
             // Discard invalid messages. No need to propagate error and cause a reconnect.
             log.error("Error parsing message {}", payload, ex);
