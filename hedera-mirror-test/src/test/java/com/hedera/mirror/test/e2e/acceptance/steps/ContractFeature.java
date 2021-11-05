@@ -87,9 +87,7 @@ public class ContractFeature extends StepDefinitions {
     @Given("I successfully call the contract")
     public void callContract() {
         // log and results to be verified
-        executeCreateChildTransaction();
-        executeDonateTransaction(1000);
-        executeTransferToChild(500);
+        executeCreateChildTransaction(1000);
     }
 
     @Given("I successfully update the contract")
@@ -153,35 +151,6 @@ public class ContractFeature extends StepDefinitions {
         networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-
-//        byte[] contractBytes = contractContents.getBytes(StandardCharsets.UTF_8);
-//        int byteIndex = 0;
-//        boolean fileCreateOrUpdate = true;
-//        while (byteIndex <= contractBytes.length) {
-//            int stopIndex = byteIndex + MAX_FILE_SIZE;
-//            if (stopIndex > contractBytes.length) {
-//                stopIndex = contractBytes.length;
-//            }
-//
-//            byte[] fileContents = Arrays.copyOfRange(contractBytes, byteIndex, stopIndex);
-//            if (fileCreateOrUpdate) {
-//                networkTransactionResponse = fileClient.createFile(fileContents);
-//            } else {
-//                networkTransactionResponse = fileClient.appendFile(fileId, fileContents);
-//            }
-//
-//            assertNotNull(networkTransactionResponse.getTransactionId());
-//            assertNotNull(networkTransactionResponse.getReceipt());
-//
-//            if (fileCreateOrUpdate) {
-//                fileId = networkTransactionResponse.getReceipt().fileId;
-//                assertNotNull(fileId);
-//                log.info("Created file {} to hold contract init code", fileId);
-//            }
-//
-//            fileCreateOrUpdate = false;
-//            byteIndex += MAX_FILE_SIZE;
-//        }
     }
 
     private void createContract(String byteCode, int initialBalance) {
@@ -216,35 +185,11 @@ public class ContractFeature extends StepDefinitions {
         return mirrorContract;
     }
 
-    private void executeCreateChildTransaction() {
+    private void executeCreateChildTransaction(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                57000,
+                65000,
                 "createChild",
-                null,
-                null);
-
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private void executeDonateTransaction(int sponsorAmount) {
-        networkTransactionResponse = contractClient.executeContract(
-                contractId,
-                2500,
-                "donate",
-                null,
-                Hbar.fromTinybars(sponsorAmount));
-
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private void executeTransferToChild(int transferAmount) {
-        networkTransactionResponse = contractClient.executeContract(
-                contractId,
-                15000,
-                "transferToChild",
                 new ContractFunctionParameters()
                         .addUint256(BigInteger.valueOf(transferAmount)),
                 null);
