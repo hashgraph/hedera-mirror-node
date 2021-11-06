@@ -20,13 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityTypeEnum;
 
 class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
+
+    private static final long OBTAINER_ID = 99L;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -37,11 +44,44 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setContractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
-                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()));
+                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build())
+                        .setTransferAccountID(AccountID.newBuilder().setAccountNum(OBTAINER_ID).build()));
     }
 
     @Override
     protected EntityTypeEnum getExpectedEntityIdType() {
         return EntityTypeEnum.CONTRACT;
+    }
+
+    @Override
+    protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecs() {
+        List<UpdateEntityTestSpec> specs = new ArrayList<>();
+        Contract expected = (Contract) getExpectedEntityWithTimestamp();
+        expected.setDeleted(true);
+        expected.setObtainerId(EntityId.of(0, 0, OBTAINER_ID, EntityTypeEnum.ACCOUNT));
+
+        specs.add(
+                UpdateEntityTestSpec.builder()
+                        .description("Delete with account obtainer")
+                        .expected(expected)
+                        .recordItem(getRecordItem(getDefaultTransactionBody().build(),
+                                getDefaultTransactionRecord().build()))
+                        .build()
+        );
+
+        TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
+                .setContractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
+                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build())
+                        .setTransferContractID(ContractID.newBuilder().setContractNum(OBTAINER_ID).build()));
+
+        specs.add(
+                UpdateEntityTestSpec.builder()
+                        .description("Delete with contract obtainer")
+                        .expected(expected)
+                        .recordItem(getRecordItem(transactionBody.build(),
+                                getDefaultTransactionRecord().build()))
+                        .build()
+        );
+        return specs;
     }
 }
