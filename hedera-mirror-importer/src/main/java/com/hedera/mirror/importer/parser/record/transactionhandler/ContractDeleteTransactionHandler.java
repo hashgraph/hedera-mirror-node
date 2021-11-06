@@ -42,6 +42,16 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody().getContractDeleteInstance();
+        EntityId obtainerId = null;
+
+        if (transactionBody.hasTransferAccountID()) {
+            obtainerId = EntityId.of(transactionBody.getTransferAccountID());
+        } else if (transactionBody.hasTransferContractID()) {
+            obtainerId = EntityId.of(transactionBody.getTransferContractID());
+        }
+
+        contract.setObtainerId(obtainerId);
         entityListener.onContract(contract);
     }
 }
