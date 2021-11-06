@@ -103,6 +103,8 @@ jobs:
           [[ $code -eq 0 ]] && { wait $pid || code=$?; }
           cat /tmp/construction-validation.log
           exit $code
+        env:
+          ROSETTA_CLI_VERSION: v0.7.1
 
       - name: Install Postman newman CLI
         run: npm install -g newman
