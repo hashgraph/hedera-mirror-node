@@ -48,19 +48,14 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
 @Cucumber
-public class ContractFeature extends StepDefinitions {
-    private static final int MAX_FILE_SIZE = 5500; // ensure transaction bytes are under 6144 (6kb)
-
+public class ContractFeature extends AbstractFeature {
     private final ObjectMapper mapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
-    private NetworkTransactionResponse networkTransactionResponse;
     private ContractId contractId;
     private FileId fileId;
 
@@ -111,15 +106,8 @@ public class ContractFeature extends StepDefinitions {
     @Then("the mirror node REST API should return status {int} for the contract transaction")
     public void verifyMirrorAPIResponses(int status) {
         log.info("Verify contract transaction");
-        String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
-
-        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status);
+        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
         assertThat(mirrorTransaction.getEntityId()).isEqualTo(contractId.toString());
-
-        assertThat(mirrorTransaction.getValidStartTimestamp())
-                .isEqualTo(networkTransactionResponse.getValidStartString());
-        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
     }
 
     @Then("the mirror node REST API should verify the deployed contract entity")
@@ -184,7 +172,8 @@ public class ContractFeature extends StepDefinitions {
         assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
 
         if (isDeleted) {
-            // add obtainerId check when set is supported
+            assertThat(mirrorContract.getObtainerId())
+                    .isEqualTo(contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId());
         } else {
             assertThat(mirrorContract.getObtainerId()).isNull();
         }
