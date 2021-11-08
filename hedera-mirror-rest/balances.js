@@ -67,6 +67,8 @@ const formatBalancesResult = (req, result, limit, order) => {
   return ret;
 };
 
+const accountContractQuery = getAccountContractUnionQueryWithOrder();
+
 /**
  * Handler function for /balances API.
  * @param {Request} req HTTP request object
@@ -100,8 +102,7 @@ const getBalances = async (req, res) => {
         .join(' AND ')}`;
 
   // Only need to join entity if we're selecting on publickey.
-  const joinEntityClause =
-    pubKeyQuery !== '' ? `JOIN (${getAccountContractUnionQueryWithOrder()}) ac on ac.id = ab.account_id` : '';
+  const joinEntityClause = pubKeyQuery !== '' ? `JOIN (${accountContractQuery}) ac on ac.id = ab.account_id` : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
   const sqlQuery = `
