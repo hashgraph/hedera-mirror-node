@@ -26,13 +26,15 @@ const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 const {proto} = require('@hashgraph/proto/lib/proto');
 
 const hederaFunctionalityLength = 64;
+const cryptoCreateAccountProtoId = 11;
+const unknownProtoId = 9999999;
 
 describe('getName', () => {
   test('Return valid name', () => {
-    expect(TransactionType.getName(11)).toEqual('CRYPTOCREATEACCOUNT');
+    expect(TransactionType.getName(cryptoCreateAccountProtoId)).toEqual('CRYPTOCREATEACCOUNT');
   });
   test('Return UNKNOWN for future proto id', () => {
-    expect(TransactionType.getName(9999999)).toEqual('UNKNOWN');
+    expect(TransactionType.getName(unknownProtoId)).toEqual('UNKNOWN');
   });
   test('Return UNKNOWN for invalid proto id', () => {
     expect(TransactionType.getName('')).toEqual('UNKNOWN');
@@ -47,14 +49,14 @@ describe('getName', () => {
 
 describe('getProtoId', () => {
   test('Return valid proto id', () => {
-    expect(TransactionType.getProtoId('CRYPTOCREATEACCOUNT')).toEqual('11');
+    expect(TransactionType.getProtoId('CRYPTOCREATEACCOUNT')).toEqual(`${cryptoCreateAccountProtoId}`);
   });
   test('Return valid proto id for camel case', () => {
-    expect(TransactionType.getProtoId('cryptoCreateAccount')).toEqual('11');
+    expect(TransactionType.getProtoId('cryptoCreateAccount')).toEqual(`${cryptoCreateAccountProtoId}`);
   });
   test('Throw error for invalid name', () => {
     expect(() => {
-      TransactionType.getProtoId(22);
+      TransactionType.getProtoId(unknownProtoId);
     }).toThrowError(InvalidArgumentError);
   });
   test('Throw error for unknown name', () => {
@@ -82,7 +84,7 @@ describe('isValid', () => {
     expect(TransactionType.isValid('cryptoCreateAccount')).toBeTruthy();
   });
   test('Throw error for invalid name', () => {
-    expect(TransactionType.isValid(22)).toBeFalsy();
+    expect(TransactionType.isValid(unknownProtoId)).toBeFalsy();
   });
   test('Throw error for unknown name', () => {
     expect(TransactionType.isValid('')).toBeFalsy();

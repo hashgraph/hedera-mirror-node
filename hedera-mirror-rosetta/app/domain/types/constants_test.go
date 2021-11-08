@@ -27,6 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var hederaFunctionalityLength = 67
+
 func TestResponseCodeUpToDate(t *testing.T) {
 	// given
 	for code, name := range proto.ResponseCodeEnum_name {
@@ -37,5 +39,5 @@ func TestResponseCodeUpToDate(t *testing.T) {
 func TestTransactionTypesUpToDate(t *testing.T) {
 	//There isn't a dedicate enum for TransactionBody values, so just check that no new HederaFunctionality exists
 	//Last entry is 80: TokenUnpause
-	assert.Equal(t, len(proto.HederaFunctionality_name), 67)
+	assert.Equal(t, len(proto.HederaFunctionality_name), hederaFunctionalityLength)
 }
