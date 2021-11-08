@@ -98,6 +98,7 @@ describe('isValid', () => {
 });
 describe('transactionType constants are up to date', () => {
   //There isn't a dedicate enum for TransactionBody values, so just check that no new HederaFunctionality exists
+  //If this test fails, ensure that new Transactions Types are added and update this test with the new HederaFunctionality
   test('transactionType have new values been added', () => {
     //Last entry is TokenFeeScheduleUpdate: 77
     expect(Object.keys(proto.HederaFunctionality).length).toEqual(hederaFunctionalityLength);
