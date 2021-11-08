@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
@@ -34,7 +34,8 @@ class CryptoAddLiveHashTransactionHandler implements TransactionHandler {
         return EntityId.of(recordItem.getTransactionBody().getCryptoAddLiveHash().getLiveHash().getAccountId());
     }
 
-    public TransactionTypeEnum getType() {
-        return TransactionTypeEnum.CRYPTOADDLIVEHASH;
+    @Override
+    public TransactionType getType() {
+        return TransactionType.CRYPTOADDLIVEHASH;
     }
 }

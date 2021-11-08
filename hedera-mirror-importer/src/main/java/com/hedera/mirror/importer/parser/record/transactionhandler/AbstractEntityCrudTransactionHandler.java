@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
@@ -37,7 +37,7 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
     protected final EntityListener entityListener;
 
     @Getter
-    private final TransactionTypeEnum type;
+    private final TransactionType type;
 
     @Override
     public final void updateTransaction(Transaction transaction, RecordItem recordItem) {

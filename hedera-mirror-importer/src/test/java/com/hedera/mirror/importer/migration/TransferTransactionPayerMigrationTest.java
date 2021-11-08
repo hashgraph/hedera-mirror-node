@@ -58,7 +58,7 @@ import com.hedera.mirror.importer.domain.NftTransferId;
 import com.hedera.mirror.importer.domain.NonFeeTransfer;
 import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
@@ -169,33 +169,33 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 schedule));
 
         Transaction transfer1 = transaction(schedule
-                .getCreatedTimestamp() + 200L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
+                .getCreatedTimestamp() + 200L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
         Transaction transfer2 = transaction(schedule
-                .getCreatedTimestamp() + 300L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
+                .getCreatedTimestamp() + 300L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
         Transaction transfer3 = transaction(schedule
-                .getCreatedTimestamp() + 400L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
+                .getCreatedTimestamp() + 400L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
         Transaction transfer4 = transaction(schedule
-                .getCreatedTimestamp() + 500L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
+                .getCreatedTimestamp() + 500L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
         Transaction transfer5 = transaction(schedule
-                .getCreatedTimestamp() + 600L, 0, SUCCESS, TransactionTypeEnum.CRYPTOTRANSFER);
+                .getCreatedTimestamp() + 600L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
         transactionRepository.saveAll(List.of(
                 transaction(contract.getCreatedTimestamp(), contract
-                        .getId(), SUCCESS, TransactionTypeEnum.CONTRACTCREATEINSTANCE),
+                        .getId(), SUCCESS, TransactionType.CONTRACTCREATEINSTANCE),
                 transaction(contract.getCreatedTimestamp() + 1, contract
-                        .getId(), INSUFFICIENT_TX_FEE, TransactionTypeEnum.CONTRACTUPDATEINSTANCE),
-                transaction(file.getCreatedTimestamp(), file.getId(), SUCCESS, TransactionTypeEnum.FILECREATE),
-                transaction(file.getCreatedTimestamp() + 1, file.getId(), SUCCESS, TransactionTypeEnum.FILEDELETE),
+                        .getId(), INSUFFICIENT_TX_FEE, TransactionType.CONTRACTUPDATEINSTANCE),
+                transaction(file.getCreatedTimestamp(), file.getId(), SUCCESS, TransactionType.FILECREATE),
+                transaction(file.getCreatedTimestamp() + 1, file.getId(), SUCCESS, TransactionType.FILEDELETE),
                 transaction(topic.getCreatedTimestamp(), topic
-                        .getId(), SUCCESS, TransactionTypeEnum.CONSENSUSCREATETOPIC),
+                        .getId(), SUCCESS, TransactionType.CONSENSUSCREATETOPIC),
                 transaction(topic.getCreatedTimestamp() + 1, topic
-                        .getId(), SUCCESS, TransactionTypeEnum.CONSENSUSUPDATETOPIC),
+                        .getId(), SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
                 transaction(topic.getCreatedTimestamp() + 2, topic
-                        .getId(), SUCCESS, TransactionTypeEnum.CONSENSUSUPDATETOPIC),
+                        .getId(), SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
                 transaction(topic.getCreatedTimestamp() + 3, topic
-                        .getId(), SUCCESS, TransactionTypeEnum.CONSENSUSUPDATETOPIC),
-                transaction(token.getCreatedTimestamp(), token.getId(), SUCCESS, TransactionTypeEnum.TOKENCREATION),
+                        .getId(), SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
+                transaction(token.getCreatedTimestamp(), token.getId(), SUCCESS, TransactionType.TOKENCREATION),
                 transaction(schedule.getCreatedTimestamp(), schedule
-                        .getId(), SUCCESS, TransactionTypeEnum.SCHEDULECREATE),
+                        .getId(), SUCCESS, TransactionType.SCHEDULECREATE),
                 transfer1,
                 transfer2,
                 transfer3,
@@ -416,7 +416,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     }
 
     private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result,
-                                    TransactionTypeEnum type) {
+                                    TransactionType type) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));

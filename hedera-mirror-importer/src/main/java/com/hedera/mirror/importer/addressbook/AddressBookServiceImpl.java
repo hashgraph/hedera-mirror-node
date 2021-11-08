@@ -60,7 +60,7 @@ import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -288,7 +288,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         FileData firstPartialAddressBook = fileDataRepository.findLatestMatchingFile(
                 fileData.getConsensusTimestamp(),
                 fileData.getEntityId().getId(),
-                List.of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId())
+                List.of(TransactionType.FILECREATE.getProtoId(), TransactionType.FILEUPDATE.getProtoId())
         ).orElseThrow(() -> new IllegalStateException(
                 "Missing FileData entry. FileAppend expects a corresponding  FileCreate/FileUpdate entry"));
 
@@ -296,7 +296,7 @@ public class AddressBookServiceImpl implements AddressBookService {
                 getAddressBookStartConsensusTimestamp(firstPartialAddressBook),
                 fileData.getConsensusTimestamp() - 1,
                 firstPartialAddressBook.getEntityId().getId(),
-                TransactionTypeEnum.FILEAPPEND.getProtoId()
+                TransactionType.FILEAPPEND.getProtoId()
         );
 
         try (var bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length)) {
@@ -488,7 +488,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         return new FileData(0L, addressBookBytes,
                 AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID,
-                TransactionTypeEnum.FILECREATE.getProtoId());
+                TransactionType.FILECREATE.getProtoId());
     }
 
     /**

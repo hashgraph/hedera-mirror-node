@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 /**
@@ -42,7 +42,7 @@ public interface TransactionHandler {
     /**
      * @return the transaction type associated with this handler
      */
-    TransactionTypeEnum getType();
+    TransactionType getType();
 
     /**
      * Override to update fields of the Transaction's (domain) fields.

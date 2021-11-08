@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
@@ -34,7 +34,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
         return EntityId.of(recordItem.getTransactionBody().getTokenFeeScheduleUpdate().getTokenId());
     }
 
-    public TransactionTypeEnum getType() {
-        return TransactionTypeEnum.TOKENFEESCHEDULEUPDATE;
+    @Override
+    public TransactionType getType() {
+        return TransactionType.TOKENFEESCHEDULEUPDATE;
     }
 }

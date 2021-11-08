@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 
 @Named
@@ -33,7 +33,8 @@ class ScheduleSignTransactionHandler implements TransactionHandler {
         return EntityId.of(recordItem.getTransactionBody().getScheduleSign().getScheduleID());
     }
 
-    public TransactionTypeEnum getType() {
-        return TransactionTypeEnum.SCHEDULESIGN;
+    @Override
+    public TransactionType getType() {
+        return TransactionType.SCHEDULESIGN;
     }
 }

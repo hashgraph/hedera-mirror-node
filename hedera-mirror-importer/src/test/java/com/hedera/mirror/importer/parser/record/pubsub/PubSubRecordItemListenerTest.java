@@ -66,7 +66,7 @@ import org.springframework.messaging.MessageChannel;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -252,7 +252,7 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
 
         // then
-        FileData fileData = new FileData(100L, fileContents, entityId, TransactionTypeEnum.FILEAPPEND
+        FileData fileData = new FileData(100L, fileContents, entityId, TransactionType.FILEAPPEND
                 .getProtoId());
         verify(addressBookService).update(fileData);
     }
@@ -274,7 +274,7 @@ class PubSubRecordItemListenerTest {
 
         // then
         FileData fileData = new FileData(100L, fileContents, EntityId
-                .of(ADDRESS_BOOK_FILE_ID), TransactionTypeEnum.FILEUPDATE
+                .of(ADDRESS_BOOK_FILE_ID), TransactionType.FILEUPDATE
                 .getProtoId());
         verify(addressBookService).update(fileData);
     }

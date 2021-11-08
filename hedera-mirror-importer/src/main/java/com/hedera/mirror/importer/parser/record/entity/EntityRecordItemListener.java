@@ -84,7 +84,7 @@ import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.domain.TransactionSignature;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.exception.InvalidEntityException;
@@ -128,9 +128,9 @@ public class EntityRecordItemListener implements RecordItemListener {
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getRecord();
         TransactionBody body = recordItem.getTransactionBody();
-        int transactionType = recordItem.getTransactionType();
-        TransactionTypeEnum transactionTypeEnum = TransactionTypeEnum.of(transactionType);
-        TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionTypeEnum);
+        int transactionTypeValue = recordItem.getTransactionType();
+        TransactionType transactionType = TransactionType.of(transactionTypeValue);
+        TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
 
         long consensusTimestamp = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId;
@@ -141,13 +141,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityId = null;
         }
 
-        log.debug("Processing {} transaction {} for entity {}", transactionTypeEnum, consensusTimestamp, entityId);
+        log.debug("Processing {} transaction {} for entity {}", transactionType, consensusTimestamp, entityId);
 
         // to:do - exclude Freeze from Filter transaction type
-        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionTypeEnum);
+        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionType);
         if (!transactionFilter.test(transactionFilterFields)) {
             log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
-                    consensusTimestamp, transactionTypeEnum, entityId);
+                    consensusTimestamp, transactionType, entityId);
             return;
         }
 
@@ -169,7 +169,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         if (recordItem.isSuccessful()) {
-            if (entityProperties.getPersist().getTransactionSignatures().contains(transactionTypeEnum)) {
+            if (entityProperties.getPersist().getTransactionSignatures().contains(transactionType)) {
                 insertTransactionSignatures(
                         transaction.getEntityId(),
                         recordItem.getConsensusTimestamp(),
@@ -184,12 +184,12 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusTimestamp, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
-                insertFileAppend(consensusTimestamp, body.getFileAppend(), transactionType);
+                insertFileAppend(consensusTimestamp, body.getFileAppend(), transactionTypeValue);
             } else if (body.hasFileCreate()) {
                 insertFileData(consensusTimestamp, Utility.toBytes(body.getFileCreate().getContents()),
-                        txRecord.getReceipt().getFileID(), transactionType);
+                        txRecord.getReceipt().getFileID(), transactionTypeValue);
             } else if (body.hasFileUpdate()) {
-                insertFileUpdate(consensusTimestamp, body.getFileUpdate(), transactionType);
+                insertFileUpdate(consensusTimestamp, body.getFileUpdate(), transactionTypeValue);
             } else if (body.hasTokenAssociate()) {
                 insertTokenAssociate(recordItem);
             } else if (body.hasTokenBurn()) {
@@ -328,9 +328,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), transactionType);
     }
 
-    private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeEnum) {
+    private void insertFileData(long consensusTimestamp, byte[] contents, FileID fileID, int transactionTypeValue) {
         EntityId entityId = EntityId.of(fileID);
-        FileData fileData = new FileData(consensusTimestamp, contents, entityId, transactionTypeEnum);
+        FileData fileData = new FileData(consensusTimestamp, contents, entityId, transactionTypeValue);
 
         // We always store file data for address books since they're used by the address book service
         if (addressBookService.isAddressBook(entityId)) {
