@@ -96,8 +96,8 @@ const getEntityBalanceFullOuterJoinQuery = (
   limitQuery,
   order
 ) => {
-  const entityIdField = 'coalesce(ab.account_id, e.id)';
   const balanceWhereCondition = [latestBalanceFilter, balanceAccountQuery.query].filter((x) => !!x).join(' and ');
+  const entityIdField = 'coalesce(ab.account_id, e.id)';
   const params = utils.mergeParams(
     entityAccountQuery.params,
     limitParams,
@@ -157,6 +157,10 @@ const getEntityBalanceQuery = (
   let joinType = '';
   let params;
 
+  // use different joins for different combinations of balance query and public key query. The where conditions
+  // and the corresponding params differ too. The entity id conditions only have to apply to one table: for inner
+  // and left outer joins, apply them to the account / contract table; for right outer join, apply them to the
+  // account_balance table
   if (balanceQuery.query && pubKeyQuery.query) {
     joinType = 'inner';
     params = [entityAccountQuery.params, pubKeyQuery.params, balanceQuery.params];
@@ -238,7 +242,8 @@ const getAccountQuery = (
 
   const {query: entityBalanceQuery, params} =
     balanceQuery.query === '' && pubKeyQuery.query === ''
-      ? getEntityBalanceFullOuterJoinQuery(
+      ? // use full outer join when no balance query and public key query
+        getEntityBalanceFullOuterJoinQuery(
           accountContractQuery,
           balanceAccountQuery,
           entityAccountQuery,
