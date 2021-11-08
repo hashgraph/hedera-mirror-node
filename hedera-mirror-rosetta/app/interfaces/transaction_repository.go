@@ -39,9 +39,6 @@ type TransactionRepository interface {
 		*rTypes.Error,
 	)
 
-	// Types returns map of all transaction types
-	Types(ctx context.Context) (map[int]string, *rTypes.Error)
-
 	// TypesAsArray returns all Transaction type names as an array
 	TypesAsArray(ctx context.Context) ([]string, *rTypes.Error)
 }

@@ -53,13 +53,10 @@ const integrationDbOps = require('./integrationDbOps');
 const integrationDomainOps = require('./integrationDomainOps');
 const {S3Ops} = require('./integrationS3Ops');
 const config = require('../config');
-const {cloudProviders, filterKeys} = require('../constants');
+const {cloudProviders} = require('../constants');
 const EntityId = require('../entityId');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const server = require('../server');
 const transactions = require('../transactions');
-const {TransactionTypeService} = require('../service');
-const utils = require('../utils');
 
 jest.setTimeout(40000);
 
@@ -71,9 +68,6 @@ const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 *
 
 beforeAll(async () => {
   sqlConnection = await integrationDbOps.instantiateDatabase();
-
-  // set items that required db connection but weren't available due to integration db setup logic
-  await TransactionTypeService.loadTransactionTypes();
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
@@ -189,73 +183,6 @@ const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
   return rows.map((v) => `${v.valid_duration_seconds}, ${v.max_fee}`);
 };
 
-const extractNameAndResultFromTransactionResults = (rows) => rows.map((v) => `${v.name}, ${v.result}`);
-
-//
-// TESTS
-//
-describe('DB integration test - utils.getTransactionTypeQuery', () => {
-  test('DB integration test - utils.getTransactionTypeQuery - Verify null query params', () => {
-    expect(utils.getTransactionTypeQuery(null)).toBe('');
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify undefined query params', () => {
-    expect(utils.getTransactionTypeQuery(undefined)).toBe('');
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty query params', () => {
-    expect(utils.getTransactionTypeQuery({})).toBe('');
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify empty transaction type query', () => {
-    expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(InvalidArgumentError);
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify non applicable transaction type query', () => {
-    expect(() => utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'newtransaction'})).toThrowError(
-      InvalidArgumentError
-    );
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENCREATION transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${TransactionTypeService.getProtoId('TOKENCREATION')}`
-    );
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable TOKENASSOCIATE transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${TransactionTypeService.getProtoId('TOKENASSOCIATE')}`
-    );
-  });
-  test('DB integration test - utils.getTransactionTypeQuery - Verify applicable consensussubmitmessage transaction type query', () => {
-    expect(utils.getTransactionTypeQuery({[filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${TransactionTypeService.getProtoId('CONSENSUSSUBMITMESSAGE')}`
-    );
-  });
-});
-
-describe('DB integration test -  utils.isValidTransactionType', () => {
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for null', () => {
-    expect(utils.isValidTransactionType(null)).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for empty input', () => {
-    expect(utils.isValidTransactionType('')).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for invalid input', () => {
-    expect(utils.isValidTransactionType('1234567890.000000001')).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for entity format shard', () => {
-    expect(utils.isValidTransactionType('1.0.1')).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for negative num', () => {
-    expect(utils.isValidTransactionType(-10)).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for 0', () => {
-    expect(utils.isValidTransactionType(0)).toBe(false);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify valid for valid CONSENSUSSUBMITMESSAGE transaction type', () => {
-    expect(utils.isValidTransactionType('CONSENSUSSUBMITMESSAGE')).toBe(true);
-  });
-  test('DB integration test -  utils.isValidTransactionType - Verify invalid for former TOKENTRANSFERS transaction type', () => {
-    expect(utils.isValidTransactionType('TOKENTRANSFERS')).toBe(false);
-  });
-});
-
 // expected transaction rows order by consensus_timestamp desc, only check fields consensus_timestamp and crypto_transfer_list
 const expectedTransactionRowsDesc = [
   {
@@ -316,14 +243,6 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows)).toEqual(['null, null', 'null, 777', '5, null']);
 });
 
-test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
-
-  const sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['UNKNOWN, -1']);
-});
-
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
   await createAndPopulateNewAccount(13, 15, 5, 10);
   await createAndPopulateNewAccount(63, 15, 6, 50);
@@ -359,19 +278,6 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   // 2 transactions, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
   // recipient and fee to bank. Note bank is out of desired range but is expected in query result
   expect(mapTransactionResults(res.rows).sort()).toEqual(expected);
-});
-
-describe('DB integration test - transactionTypes.getId', () => {
-  test('DB integration test -  transactionTypes.getId - Verify valid transaction type returns value', () => {
-    expect(TransactionTypeService.getProtoId('CRYPTOTRANSFER')).toBe(14);
-    expect(TransactionTypeService.getProtoId('cryptotransfer')).toBe(14);
-    expect(TransactionTypeService.getProtoId('TOKENWIPE')).toBe(39);
-    expect(TransactionTypeService.getProtoId('tokenWipe')).toBe(39);
-  });
-  test('DB integration test -  transactionTypes.getId - Verify invalid transaction type throws error', () => {
-    expect(() => TransactionTypeService.getProtoId('TEST')).toThrowError(InvalidArgumentError);
-    expect(() => TransactionTypeService.getProtoId(1)).toThrowError(InvalidArgumentError);
-  });
 });
 
 describe('DB integration test - spec based', () => {

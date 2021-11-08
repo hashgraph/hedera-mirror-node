@@ -21,15 +21,38 @@
 package types
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hashgraph/hedera-sdk-go/v2/proto"
 	"github.com/stretchr/testify/assert"
 )
 
+var hederaFunctionalityLength = 67
+
 func TestResponseCodeUpToDate(t *testing.T) {
 	// given
 	for code, name := range proto.ResponseCodeEnum_name {
 		assert.Equal(t, name, TransactionResults[code])
 	}
+}
+
+func TestTransactionTypesUpToDate(t *testing.T) {
+	sdkTransactionTypes := getSdkTransactionTypes()
+	for protoId, name := range sdkTransactionTypes {
+		assert.Equal(t, name, TransactionTypes[protoId])
+	}
+}
+
+func getSdkTransactionTypes() map[int32]string {
+	body := proto.TransactionBody{}
+	dataFields := body.ProtoReflect().Descriptor().Oneofs().ByName("data").Fields()
+	transactionTypes := make(map[int32]string)
+	for i := 0; i < dataFields.Len(); i++ {
+		dataField := dataFields.Get(i)
+		name := strings.ToUpper(string(dataField.Name()))
+		transactionTypes[int32(dataField.Number())] = strings.ReplaceAll(name, "_", "")
+	}
+
+	return transactionTypes
 }

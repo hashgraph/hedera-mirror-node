@@ -50,10 +50,6 @@ var (
 	tokenInitialSupply int64 = 50000
 )
 
-func TestShouldSuccessReturnTransactionTypesTableName(t *testing.T) {
-	assert.Equal(t, tableNameTransactionTypes, transactionType{}.TableName())
-}
-
 func TestTransactionGetHashString(t *testing.T) {
 	tx := transaction{Hash: []byte{1, 2, 3, 0xaa, 0xff}}
 	assert.Equal(t, "0x010203aaff", tx.getHashString())
@@ -205,32 +201,11 @@ func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
 	assert.NotNil(suite.T(), t)
 }
 
-func (suite *transactionRepositorySuite) TestTypes() {
-	t := NewTransactionRepository(dbClient)
-	actual, err := t.Types(defaultContext)
-	assert.Nil(suite.T(), err)
-	assert.NotEmpty(suite.T(), actual)
-}
-
-func (suite *transactionRepositorySuite) TestTypesDbConnectionError() {
-	t := NewTransactionRepository(invalidDbClient)
-	actual, err := t.Types(defaultContext)
-	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
-	assert.Nil(suite.T(), actual)
-}
-
 func (suite *transactionRepositorySuite) TestTypesAsArray() {
 	t := NewTransactionRepository(dbClient)
 	actual, err := t.TypesAsArray(defaultContext)
 	assert.Nil(suite.T(), err)
 	assert.NotEmpty(suite.T(), actual)
-}
-
-func (suite *transactionRepositorySuite) TestTypesAsArrayDbConnectionError() {
-	t := NewTransactionRepository(invalidDbClient)
-	actual, err := t.TypesAsArray(defaultContext)
-	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
-	assert.Nil(suite.T(), actual)
 }
 
 func (suite *transactionRepositorySuite) TestFindBetween() {

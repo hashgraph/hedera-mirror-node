@@ -34,7 +34,7 @@ const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
-const TransactionTypeService = require('./service/transactionTypeService');
+const {TransactionType} = require('./model');
 const responseLimit = config.response.limit;
 
 const TRANSACTION_RESULT_SUCCESS = 22;
@@ -101,15 +101,6 @@ const isValidEncoding = (query) => {
   }
   query = query.toLowerCase();
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
-};
-
-const isValidTransactionType = (transactionType) => {
-  try {
-    TransactionTypeService.getProtoId(transactionType);
-    return true;
-  } catch (err) {
-    return false;
-  }
 };
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
@@ -217,7 +208,7 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
-      ret = isValidTransactionType(val);
+      ret = TransactionType.isValid(val);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -908,7 +899,7 @@ const parsePublicKey = (publicKey) => {
   return decodedKey == null ? publicKey : decodedKey;
 };
 
-const getTransactionTypeQuery = (parsedQueryParams) => {
+const parseTransactionTypeParam = (parsedQueryParams) => {
   if (_.isNil(parsedQueryParams)) {
     return '';
   }
@@ -917,7 +908,7 @@ const getTransactionTypeQuery = (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  const protoId = TransactionTypeService.getProtoId(transactionType);
+  const protoId = TransactionType.getProtoId(transactionType);
   return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
 };
 
@@ -992,7 +983,6 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getPoolClass,
-  getTransactionTypeQuery,
   ipMask,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
@@ -1001,7 +991,6 @@ module.exports = {
   isValidOperatorQuery,
   isValidValueIgnoreCase,
   isValidTimestampParam,
-  isValidTransactionType,
   loadPgRange,
   mergeParams,
   nsToSecNs,
@@ -1019,6 +1008,7 @@ module.exports = {
   parseTimestampParam,
   parseTimestampQueryParam,
   parseTokenBalances,
+  parseTransactionTypeParam,
   randomString,
   secNsToNs,
   secNsToSeconds,

@@ -29,7 +29,6 @@ const {
 } = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
-const {TransactionTypeService} = require('../service');
 const {formatSqlQueryString} = require('./testutils');
 const constants = require('../constants');
 
@@ -1177,8 +1176,6 @@ describe('token validateTokenIdParam tests', () => {
 });
 
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
-  TransactionTypeService.populateTransactionTypeMaps([{entityType: 5, name: 'TOKENDELETION', protoId: 35}]);
-
   const verifyExtractSqlFromNftTransferHistoryRequest = (
     tokenId,
     serialNumber,

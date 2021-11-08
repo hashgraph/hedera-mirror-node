@@ -22,7 +22,7 @@
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
-const {TransactionTypeService} = require('../service');
+const {TransactionType} = require('../model');
 
 /**
  * Nft transaction history transfer view model
@@ -36,7 +36,7 @@ class NftTransactionHistoryViewModel {
     );
     this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
     this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
-    this.type = TransactionTypeService.getName(transactionModel.type);
+    this.type = TransactionType.getName(transactionModel.type);
   }
 }
 

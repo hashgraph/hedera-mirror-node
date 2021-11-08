@@ -20,25 +20,81 @@
 
 'use strict';
 
-class TransactionType {
-  /**
-   * Parses transaction type columns into object
-   */
-  constructor(type) {
-    this.name = type.name;
-    this.entityType = type.entity_type;
-    this.protoId = type.proto_id;
+const _ = require('lodash');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+
+const transactionTypeProtoToName = {
+  7: 'CONTRACTCALL',
+  8: 'CONTRACTCREATEINSTANCE',
+  9: 'CONTRACTUPDATEINSTANCE',
+  10: 'CRYPTOADDLIVEHASH',
+  11: 'CRYPTOCREATEACCOUNT',
+  12: 'CRYPTODELETE',
+  13: 'CRYPTODELETELIVEHASH',
+  14: 'CRYPTOTRANSFER',
+  15: 'CRYPTOUPDATEACCOUNT',
+  16: 'FILEAPPEND',
+  17: 'FILECREATE',
+  18: 'FILEDELETE',
+  19: 'FILEUPDATE',
+  20: 'SYSTEMDELETE',
+  21: 'SYSTEMUNDELETE',
+  22: 'CONTRACTDELETEINSTANCE',
+  23: 'FREEZE',
+  24: 'CONSENSUSCREATETOPIC',
+  25: 'CONSENSUSUPDATETOPIC',
+  26: 'CONSENSUSDELETETOPIC',
+  27: 'CONSENSUSSUBMITMESSAGE',
+  28: 'UNCHECKEDSUBMIT',
+  29: 'TOKENCREATION',
+  31: 'TOKENFREEZE',
+  32: 'TOKENUNFREEZE',
+  33: 'TOKENGRANTKYC',
+  34: 'TOKENREVOKEKYC',
+  35: 'TOKENDELETION',
+  36: 'TOKENUPDATE',
+  37: 'TOKENMINT',
+  38: 'TOKENBURN',
+  39: 'TOKENWIPE',
+  40: 'TOKENASSOCIATE',
+  41: 'TOKENDISSOCIATE',
+  42: 'SCHEDULECREATE',
+  43: 'SCHEDULEDELETE',
+  44: 'SCHEDULESIGN',
+  45: 'TOKENFEESCHEDULEUPDATE',
+  46: 'TOKENPAUSE',
+  47: 'TOKENUNPAUSE',
+};
+
+const UKNOWN = 'UNKNOWN';
+
+const transactionTypeNameToProto = _.invert(transactionTypeProtoToName);
+
+const getName = (protoId) => {
+  return transactionTypeProtoToName.hasOwnProperty(protoId) ? transactionTypeProtoToName[protoId] : UKNOWN;
+};
+
+const getProtoId = (transactionTypeName) => {
+  if (!_.isString(transactionTypeName)) {
+    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
   }
 
-  static tableAlias = 'ttt';
-  static tableName = 't_transaction_types';
+  const type = transactionTypeNameToProto[transactionTypeName.toUpperCase()];
+  if (type === undefined) {
+    throw new InvalidArgumentError(`Invalid transaction type ${transactionTypeName.toUpperCase()}`);
+  }
+  return type;
+};
 
-  static ENTITY_TYPE = `entity_type`;
-  static ENTITY_TYPE_FULL_NAME = `${this.tableAlias}.${this.ENTITY_TYPE}`;
-  static NAME = `name`;
-  static NAME_FULL_NAME = `${this.tableAlias}.${this.NAME}`;
-  static PROTO_ID = `proto_id`;
-  static PROTO_ID_FULL_NAME = `${this.tableAlias}.${this.PROTO_ID}`;
-}
+const isValid = (transactionTypeName) => {
+  if (!_.isString(transactionTypeName)) {
+    return false;
+  }
+  return transactionTypeNameToProto.hasOwnProperty(transactionTypeName.toUpperCase());
+};
 
-module.exports = TransactionType;
+module.exports = {
+  isValid,
+  getName,
+  getProtoId,
+};

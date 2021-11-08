@@ -49,7 +49,6 @@ const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandl
 const {serveSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const {TransactionResultService, TransactionTypeService} = require('./service');
 const fs = require('fs');
 
 // Logger
@@ -137,13 +136,6 @@ if (config.response.compression) {
 // logging middleware
 app.use(httpContext.middleware);
 app.useAsync(requestLogger);
-app.useAsync(async (req, res, next) => {
-  try {
-    await TransactionTypeService.loadTransactionTypes();
-  } catch (err) {
-    logger.warn('Failed to load transaction results / types', err);
-  }
-});
 
 // metrics middleware
 if (config.metrics.enabled) {
