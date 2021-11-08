@@ -21,6 +21,7 @@
 package types
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hashgraph/hedera-sdk-go/v2/proto"
@@ -37,8 +38,21 @@ func TestResponseCodeUpToDate(t *testing.T) {
 }
 
 func TestTransactionTypesUpToDate(t *testing.T) {
-	//There isn't a dedicate enum for TransactionBody values, so just check that no new HederaFunctionality exists
-	//If this test fails, ensure that new Transactions Types are added and update this test with the new HederaFunctionality
-	//Last entry is 80: TokenUnpause
-	assert.Equal(t, len(proto.HederaFunctionality_name), hederaFunctionalityLength)
+	sdkTransactionTypes := getSdkTransactionTypes()
+	for protoId, name := range sdkTransactionTypes {
+		assert.Equal(t, name, TransactionTypes[protoId])
+	}
+}
+
+func getSdkTransactionTypes() map[int32]string {
+	body := proto.TransactionBody{}
+	dataFields := body.ProtoReflect().Descriptor().Oneofs().ByName("data").Fields()
+	transactionTypes := make(map[int32]string)
+	for i := 0; i < dataFields.Len(); i++ {
+		dataField := dataFields.Get(i)
+		name := strings.ToUpper(string(dataField.Name()))
+		transactionTypes[int32(dataField.Number())] = strings.ReplaceAll(name, "_", "")
+	}
+
+	return transactionTypes
 }
