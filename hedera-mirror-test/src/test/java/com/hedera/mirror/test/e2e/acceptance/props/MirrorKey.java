@@ -23,7 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.props;
 import lombok.Data;
 
 @Data
-public class MirrorAdminKey {
+public class MirrorKey {
     private String key;
     private String _type;
 }

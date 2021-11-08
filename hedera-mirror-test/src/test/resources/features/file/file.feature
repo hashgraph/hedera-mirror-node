@@ -6,7 +6,7 @@ Feature: File Base Coverage Feature
         Given I successfully create a file
         When the network confirms file presence
         Then the mirror node REST API should return status <httpStatusCode> for the file transaction
-        When I successfully update the file with <bytesLength> bytes
+        When I successfully update the file
         And the network confirms partial file contents
         Then the mirror node REST API should return status <httpStatusCode> for the file transaction
         When I successfully append to the file
@@ -16,5 +16,5 @@ Feature: File Base Coverage Feature
         And the network confirms file absence
         Then the mirror node REST API should return status <httpStatusCode> for the file transaction
         Examples:
-            | httpStatusCode | bytesLength |
-            | 200            | "PARTIAL"   |
+            | httpStatusCode |
+            | 200            |

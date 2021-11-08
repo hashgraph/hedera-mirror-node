@@ -34,6 +34,8 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
@@ -58,6 +60,7 @@ public class ContractFeature extends AbstractFeature {
 
     private ContractId contractId;
     private FileId fileId;
+    private CompiledSolidityArtifact compiledSolidityArtifact;
 
     @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
     private Path parentContract;
@@ -73,10 +76,10 @@ public class ContractFeature extends AbstractFeature {
 
     @Given("I successfully create a contract from contract bytes with {int} balance")
     public void createNewContract(int initialBalance) throws IOException {
-        CompiledSolidityArtifact compiledParentArtifact = mapper.readValue(
+        compiledSolidityArtifact = mapper.readValue(
                 ResourceUtils.getFile(parentContract.toUri()),
                 CompiledSolidityArtifact.class);
-        createContract(compiledParentArtifact.getBytecode(), initialBalance);
+        createContract(compiledSolidityArtifact.getBytecode(), initialBalance);
     }
 
     @Given("I successfully call the contract")
@@ -111,12 +114,12 @@ public class ContractFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should verify the deployed contract entity")
-    public void verifyDeployedContractMirror() {
+    public void verifyDeployedContractMirror() throws DecoderException {
         verifyContractFromMirror(false);
     }
 
     @Then("the mirror node REST API should verify the deleted contract entity")
-    public void verifyDeletedContractMirror() {
+    public void verifyDeletedContractMirror() throws DecoderException {
         verifyContractFromMirror(true);
     }
 
@@ -152,11 +155,13 @@ public class ContractFeature extends AbstractFeature {
         verifyCreateContractNetworkResponse();
     }
 
-    private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {
+    private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) throws DecoderException {
         MirrorContractResponse mirrorContract = mirrorClient.getContractInfo(contractId.toString());
 
         assertNotNull(mirrorContract);
         assertThat(mirrorContract.getAdminKey()).isNotNull();
+        assertThat(mirrorContract.getAdminKey().getKey())
+                .isEqualTo(contractClient.getSdkClient().getExpandedOperatorAccountId().getPublicKey().toStringRaw());
         assertThat(mirrorContract.getAutoRenewPeriod()).isNotNull();
         assertThat(mirrorContract.getBytecode()).isNotBlank();
         assertThat(mirrorContract.getContractId()).isEqualTo(contractId.toString());
@@ -165,15 +170,19 @@ public class ContractFeature extends AbstractFeature {
         assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
         assertThat(mirrorContract.getMemo()).isNotBlank();
         String address = mirrorContract.getSolidityAddress();
-        assertThat(address).isNotBlank();
-        assertThat(address).isNotEqualTo("0x");
-        assertThat(address).isNotEqualTo("0x0000000000000000000000000000000000000000");
+        assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
         assertThat(mirrorContract.getTimestamp()).isNotNull();
         assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
 
+        // contract bytes string goes through a series of transformations
+        // remove '0x' prior to conversion to byte[], then encode and add 0x back for REST API
+        String stringMinusOx = compiledSolidityArtifact.getBytecode().replaceFirst("0x", "");
+        assertThat(mirrorContract.getBytecode())
+                .isEqualTo("0x" + Hex.encodeHexString(stringMinusOx.getBytes(StandardCharsets.UTF_8)));
+
         if (isDeleted) {
             assertThat(mirrorContract.getObtainerId())
-                    .isEqualTo(contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId());
+                    .isEqualTo(contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toString());
         } else {
             assertThat(mirrorContract.getObtainerId()).isNull();
         }

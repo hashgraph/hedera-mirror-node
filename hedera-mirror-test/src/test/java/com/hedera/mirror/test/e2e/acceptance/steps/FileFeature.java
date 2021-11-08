@@ -67,21 +67,10 @@ public class FileFeature {
         assertNotNull(fileId);
     }
 
-    @Given("I successfully update the file with {string} bytes")
-    public void updateFile(String bytesLength) {
-        String updateContents = "";
-        switch (bytesLength) {
-            case "FULL":
-                updateContents = updatedFileContents;
-                break;
-            case "PARTIAL":
-                updateContents = updateBaseFileContents;
-                break;
-            default:
-                break;
-        }
-
-        networkTransactionResponse = fileClient.updateFile(fileId, updateContents.getBytes(StandardCharsets.UTF_8));
+    @Given("I successfully update the file")
+    public void updateFile() {
+        networkTransactionResponse = fileClient
+                .updateFile(fileId, updateBaseFileContents.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());

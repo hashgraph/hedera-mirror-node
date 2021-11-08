@@ -22,12 +22,12 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import lombok.Data;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorAdminKey;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorKey;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTimestampRange;
 
 @Data
 public class MirrorContractResponse {
-    private MirrorAdminKey adminKey;
+    private MirrorKey adminKey;
     private Integer autoRenewPeriod;
     private String bytecode;
     private String contractId;
