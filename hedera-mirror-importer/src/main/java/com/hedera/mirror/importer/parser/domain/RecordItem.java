@@ -48,7 +48,7 @@ public class RecordItem implements StreamItem {
     private final Transaction transaction;
     private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap;
     private final TransactionRecord record;
-    // This field is not TransactionTypeEnum since in case of unknown type, we want exact numerical value rather than
+    // This field is not TransactionType since in case of unknown type, we want exact numerical value rather than
     // -1 in enum.
     private final int transactionType;
     private final byte[] transactionBytes;

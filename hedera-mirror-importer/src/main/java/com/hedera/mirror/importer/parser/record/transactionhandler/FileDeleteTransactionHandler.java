@@ -24,7 +24,7 @@ import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 class FileDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
     FileDeleteTransactionHandler(EntityListener entityListener) {
-        super(entityListener, TransactionTypeEnum.FILEDELETE);
+        super(entityListener, TransactionType.FILEDELETE);
     }
 
     @Override

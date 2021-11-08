@@ -46,7 +46,7 @@ import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
 
@@ -93,19 +93,19 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
                 .add(transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CRYPTOCREATEACCOUNT));
+                        TransactionType.CRYPTOCREATEACCOUNT));
         transactionList
                 .add(transaction(20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONTRACTCREATEINSTANCE));
+                        TransactionType.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType
                         .FILECREATE));
         transactionList
                 .add(transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONSENSUSCREATETOPIC));
+                        TransactionType.CONSENSUSCREATETOPIC));
         transactionList
                 .add(transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.TOKENCREATION));
+                        TransactionType.TOKENCREATION));
         transactionList.forEach(this::insertTransaction);
 
         // migration
@@ -131,25 +131,25 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
                 .add(transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CRYPTOCREATEACCOUNT));
+                        TransactionType.CRYPTOCREATEACCOUNT));
         transactionList
                 .add(transaction(20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONTRACTCREATEINSTANCE));
+                        TransactionType.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType
                         .FILECREATE));
         transactionList
                 .add(transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONSENSUSCREATETOPIC));
+                        TransactionType.CONSENSUSCREATETOPIC));
         transactionList
                 .add(transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.TOKENCREATION));
+                        TransactionType.TOKENCREATION));
         transactionList
                 .add(transaction(70, 50, EntityType.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID,
-                        TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
+                        TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList
                 .add(transaction(80, 100, EntityType.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
-                        TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
+                        TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList.forEach(this::insertTransaction);
 
         // migration
@@ -194,40 +194,40 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         List<Transaction> transactionList = new ArrayList<>();
         transactionList
                 .add(transaction(1, 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CRYPTOCREATEACCOUNT));
+                        TransactionType.CRYPTOCREATEACCOUNT));
         transactionList
                 .add(transaction(20, 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONTRACTCREATEINSTANCE));
+                        TransactionType.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(30, 3, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType
                         .FILECREATE));
         transactionList
                 .add(transaction(40, 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONSENSUSCREATETOPIC));
+                        TransactionType.CONSENSUSCREATETOPIC));
         transactionList
                 .add(transaction(50, 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.TOKENCREATION));
+                        TransactionType.TOKENCREATION));
         transactionList
                 .add(transaction(60, 6, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CRYPTOCREATEACCOUNT));
+                        TransactionType.CRYPTOCREATEACCOUNT));
         transactionList
                 .add(transaction(70, 7, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONTRACTCREATEINSTANCE));
+                        TransactionType.CONTRACTCREATEINSTANCE));
         transactionList
-                .add(transaction(80, 8, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionTypeEnum
+                .add(transaction(80, 8, EntityType.FILE, ResponseCodeEnum.SUCCESS, TransactionType
                         .FILECREATE));
         transactionList
                 .add(transaction(90, 9, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.CONSENSUSCREATETOPIC));
+                        TransactionType.CONSENSUSCREATETOPIC));
         transactionList
                 .add(transaction(100, 10, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                        TransactionTypeEnum.TOKENCREATION));
+                        TransactionType.TOKENCREATION));
         transactionList
                 .add(transaction(500, 50, EntityType.TOPIC, ResponseCodeEnum.INVALID_TOPIC_ID,
-                        TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
+                        TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList
                 .add(transaction(1000, 100, EntityType.TOPIC, ResponseCodeEnum.TOPIC_EXPIRED,
-                        TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
+                        TransactionType.CONSENSUSSUBMITMESSAGE));
         transactionList.forEach(this::insertTransaction);
 
         // migration
@@ -251,7 +251,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
     }
 
     private Transaction transaction(long consensusNs, long id, EntityType entityType, ResponseCodeEnum result,
-                                    TransactionTypeEnum transactionTypeEnum) {
+                                    TransactionType transactionType) {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusTimestamp(consensusNs);
@@ -261,7 +261,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityType.ACCOUNT));
         transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityType.ACCOUNT));
         transaction.setResult(result.getNumber());
-        transaction.setType(transactionTypeEnum.getProtoId());
+        transaction.setType(transactionType.getProtoId());
         transaction.setValidStartNs(20L);
         transaction.setValidDurationSeconds(11L);
         transaction.setMaxFee(33L);

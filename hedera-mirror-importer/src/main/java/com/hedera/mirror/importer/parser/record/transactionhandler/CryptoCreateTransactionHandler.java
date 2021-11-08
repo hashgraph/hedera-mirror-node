@@ -25,7 +25,7 @@ import javax.inject.Named;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
     CryptoCreateTransactionHandler(EntityListener entityListener) {
-        super(entityListener, TransactionTypeEnum.CRYPTOCREATEACCOUNT);
+        super(entityListener, TransactionType.CRYPTOCREATEACCOUNT);
     }
 
     @Override
@@ -47,7 +47,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     @Override
-    protected void doUpdateEntity(final Entity entity, final RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
 
         if (transactionBody.hasAutoRenewPeriod()) {

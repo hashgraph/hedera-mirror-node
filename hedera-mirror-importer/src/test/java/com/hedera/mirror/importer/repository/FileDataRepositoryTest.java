@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 
 class FileDataRepositoryTest extends AbstractRepositoryTest {
 
@@ -43,18 +43,18 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
     @Test
     void findFilesInRange() {
         List<FileData> fileDataList = new ArrayList<>();
-        fileDataList.add(fileData(1, 123, TransactionTypeEnum.FILECREATE.getProtoId()));
-        fileDataList.add(fileData(2, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
-        fileDataList.add(fileData(3, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(4, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(6, 123, TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(7, 123, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(1, 123, TransactionType.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(2, ADDRESS_BOOK_102.getId(), TransactionType.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(3, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(4, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(6, 123, TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(7, 123, TransactionType.FILEAPPEND.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
         Assertions.assertThat(fileDataRepository
                 .findFilesInRange(
-                        2, 7, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()))
+                        2, 7, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()))
                 .isNotNull()
                 .hasSize(3)
                 .extracting(FileData::getConsensusTimestamp)
@@ -64,18 +64,18 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
     @Test
     void findFilesOfTransactionTypesInRange() {
         List<FileData> fileDataList = new ArrayList<>();
-        fileDataList.add(fileData(1, 123, TransactionTypeEnum.FILECREATE.getProtoId()));
-        FileData fileData = fileData(2, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId());
+        fileDataList.add(fileData(1, 123, TransactionType.FILECREATE.getProtoId()));
+        FileData fileData = fileData(2, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId());
         fileDataList.add(fileData);
-        fileDataList.add(fileData(3, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(4, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(6, 123, TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(7, 123, TransactionTypeEnum.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(3, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(4, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(6, 123, TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(7, 123, TransactionType.FILEAPPEND.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
         List<Integer> transactionTypes = List
-                .of(TransactionTypeEnum.FILECREATE.getProtoId(), TransactionTypeEnum.FILEUPDATE.getProtoId());
+                .of(TransactionType.FILECREATE.getProtoId(), TransactionType.FILEUPDATE.getProtoId());
         Assertions.assertThat(fileDataRepository
                 .findLatestMatchingFile(
                         5, ADDRESS_BOOK_102.getId(), transactionTypes)).get()
@@ -86,14 +86,14 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
     @Test
     void findAddressBookFilesInRange() {
         List<FileData> fileDataList = new ArrayList<>();
-        fileDataList.add(fileData(1, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
-        fileDataList.add(fileData(2, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
-        fileDataList.add(fileData(3, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(4, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(6, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(7, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(1, ADDRESS_BOOK_101.getId(), TransactionType.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(2, ADDRESS_BOOK_102.getId(), TransactionType.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(3, ADDRESS_BOOK_101.getId(), TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(4, ADDRESS_BOOK_101.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(6, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(7, ADDRESS_BOOK_101.getId(), TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
         Assertions.assertThat(fileDataRepository
@@ -108,14 +108,14 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
     @Test
     void findAddressBookFilesWithLimit() {
         List<FileData> fileDataList = new ArrayList<>();
-        fileDataList.add(fileData(1, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
-        fileDataList.add(fileData(2, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILECREATE.getProtoId()));
-        fileDataList.add(fileData(3, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(4, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(6, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEAPPEND.getProtoId()));
-        fileDataList.add(fileData(7, ADDRESS_BOOK_101.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
-        fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionTypeEnum.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(1, ADDRESS_BOOK_101.getId(), TransactionType.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(2, ADDRESS_BOOK_102.getId(), TransactionType.FILECREATE.getProtoId()));
+        fileDataList.add(fileData(3, ADDRESS_BOOK_101.getId(), TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(4, ADDRESS_BOOK_101.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(5, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(6, ADDRESS_BOOK_102.getId(), TransactionType.FILEAPPEND.getProtoId()));
+        fileDataList.add(fileData(7, ADDRESS_BOOK_101.getId(), TransactionType.FILEUPDATE.getProtoId()));
+        fileDataList.add(fileData(8, ADDRESS_BOOK_102.getId(), TransactionType.FILEUPDATE.getProtoId()));
         fileDataRepository.saveAll(fileDataList);
 
         Assertions.assertThat(fileDataRepository

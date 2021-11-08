@@ -31,7 +31,7 @@ import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 
 @Data
 @Validated
@@ -74,7 +74,7 @@ public class CommonParserProperties {
         private Collection<EntityId> entity = new LinkedHashSet<>();
 
         @NotNull
-        private Collection<TransactionTypeEnum> transaction = new LinkedHashSet<>();
+        private Collection<TransactionType> transaction = new LinkedHashSet<>();
 
         public Predicate<TransactionFilterFields> getFilter() {
             return t -> (matches(t) && matches(t.getEntity()));

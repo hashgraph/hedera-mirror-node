@@ -31,5 +31,5 @@ public class TransactionFilterFields {
      * Main entity associated with the transaction
      */
     EntityId entity;
-    TransactionTypeEnum transactionType;
+    TransactionType transactionType;
 }

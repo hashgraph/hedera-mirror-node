@@ -27,7 +27,7 @@ import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<AbstractEntity> {
 
     SystemUndeleteTransactionHandler(EntityListener entityListener) {
-        super(entityListener, TransactionTypeEnum.SYSTEMUNDELETE);
+        super(entityListener, TransactionType.SYSTEMUNDELETE);
     }
 
     @Override
