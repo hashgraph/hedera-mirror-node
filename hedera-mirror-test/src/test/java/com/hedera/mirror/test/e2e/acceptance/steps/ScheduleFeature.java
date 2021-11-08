@@ -29,7 +29,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -74,7 +73,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 @Cucumber
 public class ScheduleFeature {
     private final static int DEFAULT_TINY_HBAR = 1_000;
-
+    private final int signatoryCountOffset = 1; // Schedule map includes payer account which may not be a required
     @Autowired
     private AccountClient accountClient;
     @Autowired
@@ -85,7 +84,6 @@ public class ScheduleFeature {
     private TopicClient topicClient;
     @Autowired
     private ScheduleClient scheduleClient;
-
     private int currentSignersCount;
     private int expectedSignersCount;
     private NetworkTransactionResponse networkTransactionResponse;
@@ -93,7 +91,6 @@ public class ScheduleFeature {
     private ScheduleInfo scheduleInfo;
     private Transaction scheduledTransaction;
     private TransactionId scheduledTransactionId;
-    private final int signatoryCountOffset = 1; // Schedule map includes payer account which may not be a required
     // signatory
     private TokenId tokenId;
     private long serialNumber;
@@ -125,7 +122,7 @@ public class ScheduleFeature {
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
                         KeyList.of(alice.getPublicKey()),
                         true,
-                        "scheduled account create");
+                        "scheduled case");
 
         createNewSchedule(scheduledTransaction, null);
     }
@@ -246,7 +243,6 @@ public class ScheduleFeature {
         networkTransactionResponse = scheduleClient.createSchedule(
                 scheduleClient.getSdkClient().getExpandedOperatorAccountId(),
                 transaction,
-                "New Mirror Acceptance Schedule_" + Instant.now(),
                 innerSignatureKeyList);
         assertNotNull(networkTransactionResponse.getTransactionId());
 
@@ -317,7 +313,8 @@ public class ScheduleFeature {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
-        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status);
+        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status,
+                true);
 
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
@@ -448,14 +445,14 @@ public class ScheduleFeature {
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactionInfoByTimestamp(timestamp);
 
         MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, HttpStatus.OK
-                .value());
+                .value(), false);
 
         assertThat(mirrorTransaction.getConsensusTimestamp()).isEqualTo(timestamp);
         assertThat(mirrorTransaction.isScheduled()).isTrue();
     }
 
     private MirrorTransaction verifyMirrorTransactionsResponse(MirrorTransactionsResponse mirrorTransactionsResponse,
-                                                               int status) {
+                                                               int status, boolean verifyEntityId) {
         List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
@@ -469,6 +466,10 @@ public class ScheduleFeature {
         assertThat(mirrorTransaction.getName()).isNotNull();
         assertThat(mirrorTransaction.getResult()).isNotNull();
         assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
+
+        if (verifyEntityId) {
+            assertThat(mirrorTransaction.getEntityId()).isEqualTo(scheduleId.toString());
+        }
 
         return mirrorTransaction;
     }
