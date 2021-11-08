@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.util.List;
 import javax.inject.Named;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -60,7 +59,6 @@ import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
 @Named
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TokenClient extends AbstractNetworkClient {
@@ -90,8 +88,7 @@ public class TokenClient extends AbstractNetworkClient {
                                                              ExpandedAccountId treasuryAccount, TokenType tokenType,
                                                              TokenSupplyType tokenSupplyType, long maxSupply,
                                                              List<CustomFee> customFees) {
-        Instant refInstant = Instant.now();
-        String memo = String.format("Create token %s_%s", symbol, refInstant);
+        String memo = getMemo("Create token");
         PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction transaction = new TokenCreateTransaction()
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
@@ -177,12 +174,11 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) {
         log.debug("Associate account {} with token {}", accountId.getAccountId(), token);
-        Instant refInstant = Instant.now();
         TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
                 .setAccountId(accountId.getAccountId())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenIds((List.of(token)))
-                .setTransactionMemo("Associate w token_" + refInstant);
+                .setTransactionMemo(getMemo("Associate w token"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
@@ -204,11 +200,10 @@ public class TokenClient extends AbstractNetworkClient {
     public NetworkTransactionResponse mint(TokenId tokenId, long amount, byte[] metadata) {
 
         log.debug("Mint {} tokens from {}", amount, tokenId);
-        Instant refInstant = Instant.now();
         TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
                 .setTokenId(tokenId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Mint token_" + refInstant);
+                .setTransactionMemo(getMemo("Mint token"));
 
         if (metadata != null) {
             tokenMintTransaction.addMetadata(metadata);
@@ -225,13 +220,11 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse freeze(TokenId tokenId, AccountId accountId) {
-
-        Instant refInstant = Instant.now();
         TokenFreezeTransaction tokenFreezeAccountTransaction = new TokenFreezeTransaction()
                 .setAccountId(accountId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenId(tokenId)
-                .setTransactionMemo("Freeze account_" + refInstant);
+                .setTransactionMemo(getMemo("Freeze token account"));
 
         NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenFreezeAccountTransaction);
 
@@ -241,13 +234,11 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse unfreeze(TokenId tokenId, AccountId accountId) {
-
-        Instant refInstant = Instant.now();
         TokenUnfreezeTransaction tokenUnfreezeTransaction = new TokenUnfreezeTransaction()
                 .setAccountId(accountId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTokenId(tokenId)
-                .setTransactionMemo("Unfreeze account_" + refInstant);
+                .setTransactionMemo(getMemo("Unfreeze token account"));
 
         NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenUnfreezeTransaction);
 
@@ -257,14 +248,12 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse grantKyc(TokenId tokenId, AccountId accountId) {
-
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
-        Instant refInstant = Instant.now();
         TokenGrantKycTransaction tokenGrantKycTransaction = new TokenGrantKycTransaction()
                 .setAccountId(accountId)
                 .setTokenId(tokenId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Grant kyc for token_" + refInstant);
+                .setTransactionMemo(getMemo("Grant kyc for token"));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 tokenGrantKycTransaction);
@@ -275,14 +264,12 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId) {
-
         log.debug("Grant account {} with KYC for token {}", accountId, tokenId);
-        Instant refInstant = Instant.now();
         TokenRevokeKycTransaction tokenRevokeKycTransaction = new TokenRevokeKycTransaction()
                 .setAccountId(accountId)
                 .setTokenId(tokenId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Revoke kyc for token_" + refInstant);
+                .setTransactionMemo(getMemo("Revoke kyc for token"));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 tokenRevokeKycTransaction);
@@ -293,13 +280,11 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse pause(TokenId tokenId) {
-
         log.debug("Pausing token {}", tokenId);
-        Instant refInstant = Instant.now();
         TokenPauseTransaction tokenPauseTransaction = new TokenPauseTransaction()
                 .setTokenId(tokenId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Pause token_" + refInstant);
+                .setTransactionMemo(getMemo("Pause token"));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 tokenPauseTransaction);
@@ -310,13 +295,11 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse unpause(TokenId tokenId) {
-
         log.debug("Unpausing token {}", tokenId);
-        Instant refInstant = Instant.now();
         TokenUnpauseTransaction tokenUnpauseTransaction = new TokenUnpauseTransaction()
                 .setTokenId(tokenId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Unpause token_" + refInstant);
+                .setTransactionMemo(getMemo("Unpause token"));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 tokenUnpauseTransaction);
@@ -346,7 +329,7 @@ public class TokenClient extends AbstractNetworkClient {
         Instant refInstant = Instant.now();
         return new TransferTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Transfer token_" + refInstant);
+                .setTransactionMemo(getMemo("Transfer token"));
     }
 
     public NetworkTransactionResponse transferFungibleToken(TokenId tokenId, ExpandedAccountId sender,
@@ -368,14 +351,17 @@ public class TokenClient extends AbstractNetworkClient {
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
         PublicKey publicKey = expandedAccountId.getPublicKey();
         String newSymbol = RandomStringUtils.randomAlphabetic(4).toUpperCase();
+        String memo = getMemo("Update token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAdminKey(publicKey)
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
                 .setAutoRenewPeriod(Duration.ofSeconds(8_000_001L))
                 .setTokenName(newSymbol + "_name")
                 .setSupplyKey(publicKey)
+                .setTokenMemo(memo)
                 .setTokenSymbol(newSymbol)
                 .setTokenId(tokenId)
+                .setTransactionMemo(memo)
                 .setTreasuryAccountId(client.getOperatorAccountId())
                 .setWipeKey(publicKey)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
@@ -390,9 +376,12 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse updateTokenTreasury(TokenId tokenId, ExpandedAccountId newTreasuryId) {
         AccountId treasuryAccountId = newTreasuryId.getAccountId();
+        String memo = getMemo("Update token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setTokenId(tokenId)
-                .setTreasuryAccountId(treasuryAccountId);
+                .setTokenMemo(memo)
+                .setTreasuryAccountId(treasuryAccountId)
+                .setTransactionMemo(memo);
 
         KeyList keyList = KeyList.of(newTreasuryId.getPrivateKey());
         NetworkTransactionResponse networkTransactionResponse =
@@ -404,17 +393,17 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private TokenBurnTransaction getTokenBurnTransaction(TokenId tokenId) {
-        Instant refInstant = Instant.now();
         return new TokenBurnTransaction()
                 .setTokenId(tokenId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Burn token_" + refInstant);
+                .setTransactionMemo(getMemo("Burn token"));
     }
 
     public NetworkTransactionResponse burnFungible(TokenId tokenId, long amount) {
         log.debug("Burn {} tokens from {}", amount, tokenId);
         TokenBurnTransaction tokenBurnTransaction = getTokenBurnTransaction(tokenId)
-                .setAmount(amount);
+                .setAmount(amount)
+                .setTransactionMemo(getMemo("Token burn"));
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
 
@@ -427,7 +416,8 @@ public class TokenClient extends AbstractNetworkClient {
 
         log.debug("Burn serial number {} from token {}", serialNumber, tokenId);
         TokenBurnTransaction tokenBurnTransaction = getTokenBurnTransaction(tokenId)
-                .addSerial(serialNumber);
+                .addSerial(serialNumber)
+                .setTransactionMemo(getMemo("Token burn"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenBurnTransaction);
@@ -438,12 +428,11 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private TokenWipeTransaction getTokenWipeTransaction(TokenId tokenId, ExpandedAccountId expandedAccountId) {
-        Instant refInstant = Instant.now();
         return new TokenWipeTransaction()
                 .setAccountId(expandedAccountId.getAccountId())
                 .setTokenId(tokenId)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Wipe token_" + refInstant);
+                .setTransactionMemo(getMemo("Wipe token"));
     }
 
     public NetworkTransactionResponse wipeFungible(TokenId tokenId, long amount, ExpandedAccountId expandedAccountId) {
@@ -482,7 +471,8 @@ public class TokenClient extends AbstractNetworkClient {
         log.debug("Dissociate account {} with token {}", accountId.getAccountId(), token);
         TokenDissociateTransaction tokenDissociateTransaction = new TokenDissociateTransaction()
                 .setAccountId(accountId.getAccountId())
-                .setTokenIds(List.of(token));
+                .setTokenIds(List.of(token))
+                .setTransactionMemo(getMemo("Dissociate token"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
@@ -496,11 +486,10 @@ public class TokenClient extends AbstractNetworkClient {
     public NetworkTransactionResponse delete(ExpandedAccountId accountId, TokenId token) {
 
         log.debug("Delete token {}", token);
-        Instant refInstant = Instant.now();
         TokenDeleteTransaction tokenDissociateTransaction = new TokenDeleteTransaction()
                 .setTokenId(token)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo("Delete token_" + refInstant);
+                .setTransactionMemo(getMemo("Delete token"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(tokenDissociateTransaction,
@@ -516,7 +505,8 @@ public class TokenClient extends AbstractNetworkClient {
         TokenFeeScheduleUpdateTransaction transaction = new TokenFeeScheduleUpdateTransaction()
                 .setCustomFees(customFees)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTokenId(tokenId);
+                .setTokenId(tokenId)
+                .setTransactionMemo(getMemo("Update token fee schedule"));
 
         NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(transaction,
                 KeyList.of(expandedAccountId.getPrivateKey()));

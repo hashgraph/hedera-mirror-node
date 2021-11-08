@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -51,7 +50,6 @@ import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
 @Named
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TopicClient extends AbstractNetworkClient {
@@ -66,9 +64,7 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) {
-
-        Instant refInstant = Instant.now();
-        String memo = "HCS Topic_" + refInstant;
+        String memo = getMemo("Create Topic");
         TopicCreateTransaction consensusTopicCreateTransaction = new TopicCreateTransaction()
                 .setAdminKey(adminAccount.getPublicKey())
                 .setAutoRenewAccountId(sdkClient.getExpandedOperatorAccountId().getAccountId())
@@ -91,16 +87,17 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateTopic(TopicId topicId) {
-        String newMemo = "HCS UpdatedTopic__" + Instant.now().getNano();
+        String memo = getMemo("Update Topic");
         TopicUpdateTransaction consensusTopicUpdateTransaction = new TopicUpdateTransaction()
                 .setTopicId(topicId)
-                .setTopicMemo(newMemo)
+                .setTopicMemo(memo)
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .clearAdminKey()
                 .clearSubmitKey()
                 .clearTopicMemo()
                 .clearAutoRenewAccountId()
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
+                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
+                .setTransactionMemo(memo);
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction);
@@ -112,7 +109,8 @@ public class TopicClient extends AbstractNetworkClient {
     public NetworkTransactionResponse deleteTopic(TopicId topicId) {
         TopicDeleteTransaction consensusTopicDeleteTransaction = new TopicDeleteTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTopicId(topicId);
+                .setTopicId(topicId)
+                .setTransactionMemo(getMemo("Delete Topic"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
@@ -166,7 +164,8 @@ public class TopicClient extends AbstractNetworkClient {
     public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) {
         TopicMessageSubmitTransaction consensusMessageSubmitTransaction = new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
-                .setMessage(message);
+                .setMessage(message)
+                .setTransactionMemo(getMemo("Publish topic message"));
 
         TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKeys);
 

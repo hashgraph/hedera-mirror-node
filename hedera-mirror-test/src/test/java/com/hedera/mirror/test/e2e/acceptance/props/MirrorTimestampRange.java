@@ -20,21 +20,10 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Data;
 
 @Data
-public class MirrorTransaction {
-    private List<MirrorAssessedCustomFee> assessedCustomFees = new ArrayList<>();
-    private String consensusTimestamp;
-    private String entityId;
-    private String name;
-    private List<MirrorNftTransfer> nftTransfers;
-    private String result;
-    private boolean scheduled;
-    private List<MirrorTokenTransfer> tokenTransfers;
-    private String transactionId;
-    private List<MirrorTransfer> transfers;
-    private String validStartTimestamp;
+public class MirrorTimestampRange {
+    private String from;
+    private String to;
 }
