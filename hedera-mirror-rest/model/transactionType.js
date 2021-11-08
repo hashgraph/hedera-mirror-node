@@ -81,7 +81,7 @@ const getProtoId = (transactionTypeName) => {
 
   const type = transactionTypeNameToProto[transactionTypeName.toUpperCase()];
   if (type === undefined) {
-    throw new InvalidArgumentError(`Transaction type ${transactionTypeName.toUpperCase()} not found in db`);
+    throw new InvalidArgumentError(`Invalid transaction type ${transactionTypeName.toUpperCase()}`);
   }
   return type;
 };

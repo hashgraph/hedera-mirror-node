@@ -183,8 +183,6 @@ const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
   return rows.map((v) => `${v.valid_duration_seconds}, ${v.max_fee}`);
 };
 
-const extractNameAndResultFromTransactionResults = (rows) => rows.map((v) => `${v.name}, ${v.result}`);
-
 // expected transaction rows order by consensus_timestamp desc, only check fields consensus_timestamp and crypto_transfer_list
 const expectedTransactionRowsDesc = [
   {
@@ -243,14 +241,6 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   const sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
   const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows)).toEqual(['null, null', 'null, 777', '5, null']);
-});
-
-test('DB integration test - transactions.reqToSql - Unknown transaction result and type', async () => {
-  await addCryptoTransferTransaction(1070, '0.15.7', '0.15.1', 2, 11, 33, -1, -1);
-
-  const sql = transactions.reqToSql({query: {timestamp: '0.000001070'}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
-  expect(extractNameAndResultFromTransactionResults(res.rows)).toEqual(['undefined, -1']);
 });
 
 test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
