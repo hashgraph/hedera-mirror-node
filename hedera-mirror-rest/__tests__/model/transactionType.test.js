@@ -37,6 +37,12 @@ describe('getName', () => {
   test('Return UNKNOWN for invalid proto id', () => {
     expect(TransactionType.getName('')).toEqual('UNKNOWN');
   });
+  test('Return UNKNOWN for null proto id', () => {
+    expect(TransactionType.getName(null)).toEqual('UNKNOWN');
+  });
+  test('Return UNKNOWN for undefined proto id', () => {
+    expect(TransactionType.getName(undefined)).toEqual('UNKNOWN');
+  });
 });
 
 describe('getProtoId', () => {
@@ -56,6 +62,16 @@ describe('getProtoId', () => {
       TransactionType.getProtoId('UNKNOWN');
     }).toThrowError(InvalidArgumentError);
   });
+  test('Throw error for null name', () => {
+    expect(() => {
+      TransactionType.getProtoId(null);
+    }).toThrowError(InvalidArgumentError);
+  });
+  test('Throw error for undefined name', () => {
+    expect(() => {
+      TransactionType.getProtoId(undefined);
+    }).toThrowError(InvalidArgumentError);
+  });
 });
 
 describe('isValid', () => {
@@ -70,6 +86,12 @@ describe('isValid', () => {
   });
   test('Throw error for unknown name', () => {
     expect(TransactionType.isValid('')).toBeFalsy();
+  });
+  test('Throw error for null name', () => {
+    expect(TransactionType.isValid(null)).toBeFalsy();
+  });
+  test('Throw error for undefined name', () => {
+    expect(TransactionType.isValid(undefined)).toBeFalsy();
   });
 });
 describe('transactionType constants are up to date', () => {
