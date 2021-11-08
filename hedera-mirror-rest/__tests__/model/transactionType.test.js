@@ -21,8 +21,11 @@
 'use strict';
 
 // models
-const {TransactionType} = require('../../model');
+const {TransactionType, TransactionResult} = require('../../model');
 const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
+const {proto} = require('@hashgraph/proto/lib/proto');
+
+const hederaFunctionalityLength = 64;
 
 describe('getName', () => {
   test('Return valid name', () => {
@@ -53,19 +56,26 @@ describe('getProtoId', () => {
       TransactionType.getProtoId('UNKNOWN');
     }).toThrowError(InvalidArgumentError);
   });
+});
 
-  describe('isValid', () => {
-    test('Return valid proto id', () => {
-      expect(TransactionType.isValid('CRYPTOCREATEACCOUNT')).toBeTruthy();
-    });
-    test('Return valid proto id for camel case', () => {
-      expect(TransactionType.isValid('cryptoCreateAccount')).toBeTruthy();
-    });
-    test('Throw error for invalid name', () => {
-      expect(TransactionType.isValid(22)).toBeFalsy();
-    });
-    test('Throw error for unknown name', () => {
-      expect(TransactionType.isValid('')).toBeFalsy();
-    });
+describe('isValid', () => {
+  test('Return valid proto id', () => {
+    expect(TransactionType.isValid('CRYPTOCREATEACCOUNT')).toBeTruthy();
+  });
+  test('Return valid proto id for camel case', () => {
+    expect(TransactionType.isValid('cryptoCreateAccount')).toBeTruthy();
+  });
+  test('Throw error for invalid name', () => {
+    expect(TransactionType.isValid(22)).toBeFalsy();
+  });
+  test('Throw error for unknown name', () => {
+    expect(TransactionType.isValid('')).toBeFalsy();
+  });
+});
+describe('transactionType constants are up to date', () => {
+  //There isn't a dedicate enum for TransactionBody values, so just check that no new HederaFunctionality exists
+  test('transactionType have new values been added', () => {
+    //Last entry is TokenFeeScheduleUpdate: 77
+    expect(Object.keys(proto.HederaFunctionality).length).toEqual(hederaFunctionalityLength);
   });
 });

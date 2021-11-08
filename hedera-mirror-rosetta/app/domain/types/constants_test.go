@@ -33,3 +33,9 @@ func TestResponseCodeUpToDate(t *testing.T) {
 		assert.Equal(t, name, TransactionResults[code])
 	}
 }
+
+func TestTransactionTypesUpToDate(t *testing.T) {
+	//There isn't a dedicate enum for TransactionBody values, so just check that no new HederaFunctionality exists
+	//Last entry is 80: TokenUnpause
+	assert.Equal(t, len(proto.HederaFunctionality_name), 67)
+}
