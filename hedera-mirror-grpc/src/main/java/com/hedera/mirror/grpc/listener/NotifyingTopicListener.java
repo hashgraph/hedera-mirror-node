@@ -21,7 +21,7 @@ package com.hedera.mirror.grpc.listener;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.vertx.core.Vertx;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.pubsub.PgChannel;
@@ -29,9 +29,8 @@ import io.vertx.pgclient.pubsub.PgSubscriber;
 import java.time.Duration;
 import java.util.Objects;
 import javax.inject.Named;
-import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Sinks;
 import reactor.util.retry.Retry;
 
 import com.hedera.mirror.grpc.DbProperties;
@@ -48,12 +47,13 @@ public class NotifyingTopicListener extends SharedTopicListener {
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
         super(listenerProperties);
 
-        this.objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         PgConnectOptions connectOptions = new PgConnectOptions()
                 .setDatabase(dbProperties.getName())
                 .setHost(dbProperties.getHost())
                 .setPassword(dbProperties.getPassword())
                 .setPort(dbProperties.getPort())
+                .setSslMode(dbProperties.getSslMode())
                 .setUser(dbProperties.getUsername());
 
         Duration interval = listenerProperties.getInterval();
@@ -90,14 +90,13 @@ public class NotifyingTopicListener extends SharedTopicListener {
     }
 
     private Flux<String> listen() {
-        EmitterProcessor<String> emitterProcessor = EmitterProcessor.create();
-        FluxSink<String> sink = emitterProcessor.sink().onDispose(this::unlisten);
-        channel.handler(sink::next);
+        Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
+        channel.handler(sink::tryEmitNext);
         log.info("Listening for messages");
-        return emitterProcessor;
+        return sink.asFlux().doFinally(x -> unListen());
     }
 
-    private void unlisten() {
+    private void unListen() {
         channel.handler(null);
         log.info("Stopped listening for messages");
     }

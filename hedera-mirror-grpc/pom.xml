@@ -178,6 +178,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.ongres.scram</groupId>
+            <artifactId>client</artifactId>
+            <version>2.1</version>
+        </dependency>
         <!-- Test -->
         <dependency>
             <groupId>io.projectreactor</groupId>
