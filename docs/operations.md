@@ -249,9 +249,9 @@ also recommended to create a `restapi` user and execute all commands as that use
 
 ```shell script
 sudo apt-get install build-essential libssl-dev git postgresql-client
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 bash # reload shell
-nvm install stable #pin the current versions node: v12.10.0, npm: 6.10.3
+nvm install --lts #pin the current lts version node and npm provided by node distribution
 npm install -g pm2
 sudo mkdir -p /opt/restapi
 sudo chown restapi: /opt/restapi
@@ -264,9 +264,17 @@ hedera:
         host: dbhost
         password: mirror_api_pass
 EOF
-wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.8.1/hedera-mirror-rest-v0.8.1.tgz"
+wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/${VERSION}/hedera-mirror-rest-${VERSION}.tgz"
 tar --strip-components=1 -xvf hedera-mirror-rest-v*.tgz
 pm2 start pm2.json
+```
+
+Please set `VERSION` to a release tag listed [here](https://github.com/hashgraph/hedera-mirror-node/releases).
+
+You can use the following shell command to get the latest release tag:
+
+```shell script
+VERSION=$(curl -s https://github.com/hashgraph/hedera-mirror-node/releases/latest | sed -n -e 's/^.*\(v[0-9.]\+\).*$/\1/p')
 ```
 
 ### File Layout
@@ -276,13 +284,13 @@ pm2 start pm2.json
 
 ### Upgrading
 
-Replace the version below with the appropriate version:
+Replace the `VERSION` below with the appropriate version:
 
 ```shell script
 sudo su - restapi
 cd /opt/restapi
 pm2 stop all
-wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.8.1/hedera-mirror-rest-v0.8.1.tgz"
+wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/${VERSION}/hedera-mirror-rest-${VERSION}.tgz"
 tar --strip-components=1 -xvf hedera-mirror-rest-v*.tgz
 pm2 start pm2.json
 ```

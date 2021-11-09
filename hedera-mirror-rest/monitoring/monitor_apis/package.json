@@ -5,7 +5,7 @@
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=12.6.0"
+    "node": ">=16.13.0 < 17"
   },
   "scripts": {
     "test": "jest --watchAll",
