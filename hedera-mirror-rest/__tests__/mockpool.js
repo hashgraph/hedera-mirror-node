@@ -115,7 +115,7 @@ class Pool {
         orderprefix = 'account_id';
         break;
       case 'accounts':
-        orderprefix = 'coalesce\\(balances.account_id, e.id\\)';
+        orderprefix = '(coalesce\\(ab.account_id, e.id\\)|id|account_id)';
         break;
       default:
         break;
