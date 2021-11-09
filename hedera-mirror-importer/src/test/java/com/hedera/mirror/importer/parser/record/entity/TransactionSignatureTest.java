@@ -33,7 +33,6 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
-import com.hedera.mirror.importer.domain.EntityType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -62,8 +61,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TransactionSignature;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -103,7 +103,7 @@ class TransactionSignatureTest {
 
     private EntityRecordItemListener entityRecordItemListener;
 
-    private Set<TransactionTypeEnum> transactionSignatures;
+    private Set<TransactionType> transactionSignatures;
 
     private static Stream<Arguments> provideDefaultTransactionSignatures() {
         return new EntityProperties().getPersist().getTransactionSignatures()
@@ -135,12 +135,12 @@ class TransactionSignatureTest {
         transactionSignatures = entityProperties.getPersist().getTransactionSignatures();
 
         doReturn(ENTITY_ID).when(transactionHandler).getEntity(any(RecordItem.class));
-        doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionTypeEnum.class));
+        doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
     }
 
     @Test
     void nonEd25519Signature() {
-        transactionSignatures.add(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE);
+        transactionSignatures.add(TransactionType.CONSENSUSSUBMITMESSAGE);
 
         SignatureMap signatureMap = defaultSignatureMap
                 .addSigPair(SignaturePair.newBuilder()
@@ -148,14 +148,14 @@ class TransactionSignatureTest {
                         .setRSA3072(ByteString.copyFromUtf8("RSA3072Signature"))
                         .build())
                 .build();
-        RecordItem recordItem = getRecordItem(TransactionTypeEnum.CONSENSUSSUBMITMESSAGE, SUCCESS, signatureMap);
+        RecordItem recordItem = getRecordItem(TransactionType.CONSENSUSSUBMITMESSAGE, SUCCESS, signatureMap);
 
         assertThrows(ImporterException.class, () -> entityRecordItemListener.onItem(recordItem));
     }
 
     @ParameterizedTest
-    @EnumSource(value = TransactionTypeEnum.class, names = "UNKNOWN", mode = EXCLUDE)
-    void transactionSignatureEnabled(TransactionTypeEnum transactionType) {
+    @EnumSource(value = TransactionType.class, names = "UNKNOWN", mode = EXCLUDE)
+    void transactionSignatureEnabled(TransactionType transactionType) {
         transactionSignatures.clear();
         transactionSignatures.add(transactionType);
 
@@ -166,8 +166,8 @@ class TransactionSignatureTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TransactionTypeEnum.class, names = "UNKNOWN", mode = EXCLUDE)
-    void transactionSignatureDisabled(TransactionTypeEnum transactionType) {
+    @EnumSource(value = TransactionType.class, names = "UNKNOWN", mode = EXCLUDE)
+    void transactionSignatureDisabled(TransactionType transactionType) {
         transactionSignatures.clear();
         transactionSignatures.addAll(EnumSet.complementOf(EnumSet.of(transactionType)));
 
@@ -178,9 +178,9 @@ class TransactionSignatureTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TransactionTypeEnum.class, names = "UNKNOWN", mode = EXCLUDE)
-    void transactionSignatureFailedTransaction(TransactionTypeEnum transactionType) {
-        transactionSignatures.addAll(EnumSet.allOf(TransactionTypeEnum.class));
+    @EnumSource(value = TransactionType.class, names = "UNKNOWN", mode = EXCLUDE)
+    void transactionSignatureFailedTransaction(TransactionType transactionType) {
+        transactionSignatures.addAll(EnumSet.allOf(TransactionType.class));
 
         RecordItem recordItem = getRecordItem(transactionType, FAIL_FEE);
         entityRecordItemListener.onItem(recordItem);
@@ -190,7 +190,7 @@ class TransactionSignatureTest {
 
     @ParameterizedTest
     @MethodSource("provideDefaultTransactionSignatures")
-    void transactionSignatureDefault(TransactionTypeEnum transactionType) {
+    void transactionSignatureDefault(TransactionType transactionType) {
         RecordItem recordItem = getRecordItem(transactionType, SUCCESS);
         entityRecordItemListener.onItem(recordItem);
 
@@ -218,11 +218,11 @@ class TransactionSignatureTest {
         return sigMap;
     }
 
-    private RecordItem getRecordItem(TransactionTypeEnum transactionType, ResponseCodeEnum responseCode) {
+    private RecordItem getRecordItem(TransactionType transactionType, ResponseCodeEnum responseCode) {
         return getRecordItem(transactionType, responseCode, defaultSignatureMap.build());
     }
 
-    private RecordItem getRecordItem(TransactionTypeEnum transactionType, ResponseCodeEnum responseCode,
+    private RecordItem getRecordItem(TransactionType transactionType, ResponseCodeEnum responseCode,
                                      SignatureMap signatureMap) {
         TransactionBody transactionBody = getTransactionBody(transactionType);
         Transaction transaction = Transaction.newBuilder()
@@ -241,7 +241,7 @@ class TransactionSignatureTest {
         return new RecordItem(transaction, transactionRecord);
     }
 
-    private TransactionBody getTransactionBody(TransactionTypeEnum transactionType) {
+    private TransactionBody getTransactionBody(TransactionType transactionType) {
         TransactionBody.Builder builder = TransactionBody.newBuilder();
         Descriptors.Descriptor descriptor = TransactionBody.getDescriptor();
         Descriptors.FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(transactionType.getProtoId());

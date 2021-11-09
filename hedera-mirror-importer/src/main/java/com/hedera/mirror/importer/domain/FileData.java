@@ -50,7 +50,7 @@ public class FileData implements Persistable<Long> {
     private Integer transactionType;
 
     public boolean transactionTypeIsAppend() {
-        return transactionType == TransactionTypeEnum.FILEAPPEND.getProtoId();
+        return transactionType == TransactionType.FILEAPPEND.getProtoId();
     }
 
     @JsonIgnore

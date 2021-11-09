@@ -89,7 +89,7 @@ import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
@@ -692,7 +692,7 @@ public abstract class AbstractDownloaderTest {
                 now,
                 addressBookBytes,
                 entityId,
-                TransactionTypeEnum.FILECREATE.getProtoId()));
+                TransactionType.FILECREATE.getProtoId()));
     }
 
     private static Stream<Arguments> provideAllNodeAccountIds() {

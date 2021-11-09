@@ -72,7 +72,7 @@ import com.hedera.mirror.importer.domain.TokenTypeEnum;
 import com.hedera.mirror.importer.domain.TopicMessage;
 import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionSignature;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -346,7 +346,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onFileData() {
         // given
         FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
-                .of(0, 0, 111, EntityType.FILE), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE.getProtoId());
+                .of(0, 0, 111, EntityType.FILE), TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId());
 
         // when
         sqlEntityListener.onFileData(expectedFileData);

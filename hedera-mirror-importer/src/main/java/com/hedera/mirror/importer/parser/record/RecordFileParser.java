@@ -38,7 +38,7 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
@@ -72,7 +72,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         ImmutableMap.Builder<Integer, Timer> latencyMetricsBuilder = ImmutableMap.builder();
         ImmutableMap.Builder<Integer, DistributionSummary> sizeMetricsBuilder = ImmutableMap.builder();
 
-        for (TransactionTypeEnum type : TransactionTypeEnum.values()) {
+        for (TransactionType type : TransactionType.values()) {
             Timer timer = Timer.builder("hedera.mirror.transaction.latency")
                     .description("The difference in ms between the time consensus was achieved and the mirror node " +
                             "processed the transaction")
@@ -90,8 +90,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
         latencyMetrics = latencyMetricsBuilder.build();
         sizeMetrics = sizeMetricsBuilder.build();
-        unknownLatencyMetric = latencyMetrics.get(TransactionTypeEnum.UNKNOWN.getProtoId());
-        unknownSizeMetric = sizeMetrics.get(TransactionTypeEnum.UNKNOWN.getProtoId());
+        unknownLatencyMetric = latencyMetrics.get(TransactionType.UNKNOWN.getProtoId());
+        unknownSizeMetric = sizeMetrics.get(TransactionType.UNKNOWN.getProtoId());
     }
 
     /**

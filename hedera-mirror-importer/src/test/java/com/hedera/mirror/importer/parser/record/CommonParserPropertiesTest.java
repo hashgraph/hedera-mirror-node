@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.parser.record;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
-
-import com.hedera.mirror.importer.domain.EntityType;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,8 +31,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.CommonParserProperties.TransactionFilter;
 
@@ -47,7 +46,7 @@ class CommonParserPropertiesTest {
     @Test
     void filterEmpty() {
         assertTrue(commonParserProperties.getFilter().test(
-                new TransactionFilterFields(entity("0.0.1"), TransactionTypeEnum.CONSENSUSSUBMITMESSAGE)));
+                new TransactionFilterFields(entity("0.0.1"), TransactionType.CONSENSUSSUBMITMESSAGE)));
     }
 
     @DisplayName("Filter using include")
@@ -64,11 +63,11 @@ class CommonParserPropertiesTest {
             "0.0.1, UNKNOWN, false",
             ", UNKNOWN, false"
     })
-    void filterInclude(String entityId, TransactionTypeEnum type, boolean result) {
-        commonParserProperties.getInclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
-        commonParserProperties.getInclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
+    void filterInclude(String entityId, TransactionType type, boolean result) {
+        commonParserProperties.getInclude().add(filter("0.0.1", TransactionType.CONSENSUSSUBMITMESSAGE));
+        commonParserProperties.getInclude().add(filter("0.0.2", TransactionType.CRYPTOCREATEACCOUNT));
         commonParserProperties.getInclude().add(filter("0.0.3", null));
-        commonParserProperties.getInclude().add(filter(null, TransactionTypeEnum.FILECREATE));
+        commonParserProperties.getInclude().add(filter(null, TransactionType.FILECREATE));
 
         assertEquals(result, commonParserProperties.getFilter().test(
                 new TransactionFilterFields(entity(entityId), type)));
@@ -88,11 +87,11 @@ class CommonParserPropertiesTest {
             "0.0.1, UNKNOWN, true",
             ", UNKNOWN, true"
     })
-    void filterExclude(String entityId, TransactionTypeEnum type, boolean result) {
-        commonParserProperties.getExclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
-        commonParserProperties.getExclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
+    void filterExclude(String entityId, TransactionType type, boolean result) {
+        commonParserProperties.getExclude().add(filter("0.0.1", TransactionType.CONSENSUSSUBMITMESSAGE));
+        commonParserProperties.getExclude().add(filter("0.0.2", TransactionType.CRYPTOCREATEACCOUNT));
         commonParserProperties.getExclude().add(filter("0.0.3", null));
-        commonParserProperties.getExclude().add(filter(null, TransactionTypeEnum.FILECREATE));
+        commonParserProperties.getExclude().add(filter(null, TransactionType.FILECREATE));
 
         assertEquals(result, commonParserProperties.getFilter().test(
                 new TransactionFilterFields(entity(entityId), type)));
@@ -110,17 +109,17 @@ class CommonParserPropertiesTest {
             "0.0.4, FREEZE, false",
             "0.0.5, CONSENSUSSUBMITMESSAGE, false",
     })
-    void filterBoth(String entityId, TransactionTypeEnum type, boolean result) {
-        commonParserProperties.getInclude().add(filter("0.0.1", TransactionTypeEnum.CONSENSUSSUBMITMESSAGE));
-        commonParserProperties.getInclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOCREATEACCOUNT));
-        commonParserProperties.getInclude().add(filter("0.0.3", TransactionTypeEnum.FREEZE));
-        commonParserProperties.getInclude().add(filter("0.0.4", TransactionTypeEnum.FILECREATE));
-        commonParserProperties.getInclude().add(filter("0.0.5", TransactionTypeEnum.CONSENSUSCREATETOPIC));
+    void filterBoth(String entityId, TransactionType type, boolean result) {
+        commonParserProperties.getInclude().add(filter("0.0.1", TransactionType.CONSENSUSSUBMITMESSAGE));
+        commonParserProperties.getInclude().add(filter("0.0.2", TransactionType.CRYPTOCREATEACCOUNT));
+        commonParserProperties.getInclude().add(filter("0.0.3", TransactionType.FREEZE));
+        commonParserProperties.getInclude().add(filter("0.0.4", TransactionType.FILECREATE));
+        commonParserProperties.getInclude().add(filter("0.0.5", TransactionType.CONSENSUSCREATETOPIC));
 
-        commonParserProperties.getExclude().add(filter("0.0.2", TransactionTypeEnum.CRYPTOUPDATEACCOUNT));
+        commonParserProperties.getExclude().add(filter("0.0.2", TransactionType.CRYPTOUPDATEACCOUNT));
         commonParserProperties.getExclude().add(filter("0.0.3", null));
-        commonParserProperties.getExclude().add(filter(null, TransactionTypeEnum.FILECREATE));
-        commonParserProperties.getExclude().add(filter("0.0.5", TransactionTypeEnum.CONSENSUSCREATETOPIC));
+        commonParserProperties.getExclude().add(filter(null, TransactionType.FILECREATE));
+        commonParserProperties.getExclude().add(filter("0.0.5", TransactionType.CONSENSUSCREATETOPIC));
 
         assertEquals(result, commonParserProperties.getFilter().test(
                 new TransactionFilterFields(entity(entityId), type)));
@@ -134,7 +133,7 @@ class CommonParserPropertiesTest {
         return EntityId.of(entityId, EntityType.ACCOUNT);
     }
 
-    private TransactionFilter filter(String entity, TransactionTypeEnum type) {
+    private TransactionFilter filter(String entity, TransactionType type) {
         TransactionFilter transactionFilter = new TransactionFilter();
 
         if (StringUtils.isNotBlank(entity)) {

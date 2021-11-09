@@ -26,21 +26,21 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 
 @Named
 public class TransactionHandlerFactory {
 
-    private final Map<TransactionTypeEnum, TransactionHandler> transactionHandlers;
+    private final Map<TransactionType, TransactionHandler> transactionHandlers;
     private final TransactionHandler defaultTransactionHandler;
 
     TransactionHandlerFactory(List<TransactionHandler> transactionHandlers) {
         this.transactionHandlers = transactionHandlers.stream()
                 .collect(Collectors.toUnmodifiableMap(TransactionHandler::getType, Function.identity()));
-        this.defaultTransactionHandler = this.transactionHandlers.get(TransactionTypeEnum.UNKNOWN);
+        this.defaultTransactionHandler = this.transactionHandlers.get(TransactionType.UNKNOWN);
     }
 
-    public TransactionHandler get(TransactionTypeEnum transactionType) {
+    public TransactionHandler get(TransactionType transactionType) {
         return transactionHandlers.getOrDefault(transactionType, defaultTransactionHandler);
     }
 }

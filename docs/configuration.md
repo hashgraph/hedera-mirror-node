@@ -102,10 +102,10 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.event.transactionTimeout`             | 30s                     | The timeout in seconds for a database transaction                                              |
 | `hedera.mirror.importer.parser.exclude`                              | []                      | A list of filters that determine which transactions are ignored. Takes precedence over include |
 | `hedera.mirror.importer.parser.exclude.entity`                       | []                      | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                          |
-| `hedera.mirror.importer.parser.exclude.transaction`                  | []                      | A list of transaction types to ignore. See `TransactionTypeEnum.java` for possible values      |
+| `hedera.mirror.importer.parser.exclude.transaction`                  | []                      | A list of transaction types to ignore. See `TransactionType.java` for possible values      |
 | `hedera.mirror.importer.parser.include`                              | []                      | A list of filters that determine which transactions are stored                                 |
 | `hedera.mirror.importer.parser.include.entity`                       | []                      | A list of entity IDs to store in shard.realm.num (e.g. 0.0.3) format                           |
-| `hedera.mirror.importer.parser.include.transaction`                  | []                      | A list of transaction types to store. See `TransactionTypeEnum.java` for possible values       |
+| `hedera.mirror.importer.parser.include.transaction`                  | []                      | A list of transaction types to store. See `TransactionType.java` for possible values       |
 | `hedera.mirror.importer.parser.record.enabled`                       | true                    | Whether to enable record file parsing                                                          |
 | `hedera.mirror.importer.parser.record.entity.notify.enabled`                | false                   | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                    |
 | `hedera.mirror.importer.parser.record.entity.notify.maxJsonPayloadSize`     | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |

@@ -36,7 +36,7 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.EntityOperati
 
 @Getter
 @RequiredArgsConstructor
-public enum TransactionTypeEnum {
+public enum TransactionType {
 
     UNKNOWN(-1, NONE),
     CONTRACTCALL(7, NONE),
@@ -80,13 +80,13 @@ public enum TransactionTypeEnum {
     TOKENPAUSE(46, NONE),
     TOKENUNPAUSE(47, NONE);
 
-    private static final Map<Integer, TransactionTypeEnum> idMap = Arrays.stream(values())
-            .collect(Collectors.toMap(TransactionTypeEnum::getProtoId, Function.identity()));
+    private static final Map<Integer, TransactionType> idMap = Arrays.stream(values())
+            .collect(Collectors.toMap(TransactionType::getProtoId, Function.identity()));
 
     private final int protoId;
     private final EntityOperation entityOperation;
 
-    public static TransactionTypeEnum of(int protoId) {
+    public static TransactionType of(int protoId) {
         return idMap.getOrDefault(protoId, UNKNOWN);
     }
 }

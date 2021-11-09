@@ -27,7 +27,7 @@ import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.ContractResult;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -50,8 +50,8 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
     }
 
     @Override
-    public TransactionTypeEnum getType() {
-        return TransactionTypeEnum.CONTRACTCREATEINSTANCE;
+    public TransactionType getType() {
+        return TransactionType.CONTRACTCREATEINSTANCE;
     }
 
     /*

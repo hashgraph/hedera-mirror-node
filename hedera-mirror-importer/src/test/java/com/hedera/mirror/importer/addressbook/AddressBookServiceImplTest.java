@@ -63,7 +63,7 @@ import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -138,25 +138,25 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     private FileData createFileData(byte[] contents, long consensusTimeStamp, boolean is102,
-                                    TransactionTypeEnum transactionTypeEnum) {
+                                    TransactionType transactionType) {
         EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
                 AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID;
-        return new FileData(consensusTimeStamp, contents, entityId, transactionTypeEnum.getProtoId());
+        return new FileData(consensusTimeStamp, contents, entityId, transactionType.getProtoId());
     }
 
     private FileData store(byte[] contents, long consensusTimeStamp, boolean is102) {
-        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEUPDATE);
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionType.FILEUPDATE);
         return fileDataRepository.save(fileData);
     }
 
     private void update(byte[] contents, long consensusTimeStamp, boolean is102) {
-        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEUPDATE);
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionType.FILEUPDATE);
         addressBookService.update(fileData);
         fileDataRepository.save(fileData);
     }
 
     private void append(byte[] contents, long consensusTimeStamp, boolean is102) {
-        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionTypeEnum.FILEAPPEND);
+        FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionType.FILEAPPEND);
         fileDataRepository.save(fileData);
         addressBookService.update(fileData);
     }
@@ -641,7 +641,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         // migration
         int addressBook5NodeCount = 20;
         byte[] addressBookBytes5 = addressBook(addressBook5NodeCount, 0).toByteArray();
-        addressBookService.update(createFileData(addressBookBytes5, 6L, true, TransactionTypeEnum.FILEUPDATE));
+        addressBookService.update(createFileData(addressBookBytes5, 6L, true, TransactionType.FILEUPDATE));
 
         assertEquals(4, fileDataRepository.count());
         assertEquals(6, addressBookRepository.count()); // initial plus 5 files
@@ -900,16 +900,16 @@ class AddressBookServiceImplTest extends IntegrationTest {
         int index101 = addressBook101Bytes.length / 2;
         byte[] addressBook101Bytes1 = Arrays.copyOfRange(addressBook101Bytes, 0, index101);
         byte[] addressBook101Bytes2 = Arrays.copyOfRange(addressBook101Bytes, index101, addressBook101Bytes.length);
-        fileDataRepository.save(createFileData(addressBook101Bytes1, 4L, false, TransactionTypeEnum.FILEUPDATE));
-        fileDataRepository.save(createFileData(addressBook101Bytes2, 5L, false, TransactionTypeEnum.FILEAPPEND));
+        fileDataRepository.save(createFileData(addressBook101Bytes1, 4L, false, TransactionType.FILEUPDATE));
+        fileDataRepository.save(createFileData(addressBook101Bytes2, 5L, false, TransactionType.FILEAPPEND));
 
         // file 102 update contents to be split over 1 update and 1 append operation
         byte[] addressBook102Bytes = FINAL.toByteArray();
         int index = addressBook102Bytes.length / 2;
         byte[] addressBook102Bytes1 = Arrays.copyOfRange(addressBook102Bytes, 0, index);
         byte[] addressBook102Bytes2 = Arrays.copyOfRange(addressBook102Bytes, index, addressBook102Bytes.length);
-        fileDataRepository.save(createFileData(addressBook102Bytes1, 6L, true, TransactionTypeEnum.FILEUPDATE));
-        fileDataRepository.save(createFileData(addressBook102Bytes2, 7L, true, TransactionTypeEnum.FILEAPPEND));
+        fileDataRepository.save(createFileData(addressBook102Bytes1, 6L, true, TransactionType.FILEUPDATE));
+        fileDataRepository.save(createFileData(addressBook102Bytes2, 7L, true, TransactionType.FILEAPPEND));
 
         // migration on startup
         AddressBook newAddressBook = addressBookService.migrate();
@@ -941,19 +941,19 @@ class AddressBookServiceImplTest extends IntegrationTest {
         int index101 = addressBook101Bytes.length / 2;
         byte[] addressBook101Bytes1 = Arrays.copyOfRange(addressBook101Bytes, 0, index101);
         byte[] addressBook101Bytes2 = Arrays.copyOfRange(addressBook101Bytes, index101, addressBook101Bytes.length);
-        fileDataRepository.save(createFileData(addressBook101Bytes1, 4L, false, TransactionTypeEnum.FILEUPDATE));
-        fileDataRepository.save(createFileData(addressBook101Bytes2, 5L, false, TransactionTypeEnum.FILEAPPEND));
+        fileDataRepository.save(createFileData(addressBook101Bytes1, 4L, false, TransactionType.FILEUPDATE));
+        fileDataRepository.save(createFileData(addressBook101Bytes2, 5L, false, TransactionType.FILEAPPEND));
 
         // file 102 update contents to be split over 1 update and 1 append operation
         byte[] addressBook102Bytes = FINAL.toByteArray();
         int index = addressBook102Bytes.length / 2;
         byte[] addressBook102Bytes1 = Arrays.copyOfRange(addressBook102Bytes, 0, index);
         byte[] addressBook102Bytes2 = Arrays.copyOfRange(addressBook102Bytes, index, addressBook102Bytes.length);
-        fileDataRepository.save(createFileData(addressBook102Bytes1, 6L, true, TransactionTypeEnum.FILEUPDATE));
-        fileDataRepository.save(createFileData(addressBook102Bytes2, 7L, true, TransactionTypeEnum.FILEAPPEND));
+        fileDataRepository.save(createFileData(addressBook102Bytes1, 6L, true, TransactionType.FILEUPDATE));
+        fileDataRepository.save(createFileData(addressBook102Bytes2, 7L, true, TransactionType.FILEAPPEND));
 
         // migration on update, missing address books are created
-        addressBookService.update(createFileData(addressBook101Bytes1, 10L, false, TransactionTypeEnum.FILEUPDATE));
+        addressBookService.update(createFileData(addressBook101Bytes1, 10L, false, TransactionType.FILEUPDATE));
         AddressBook newAddressBook = addressBookService.getCurrent(); // latest missing address book is current
         assertThat(newAddressBook.getStartConsensusTimestamp()).isEqualTo(8L);
         assertAddressBook(newAddressBook, FINAL);

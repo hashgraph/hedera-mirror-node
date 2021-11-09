@@ -43,7 +43,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @EnabledIfV1
@@ -86,17 +86,17 @@ class EntityTimestampMigrationTest extends IntegrationTest {
         ));
 
         persistTransactions(List.of(
-                transaction(102L, 9001, SUCCESS, TransactionTypeEnum.CRYPTOUPDATEACCOUNT),
-                transaction(103L, 9002, SUCCESS, TransactionTypeEnum.CONTRACTCREATEINSTANCE),
-                transaction(104L, 9002, INSUFFICIENT_TX_FEE, TransactionTypeEnum.CONTRACTUPDATEINSTANCE),
-                transaction(105L, 9003, SUCCESS, TransactionTypeEnum.FILECREATE),
-                transaction(106L, 9003, SUCCESS, TransactionTypeEnum.FILEDELETE),
-                transaction(107L, 9004, SUCCESS, TransactionTypeEnum.CONSENSUSCREATETOPIC),
-                transaction(108L, 9004, SUCCESS, TransactionTypeEnum.CONSENSUSUPDATETOPIC),
-                transaction(109L, 9004, SUCCESS, TransactionTypeEnum.CONSENSUSUPDATETOPIC),
-                transaction(110L, 9004, SUCCESS, TransactionTypeEnum.CONSENSUSUPDATETOPIC),
-                transaction(111L, 9005, SUCCESS, TransactionTypeEnum.TOKENCREATION),
-                transaction(112L, 9006, SUCCESS, TransactionTypeEnum.SCHEDULECREATE)
+                transaction(102L, 9001, SUCCESS, TransactionType.CRYPTOUPDATEACCOUNT),
+                transaction(103L, 9002, SUCCESS, TransactionType.CONTRACTCREATEINSTANCE),
+                transaction(104L, 9002, INSUFFICIENT_TX_FEE, TransactionType.CONTRACTUPDATEINSTANCE),
+                transaction(105L, 9003, SUCCESS, TransactionType.FILECREATE),
+                transaction(106L, 9003, SUCCESS, TransactionType.FILEDELETE),
+                transaction(107L, 9004, SUCCESS, TransactionType.CONSENSUSCREATETOPIC),
+                transaction(108L, 9004, SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
+                transaction(109L, 9004, SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
+                transaction(110L, 9004, SUCCESS, TransactionType.CONSENSUSUPDATETOPIC),
+                transaction(111L, 9005, SUCCESS, TransactionType.TOKENCREATION),
+                transaction(112L, 9006, SUCCESS, TransactionType.SCHEDULECREATE)
         ));
 
         List<MigrationEntity> expected = List.of(
@@ -134,7 +134,7 @@ class EntityTimestampMigrationTest extends IntegrationTest {
     }
 
     private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result,
-                                    TransactionTypeEnum type) {
+                                    TransactionType type) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusNs);
         transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));

@@ -45,7 +45,7 @@ import com.hedera.mirror.importer.domain.Entity;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.EntityIdEndec;
@@ -103,17 +103,17 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
         long[] createTimestamps = new long[] {10, 20, 30, 40, 50, 60};
         insertTransaction(createTimestamps[0], 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CRYPTOCREATEACCOUNT);
+                TransactionType.CRYPTOCREATEACCOUNT);
         insertTransaction(createTimestamps[1], 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONTRACTCREATEINSTANCE);
+                TransactionType.CONTRACTCREATEINSTANCE);
         insertTransaction(createTimestamps[2], 3, EntityType.FILE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.FILECREATE);
+                TransactionType.FILECREATE);
         insertTransaction(createTimestamps[3], 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONSENSUSCREATETOPIC);
+                TransactionType.CONSENSUSCREATETOPIC);
         insertTransaction(createTimestamps[4], 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.TOKENCREATION);
+                TransactionType.TOKENCREATION);
         insertTransaction(createTimestamps[5], 6, EntityType.SCHEDULE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.SCHEDULECREATE);
+                TransactionType.SCHEDULECREATE);
 
         assertEquals(ids.length, getTEntitiesCount());
 
@@ -175,31 +175,31 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         // failed create transactions
         insertTransaction(createTimestamps[0] - 1, 1, EntityType.ACCOUNT,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
-                TransactionTypeEnum.CRYPTOCREATEACCOUNT);
+                TransactionType.CRYPTOCREATEACCOUNT);
         insertTransaction(createTimestamps[1] - 1, 2, EntityType.CONTRACT, ResponseCodeEnum.INVALID_TRANSACTION,
-                TransactionTypeEnum.CONTRACTCREATEINSTANCE);
+                TransactionType.CONTRACTCREATEINSTANCE);
         insertTransaction(createTimestamps[2] - 1, 3, EntityType.FILE, ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND,
-                TransactionTypeEnum.FILECREATE);
+                TransactionType.FILECREATE);
         insertTransaction(createTimestamps[3] - 1, 4, EntityType.TOPIC, ResponseCodeEnum.INVALID_NODE_ACCOUNT,
-                TransactionTypeEnum.CONSENSUSCREATETOPIC);
+                TransactionType.CONSENSUSCREATETOPIC);
         insertTransaction(createTimestamps[4] - 1, 5, EntityType.TOKEN, ResponseCodeEnum.INVALID_SIGNATURE,
-                TransactionTypeEnum.TOKENCREATION);
+                TransactionType.TOKENCREATION);
         insertTransaction(createTimestamps[5] - 1, 6, EntityType.SCHEDULE, ResponseCodeEnum.MEMO_TOO_LONG,
-                TransactionTypeEnum.SCHEDULECREATE);
+                TransactionType.SCHEDULECREATE);
 
         // successful create transactions
         insertTransaction(createTimestamps[0], 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CRYPTOCREATEACCOUNT);
+                TransactionType.CRYPTOCREATEACCOUNT);
         insertTransaction(createTimestamps[1], 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONTRACTCREATEINSTANCE);
+                TransactionType.CONTRACTCREATEINSTANCE);
         insertTransaction(createTimestamps[2], 3, EntityType.FILE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.FILECREATE);
+                TransactionType.FILECREATE);
         insertTransaction(createTimestamps[3], 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONSENSUSCREATETOPIC);
+                TransactionType.CONSENSUSCREATETOPIC);
         insertTransaction(createTimestamps[4], 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.TOKENCREATION);
+                TransactionType.TOKENCREATION);
         insertTransaction(createTimestamps[5], 6, EntityType.SCHEDULE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.SCHEDULECREATE);
+                TransactionType.SCHEDULECREATE);
 
         // migration
         migrate();
@@ -231,28 +231,28 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
         // successful create transactions
         insertTransaction(createTimestamps[0], 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CRYPTOCREATEACCOUNT);
+                TransactionType.CRYPTOCREATEACCOUNT);
         insertTransaction(createTimestamps[1], 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONTRACTCREATEINSTANCE);
+                TransactionType.CONTRACTCREATEINSTANCE);
         insertTransaction(createTimestamps[2], 3, EntityType.FILE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.FILECREATE);
+                TransactionType.FILECREATE);
         insertTransaction(createTimestamps[3], 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONSENSUSCREATETOPIC);
+                TransactionType.CONSENSUSCREATETOPIC);
         insertTransaction(createTimestamps[4], 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.TOKENCREATION);
+                TransactionType.TOKENCREATION);
 
         // successful update transactions
         long[] modifiedTimestamps = new long[] {110, 120, 130, 140, 150};
         insertTransaction(modifiedTimestamps[0], 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CRYPTOUPDATEACCOUNT);
+                TransactionType.CRYPTOUPDATEACCOUNT);
         insertTransaction(modifiedTimestamps[1], 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONTRACTUPDATEINSTANCE);
+                TransactionType.CONTRACTUPDATEINSTANCE);
         insertTransaction(modifiedTimestamps[2], 3, EntityType.FILE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.FILEUPDATE);
+                TransactionType.FILEUPDATE);
         insertTransaction(modifiedTimestamps[3], 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONSENSUSUPDATETOPIC);
+                TransactionType.CONSENSUSUPDATETOPIC);
         insertTransaction(modifiedTimestamps[4], 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.TOKENUPDATE);
+                TransactionType.TOKENUPDATE);
 
         // migration
         migrate();
@@ -284,40 +284,40 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
         // successful create transactions
         insertTransaction(createTimestamps[0], 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CRYPTOCREATEACCOUNT);
+                TransactionType.CRYPTOCREATEACCOUNT);
         insertTransaction(createTimestamps[1], 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONTRACTCREATEINSTANCE);
+                TransactionType.CONTRACTCREATEINSTANCE);
         insertTransaction(createTimestamps[2], 3, EntityType.FILE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.FILECREATE);
+                TransactionType.FILECREATE);
         insertTransaction(createTimestamps[3], 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONSENSUSCREATETOPIC);
+                TransactionType.CONSENSUSCREATETOPIC);
         insertTransaction(createTimestamps[4], 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.TOKENCREATION);
+                TransactionType.TOKENCREATION);
 
         // successful update transactions
         long[] modifiedTimestamps = new long[] {110, 120, 130, 140, 150};
         insertTransaction(modifiedTimestamps[0], 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CRYPTOUPDATEACCOUNT);
+                TransactionType.CRYPTOUPDATEACCOUNT);
         insertTransaction(modifiedTimestamps[1], 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONTRACTUPDATEINSTANCE);
+                TransactionType.CONTRACTUPDATEINSTANCE);
         insertTransaction(modifiedTimestamps[2], 3, EntityType.FILE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.FILEUPDATE);
+                TransactionType.FILEUPDATE);
         insertTransaction(modifiedTimestamps[3], 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONSENSUSUPDATETOPIC);
+                TransactionType.CONSENSUSUPDATETOPIC);
         insertTransaction(modifiedTimestamps[4], 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.TOKENUPDATE);
+                TransactionType.TOKENUPDATE);
 
         long[] deletedTimestamps = new long[] {210, 220, 230, 240, 250};
         insertTransaction(deletedTimestamps[0], 1, EntityType.ACCOUNT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CRYPTODELETE);
+                TransactionType.CRYPTODELETE);
         insertTransaction(deletedTimestamps[1], 2, EntityType.CONTRACT, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONTRACTDELETEINSTANCE);
+                TransactionType.CONTRACTDELETEINSTANCE);
         insertTransaction(deletedTimestamps[2], 3, EntityType.FILE, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.FILEDELETE);
+                TransactionType.FILEDELETE);
         insertTransaction(deletedTimestamps[3], 4, EntityType.TOPIC, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.CONSENSUSDELETETOPIC);
+                TransactionType.CONSENSUSDELETETOPIC);
         insertTransaction(deletedTimestamps[4], 5, EntityType.TOKEN, ResponseCodeEnum.SUCCESS,
-                TransactionTypeEnum.TOKENDELETION);
+                TransactionType.TOKENDELETION);
 
         // migration
         migrate();
@@ -337,7 +337,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
     private Transaction transaction(long consensusNs, long entityNum, EntityType entityType,
                                     ResponseCodeEnum result,
-                                    TransactionTypeEnum transactionTypeEnum) {
+                                    TransactionType transactionType) {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusTimestamp(consensusNs);
@@ -347,7 +347,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityType.ACCOUNT));
         transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityType.ACCOUNT));
         transaction.setResult(result.getNumber());
-        transaction.setType(transactionTypeEnum.getProtoId());
+        transaction.setType(transactionType.getProtoId());
         transaction.setValidStartNs(20L);
         transaction.setValidDurationSeconds(11L);
         transaction.setMaxFee(33L);
@@ -356,8 +356,8 @@ class CleanupEntityMigrationTest extends IntegrationTest {
 
     private void insertTransaction(long consensusTimestamp, long entityNum, EntityType entityType,
                                    ResponseCodeEnum result,
-                                   TransactionTypeEnum transactionTypeEnum) {
-        Transaction transaction = transaction(consensusTimestamp, entityNum, entityType, result, transactionTypeEnum);
+                                   TransactionType transactionType) {
+        Transaction transaction = transaction(consensusTimestamp, entityNum, entityType, result, transactionType);
         jdbcOperations
                 .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, max_fee, " +
                                 "memo, " +

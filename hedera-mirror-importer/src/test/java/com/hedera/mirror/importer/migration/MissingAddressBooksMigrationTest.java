@@ -49,7 +49,7 @@ import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
 import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionTypeEnum;
+import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -94,16 +94,16 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         int index101 = addressBook101Bytes.length / 2;
         byte[] addressBook101Bytes1 = Arrays.copyOfRange(addressBook101Bytes, 0, index101);
         byte[] addressBook101Bytes2 = Arrays.copyOfRange(addressBook101Bytes, index101, addressBook101Bytes.length);
-        createAndStoreFileData(addressBook101Bytes1, 101, false, TransactionTypeEnum.FILEUPDATE);
-        createAndStoreFileData(addressBook101Bytes2, 102, false, TransactionTypeEnum.FILEAPPEND);
+        createAndStoreFileData(addressBook101Bytes1, 101, false, TransactionType.FILEUPDATE);
+        createAndStoreFileData(addressBook101Bytes2, 102, false, TransactionType.FILEAPPEND);
 
         // file 102 update contents to be split over 1 update and 1 append operation
         byte[] addressBook102Bytes = FINAL.toByteArray();
         int index = addressBook102Bytes.length / 2;
         byte[] addressBook102Bytes1 = Arrays.copyOfRange(addressBook102Bytes, 0, index);
         byte[] addressBook102Bytes2 = Arrays.copyOfRange(addressBook102Bytes, index, addressBook102Bytes.length);
-        createAndStoreFileData(addressBook102Bytes1, 201, true, TransactionTypeEnum.FILEUPDATE);
-        createAndStoreFileData(addressBook102Bytes2, 202, true, TransactionTypeEnum.FILEAPPEND);
+        createAndStoreFileData(addressBook102Bytes1, 201, true, TransactionType.FILEUPDATE);
+        createAndStoreFileData(addressBook102Bytes2, 202, true, TransactionType.FILEAPPEND);
         assertEquals(4, fileDataRepository.count());
 
         // migration on startup
@@ -205,10 +205,10 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     }
 
     private FileData createAndStoreFileData(byte[] contents, long consensusTimeStamp, boolean is102,
-                                            TransactionTypeEnum transactionTypeEnum) {
+                                            TransactionType transactionType) {
         EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
                 AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID;
-        FileData fileData = new FileData(consensusTimeStamp, contents, entityId, transactionTypeEnum.getProtoId());
+        FileData fileData = new FileData(consensusTimeStamp, contents, entityId, transactionType.getProtoId());
         return fileDataRepository.save(fileData);
     }
 
