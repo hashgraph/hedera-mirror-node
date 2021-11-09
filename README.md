@@ -95,9 +95,9 @@ to understanding the mirror node operations.
 Ensure these tools are installed (note minimum versions) prior to running the mirror node
 
 - [Docker](https://www.docker.com/products/docker-desktop) - v3.3.3+
-- [NodeJs](https://nodejs.org) - v14.16.0+
-- [Npm](https://www.npmjs.com/get-npm) - v6.14.11+
-- [Go](https://golang.org/dl/) - v1.16+
+- [NodeJs](https://nodejs.org) - v16.13.0+
+- [Npm](https://www.npmjs.com/get-npm) - v8.1.0+
+- [Go](https://golang.org/dl/) - v1.17+
 - Java - [AdoptOpenJDK 11](https://adoptopenjdk.net/)
 
 ### Running Mirror Node
