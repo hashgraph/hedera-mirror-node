@@ -485,3 +485,9 @@ module.exports = {
   getAccounts,
   getOneAccount,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(module.exports, {
+    processRow,
+  });
+}
