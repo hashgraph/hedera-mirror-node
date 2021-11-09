@@ -25,6 +25,7 @@ const config = require('../config.js');
 const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
+const {TransactionType} = require('../model');
 const {getLimitParamValue} = require('../utils');
 
 const responseLimit = config.response.limit;
@@ -847,5 +848,42 @@ describe('Utils getLimitParamValue', () => {
 
   test('values array', () => {
     expect(getLimitParamValue(['1', '50'])).toEqual(50);
+  });
+});
+
+describe('Utils test - utils.parseTransactionTypeParam', () => {
+  test('Utils test - utils.parseTransactionTypeParam - Verify null query params', () => {
+    expect(utils.parseTransactionTypeParam(null)).toBe('');
+  });
+  test('Utils test - utils.parseTransactionTypeParam - Verify undefined query params', () => {
+    expect(utils.parseTransactionTypeParam(undefined)).toBe('');
+  });
+  test('Utils test - utils.parseTransactionTypeParam - Verify empty query params', () => {
+    expect(utils.parseTransactionTypeParam({})).toBe('');
+  });
+  test('Utils test - utils.parseTransactionTypeParam - Verify empty transaction type query', () => {
+    expect(() => utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
+      InvalidArgumentError
+    );
+  });
+  test('Utils test - utils.parseTransactionTypeParam - Verify non applicable transaction type query', () => {
+    expect(() =>
+      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
+    ).toThrowError(InvalidArgumentError);
+  });
+  test('Utils test - utils.parseTransactionTypeParam - Verify applicable TOKENCREATION transaction type query', () => {
+    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
+      `type = ${TransactionType.getProtoId('TOKENCREATION')}`
+    );
+  });
+  test('Utils test - utils.parseTransactionTypeParam - Verify applicable TOKENASSOCIATE transaction type query', () => {
+    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
+      `type = ${TransactionType.getProtoId('TOKENASSOCIATE')}`
+    );
+  });
+  test('Utils test - utils.parseTransactionTypeParam - Verify applicable consensussubmitmessage transaction type query', () => {
+    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
+      `type = ${TransactionType.getProtoId('CONSENSUSSUBMITMESSAGE')}`
+    );
   });
 });

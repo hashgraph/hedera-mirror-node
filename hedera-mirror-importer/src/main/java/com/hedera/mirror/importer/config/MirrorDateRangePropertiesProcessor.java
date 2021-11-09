@@ -62,6 +62,11 @@ public class MirrorDateRangePropertiesProcessor {
 
     private final Map<StreamType, DateRangeFilter> filters = new ConcurrentHashMap<>();
 
+    // Clear cache between test runs
+    public void clear() {
+        filters.clear();
+    }
+
     /**
      * Gets the DateRangeFilter for the downloader (record, balance, event).
      *
@@ -207,6 +212,14 @@ public class MirrorDateRangePropertiesProcessor {
             }
         }
 
+        public static DateRangeFilter empty() {
+            return new DateRangeFilter(Instant.EPOCH.plusNanos(1), Instant.EPOCH);
+        }
+
+        public static DateRangeFilter all() {
+            return new DateRangeFilter(Instant.EPOCH, Utility.MAX_INSTANT_LONG);
+        }
+
         public boolean filter(long timestamp) {
             return timestamp >= start && timestamp <= end;
         }
@@ -222,14 +235,6 @@ public class MirrorDateRangePropertiesProcessor {
         @Override
         public String toString() {
             return String.format("DateRangeFilter([%s, %s])", getStartAsInstant(), getEndAsInstant());
-        }
-
-        public static DateRangeFilter empty() {
-            return new DateRangeFilter(Instant.EPOCH.plusNanos(1), Instant.EPOCH);
-        }
-
-        public static DateRangeFilter all() {
-            return new DateRangeFilter(Instant.EPOCH, Utility.MAX_INSTANT_LONG);
         }
     }
 }

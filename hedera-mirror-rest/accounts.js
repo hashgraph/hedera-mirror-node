@@ -409,7 +409,7 @@ const getOneAccount = async (req, res) => {
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [accountId];
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
   const innerQuery = transactions.getTransactionsInnerQuery(
     accountQuery,

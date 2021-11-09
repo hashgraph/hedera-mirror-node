@@ -20,7 +20,7 @@
 
 package tools
 
-func GetStringValuesFromIntStringMap(mapping map[int]string) []string {
+func GetStringValuesFromInt32StringMap(mapping map[int32]string) []string {
 	var values []string
 
 	for _, v := range mapping {

@@ -23,30 +23,30 @@
 const {proto} = require('@hashgraph/proto/lib/proto');
 
 // models
-const {TransactionResult} = require('../model');
+const {TransactionResult} = require('../../model');
 
 describe('transactionResult constants are up to date', () => {
   test('transactionResult constants are up to date', () => {
     for (const responseCode in proto.ResponseCodeEnum) {
       if (isNaN(Number(responseCode))) {
-        expect(TransactionResult.getTransactionResultProtoId(responseCode)).toBeTruthy();
+        expect(TransactionResult.getProtoId(responseCode)).toBeTruthy();
       } else {
-        expect(TransactionResult.getTransactionResultName(responseCode)).toBeTruthy();
+        expect(TransactionResult.getName(responseCode)).toBeTruthy();
       }
     }
   });
 });
 
 describe('transactionResults getters work as expected', () => {
-  test('getTransactionResultName handles unknown', () => {
-    expect(TransactionResult.getTransactionResultName(9999999)).toEqual('UNKNOWN');
+  test('getName handles unknown', () => {
+    expect(TransactionResult.getName(9999999)).toEqual('UNKNOWN');
   });
 
-  test('getTransactionResultProtoId handles unknown', () => {
-    expect(TransactionResult.getTransactionResultProtoId('XYZ')).toBeFalsy();
+  test('getProtoId handles unknown', () => {
+    expect(TransactionResult.getProtoId('XYZ')).toBeFalsy();
   });
 
-  test('getTransactionResultProtoId handles unknown', () => {
-    expect(TransactionResult.getSuccessTransactionProtoId()).toEqual('22');
+  test('getProtoId handles unknown', () => {
+    expect(TransactionResult.getSuccessProtoId()).toEqual('22');
   });
 });

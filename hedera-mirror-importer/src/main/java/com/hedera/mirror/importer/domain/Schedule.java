@@ -32,6 +32,7 @@ import com.hedera.mirror.importer.converter.AccountIdConverter;
 @Data
 @Entity
 @NoArgsConstructor
+@Upsertable
 public class Schedule {
     private Long consensusTimestamp;
 

@@ -25,7 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.primitives.Longs;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,71 +78,87 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         accountBalanceFileParser.parse(accountBalanceFile);
 
         // then
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+        assertAccountBalanceFile(accountBalanceFile, List.of());
     }
 
     @Test
     void success() {
+        // given
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+
+        // when
         accountBalanceFileParser.parse(accountBalanceFile);
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+
+        // then
+        assertAccountBalanceFile(accountBalanceFile, items);
+    }
+
+    @Test
+    void multipleBatches() {
+        // given
+        int batchSize = parserProperties.getBatchSize();
+        parserProperties.setBatchSize(2);
+        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+
+        // when
+        accountBalanceFileParser.parse(accountBalanceFile);
+
+        // then
+        assertAccountBalanceFile(accountBalanceFile, items);
+        parserProperties.setBatchSize(batchSize);
     }
 
     @Test
     void duplicateFile() {
+        // given
         AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
         AccountBalanceFile duplicate = accountBalanceFile(1);
+        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
 
+        // when
         accountBalanceFileParser.parse(accountBalanceFile);
         accountBalanceFileParser.parse(duplicate); // Will be ignored
 
+        // then
         assertThat(accountBalanceFileRepository.count()).isEqualTo(1L);
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+        assertAccountBalanceFile(accountBalanceFile, items);
     }
 
     @Test
     void beforeStartDate() {
+        // given
         AccountBalanceFile accountBalanceFile = accountBalanceFile(-1L);
+
+        // when
         accountBalanceFileParser.parse(accountBalanceFile);
 
+        // then
         assertThat(accountBalanceFileRepository.findAll())
                 .usingElementComparatorIgnoringFields("bytes", "items")
                 .containsExactly(accountBalanceFile);
         assertThat(accountBalanceRepository.count()).isZero();
-        assertPostParseAccountBalanceFile(accountBalanceFile, true);
+        assertAccountBalanceFile(accountBalanceFile, List.of());
     }
 
-    void assertPostParseAccountBalanceFile(AccountBalanceFile accountBalanceFile, boolean success) {
-        if (success) {
-            assertThat(accountBalanceFile.getBytes()).isNull();
-            assertThat(accountBalanceFile.getItems()).isNull();
-        } else {
-            assertThat(accountBalanceFile.getBytes()).isNotNull();
-            assertThat(accountBalanceFile.getItems()).isNotNull();
-        }
-    }
+    void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {
+        List<TokenBalance> tokenBalances = accountBalances.stream()
+                .map(AccountBalance::getTokenBalances)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
 
-    void assertAccountBalances(AccountBalanceFile... accountBalanceFiles) {
-        assertThat(accountBalanceFileRepository.count()).isEqualTo(accountBalanceFiles.length);
+        assertThat(accountBalanceFile.getBytes()).isNull();
+        assertThat(accountBalanceFile.getItems()).isNull();
+        assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(accountBalances);
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenBalances);
 
-        for (AccountBalanceFile accountBalanceFile : accountBalanceFiles) {
-            accountBalanceFile.getItems().doOnNext(accountBalance -> {
-                assertThat(accountBalanceRepository.findById(accountBalance.getId())).get().isEqualTo(accountBalance);
-
-                for (TokenBalance tokenBalance : accountBalance.getTokenBalances()) {
-                    assertThat(tokenBalanceRepository.findById(tokenBalance.getId())).get().isEqualTo(tokenBalance);
-                }
-            }).blockLast();
-
-            assertThat(accountBalanceRepository.findByIdConsensusTimestamp(accountBalanceFile.getConsensusTimestamp()))
-                    .hasSize(accountBalanceFile.getCount().intValue())
-                    .hasSize(Math.toIntExact(accountBalanceFile.getItems().count().block()));
-
+        if (parserProperties.isEnabled()) {
             assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()))
                     .get()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
-                    .ignoringFields("items", "loadEnd")
+                    .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
     }
@@ -151,9 +169,10 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         return AccountBalanceFile.builder()
                 .bytes(Longs.toByteArray(timestamp))
                 .consensusTimestamp(timestamp)
-                .count(2L)
                 .fileHash("fileHash" + timestamp)
-                .items(Flux.just(accountBalance(timestamp, 1), accountBalance(timestamp, 2)))
+                .items(Flux.just(accountBalance(timestamp, 1),
+                        accountBalance(timestamp, 2),
+                        accountBalance(timestamp, 3)))
                 .loadEnd(null)
                 .loadStart(timestamp)
                 .name(filename)

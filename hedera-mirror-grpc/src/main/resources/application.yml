@@ -6,6 +6,7 @@ hedera:
         name: mirror_node
         password: mirror_grpc_pass
         port: 5432
+        sslMode: DISABLE
         username: mirror_grpc
       port: 5600
 grpc:
@@ -60,7 +61,7 @@ spring:
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
-    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
+    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}?sslmode=${hedera.mirror.grpc.db.sslMode}
     username: ${hedera.mirror.grpc.db.username}
     hikari:
       connection-timeout: 3000

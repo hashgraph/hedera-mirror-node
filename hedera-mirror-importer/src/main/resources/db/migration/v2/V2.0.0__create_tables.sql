@@ -88,12 +88,12 @@ create table if not exists contract
     file_id              bigint                         null,
     id                   bigint                         not null,
     key                  bytea                          null,
-    memo                 text       default ''          not null,
+    memo                 text        default ''         not null,
     num                  bigint                         not null,
     obtainer_id          bigint                         null,
     parent_id            bigint                         null,
     proxy_account_id     bigint                         null,
-    public_key           character  varying             null,
+    public_key           character varying              null,
     realm                bigint                         not null,
     shard                bigint                         not null,
     timestamp_range      int8range                      not null,
@@ -303,23 +303,6 @@ create table if not exists schedule
     transaction_body    bytea  not null
 );
 comment on table schedule is 'Schedule entity entries';
-
--- t_transaction_results
-create table if not exists t_transaction_results
-(
-    proto_id    integer not null,
-    result      character varying(100)
-);
-comment on table t_transaction_results is 'Transaction result types';
-
--- t_transaction_types
-create table if not exists t_transaction_types
-(
-    entity_type entity_type null,
-    name        character varying(30),
-    proto_id    integer not null
-);
-comment on table t_transaction_types is 'Transaction types';
 
 -- token
 create table if not exists token

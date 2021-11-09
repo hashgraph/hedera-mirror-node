@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <vertx.version>4.2.0</vertx.version>
+        <vertx.version>4.2.1</vertx.version>
     </properties>
 
     <dependencies>
@@ -177,6 +177,11 @@
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.ongres.scram</groupId>
+            <artifactId>client</artifactId>
+            <version>2.1</version>
         </dependency>
         <!-- Test -->
         <dependency>

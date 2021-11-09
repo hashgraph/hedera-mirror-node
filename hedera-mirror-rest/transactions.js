@@ -34,6 +34,7 @@ const {
   TokenTransfer,
   Transaction,
   TransactionResult,
+  TransactionType,
 } = require('./model');
 const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
 
@@ -185,7 +186,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     Transaction.CONSENSUS_TIMESTAMP_FULL_NAME,
     Transaction.VALID_START_NS_FULL_NAME,
     Transaction.RESULT_FULL_NAME,
-    `coalesce(ttt.name, 'UNKNOWN') AS name`,
+    Transaction.TYPE_FULL_NAME,
     Transaction.NODE_ACCOUNT_ID_FULL_NAME,
     Transaction.CHARGED_TX_FEE_FULL_NAME,
     Transaction.VALID_DURATION_SECONDS_FULL_NAME,
@@ -304,10 +305,10 @@ const createTransferLists = (rows) => {
       entity_id: EntityId.parse(row.entity_id, true).toString(),
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
-      name: row.name,
+      name: TransactionType.getName(row.type),
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.parse(row.node_account_id, true).toString(),
-      result: TransactionResult.getTransactionResultName(row.result),
+      result: TransactionResult.getName(row.result),
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
       bytes: utils.encodeBase64(row.transaction_bytes),
@@ -344,7 +345,6 @@ const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) 
   return `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery, order)}
     FROM transfer_list t
-       LEFT OUTER JOIN t_transaction_types ttt ON ttt.proto_id = ${Transaction.TYPE_FULL_NAME}
      ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}`;
 };
 
@@ -545,7 +545,7 @@ const reqToSql = function (req) {
   creditDebitQuery = utils.convertMySqlStyleQueryToPostgres(creditDebitQuery, sqlParams.length + 1);
   sqlParams.push(...creditDebitParams);
   const resultTypeQuery = utils.parseResultParams(req, Transaction.RESULT_FULL_NAME);
-  const transactionTypeQuery = utils.getTransactionTypeQuery(parsedQueryParams);
+  const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   sqlParams.push(...params);
 
@@ -654,7 +654,6 @@ const getOneTransaction = async (req, res) => {
   const sqlQuery = `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
     FROM transfer_list t
-    JOIN t_transaction_types ttt ON ttt.proto_id = ${Transaction.TYPE_FULL_NAME}
     ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ASC`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);

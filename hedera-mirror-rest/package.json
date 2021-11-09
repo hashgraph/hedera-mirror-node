@@ -21,7 +21,7 @@
     "@godaddy/terminus": "^4.9.0",
     "@hashgraph/proto": "^2.0.0",
     "asn1js": "^2.1.1",
-    "aws-sdk": "^2.1018.0",
+    "aws-sdk": "^2.1024.0",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -33,7 +33,7 @@
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
     "long": "^5.1.0",
-    "mathjs": "^9.5.1",
+    "mathjs": "^10.0.0",
     "mem": "^8.1.1",
     "pg": "~8.7.1",
     "pg-range": "^1.1.1",
@@ -78,7 +78,7 @@
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^6.15.0",
     "eslint-plugin-import": "^2.25.2",
-    "eslint-plugin-jest": "^25.2.2",
+    "eslint-plugin-jest": "^25.2.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-security": "^1.4.0",
@@ -93,9 +93,9 @@
     "prettier": "^2.4.1",
     "pretty-quick": "^3.1.1",
     "rewire": "^5.0.0",
-    "sinon": "^11.1.2",
+    "sinon": "^12.0.1",
     "supertest": "^6.1.6",
-    "testcontainers": "^7.21.0"
+    "testcontainers": "^7.22.0"
   },
   "jest": {
     "collectCoverage": true,

@@ -23,7 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.util.List;
 import javax.inject.Named;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
@@ -41,7 +40,6 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
-@Log4j2
 @Named
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ScheduleClient extends AbstractNetworkClient {
@@ -52,13 +50,14 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
-                                                     String memo, KeyList signatureKeyList) {
+                                                     KeyList signatureKeyList) {
 
         log.debug("Create new schedule");
         TransactionId transactionId = TransactionId.generate(sdkClient.getExpandedOperatorAccountId().getAccountId())
                 .setScheduled(true);
         transaction.setTransactionId(transactionId);
 
+        String memo = getMemo("Create schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
@@ -93,7 +92,8 @@ public class ScheduleClient extends AbstractNetworkClient {
 
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setScheduleId(scheduleId);
+                .setScheduleId(scheduleId)
+                .setTransactionMemo(getMemo("Sign schedule"));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 scheduleSignTransaction,
@@ -109,7 +109,8 @@ public class ScheduleClient extends AbstractNetworkClient {
         log.debug("Delete schedule {}", scheduleId);
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setScheduleId(scheduleId);
+                .setScheduleId(scheduleId)
+                .setTransactionMemo(getMemo("Delete schedule"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);

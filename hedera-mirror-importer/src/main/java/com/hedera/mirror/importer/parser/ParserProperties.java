@@ -26,8 +26,6 @@ import com.hedera.mirror.importer.domain.StreamType;
 
 public interface ParserProperties {
 
-    int getBufferSize();
-
     Duration getFrequency();
 
     Duration getProcessingTimeout();

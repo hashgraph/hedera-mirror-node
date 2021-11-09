@@ -36,7 +36,8 @@ select json_agg(json_build_object(
   'id', account_id::text,
   'token', tb.token_id::text,
   'decimals', t.decimals,
-  'value', balance::text
+  'value', balance::text,
+  'type', t.type
 ))
 from token_balance tb
 join token t on t.token_id = tb.token_id
@@ -85,6 +86,7 @@ hbar_json=$(echo "$account_balances" | \
 
 token_json=$(echo "$token_balances" | \
   jq 'select (.!=null) | [.[] | .account_identifier.address=("0.0." + .id) | del(.id)
-    | .currency={symbol: ("0.0." + .token), decimals: .decimals} | del(.token) | del(.decimals)]')
+    | .currency={symbol: ("0.0." + .token), decimals: .decimals, metadata: {type: .type}}
+    | del(.token,.decimals,.type)]')
 
 echo "$hbar_json $token_json" | jq -s add > "$parent_path/$network/data_genesis_balances.json"

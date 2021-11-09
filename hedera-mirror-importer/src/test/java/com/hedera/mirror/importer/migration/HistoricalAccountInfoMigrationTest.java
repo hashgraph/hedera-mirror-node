@@ -76,14 +76,12 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         network = mirrorProperties.getNetwork();
         mirrorProperties.setImportHistoricalAccountInfo(true);
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
-        mirrorProperties.setStartDate(Instant.EPOCH);
     }
 
     @AfterEach
     void after() {
         mirrorProperties.setImportHistoricalAccountInfo(false);
         mirrorProperties.setNetwork(network);
-        mirrorProperties.setStartDate(null);
     }
 
     @Test

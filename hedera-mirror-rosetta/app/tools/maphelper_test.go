@@ -28,7 +28,7 @@ import (
 
 func TestGetsCorrectStringValuesFromMap(t *testing.T) {
 	// given:
-	inputData := map[int]string{
+	inputData := map[int32]string{
 		1: "abc",
 		2: "asd",
 		3: "aaaa",
@@ -42,7 +42,7 @@ func TestGetsCorrectStringValuesFromMap(t *testing.T) {
 	}
 
 	// when:
-	result := GetStringValuesFromIntStringMap(inputData)
+	result := GetStringValuesFromInt32StringMap(inputData)
 
 	// then:
 	assert.ElementsMatch(t, expected, result)

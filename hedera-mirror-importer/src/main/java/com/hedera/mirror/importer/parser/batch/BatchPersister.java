@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.parser.batch;
 
 /*-
  * ‌
@@ -20,11 +20,15 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.repository.CrudRepository;
+import java.util.Collection;
 
-import com.hedera.mirror.importer.domain.TransactionType;
+/**
+ * Performs bulk insertion of domain objects to the database. For some domain types it might be insert-only while others
+ * may use upsert logic.
+ *
+ * @param <T> the domain type to batch persist
+ */
+public interface BatchPersister {
 
-public interface TransactionTypeRepository extends CrudRepository<TransactionType, Integer> {
-    Optional<TransactionType> findByName(String name);
+    void persist(Collection<? extends Object> items);
 }
