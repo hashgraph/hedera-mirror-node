@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
+import java.text.MessageFormat;
+
 public class TokenDissociateTransferUpsertQueryGenerator implements UpsertQueryGenerator {
 
     private static final String FINAL_TABLE_NAME = "token_transfer";
@@ -42,6 +44,12 @@ public class TokenDissociateTransferUpsertQueryGenerator implements UpsertQueryG
             "insert into " + FINAL_TABLE_NAME + " " +
             "select * from " + TEMP_TABLE_NAME + " tdt " +
             "where tdt.token_id not in (select distinct token_id from updated_nft)";
+
+    @Override
+    public String getCreateTempIndexQuery() {
+        return MessageFormat.format("create index if not exists {0}_idx on {0} (token_id, account_id)",
+                TEMP_TABLE_NAME);
+    }
 
     @Override
     public String getCreateTempTableQuery() {

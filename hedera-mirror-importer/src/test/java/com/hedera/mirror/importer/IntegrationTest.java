@@ -20,16 +20,27 @@ package com.hedera.mirror.importer;
  * ‍
  */
 
+import com.google.common.collect.Range;
 import java.time.Instant;
 import java.util.Collection;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.importer.util.EntityIdEndec;
+
+import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.postgresql.util.PGobject;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
@@ -52,6 +63,18 @@ public abstract class IntegrationTest {
 
     @Resource
     private MirrorProperties mirrorProperties;
+
+    protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        defaultConversionService.addConverter(PGobject.class, Range.class,
+                source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
+        defaultConversionService.addConverter(Long.class, EntityId.class,
+                id -> EntityIdEndec.decode(id, EntityType.ACCOUNT));
+
+        DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(entityClass);
+        dataClassRowMapper.setConversionService(defaultConversionService);
+        return dataClassRowMapper;
+    }
 
     @BeforeEach
     void logTest(TestInfo testInfo) {

@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.repository.upsert;
 
 public interface UpsertQueryGenerator {
 
+    String getCreateTempIndexQuery();
+
     String getCreateTempTableQuery();
 
     String getFinalTableName();

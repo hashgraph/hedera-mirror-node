@@ -22,47 +22,30 @@ package com.hedera.mirror.importer.parser.batch;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import javax.persistence.Entity;
 import javax.sql.DataSource;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.data.util.AnnotatedTypeScanner;
 
 import com.hedera.mirror.importer.domain.Upsertable;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.UpsertQueryGeneratorFactory;
 
 @Named
 @Primary
+@RequiredArgsConstructor
 public class CompositeBatchPersister implements BatchPersister {
 
-    private final Map<Class<?>, BatchPersister> batchInserters = new HashMap<>();
-
-    public CompositeBatchPersister(DataSource dataSource,
-                                   MeterRegistry meterRegistry,
-                                   CommonParserProperties properties,
-                                   Collection<UpsertQueryGenerator> upsertQueryGenerators) {
-        AnnotatedTypeScanner annotatedTypeScanner = new AnnotatedTypeScanner(Entity.class);
-        Set<Class<?>> domainClasses = annotatedTypeScanner.findTypes(Upsertable.class.getPackageName());
-
-        for (Class<?> domainClass : domainClasses) {
-            Upsertable upsertable = AnnotationUtils.findAnnotation(domainClass, Upsertable.class);
-            BatchPersister batchPersister;
-
-            if (upsertable != null) {
-                UpsertQueryGenerator generator = getUpsertQueryGenerator(upsertQueryGenerators, domainClass);
-                batchPersister = new BatchUpserter(domainClass, dataSource, meterRegistry, properties, generator);
-            } else {
-                batchPersister = new BatchInserter(domainClass, dataSource, meterRegistry, properties);
-            }
-
-            batchInserters.put(domainClass, batchPersister);
-        }
-    }
+    private final Map<Class<?>, BatchPersister> batchPersisters = new ConcurrentHashMap<>();
+    private final DataSource dataSource;
+    private final MeterRegistry meterRegistry;
+    private final CommonParserProperties properties;
+    private final UpsertQueryGeneratorFactory upsertQueryGeneratorFactory;
 
     @Override
     public void persist(Collection<? extends Object> items) {
@@ -71,26 +54,27 @@ public class CompositeBatchPersister implements BatchPersister {
         }
 
         Object item = items.iterator().next();
-        Class<?> itemClass = item != null ? item.getClass() :null;
-        BatchPersister batchPersister = batchInserters.get(itemClass);
-
-        if (batchPersister == null) {
-            throw new UnsupportedOperationException("Object does not support batch insertion: " + itemClass);
+        if (item == null) {
+            throw new UnsupportedOperationException("Object does not support batch insertion: " + item);
         }
 
+        BatchPersister batchPersister = batchPersisters.computeIfAbsent(item.getClass(), this::create);
         batchPersister.persist(items);
     }
 
-    /**
-     * This method relies on the convention that the domain class and its associated UpsertQueryGenerator have the same
-     * prefix.
-     */
-    private UpsertQueryGenerator getUpsertQueryGenerator(Collection<UpsertQueryGenerator> upsertQueryGenerators,
-                                                         Class<?> domainClass) {
-        String className = domainClass.getSimpleName() + UpsertQueryGenerator.class.getSimpleName();
-        return upsertQueryGenerators.stream()
-                .filter(u -> u.getClass().getSimpleName().equals(className))
-                .findFirst()
-                .orElseThrow();
+    private BatchPersister create(Class<?> domainClass) {
+        Entity entity = AnnotationUtils.findAnnotation(domainClass, Entity.class);
+        Upsertable upsertable = AnnotationUtils.findAnnotation(domainClass, Upsertable.class);
+
+        if (entity == null) {
+            throw new UnsupportedOperationException("Object does not support batch insertion: " + domainClass);
+        }
+
+        if (upsertable != null) {
+            UpsertQueryGenerator generator = upsertQueryGeneratorFactory.get(domainClass);
+            return new BatchUpserter(domainClass, dataSource, meterRegistry, properties, generator);
+        } else {
+            return new BatchInserter(domainClass, dataSource, meterRegistry, properties);
+        }
     }
 }

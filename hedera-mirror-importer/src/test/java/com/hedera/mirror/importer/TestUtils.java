@@ -25,15 +25,36 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.time.Instant;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.beanutils.BeanUtilsBean;
 
 import com.hedera.mirror.importer.util.Utility;
 
 @UtilityClass
 public class TestUtils {
+
+    // Customize BeanUtilsBean to not copy properties for null since non-nulls represent partial updates in our system.
+    private static final BeanUtilsBean BEAN_UTILS = new BeanUtilsBean() {
+        @Override
+        public void copyProperty(Object dest, String name, Object value)
+                throws IllegalAccessException, InvocationTargetException {
+            if (value != null) {
+                super.copyProperty(dest, name, value);
+            }
+        }
+    };
+
+    public static <T> T clone(T object) {
+        try {
+            return (T) BEAN_UTILS.cloneBean(object);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static File getResource(String path) {
         ClassLoader[] classLoaders = {Thread
@@ -57,6 +78,16 @@ public class TestUtils {
         try {
             return new File(url.toURI().getSchemeSpecificPart());
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T merge(T previous, T current) {
+        try {
+            T merged = clone(previous);
+            BEAN_UTILS.copyProperties(merged, current);
+            return merged;
+        } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }

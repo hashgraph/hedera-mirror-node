@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -60,6 +61,7 @@ public abstract class AbstractEntity {
 
     private Long autoRenewPeriod;
 
+    @Column(updatable = false)
     private Long createdTimestamp;
 
     private Boolean deleted;
@@ -74,6 +76,7 @@ public abstract class AbstractEntity {
 
     private String memo;
 
+    @Column(updatable = false)
     private Long num;
 
     @Convert(converter = AccountIdConverter.class)
@@ -81,10 +84,13 @@ public abstract class AbstractEntity {
 
     private String publicKey;
 
+    @Column(updatable = false)
     private Long realm;
 
+    @Column(updatable = false)
     private Long shard;
 
+    @Column(updatable = false)
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     private EntityType type;
@@ -92,6 +98,10 @@ public abstract class AbstractEntity {
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;
+
+    public void setTimestampRangeUpper(long modifiedTimestamp) {
+        setTimestampRange(Range.closedOpen(getModifiedTimestamp(), modifiedTimestamp));
+    }
 
     @JsonIgnore
     public Long getModifiedTimestamp() {

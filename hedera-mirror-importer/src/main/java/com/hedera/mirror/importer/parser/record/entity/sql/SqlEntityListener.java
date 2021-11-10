@@ -82,10 +82,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // lists of insert only domains
     private final Collection<AssessedCustomFee> assessedCustomFees;
+    private final Collection<Contract> contracts;
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
+    private final Collection<Entity> entities;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftTransfer> nftTransfers;
@@ -98,8 +100,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
-    private final Map<Long, Contract> contracts;
-    private final Map<Long, Entity> entities;
+    private final Map<Long, Contract> contractState;
+    private final Map<Long, Entity> entityState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<NftId, Nft> nfts;
@@ -122,10 +124,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.tokenDissociateTransferBatchPersister = tokenDissociateTransferBatchPersister;
 
         assessedCustomFees = new ArrayList<>();
+        contracts = new ArrayList<>();
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
+        entities = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftTransfers = new ArrayList<>();
@@ -137,12 +141,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
-        contracts = new HashMap<>();
-        entities = new HashMap<>();
+        contractState = new HashMap<>();
+        entityState = new HashMap<>();
         nfts = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
-
         tokenAccountState = new HashMap<>();
     }
 
@@ -171,11 +174,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             assessedCustomFees.clear();
             contracts.clear();
+            contractState.clear();
             contractLogs.clear();
             contractResults.clear();
             cryptoTransfers.clear();
             customFees.clear();
             entities.clear();
+            entityState.clear();
             fileData.clear();
             liveHashes.clear();
             nonFeeTransfers.clear();
@@ -216,8 +221,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(transactionSignatures);
 
             // insert operations with conflict management
-            batchPersister.persist(contracts.values());
-            batchPersister.persist(entities.values());
+            batchPersister.persist(contracts);
+            batchPersister.persist(entities);
             batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
             batchPersister.persist(tokenAccounts);
@@ -249,7 +254,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onContract(Contract contract) {
-        contracts.merge(contract.getId(), contract, this::mergeContract);
+        Contract merged = contractState.merge(contract.getId(), contract, this::mergeContract);
+        contracts.add(merged);
     }
 
     @Override
@@ -279,7 +285,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return;
         }
 
-        entities.merge(id, entity, this::mergeEntity);
+        Entity merged = entityState.merge(entity.getId(), entity, this::mergeEntity);
+        entities.add(merged);
     }
 
     @Override
@@ -355,67 +362,69 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
-        if (current.getAutoRenewPeriod() != null) {
-            previous.setAutoRenewPeriod(current.getAutoRenewPeriod());
+        // Copy non-updatable fields from previous
+        current.setCreatedTimestamp(previous.getCreatedTimestamp());
+
+        if (current.getAutoRenewPeriod() == null) {
+            current.setAutoRenewPeriod(previous.getAutoRenewPeriod());
         }
 
-        if (current.getDeleted() != null) {
-            previous.setDeleted(current.getDeleted());
+        if (current.getDeleted() == null) {
+            current.setDeleted(previous.getDeleted());
         }
 
-        if (current.getExpirationTimestamp() != null) {
-            previous.setExpirationTimestamp(current.getExpirationTimestamp());
+        if (current.getExpirationTimestamp() == null) {
+            current.setExpirationTimestamp(previous.getExpirationTimestamp());
         }
 
-        if (current.getKey() != null) {
-            previous.setKey(current.getKey());
+        if (current.getKey() == null) {
+            current.setKey(previous.getKey());
         }
 
-        if (current.getMemo() != null) {
-            previous.setMemo(current.getMemo());
+        if (current.getMemo() == null) {
+            current.setMemo(previous.getMemo());
         }
 
-        if (current.getProxyAccountId() != null) {
-            previous.setProxyAccountId(current.getProxyAccountId());
+        if (current.getProxyAccountId() == null) {
+            current.setProxyAccountId(previous.getProxyAccountId());
         }
 
-        if (current.getTimestampRange() != null) {
-            previous.setTimestampRange(current.getTimestampRange());
-        }
-
-        return previous;
+        previous.setTimestampRangeUpper(current.getModifiedTimestamp());
+        return current;
     }
 
     private Contract mergeContract(Contract previous, Contract current) {
         mergeAbstractEntity(previous, current);
 
-        if (current.getObtainerId() != null) {
-            previous.setObtainerId(current.getObtainerId());
+        current.setFileId(previous.getFileId());
+
+        if (current.getObtainerId() == null) {
+            current.setObtainerId(previous.getObtainerId());
         }
 
-        return previous;
+        return current;
     }
 
     private Entity mergeEntity(Entity previous, Entity current) {
         mergeAbstractEntity(previous, current);
 
-        if (current.getAutoRenewAccountId() != null) {
-            previous.setAutoRenewAccountId(current.getAutoRenewAccountId());
+        if (current.getAutoRenewAccountId() == null) {
+            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
         }
 
-        if (current.getMaxAutomaticTokenAssociations() != null) {
-            previous.setMaxAutomaticTokenAssociations(current.getMaxAutomaticTokenAssociations());
+        if (current.getMaxAutomaticTokenAssociations() == null) {
+            current.setMaxAutomaticTokenAssociations(previous.getMaxAutomaticTokenAssociations());
         }
 
-        if (current.getReceiverSigRequired() != null) {
-            previous.setReceiverSigRequired(current.getReceiverSigRequired());
+        if (current.getReceiverSigRequired() == null) {
+            current.setReceiverSigRequired(previous.getReceiverSigRequired());
         }
 
-        if (current.getSubmitKey() != null) {
-            previous.setSubmitKey(current.getSubmitKey());
+        if (current.getSubmitKey() == null) {
+            current.setSubmitKey(previous.getSubmitKey());
         }
 
-        return previous;
+        return current;
     }
 
     private Nft mergeNft(Nft cachedNft, Nft newNft) {
@@ -505,8 +514,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         // newTokenAccount is a partial update. It must have its id (tokenId, accountId, modifiedTimestamp) set.
-        // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the last snapshot.
-        // copy other fields from the last snapshot if not set in newTokenAccount
+        // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the previous snapshot.
+        // copy other fields from the previous snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
