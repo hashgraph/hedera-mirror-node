@@ -25,7 +25,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import com.hedera.mirror.importer.converter.ContractIdConverter;
 import com.hedera.mirror.importer.converter.FileIdConverter;
 import com.hedera.mirror.importer.converter.UnknownIdConverter;
 
@@ -40,7 +39,4 @@ public class Contract extends AbstractEntity {
 
     @Convert(converter = UnknownIdConverter.class)
     private EntityId obtainerId;
-
-    @Convert(converter = ContractIdConverter.class)
-    private EntityId parentId;
 }

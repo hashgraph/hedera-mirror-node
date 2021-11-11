@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.importer.domain.Contract;
@@ -43,8 +42,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
     protected final EntityListener entityListener;
     protected final EntityProperties entityProperties;
 
-    protected final void onContractResult(RecordItem recordItem, Supplier<Contract> inheritedContract,
-                                          ContractResult contractResult,
+    protected final void onContractResult(RecordItem recordItem, ContractResult contractResult,
                                           ContractFunctionResult functionResult) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         List<Long> createdContractIds = new ArrayList<>();
@@ -56,16 +54,10 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
             // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
             if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
-                Contract contract = inheritedContract.get();
+                Contract contract = contractId.toEntity();
                 contract.setCreatedTimestamp(consensusTimestamp);
                 contract.setDeleted(false);
-                contract.setId(contractId.getId());
                 contract.setModifiedTimestamp(consensusTimestamp);
-                contract.setNum(contractId.getEntityNum());
-                contract.setParentId(contractResult.getContractId());
-                contract.setRealm(contractId.getRealmNum());
-                contract.setShard(contractId.getShardNum());
-                contract.setType(contractId.getType());
                 doUpdateEntity(contract, recordItem);
             }
         }

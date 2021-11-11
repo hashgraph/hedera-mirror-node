@@ -18,6 +18,7 @@ logging:
     root: warn
     com.hedera.mirror.importer: info
     org.flywaydb.core.internal.command.DbMigrate: info
+    org.springframework.cloud.kubernetes.fabric8.config.Fabric8ConfigUtils: error
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
   endpoints:
