@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 
+import com.hedera.mirror.importer.domain.AbstractEntity;
 import com.hedera.mirror.importer.domain.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.ContractLog;
@@ -249,7 +250,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContract(Contract contract) {
         contracts.merge(contract.getId(), contract, this::mergeContract);
-        entities.remove(contract.getId());
     }
 
     @Override
@@ -275,7 +275,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onEntity(Entity entity) throws ImporterException {
         long id = entity.getId();
-        if (id == EntityId.EMPTY.getId() || contracts.containsKey(id)) {
+        if (id == EntityId.EMPTY.getId()) {
             return;
         }
 
@@ -354,112 +354,68 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures.add(transactionSignature);
     }
 
-    private Contract mergeContract(Contract cachedContract, Contract newContract) {
-        if (newContract.getAutoRenewPeriod() != null) {
-            cachedContract.setAutoRenewPeriod(newContract.getAutoRenewPeriod());
+    private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
+        if (current.getAutoRenewPeriod() != null) {
+            previous.setAutoRenewPeriod(current.getAutoRenewPeriod());
         }
 
-        if (newContract.getCreatedTimestamp() != null) {
-            // it's possible when processing transactions, an entity is populated with the minimum amount of info and
-            // gets inserted to the cache before a later fully populated entity object of the same id. So set the
-            // created timestamp if the new entity object has it set.
-            cachedContract.setCreatedTimestamp(newContract.getCreatedTimestamp());
+        if (current.getDeleted() != null) {
+            previous.setDeleted(current.getDeleted());
         }
 
-        if (newContract.getDeleted() != null) {
-            cachedContract.setDeleted(newContract.getDeleted());
+        if (current.getExpirationTimestamp() != null) {
+            previous.setExpirationTimestamp(current.getExpirationTimestamp());
         }
 
-        if (newContract.getExpirationTimestamp() != null) {
-            cachedContract.setExpirationTimestamp(newContract.getExpirationTimestamp());
+        if (current.getKey() != null) {
+            previous.setKey(current.getKey());
         }
 
-        if (newContract.getFileId() != null) {
-            cachedContract.setFileId(newContract.getFileId());
+        if (current.getMemo() != null) {
+            previous.setMemo(current.getMemo());
         }
 
-        if (newContract.getKey() != null) {
-            cachedContract.setKey(newContract.getKey());
+        if (current.getProxyAccountId() != null) {
+            previous.setProxyAccountId(current.getProxyAccountId());
         }
 
-        if (newContract.getMemo() != null) {
-            cachedContract.setMemo(newContract.getMemo());
+        if (current.getTimestampRange() != null) {
+            previous.setTimestampRange(current.getTimestampRange());
         }
 
-        if (newContract.getObtainerId() != null) {
-            cachedContract.setObtainerId(newContract.getObtainerId());
-        }
-
-        if (newContract.getParentId() != null) {
-            cachedContract.setParentId(newContract.getParentId());
-        }
-
-        if (newContract.getProxyAccountId() != null) {
-            cachedContract.setProxyAccountId(newContract.getProxyAccountId());
-        }
-
-        if (newContract.getTimestampRange() != null && (cachedContract.getTimestampRange() == null ||
-                newContract.getModifiedTimestamp() >= cachedContract.getModifiedTimestamp())) {
-            cachedContract.setTimestampRange(newContract.getTimestampRange());
-        }
-
-        return cachedContract;
+        return previous;
     }
 
-    private Entity mergeEntity(Entity cachedEntity, Entity newEntity) {
-        if (newEntity.getAutoRenewAccountId() != null) {
-            cachedEntity.setAutoRenewAccountId(newEntity.getAutoRenewAccountId());
+    private Contract mergeContract(Contract previous, Contract current) {
+        mergeAbstractEntity(previous, current);
+
+        if (current.getObtainerId() != null) {
+            previous.setObtainerId(current.getObtainerId());
         }
 
-        if (newEntity.getAutoRenewPeriod() != null) {
-            cachedEntity.setAutoRenewPeriod(newEntity.getAutoRenewPeriod());
+        return previous;
+    }
+
+    private Entity mergeEntity(Entity previous, Entity current) {
+        mergeAbstractEntity(previous, current);
+
+        if (current.getAutoRenewAccountId() != null) {
+            previous.setAutoRenewAccountId(current.getAutoRenewAccountId());
         }
 
-        if (newEntity.getCreatedTimestamp() != null) {
-            // it's possible when processing transactions, an entity is populated with the minimum amount of info and
-            // gets inserted to the cache before a later fully populated entity object of the same id. So set the
-            // created timestamp if the new entity object has it set.
-            cachedEntity.setCreatedTimestamp(newEntity.getCreatedTimestamp());
+        if (current.getMaxAutomaticTokenAssociations() != null) {
+            previous.setMaxAutomaticTokenAssociations(current.getMaxAutomaticTokenAssociations());
         }
 
-        if (newEntity.getDeleted() != null) {
-            cachedEntity.setDeleted(newEntity.getDeleted());
+        if (current.getReceiverSigRequired() != null) {
+            previous.setReceiverSigRequired(current.getReceiverSigRequired());
         }
 
-        if (newEntity.getExpirationTimestamp() != null) {
-            cachedEntity.setExpirationTimestamp(newEntity.getExpirationTimestamp());
+        if (current.getSubmitKey() != null) {
+            previous.setSubmitKey(current.getSubmitKey());
         }
 
-        if (newEntity.getKey() != null) {
-            cachedEntity.setKey(newEntity.getKey());
-        }
-
-        if (newEntity.getMaxAutomaticTokenAssociations() != null) {
-            cachedEntity.setMaxAutomaticTokenAssociations(newEntity.getMaxAutomaticTokenAssociations());
-        }
-
-        if (newEntity.getMemo() != null) {
-            cachedEntity.setMemo(newEntity.getMemo());
-        }
-
-        if (newEntity.getProxyAccountId() != null) {
-            cachedEntity.setProxyAccountId(newEntity.getProxyAccountId());
-        }
-
-        if (newEntity.getReceiverSigRequired() != null) {
-            cachedEntity.setReceiverSigRequired(newEntity.getReceiverSigRequired());
-        }
-
-        if (newEntity.getSubmitKey() != null) {
-            cachedEntity.setSubmitKey(newEntity.getSubmitKey());
-        }
-
-        if (newEntity.getTimestampRange() != null && (cachedEntity.getTimestampRange() == null ||
-                newEntity.getModifiedTimestamp() >= cachedEntity.getModifiedTimestamp())) {
-            cachedEntity.setTimestampRange(newEntity.getTimestampRange());
-        }
-
-        return cachedEntity;
+        return previous;
     }
 
     private Nft mergeNft(Nft cachedNft, Nft newNft) {

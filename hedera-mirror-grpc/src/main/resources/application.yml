@@ -19,6 +19,7 @@ logging:
   level:
     root: warn
     com.hedera.mirror.grpc: info
+    org.springframework.cloud.kubernetes.fabric8.config.Fabric8ConfigUtils: error
     # io.grpc: debug
     # org.hibernate.SQL: debug
     # org.hibernate.type.descriptor.sql.BasicBinder: trace

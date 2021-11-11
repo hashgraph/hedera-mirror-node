@@ -22,6 +22,8 @@
 
 const log4js = require('log4js');
 const request = require('supertest');
+
+const {processRow} = require('../accounts');
 const server = require('../server');
 const testutils = require('./testutils.js');
 
@@ -332,4 +334,92 @@ describe('Accounts tests', () => {
   testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
   testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
   testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
+});
+
+describe('processRow', () => {
+  const input = {
+    account_balance: '123456789',
+    auto_renew_period: 7890000,
+    consensus_timestamp: '9876500123456789',
+    deleted: false,
+    expiration_timestamp: '999876500123456789',
+    id: '1250',
+    key: Buffer.from([1, 2, 3, 4, 5, 6]),
+    max_automatic_token_associations: 100,
+    memo: 'entity memo',
+    receiver_sig_required: false,
+    token_balances: [
+      {
+        token_id: '1500',
+        balance: 2000,
+      },
+    ],
+  };
+  const expected = {
+    account: '0.0.1250',
+    auto_renew_period: 7890000,
+    balance: {
+      balance: 123456789,
+      timestamp: '9876500.123456789',
+      tokens: [
+        {
+          token_id: '0.0.1500',
+          balance: 2000,
+        },
+      ],
+    },
+    deleted: false,
+    expiry_timestamp: '999876500.123456789',
+    key: {
+      _type: 'ProtobufEncoded',
+      key: '010203040506',
+    },
+    max_automatic_token_associations: 100,
+    memo: 'entity memo',
+    receiver_sig_required: false,
+  };
+
+  test('with balance', () => {
+    expect(processRow(input)).toEqual(expected);
+  });
+
+  test('undefined balance', () => {
+    const inputBalanceUndefined = {
+      ...input,
+      account_balance: undefined,
+      consensus_timestamp: undefined,
+      token_balances: undefined,
+    };
+    const expectedNoBalance = {
+      ...expected,
+      balance: undefined,
+    };
+    expect(processRow(inputBalanceUndefined)).toEqual(expectedNoBalance);
+  });
+
+  test('null balance', () => {
+    const inputNullBalance = {
+      ...input,
+      account_balance: null,
+      consensus_timestamp: null,
+      token_balances: null,
+    };
+    const expectedNullBalance = {
+      ...expected,
+      balance: {
+        balance: null,
+        timestamp: null,
+        tokens: [],
+      },
+    };
+    expect(processRow(inputNullBalance)).toEqual(expectedNullBalance);
+  });
+
+  test('null auto_renew_period', () => {
+    expect(processRow({...input, auto_renew_period: null})).toEqual({...expected, auto_renew_period: null});
+  });
+
+  test('null key', () => {
+    expect(processRow({...input, key: null})).toEqual({...expected, key: null});
+  });
 });

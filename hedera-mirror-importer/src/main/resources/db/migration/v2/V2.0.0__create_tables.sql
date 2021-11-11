@@ -91,7 +91,6 @@ create table if not exists contract
     memo                 text        default ''         not null,
     num                  bigint                         not null,
     obtainer_id          bigint                         null,
-    parent_id            bigint                         null,
     proxy_account_id     bigint                         null,
     public_key           character varying              null,
     realm                bigint                         not null,

@@ -55,113 +55,236 @@ const processRow = (row) => {
   };
 };
 
+// 'id' is different for different join types, so will add later when composing the query
+const entityFields = [
+  'auto_renew_period',
+  'deleted',
+  'expiration_timestamp',
+  'key',
+  'max_automatic_token_associations',
+  'memo',
+  'receiver_sig_required',
+  'type',
+].join(',');
+const entityAndBalanceFields = [
+  entityFields,
+  // fields from account_balance
+  'consensus_timestamp',
+  'balance account_balance',
+].join(',');
+const latestBalanceFilter = 'ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance)';
+const latestBalanceNullableFilter = `(${latestBalanceFilter} or ab.consensus_timestamp is null)`;
+
+/**
+ * Gets the query for entity fields with hbar balance info for the full outer join case.
+ *
+ * @param accountContractQuery
+ * @param balanceAccountQuery
+ * @param entityAccountQuery
+ * @param entityWhereClause
+ * @param limitParams
+ * @param limitQuery
+ * @param order
+ * @return {{query: string, params: *[]}}
+ */
+const getEntityBalanceFullOuterJoinQuery = (
+  accountContractQuery,
+  balanceAccountQuery,
+  entityAccountQuery,
+  entityWhereClause,
+  limitParams,
+  limitQuery,
+  order
+) => {
+  const balanceWhereCondition = [latestBalanceFilter, balanceAccountQuery.query].filter((x) => !!x).join(' and ');
+  const entityIdField = 'coalesce(ab.account_id, e.id)';
+  const params = utils.mergeParams(
+    entityAccountQuery.params,
+    limitParams,
+    balanceAccountQuery.params,
+    limitParams,
+    limitParams
+  );
+  const entityBalanceQuery = `
+      select ${entityIdField} id,${entityAndBalanceFields}
+      from (
+        select id,${entityFields}
+        from (${accountContractQuery}) e
+        ${entityWhereClause}
+        order by id ${order}
+        ${limitQuery}
+      ) e
+      full outer join (
+        select *
+        from account_balance ab
+        where ${balanceWhereCondition}
+        order by account_id ${order}
+        ${limitQuery}
+      ) ab
+        on ab.account_id = e.id
+      order by ${entityIdField} ${order}
+      ${limitQuery}
+    `;
+  return {query: entityBalanceQuery, params};
+};
+
+/**
+ * Gets the query for entity fields with hbar balance info for inner, left outer, and right outer join cases.
+ *
+ * @param accountContractQuery
+ * @param balanceAccountQuery
+ * @param balanceQuery
+ * @param entityAccountQuery
+ * @param limitParams
+ * @param limitQuery
+ * @param order
+ * @param pubKeyQuery
+ * @return {{query: string, params: *[]}}
+ */
+const getEntityBalanceQuery = (
+  accountContractQuery,
+  balanceAccountQuery,
+  balanceQuery,
+  entityAccountQuery,
+  limitParams,
+  limitQuery,
+  order,
+  pubKeyQuery
+) => {
+  const balanceWhereConditions = [balanceQuery.query];
+  let balanceTimestampFilter = latestBalanceFilter;
+  let entityIdField = 'id'; // use 'id' from account / contract for inner and left outer joins
+  let joinType = '';
+  let params;
+
+  // use different joins for different combinations of balance query and public key query. The where conditions
+  // and the corresponding params differ too. The entity id conditions only have to apply to one table: for inner
+  // and left outer joins, apply them to the account / contract table; for right outer join, apply them to the
+  // account_balance table
+  if (balanceQuery.query && pubKeyQuery.query) {
+    joinType = 'inner';
+    params = [entityAccountQuery.params, pubKeyQuery.params, balanceQuery.params];
+  } else if (pubKeyQuery.query) {
+    // allow null for account_balance consensus_timestamp for left outer join
+    balanceTimestampFilter = latestBalanceNullableFilter;
+    joinType = 'left outer';
+    params = [entityAccountQuery.params, pubKeyQuery.params];
+  } else if (balanceQuery.query) {
+    entityIdField = 'account_id';
+    balanceWhereConditions.push(balanceAccountQuery.query);
+    joinType = 'right outer';
+    // no entity id filter needed for account / contract for right outer join
+    params = [balanceQuery.params, balanceAccountQuery.params];
+  }
+
+  balanceWhereConditions.push(balanceTimestampFilter);
+  const whereCondition = [
+    // no entity id filter needed for account / contract for right outer join
+    joinType !== 'right outer' ? entityAccountQuery.query : '',
+    pubKeyQuery.query,
+    ...balanceWhereConditions,
+  ]
+    .filter((x) => !!x)
+    .join(' and ');
+  const whereClause = `where ${whereCondition}`;
+
+  params = utils.mergeParams(...params, limitParams);
+  const entityBalanceQuery = `
+      select ${entityIdField} id,${entityAndBalanceFields}
+      from (${accountContractQuery}) e
+      ${joinType} join account_balance ab
+        on ab.account_id = e.id
+      ${whereClause}
+      order by ${entityIdField} ${order}
+      ${limitQuery}
+    `;
+  return {query: entityBalanceQuery, params};
+};
+
 /**
  * Creates account query and params from filters with limit and order
  *
  * @param entityAccountQuery optional entity id query
- * @param balancesAccountQuery optional account balance account id query
+ * @param balanceAccountQuery optional account balance account id query
  * @param balanceQuery optional account balance query
- * @param pubKeyQuery optional entity public key query
  * @param limitAndOrderQuery optional limit and order query
+ * @param pubKeyQuery optional entity public key query
  * @param includeBalance include balance info or not
  * @return {{query: string, params: []}}
  */
 const getAccountQuery = (
   entityAccountQuery,
-  balancesAccountQuery,
+  balanceAccountQuery,
   balanceQuery = {query: '', params: []},
+  limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
-  limitAndOrderQuery = {query: '', params: [], order: ''},
   includeBalance = true
 ) => {
-  const entityWhereFilter = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
-  const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
-  const accountContractOrderOption = {field: 'id', order: order || 'asc'};
-  const entityQuery = `select
-      id,
-      expiration_timestamp,
-      auto_renew_period,
-      key,
-      deleted,
-      type,
-      max_automatic_token_associations,
-      memo,
-      receiver_sig_required
-    from (${getAccountContractUnionQueryWithOrder(accountContractOrderOption)}) account_contract
-    ${entityWhereFilter && 'where ' + entityWhereFilter}
-    order by id ${order || ''}
-    ${limitQuery || ''}`;
+  const entityWhereCondition = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
+  const entityWhereClause = entityWhereCondition && `where ${entityWhereCondition}`;
+  const limitParams = limitAndOrderQuery.params;
+  const limitQuery = limitAndOrderQuery.query || '';
+  const order = limitAndOrderQuery.order || constants.orderFilterValues.ASC;
+  const accountContractQuery = getAccountContractUnionQueryWithOrder({field: 'id', order});
 
   if (!includeBalance) {
+    const entityOnlyQuery = `
+      select id,${entityFields}
+      from (${accountContractQuery}) account_contract
+      ${entityWhereClause}
+      order by id ${order}
+      ${limitQuery}`;
     return {
-      query: entityQuery,
+      query: entityOnlyQuery,
       params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitParams),
     };
   }
 
-  const balanceWhereFilter = [
-    'ab.consensus_timestamp = (select max(consensus_timestamp) as time_stamp_max from account_balance)',
-    balancesAccountQuery.query,
-    balanceQuery.query,
-  ]
-    .filter((x) => !!x)
-    .join(' and ');
-
-  // balanceQuery and pubKeyQuery are applied in the two sub queries; depending on the presence, use different joins
-  let joinType = 'full outer';
-  if (balanceQuery.query && pubKeyQuery.query) {
-    joinType = 'inner';
-  } else if (balanceQuery.query) {
-    joinType = 'left outer';
-  } else if (pubKeyQuery.query) {
-    joinType = 'right outer';
-  }
+  const {query: entityBalanceQuery, params} =
+    balanceQuery.query === '' && pubKeyQuery.query === ''
+      ? // use full outer join when no balance query and public key query
+        getEntityBalanceFullOuterJoinQuery(
+          accountContractQuery,
+          balanceAccountQuery,
+          entityAccountQuery,
+          entityWhereClause,
+          limitParams,
+          limitQuery,
+          order
+        )
+      : getEntityBalanceQuery(
+          accountContractQuery,
+          balanceAccountQuery,
+          balanceQuery,
+          entityAccountQuery,
+          limitParams,
+          limitQuery,
+          order,
+          pubKeyQuery
+        );
 
   const query = `
-    with balances as (
-      select json_agg(
-          json_build_object(
+    with entity_balance as (${entityBalanceQuery}),
+    token_balance as (
+      select
+        tb.account_id,
+        (select jsonb_agg(
+          jsonb_build_object(
             'token_id', tb.token_id::text,
             'balance', tb.balance
-          ) order by tb.token_id ${order || ''}
-        ) as token_balances,
-        ab.balance             as balance,
-        ab.consensus_timestamp as consensus_timestamp,
-        ab.account_id          as account_id
-      from account_balance ab
-      left outer join token_balance tb
-        on ab.account_id = tb.account_id and ab.consensus_timestamp = tb.consensus_timestamp
-      where ${balanceWhereFilter}
-      group by ab.consensus_timestamp, ab.account_id, ab.balance
-      order by ab.account_id ${order || ''}
-      ${limitQuery || ''}
+          ) order by tb.token_id ${order}
+        )) as token_balances
+      from token_balance tb
+      join entity_balance eb
+        on tb.account_id = eb.id and tb.consensus_timestamp = eb.consensus_timestamp
+      group by tb.account_id
     )
-    select balances.balance as account_balance,
-      balances.consensus_timestamp as consensus_timestamp,
-       coalesce(balances.account_id, e.id) as id,
-       e.expiration_timestamp,
-       e.auto_renew_period,
-       e.key,
-       e.deleted,
-       e.max_automatic_token_associations,
-       e.memo,
-       e.receiver_sig_required,
-       balances.token_balances
-    from balances
-    ${joinType} join (${entityQuery}) e
-      on e.id = balances.account_id
-    order by coalesce(balances.account_id, e.id) ${order || ''}
-    ${limitQuery || ''}`;
-
-  const params = utils.mergeParams(
-    balancesAccountQuery.params,
-    balanceQuery.params,
-    limitParams,
-    entityAccountQuery.params,
-    pubKeyQuery.params,
-    limitParams,
-    limitParams
-  );
+    select eb.*,tb.token_balances
+    from entity_balance eb
+    left join token_balance tb
+      on tb.account_id = eb.id
+    order by eb.id ${order}
+  `;
 
   return {query, params};
 };
@@ -192,18 +315,18 @@ const getAccounts = async (req, res) => {
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'id'));
-  const balancesAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
+  const balanceAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
   const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'ab.balance'));
   const includeBalance = getBalanceParamValue(req.query);
-  const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'public_key'));
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
+  const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'public_key'));
 
   const {query, params} = getAccountQuery(
     entityAccountQuery,
-    balancesAccountQuery,
+    balanceAccountQuery,
     balanceQuery,
-    pubKeyQuery,
     limitAndOrderQuery,
+    pubKeyQuery,
     includeBalance
   );
 
@@ -362,3 +485,9 @@ module.exports = {
   getAccounts,
   getOneAccount,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(module.exports, {
+    processRow,
+  });
+}

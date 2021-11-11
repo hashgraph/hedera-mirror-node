@@ -6,7 +6,7 @@ exports[`from record file buffer or compact object check individual field from v
 
 exports[`from record file buffer or compact object end running hash mismatch 1`] = `"End object running hash mismatch"`;
 
-exports[`from record file buffer or compact object from non-Buffer obj 1`] = `"Cannot read property 'readInt32BE' of undefined"`;
+exports[`from record file buffer or compact object from non-Buffer obj 1`] = `"Cannot read properties of undefined (reading 'readInt32BE')"`;
 
 exports[`from record file buffer or compact object truncated v2 buffer 1`] = `"Error reading byte array, expect 221-byte data got 220-byte"`;
 

@@ -316,23 +316,6 @@ describe('utils encodeMessage tests', () => {
   test(`Verify encodeBinary on utf8 character encoding`, () => {
     expect(utils.encodeBinary(inputMessage, 'utf8')).toBe(utf8Message);
   });
-
-  describe('utils parsePublicKey tests', () => {
-    test(`Verify parsePublicKey on null publickey`, () => {
-      expect(utils.parsePublicKey(null)).toBe(null);
-    });
-
-    test(`Verify parsePublicKey on invalid decode publickey`, () => {
-      const key = '2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864;';
-      expect(utils.parsePublicKey(key)).toBe(key);
-    });
-
-    test(`Verify parsePublicKey on valid decode publickey`, () => {
-      const validDer = '302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
-      const validDecoded = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
-      expect(utils.parsePublicKey(validDer)).toBe(validDecoded);
-    });
-  });
 });
 
 describe('Utils convertMySqlStyleQueryToPostgres tests', () => {
@@ -504,6 +487,23 @@ describe('Utils parseAccountIdQueryParam tests', () => {
   );
 });
 
+describe('utils parsePublicKey tests', () => {
+  test(`Verify parsePublicKey on null publickey`, () => {
+    expect(utils.parsePublicKey(null)).toBe(null);
+  });
+
+  test(`Verify parsePublicKey on invalid decode publickey`, () => {
+    const key = '2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864;';
+    expect(utils.parsePublicKey(key)).toBe(key);
+  });
+
+  test(`Verify parsePublicKey on valid decode publickey`, () => {
+    const validDer = '302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
+    const validDecoded = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
+    expect(utils.parsePublicKey(validDer)).toBe(validDecoded);
+  });
+});
+
 describe('Utils parseTimestampQueryParam tests', () => {
   const testSpecs = [
     {
@@ -558,6 +558,52 @@ describe('Utils parseTimestampQueryParam tests', () => {
   parseQueryParamTest('Utils parseTimestampQueryParam - ', testSpecs, (spec) =>
     utils.parseTimestampQueryParam(spec.parsedQueryParams, 'timestamp', spec.opOverride)
   );
+});
+
+describe('Utils parseTokenBalances', () => {
+  const input = [
+    {
+      token_id: '1005',
+      balance: '7500',
+    },
+    {
+      token_id: '4294967396',
+      balance: '12000',
+    },
+  ];
+  const expected = [
+    {
+      token_id: '0.0.1005',
+      balance: '7500',
+    },
+    {
+      token_id: '0.1.100',
+      balance: '12000',
+    },
+  ];
+
+  test('success', () => {
+    expect(utils.parseTokenBalances(input)).toEqual(expected);
+  });
+
+  test('success with null token_id', () => {
+    expect(
+      utils.parseTokenBalances([
+        ...input,
+        {
+          token_id: null,
+        },
+      ])
+    ).toEqual(expected);
+  });
+
+  test('null tokenBalances', () => {
+    expect(utils.parseTokenBalances(null)).toEqual([]);
+  });
+
+  test('undefined tokenBalances', () => {
+    expect(utils.parseTokenBalances(undefined)).toEqual([]);
+  });
 });
 
 describe('Utils parseBalanceQueryParam tests', () => {

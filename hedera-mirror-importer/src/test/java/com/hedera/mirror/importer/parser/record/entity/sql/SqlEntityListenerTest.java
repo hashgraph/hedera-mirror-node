@@ -149,19 +149,10 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContract() {
         // given
-        Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
-        Entity entity = new Entity();
-        entity.setId(contract.getId());
-        entity.setNum(contract.getNum());
-        entity.setRealm(contract.getRealm());
-        entity.setShard(contract.getShard());
-        entity.setModifiedTimestamp(contract.getModifiedTimestamp() + 10L);
-        entity.setType(ACCOUNT);
+        Contract contract = domainBuilder.contract().get();
 
         // when
-        sqlEntityListener.onEntity(entity); // Removed after onContract
         sqlEntityListener.onContract(contract);
-        sqlEntityListener.onEntity(entity); // Ignored
         completeFileAndCommit();
 
         // then
@@ -173,7 +164,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContractMergeSame() {
         // given
-        Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
+        Contract contract = domainBuilder.contract().get();
 
         // when
         sqlEntityListener.onContract(contract);
@@ -189,9 +180,10 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContractMergeDifferent() {
         // given
-        Contract contract = domainBuilder.contract().customize(c -> c.parentId(null)).get();
+        Contract contract = domainBuilder.contract().get();
         Contract contractUpdated = domainBuilder.contract()
-                .customize(c -> c.parentId(null).id(contract.getId()).num(contract.getNum()))
+                .customize(c -> c.fileId(contract.getFileId()).createdTimestamp(contract.getCreatedTimestamp())
+                        .id(contract.getId()).num(contract.getNum()))
                 .get();
 
         // when
@@ -203,61 +195,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
         assertThat(entityRepository.count()).isZero();
         assertThat(contractRepository.findAll()).containsExactly(contractUpdated);
-    }
-
-    @Test
-    void onContractWithParent() {
-        // given
-        Contract parent = domainBuilder.contract().persist();
-        Contract contract = EntityId.of(0L, 0L, 100L, EntityType.CONTRACT).toEntity();
-        contract.setCreatedTimestamp(1L);
-        contract.setDeleted(false);
-        contract.setModifiedTimestamp(1L);
-        contract.setParentId(parent.toEntityId());
-
-        // when
-        sqlEntityListener.onContract(contract);
-        completeFileAndCommit();
-
-        // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertThat(entityRepository.count()).isZero();
-        assertThat(contractRepository.findAll())
-                .hasSize(2)
-                .filteredOn(c -> c.getId().equals(contract.getId()))
-                .first()
-                .returns(contract.getCreatedTimestamp(), Contract::getCreatedTimestamp)
-                .returns(contract.getId(), Contract::getId)
-                .returns(contract.getModifiedTimestamp(), Contract::getModifiedTimestamp)
-                .returns(contract.getNum(), Contract::getNum)
-                .returns(contract.getParentId(), Contract::getParentId)
-                .usingRecursiveComparison()
-                .ignoringFields("createdTimestamp", "id", "num", "parentId", "timestampRange")
-                .isEqualTo(parent);
-    }
-
-    // Tests scenario when mirror node has partial data and is missing contract parent
-    @Test
-    void onContractWithMissingParent() {
-        // given
-        Contract contract = EntityId.of(0L, 0L, 101L, EntityType.CONTRACT).toEntity();
-        contract.setCreatedTimestamp(1L);
-        contract.setDeleted(false);
-        contract.setMemo("");
-        contract.setModifiedTimestamp(1L);
-        contract.setParentId(EntityId.of(0L, 0L, 100L, EntityType.CONTRACT));
-
-        // when
-        sqlEntityListener.onContract(contract);
-        completeFileAndCommit();
-
-        // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1);
-        assertThat(entityRepository.count()).isZero();
-        assertThat(contractRepository.findAll())
-                .hasSize(1)
-                .first()
-                .isEqualTo(contract);
     }
 
     @Test
@@ -472,14 +409,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntity(entity);
 
         EntityId entityId1 = EntityId.of(0L, 0L, 1L, ACCOUNT);
+        Entity entityUpdated1 = entityId1.toEntity();
+        entityUpdated1.setModifiedTimestamp(2L);
         sqlEntityListener.onEntity(entityId1.toEntity());
 
-        Entity entityUpdated = getEntity(1, 5L);
-        entityUpdated.setMemo("memo-updated");
-        sqlEntityListener.onEntity(entityUpdated);
-
-        EntityId entityId2 = EntityId.of(0L, 0L, 1L, ACCOUNT);
-        sqlEntityListener.onEntity(entityId2.toEntity());
+        Entity entityUpdated2 = getEntity(1, 5L);
+        entityUpdated2.setMemo("memo-updated");
+        sqlEntityListener.onEntity(entityUpdated2);
 
         // when
         completeFileAndCommit();
