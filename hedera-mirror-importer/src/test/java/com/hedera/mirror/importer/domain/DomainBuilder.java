@@ -91,7 +91,6 @@ public class DomainBuilder {
                 .key(key)
                 .memo("test" + id)
                 .obtainerId(entityId(CONTRACT))
-                .parentId(entityId(CONTRACT))
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)

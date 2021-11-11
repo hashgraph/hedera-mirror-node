@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.function.Supplier;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.Contract;
@@ -31,17 +30,13 @@ import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.util.Cloner;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    private final Cloner cloner;
-
-    ContractCreateTransactionHandler(Cloner cloner, EntityListener entityListener, EntityProperties entityProperties) {
+    ContractCreateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
         super(entityListener, entityProperties);
-        this.cloner = cloner;
     }
 
     @Override
@@ -65,7 +60,6 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         EntityId entityId = transaction.getEntityId();
         transaction.setInitialBalance(transactionBody.getInitialBalance());
-        Supplier<Contract> inheritedContract = Contract::new;
 
         if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
             Contract contract = entityId.toEntity();
@@ -73,7 +67,6 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             contract.setDeleted(false);
             contract.setModifiedTimestamp(consensusTimestamp);
             doUpdateEntity(contract, recordItem);
-            inheritedContract = () -> cloner.deepClone(contract);
         }
 
         if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
@@ -87,7 +80,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             contractResult.setGasLimit(transactionBody.getGas());
             contractResult.setPayerAccountId(transaction.getPayerAccountId());
 
-            onContractResult(recordItem, inheritedContract, contractResult, functionResult);
+            onContractResult(recordItem, contractResult, functionResult);
         }
     }
 

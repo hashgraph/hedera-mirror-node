@@ -344,7 +344,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(CREATED_CONTRACT_ID)),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractCallResult(contractCallTransactionBody, record),
-                () -> assertCreatedContract(parent, recordItem),
+                () -> assertCreatedContract(recordItem),
                 () -> assertThat(contractRepository.findById(parentId.getId())).get().isEqualTo(parent) // No change
         );
     }
@@ -485,28 +485,26 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(transactionBody.getMemo(), Contract::getMemo)
                 .returns(createdTimestamp, Contract::getModifiedTimestamp)
                 .returns(null, Contract::getObtainerId)
-                .returns(null, Contract::getParentId)
                 .returns(EntityId.of(transactionBody.getProxyAccountID()), Contract::getProxyAccountId)
                 .returns(Utility.convertSimpleKeyToHex(adminKey), Contract::getPublicKey)
                 .returns(EntityType.CONTRACT, Contract::getType);
 
         if (entityProperties.getPersist().isContracts()) {
-            assertCreatedContract(contract, recordItem);
+            assertCreatedContract(recordItem);
         }
     }
 
-    private void assertCreatedContract(Contract parent, RecordItem recordItem) {
+    private void assertCreatedContract(RecordItem recordItem) {
         EntityId createdId = EntityId.of(CREATED_CONTRACT_ID);
         assertThat(contractRepository.findById(createdId.getId()))
                 .get()
                 .returns(recordItem.getConsensusTimestamp(), Contract::getCreatedTimestamp)
+                .returns(false, Contract::getDeleted)
                 .returns(createdId.getId(), Contract::getId)
                 .returns(recordItem.getConsensusTimestamp(), Contract::getModifiedTimestamp)
                 .returns(createdId.getEntityNum(), Contract::getNum)
-                .returns(parent.toEntityId(), Contract::getParentId)
-                .usingRecursiveComparison()
-                .ignoringFields("createdTimestamp", "id", "num", "parentId", "timestampRange")
-                .isEqualTo(parent);
+                .returns(createdId.getShardNum(), Contract::getShard)
+                .returns(createdId.getType(), Contract::getType);
     }
 
     private ObjectAssert<Contract> assertContractEntity(ContractUpdateTransactionBody expected,
@@ -524,7 +522,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(getMemoFromContractUpdateTransactionBody(expected), Contract::getMemo)
                 .returns(updatedTimestamp, Contract::getModifiedTimestamp)
                 .returns(null, Contract::getObtainerId)
-                .returns(null, Contract::getParentId)
                 .returns(EntityId.of(expected.getProxyAccountID()), Contract::getProxyAccountId)
                 .returns(Utility.convertSimpleKeyToHex(adminKey), Contract::getPublicKey)
                 .returns(EntityType.CONTRACT, Contract::getType);

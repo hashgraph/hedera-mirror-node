@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
@@ -33,7 +32,6 @@ import com.hedera.mirror.importer.domain.Contract_;
 @Value
 public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Contract_> {
 
-    private static final String PARENT = "parent";
     private final String finalTableName = "contract";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> v1ConflictIdColumns = List.of(AbstractEntity_.ID);
@@ -43,34 +41,12 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
             Contract_.FILE_ID, AbstractEntity_.KEY, Contract_.OBTAINER_ID,
             AbstractEntity_.PUBLIC_KEY, AbstractEntity_.PROXY_ACCOUNT_ID, AbstractEntity_.TIMESTAMP_RANGE);
     private final Set<String> nonUpdatableColumns = Set.of(AbstractEntity_.CREATED_TIMESTAMP, AbstractEntity_.ID,
-            AbstractEntity_.NUM, Contract_.PARENT_ID, AbstractEntity_.REALM, AbstractEntity_.SHARD,
+            AbstractEntity_.NUM, AbstractEntity_.REALM, AbstractEntity_.SHARD,
             AbstractEntity_.TYPE);
 
     @Override
-    protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
-        if (attributeType == String.class && !isNullableColumn(attributeName)) {
-            return getSelectCoalesceQuery(attributeName, EMPTY_STRING);
-        } else if (isNullableColumn(attributeName)) {
-            return getSelectCoalesceQuery(attributeName, null);
-        } else {
-            return getFullTempTableColumnName(attributeName);
-        }
-    }
-
-    @Override
-    protected String getSelectCoalesceQuery(String column, String defaultValue) {
-        String formattedColumnName = getFullTempTableColumnName(column);
-        String parentColumnName = getFullTableColumnName(PARENT, column);
-        return String.format("coalesce(%s, %s, %s)", formattedColumnName, parentColumnName, defaultValue);
-    }
-
-    @Override
     public String getInsertWhereClause() {
-        return String.format(" left join %s %s on %s = %s",
-                getFinalTableName(),
-                PARENT,
-                getFullTableColumnName(PARENT, AbstractEntity_.ID),
-                getFullTempTableColumnName(Contract_.PARENT_ID));
+        return "";
     }
 
     @Override
