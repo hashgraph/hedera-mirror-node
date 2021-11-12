@@ -49,11 +49,11 @@ create index if not exists contract_history__timestamp_range on contract_history
 
 -- contract_log
 alter table if exists contract_log
-    add constraint contract_log__pk primary key (consensus_timestamp, index, contract_id);
+    add constraint contract_log__pk primary key (consensus_timestamp, index, payer_account_id);
 
 -- contract_result
 alter table if exists contract_result
-    add constraint contract_result__pk primary key (consensus_timestamp, contract_id);
+    add constraint contract_result__pk primary key (consensus_timestamp, payer_account_id);
 
 -- crypto_transfer
 create index if not exists crypto_transfer__consensus_timestamp
