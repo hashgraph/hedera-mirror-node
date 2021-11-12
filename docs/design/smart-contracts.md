@@ -87,6 +87,7 @@ create table if not exists contract_result
   call_result          bytea              null,
   consensus_timestamp  bigint primary key not null,
   contract_id          bigint             null,
+  child_transactions   bigint             null,
   created_contract_ids bigint array       null,
   error_message        text               null,
   function_parameters  bytea              not null,
@@ -119,7 +120,7 @@ create table if not exists contract_log
 
 #### Contract Access List
 
-Create a new table to store the access list of contract execution
+Create a new table to store the access list of a contract execution
 
 ```sql
 create table if not exists contract_access_list
@@ -127,7 +128,7 @@ create table if not exists contract_access_list
   consensus_timestamp bigint      not null,
   contract_id         bigint      not null,
   storage_keys        bytea array not null,
-  primary key (consensus_timestamp, contract_id)
+  primary key (consensus_timestamp, contract_id, gin(storage_keys))
 );
 ```
 
@@ -294,6 +295,7 @@ Optional filters
   "blockNumber": "50",
   "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
   "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
+  "child_transactions": null,
   "created_contract_ids": [
     "0.0.1003"
   ],
@@ -336,11 +338,22 @@ Optional filters
 }
 ```
 
-See [Get Contract Access List](#contract-access-list) for access_list, [Get Contract Logs](#contract-log) for logs
-and [Get State Changes](#contract-state-change) for state_changes formats.
+- `access_list` schema is described by [Get Contract Access List](#contract-access-list). This should be retrieved by a
+  join between the `contract_result` and `contract_access_list` tables.
+- `logs` schema is described by [Get Contract Logs](#contract-log). This should be retrieved by a join between
+  the `contract_result` and `contract_log` tables.
+- `internal_transactions` should be retrieved by a join between the `contract_result` and transfer tables
+  (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables.
+- `state-changes` schema is described by [Get State Changes](#contract-state-change). This should be retrieved by a join
+  between the `contract_result` and `contract-state-change` tables.
 
 > _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractId and timestamp to
 > retrieve the correct contract_result row
+
+> _Note 2:_ Internal transactions issued by HTS precompiled transactions will produce regular HTS transactions.
+> The HTS transaction will contain the transferList that describes the internal transfers to be extracted. The parent
+> transactions `contract_result.child_transactions` will denote the range of consensusTimestamps for child transactions
+> i.e. `[parent_timestamp, parent_timestamp + contract_result.child_transactions)`
 
 ### Get Contract Logs
 
