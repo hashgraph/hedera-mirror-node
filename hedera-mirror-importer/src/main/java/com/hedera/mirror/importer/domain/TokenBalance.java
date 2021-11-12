@@ -62,10 +62,10 @@ public class TokenBalance implements Persistable<TokenBalance.Id> {
 
         private static final long serialVersionUID = -8547332015249955424L;
 
-        @Column(nullable = false, updatable = false)
+        @Column(nullable = false, updatable = false) // set updatable = false to prevent additional hibernate query
         private long consensusTimestamp;
 
-        @Column(nullable = false, updatable = false)
+        @Column(nullable = false, updatable = false) // set updatable = false to prevent additional hibernate query
         @Convert(converter = AccountIdConverter.class)
         private EntityId accountId;
 
