@@ -1,7 +1,9 @@
 -------------------
 -- Add constraints and indexes to tables
--- When adding primary keys citus requires an explicit statement of the constraints name for distributed tables
 -------------------
+
+-- use sequential, avoid error "The index name ... on a shard is too long and could lead to deadlocks when executed ..."
+set local citus.multi_shard_modify_mode to 'sequential';
 
 -- assessed_custom_fee
 create index if not exists assessed_custom_fee__consensus_timestamp
@@ -182,7 +184,8 @@ create index if not exists transaction_type
 -- transaction_signature
 create index if not exists transaction_signature__entity_id
     on transaction_signature (entity_id desc, consensus_timestamp desc);
-
 create unique index if not exists transaction_signature__timestamp_public_key_prefix
     on transaction_signature (consensus_timestamp desc, public_key_prefix, entity_id);
 
+-- revert to default
+set local citus.multi_shard_modify_mode to 'parallel';

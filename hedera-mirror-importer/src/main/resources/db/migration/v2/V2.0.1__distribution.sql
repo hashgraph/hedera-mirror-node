@@ -5,9 +5,9 @@
 
 
 -- Tables distributed on id
-select create_distributed_table('entity', 'id');
-
 select create_distributed_table('contract', 'id');
+
+select create_distributed_table('entity', 'id');
 
 -- Tables that will be colocated with tables above
 
