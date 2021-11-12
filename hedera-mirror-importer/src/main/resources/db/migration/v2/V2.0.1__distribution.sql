@@ -1,15 +1,15 @@
 -------------------
--- Create distributed tables for tables that can be distributed around an entity.
--- Colocate where possible with matching entity
+-- Create distributed tables for tables that have mostly insert logic.
+-- Colocate where possible with matching entity.
 -------------------
 
 
--- Entity tables distributed on id
+-- Tables distributed on id
 select create_distributed_table('entity', 'id');
 
 select create_distributed_table('contract', 'id');
 
--- Entity sub-tables distibuted on entity_ids and colocated with corresponding entity
+-- Tables that will be colocated with tables above
 
 select create_distributed_table('account_balance', 'account_id', colocate_with => 'entity');
 
