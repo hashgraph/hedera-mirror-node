@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.Serializable;
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
@@ -61,8 +62,10 @@ public class TokenBalance implements Persistable<TokenBalance.Id> {
 
         private static final long serialVersionUID = -8547332015249955424L;
 
+        @Column(nullable = false, updatable = false)
         private long consensusTimestamp;
 
+        @Column(nullable = false, updatable = false)
         @Convert(converter = AccountIdConverter.class)
         private EntityId accountId;
 
