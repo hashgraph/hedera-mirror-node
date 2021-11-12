@@ -17,9 +17,9 @@ select create_distributed_table('account_balance_file', 'node_account_id', coloc
 
 select create_distributed_table('contract_history', 'id', colocate_with => 'contract');
 
-select create_distributed_table('contract_log', 'payer_account_id', colocate_with => 'entity');
+select create_distributed_table('contract_log', 'payer_account_id', colocate_with => 'contract');
 
-select create_distributed_table('contract_result', 'payer_account_id', colocate_with => 'entity');
+select create_distributed_table('contract_result', 'payer_account_id', colocate_with => 'contract');
 
 select create_distributed_table('custom_fee', 'token_id', colocate_with => 'entity');
 
