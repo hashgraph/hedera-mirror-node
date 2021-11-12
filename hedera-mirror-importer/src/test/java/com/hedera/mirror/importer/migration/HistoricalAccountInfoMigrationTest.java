@@ -35,6 +35,7 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -47,6 +48,7 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@ActiveProfiles(profiles = "v2")
 class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     // These are the three accounts present in the test accountInfo.txt.gz
@@ -112,7 +114,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .allMatch(e -> e.getExpirationTimestamp() > 0)
                 .allMatch(e -> e.getKey().length > 0)
                 .map(Entity::getNum)
-                .containsExactly(entity1.getNum(), entity2.getNum(), entity3.getNum());
+                .containsExactlyInAnyOrder(entity1.getNum(), entity2.getNum(), entity3.getNum());
     }
 
     @Test
