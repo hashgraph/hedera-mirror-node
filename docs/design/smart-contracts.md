@@ -303,6 +303,13 @@ Optional filters
   "gas_limit": 2500,
   "gas_used": 1000,
   "hash": "0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
+  "internal_transactions": [
+    {
+      "amount": "",
+      "from": "",
+      "to": ""
+    }
+  ],
   "logs": [
     {
       "contract_id": "0.0.1234",
@@ -323,12 +330,16 @@ Optional filters
       ]
     }
   ],
+  "state_changes": [],
   "timestamp": "12345.10001",
   "to": "0.0.1002"
 }
 ```
 
-> _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractid and timestamp to
+See [Get Contract Access List](#contract-access-list) for access_list, [Get Contract Logs](#contract-log) for logs
+and [Get State Changes](#contract-state-change) for state_changes formats.
+
+> _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractId and timestamp to
 > retrieve the correct contract_result row
 
 ### Get Contract Logs
@@ -411,7 +422,7 @@ Optional filters
 ```json
 {
   "contract_id": "0.0.1003",
-  "storage_change": [
+  "storage_changes": [
     {
       "slot": "0x0000000000000000000000000000000000000000000000000000000000000002",
       "before": "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5",
@@ -464,31 +475,6 @@ The Mirror Node should implement a subset of the standard calls using to
 Existing domain and repositories can be utilized from the `hedera-mirror-common` dependencies to extract information
 from the database.
 
-Additional POJO's should be created to represent the various response formats
-
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": "null|string|array|boolean|integer|object"
-}
-```
-
-Add classes
-
-- `AbstractJSONRpcResponse`
-  ```java
-  public abstract class AbstractJSONRpcResponse {
-    private String jsonrpc;
-    private String method;
-  }
-  ```
-
-- `ArrayJSONRpcResponse` extends `AbstractJSONRpcResponse`
-- `BooleanJSONRpcResponse` extends `AbstractJSONRpcResponse`
-- `ObjectJSONRpcResponse` extends `AbstractJSONRpcResponse`
-- `StringJSONRpcResponse` extends `AbstractJSONRpcResponse`
-
 ### ETH RPC Service
 
 Establish an
@@ -496,6 +482,64 @@ Establish an
 - `EthRpcService` interface that describes the supported rpc methods
 - `EthRpcServiceImpl` class that contains the logic to service the rpc methods called. Methods query the appropriate
   `account_balance`, `contract`, `record_file` and `transaction` tables returning data in expected schema formats.
+
+#### Request POJOs
+
+Depending on the web dependency used we may have to manually handle input conversion from String to JSON. If so utilize
+[Jackson](https://github.com/FasterXML/jackson) library to create a `JSONRpcRequest` object that each method can parse
+
+Requests are typically of the JSON format
+
+  ```json
+  {
+  "id": 1,
+  "jsonrpc": "2.0",
+  "method": "",
+  "params": []
+}
+  ```
+
+An appropriate POJO schema would be
+
+  ```java
+  public class JSONRpcRequest {
+  private String id;
+  private String jsonrpc;
+  private String method;
+  private Object[] params;
+}
+  ```
+
+#### Response POJOs
+
+Responses are typically of the format
+
+```json
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": ""
+}
+```
+
+An appropriate POJO schema would be
+
+- `JSONRpcResponse`
+  ```java
+  public class JSONRpcResponse {
+    private String jsonrpc;
+    private String method;
+    private String result;
+  }
+  ```
+
+The result field will be populated with the JSON serialized value to be returned. The value can range from primitive
+data types (String, int, array) or defined Ethereum objects such as
+
+- [Block](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#block-object)
+- [Log](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#log-object)
+- [Transaction](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#transaction-object)
+- ...
 
 #### ETH Method Analysis
 
@@ -509,13 +553,13 @@ Wikis [JSON-RPC API](https://eth.wiki/json-rpc/API)
 | Method                                                                                                          | Description                                                                                           | Mirror Node Support Priority  | Justification                   |
 | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------- | -------------------------------- |
 | [eth_accounts](https://eth.wiki/json-rpc/API#eth_accounts)                                                      | Returns a list of addresses owned by client.                                                          | N/A                           | Mirror node is not an ethereum client                          |
-| [eth_blockNumber](https://eth.wiki/json-rpc/API#eth_blocknumber)                                                | Returns the index corresponding to the block number of the current chain head.                        | P0* | Mirror node is able to return the current record file count. However, this may be inaccurate depending on network load.
+| [eth_blockNumber](https://eth.wiki/json-rpc/API#eth_blocknumber)                                                | Returns the index corresponding to the block number of the current chain head.                        | P1* | Mirror node is able to return the current record file count. However, this may be inaccurate depending on network load.
 | [eth_call](https://eth.wiki/json-rpc/API#eth_call)                                                              | Invokes a contract function locally and does not change the state of the blockchain.                  | N/A                           | Mirror node is not an ethereum client                          |
 | [eth_coinbase](https://eth.wiki/json-rpc/API#eth_coinbase)                                                      | Returns the client coinbase address. The coinbase address is the account to pay mining rewards to.    | N/A                           | Mirror node is not an ethereum client                          |
 | [eth_estimateGas](https://eth.wiki/json-rpc/API#eth_estimategas)                                                | Returns an estimate of the gas required for a transaction to complete. | N/A                           | Mirror node is not an EVM bearing client                          |
 | [eth_gasPrice](https://eth.wiki/json-rpc/API#eth_gasprice)                                                      | Returns a percentile gas unit price for the most recent blocks, in Wei. | N/A                           | Mirror node is not an EVM bearing client                          |
-| [eth_getBalance](https://eth.wiki/json-rpc/API#eth_getbalance)                                                  | Returns the account balance of the specified address. | P0* | Mirror node can return an accounts balance. However, as of receipt it may be stale for up to 15 mins due to balance file parse rate.
-| [eth_getBlockByHash](https://eth.wiki/json-rpc/API#eth_getblockbyhash)                                          | Returns information about the block by hash. | P1 | Mirror node is able to return record file information. Block info will be secondary to transactions.
+| [eth_getBalance](https://eth.wiki/json-rpc/API#eth_getbalance)                                                  | Returns the account balance of the specified address. | P1* | Mirror node can return an accounts balance. However, as of receipt it may be stale for up to 15 mins due to balance file parse rate.
+| [eth_getBlockByHash](https://eth.wiki/json-rpc/API#eth_getblockbyhash)                                          | Returns information about the block by hash. | P2 | Mirror node is able to return record file information. Block info will be secondary to transactions.
 | [eth_getBlockByNumber](https://eth.wiki/json-rpc/API#eth_getblockbynumber)                                      | Returns information about a block by block number.
 | [eth_getBlockTransactionCountByHash](https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbyhash)          | Returns the number of transactions in the block matching the given block hash.
 | [eth_getBlockTransactionCountByNumber](https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbynumber)      | Returns the number of transactions in a block matching the specified block number.
@@ -550,7 +594,7 @@ Wikis [JSON-RPC API](https://eth.wiki/json-rpc/API)
 
 #### RPC Methods
 
-Methods marked with P0 support priority serve as a starting subset of Ethereum JSON RPC API methods to be implemented.
+Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON RPC API methods to be implemented.
 
 - blockNumber
 
@@ -782,6 +826,13 @@ Methods marked with P0 support priority serve as a starting subset of Ethereum J
   }
   ```
 
+#### Custom RPC Methods
+
+In addition to the official Ethereum JSON-RPC Specification, some node clients provide additional methods that provide
+additional value to many developers
+e.g. [Besu RPC Pubc/Sub](https://besu.hyperledger.org/en/stable/HowTo/Interact/APIs/RPC-PubSub/#rpc-pubsub-over-websockets)
+The Mirror Node should additional provide support for this.
+
 - subscribe
 
   Request
@@ -842,10 +893,6 @@ Methods marked with P0 support priority serve as a starting subset of Ethereum J
     "result":true
   }
 
-> _Note:_ `subscribe` and `unsubscribe` are not part of the official Ethereum JSON-RPC Specification but represent
-> Pub/Sub methods added by many Ethereum clients that have become vital to many developers
-> e.g. [Besu RPC Pubc/Sub](https://besu.hyperledger.org/en/stable/HowTo/Interact/APIs/RPC-PubSub/#rpc-pubsub-over-websockets)
-
 ## Non-Functional Requirements
 
 - Support peak smart contract call TPS (400+)
@@ -872,4 +919,8 @@ Methods marked with P0 support priority serve as a starting subset of Ethereum J
    between Hedera and Ethereum logic. Ans: Though valuable to the separation of concern it brings too much overhead, and
    the endpoint themselves aren't known to existing developers. Better to put effort on existing endpoints and JSON-RPC
 7. With the use of `transaction_id` to retrieve entity metadata rows should we consider a caching and or db mapping to
-   extract the entityId and timestamp?
+   extract the entityId and timestamp? Ans: For now caching and internal db mapping not needed. We'll simply do 2 calls
+   to get transaction info and then contract details.
+8. How will internal transactions show up in record stream and will they follow a hierarchy that highlights transfer
+   succession or will it be flattened?
+9. How should non HTS precompiled internal transactions be handled?
