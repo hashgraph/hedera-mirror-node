@@ -35,7 +35,6 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -48,7 +47,6 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@ActiveProfiles(profiles = "v2")
 class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     // These are the three accounts present in the test accountInfo.txt.gz
