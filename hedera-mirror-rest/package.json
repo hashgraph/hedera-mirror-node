@@ -37,7 +37,7 @@
     "mem": "^8.1.1",
     "pg": "~8.7.1",
     "pg-range": "^1.1.1",
-    "prom-client": "^13.2.0",
+    "prom-client": "^14.0.1",
     "qs": "^6.10.1",
     "quick-lru": "^5.1.1",
     "swagger-stats": "^0.99.2",
