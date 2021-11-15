@@ -32,7 +32,7 @@ select create_distributed_table('file_data', 'entity_id', colocate_with => 'enti
 
 select create_distributed_table('nft', 'token_id', colocate_with => 'entity');
 
--- Keep record_file as a local table.
+select create_distributed_table('record_file', 'node_account_id', colocate_with => 'entity');
 
 select create_distributed_table('schedule', 'schedule_id', colocate_with => 'entity');
 
