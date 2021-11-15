@@ -1,5 +1,5 @@
 -------------------
--- Add constraints and indexes to tables
+-- Add constraints and indexes to tables.
 -------------------
 
 -- use sequential, avoid error "The index name ... on a shard is too long and could lead to deadlocks when executed ..."
@@ -100,8 +100,6 @@ create index if not exists event_file__hash
 -- file_data
 alter table file_data
     add constraint file_data__pk primary key (consensus_timestamp, entity_id);
-create index if not exists file_data__id_timestamp
-    on file_data (entity_id, consensus_timestamp);
 
 -- live_hash
 alter table live_hash
@@ -123,9 +121,9 @@ create index if not exists non_fee_transfer__consensus_timestamp
 -- record_file
 alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);
-create unique index if not exists record_file__index
+create unique index if not exists record_file__index_node
     on record_file (index, node_account_id);
-create unique index if not exists record_file__hash
+create unique index if not exists record_file__hash_node
     on record_file (hash, node_account_id);
 create index if not exists record_file__prev_hash
     on record_file (prev_hash);
@@ -161,7 +159,7 @@ create index if not exists token_transfer__account_timestamp
 -- topic_message
 alter table if exists topic_message
     add constraint topic_message__pk primary key (consensus_timestamp, topic_id);
-create unique index if not exists topic_message__topic_id_seqnum_timestamp
+create unique index if not exists topic_message__topic_id_seqnum
     on topic_message (topic_id, sequence_number);
 
 -- transaction
