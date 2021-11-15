@@ -100,6 +100,8 @@ create index if not exists event_file__hash
 -- file_data
 alter table file_data
     add constraint file_data__pk primary key (consensus_timestamp, entity_id);
+create index if not exists file_data__id_timestamp
+    on file_data (entity_id, consensus_timestamp);
 
 -- live_hash
 alter table live_hash
@@ -137,8 +139,6 @@ create index if not exists schedule__creator_account_id
 -- token
 alter table token
     add constraint token__pk primary key (token_id);
-create unique index if not exists token__id_timestamp
-    on token (token_id, created_timestamp);
 
 -- token_account
 alter table token_account
@@ -159,7 +159,9 @@ create index if not exists token_transfer__account_timestamp
 -- topic_message
 alter table if exists topic_message
     add constraint topic_message__pk primary key (consensus_timestamp, topic_id);
-create unique index if not exists topic_message__topic_id_seqnum
+create index if not exists topic_message__topic_id_timestamp
+    on topic_message (topic_id, consensus_timestamp);
+create unique index if not exists topic_message__topic_id_seqnum_timestamp
     on topic_message (topic_id, sequence_number);
 
 -- transaction
