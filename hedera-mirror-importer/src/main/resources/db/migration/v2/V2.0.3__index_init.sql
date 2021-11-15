@@ -17,9 +17,9 @@ create index if not exists account_balance__account_timestamp
 
 -- account_balance_file
 alter table account_balance_file
-    add constraint account_balance_file__pk primary key (consensus_timestamp, node_account_id);
+    add constraint account_balance_file__pk primary key (consensus_timestamp);
 create unique index if not exists account_balance_file__name
-    on account_balance_file (name, node_account_id);
+    on account_balance_file (name, consensus_timestamp desc);
 
 -- address_book
 alter table address_book
@@ -73,8 +73,7 @@ alter table entity
 -- Enforce lowercase hex representation by constraint rather than making indexes on lower(ed25519).
 alter table entity
     add constraint c__entity__lower_ed25519
-        check (public_key = lower(public_key));
-alter table if exists entity
+        check (public_key = lower(public_key)),
     add constraint entity__type_check
         check (type <> 'CONTRACT');
 create index if not exists entity__id_type
@@ -87,8 +86,7 @@ create unique index if not exists entity__shard_realm_num
 
 -- entity_history
 alter table if exists entity_history
-    add constraint entity_history__pk primary key (id, timestamp_range);
-alter table if exists entity_history
+    add constraint entity_history__pk primary key (id, timestamp_range),
     add constraint entity_history__type_check
         check (type <> 'CONTRACT');
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
