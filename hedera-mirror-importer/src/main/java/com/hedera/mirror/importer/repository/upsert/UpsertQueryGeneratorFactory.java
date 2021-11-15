@@ -75,7 +75,7 @@ public class UpsertQueryGeneratorFactory {
 
     private UpsertQueryGenerator create(Class<?> domainClass) {
         UpsertEntity upsertEntity = createEntity(domainClass);
-        log.info("{}", upsertEntity);
+        log.debug("Creating {}", upsertEntity);
         return new GenericUpsertQueryGenerator(upsertEntity);
     }
 

@@ -64,12 +64,12 @@ public class CompositeBatchPersister implements BatchPersister {
 
     private BatchPersister create(Class<?> domainClass) {
         Entity entity = AnnotationUtils.findAnnotation(domainClass, Entity.class);
-        Upsertable upsertable = AnnotationUtils.findAnnotation(domainClass, Upsertable.class);
 
         if (entity == null) {
             throw new UnsupportedOperationException("Object does not support batch insertion: " + domainClass);
         }
 
+        Upsertable upsertable = AnnotationUtils.findAnnotation(domainClass, Upsertable.class);
         if (upsertable != null) {
             UpsertQueryGenerator generator = upsertQueryGeneratorFactory.get(domainClass);
             return new BatchUpserter(domainClass, dataSource, meterRegistry, properties, generator);

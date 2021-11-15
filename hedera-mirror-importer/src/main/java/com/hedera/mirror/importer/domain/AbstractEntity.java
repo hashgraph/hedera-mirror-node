@@ -99,8 +99,8 @@ public abstract class AbstractEntity {
     @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;
 
-    public void setTimestampRangeUpper(long modifiedTimestamp) {
-        setTimestampRange(Range.closedOpen(getModifiedTimestamp(), modifiedTimestamp));
+    public void setTimestampRangeUpper(long timestampRangeUpper) {
+        setTimestampRange(Range.closedOpen(getModifiedTimestamp(), timestampRangeUpper));
     }
 
     @JsonIgnore
