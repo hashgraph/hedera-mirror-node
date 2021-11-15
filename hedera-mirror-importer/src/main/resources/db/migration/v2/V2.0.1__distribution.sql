@@ -14,7 +14,7 @@ select create_distributed_table('entity', 'id');
 
 select create_distributed_table('account_balance', 'account_id', colocate_with => 'entity');
 
-select create_distributed_table('account_balance_file', 'node_account_id', colocate_with => 'entity');
+select create_reference_table('account_balance_file');
 
 select create_distributed_table('contract_history', 'id', colocate_with => 'contract');
 
@@ -32,7 +32,7 @@ select create_distributed_table('file_data', 'entity_id', colocate_with => 'enti
 
 select create_distributed_table('nft', 'token_id', colocate_with => 'entity');
 
-select create_distributed_table('record_file', 'node_account_id', colocate_with => 'entity');
+-- Keep record_file as a local table.
 
 select create_distributed_table('schedule', 'schedule_id', colocate_with => 'entity');
 

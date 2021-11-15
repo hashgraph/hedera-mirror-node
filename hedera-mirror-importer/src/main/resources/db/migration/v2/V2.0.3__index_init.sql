@@ -11,7 +11,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 
 -- account_balance
 alter table account_balance
-    add constraint account_balance__pk primary key (consensus_timestamp, account_id);
+    add primary key (consensus_timestamp, account_id);
 create index if not exists account_balance__account_timestamp
     on account_balance (account_id desc, consensus_timestamp desc);
 
@@ -136,7 +136,7 @@ create index if not exists record_file__prev_hash
 
 -- schedule
 alter table schedule
-    add constraint schedule__pk primary key (consensus_timestamp, schedule_id);
+    add constraint schedule__pk primary key (schedule_id);
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
