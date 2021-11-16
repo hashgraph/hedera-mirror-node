@@ -33,6 +33,6 @@ class NftUpsertQueryGeneratorV2Test extends NftUpsertQueryGeneratorTest {
                 "from nft_temp " +
                 "join token on nft_temp.token_id = token.token_id " +
                 "where nft_temp.created_timestamp is not null " +
-                "on conflict (token_id, serial_number, created_timestamp) do nothing";
+                "on conflict (token_id, serial_number) do nothing";
     }
 }
