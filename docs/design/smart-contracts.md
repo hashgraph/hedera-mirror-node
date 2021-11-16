@@ -86,7 +86,6 @@ create table if not exists contract_result
   amount               bigint             null,
   bloom                bytea              null,
   call_result          bytea              null,
-  child_transactions   smallint           null,
   consensus_timestamp  bigint primary key not null,
   contract_id          bigint             null,
   created_contract_ids bigint array       null,
@@ -99,7 +98,7 @@ create table if not exists contract_result
   primary key (consensus_timestamp)
 );
 
-create index if not exists contract_result__to_from
+create index if not exists contract_result__id_payer
   on contract_result (contract_id, payer_account_id);
 
 create index if not exists contract_result__timestamp_id
@@ -118,13 +117,18 @@ create table if not exists contract_log
   contract_id         bigint      not null,
   data                bytea       not null,
   index               int         not null,
-  record_index        bigint      not null,
   topic0              varchar(64) null,
   topic1              varchar(64) null,
   topic2              varchar(64) null,
   topic3              varchar(64) null,
   primary key (consensus_timestamp, contract_id, index)
 );
+
+create index if not exists contract_log__id_timestamp
+  on contract_log (contract_id, consensus_timestamp);
+
+create index if not exists contract_log__id_topics_bloom
+  on contract_log using bloom (contract_id, topic0, topic1, topic2, topic3);
 ```
 
 #### Contract Access List
@@ -136,8 +140,9 @@ create table if not exists contract_access
 (
   consensus_timestamp bigint      not null,
   contract_id         bigint      not null,
+  initial_contract_id bigint      not null,
   storage_keys        bytea array not null,
-  primary key (consensus_timestamp, contract_id, storage_keys)
+  primary key (consensus_timestamp, initial_contract_id, contract_id)
 );
 ```
 
@@ -166,12 +171,12 @@ create table if not exists contract_state_change
 - Add a `ContractStateChange` domain object with fields that match the schema.
 - Add a `ContractRepository` and `ContractLogRepository`.
 - Add `EntityListener.onContract(Contract)` and `EntityListener.onContractLog(ContractLog)`.
-- Add `EntityListener.onContractAccessList(ContractAccessList)`
+- Add `EntityListener.onContractAccess(ContractAccess)`
   and `EntityListener.onContractStateChange(ContractStateChange)`.
 - Add logic to create a `Contract` domain object in create, update, and delete contract transaction handlers and notify
   via `EntityListener`.
-- Add logic to create a `ContractAccessList`, `ContractLog`, `ContractResult` and `ContractStateChange` domain objects
-  in the contract create and contract call transaction handlers and notify via `EntityListener`.
+- Add logic to create a `ContractAccess`, `ContractLog`, `ContractResult` and `ContractStateChange` domain objects in
+  the contract create and contract call transaction handlers and notify via `EntityListener`.
 - Add logic to `SqlEntityListener` to batch insert `Contract` and `ContractLog`.
 - Implement a generic custom `UpsertQueryGenerator` that generates the insert query entirely from annotations on
   the `Contract` domain object.
@@ -300,25 +305,30 @@ Optional filters
   "amount": 10,
   "access_list": [],
   "block_hash": "0x410ef7b5a5f",
-  "block_number": "50",
+  "block_number": 50,
   "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
   "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
-  "child_transactions": "0",
+  "child_transactions": 0,
   "created_contract_ids": [
     "0.0.1003"
   ],
   "error_message": "",
+  "evm_internal_transactions": [
+    {
+      "from": "0.0.1002",
+      "to": "0.0.1003",
+      "type": "call_0",
+      "value": "20"
+    }
+  ],
   "from": "0.0.1001",
   "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
   "gas_limit": 2500,
   "gas_used": 1000,
   "hash": "0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
-  "internal_transactions": [
-    {
-      "amount": "20",
-      "from": "0.0.1002",
-      "to": "0.0.1003"
-    }
+  "hedera_child_transactions": [
+    "api/v1/transactions/0.0.11943-1637100159-861284000",
+    "api/v1/transactions/0.0.10459-1637099842-891982153"
   ],
   "logs": [
     {
@@ -360,8 +370,8 @@ Optional filters
 
 > _Note 2:_ Internal transactions issued by HTS precompiled transactions will produce regular HTS transactions.
 > The HTS transaction will contain the transferList that describes the internal transfers to be extracted. The parent
-> transactions `contract_result.child_transactions` will denote the range of consensusTimestamps for child transactions
-> i.e. `[parent_timestamp, parent_timestamp + contract_result.child_transactions)`
+> transactions `transaction.child_transactions` will denote the range of consensusTimestamps for child transactions
+> i.e. `[parent_timestamp, parent_timestamp + transaction.child_transactions)`
 
 ### Get Contract Logs
 
@@ -371,7 +381,7 @@ Optional filters
 {
   "logs": [
     {
-      "address": "0x0000000000000000000000000000000000001234",
+      "solidity_address": "0x0000000000000000000000000000000000001234",
       "contract_id": "0.0.1234",
       "bloom": "0x1513001083c899b1996ec7fa33621e2c340203f0",
       "data": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
@@ -382,7 +392,7 @@ Optional filters
       ]
     },
     {
-      "address": "0x0000000000000000000000000000000000001893",
+      "solidity_address": "0x0000000000000000000000000000000000001893",
       "contract_id": "0.0.1893",
       "bloom": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "data": "0x1513001083c899b1996ec7fa33621e2c340203f0",
@@ -405,7 +415,10 @@ Optional filters
 - `order`
 - `timestamp`
 - `address`
-- `topic ([topic0,topic1,topic2,topic3])`
+- `topic0`
+- `topic1`
+- `topic2`
+- `topic3`
 
 ### Get Contract Access List
 
@@ -480,7 +493,7 @@ On the ethereum network, all client nodes implement
 the [Ethereum JSON-RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/ethereum/eth1.0-apis/assembled-spec/openrpc.json&uiSchema%5BappBar%5D%5Bui:splitView%5D=false&uiSchema%5BappBar%5D%5Bui:input%5D=false&uiSchema%5BappBar%5D%5Bui:examplesDropdown%5D=false)
 methods for ease of interaction by DApps.
 
-The HyperLedger Besu EVM supports the methods capture
+The HyperLedger Besu EVM supports the methods captured
 at [ETH methods](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#eth-methods)
 
 The Mirror Node should implement a subset of the standard calls used to
@@ -490,18 +503,18 @@ The Mirror Node should implement a subset of the standard calls used to
 
 ### Setup
 
-- Create a new Maven module `hedera-mirror-eth` or `hedera-mirror-json-rpc` or `hedera-mirror-web3`
+- Create a new Maven module `hedera-mirror-web3`
 - Create a new Maven module `hedera-mirror-common` that encompasses all domain POJOs and repositories
 - Use [JSON-RPC for Java](https://github.com/briandilley/jsonrpc4j) or Spring WebFlux to establish a JSON-RPC server
   with [JSON-RPC 2.0 specification] (https://www.jsonrpc.org/specification) support to service rpc calls
 - Use `spring-boot-starter-data-jdbc` for database access
-- Create a Systemd unit file `hedera-mirror-evm.sevice` and add to deployment script
+- Create a Helm child chart `hedera-mirror-web3` and add to Kubernetes deployment flow
 - Add to CI and utilize a Postman collection for endpoint verification
 
 #### Domain/Repository
 
-Existing domain and repositories can be utilized from the `hedera-mirror-common` dependencies to extract information
-from the database.
+Existing domain classes can be utilized from the `hedera-mirror-common` dependencies. Applicable CRUD repositories can
+be created using Spring based on `hedera-mirror-common` domains to extract information from the database.
 
 ### ETH RPC Service
 
@@ -531,33 +544,64 @@ An appropriate POJO schema would be
 
   ```java
   public class JSONRpcRequest {
-  private String id;
+  private long id;
   private String jsonrpc;
   private String method;
-  private Object[] params;
+  private String[] params;
 }
   ```
 
 #### Response POJOs
 
-Responses are typically of the format
+Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.org/specification#response_object)
+
+e.g.
 
 ```json
 {
+  "error": {
+    "code": -32600,
+    "meaning": "The JSON sent is not a valid Request object.",
+    "message": "Invalid Request"
+  },
   "id": 1,
   "jsonrpc": "2.0",
-  "result": ""
+  "result": "SUCCESS"
 }
 ```
 
-An appropriate POJO schema would be
+> _Note:_ `result` data type is dynamic. Also `error` is not present on a successful response.
+
+An appropriate set of POJO schema would be
 
 - `JSONRpcResponse`
   ```java
-  public class JSONRpcResponse {
+  public abstract class JSONRpcResponse {
+    private Long id;
     private String jsonrpc;
-    private String method;
     private String result;
+  }
+  ```
+
+- `ErrorJSONRpcResponse`
+  ```java
+  public class JSONRpcErrorResponse extends JSONRpcResponse {
+    private Long id;
+    private String jsonrpc;
+    private ErrorJSONRpcResponse error;
+
+    private class ErrorJSONRpcResponse {
+      private long code;
+      private String meaning;
+      private String message;
+    }
+  }
+  ```
+
+- `DynamicJSONRpcResponse`
+  ```java
+  public class DynamicJSONRpcResponse extends JSONRpcResponse {
+    private T result;
   }
   ```
 
@@ -636,7 +680,6 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
     "id": 83,
     "jsonrpc": "2.0",
     "result": "0x4b7"
-    // 1207
   }
   ```
 
@@ -652,7 +695,6 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
     "id": 1,
     "jsonrpc": "2.0",
     "result": "0x0234c8a3397aab58"
-    // 158972490234375000
   }
   ```
 
@@ -683,11 +725,11 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
     "id":1,
     "jsonrpc":"2.0",
     "result": [{
-      "logIndex": "0x1", // 1
-      "blockNumber":"0x1b4", // 436
+      "logIndex": "0x1",
+      "blockNumber":"0x1b4",
       "blockHash": "0x8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcfdf829c5a142f1fccd7d",
       "transactionHash":  "0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf",
-      "transactionIndex": "0x0", // 0
+      "transactionIndex": "0x0",
       "address": "0x16c5785ac562ff41e2dcfdf829c5a142f1fccd7d",
       "data":"0x0000000000000000000000000000000000000000000000000000000000000000",
       "topics": ["0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a5"]
@@ -709,17 +751,17 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
     "id":1,
     "result":{
       "blockHash":"0x1d59ff54b1eb26b013ce3cb5fc9dab3705b415a67127a003c3e61eb445bb8df2",
-      "blockNumber":"0x5daf3b", // 6139707
+      "blockNumber":"0x5daf3b",
       "from":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-      "gas":"0xc350", // 50000
-      "gasPrice":"0x4a817c800", // 20000000000
+      "gas":"0xc350",
+      "gasPrice":"0x4a817c800",
       "hash":"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
       "input":"0x68656c6c6f21",
-      "nonce":"0x15", // 21
+      "nonce":"0x15",
       "to":"0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
-      "transactionIndex":"0x41", // 65
-      "value":"0xf3dbb76162000", // 4290000000000000
-      "v":"0x25", // 37
+      "transactionIndex":"0x41",
+      "value":"0xf3dbb76162000",
+      "v":"0x25",
       "r":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f328b16ddabcebc33eaac5fea",
       "s":"0x4ba69724e8f69de52f0125ad8b3c5c2cef33019bac3249e2c0a2192766d1721c"
     }
@@ -738,26 +780,26 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
     "id":1,
     "jsonrpc":"2.0",
     "result": {
-      transactionHash: '0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238',
-      transactionIndex:  '0x1', // 1
-      blockNumber: '0xb', // 11
-      blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
-      cumulativeGasUsed: '0x33bc', // 13244
-      gasUsed: '0x4dc', // 1244
-      contractAddress: '0xb60e8dd61c5d32be8058bb8eb970870f07233155', // or null, if none was created
-      logs: [{
-          "logIndex": "0x1", // 1
-          "blockNumber":"0x1b4", // 436
+      "transactionHash": "0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238",
+      "transactionIndex":  "0x",
+      "blockNumber": "0xb",
+      "blockHash": "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
+      "cumulativeGasUsed": "0x33bc",
+      "gasUsed": "0x4dc",
+      "contractAddress": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
+      "logs": [{
+          "logIndex": "0x1",
+          "blockNumber":"0x1b4",
           "blockHash": "0x8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcfdf829c5a142f1fccd7d",
           "transactionHash":  "0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf",
-          "transactionIndex": "0x0", // 0
+          "transactionIndex": "0x0",
           "address": "0x16c5785ac562ff41e2dcfdf829c5a142f1fccd7d",
           "data":"0x0000000000000000000000000000000000000000000000000000000000000000",
           "topics": ["0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a5"]
         }
       ],
-      logsBloom: "0x00...0", // 256 byte bloom filter
-      status: '0x1'
+      "logsBloom": "0x00...0",
+      "status": "0x1"
     }
   }
   ```
@@ -847,16 +889,6 @@ The Mirror Node should additional provide support for this.
 4. Should we show individual function parameters in a normalized form? We decided against it at this time as it might be
    a performance concern or require parsing the solidity contract. Can revisit in the future by adding a new field with
    the normalized structure.
-5. Should `from`, `to`, `transactionHash` and `blockNumber` be included in `api/v1/contract/{id}/result/{timestamp}`
-   as it maps closely to
-   Ethereum's [transactionReceipt](https://web3js.readthedocs.io/en/v1.2.11/web3-eth.html#gettransaction)
-   Ans: Yes, as we can easily extract from transaction and record tables.
-6. Would a custom `api/v1/evm` or `api/v1/eth` endpoint be valuable and needed to provide a separation of concern
-   between Hedera and Ethereum logic. Ans: Though valuable to the separation of concern it brings too much overhead, and
-   the endpoint themselves aren't known to existing developers. Better to put effort on existing endpoints and JSON-RPC
-7. With the use of `transaction_id` to retrieve entity metadata rows should we consider a caching and or db mapping to
-   extract the entityId and timestamp? Ans: For now caching and internal db mapping not needed. We'll simply do 2 calls
-   to get transaction info and then contract details.
-8. How will internal transactions show up in record stream and will they follow a hierarchy that highlights transfer
+5. How will internal transactions show up in record stream and will they follow a hierarchy that highlights transfer
    succession or will it be flattened?
-9. How should non HTS precompiled internal transactions be handled?
+6. How should non HTS precompiled internal transactions be handled?
