@@ -35,14 +35,16 @@ alter table address_book_service_endpoint
 
 -- contract
 alter table if exists contract
-    add constraint contract__pk primary key (id),
+    add constraint contract__pk primary key (id);
+alter table if exists contract
     add constraint contract__type_check
         check (type = 'CONTRACT');
 create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
 -- contract_history
 alter table if exists contract_history
-    add constraint contract_history__pk primary key (id, timestamp_range),
+    add constraint contract_history__pk primary key (id, timestamp_range);
+alter table if exists contract
     add constraint contract_history__type_check
         check (type = 'CONTRACT');
 create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
@@ -73,7 +75,8 @@ alter table entity
 -- Enforce lowercase hex representation by constraint rather than making indexes on lower(ed25519).
 alter table entity
     add constraint c__entity__lower_ed25519
-        check (public_key = lower(public_key)),
+        check (public_key = lower(public_key));
+alter table if exists contract
     add constraint entity__type_check
         check (type <> 'CONTRACT');
 create index if not exists entity__id_type
@@ -86,7 +89,8 @@ create unique index if not exists entity__shard_realm_num
 
 -- entity_history
 alter table if exists entity_history
-    add constraint entity_history__pk primary key (id, timestamp_range),
+    add constraint entity_history__pk primary key (id, timestamp_range);
+alter table if exists contract
     add constraint entity_history__type_check
         check (type <> 'CONTRACT');
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
