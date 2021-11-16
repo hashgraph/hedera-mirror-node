@@ -11,10 +11,7 @@ select create_distributed_table('contract', 'id');
 select create_distributed_table('entity', 'id');
 
 -- Tables that will be colocated with tables above
-
 select create_distributed_table('account_balance', 'account_id', colocate_with => 'entity');
-
-select create_reference_table('account_balance_file');
 
 select create_distributed_table('contract_history', 'id', colocate_with => 'contract');
 
@@ -47,3 +44,6 @@ select create_distributed_table('topic_message', 'topic_id', colocate_with => 'e
 select create_distributed_table('transaction', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('transaction_signature', 'entity_id', colocate_with => 'entity');
+
+-- Reference tables
+select create_reference_table('account_balance_file');
