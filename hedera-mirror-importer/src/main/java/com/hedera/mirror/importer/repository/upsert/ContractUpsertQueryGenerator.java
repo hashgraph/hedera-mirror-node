@@ -35,7 +35,7 @@ public class ContractUpsertQueryGenerator extends AbstractUpsertQueryGenerator<C
     private final String finalTableName = "contract";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> v1ConflictIdColumns = List.of(AbstractEntity_.ID);
-    private final List<String> v2ConflictIdColumns = List.of(AbstractEntity_.ID);
+    private final List<String> v2ConflictIdColumns = v1ConflictIdColumns;
     private final Set<String> nullableColumns = Set.of(AbstractEntity_.AUTO_RENEW_PERIOD,
             AbstractEntity_.CREATED_TIMESTAMP, AbstractEntity_.DELETED, AbstractEntity_.EXPIRATION_TIMESTAMP,
             Contract_.FILE_ID, AbstractEntity_.KEY, Contract_.OBTAINER_ID,

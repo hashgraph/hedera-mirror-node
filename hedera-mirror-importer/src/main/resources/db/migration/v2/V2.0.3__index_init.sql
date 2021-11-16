@@ -44,7 +44,7 @@ create index if not exists contract__public_key on contract (public_key) where p
 -- contract_history
 alter table if exists contract_history
     add constraint contract_history__pk primary key (id, timestamp_range);
-alter table if exists contract
+alter table if exists contract_history
     add constraint contract_history__type_check
         check (type = 'CONTRACT');
 create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
@@ -76,7 +76,7 @@ alter table entity
 alter table entity
     add constraint c__entity__lower_ed25519
         check (public_key = lower(public_key));
-alter table if exists contract
+alter table if exists entity
     add constraint entity__type_check
         check (type <> 'CONTRACT');
 create index if not exists entity__id_type
@@ -90,7 +90,7 @@ create unique index if not exists entity__shard_realm_num
 -- entity_history
 alter table if exists entity_history
     add constraint entity_history__pk primary key (id, timestamp_range);
-alter table if exists contract
+alter table if exists entity_history
     add constraint entity_history__type_check
         check (type <> 'CONTRACT');
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
@@ -113,7 +113,7 @@ alter table live_hash
 
 -- nft
 alter table nft
-    add constraint nft__pk primary key (token_id, serial_number, created_timestamp);
+    add constraint nft__pk primary key (token_id, serial_number);
 create index if not exists nft__account_token on nft (account_id, token_id);
 
 -- nft_transfer
