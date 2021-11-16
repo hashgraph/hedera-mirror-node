@@ -37,8 +37,7 @@ import com.hedera.mirror.importer.domain.TokenId_;
 public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> {
     private final String finalTableName = "nft";
     private final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> v1ConflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER);
-    private final List<String> v2ConflictIdColumns = v1ConflictIdColumns;
+    private final List<String> conflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER);
     private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID);
     private final Set<String> nonUpdatableColumns = Set.of(Nft_.CREATED_TIMESTAMP, Nft_.ID, Nft_.METADATA,
             NftId_.SERIAL_NUMBER, NftId_.TOKEN_ID);
