@@ -28,20 +28,23 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/jackc/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	account                     = domain.MustDecodeEntityId(9000)
-	account2                    = domain.MustDecodeEntityId(9001)
-	treasury                    = domain.MustDecodeEntityId(9500)
-	payer                       = domain.MustDecodeEntityId(2002)
-	consensusTimestamp    int64 = 200
-	snapshotTimestamp     int64 = 100
-	cryptoTransferAmounts       = []int64{150, -178}
-	defaultContext              = context.Background()
-	token1                      = &domain.Token{
+	account                       = domain.MustDecodeEntityId(9000)
+	account2                      = domain.MustDecodeEntityId(9001)
+	treasury                      = domain.MustDecodeEntityId(9500)
+	payer                         = domain.MustDecodeEntityId(2002)
+	accountDeleteTimestamp  int64 = 280
+	consensusTimestamp      int64 = 200
+	firstSnapshotTimestamp  int64 = 100
+	secondSnapshotTimestamp int64 = 300
+	cryptoTransferAmounts         = []int64{150, -178}
+	defaultContext                = context.Background()
+	token1                        = &domain.Token{
 		TokenId:           domain.MustDecodeEntityId(1001),
 		CreatedTimestamp:  10,
 		Decimals:          8,
@@ -93,54 +96,64 @@ var (
 		TreasuryAccountId: treasury,
 		Type:              domain.TokenTypeNonFungibleUnique,
 	}
-	token1TransferAmounts      = []int64{10, -5}
-	token2TransferAmounts      = []int64{20, -7}
-	snapshotAccountBalanceFile = &domain.AccountBalanceFile{
-		ConsensusTimestamp: snapshotTimestamp,
+	token1TransferAmounts   = []int64{10, -5, 153}
+	token2TransferAmounts   = []int64{20, -7, 157}
+	firstAccountBalanceFile = &domain.AccountBalanceFile{
+		ConsensusTimestamp: firstSnapshotTimestamp,
 		Count:              100,
 		LoadStart:          1600,
 		LoadEnd:            1650,
-		FileHash:           "filehash",
+		FileHash:           "filehash1",
 		Name:               "account balance file 1",
+		NodeAccountId:      domain.MustDecodeEntityId(3),
+	}
+	secondAccountBalanceFile = &domain.AccountBalanceFile{
+		ConsensusTimestamp: secondSnapshotTimestamp,
+		Count:              100,
+		LoadStart:          3600,
+		LoadEnd:            3650,
+		FileHash:           "filehash2",
+		Name:               "account balance file 2",
 		NodeAccountId:      domain.MustDecodeEntityId(3),
 	}
 	initialTokenBalances = []domain.TokenBalance{
 		{
 			AccountId:          account,
-			ConsensusTimestamp: snapshotTimestamp,
+			ConsensusTimestamp: firstSnapshotTimestamp,
 			Balance:            112,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
-			ConsensusTimestamp: snapshotTimestamp,
+			ConsensusTimestamp: firstSnapshotTimestamp,
 			Balance:            280,
 			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
-			ConsensusTimestamp: snapshotTimestamp,
+			ConsensusTimestamp: firstSnapshotTimestamp,
 			Balance:            2,
 			TokenId:            token3.TokenId,
 		},
 	}
 	initialAccountBalance = &domain.AccountBalance{
-		ConsensusTimestamp: snapshotTimestamp,
+		ConsensusTimestamp: firstSnapshotTimestamp,
 		Balance:            12345,
 		AccountId:          account,
 	}
-	// the last crypto transfer is after consensusTimestamp
+	// the third crypto transfer is after consensusTimestamp, the last transfer happens when account is deleted, brings
+	// account's hbar balance to 0
 	cryptoTransfers = []domain.CryptoTransfer{
 		{
 			EntityId:           account,
 			Amount:             cryptoTransferAmounts[0],
-			ConsensusTimestamp: snapshotTimestamp + 1,
+			ConsensusTimestamp: firstSnapshotTimestamp + 1,
 			PayerAccountId:     payer,
 		},
 		{
 			EntityId:           account,
 			Amount:             cryptoTransferAmounts[1],
-			ConsensusTimestamp: snapshotTimestamp + 5,
+			ConsensusTimestamp: firstSnapshotTimestamp + 5,
 			PayerAccountId:     payer,
 		},
 		{
@@ -149,19 +162,25 @@ var (
 			ConsensusTimestamp: consensusTimestamp + 1,
 			PayerAccountId:     payer,
 		},
+		{
+			EntityId:           account,
+			Amount:             -(initialAccountBalance.Balance + sum(cryptoTransferAmounts) + 155),
+			ConsensusTimestamp: accountDeleteTimestamp,
+			PayerAccountId:     account2,
+		},
 	}
 	// crypto transfers at or before snapshot timestamp
 	cryptoTransfersLTESnapshot = []domain.CryptoTransfer{
 		{
 			EntityId:           account,
 			Amount:             110,
-			ConsensusTimestamp: snapshotTimestamp - 1,
+			ConsensusTimestamp: firstSnapshotTimestamp - 1,
 			PayerAccountId:     payer,
 		},
 		{
 			EntityId:           account,
 			Amount:             170,
-			ConsensusTimestamp: snapshotTimestamp,
+			ConsensusTimestamp: firstSnapshotTimestamp,
 			PayerAccountId:     payer,
 		},
 	}
@@ -170,20 +189,20 @@ var (
 		{
 			AccountId:          account,
 			Amount:             token1TransferAmounts[0],
-			ConsensusTimestamp: snapshotTimestamp + 2,
+			ConsensusTimestamp: firstSnapshotTimestamp + 2,
 			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token1TransferAmounts[1],
-			ConsensusTimestamp: snapshotTimestamp + 4,
+			ConsensusTimestamp: firstSnapshotTimestamp + 4,
 			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
-			Amount:             153,
+			Amount:             token1TransferAmounts[2],
 			ConsensusTimestamp: consensusTimestamp + 1,
 			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
@@ -191,52 +210,52 @@ var (
 		{
 			AccountId:          account,
 			Amount:             token2TransferAmounts[0],
-			ConsensusTimestamp: snapshotTimestamp + 5,
+			ConsensusTimestamp: firstSnapshotTimestamp + 5,
 			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             token2TransferAmounts[1],
-			ConsensusTimestamp: snapshotTimestamp + 8,
+			ConsensusTimestamp: firstSnapshotTimestamp + 8,
 			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
-			Amount:             157,
+			Amount:             token2TransferAmounts[2],
 			ConsensusTimestamp: consensusTimestamp + 1,
 			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 	}
-	// token transfers at or before snapshot timestamp
+	// token transfers at or before the first snapshot timestamp
 	tokenTransfersLTESnapshot = []*domain.TokenTransfer{
 		{
 			AccountId:          account,
 			Amount:             17,
-			ConsensusTimestamp: snapshotTimestamp - 1,
+			ConsensusTimestamp: firstSnapshotTimestamp - 1,
 			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             -2,
-			ConsensusTimestamp: snapshotTimestamp,
+			ConsensusTimestamp: firstSnapshotTimestamp,
 			PayerAccountId:     payer,
 			TokenId:            token1.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             25,
-			ConsensusTimestamp: snapshotTimestamp - 1,
+			ConsensusTimestamp: firstSnapshotTimestamp - 1,
 			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
 		{
 			AccountId:          account,
 			Amount:             -9,
-			ConsensusTimestamp: snapshotTimestamp,
+			ConsensusTimestamp: firstSnapshotTimestamp,
 			PayerAccountId:     payer,
 			TokenId:            token2.TokenId,
 		},
@@ -244,7 +263,7 @@ var (
 	// the net change for account is 2 (received 3 [5, 4, 3], and sent 1 [5])
 	nftTransfers = []domain.NftTransfer{
 		{
-			ConsensusTimestamp: snapshotTimestamp + 1,
+			ConsensusTimestamp: firstSnapshotTimestamp + 1,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
@@ -252,7 +271,7 @@ var (
 			TokenId:            token3.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 2,
+			ConsensusTimestamp: firstSnapshotTimestamp + 2,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
@@ -260,7 +279,7 @@ var (
 			TokenId:            token3.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 3,
+			ConsensusTimestamp: firstSnapshotTimestamp + 3,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
@@ -268,7 +287,7 @@ var (
 			TokenId:            token3.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 4,
+			ConsensusTimestamp: firstSnapshotTimestamp + 4,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SenderAccountId:    &account,
@@ -277,42 +296,42 @@ var (
 		},
 		// nft transfers for token4 between account2 and treasury which should not affect query for account
 		{
-			ConsensusTimestamp: snapshotTimestamp + 5,
+			ConsensusTimestamp: firstSnapshotTimestamp + 5,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       1,
 			TokenId:            token4.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 5,
+			ConsensusTimestamp: firstSnapshotTimestamp + 5,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       2,
 			TokenId:            token4.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 5,
+			ConsensusTimestamp: firstSnapshotTimestamp + 5,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       3,
 			TokenId:            token4.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 5,
+			ConsensusTimestamp: firstSnapshotTimestamp + 5,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       4,
 			TokenId:            token4.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 5,
+			ConsensusTimestamp: firstSnapshotTimestamp + 5,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SerialNumber:       5,
 			TokenId:            token4.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 6,
+			ConsensusTimestamp: firstSnapshotTimestamp + 6,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &account2,
 			SenderAccountId:    &treasury,
@@ -320,7 +339,7 @@ var (
 			TokenId:            token4.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 6,
+			ConsensusTimestamp: firstSnapshotTimestamp + 6,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &account2,
 			SenderAccountId:    &treasury,
@@ -328,7 +347,7 @@ var (
 			TokenId:            token4.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp + 7,
+			ConsensusTimestamp: firstSnapshotTimestamp + 7,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &treasury,
 			SenderAccountId:    &account2,
@@ -339,7 +358,7 @@ var (
 	// nft transfers at or before snapshot timestamp
 	nftTransfersLTESnapshot = []domain.NftTransfer{
 		{
-			ConsensusTimestamp: snapshotTimestamp - 2,
+			ConsensusTimestamp: firstSnapshotTimestamp - 2,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
@@ -347,7 +366,7 @@ var (
 			TokenId:            token3.TokenId,
 		},
 		{
-			ConsensusTimestamp: snapshotTimestamp - 2,
+			ConsensusTimestamp: firstSnapshotTimestamp - 2,
 			PayerAccountId:     payer,
 			ReceiverAccountId:  &account,
 			SenderAccountId:    &treasury,
@@ -381,12 +400,12 @@ type accountRepositorySuite struct {
 
 func (suite *accountRepositorySuite) SetupTest() {
 	suite.integrationTest.SetupTest()
-	db.CreateDbRecords(dbClient, snapshotAccountBalanceFile)
+	db.CreateDbRecords(dbClient, firstAccountBalanceFile, secondAccountBalanceFile)
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	// given
-	db.CreateDbRecords(dbClient, token1, token2, token3)
+	db.CreateDbRecords(dbClient, getAccountEntity(account, false, 1), token1, token2, token3)
 	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
 	// transfers before or at the snapshot timestamp should not affect balance calculation
 	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot, nftTransfersLTESnapshot)
@@ -395,15 +414,70 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	repo := NewAccountRepository(dbClient)
 
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance.Balance + sum(cryptoTransferAmounts)}
-	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts))
-	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts))
+	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts[:2]))
+	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts[:2]))
 	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2).
 		SetSerialNumbers([]int64{1, 2, 3, 4})
 
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount}
 
 	// when
+	// account is deleted, however when querying its balance before when it's deleted, it should work as if the account
+	// wasn't deleted
 	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, consensusTimestamp)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.ElementsMatch(suite.T(), expected, actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockForDeletedAccount() {
+	// given
+	db.CreateDbRecords(dbClient, getAccountEntity(account, true, accountDeleteTimestamp), token1, token2, token3)
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
+	// transfers before or at the snapshot timestamp should not affect balance calculation
+	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot, nftTransfersLTESnapshot)
+	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers, nftTransfers)
+
+	repo := NewAccountRepository(dbClient)
+
+	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts))
+	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts))
+	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2).
+		SetSerialNumbers([]int64{1, 2, 3, 4})
+
+	expected := []types.Amount{&types.HbarAmount{}, token1Amount, token2Amount, token3Amount}
+
+	// when
+	// account is deleted before the second account balance file, so there is no balance info in the file. querying the
+	// account balance for a timestamp after the second account balance file should then return the balance at the time
+	// the account is deleted
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, secondSnapshotTimestamp+10)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.ElementsMatch(suite.T(), expected, actual)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAtAccountDeletionTime() {
+	// given
+	db.CreateDbRecords(dbClient, getAccountEntity(account, true, accountDeleteTimestamp), token1, token2, token3)
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
+	// transfers before or at the snapshot timestamp should not affect balance calculation
+	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot, nftTransfersLTESnapshot)
+	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers, nftTransfers)
+
+	repo := NewAccountRepository(dbClient)
+
+	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts))
+	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts))
+	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2).
+		SetSerialNumbers([]int64{1, 2, 3, 4})
+
+	expected := []types.Amount{&types.HbarAmount{}, token1Amount, token2Amount, token3Amount}
+
+	// when
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, accountDeleteTimestamp)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -433,14 +507,15 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance() {
 	// given
-	db.CreateDbRecords(dbClient, token1, token2, token3)
+	// account is not deleted
+	db.CreateDbRecords(dbClient, getAccountEntity(account, false, 1), token1, token2, token3)
 	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers, nftTransfers)
 
 	repo := NewAccountRepository(dbClient)
 
 	hbarAmount := &types.HbarAmount{Value: sum(cryptoTransferAmounts)}
-	token1Amount := types.NewTokenAmount(*token1, sum(token1TransferAmounts))
-	token2Amount := types.NewTokenAmount(*token2, sum(token2TransferAmounts))
+	token1Amount := types.NewTokenAmount(*token1, sum(token1TransferAmounts[:2]))
+	token2Amount := types.NewTokenAmount(*token2, sum(token2TransferAmounts[:2]))
 	token3Amount := types.NewTokenAmount(*token3, 2).SetSerialNumbers([]int64{3, 4})
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount}
 
@@ -609,6 +684,25 @@ func TestGetUpdatedTokenAmounts(t *testing.T) {
 			actual := getUpdatedTokenAmounts(tt.tokenAmountMap, tt.tokenValues)
 			assert.ElementsMatch(t, tt.expected, actual)
 		})
+	}
+}
+
+func getAccountEntity(id domain.EntityId, deleted bool, modifiedTimestamp int64) *domain.Entity {
+	return &domain.Entity{
+		Deleted: &deleted,
+		Id:      id,
+		Memo:    "test account",
+		Num:     id.EntityNum,
+		Realm:   id.RealmNum,
+		Shard:   id.ShardNum,
+		Type:    "ACCOUNT",
+		TimestampRange: pgtype.Int8range{
+			Lower:     pgtype.Int8{Int: modifiedTimestamp, Status: pgtype.Present},
+			Upper:     pgtype.Int8{Status: pgtype.Null},
+			LowerType: pgtype.Inclusive,
+			UpperType: pgtype.Unbounded,
+			Status:    pgtype.Present,
+		},
 	}
 }
 

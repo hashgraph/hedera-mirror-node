@@ -61,7 +61,10 @@ jobs:
         working-directory: ./hedera-mirror-rosetta/build
 
       - name: Importer Configuration
-        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application.yml
+        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application_importer.yml
+
+      - name: Rosetta Configuration
+        run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > /tmp/application_rosetta.yml
 
       - name: Construction Test Prefunded Accounts
         run: |
@@ -73,8 +76,10 @@ jobs:
 
       - name: Set Importer StartDate
         run: |
-          startdate=$(date --date='15 minutes ago' -Iseconds -u)
-          startdate=${startdate%+*}Z
+          # grep extracts the data up to minute, e.g., 2021-11-15T16:48:, so as to always round down to the whole minute
+          # and avoid importer saves the first account balance file but not the account balance entries
+          startdate=$(date --date='15 minutes ago' -Iseconds -u | grep -o -e '^[0-9T:-]\+:')
+          startdate="${startdate}00Z"
           echo "STARTDATE=$startdate" >> $GITHUB_ENV
           echo "Set importer startDate to $startdate"
 
@@ -82,7 +87,8 @@ jobs:
         run: |
           CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
             -e NETWORK=testnet \
-            -v /tmp/application.yml:/app/importer/application.yml \
+            -v /tmp/application_importer.yml:/app/importer/application.yml \
+            -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5432:5432 -p 5700:5700 "${MODULE}")
           echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
 
@@ -104,8 +110,6 @@ jobs:
           [[ $code -eq 0 ]] && { wait $pid || code=$?; }
           cat /tmp/construction-validation.log
           exit $code
-        env:
-          ROSETTA_CLI_VERSION: v0.7.1
 
       - name: Install Postman newman CLI
         run: npm install -g newman
