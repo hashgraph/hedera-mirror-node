@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import com.hedera.mirror.importer.EnabledIfV2;
+import org.springframework.test.context.ActiveProfiles;
 
-@EnabledIfV2
+@ActiveProfiles(profiles = "v2")
 @SuppressWarnings("java:S2187")
 class TokenUpsertQueryGeneratorV2Test extends TokenUpsertQueryGeneratorTest {
     @Override
@@ -40,6 +40,6 @@ class TokenUpsertQueryGeneratorV2Test extends TokenUpsertQueryGeneratorTest {
                 ".supply_type, coalesce(token_temp.symbol, ''), token_temp.token_id, token_temp.total_supply, " +
                 "token_temp.treasury_account_id, token_temp.type, token_temp.wipe_key, token_temp" +
                 ".wipe_key_ed25519_hex from token_temp where token_temp.created_timestamp is not null " +
-                "on conflict (token_id, created_timestamp) do nothing";
+                "on conflict (token_id) do nothing";
     }
 }
