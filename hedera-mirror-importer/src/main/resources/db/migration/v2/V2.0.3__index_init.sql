@@ -19,7 +19,7 @@ create index if not exists account_balance__account_timestamp
 alter table account_balance_file
     add constraint account_balance_file__pk primary key (consensus_timestamp);
 create unique index if not exists account_balance_file__name
-    on account_balance_file (name, consensus_timestamp desc);
+    on account_balance_file (name);
 
 -- address_book
 alter table address_book
@@ -99,7 +99,7 @@ create index if not exists entity_history__timestamp_range on entity_history usi
 alter table event_file
     add constraint event_file__pk primary key (consensus_end, node_account_id);
 create index if not exists event_file__hash
-    on event_file (hash, consensus_end);
+    on event_file (hash);
 
 -- file_data
 alter table file_data
@@ -127,10 +127,10 @@ create index if not exists non_fee_transfer__consensus_timestamp
 -- record_file
 alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);
-create unique index if not exists record_file__index_node
-    on record_file (index, node_account_id);
-create unique index if not exists record_file__hash_node
-    on record_file (hash, node_account_id);
+create index if not exists record_file__index_node
+    on record_file (index);
+create index if not exists record_file__hash_node
+    on record_file (hash);
 create index if not exists record_file__prev_hash
     on record_file (prev_hash);
 
@@ -176,7 +176,7 @@ create index if not exists transaction__transaction_id
 create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
 create index if not exists transaction_type
-    on transaction (type, consensus_timestamp desc);
+    on transaction (type);
 
 -- transaction_signature
 create index if not exists transaction_signature__entity_id
