@@ -303,7 +303,20 @@ Optional filters
 ```json
 {
   "amount": 10,
-  "access_list": [],
+  "access_list": [
+    {
+      "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
+      "storage_keys": [
+        "0x0000000000000000000000000000000000000000000000000000000000000003"
+      ]
+    },
+    {
+      "address": "0xbb9bc244d798123fde783fcc1c72d3bb8c189413",
+      "storage_keys": [
+        "0x0000000000000000000000000000000000000000000000000000000000000007"
+      ]
+    }
+  ],
   "block_hash": "0x410ef7b5a5f",
   "block_number": 50,
   "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
@@ -350,7 +363,20 @@ Optional filters
       ]
     }
   ],
-  "state_changes": [],
+  "state_changes": [
+    {
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000002",
+      "before": "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5",
+      "after": "0x000000000000000000000000000000000000000000c2a8c80ee5fda74d69c302",
+      "timestamp": "12345.10001"
+    },
+    {
+      "slot": "0xe1b094dec1b7d360498fa8130bf1944104b7b5d8a48f9ca88c3fc0f96c2d7225",
+      "before": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "after": "0x000000000000000000000000000000000000000000000001eafa3aaed1d27246",
+      "timestamp": "12345.10001"
+    }
+  ],
   "timestamp": "12345.10001",
   "to": "0.0.1002"
 }
@@ -419,73 +445,6 @@ Optional filters
 - `topic1`
 - `topic2`
 - `topic3`
-
-### Get Contract Access List
-
-`GET /api/v1/contracts/{id}/results/access-list`
-
-```json
-{
-  "access_list": [
-    {
-      "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-      "storage_keys": [
-        "0x0000000000000000000000000000000000000000000000000000000000000003",
-        "0x0000000000000000000000000000000000000000000000000000000000000007"
-      ],
-      "timestamp": "12345.10001"
-    },
-    {
-      "address": "0xbb9bc244d798123fde783fcc1c72d3bb8c189413",
-      "storage_keys": [],
-      "timestamp": "12345.10001"
-    }
-  ],
-  "links": {
-    "next": null
-  }
-}
-```
-
-Optional filters
-
-- `limit` Maximum limit will be configurable and lower than current global max limit
-- `order`
-- `timestamp`
-- `address`
-
-### Get Contract State Changes
-
-`GET /api/v1/contracts/{id}/results/state-changes`
-
-```json
-{
-  "storage_changes": [
-    {
-      "slot": "0x0000000000000000000000000000000000000000000000000000000000000002",
-      "before": "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5",
-      "after": "0x000000000000000000000000000000000000000000c2a8c80ee5fda74d69c302",
-      "timestamp": "12345.10001"
-    },
-    {
-      "slot": "0xe1b094dec1b7d360498fa8130bf1944104b7b5d8a48f9ca88c3fc0f96c2d7225",
-      "before": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "after": "0x000000000000000000000000000000000000000000000001eafa3aaed1d27246",
-      "timestamp": "12345.10001"
-    }
-  ],
-  "links": {
-    "next": null
-  }
-}
-```
-
-Optional filters
-
-- `limit` Maximum limit will be configurable and lower than current global max limit
-- `order`
-- `slot`
-- `timestamp`
 
 ## JSON-RPC
 
