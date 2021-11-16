@@ -34,22 +34,22 @@ contract-specific fields will need to be marked as nullable since we didn't stor
 ```sql
 create table if not exists contract
 (
-  auto_renew_period    bigint                     null,
-  created_timestamp    bigint                     null,
-  deleted              boolean                    null,
-  expiration_timestamp bigint                     null,
-  file_id              bigint                     null,
-  id                   bigint                     not null,
-  key                  bytea                      null,
-  memo                 text    default ''         not null,
-  num                  bigint                     not null,
-  obtainer_id          bigint                     null,
-  proxy_account_id     bigint                     null,
-  public_key           character varying          null,
-  realm                bigint                     not null,
-  shard                bigint                     not null,
-  timestamp_range      int8range                  not null,
-  type                 integer default 'CONTRACT' not null
+  auto_renew_period    bigint                         null,
+  created_timestamp    bigint                         null,
+  deleted              boolean                        null,
+  expiration_timestamp bigint                         null,
+  file_id              bigint                         null,
+  id                   bigint                         not null,
+  key                  bytea                          null,
+  memo                 text        default ''         not null,
+  num                  bigint                         not null,
+  obtainer_id          bigint                         null,
+  proxy_account_id     bigint                         null,
+  public_key           character varying              null,
+  realm                bigint                         not null,
+  shard                bigint                         not null,
+  timestamp_range      int8range                      not null,
+  type                 entity_type default 'CONTRACT' not null
 );
 
 alter table if exists contract
@@ -483,10 +483,10 @@ methods for ease of interaction by DApps.
 The HyperLedger Besu EVM supports the methods capture
 at [ETH methods](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#eth-methods)
 
-The Mirror Node should implement a subset of the standard calls using to
+The Mirror Node should implement a subset of the standard calls used to
 
 - support existing ethereum developers who may call the JSON-RPC endpoints directly
-- to encompass Hedera EVM translation logic that can be wrapped by potential web3 modules.
+- encompass Hedera EVM translation logic that can be wrapped by potential web3 modules.
 
 ### Setup
 
@@ -509,7 +509,7 @@ Establish an
 
 - `EthRpcService` interface that describes the supported rpc methods
 - `EthRpcServiceImpl` class that contains the logic to service the rpc methods called. Methods query the appropriate
-  `account_balance`, `contract`, `record_file` and `transaction` tables returning data in expected schema formats.
+  `account_balance`, `contract`, `record_file`, and `transaction` tables returning data in expected schema formats.
 
 #### Request POJOs
 
