@@ -22,6 +22,7 @@ package types
 
 import (
 	"encoding/base64"
+	"reflect"
 	"strconv"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -136,6 +137,10 @@ func NewAmount(amount *types.Amount) (Amount, *types.Error) {
 	}
 
 	if currency.Symbol == CurrencyHbar.Symbol {
+		if !reflect.DeepEqual(currency, CurrencyHbar) {
+			return nil, errors.ErrInvalidCurrency
+		}
+
 		return &HbarAmount{Value: value}, nil
 	}
 

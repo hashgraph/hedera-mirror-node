@@ -115,6 +115,7 @@ func NewTransactionConstructor(tokenRepo interfaces.TokenRepository) Transaction
 		constructorsByTransactionType: make(map[string]transactionConstructorWithType),
 	}
 
+	c.addConstructor(newCryptoCreateTransactionConstructor())
 	c.addConstructor(newCryptoTransferTransactionConstructor(tokenRepo))
 	c.addConstructor(newTokenCreateTransactionConstructor())
 

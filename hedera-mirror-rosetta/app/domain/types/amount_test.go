@@ -236,10 +236,29 @@ func TestNewAmountFailure(t *testing.T) {
 			},
 		},
 		{
-			name: "InvalidCurrencyDecimals",
+			name: "NegativeCurrencyDecimals",
 			input: &types.Amount{
 				Value:    "1",
 				Currency: &types.Currency{Decimals: -1, Symbol: CurrencyHbar.Symbol},
+			},
+		},
+		{
+			name: "InvalidCurrencyDecimalsForHbar",
+			input: &types.Amount{
+				Value:    "1",
+				Currency: &types.Currency{Decimals: 2, Symbol: CurrencyHbar.Symbol},
+			},
+		},
+		{
+			name: "InvalidCurrencyMetadataForHbar",
+			input: &types.Amount{
+				Value: "1",
+				Currency: &types.Currency{
+					Symbol: CurrencyHbar.Symbol,
+					Metadata: map[string]interface{}{
+						"issuer": "group",
+					},
+				},
 			},
 		},
 		{

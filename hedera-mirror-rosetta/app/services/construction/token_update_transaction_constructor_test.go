@@ -34,26 +34,26 @@ import (
 )
 
 const (
-	adminKeyStr  = "302a300506032b6570032100d619a3a22d6bd2a9e4b08f3d999df757e5a9ef0364c13b4b3356bc065b34fa01"
-	freezeKeyStr = "302a300506032b65700321006663a95da28adcb0fc129d1b4eda4be7dd90b54a337cd2dd953e1d2dc03ca6d1"
-	kycKeyStr    = "302a300506032b6570032100cf84dd35980ba09a3a4c5a19a3d63fe4937ab3fde3e2c5c6ba41e42c0c60ee9f"
-	memo         = "new memo"
-	name         = "new name"
-	supplyKeyStr = "302a300506032b65700321000d469b64f14cc584c6fc48f03c339defcba719c2b71abe05c4aea19d16127ba1"
-	symbol       = "new symbol"
-	wipeKeyStr   = "302a300506032b6570032100647b6d2a4efa666858c6d0d85e660698410d1bbe67763bc50ece0b5dcff0b6db"
+	autoRenewPeriod int64 = 3600
+	adminKeyStr           = "302a300506032b6570032100d619a3a22d6bd2a9e4b08f3d999df757e5a9ef0364c13b4b3356bc065b34fa01"
+	freezeKeyStr          = "302a300506032b65700321006663a95da28adcb0fc129d1b4eda4be7dd90b54a337cd2dd953e1d2dc03ca6d1"
+	kycKeyStr             = "302a300506032b6570032100cf84dd35980ba09a3a4c5a19a3d63fe4937ab3fde3e2c5c6ba41e42c0c60ee9f"
+	memo                  = "new memo"
+	name                  = "new name"
+	supplyKeyStr          = "302a300506032b65700321000d469b64f14cc584c6fc48f03c339defcba719c2b71abe05c4aea19d16127ba1"
+	symbol                = "new symbol"
+	wipeKeyStr            = "302a300506032b6570032100647b6d2a4efa666858c6d0d85e660698410d1bbe67763bc50ece0b5dcff0b6db"
 )
 
 var (
-	adminKey, _            = hedera.PublicKeyFromString(adminKeyStr)
-	autoRenewAccount       = hedera.AccountID{Account: 1981}
-	autoRenewPeriod  int64 = 3600
-	expiry                 = time.Unix(167000, 0)
-	freezeKey, _           = hedera.PublicKeyFromString(freezeKeyStr)
-	kycKey, _              = hedera.PublicKeyFromString(kycKeyStr)
-	supplyKey, _           = hedera.PublicKeyFromString(supplyKeyStr)
-	treasury               = hedera.AccountID{Account: 1701}
-	wipeKey, _             = hedera.PublicKeyFromString(wipeKeyStr)
+	adminKey, _      = hedera.PublicKeyFromString(adminKeyStr)
+	autoRenewAccount = hedera.AccountID{Account: 1981}
+	expiry           = time.Unix(167000, 0)
+	freezeKey, _     = hedera.PublicKeyFromString(freezeKeyStr)
+	kycKey, _        = hedera.PublicKeyFromString(kycKeyStr)
+	supplyKey, _     = hedera.PublicKeyFromString(supplyKeyStr)
+	treasury         = hedera.AccountID{Account: 1701}
+	wipeKey, _       = hedera.PublicKeyFromString(wipeKeyStr)
 )
 
 func TestTokenUpdateTransactionConstructorSuite(t *testing.T) {

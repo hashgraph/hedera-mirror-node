@@ -23,6 +23,7 @@ package types
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
+	OperationTypeCryptoCreate    = "CRYPTOCREATE"
 	OperationTypeCryptoTransfer  = "CRYPTOTRANSFER"
 	OperationTypeTokenAssociate  = "TOKENASSOCIATE"
 	OperationTypeTokenBurn       = "TOKENBURN"
@@ -338,6 +339,7 @@ var (
 	}
 
 	SupportedOperationTypes = []string{
+		OperationTypeCryptoCreate,
 		OperationTypeCryptoTransfer,
 		OperationTypeTokenAssociate,
 		OperationTypeTokenBurn,

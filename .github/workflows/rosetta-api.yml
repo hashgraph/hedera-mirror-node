@@ -76,7 +76,7 @@ jobs:
 
       - name: Set Importer StartDate
         run: |
-          # grep extracts the data up to minute, e.g., 2021-11-15T16:48:, so as to always round down to the whole minute
+          # grep extracts the date up to minute, e.g., 2021-11-15T16:48:, so as to always round down to the whole minute
           # and avoid importer saves the first account balance file but not the account balance entries
           startdate=$(date --date='15 minutes ago' -Iseconds -u | grep -o -e '^[0-9T:-]\+:')
           startdate="${startdate}00Z"
