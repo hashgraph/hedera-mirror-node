@@ -115,14 +115,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return null;
     }
 
-    protected List<String> getV1ConflictIdColumns() {
-        return Collections.emptyList();
-    }
-
-    protected List<String> getV2ConflictIdColumns() {
-        return Collections.emptyList();
-    }
-
     protected Set<String> getNullableColumns() {
         return Collections.emptySet();
     }
@@ -176,12 +168,6 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     }
 
     private List<String> getConflictIdColumns() {
-        if (version.contains(V1_DIRECTORY)) {
-            return getV1ConflictIdColumns();
-        } else if (version.contains(V2_DIRECTORY)) {
-            return getV2ConflictIdColumns();
-        }
-
         return Collections.emptyList();
     }
 
