@@ -31,9 +31,11 @@ import (
 // AccountRepository Interface that all AccountRepository structs must implement
 type AccountRepository interface {
 
-	// RetrieveBalanceAtBlock returns the hbar balance and token balances of the account at a given block (
-	// provided by consensusEnd timestamp).
+	// RetrieveBalanceAtBlock returns the hbar balance and token balances of the account at a given block (provided by
+	// consensusEnd timestamp).
 	// balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
+	// if the account is deleted at T1 and T1 <= consensusEnd, the balance is calculated as
+	// balance = balanceAtLatestBalanceSnapshotBeforeT1 + balanceChangeBetweenSnapshotAndT1
 	RetrieveBalanceAtBlock(ctx context.Context, accountId, consensusEnd int64) ([]types.Amount, *rTypes.Error)
 
 	// RetrieveEverOwnedTokensByBlockAfter returns the tokens the account has ever owned by the end of the block after

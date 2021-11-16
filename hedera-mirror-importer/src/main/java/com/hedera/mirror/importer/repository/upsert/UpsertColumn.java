@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.repository.upsert;
 
 /*-
  * ‌
@@ -20,17 +20,20 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import java.util.Comparator;
+import lombok.Value;
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.DomainBuilder;
+@Value
+class UpsertColumn implements Comparable<UpsertColumn> {
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+    private final Object defaultValue;
+    private final boolean history;
+    private final boolean id;
+    private final String name;
+    private final boolean updatable;
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    @Override
+    public int compareTo(UpsertColumn other) {
+        return Comparator.comparing(UpsertColumn::getName).compare(this, other);
+    }
 }

@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.repository;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,17 +18,14 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+package domain
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.DomainBuilder;
+import (
+	"testing"
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+	"github.com/stretchr/testify/assert"
+)
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+func TestEntityTableName(t *testing.T) {
+	assert.Equal(t, "entity", Entity{}.TableName())
 }

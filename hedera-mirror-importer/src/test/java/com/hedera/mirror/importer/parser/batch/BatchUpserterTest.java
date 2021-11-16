@@ -36,6 +36,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.importer.IntegrationTest;
@@ -86,6 +87,9 @@ class BatchUpserterTest extends IntegrationTest {
     private EntityRepository entityRepository;
 
     @Resource
+    private JdbcOperations jdbcOperations;
+
+    @Resource
     private NftRepository nftRepository;
 
     @Resource
@@ -133,6 +137,10 @@ class BatchUpserterTest extends IntegrationTest {
                 .hasSize(3)
                 .extracting(Contract::getMemo)
                 .containsExactlyInAnyOrder(contract1.getMemo(), contract2Memo, contract3.getMemo());
+        assertThat(findHistory(Contract.class))
+                .hasSize(3)
+                .extracting(Contract::getId)
+                .containsExactlyInAnyOrder(contract1.getId(), contract2.getId(), contract3.getId());
     }
 
     @Test
@@ -147,6 +155,7 @@ class BatchUpserterTest extends IntegrationTest {
         persist(batchPersister, entities);
         entities.get(1).setMemo("");
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrderElementsOf(entities);
+        assertThat(findHistory(Entity.class)).isEmpty();
     }
 
     @Test
@@ -181,6 +190,10 @@ class BatchUpserterTest extends IntegrationTest {
                 .hasSize(6)
                 .extracting(Entity::getMemo)
                 .containsExactlyInAnyOrder("memo-1", "memo-2", "", "updated-memo-4", "memo-5", "memo-6");
+        assertThat(findHistory(Entity.class))
+                .hasSize(3)
+                .extracting(Entity::getId)
+                .containsExactlyInAnyOrder(2L, 3L, 4L);
     }
 
     @Test
@@ -212,6 +225,10 @@ class BatchUpserterTest extends IntegrationTest {
                 .hasSize(6)
                 .extracting(Entity::getMemo)
                 .containsExactlyInAnyOrder("memo-1", "memo-2", "", "updated-memo-4", "memo-5", "memo-6");
+        assertThat(findHistory(Entity.class))
+                .hasSize(2)
+                .extracting(Entity::getId)
+                .containsExactlyInAnyOrder(3L, 4L);
     }
 
     @Test
@@ -690,6 +707,12 @@ class BatchUpserterTest extends IntegrationTest {
                 batchPersister.persist(batch);
             }
         });
+    }
+
+    private <T> Collection<T> findHistory(Class<T> historyClass) {
+        String table = historyClass.getSimpleName().toLowerCase();
+        String sql = String.format("select * from %s_history order by id asc, timestamp_range asc", table);
+        return jdbcOperations.query(sql, rowMapper(historyClass));
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {

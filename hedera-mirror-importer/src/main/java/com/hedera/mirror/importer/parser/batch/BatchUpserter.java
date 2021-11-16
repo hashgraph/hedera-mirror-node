@@ -44,9 +44,12 @@ import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 public class BatchUpserter extends BatchInserter {
 
     private static final String TABLE = "table";
+
     private final String createTempTableSql;
+    private final String createTempIndexSql;
     private final String finalTableName;
     private final String insertSql;
+    private final String setTempBuffersSql;
     private final String updateSql;
     private final Timer copyDurationMetric;
     private final Timer finalInsertDurationMetric;
@@ -57,7 +60,9 @@ public class BatchUpserter extends BatchInserter {
                          CommonParserProperties properties,
                          UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
+        createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
+        setTempBuffersSql = String.format("set temp_buffers = '%dMB'", properties.getTempTableBufferSize());
         truncateSql = String
                 .format("truncate table %s restart identity cascade", upsertQueryGenerator.getTemporaryTableName());
         finalTableName = upsertQueryGenerator.getFinalTableName();
@@ -124,8 +129,16 @@ public class BatchUpserter extends BatchInserter {
     }
 
     private void createTempTable(Connection connection) throws SQLException {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(setTempBuffersSql)) {
+            preparedStatement.executeUpdate();
+        }
+
         // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
         try (PreparedStatement preparedStatement = connection.prepareStatement(createTempTableSql)) {
+            preparedStatement.executeUpdate();
+        }
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(createTempIndexSql)) {
             preparedStatement.executeUpdate();
         }
 

@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -78,7 +79,6 @@ public class DomainBuilder {
 
     public DomainPersister<Contract, Contract.ContractBuilder> contract() {
         long id = id();
-        byte[] key = Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(32))).build().toByteArray();
         long timestamp = timestamp();
 
         Contract.ContractBuilder builder = Contract.builder()
@@ -88,8 +88,8 @@ public class DomainBuilder {
                 .expirationTimestamp(timestamp + 30_000_000L)
                 .fileId(entityId(FILE))
                 .id(id)
-                .key(key)
-                .memo("test" + id)
+                .key(key())
+                .memo(text(16))
                 .obtainerId(entityId(CONTRACT))
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
@@ -135,7 +135,6 @@ public class DomainBuilder {
 
     public DomainPersister<Entity, Entity.EntityBuilder> entity() {
         long id = id();
-        byte[] key = Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(32))).build().toByteArray();
         long timestamp = timestamp();
 
         Entity.EntityBuilder builder = Entity.builder()
@@ -145,15 +144,15 @@ public class DomainBuilder {
                 .deleted(false)
                 .expirationTimestamp(timestamp + 30_000_000L)
                 .id(id)
-                .key(key)
+                .key(key())
                 .maxAutomaticTokenAssociations(0)
-                .memo("test" + id)
+                .memo(text(16))
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)
                 .receiverSigRequired(false)
                 .shard(0L)
-                .submitKey(key)
+                .submitKey(key())
                 .timestampRange(Range.atLeast(timestamp))
                 .type(ACCOUNT);
 
@@ -179,6 +178,24 @@ public class DomainBuilder {
         return new DomainPersister<>(getRepository(NonFeeTransfer.class), builder, builder::build);
     }
 
+    public DomainPersister<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
+        long timestamp = timestamp();
+        RecordFile.RecordFileBuilder builder = RecordFile.builder()
+                .consensusStart(timestamp)
+                .consensusEnd(timestamp + 1)
+                .count(1L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .fileHash(text(96))
+                .hash(text(96))
+                .index(id())
+                .loadEnd(now.plusSeconds(1).getEpochSecond())
+                .loadStart(now.getEpochSecond())
+                .name(now.toString().replace(':', '_') + ".rcd")
+                .nodeAccountId(entityId(ACCOUNT))
+                .previousHash(text(96));
+        return new DomainPersister<>(getRepository(RecordFile.class), builder, builder::build);
+    }
+
     public DomainPersister<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
         TokenTransfer.TokenTransferBuilder builder = TokenTransfer.builder()
                 .amount(100L)
@@ -190,25 +207,33 @@ public class DomainBuilder {
     }
 
     // Helper methods
-    private byte[] bytes(int length) {
+    public byte[] bytes(int length) {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
     }
 
-    private EntityId entityId(EntityType type) {
+    public EntityId entityId(EntityType type) {
         return EntityId.of(0L, 0L, id(), type);
+    }
+
+    public long id() {
+        return id.incrementAndGet();
+    }
+
+    public byte[] key() {
+        return Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(32))).build().toByteArray();
+    }
+
+    public String text(int characters) {
+        return RandomStringUtils.randomAlphanumeric(characters);
+    }
+
+    public long timestamp() {
+        return Utility.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
     }
 
     private <T> CrudRepository<T, ?> getRepository(Class<T> domainClass) {
         return (CrudRepository<T, ?>) repositories.get(domainClass);
-    }
-
-    private long id() {
-        return id.incrementAndGet();
-    }
-
-    private long timestamp() {
-        return Utility.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
     }
 }

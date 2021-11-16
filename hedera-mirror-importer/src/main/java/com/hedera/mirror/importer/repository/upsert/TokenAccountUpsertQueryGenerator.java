@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.repository.upsert;
  */
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
 import javax.persistence.metamodel.SingularAttribute;
@@ -44,6 +45,8 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
             TokenAccount_.AUTOMATIC_ASSOCIATION, TokenAccount_.CREATED_TIMESTAMP);
     private final String finalTableName = "token_account";
     private final String temporaryTableName = getFinalTableName() + "_temp";
+    private final List<String> v1ConflictIdColumns = List.of(TokenAccountId_.ACCOUNT_ID, TokenAccountId_.TOKEN_ID);
+    private final List<String> v2ConflictIdColumns = v1ConflictIdColumns;
 
     @Getter(lazy = true)
     @SuppressWarnings("java:S3740")

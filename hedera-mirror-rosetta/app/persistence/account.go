@@ -24,14 +24,17 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"sort"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -86,6 +89,13 @@ const (
                                     from abm
                                     left join account_balance ab
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
+	selectCryptoEntity = `select id, deleted, timestamp_range
+                          from entity
+                          where type = 'ACCOUNT' and id = @entity_id
+                          union all
+                          select id, deleted, timestamp_range
+                          from contract
+                          where id = @entity_id`
 	// #nosec
 	selectEverOwnedTokensByBlockAfter = `with next_rf as (
                                           select consensus_end
@@ -137,12 +147,32 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	accountId int64,
 	consensusEnd int64,
 ) ([]types.Amount, *rTypes.Error) {
-	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(ctx, accountId, consensusEnd)
+	entity, err := ar.getCryptoEntity(ctx, accountId)
 	if err != nil {
 		return nil, err
 	}
 
-	hbarValue, tokenValues, err := ar.getBalanceChange(ctx, accountId, snapshotTimestamp, consensusEnd)
+	balanceChangeEndTimestamp := consensusEnd
+	balanceSnapshotEndTimestamp := consensusEnd
+	if entity != nil && entity.Deleted != nil && *entity.Deleted && entity.TimestampRange.Lower.Int <= consensusEnd {
+		// if an account / contract is deleted at t1, a balance snapshot at t1 (if exists) won't have info for the
+		// entity, thus look for a balance snapshot at or before the deleted timestamp - 1
+		// however, the balanceChangeEndTimestamp should be the deletion timestamp since the crypto delete transaction
+		// may have a transfer which moves the remaining hbar balance to another account
+		balanceChangeEndTimestamp = entity.TimestampRange.Lower.Int
+		balanceSnapshotEndTimestamp = balanceChangeEndTimestamp - 1
+	}
+
+	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(
+		ctx,
+		accountId,
+		balanceSnapshotEndTimestamp,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	hbarValue, tokenValues, err := ar.getBalanceChange(ctx, accountId, snapshotTimestamp, balanceChangeEndTimestamp)
 	if err != nil {
 		return nil, err
 	}
@@ -179,14 +209,42 @@ func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(
 		sql.Named("account_id", accountId),
 		sql.Named("consensus_timestamp", consensusEnd),
 	).Scan(&tokens).Error; err != nil {
-		log.Errorf(databaseErrorFormat, errors.ErrDatabaseError.Message, err)
-		return nil, errors.ErrDatabaseError
+		log.Errorf(
+			databaseErrorFormat,
+			hErrors.ErrDatabaseError.Message,
+			fmt.Sprintf("%v looking for tokens ever owned by %d as of %d", err, accountId, consensusEnd),
+		)
+		return nil, hErrors.ErrDatabaseError
 	}
 
 	return tokens, nil
 }
 
-func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accountId, consensusEnd int64) (
+func (ar *accountRepository) getCryptoEntity(ctx context.Context, entityId int64) (
+	*domain.Entity,
+	*rTypes.Error,
+) {
+	db, cancel := ar.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
+	cryptoEntity := &domain.Entity{}
+	if err := db.Raw(selectCryptoEntity, sql.Named("entity_id", entityId)).First(cryptoEntity).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
+		log.Errorf(
+			databaseErrorFormat,
+			hErrors.ErrDatabaseError.Message,
+			fmt.Sprintf("%v looking for entity %d", err, entityId),
+		)
+		return nil, hErrors.ErrDatabaseError
+	}
+
+	return cryptoEntity, nil
+}
+
+func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accountId, timestamp int64) (
 	int64,
 	*types.HbarAmount,
 	map[int64]*types.TokenAmount,
@@ -195,26 +253,30 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
 
-	// gets the most recent balance at or before consensusEnd
+	// gets the most recent balance at or before timestamp
 	cb := &combinedAccountBalance{}
 	if err := db.Raw(
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
-		sql.Named("timestamp", consensusEnd),
+		sql.Named("timestamp", timestamp),
 	).First(cb).Error; err != nil {
-		log.Errorf(databaseErrorFormat, errors.ErrDatabaseError.Message, err)
-		return 0, nil, nil, errors.ErrDatabaseError
+		log.Errorf(
+			databaseErrorFormat,
+			hErrors.ErrDatabaseError.Message,
+			fmt.Sprintf("%v looking for account %d's balance at or before %d", err, accountId, timestamp),
+		)
+		return 0, nil, nil, hErrors.ErrDatabaseError
 	}
 
 	if cb.ConsensusTimestamp == 0 {
-		return 0, nil, nil, errors.ErrNodeIsStarting
+		return 0, nil, nil, hErrors.ErrNodeIsStarting
 	}
 
 	hbarAmount := types.HbarAmount{Value: cb.Balance}
 
 	var tokenAmounts []*types.TokenAmount
 	if err := json.Unmarshal([]byte(cb.TokenBalances), &tokenAmounts); err != nil {
-		return 0, nil, nil, errors.ErrInvalidToken
+		return 0, nil, nil, hErrors.ErrInvalidToken
 	}
 
 	tokenAmountMap := make(map[int64]*types.TokenAmount, len(tokenAmounts))
@@ -241,14 +303,18 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
 	).First(change).Error; err != nil {
-		log.Errorf(databaseErrorFormat, errors.ErrDatabaseError.Message, err)
-		return 0, nil, errors.ErrDatabaseError
+		log.Errorf(
+			databaseErrorFormat,
+			hErrors.ErrDatabaseError.Message,
+			fmt.Sprintf("%v looking for account %d's balance change in [%d, %d]", err, accountId, consensusStart, consensusEnd),
+		)
+		return 0, nil, hErrors.ErrDatabaseError
 	}
 
 	// fungible token values
 	var tokenValues []*types.TokenAmount
 	if err := json.Unmarshal([]byte(change.TokenValues), &tokenValues); err != nil {
-		return 0, nil, errors.ErrInvalidToken
+		return 0, nil, hErrors.ErrInvalidToken
 	}
 
 	return change.Value, tokenValues, nil
@@ -267,8 +333,12 @@ func (ar *accountRepository) getNftBalance(ctx context.Context, accountId, conse
 		sql.Named("account_id", accountId),
 		sql.Named("consensus_end", consensusEnd),
 	).Scan(&nftTransfers).Error; err != nil {
-		log.Errorf(databaseErrorFormat, errors.ErrDatabaseError.Message, err)
-		return nil, errors.ErrDatabaseError
+		log.Errorf(
+			databaseErrorFormat,
+			hErrors.ErrDatabaseError.Message,
+			fmt.Sprintf("%v getting nft transfers for account %d till %d", err, accountId, consensusEnd),
+		)
+		return nil, hErrors.ErrDatabaseError
 	}
 
 	allNfts := make(map[nftId]bool)
