@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -83,6 +84,16 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
 
     protected boolean needsOnConflictAction() {
         return true;
+    }
+
+    @Override
+    public String getCreateTempIndexQuery() {
+        String columns = getConflictIdColumns()
+                .stream()
+                .map(this::getFormattedColumnName)
+                .collect(Collectors.joining(", "));
+        return MessageFormat.format("create index if not exists {0}_idx on {0} ({1})",
+                getTemporaryTableName(), columns);
     }
 
     @Override

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,6 +35,7 @@ import com.hedera.mirror.importer.converter.UnknownIdConverter;
 @SuperBuilder
 public class Contract extends AbstractEntity {
 
+    @Column(updatable = false)
     @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
 

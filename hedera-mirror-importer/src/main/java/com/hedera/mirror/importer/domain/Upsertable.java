@@ -36,7 +36,7 @@ import java.lang.annotation.Target;
 public @interface Upsertable {
 
     /**
-     * Controls whether a history entry should be added whenever this domain changes
+     * Controls whether a history entry should be added whenever this domain changes.
      *
      * @return whether history is enabled
      */
