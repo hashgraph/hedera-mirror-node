@@ -165,7 +165,7 @@ alter table if exists topic_message
     add constraint topic_message__pk primary key (consensus_timestamp, topic_id);
 create index if not exists topic_message__topic_id_timestamp
     on topic_message (topic_id, consensus_timestamp);
-create unique index if not exists topic_message__topic_id_seqnum_timestamp
+create unique index if not exists topic_message__topic_id_seqnum
     on topic_message (topic_id, sequence_number);
 
 -- transaction
