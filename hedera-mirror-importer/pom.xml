@@ -17,7 +17,7 @@
     </parent>
 
     <properties>
-        <commons-beanutils.version>1.7.0</commons-beanutils.version>
+        <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <commons-compress.version>1.21</commons-compress.version>
         <commons-io.version>2.11.0</commons-io.version>
         <s3proxy.version>1.9.0</s3proxy.version>
