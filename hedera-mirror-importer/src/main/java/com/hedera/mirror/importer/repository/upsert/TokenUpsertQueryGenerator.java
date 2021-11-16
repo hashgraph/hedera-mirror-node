@@ -35,8 +35,7 @@ import com.hedera.mirror.importer.domain.Token_;
 public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Token_> {
     public static final String TABLE = "token";
     public final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> v1ConflictIdColumns = List.of(TokenId_.TOKEN_ID);
-    private final List<String> v2ConflictIdColumns = v1ConflictIdColumns;
+    private final List<String> conflictIdColumns = List.of(TokenId_.TOKEN_ID);
     private final Set<String> nullableColumns = Set.of(Token_.FEE_SCHEDULE_KEY, Token_.FEE_SCHEDULE_KEY_ED25519_HEX,
             Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
             Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX,

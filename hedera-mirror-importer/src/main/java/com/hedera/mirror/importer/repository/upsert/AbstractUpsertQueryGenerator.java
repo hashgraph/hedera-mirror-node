@@ -167,7 +167,7 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return getNullableColumns() != null && getNullableColumns().contains(columnName);
     }
 
-    private List<String> getConflictIdColumns() {
+    protected List<String> getConflictIdColumns() {
         return Collections.emptyList();
     }
 
