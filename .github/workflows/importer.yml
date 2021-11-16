@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         schema: [ v1, v2 ]
-    timeout-minutes: 15
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
