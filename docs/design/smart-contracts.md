@@ -34,22 +34,22 @@ contract-specific fields will need to be marked as nullable since we didn't stor
 ```sql
 create table if not exists contract
 (
-  auto_renew_period    bigint             null,
-  created_timestamp    bigint             null,
-  deleted              boolean            null,
-  expiration_timestamp bigint             null,
-  file_id              bigint             null,
-  id                   bigint             not null,
-  key                  bytea              null,
-  memo                 text    default '' not null,
-  num                  bigint             not null,
-  obtainer_id          bigint             null,
-  proxy_account_id     bigint             null,
-  public_key           character varying  null,
-  realm                bigint             not null,
-  shard                bigint             not null,
-  timestamp_range      int8range          not null,
-  type                 integer default 2  not null
+  auto_renew_period    bigint                     null,
+  created_timestamp    bigint                     null,
+  deleted              boolean                    null,
+  expiration_timestamp bigint                     null,
+  file_id              bigint                     null,
+  id                   bigint                     not null,
+  key                  bytea                      null,
+  memo                 text    default ''         not null,
+  num                  bigint                     not null,
+  obtainer_id          bigint                     null,
+  proxy_account_id     bigint                     null,
+  public_key           character varying          null,
+  realm                bigint                     not null,
+  shard                bigint                     not null,
+  timestamp_range      int8range                  not null,
+  type                 integer default 'CONTRACT' not null
 );
 
 alter table if exists contract
@@ -82,10 +82,11 @@ using the protobuf and normalize it into the other fields.
 ```sql
 create table if not exists contract_result
 (
+  account_access       bigint array       null,
   amount               bigint             null,
   bloom                bytea              null,
   call_result          bytea              null,
-  child_transactions   bigint             null,
+  child_transactions   smallint           null,
   consensus_timestamp  bigint primary key not null,
   contract_id          bigint             null,
   created_contract_ids bigint array       null,
@@ -94,8 +95,15 @@ create table if not exists contract_result
   function_result      bytea              null,
   gas_limit            bigint             not null,
   gas_used             bigint             not null,
-  payer_account_id     bigint             not null
+  payer_account_id     bigint             not null,
+  primary key (consensus_timestamp)
 );
+
+create index if not exists contract_result__to_from
+  on contract_result (contract_id, payer_account_id);
+
+create index if not exists contract_result__timestamp_id
+  on contract_result (consensus_timestamp, contract_id);
 ```
 
 #### Contract Log
@@ -110,12 +118,12 @@ create table if not exists contract_log
   contract_id         bigint      not null,
   data                bytea       not null,
   index               int         not null,
-  record_index        int         not null,
+  record_index        bigint      not null,
   topic0              varchar(64) null,
   topic1              varchar(64) null,
   topic2              varchar(64) null,
   topic3              varchar(64) null,
-  primary key (consensus_timestamp, index)
+  primary key (consensus_timestamp, contract_id, index)
 );
 ```
 
@@ -124,12 +132,12 @@ create table if not exists contract_log
 Create a new table to store the access list of a contract execution
 
 ```sql
-create table if not exists contract_access_list
+create table if not exists contract_access
 (
   consensus_timestamp bigint      not null,
   contract_id         bigint      not null,
   storage_keys        bytea array not null,
-  primary key (consensus_timestamp, contract_id, gin(storage_keys))
+  primary key (consensus_timestamp, contract_id, storage_keys)
 );
 ```
 
@@ -152,7 +160,7 @@ create table if not exists contract_state_change
 ## Importer
 
 - Add a `Contract` domain object with fields that match the schema.
-- Add a `ContractAccessList` domain object with fields that match the schema.
+- Add a `ContractAccess` domain object with fields that match the schema.
 - Add a `ContractLog` domain object with fields that match the schema.
 - Update the `ContractResult` domain object with fields that match the schema.
 - Add a `ContractStateChange` domain object with fields that match the schema.
@@ -282,7 +290,6 @@ Optional filters
 - `order`
 - `timestamp`
 - `from`
-- `to`
 
 ### Get Contract Result
 
@@ -292,11 +299,11 @@ Optional filters
 {
   "amount": 10,
   "access_list": [],
-  "blockHash": "50",
-  "blockNumber": "50",
+  "block_hash": "0x410ef7b5a5f",
+  "block_number": "50",
   "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
   "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
-  "child_transactions": null,
+  "child_transactions": "0",
   "created_contract_ids": [
     "0.0.1003"
   ],
@@ -308,9 +315,9 @@ Optional filters
   "hash": "0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
   "internal_transactions": [
     {
-      "amount": "",
-      "from": "",
-      "to": ""
+      "amount": "20",
+      "from": "0.0.1002",
+      "to": "0.0.1003"
     }
   ],
   "logs": [
@@ -385,7 +392,10 @@ Optional filters
         "0000000000000000000000000000000000000000000000000000000000000765"
       ]
     }
-  ]
+  ],
+  "links": {
+    "next": null
+  }
 }
 ```
 
@@ -403,7 +413,6 @@ Optional filters
 
 ```json
 {
-  "contract_id": "0.0.1003",
   "access_list": [
     {
       "address": "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
@@ -418,7 +427,10 @@ Optional filters
       "storage_keys": [],
       "timestamp": "12345.10001"
     }
-  ]
+  ],
+  "links": {
+    "next": null
+  }
 }
 ```
 
@@ -435,7 +447,6 @@ Optional filters
 
 ```json
 {
-  "contract_id": "0.0.1003",
   "storage_changes": [
     {
       "slot": "0x0000000000000000000000000000000000000000000000000000000000000002",
@@ -449,7 +460,10 @@ Optional filters
       "after": "0x000000000000000000000000000000000000000000000001eafa3aaed1d27246",
       "timestamp": "12345.10001"
     }
-  ]
+  ],
+  "links": {
+    "next": null
+  }
 }
 ```
 
