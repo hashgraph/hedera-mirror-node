@@ -326,14 +326,6 @@ Optional filters
     "0.0.1003"
   ],
   "error_message": "",
-  "evm_internal_transactions": [
-    {
-      "from": "0.0.1002",
-      "to": "0.0.1003",
-      "type": "call_0",
-      "value": "20"
-    }
-  ],
   "from": "0.0.1001",
   "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
   "gas_limit": 2500,
@@ -374,32 +366,24 @@ Optional filters
     }
   ],
   "timestamp": "12345.10001",
-  "to": "0.0.1002",
-  "links": {
-    "hedera_child_transactions": [
-      "api/v1/transactions/0.0.11943-1637100159-861284000",
-      "api/v1/transactions/0.0.10459-1637099842-891982153"
-    ]
-  }
+  "to": "0.0.1002"
 }
 ```
 
 - `access_list` should be retrieved by a join between the `contract_result` and `contract_access_list` tables.
-- `logs` should be retrieved by a join between the `contract_result` and `contract_log` tables.
-- `hedera_child_transactions` should be retrieved by a join between the `contract_result` and transfer tables
+- `hedera_child_transactions` (when added) will be retrieved by a join between the `contract_result` and transfer tables
   (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables based on child timestamps.
+- `logs` should be retrieved by a join between the `contract_result` and `contract_log` tables.
 - `state-changes` should be retrieved by a join between the `contract_result` and `contract-state-change` tables.
 
 > _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractId and timestamp to
 > retrieve the correct contract_result row
 
-> _Note 2:_ Child transactions issued by HTS precompiled transactions will produce regular HTS transactions.
+> _Note 2:_ Child Hedera transactions issued by HTS precompiled transactions will produce regular HTS transactions.
 > These differ from EVM internal transactions between contracts.
 > The HTS transactions will contain the transferList that describes the internal transfers to be extracted. The parent
 > transactions `transaction.child_transactions` will denote the range of consensusTimestamps for child transactions
 > i.e. `[parent_timestamp, parent_timestamp + transaction.child_transactions)`
-
-> _Note 3:_ `internal_transactions` will be retrieved from `ContractAction` related information
 
 ### Get Contract Logs
 
@@ -837,6 +821,45 @@ The Mirror Node should additional provide support for this.
 
 ## Open Questions
 
-1. What will externalization of the contract call type in the transaction record look like? Still being designed.
+1. What will the externalization of the contract call type in the transaction record look like? Still being designed.
 2. How will EVM internal transactions (i.e. non HTS precompiled child transactions) show up in record stream and will
-   they follow a hierarchy that highlights transfer succession or will it be flattened?
+   they follow a hierarchy that highlights transfer succession or will it be flattened? Still being designed.
+3. How should we expose EVM internal transactions under `/api/v1/contracts/{id}/results/{timestamp}`
+   & `/api/v1/contracts/results/{transactionId}`? Still being designed. One suggestion under is
+    ```json
+      "evm_internal_transactions": [
+        {
+          "from": "0.0.1002",
+          "to": "0.0.1003",
+          "type": "call_0",
+          "value": "20"
+        }
+      ]
+    ```
+4. How should we expose Hedera child transactions under `/api/v1/contracts/{id}/results/{timestamp}`
+   & `/api/v1/contracts/results/{transactionId}`? Still being designed. Two suggestions are
+    ```json
+    "links": {
+      "hedera_child_transactions": [
+        "api/v1/transactions/0.0.11943-1637100159-861284000",
+        "api/v1/transactions/0.0.10459-1637099842-891982153"
+      ]
+    }
+    ```
+   or
+    ```json
+    "links": {
+      "related": {
+        "hedera_child_transactions": [
+          {
+            "timestamp": "1637100159.961284000",
+            "endpoint": "api/v1/transactions/0.0.11943-1637100159-861284000"
+          },
+          {
+            "timestamp": "1637099842.991982153",
+            "endpoint": "api/v1/transactions/0.0.10459-1637099842-891982153"
+          }
+        ]
+      }
+    }
+    ```
