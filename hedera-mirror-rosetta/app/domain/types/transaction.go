@@ -20,10 +20,14 @@
 
 package types
 
-import "github.com/coinbase/rosetta-sdk-go/types"
+import (
+	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+)
 
 // Transaction is domain level struct used to represent Transaction conceptual mapping in Hedera
 type Transaction struct {
+	EntityId   *domain.EntityId
 	Hash       string
 	Operations []*Operation
 }
@@ -34,9 +38,14 @@ func (t *Transaction) ToRosetta() *types.Transaction {
 	for i, o := range t.Operations {
 		operations[i] = o.ToRosetta()
 	}
+	var metadata map[string]interface{}
+	if t.EntityId != nil {
+		metadata = map[string]interface{}{"entity_id": t.EntityId.String()}
+	}
 
 	return &types.Transaction{
 		TransactionIdentifier: &types.TransactionIdentifier{Hash: t.Hash},
 		Operations:            operations,
+		Metadata:              metadata,
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/coinbase/rosetta-sdk-go/asserter"
@@ -56,12 +57,18 @@ func configLogger(level string) {
 		logLevel = log.InfoLevel
 	}
 
-	log.SetLevel(logLevel)
-	log.SetOutput(os.Stdout)
 	log.SetFormatter(&log.TextFormatter{ // Use logfmt for easy parsing by Loki
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			parts := strings.Split(frame.File, moduleName)
+			relativeFilename := parts[len(parts)-1]
+			return "", fmt.Sprintf("%s:%d", relativeFilename, frame.Line)
+		},
 		DisableColors: true,
 		FullTimestamp: true,
 	})
+	log.SetLevel(logLevel)
+	log.SetOutput(os.Stdout)
+	log.SetReportCaller(true)
 }
 
 // newBlockchainOnlineRouter creates a Mux http.Handler from a collection

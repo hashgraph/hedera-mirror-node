@@ -203,8 +203,7 @@ func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
 
 func (suite *transactionRepositorySuite) TestTypesAsArray() {
 	t := NewTransactionRepository(dbClient)
-	actual, err := t.TypesAsArray(defaultContext)
-	assert.Nil(suite.T(), err)
+	actual := t.TypesAsArray()
 	assert.NotEmpty(suite.T(), actual)
 }
 

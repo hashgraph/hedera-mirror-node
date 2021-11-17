@@ -37,8 +37,8 @@ import (
 )
 
 const (
-	batchSize                = 2000
-	transactionResultSuccess = 22
+	batchSize                      = 2000
+	transactionResultSuccess int32 = 22
 )
 
 const (
@@ -50,9 +50,10 @@ const (
 	// table is its related token id and require an extra rosetta operation
 	selectTransactionsInTimestampRange = `select
                                             t.consensus_timestamp,
+                                            t.entity_id,
                                             t.payer_account_id,
-                                            t.transaction_hash as hash,
                                             t.result,
+                                            t.transaction_hash as hash,
                                             t.type,
                                             coalesce((
                                               select json_agg(json_build_object(
@@ -114,15 +115,11 @@ const (
 	selectTransactionsInTimestampRangeOrdered = selectTransactionsInTimestampRange + orderByConsensusTimestamp
 )
 
-type transactionType struct {
-	ProtoID int    `gorm:"type:integer;primaryKey"`
-	Name    string `gorm:"size:30"`
-}
-
 // transaction maps to the transaction query which returns the required transaction fields, CryptoTransfers json string,
 // NonFeeTransfers json string, TokenTransfers json string, and Token definition json string
 type transaction struct {
 	ConsensusTimestamp int64
+	EntityId           *domain.EntityId
 	Hash               []byte
 	PayerAccountId     int64
 	Result             int16
@@ -262,7 +259,7 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 	res := make([]*types.Transaction, 0, len(sameHashMap))
 	for _, hash := range hashes {
 		sameHashTransactions := sameHashMap[hash]
-		transaction, err := tr.constructTransaction(ctx, sameHashTransactions)
+		transaction, err := tr.constructTransaction(sameHashTransactions)
 		if err != nil {
 			return nil, err
 		}
@@ -300,7 +297,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 		return nil, hErrors.ErrTransactionNotFound
 	}
 
-	transaction, rErr := tr.constructTransaction(ctx, transactions)
+	transaction, rErr := tr.constructTransaction(transactions)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -308,11 +305,11 @@ func (tr *transactionRepository) FindByHashInBlock(
 	return transaction, nil
 }
 
-func (tr *transactionRepository) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
-	return tools.GetStringValuesFromInt32StringMap(types.TransactionTypes), nil
+func (tr *transactionRepository) TypesAsArray() []string {
+	return tools.GetStringValuesFromInt32StringMap(types.TransactionTypes)
 }
 
-func (tr *transactionRepository) constructTransaction(ctx context.Context, sameHashTransactions []*transaction) (
+func (tr *transactionRepository) constructTransaction(sameHashTransactions []*transaction) (
 	*types.Transaction,
 	*rTypes.Error,
 ) {
@@ -365,6 +362,10 @@ func (tr *transactionRepository) constructTransaction(ctx context.Context, sameH
 				return nil, err
 			}
 			operations = append(operations, operation)
+		}
+
+		if transaction.Result == int16(transactionResultSuccess) {
+			tResult.EntityId = transaction.EntityId
 		}
 	}
 

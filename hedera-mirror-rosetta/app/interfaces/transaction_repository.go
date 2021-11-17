@@ -40,5 +40,5 @@ type TransactionRepository interface {
 	)
 
 	// TypesAsArray returns all Transaction type names as an array
-	TypesAsArray(ctx context.Context) ([]string, *rTypes.Error)
+	TypesAsArray() []string
 }
