@@ -75,14 +75,14 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
     }
 
     @Test
-    @Timeout(2)
+    @Timeout(10)
     void insertHighCreateEntityCount() {
         parseRecordItemsAndCommit(insertRecordItemList);
         assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size());
     }
 
     @Test
-    @Timeout(3)
+    @Timeout(10)
     void insertHighCreateAndUpdateEntityCount() {
         Instant startTime = Instant.now();
         parseRecordItemsAndCommit(insertRecordItemList);
