@@ -339,10 +339,6 @@ Optional filters
   "gas_limit": 2500,
   "gas_used": 1000,
   "hash": "0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
-  "hedera_child_transactions": [
-    "api/v1/transactions/0.0.11943-1637100159-861284000",
-    "api/v1/transactions/0.0.10459-1637099842-891982153"
-  ],
   "logs": [
     {
       "contract_id": "0.0.1234",
@@ -378,7 +374,13 @@ Optional filters
     }
   ],
   "timestamp": "12345.10001",
-  "to": "0.0.1002"
+  "to": "0.0.1002",
+  "links": {
+    "hedera_child_transactions": [
+      "api/v1/transactions/0.0.11943-1637100159-861284000",
+      "api/v1/transactions/0.0.10459-1637099842-891982153"
+    ]
+  }
 }
 ```
 
@@ -535,18 +537,17 @@ An appropriate set of POJO schema would be
 
 - `JSONRpcResponse`
   ```java
-  public abstract class JSONRpcResponse {
+  @Data
+  public class JSONRpcResponse<T> {
+    private final String jsonrpc = "2.0";
     private Long id;
-    private String jsonrpc;
-    private String result;
+    private T result;
   }
   ```
 
 - `ErrorJSONRpcResponse`
   ```java
   public class JSONRpcErrorResponse extends JSONRpcResponse {
-    private Long id;
-    private String jsonrpc;
     private ErrorJSONRpcResponse error;
 
     private class ErrorJSONRpcResponse {
@@ -557,15 +558,8 @@ An appropriate set of POJO schema would be
   }
   ```
 
-- `DynamicJSONRpcResponse`
-  ```java
-  public class DynamicJSONRpcResponse extends JSONRpcResponse {
-    private T result;
-  }
-  ```
-
-The result field will be populated with the JSON serialized value to be returned. The value can range from primitive
-data types (String, int, array) or defined Ethereum objects such as
+The result field will be populated with the value to be returned. Additional POJOs per complex response value should be
+added. The value can range from regular data types (String, int, array) or defined Ethereum objects such as
 
 - [Block](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#block-object)
 - [Log](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#log-object)
@@ -577,7 +571,7 @@ data types (String, int, array) or defined Ethereum objects such as
 The Mirror Node is essentially a full archive node (i.e. it can provide the state of the ledger at present but also at
 multiple snapshots of time). However, its current implementation is limited by the lack of connectivity to the actual
 Gossip based network of consensus nodes. As a result some network specific details are not available to it unless
-provided through the record stream and therefore some `eth_` related methods may not be applicable to it's current
+provided through the record stream and therefore some `eth_` related methods may not be applicable to its current
 iteration. Below is a table of compatibility. All methods are referenced from the Ethereum
 Wikis [JSON-RPC API](https://eth.wiki/json-rpc/API)
 
@@ -622,6 +616,9 @@ Wikis [JSON-RPC API](https://eth.wiki/json-rpc/API)
 | [eth_submitWork](https://eth.wiki/json-rpc/API#eth_submitwork)                                                  | Submits a Proof of Work (Ethash) solution.                                                            | N/A                           | Mirror node is not an EVM bearing client
 | [eth_syncing](https://eth.wiki/json-rpc/API#eth_syncing)                                                        | Returns an object with data about the synchronization status, or false if not synchronizing.          | N/A                           | Mirror node is not an EVM bearing client
 | [eth_uninstallFilter](https://eth.wiki/json-rpc/API#eth_uninstallfilter)                                        | Uninstalls a filter with the specified ID.                                                            | N/A                           | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs
+
+> _Note:_ Methods may become applicable over time should the Mirror Node become connected to a gossip based network or
+> should the REST APIs move from a stateless to stateful design for items such as search
 
 #### RPC Methods
 
