@@ -88,7 +88,10 @@ func (c *compositeTransactionConstructor) addConstructor(constructor transaction
 	c.constructorsByTransactionType[constructor.GetSdkTransactionType()] = constructor
 }
 
-func (c *compositeTransactionConstructor) validate(operations []*rTypes.Operation) (transactionConstructorWithType, *rTypes.Error) {
+func (c *compositeTransactionConstructor) validate(operations []*rTypes.Operation) (
+	transactionConstructorWithType,
+	*rTypes.Error,
+) {
 	if len(operations) == 0 {
 		return nil, errors.ErrEmptyOperations
 	}

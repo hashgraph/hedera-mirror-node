@@ -60,8 +60,9 @@ func configLogger(level string) {
 	log.SetFormatter(&log.TextFormatter{ // Use logfmt for easy parsing by Loki
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
 			parts := strings.Split(frame.File, moduleName)
-			relativeFilename := parts[len(parts)-1]
-			return "", fmt.Sprintf("%s:%d", relativeFilename, frame.Line)
+			relativeFilepath := parts[len(parts)-1]
+			// remove function name, show file path relative to project root
+			return "", fmt.Sprintf("%s:%d", relativeFilepath, frame.Line)
 		},
 		DisableColors: true,
 		FullTimestamp: true,
