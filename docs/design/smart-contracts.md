@@ -384,22 +384,22 @@ Optional filters
 }
 ```
 
-- `access_list` schema is described by [Get Contract Access List](#contract-access-list). This should be retrieved by a
-  join between the `contract_result` and `contract_access_list` tables.
-- `logs` schema is described by [Get Contract Logs](#contract-log). This should be retrieved by a join between
-  the `contract_result` and `contract_log` tables.
-- `internal_transactions` should be retrieved by a join between the `contract_result` and transfer tables
-  (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables.
-- `state-changes` schema is described by [Get State Changes](#contract-state-change). This should be retrieved by a join
-  between the `contract_result` and `contract-state-change` tables.
+- `access_list` should be retrieved by a join between the `contract_result` and `contract_access_list` tables.
+- `logs` should be retrieved by a join between the `contract_result` and `contract_log` tables.
+- `hedera_child_transactions` should be retrieved by a join between the `contract_result` and transfer tables
+  (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables based on child timestamps.
+- `state-changes` should be retrieved by a join between the `contract_result` and `contract-state-change` tables.
 
 > _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractId and timestamp to
 > retrieve the correct contract_result row
 
-> _Note 2:_ Internal transactions issued by HTS precompiled transactions will produce regular HTS transactions.
-> The HTS transaction will contain the transferList that describes the internal transfers to be extracted. The parent
+> _Note 2:_ Child transactions issued by HTS precompiled transactions will produce regular HTS transactions.
+> These differ from EVM internal transactions between contracts.
+> The HTS transactions will contain the transferList that describes the internal transfers to be extracted. The parent
 > transactions `transaction.child_transactions` will denote the range of consensusTimestamps for child transactions
 > i.e. `[parent_timestamp, parent_timestamp + transaction.child_transactions)`
+
+> _Note 3:_ `internal_transactions` will be retrieved from `ContractAction` related information
 
 ### Get Contract Logs
 
@@ -837,14 +837,6 @@ The Mirror Node should additional provide support for this.
 
 ## Open Questions
 
-1. What will externalization of the contract state in the transaction record look like? Still being designed.
-2. How should we allow searching by topics or logs?
-3. How will Hedera transactions triggered from a smart contract be externalized in the record stream? Still being
-   designed. Tentatively, each contract triggered transaction will show up as a separate transaction and record with an
-   incremented consensus timestamp and a parent timestamp populated.
-4. Should we show individual function parameters in a normalized form? We decided against it at this time as it might be
-   a performance concern or require parsing the solidity contract. Can revisit in the future by adding a new field with
-   the normalized structure.
-5. How will internal transactions show up in record stream and will they follow a hierarchy that highlights transfer
-   succession or will it be flattened?
-6. How should non HTS precompiled internal transactions be handled?
+1. What will externalization of the contract call type in the transaction record look like? Still being designed.
+2. How will EVM internal transactions (i.e. non HTS precompiled child transactions) show up in record stream and will
+   they follow a hierarchy that highlights transfer succession or will it be flattened?
