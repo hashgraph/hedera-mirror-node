@@ -192,14 +192,22 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 	}{
 		{name: "Success"},
 		{
-			name:             "MissingMetadataKey",
-			updateOperations: deleteOperationMetadata("key"),
-			expectError:      true,
-		},
-		{
 			name:             "InvalidAccountAddress",
 			updateOperations: updateOperationAccount("x.y.z"),
 			expectError:      true,
+		},
+		{
+			name:             "InvalidCurrencySymbol",
+			updateOperations: updateCurrency(&rTypes.Currency{Symbol: "dummy"}),
+			expectError:      true,
+		},
+		{
+			name: "InvalidCurrencyType",
+			updateOperations: updateCurrency(&rTypes.Currency{
+				Symbol:   "0.0.8231",
+				Metadata: map[string]interface{}{"type": "FUNGIBLE_COMMON"},
+			}),
+			expectError: true,
 		},
 		{
 			name:             "InvalidMetadataKey",
@@ -232,8 +240,18 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
+			name:             "MissingMetadataKey",
+			updateOperations: deleteOperationMetadata("key"),
+			expectError:      true,
+		},
+		{
 			name:             "MultipleOperations",
 			updateOperations: addOperation,
+			expectError:      true,
+		},
+		{
+			name:             "NegativeInitialBalance",
+			updateOperations: negateAmountValue,
 			expectError:      true,
 		},
 		{

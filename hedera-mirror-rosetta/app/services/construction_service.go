@@ -315,7 +315,7 @@ func NewConstructionAPIService(
 
 func addSignature(transaction interfaces.Transaction, pubKey hedera.PublicKey, signature []byte) *rTypes.Error {
 	switch tx := transaction.(type) {
-	// these transaction types are what the construction service supports]
+	// these transaction types are what the construction service supports
 	case *hedera.AccountCreateTransaction:
 		tx.AddSignature(pubKey, signature)
 	case *hedera.TokenAssociateTransaction:
