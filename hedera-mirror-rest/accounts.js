@@ -106,25 +106,24 @@ const getEntityBalanceFullOuterJoinQuery = (
     limitParams
   );
   const entityBalanceQuery = `
-      select ${entityIdField} id,${entityAndBalanceFields}
-      from (
-        select id,${entityFields}
-        from (${accountContractQuery}) e
-        ${entityWhereClause}
-        order by id ${order}
+    select ${entityIdField} id, ${entityAndBalanceFields}
+    from (
+           select id, ${entityFields}
+           from (${accountContractQuery}) e
+             ${entityWhereClause}
+           order by id ${order} ${limitQuery}
+         ) e
+           full outer join (
+      select *
+      from account_balance ab
+      where ${balanceWhereCondition}
+      order by account_id ${order}
         ${limitQuery}
-      ) e
-      full outer join (
-        select *
-        from account_balance ab
-        where ${balanceWhereCondition}
-        order by account_id ${order}
-        ${limitQuery}
-      ) ab
-        on ab.account_id = e.id
-      order by ${entityIdField} ${order}
+    ) ab
+                           on ab.account_id = e.id
+    order by ${entityIdField} ${order}
       ${limitQuery}
-    `;
+  `;
   return {query: entityBalanceQuery, params};
 };
 
@@ -190,14 +189,12 @@ const getEntityBalanceQuery = (
 
   params = utils.mergeParams(...params, limitParams);
   const entityBalanceQuery = `
-      select ${entityIdField} id,${entityAndBalanceFields}
-      from (${accountContractQuery}) e
-      ${joinType} join account_balance ab
-        on ab.account_id = e.id
+    select ${entityIdField} id, ${entityAndBalanceFields}
+    from (${accountContractQuery}) e ${joinType} join account_balance ab
+    on ab.account_id = e.id
       ${whereClause}
-      order by ${entityIdField} ${order}
-      ${limitQuery}
-    `;
+    order by ${entityIdField} ${order} ${limitQuery}
+  `;
   return {query: entityBalanceQuery, params};
 };
 
@@ -229,11 +226,10 @@ const getAccountQuery = (
 
   if (!includeBalance) {
     const entityOnlyQuery = `
-      select id,${entityFields}
+      select id, ${entityFields}
       from (${accountContractQuery}) account_contract
-      ${entityWhereClause}
-      order by id ${order}
-      ${limitQuery}`;
+        ${entityWhereClause}
+      order by id ${order} ${limitQuery}`;
     return {
       query: entityOnlyQuery,
       params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitParams),
@@ -265,24 +261,23 @@ const getAccountQuery = (
 
   const query = `
     with entity_balance as (${entityBalanceQuery}),
-    token_balance as (
-      select
-        tb.account_id,
-        (select jsonb_agg(
-          jsonb_build_object(
-            'token_id', tb.token_id::text,
-            'balance', tb.balance
-          ) order by tb.token_id ${order}
-        )) as token_balances
-      from token_balance tb
-      join entity_balance eb
-        on tb.account_id = eb.id and tb.consensus_timestamp = eb.consensus_timestamp
-      group by tb.account_id
-    )
-    select eb.*,tb.token_balances
+         token_balance as (
+           select tb.account_id,
+                  (jsonb_agg(
+                    jsonb_build_object(
+                      'token_id', tb.token_id::text,
+                      'balance', tb.balance
+                      ) order by tb.token_id ${order}
+                    )) as token_balances
+           from token_balance tb
+                  join entity_balance eb
+                       on tb.account_id = eb.id and tb.consensus_timestamp = eb.consensus_timestamp
+           group by tb.account_id
+         )
+    select eb.*, tb.token_balances
     from entity_balance eb
-    left join token_balance tb
-      on tb.account_id = eb.id
+           left join token_balance tb
+                     on tb.account_id = eb.id
     order by eb.id ${order}
   `;
 
