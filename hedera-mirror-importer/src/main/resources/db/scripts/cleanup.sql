@@ -3,6 +3,7 @@ do
 declare
     t record;
 begin
+execute format(''delete from address_book_entry'');
 for t in select table_name
 from information_schema.tables
 where table_schema = ''public'' and table_name !~ ''.*(flyway|transaction_type|transaction_result|citus_|_\d+).*'' and table_type <> ''VIEW''
