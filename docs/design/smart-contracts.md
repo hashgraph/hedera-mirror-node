@@ -437,8 +437,8 @@ Optional filters
 
 ## JSON-RPC
 
-On the ethereum network, all client nodes implement
-the [Ethereum JSON-RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/ethereum/eth1.0-apis/assembled-spec/openrpc.json&uiSchema%5BappBar%5D%5Bui:splitView%5D=false&uiSchema%5BappBar%5D%5Bui:input%5D=false&uiSchema%5BappBar%5D%5Bui:examplesDropdown%5D=false)
+On the Ethereum network, all client nodes implement
+the [Ethereum JSON-RPC Specification](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/ethereum/eth1.0-apis/assembled-spec/openrpc.json)
 methods for ease of interaction by DApps.
 
 The HyperLedger Besu EVM supports the methods captured
@@ -446,8 +446,8 @@ at [ETH methods](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#e
 
 The Mirror Node should implement a subset of the standard calls used to
 
-- support existing ethereum developers who may call the JSON-RPC endpoints directly
-- encompass Hedera EVM translation logic that can be wrapped by potential web3 modules.
+- support existing Ethereum developers who may call the JSON-RPC endpoints directly
+- encompass Hedera EVM translation logic that can be wrapped by potential Web3 modules.
 
 ### Setup
 
@@ -464,7 +464,7 @@ The Mirror Node should implement a subset of the standard calls used to
 Existing domain classes can be utilized from the `hedera-mirror-common` dependencies. Applicable CRUD repositories can
 be created using Spring based on `hedera-mirror-common` domains to extract information from the database.
 
-### JSON RPC Service
+### JSON-RPC Service
 
 Establish an
 
@@ -475,7 +475,7 @@ Establish an
 #### Request POJOs
 
 Depending on the web dependency used we may have to manually handle input conversion from String to JSON. If so utilize
-[Jackson](https://github.com/FasterXML/jackson) library to create a `JSONRpcRequest` object that each method can parse
+[Jackson](https://github.com/FasterXML/jackson) library to create a `JSONRpcRequest` object that each method can parse.
 
 Requests are typically of the JSON format
 
@@ -553,7 +553,7 @@ An appropriate set of POJO schema would be
   ```
 
 The result field will be populated with the value to be returned. Additional POJOs per complex response value should be
-added. The value can range from regular data types (String, int, array) or defined Ethereum objects such as
+added. The value can range from regular data types (String, int, array) to defined Ethereum objects such as
 
 - [Block](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#block-object)
 - [Log](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#log-object)
@@ -571,10 +571,10 @@ Wikis [JSON-RPC API](https://eth.wiki/json-rpc/API)
 
 | Method                                                                                                          | Description                                                                                           | Mirror Node Support Priority  | Justification                   |
 | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------- | -------------------------------- |
-| [eth_accounts](https://eth.wiki/json-rpc/API#eth_accounts)                                                      | Returns a list of addresses owned by client.                                                          | N/A                           | Mirror node is not an ethereum client                          |
+| [eth_accounts](https://eth.wiki/json-rpc/API#eth_accounts)                                                      | Returns a list of addresses owned by client.                                                          | N/A                           | Mirror node is not an Ethereum client                          |
 | [eth_blockNumber](https://eth.wiki/json-rpc/API#eth_blocknumber)                                                | Returns the index corresponding to the block number of the current chain head.                        | P1*                           | Mirror node is able to return the current record file count. However, this may be inaccurate depending on network load.
-| [eth_call](https://eth.wiki/json-rpc/API#eth_call)                                                              | Invokes a contract function locally and does not change the state of the blockchain.                  | N/A                           | Mirror node is not an ethereum client                          |
-| [eth_coinbase](https://eth.wiki/json-rpc/API#eth_coinbase)                                                      | Returns the client coinbase address. The coinbase address is the account to pay mining rewards to.    | N/A                           | Mirror node is not an ethereum client                          |
+| [eth_call](https://eth.wiki/json-rpc/API#eth_call)                                                              | Invokes a contract function locally and does not change the state of the blockchain.                  | N/A                           | Mirror node is not an Ethereum client                          |
+| [eth_coinbase](https://eth.wiki/json-rpc/API#eth_coinbase)                                                      | Returns the client coinbase address. The coinbase address is the account to pay mining rewards to.    | N/A                           | Mirror node is not an Ethereum client                          |
 | [eth_estimateGas](https://eth.wiki/json-rpc/API#eth_estimategas)                                                | Returns an estimate of the gas required for a transaction to complete.                                | N/A                           | Mirror node is not an EVM bearing client                          |
 | [eth_gasPrice](https://eth.wiki/json-rpc/API#eth_gasprice)                                                      | Returns a percentile gas unit price for the most recent blocks, in Wei.                               | N/A                           | Mirror node is not an EVM bearing client                          |
 | [eth_getBalance](https://eth.wiki/json-rpc/API#eth_getbalance)                                                  | Returns the account balance of the specified address.                                                 | P1*                           | Mirror node can return an accounts balance. However, as of receipt it may be stale for up to 15 mins due to balance file parse rate.
