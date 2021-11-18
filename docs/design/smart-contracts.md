@@ -373,7 +373,8 @@ Optional filters
 ```
 
 - `access_list` should be retrieved by a join between the `contract_result` and `contract_access_list` tables.
-- `block_hash` should be retrieved by a join with the `record_file` table to find the file containing the transaction.
+- `block_hash` should be retrieved by a join with the `record_file` table to find the `file_hash` of the file containing
+  the transaction.
 - `hash` should be retrieved by a join with the `transaction` table
 - `hedera_child_transactions` (when added) will be retrieved by a join between the `contract_result` and transfer tables
   (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables based on child timestamps.
@@ -504,21 +505,29 @@ public class JSONRpcRequest {
 
 Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.org/specification#response_object)
 
-e.g.
+- Successful request response
+  ```json
+  {
+    "id": 1,
+    "jsonrpc": "2.0",
+    "result": "SUCCESS"
+  }
+  ```
 
-```json
-{
-  "error": {
-    "code": -32600,
-    "meaning": "The JSON sent is not a valid Request object.",
-    "message": "Invalid Request"
-  },
-  "id": 1,
-  "jsonrpc": "2.0"
-}
-```
+- Failed request response
+  ```json
+  {
+    "error": {
+      "code": -32600,
+      "meaning": "The JSON sent is not a valid Request object.",
+      "message": "Invalid Request"
+    },
+    "id": 1,
+    "jsonrpc": "2.0"
+  }
+  ```
 
-> _Note:_ `result` data type is dynamic. Also `error` is not present on a successful response.
+> _Note:_ `result` data type is dynamic. Either `result` or `error` must be present in a response, not both.
 
 An appropriate set of POJO schema would be
 
