@@ -71,7 +71,7 @@ class RecordFileParserPerformanceTest extends IntegrationTest {
     }
 
     @Test
-    @Timeout(25)
+    @Timeout(15)
     void parse() {
         recordFiles.forEach(recordFileParser::parse);
         assertThat(recordFileRepository.count()).isEqualTo(recordFiles.size());
