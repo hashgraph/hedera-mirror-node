@@ -58,7 +58,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestNewTransactionConstruc
 
 func (suite *cryptoCreateTransactionConstructorSuite) TestGetOperationType() {
 	h := newCryptoCreateTransactionConstructor()
-	assert.Equal(suite.T(), types.OperationTypeCryptoCreate, h.GetOperationType())
+	assert.Equal(suite.T(), types.OperationTypeCryptoCreateAccount, h.GetOperationType())
 }
 
 func (suite *cryptoCreateTransactionConstructorSuite) TestGetSdkTransactionType() {
@@ -293,6 +293,7 @@ func assertCryptoCreateTransaction(
 	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.AccountCreateTransaction{}, actual)
+	assert.True(t, actual.IsFrozen())
 
 	tx, _ := actual.(*hedera.AccountCreateTransaction)
 	payer := tx.GetTransactionID().AccountID.String()
@@ -314,7 +315,7 @@ func getCryptoCreateOperations() []*rTypes.Operation {
 	amount := &types.HbarAmount{Value: initialBalance}
 	operation := &rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Type:                types.OperationTypeCryptoCreate,
+		Type:                types.OperationTypeCryptoCreateAccount,
 		Account:             payerAccountIdentifier,
 		Amount:              amount.ToRosetta(),
 		Metadata: map[string]interface{}{

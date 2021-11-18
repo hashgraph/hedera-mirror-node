@@ -380,6 +380,7 @@ func assertTokenUpdateTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
+	assert.True(t, actual.IsFrozen())
 	assert.IsType(t, &hedera.TokenUpdateTransaction{}, actual)
 
 	tx, _ := actual.(*hedera.TokenUpdateTransaction)

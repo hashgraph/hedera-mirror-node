@@ -501,6 +501,7 @@ func assertTokenAssociateDissociateTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
+	assert.True(t, actual.IsFrozen())
 	if operations[0].Type == types.OperationTypeTokenAssociate {
 		assert.IsType(t, &hedera.TokenAssociateTransaction{}, actual)
 	} else {

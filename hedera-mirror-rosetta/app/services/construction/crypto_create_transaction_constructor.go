@@ -83,11 +83,16 @@ func (c *cryptoCreateTransactionConstructor) Construct(
 		transaction.SetProxyAccountID(*cryptoCreate.ProxyAccountId)
 	}
 
+	if _, err := transaction.Freeze(); err != nil {
+		log.Errorf("Failed to freeze transaction: %s", err)
+		return nil, nil, errors.ErrTransactionFreezeFailed
+	}
+
 	return transaction, []hedera.AccountID{*signer}, nil
 }
 
 func (c *cryptoCreateTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeCryptoCreate
+	return types.OperationTypeCryptoCreateAccount
 }
 
 func (c *cryptoCreateTransactionConstructor) GetSdkTransactionType() string {

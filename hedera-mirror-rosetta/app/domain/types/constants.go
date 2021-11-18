@@ -23,20 +23,20 @@ package types
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
-	OperationTypeCryptoCreate    = "CRYPTOCREATE"
-	OperationTypeCryptoTransfer  = "CRYPTOTRANSFER"
-	OperationTypeTokenAssociate  = "TOKENASSOCIATE"
-	OperationTypeTokenBurn       = "TOKENBURN"
-	OperationTypeTokenCreate     = "TOKENCREATION"
-	OperationTypeTokenDelete     = "TOKENDELETION"
-	OperationTypeTokenDissociate = "TOKENDISSOCIATE" // #nosec
-	OperationTypeTokenFreeze     = "TOKENFREEZE"
-	OperationTypeTokenGrantKyc   = "TOKENGRANTKYC"
-	OperationTypeTokenMint       = "TOKENMINT"
-	OperationTypeTokenRevokeKyc  = "TOKENREVOKEKYC"
-	OperationTypeTokenUnfreeze   = "TOKENUNFREEZE"
-	OperationTypeTokenUpdate     = "TOKENUPDATE"
-	OperationTypeTokenWipe       = "TOKENWIPE"
+	OperationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
+	OperationTypeCryptoTransfer      = "CRYPTOTRANSFER"
+	OperationTypeTokenAssociate      = "TOKENASSOCIATE"
+	OperationTypeTokenBurn           = "TOKENBURN"
+	OperationTypeTokenCreate         = "TOKENCREATION"
+	OperationTypeTokenDelete         = "TOKENDELETION"
+	OperationTypeTokenDissociate     = "TOKENDISSOCIATE" // #nosec
+	OperationTypeTokenFreeze         = "TOKENFREEZE"
+	OperationTypeTokenGrantKyc       = "TOKENGRANTKYC"
+	OperationTypeTokenMint           = "TOKENMINT"
+	OperationTypeTokenRevokeKyc      = "TOKENREVOKEKYC"
+	OperationTypeTokenUnfreeze       = "TOKENUNFREEZE"
+	OperationTypeTokenUpdate         = "TOKENUPDATE"
+	OperationTypeTokenWipe           = "TOKENWIPE"
 )
 
 const (
@@ -291,10 +291,10 @@ var TransactionTypes = map[int32]string{
 	8:  "CONTRACTCREATEINSTANCE",
 	9:  "CONTRACTUPDATEINSTANCE",
 	10: "CRYPTOADDLIVEHASH",
-	11: "CRYPTOCREATEACCOUNT",
+	11: OperationTypeCryptoCreateAccount,
 	12: "CRYPTODELETE",
 	13: "CRYPTODELETELIVEHASH",
-	14: "CRYPTOTRANSFER",
+	14: OperationTypeCryptoTransfer,
 	15: "CRYPTOUPDATEACCOUNT",
 	16: "FILEAPPEND",
 	17: "FILECREATE",
@@ -309,18 +309,18 @@ var TransactionTypes = map[int32]string{
 	26: "CONSENSUSDELETETOPIC",
 	27: "CONSENSUSSUBMITMESSAGE",
 	28: "UNCHECKEDSUBMIT",
-	29: "TOKENCREATION",
-	31: "TOKENFREEZE",
-	32: "TOKENUNFREEZE",
-	33: "TOKENGRANTKYC",
-	34: "TOKENREVOKEKYC",
-	35: "TOKENDELETION",
-	36: "TOKENUPDATE",
-	37: "TOKENMINT",
-	38: "TOKENBURN",
-	39: "TOKENWIPE",
-	40: "TOKENASSOCIATE",
-	41: "TOKENDISSOCIATE",
+	29: OperationTypeTokenCreate,
+	31: OperationTypeTokenFreeze,
+	32: OperationTypeTokenUnfreeze,
+	33: OperationTypeTokenGrantKyc,
+	34: OperationTypeTokenRevokeKyc,
+	35: OperationTypeTokenDelete,
+	36: OperationTypeTokenUpdate,
+	37: OperationTypeTokenMint,
+	38: OperationTypeTokenBurn,
+	39: OperationTypeTokenWipe,
+	40: OperationTypeTokenAssociate,
+	41: OperationTypeTokenDissociate,
 	42: "SCHEDULECREATE",
 	43: "SCHEDULEDELETE",
 	44: "SCHEDULESIGN",
@@ -339,7 +339,7 @@ var (
 	}
 
 	SupportedOperationTypes = []string{
-		OperationTypeCryptoCreate,
+		OperationTypeCryptoCreateAccount,
 		OperationTypeCryptoTransfer,
 		OperationTypeTokenAssociate,
 		OperationTypeTokenBurn,
