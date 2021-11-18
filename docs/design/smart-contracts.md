@@ -196,6 +196,7 @@ create table if not exists contract_state_change
         "_type": "ProtobufEncoded",
         "key": "7b2233222c2233222c2233227d"
       },
+      "address": "0x0000000000000000000000000000000000001001",
       "auto_renew_period": 7776000,
       "contract_id": "0.0.10001",
       "created_timestamp": "1633466568.31556926",
@@ -205,7 +206,6 @@ create table if not exists contract_state_change
       "memo": "First contract",
       "obtainer_id": null,
       "proxy_account_id": "0.0.100",
-      "solidity_address": "0x0000000000000000000000000000000000001001",
       "timestamp": {
         "from": "1633466568.31556926",
         "to": null
@@ -234,6 +234,7 @@ Optional filters
     "_type": "ProtobufEncoded",
     "key": "7b2233222c2233222c2233227d"
   },
+  "address": "0x0000000000000000000000000000000000001001",
   "auto_renew_period": 7776000,
   "bytecode": "0xc896c66db6d98784cc03807640f3dfd41ac3a48c",
   "contract_id": "0.0.10001",
@@ -244,7 +245,6 @@ Optional filters
   "memo": "First contract",
   "obtainer_id": "0.0.101",
   "proxy_account_id": "0.0.100",
-  "solidity_address": "0x0000000000000000000000000000000000001001",
   "timestamp": {
     "from": "1633466229.96874612",
     "to": "1633466568.31556926"
@@ -272,12 +272,12 @@ Optional filters
         "0.0.1003"
       ],
       "error_message": "",
-      "from": "0.0.1001",
+      "from": "0x0000000000000000000000000000000000001001",
       "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
       "gas_limit": 2500,
       "gas_used": 1000,
       "timestamp": "12345.10001",
-      "to": "0.0.1002"
+      "to": "0x0000000000000000000000000000000000001002"
     }
   ],
   "links": {
@@ -326,7 +326,7 @@ Optional filters
     "0.0.1003"
   ],
   "error_message": "",
-  "from": "0.0.1001",
+  "from": "0x0000000000000000000000000000000000001001",
   "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
   "gas_limit": 2500,
   "gas_used": 1000,
@@ -368,7 +368,7 @@ Optional filters
     }
   ],
   "timestamp": "12345.10001",
-  "to": "0.0.1002"
+  "to": "0x0000000000000000000000000000000000001002"
 }
 ```
 
@@ -398,7 +398,7 @@ Optional filters
 {
   "logs": [
     {
-      "solidity_address": "0x0000000000000000000000000000000000001234",
+      "address": "0x0000000000000000000000000000000000001234",
       "contract_id": "0.0.1234",
       "bloom": "0x1513001083c899b1996ec7fa33621e2c340203f0",
       "data": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
@@ -409,7 +409,7 @@ Optional filters
       ]
     },
     {
-      "solidity_address": "0x0000000000000000000000000000000000001893",
+      "address": "0x0000000000000000000000000000000000001893",
       "contract_id": "0.0.1893",
       "bloom": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "data": "0x1513001083c899b1996ec7fa33621e2c340203f0",
@@ -841,8 +841,8 @@ The Mirror Node should additional provide support for this.
     ```json
       "evm_internal_transactions": [
         {
-          "from": "0.0.1002",
-          "to": "0.0.1003",
+          "from": "0x0000000000000000000000000000000000001002",
+          "to": "0x0000000000000000000000000000000000001003",
           "type": "call_0",
           "value": "20"
         }
