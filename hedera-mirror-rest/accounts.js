@@ -268,12 +268,12 @@ const getAccountQuery = (
     token_balance as (
       select
         tb.account_id,
-        (jsonb_agg(
+        jsonb_agg(
           jsonb_build_object(
             'token_id', tb.token_id::text,
             'balance', tb.balance
           ) order by tb.token_id ${order}
-        )) as token_balances
+        ) as token_balances
       from token_balance tb
       join entity_balance eb
         on tb.account_id = eb.id and tb.consensus_timestamp = eb.consensus_timestamp
