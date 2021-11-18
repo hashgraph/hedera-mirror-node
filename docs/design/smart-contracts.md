@@ -127,8 +127,8 @@ create table if not exists contract_log
 create index if not exists contract_log__id_timestamp
   on contract_log (contract_id, consensus_timestamp);
 
-create index if not exists contract_log__id_topics
-  on contract_log (contract_id, topic0, topic1, topic2, topic3);
+create index if not exists contract_log__id_topics_bloom
+  on contract_log using bloom (contract_id, topic0, topic1, topic2, topic3);
 ```
 
 #### Contract Access List
