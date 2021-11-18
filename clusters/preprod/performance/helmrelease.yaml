@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.31.0'
+      version: '0.31.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -21,9 +21,8 @@ spec:
     crds: CreateReplace
   interval: 90s
   test:
-    enable: true
-    timeout: 5m
-  timeout: 10m
+    enable: false
+    timeout: 16m
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
