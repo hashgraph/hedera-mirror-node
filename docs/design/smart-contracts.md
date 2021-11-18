@@ -121,7 +121,7 @@ create table if not exists contract_log
   topic1              varchar(64) null,
   topic2              varchar(64) null,
   topic3              varchar(64) null,
-  primary key (consensus_timestamp, contract_id, index)
+  primary key (consensus_timestamp, index)
 );
 
 create index if not exists contract_log__id_timestamp
@@ -333,7 +333,7 @@ Optional filters
   "hash": "0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
   "logs": [
     {
-      "contract_id": "0.0.1234",
+      "address": "0x0000000000000000000000000000000000001f41",
       "bloom": "0x1513001083c899b1996ec7fa33621e2c340203f0",
       "data": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "topics": [
@@ -342,26 +342,28 @@ Optional filters
       ]
     },
     {
-      "contract_id": "0.0.1893",
+      "address": "0x0000000000000000000000000000000000001f42",
       "bloom": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "data": "0x1513001083c899b1996ec7fa33621e2c340203f0",
       "topics": [
-        "af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0",
-        "0000000000000000000000000000000000000000000000000000000000000765"
+        "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0",
+        "0x0000000000000000000000000000000000000000000000000000000000000765"
       ]
     }
   ],
   "state_changes": [
     {
-      "slot": "0x0000000000000000000000000000000000000000000000000000000000000002",
+      "after": "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0",
       "before": "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5",
-      "after": "0x000000000000000000000000000000000000000000c2a8c80ee5fda74d69c302",
+      "address": "0x0000000000000000000000000000000000001f41",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000002",
       "timestamp": "12345.10001"
     },
     {
-      "slot": "0xe1b094dec1b7d360498fa8130bf1944104b7b5d8a48f9ca88c3fc0f96c2d7225",
-      "before": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "after": "0x000000000000000000000000000000000000000000000001eafa3aaed1d27246",
+      "before": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "address": "0x0000000000000000000000000000000000001f42",
+      "slot": "0xe1b094dec1b7d360498fa8130bf1944104b7b5d8a48f9ca88c3fc0f96c2d7225",
       "timestamp": "12345.10001"
     }
   ],
@@ -371,10 +373,12 @@ Optional filters
 ```
 
 - `access_list` should be retrieved by a join between the `contract_result` and `contract_access_list` tables.
+- `block_hash` should be retrieved by a join with the `record_file` table to find the file containing the transaction.
+- `hash` should be retrieved by a join with the `transaction` table
 - `hedera_child_transactions` (when added) will be retrieved by a join between the `contract_result` and transfer tables
   (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables based on child timestamps.
 - `logs` should be retrieved by a join between the `contract_result` and `contract_log` tables.
-- `state-changes` should be retrieved by a join between the `contract_result` and `contract-state-change` tables.
+- `state-changes` should be retrieved by a join between the `contract_result` and `contract_state_change` tables.
 
 > _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractId and timestamp to
 > retrieve the correct contract_result row
@@ -451,7 +455,7 @@ The Mirror Node should implement a subset of the standard calls used to
 - Create a new Maven module `hedera-mirror-web3`
 - Create a new Maven module `hedera-mirror-common` that encompasses all domain POJOs and repositories
 - Use [JSON-RPC for Java](https://github.com/briandilley/jsonrpc4j) or Spring WebFlux to establish a JSON-RPC server
-  with [JSON-RPC 2.0 specification] (https://www.jsonrpc.org/specification) support to service rpc calls
+  with [JSON-RPC 2.0 specification](https://www.jsonrpc.org/specification) support to service rpc calls
 - Use `spring-boot-starter-data-jdbc` for database access
 - Create a Helm child chart `hedera-mirror-web3` and add to Kubernetes deployment flow
 - Add to CI and utilize a Postman collection for endpoint verification
@@ -461,12 +465,12 @@ The Mirror Node should implement a subset of the standard calls used to
 Existing domain classes can be utilized from the `hedera-mirror-common` dependencies. Applicable CRUD repositories can
 be created using Spring based on `hedera-mirror-common` domains to extract information from the database.
 
-### ETH RPC Service
+### JSON RPC Service
 
 Establish an
 
-- `EthRpcService` interface that describes the supported rpc methods
-- `EthRpcServiceImpl` class that contains the logic to service the rpc methods called. Methods query the appropriate
+- `JSONRpcService` interface that describes the supported rpc methods
+- `JSONRpcServiceImpl` class that contains the logic to service the rpc methods called. Methods query the appropriate
   `account_balance`, `contract`, `record_file`, and `transaction` tables returning data in expected schema formats.
 
 #### Request POJOs
@@ -476,19 +480,19 @@ Depending on the web dependency used we may have to manually handle input conver
 
 Requests are typically of the JSON format
 
-  ```json
-  {
+```json
+{
   "id": 1,
   "jsonrpc": "2.0",
   "method": "",
   "params": []
 }
-  ```
+```
 
 An appropriate POJO schema would be
 
-  ```java
-  public class JSONRpcRequest {
+```java
+public class JSONRpcRequest {
   private long id;
   private String jsonrpc;
   private String method;
@@ -510,8 +514,7 @@ e.g.
     "message": "Invalid Request"
   },
   "id": 1,
-  "jsonrpc": "2.0",
-  "result": "SUCCESS"
+  "jsonrpc": "2.0"
 }
 ```
 
@@ -608,7 +611,7 @@ Wikis [JSON-RPC API](https://eth.wiki/json-rpc/API)
 
 Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON RPC API methods to be implemented.
 
-- blockNumber
+- `blockNumber`
 
   Request
   ```shell
@@ -623,7 +626,7 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
   }
   ```
 
-- getBalance *
+- `getBalance`
 
   Request
   ```shell
@@ -638,7 +641,7 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
   }
   ```
 
-- getCode*
+- `getCode`
 
   Request
   ```shell
@@ -653,7 +656,7 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
   }
   ```
 
-- getLogs*
+- `getLogs`
 
   Request
   ```shell
@@ -678,7 +681,7 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
   }
   ```
 
-- getTransactionByHash*
+- `getTransactionByHash`
 
   Request
   ```shell
@@ -708,7 +711,7 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
   }
   ```
 
-- getTransactionReceipt*
+- `getTransactionReceipt`
 
   Request
   ```shell
@@ -863,3 +866,23 @@ The Mirror Node should additional provide support for this.
       }
     }
     ```
+
+## Answered Questions
+
+1. How should we allow searching by topics or logs? Ans: By topics, with timestamp filter on logs.
+2. How will Hedera transactions triggered from a smart contract be externalized in the record stream? Ans: Each contract
+   triggered transaction will show up as a separate transaction and record with an incremented consensus timestamp and a
+   parent timestamp populated.
+3. Should we show individual function parameters in a normalized form? Ans: We decided against it at this time as it
+   might be a performance concern or require parsing the solidity contract. Can revisit in the future by adding a new
+   field with the normalized structure.
+4. Should `from`, `to`, `transactionHash` and `blockNumber` be included in `api/v1/contract/{id}/result/{timestamp}`
+   as it maps closely to
+   Ethereum's [transactionReceipt](https://web3js.readthedocs.io/en/v1.2.11/web3-eth.html#gettransaction)
+   Ans: Yes, as we can easily extract from transaction and record tables.
+5. Would a custom `api/v1/evm` or `api/v1/eth` endpoint be valuable and needed to provide a separation of concern
+   between Hedera and Ethereum logic. Ans: Though valuable to the separation of concern it brings too much overhead, and
+   the endpoint themselves aren't known to existing developers. Better to put effort on existing endpoints and JSON-RPC
+6. With the use of `transaction_id` to retrieve entity metadata rows should we consider a caching and or db mapping to
+   extract the entityId and timestamp? Ans: For now caching and internal db mapping not needed. We'll simply do 2 calls
+   to get transaction info and then contract details.
