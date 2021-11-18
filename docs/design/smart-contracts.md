@@ -399,7 +399,6 @@ Optional filters
   "logs": [
     {
       "address": "0x0000000000000000000000000000000000001234",
-      "contract_id": "0.0.1234",
       "bloom": "0x1513001083c899b1996ec7fa33621e2c340203f0",
       "data": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "timestamp": "12345.10002",
@@ -410,7 +409,6 @@ Optional filters
     },
     {
       "address": "0x0000000000000000000000000000000000001893",
-      "contract_id": "0.0.1893",
       "bloom": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "data": "0x1513001083c899b1996ec7fa33621e2c340203f0",
       "timestamp": "12345.10002",
