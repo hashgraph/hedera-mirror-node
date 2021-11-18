@@ -32,8 +32,9 @@ if [[ -z "${network_identifier}" ]]; then
 fi
 
 SECONDS=0
+max_wait_seconds=${MAX_WAIT_SECONDS:-120}
 
-while [[ "${SECONDS}" -lt 90 ]];
+while [[ "${SECONDS}" -lt "${max_wait_seconds}" ]];
 do
     body="{ \"network_identifier\": ${network_identifier}, \"metadata\": {} }"
     response=$(curl -sL -w "%{http_code}" -d "${body}" -i "http://localhost:5700/network/status")
