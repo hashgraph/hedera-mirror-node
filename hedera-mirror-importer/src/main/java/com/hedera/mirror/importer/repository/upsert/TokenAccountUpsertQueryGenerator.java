@@ -45,8 +45,7 @@ public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerat
             TokenAccount_.AUTOMATIC_ASSOCIATION, TokenAccount_.CREATED_TIMESTAMP);
     private final String finalTableName = "token_account";
     private final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> v1ConflictIdColumns = List.of(TokenAccountId_.ACCOUNT_ID, TokenAccountId_.TOKEN_ID);
-    private final List<String> v2ConflictIdColumns = v1ConflictIdColumns;
+    private final List<String> conflictIdColumns = List.of(TokenAccountId_.ACCOUNT_ID, TokenAccountId_.TOKEN_ID);
 
     @Getter(lazy = true)
     @SuppressWarnings("java:S3740")

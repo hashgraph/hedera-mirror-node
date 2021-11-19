@@ -1,7 +1,9 @@
 -------------------
--- Add constraints and indexes to tables
--- When adding primary keys citus requires an explicit statement of the constraints name for distributed tables
+-- Add constraints and indexes to tables.
 -------------------
+
+-- use sequential, avoid error "The index name ... on a shard is too long and could lead to deadlocks when executed ..."
+set local citus.multi_shard_modify_mode to 'sequential';
 
 -- assessed_custom_fee
 create index if not exists assessed_custom_fee__consensus_timestamp
@@ -9,27 +11,27 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 
 -- account_balance
 alter table account_balance
-    add primary key (consensus_timestamp, account_id);
+    add constraint account_balance__pk primary key (consensus_timestamp, account_id);
 create index if not exists account_balance__account_timestamp
     on account_balance (account_id desc, consensus_timestamp desc);
 
 -- account_balance_file
 alter table account_balance_file
-    add primary key (consensus_timestamp);
+    add constraint account_balance_file__pk primary key (consensus_timestamp);
 create unique index if not exists account_balance_file__name
-    on account_balance_file (name, consensus_timestamp desc);
+    on account_balance_file (name);
 
 -- address_book
 alter table address_book
-    add primary key (start_consensus_timestamp);
+    add constraint address_book__pk primary key (start_consensus_timestamp);
 
 -- address_book_entry
 alter table address_book_entry
-    add primary key (consensus_timestamp, node_id);
+    add constraint address_book_entry__pk primary key (consensus_timestamp, node_id);
 
 -- address_book_service_endpoint
 alter table address_book_service_endpoint
-    add primary key (consensus_timestamp, node_id, ip_address_v4, port);
+    add constraint address_book_service_endpoint__pk primary key (consensus_timestamp, node_id, ip_address_v4, port);
 
 -- contract
 alter table if exists contract
@@ -49,11 +51,11 @@ create index if not exists contract_history__timestamp_range on contract_history
 
 -- contract_log
 alter table if exists contract_log
-    add primary key (consensus_timestamp, index);
+    add constraint contract_log__pk primary key (consensus_timestamp, index, payer_account_id);
 
 -- contract_result
 alter table if exists contract_result
-    add primary key (consensus_timestamp);
+    add constraint contract_result__pk primary key (consensus_timestamp, payer_account_id);
 
 -- crypto_transfer
 create index if not exists crypto_transfer__consensus_timestamp
@@ -87,7 +89,7 @@ create unique index if not exists entity__shard_realm_num
 
 -- entity_history
 alter table if exists entity_history
-    add primary key (id, timestamp_range);
+    add constraint entity_history__pk primary key (id, timestamp_range);
 alter table if exists entity_history
     add constraint entity_history__type_check
         check (type <> 'CONTRACT');
@@ -95,23 +97,23 @@ create index if not exists entity_history__timestamp_range on entity_history usi
 
 -- event_file
 alter table event_file
-    add primary key (consensus_end);
-create unique index if not exists event_file__hash
-    on event_file (hash, consensus_end);
+    add constraint event_file__pk primary key (consensus_end, node_account_id);
+create index if not exists event_file__hash
+    on event_file (hash);
 
 -- file_data
 alter table file_data
-    add primary key (consensus_timestamp);
+    add constraint file_data__pk primary key (consensus_timestamp, entity_id);
 create index if not exists file_data__id_timestamp
     on file_data (entity_id, consensus_timestamp);
 
 -- live_hash
 alter table live_hash
-    add primary key (consensus_timestamp);
+    add constraint live_hash__pk primary key (consensus_timestamp);
 
 -- nft
 alter table nft
-    add primary key (token_id, serial_number, created_timestamp);
+    add constraint nft__pk primary key (token_id, serial_number);
 create index if not exists nft__account_token on nft (account_id, token_id);
 
 -- nft_transfer
@@ -124,33 +126,31 @@ create index if not exists non_fee_transfer__consensus_timestamp
 
 -- record_file
 alter table record_file
-    add primary key (consensus_end);
-create unique index if not exists record_file__index
-    on record_file (index, consensus_end); -- have to add consensus_end due to partitioning
-create unique index if not exists record_file__hash
-    on record_file (hash, consensus_end); -- have to add consensus_end due to partitioning
+    add constraint record_file__pk primary key (consensus_end, node_account_id);
+create index if not exists record_file__index_node
+    on record_file (index);
+create index if not exists record_file__hash_node
+    on record_file (hash);
 create index if not exists record_file__prev_hash
     on record_file (prev_hash);
 
 -- schedule
-alter table if exists schedule
-    add primary key (schedule_id);
+alter table schedule
+    add constraint schedule__pk primary key (schedule_id);
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
 -- token
 alter table token
-    add primary key (created_timestamp);
-create unique index if not exists token__id_timestamp
-    on token (token_id, created_timestamp);
+    add constraint token__pk primary key (token_id);
 
 -- token_account
 alter table token_account
-    add primary key (account_id, token_id, modified_timestamp);
+    add constraint token_account__pk primary key (account_id, token_id, modified_timestamp);
 
 -- token_balance
 alter table token_balance
-    add primary key (consensus_timestamp, account_id, token_id);
+    add constraint token_balance__pk primary key (consensus_timestamp, account_id, token_id);
 create index if not exists token_balance__timestamp_token
     on token_balance (consensus_timestamp desc, token_id);
 
@@ -162,27 +162,27 @@ create index if not exists token_transfer__account_timestamp
 
 -- topic_message
 alter table if exists topic_message
-    add primary key (consensus_timestamp);
+    add constraint topic_message__pk primary key (consensus_timestamp, topic_id);
 create index if not exists topic_message__topic_id_timestamp
     on topic_message (topic_id, consensus_timestamp);
-create unique index if not exists topic_message__topic_id_seqnum_timestamp
-    on topic_message (topic_id, sequence_number, consensus_timestamp);
--- have to add consensus_timestamp when creating unique indexes due to partitioning
+create unique index if not exists topic_message__topic_id_seqnum
+    on topic_message (topic_id, sequence_number);
 
 -- transaction
 alter table if exists transaction
-    add primary key (consensus_timestamp);
+    add constraint transaction__pk primary key (consensus_timestamp, payer_account_id);
 create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
 create index if not exists transaction_type
-    on transaction (type, consensus_timestamp desc);
+    on transaction (type);
 
 -- transaction_signature
 create index if not exists transaction_signature__entity_id
     on transaction_signature (entity_id desc, consensus_timestamp desc);
-
-create unique index if not exists transaction_signature__timestamp_public_key_prefix
+create index if not exists transaction_signature__timestamp_public_key_prefix
     on transaction_signature (consensus_timestamp desc, public_key_prefix);
 
+-- revert to default
+set local citus.multi_shard_modify_mode to 'parallel';

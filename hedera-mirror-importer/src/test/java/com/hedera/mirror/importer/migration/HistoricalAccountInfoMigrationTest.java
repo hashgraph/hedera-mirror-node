@@ -112,7 +112,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .allMatch(e -> e.getExpirationTimestamp() > 0)
                 .allMatch(e -> e.getKey().length > 0)
                 .map(Entity::getNum)
-                .containsExactly(entity1.getNum(), entity2.getNum(), entity3.getNum());
+                .containsExactlyInAnyOrder(entity1.getNum(), entity2.getNum(), entity3.getNum());
     }
 
     @Test

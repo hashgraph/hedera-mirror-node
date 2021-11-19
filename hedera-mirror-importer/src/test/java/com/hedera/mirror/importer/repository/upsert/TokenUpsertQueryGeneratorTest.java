@@ -25,9 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.EnabledIfV1;
-
-@EnabledIfV1
 class TokenUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     @Resource
     private TokenUpsertQueryGenerator tokenRepositoryCustom;
