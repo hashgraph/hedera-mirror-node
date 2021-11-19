@@ -69,7 +69,7 @@ func configLogger(level string) {
 	})
 	log.SetLevel(logLevel)
 	log.SetOutput(os.Stdout)
-	log.SetReportCaller(true)
+	log.SetReportCaller(logLevel >= log.DebugLevel)
 }
 
 // newBlockchainOnlineRouter creates a Mux http.Handler from a collection
