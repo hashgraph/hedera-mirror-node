@@ -42,6 +42,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
+  // await loadContractResultss(testDataJson.contractResults);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -91,6 +92,16 @@ const loadContracts = async (contracts) => {
 
   for (const contract of contracts) {
     await addContract(contract);
+  }
+};
+
+const loadContractResults = async (contractResults) => {
+  if (contractResults == null) {
+    return;
+  }
+
+  for (const contractResult of contractResults) {
+    await addContractResult(contractResult);
   }
 };
 
@@ -565,6 +576,49 @@ const addContract = async (contract) => {
   );
 };
 
+const addContractResult = async (contractResult) => {
+  const insertFields = [
+    'amount',
+    'bloom',
+    'call_result',
+    'consensus_timestamp',
+    'contract_id',
+    'created_contract_ids',
+    'error_message',
+    'function_parameters',
+    'function_result',
+    'gas_limit',
+    'gas_used',
+    'payer_account_id',
+  ];
+  const positions = _.range(1, insertFields.length + 1)
+    .map((position) => `$${position}`)
+    .join(',');
+
+  contractResult = {
+    amount: 0,
+    bloom: null,
+    call_result: null,
+    consensus_timestamp: 1234510001,
+    contract_id: 0,
+    created_contract_ids: [],
+    error_message: '',
+    function_parameters: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    function_result: null,
+    gas_limit: 1000,
+    gas_used: 10,
+    payer_account_id: 101,
+    ...contractResult,
+  };
+
+  contractResult.created_contract_ids.push(contractResult.contract_id + 1000);
+
+  await sqlConnection.query(
+    `insert into contract_result (${insertFields.join(',')}) values (${positions})`,
+    insertFields.map((name) => contractResult[name])
+  );
+};
+
 const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
@@ -810,6 +864,7 @@ const addNft = async (nft) => {
 
 module.exports = {
   addAccount,
+  addContractResult,
   addCryptoTransaction,
   addNft,
   addToken,

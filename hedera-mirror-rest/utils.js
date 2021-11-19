@@ -336,7 +336,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
   const equalValues = new Set();
   for (const paramValue of paramValues) {
     const opAndValue = parseOperatorAndValueFromQueryParam(paramValue);
-    if (opAndValue === null) {
+    if (_.isNil(opAndValue)) {
       continue;
     }
     const processedValue = processValue(opAndValue.value);
@@ -345,7 +345,7 @@ const parseParams = (paramValues, processValue, processQuery, allowMultiple) => 
       equalValues.add(processedValue);
     } else {
       const queryAndValues = processQuery(opAndValue.op, processedValue);
-      if (queryAndValues !== null) {
+      if (!_.isNil(queryAndValues)) {
         partialQueries.push(queryAndValues[0]);
         if (queryAndValues[1]) {
           values.push(...queryAndValues[1]);
@@ -597,7 +597,7 @@ const mergeParams = (initial, ...params) => {
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
 const nsToSecNs = (ns, sep = '.') => {
-  if (ns === null) {
+  if (_.isNil(ns)) {
     return null;
   }
 
@@ -643,7 +643,7 @@ const randomString = async (length) => {
  * @return {String} Converted hex string
  */
 const toHexString = (byteArray, addPrefix = false) => {
-  if (byteArray === null) {
+  if (_.isNil(byteArray)) {
     return null;
   }
 
@@ -714,7 +714,7 @@ const encodeBinary = (buffer, encoding) => {
     charEncoding = constants.characterEncoding.UTF8;
   }
 
-  return buffer === null ? null : buffer.toString(charEncoding);
+  return _.isNil(buffer) ? null : buffer.toString(charEncoding);
 };
 
 /**
@@ -723,7 +723,7 @@ const encodeBinary = (buffer, encoding) => {
  * @returns {Any} representation of math.bignumber value of parameter or null if null
  */
 const getNullableNumber = (num) => {
-  return num == null ? null : `${num}`;
+  return _.isNil(num) ? null : `${num}`;
 };
 
 /**
@@ -753,7 +753,7 @@ const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) 
  */
 const buildFilters = (query) => {
   const filterObject = [];
-  if (query === null) {
+  if (_.isNil(query)) {
     return null;
   }
 

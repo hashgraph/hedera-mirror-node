@@ -30,6 +30,7 @@ const filterKeys = {
   CONTRACT_ID: 'contract.id',
   CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
+  FROM: 'from',
   ENTITY_PUBLICKEY: 'publickey',
   LIMIT: 'limit',
   ORDER: 'order',

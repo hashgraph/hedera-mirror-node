@@ -20,8 +20,14 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  NftService: require('./nftService'),
-  TokenService: require('./tokenService'),
-};
+// external libraries
+const {Router} = require('@awaitjs/express');
+const router = Router();
+
+const contracts = require('../controllers/contractsController');
+
+router.getAsync(`/`, contracts.getContracts);
+router.getAsync(`/:contractId`, contracts.getContractById);
+router.getAsync(`/:contractId/results`, contracts.getContractResultsById);
+
+module.exports = router;
