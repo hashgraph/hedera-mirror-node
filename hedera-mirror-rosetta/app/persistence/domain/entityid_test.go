@@ -49,6 +49,42 @@ func TestEntityIdIsNotZero(t *testing.T) {
 	assert.False(t, entityId.IsZero())
 }
 
+func TestEntityIdScan(t *testing.T) {
+	var tests = []struct {
+		name     string
+		value    interface{}
+		expected *EntityId
+	}{
+		{
+			name:     "Success",
+			value:    int64(100),
+			expected: &EntityId{EntityNum: 100, EncodedId: 100},
+		},
+		{
+			name:     "InvalidType",
+			value:    "100",
+			expected: nil,
+		},
+		{
+			name:     "InvalidEncodedId",
+			value:    int64(-1),
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := &EntityId{}
+			err := actual.Scan(tt.value)
+			if tt.expected != nil {
+				assert.Equal(t, tt.expected, actual)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
+
 func TestEntityIdString(t *testing.T) {
 	entityId := EntityId{EntityNum: 7, EncodedId: 7}
 
@@ -151,6 +187,20 @@ func TestEntityIdUnmarshalJSONThrows(t *testing.T) {
 			assert.Error(t, err)
 		})
 	}
+}
+
+func TestEntityIdValueZero(t *testing.T) {
+	entityId := EntityId{}
+	actual, err := entityId.Value()
+	assert.NoError(t, err)
+	assert.Equal(t, nil, actual)
+}
+
+func TestEntityIdValueNonZero(t *testing.T) {
+	entityId := MustDecodeEntityId(600)
+	actual, err := entityId.Value()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(600), actual)
 }
 
 func TestEntityIdEncoding(t *testing.T) {

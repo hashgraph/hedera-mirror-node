@@ -111,11 +111,6 @@ func TestTokenTransferGetAmount(t *testing.T) {
 	assert.Equal(t, getFungibleTokenAmount(10, 3, tokenId1), tokenTransfer.getAmount())
 }
 
-// func TestTokenGetAmount(t *testing.T) {
-// 	token := token{Decimals: 5, TokenId: tokenId2}
-// 	assert.Equal(t, &types.TokenAmount{Decimals: 5, TokenId: tokenId2}, token.getAmount())
-// }
-
 func TestShouldFailConstructAccount(t *testing.T) {
 	data := int64(-1)
 	expected := errors.ErrInternalServerError
@@ -183,6 +178,7 @@ func assertTransactions(t *testing.T, expected, actual []*types.Transaction) {
 	for txHash, actualTx := range actualTransactionMap {
 		assert.Contains(t, expectedTransactionMap, txHash)
 		expectedTx := expectedTransactionMap[txHash]
+		assert.Equal(t, expectedTx.EntityId, actualTx.EntityId)
 		assert.ElementsMatch(t, expectedTx.Operations, actualTx.Operations)
 	}
 }
@@ -203,8 +199,7 @@ func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
 
 func (suite *transactionRepositorySuite) TestTypesAsArray() {
 	t := NewTransactionRepository(dbClient)
-	actual, err := t.TypesAsArray(defaultContext)
-	assert.Nil(suite.T(), err)
+	actual := t.TypesAsArray()
 	assert.NotEmpty(suite.T(), actual)
 }
 
@@ -458,7 +453,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	operationType = types.OperationTypeTokenCreate
 	expectedTransaction3 := &types.Transaction{
-		Hash: "0xaaccdd",
+		EntityId: &tokenId2,
+		Hash:     "0xaaccdd",
 		Operations: []*types.Operation{
 			{Account: firstAccount, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
 			{Account: nodeAccount, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
@@ -499,7 +495,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		"initial_supply": int64(0),
 	}
 	expectedTransaction4 := &types.Transaction{
-		Hash: "0xaa1122",
+		EntityId: &tokenId3,
+		Hash:     "0xaa1122",
 		Operations: []*types.Operation{
 			{Account: firstAccount, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
 			{Account: nodeAccount, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
@@ -526,7 +523,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		nftTransfers)
 	operationType = types.OperationTypeTokenMint
 	expectedTransaction5 := &types.Transaction{
-		Hash: "0xaa1133",
+		EntityId: &tokenId3,
+		Hash:     "0xaa1133",
 		Operations: []*types.Operation{
 			{Account: firstAccount, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
 			{Account: nodeAccount, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
@@ -548,7 +546,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	nftTransfers = []domain.NftTransfer{
 		{consensusTimestamp, firstAccount.EntityId, &secondAccount.EntityId, &firstAccount.EntityId, 1, tokenId3},
 	}
-	addTransaction(dbClient, consensusTimestamp, &firstAccount.EntityId, &nodeAccount.EntityId, firstAccount.EntityId,
+	addTransaction(dbClient, consensusTimestamp, nil, &nodeAccount.EntityId, firstAccount.EntityId,
 		22, []byte{0xaa, 0x11, 0x66}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil,
 		nil, nftTransfers)
 	operationType = types.OperationTypeCryptoTransfer

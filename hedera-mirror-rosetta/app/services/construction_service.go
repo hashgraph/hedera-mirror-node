@@ -220,10 +220,7 @@ func (c *constructionAPIService) ConstructionPreprocess(
 		requiredPublicKeys = append(requiredPublicKeys, &rTypes.AccountIdentifier{Address: signer.String()})
 	}
 
-	return &rTypes.ConstructionPreprocessResponse{
-		Options:            make(map[string]interface{}),
-		RequiredPublicKeys: requiredPublicKeys,
-	}, nil
+	return &rTypes.ConstructionPreprocessResponse{RequiredPublicKeys: requiredPublicKeys}, nil
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.
@@ -251,7 +248,6 @@ func (c *constructionAPIService) ConstructionSubmit(
 		TransactionIdentifier: &rTypes.TransactionIdentifier{
 			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(hash[:])),
 		},
-		Metadata: nil,
 	}, nil
 }
 
@@ -320,6 +316,8 @@ func NewConstructionAPIService(
 func addSignature(transaction interfaces.Transaction, pubKey hedera.PublicKey, signature []byte) *rTypes.Error {
 	switch tx := transaction.(type) {
 	// these transaction types are what the construction service supports
+	case *hedera.AccountCreateTransaction:
+		tx.AddSignature(pubKey, signature)
 	case *hedera.TokenAssociateTransaction:
 		tx.AddSignature(pubKey, signature)
 	case *hedera.TokenBurnTransaction:
@@ -375,6 +373,8 @@ func unmarshallTransactionFromHexString(transactionString string) (interfaces.Tr
 
 	switch tx := transaction.(type) {
 	// these transaction types are what the construction service supports
+	case hedera.AccountCreateTransaction:
+		return &tx, nil
 	case hedera.TokenAssociateTransaction:
 		return &tx, nil
 	case hedera.TokenBurnTransaction:

@@ -53,10 +53,6 @@ func (n *networkAPIService) NetworkOptions(
 	ctx context.Context,
 	request *rTypes.NetworkRequest,
 ) (*rTypes.NetworkOptionsResponse, *rTypes.Error) {
-	operationTypes, err := n.TypesAsArray(ctx)
-	if err != nil {
-		return nil, err
-	}
 	operationStatuses := make([]*rTypes.OperationStatus, 0, len(types.TransactionResults))
 	for value, name := range types.TransactionResults {
 		operationStatuses = append(operationStatuses, &rTypes.OperationStatus{
@@ -69,7 +65,7 @@ func (n *networkAPIService) NetworkOptions(
 		Version: n.version,
 		Allow: &rTypes.Allow{
 			OperationStatuses:       operationStatuses,
-			OperationTypes:          operationTypes,
+			OperationTypes:          n.TypesAsArray(),
 			Errors:                  errors.Errors,
 			HistoricalBalanceLookup: true,
 		},

@@ -71,11 +71,9 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 		{name: "SuccessNFT", tokenType: domain.TokenTypeNonFungibleUnique},
 		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{
-			name: "EmptyOperations",
-			updateOperations: func([]*rTypes.Operation) []*rTypes.Operation {
-				return make([]*rTypes.Operation, 0)
-			},
-			expectError: true,
+			name:             "EmptyOperations",
+			updateOperations: getEmptyOperations,
+			expectError:      true,
 		},
 	}
 
@@ -360,6 +358,7 @@ func assertTokenCreateTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
+	assert.True(t, actual.IsFrozen())
 	assert.IsType(t, &hedera.TokenCreateTransaction{}, actual)
 
 	tx, _ := actual.(*hedera.TokenCreateTransaction)

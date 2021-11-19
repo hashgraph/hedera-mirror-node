@@ -28,14 +28,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	entityId = domain.MustDecodeEntityId(100)
+	status   = "pending"
+)
+
 func exampleTransaction() *Transaction {
 	return &Transaction{
-		Hash: "somehash",
+		EntityId: &entityId,
+		Hash:     "somehash",
 		Operations: []*Operation{
 			{
 				Index:   1,
 				Type:    "transfer",
-				Status:  "pending",
+				Status:  status,
 				Account: Account{domain.EntityId{}},
 				Amount:  &HbarAmount{Value: int64(400)},
 			},
@@ -44,7 +50,6 @@ func exampleTransaction() *Transaction {
 }
 
 func expectedTransaction() *types.Transaction {
-	status := "pending"
 	return &types.Transaction{
 		TransactionIdentifier: &types.TransactionIdentifier{Hash: "somehash"},
 		Operations: []*types.Operation{
@@ -56,16 +61,33 @@ func expectedTransaction() *types.Transaction {
 				Amount:              &types.Amount{Value: "400", Currency: CurrencyHbar},
 			},
 		},
+		Metadata: map[string]interface{}{
+			"entity_id": entityId.String(),
+		},
 	}
 }
 
 func TestToRosettaTransaction(t *testing.T) {
-	// given:
-	expectedTransaction := expectedTransaction()
+	// given
+	expected := expectedTransaction()
 
-	// when:
-	rosettaTransaction := exampleTransaction().ToRosetta()
+	// when
+	actual := exampleTransaction().ToRosetta()
 
-	// then:
-	assert.Equal(t, expectedTransaction, rosettaTransaction)
+	// then
+	assert.Equal(t, expected, actual)
+}
+
+func TestToRosettaTransactionNoEntityId(t *testing.T) {
+	// given
+	expected := expectedTransaction()
+	expected.Metadata = nil
+
+	// when
+	transaction := exampleTransaction()
+	transaction.EntityId = nil
+	actual := transaction.ToRosetta()
+
+	// then
+	assert.Equal(t, expected, actual)
 }

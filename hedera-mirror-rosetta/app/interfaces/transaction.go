@@ -28,6 +28,9 @@ type Transaction interface {
 	// Execute submits the Transaction to the network using client
 	Execute(client *hedera.Client) (hedera.TransactionResponse, error)
 
+	// IsFrozen returns if the transaction is frozen
+	IsFrozen() bool
+
 	// GetNodeAccountIDs returns the node accounts ids set for the Transaction
 	GetNodeAccountIDs() []hedera.AccountID
 

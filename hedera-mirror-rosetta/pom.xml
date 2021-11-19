@@ -54,7 +54,7 @@
                         <id>default-test</id>
                         <configuration>
                             <buildFlags>
-                                <flag>-coverpkg=./...</flag>
+                                <flag>-coverpkg=./app/...</flag>
                                 <flag>-coverprofile=coverage.txt</flag>
                                 <flag>-covermode=atomic</flag>
                                 <flag>-race</flag>

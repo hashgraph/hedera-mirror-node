@@ -629,7 +629,6 @@ func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
 func TestConstructionPreprocess(t *testing.T) {
 	// given:
 	expected := &types.ConstructionPreprocessResponse{
-		Options:            make(map[string]interface{}),
 		RequiredPublicKeys: []*types.AccountIdentifier{{Address: defaultCryptoAccountId1}},
 	}
 	mockConstructor := &mocks.MockTransactionConstructor{}
@@ -668,6 +667,10 @@ func freezeTransaction(transaction interfaces.Transaction) {
 
 	var err error
 	switch tx := transaction.(type) {
+	case *hedera.AccountCreateTransaction:
+		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
+			SetTransactionID(transactionId).
+			Freeze()
 	case *hedera.TokenAssociateTransaction:
 		_, err = tx.SetNodeAccountIDs(nodeAccountIds).
 			SetTransactionID(transactionId).
@@ -743,6 +746,7 @@ func TestAddSignature(t *testing.T) {
 		transaction interfaces.Transaction
 		expectError bool
 	}{
+		{transaction: hedera.NewAccountCreateTransaction()},
 		{transaction: hedera.NewTokenAssociateTransaction()},
 		{transaction: hedera.NewTokenBurnTransaction()},
 		{transaction: hedera.NewTokenCreateTransaction()},
@@ -824,6 +828,7 @@ func TestGetFrozenTransactionBodyBytes(t *testing.T) {
 func TestUnmarshallTransactionFromHexString(t *testing.T) {
 	for _, signed := range []bool{false, true} {
 		transactions := []interfaces.Transaction{
+			hedera.NewAccountCreateTransaction(),
 			hedera.NewTokenAssociateTransaction(),
 			hedera.NewTokenBurnTransaction(),
 			hedera.NewTokenCreateTransaction(),
@@ -927,69 +932,75 @@ func convertSignatureMap(signatureMap map[*hedera.PublicKey][]byte) map[string][
 
 func createTransactionHexString(transaction interfaces.Transaction, signed bool) string {
 	nodeAccountIds := []hedera.AccountID{nodeAccountId}
+	transactionId := hedera.TransactionIDGenerate(payerId)
 	switch tx := transaction.(type) {
+	case *hedera.AccountCreateTransaction:
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
+		if signed {
+			tx.Sign(privateKey)
+		}
 	case *hedera.TokenAssociateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenBurnTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenCreateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenDeleteTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenDissociateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenFreezeTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenGrantKycTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenMintTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenRevokeKycTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenUnfreezeTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenUpdateTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TokenWipeTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
 	case *hedera.TransferTransaction:
-		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(hedera.TransactionIDGenerate(payerId)).Freeze()
+		tx.SetNodeAccountIDs(nodeAccountIds).SetTransactionID(transactionId).Freeze()
 		if signed {
 			tx.Sign(privateKey)
 		}
