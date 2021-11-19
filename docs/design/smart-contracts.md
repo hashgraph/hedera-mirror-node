@@ -56,8 +56,6 @@ alter table if exists contract
   add primary key (id);
 ```
 
-> _Note:_ Entity table should be updated by another PR to add `timestamp_range int8range`.
-
 #### Contract History
 
 Create a contract history table that is populated by application upsert logic. It should insert the old row to the
@@ -127,8 +125,8 @@ create table if not exists contract_log
 create index if not exists contract_log__id_timestamp
   on contract_log (contract_id, consensus_timestamp);
 
-create index if not exists contract_log__id_topics_bloom
-  on contract_log using bloom (contract_id, topic0, topic1, topic2, topic3);
+create index if not exists contract_log__topics_bloom
+  on contract_log using bloom (topic0, topic1, topic2, topic3);
 ```
 
 #### Contract Access List
@@ -148,7 +146,7 @@ create table if not exists contract_access
 
 #### Contract State Change
 
-Create a new table to store the stage changes of a contract execution
+Create a new table to store the state changes of a contract execution
 
 ```sql
 create table if not exists contract_state_change
