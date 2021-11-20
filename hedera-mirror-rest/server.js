@@ -51,7 +51,7 @@ const {requestLogger, requestQueryParser} = require('./middleware/requestHandler
 const fs = require('fs');
 
 // routes
-const contractRoutes = require('./routes/contractRoute');
+const {ContractRoutes} = require('./routes');
 
 // Logger
 const logger = log4js.getLogger();
@@ -155,7 +155,7 @@ app.getAsync(`${apiPrefix}/accounts/:accountId`, accounts.getOneAccount);
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
 // contracts routes
-app.useAsync(`${apiPrefix}/contracts`, contractRoutes);
+app.useAsync('', ContractRoutes);
 
 // network routes
 app.getAsync(`${apiPrefix}/network/supply`, network.getSupply);
