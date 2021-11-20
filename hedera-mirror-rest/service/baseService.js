@@ -32,14 +32,6 @@ class BaseService {
     return `order by ${column} ${order}`;
   }
 
-  getEffectiveEqualsOperatorWhereQuery(column, values) {
-    if (_.isUndefined(values) || _.isEmpty(values)) {
-      return '';
-    }
-
-    return values.length == 1 ? `${column} = ${values[0]}` : `${column} in (${values.join(',')})`;
-  }
-
   getLimitQuery(limitParamCount) {
     return `limit $${limitParamCount}`;
   }

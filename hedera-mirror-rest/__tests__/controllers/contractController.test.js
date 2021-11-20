@@ -28,7 +28,7 @@ const {
   },
 } = require('../../config');
 const constants = require('../../constants');
-const contracts = require('../../controllers/contractsController');
+const contracts = require('../../controllers/contractController');
 const {formatSqlQueryString} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');

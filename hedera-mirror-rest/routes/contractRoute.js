@@ -24,7 +24,7 @@
 const {Router} = require('@awaitjs/express');
 const router = Router();
 
-const contracts = require('../controllers/contractsController');
+const contracts = require('../controllers/contractController');
 
 router.getAsync(`/`, contracts.getContracts);
 router.getAsync(`/:contractId`, contracts.getContractById);
