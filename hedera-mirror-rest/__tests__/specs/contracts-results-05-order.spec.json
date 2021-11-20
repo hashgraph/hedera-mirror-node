@@ -1,0 +1,61 @@
+{
+  "description": "Contract results api call for a specific contract using contract id",
+  "setup": {
+    "contractresults": [
+      {
+        "amount": 20,
+        "consensus_timestamp": "187654000123456",
+        "contract_id": 5001
+      },
+      {
+        "amount": 30,
+        "consensus_timestamp": "987654000123456",
+        "contract_id": 5001,
+        "created_contract_ids": [7001]
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results?order=desc",
+    "/api/v1/contracts/0.5001/results?order=desc",
+    "/api/v1/contracts/5001/results?order=desc"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "results": [
+      {
+        "amount": "30",
+        "bloom": null,
+        "call_result": null,
+        "child_transactions": null,
+        "created_contract_ids": ["0.0.7001"],
+        "error_message": "",
+        "from": "0x0000000000000000000000000000000000000065",
+        "function_parameters": "0x34613561643531346630393537666131373061363736323130633962646264646633626339353139373032636639313566613637363761343034363362393666",
+        "gas_limit": "1000",
+        "gas_used": "10",
+        "hash": null,
+        "timestamp": "987654.000123456",
+        "to": null
+      },
+      {
+        "amount": "20",
+        "bloom": null,
+        "call_result": null,
+        "child_transactions": null,
+        "created_contract_ids": [],
+        "error_message": "",
+        "from": "0x0000000000000000000000000000000000000065",
+        "function_parameters": "0x34613561643531346630393537666131373061363736323130633962646264646633626339353139373032636639313566613637363761343034363362393666",
+        "gas_limit": "1000",
+        "gas_used": "10",
+        "hash": null,
+        "timestamp": "187654.000123456",
+        "to": null
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

@@ -353,7 +353,7 @@ const getContractResultsById = async (req, res) => {
   const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
   const filters = utils.buildAndValidateFilters(req.query);
 
-  const {conditions, params, order, limit} = extractContractResultsByIdQuery(contractId, filters);
+  const {conditions, params, order, limit} = extractContractResultsByIdQuery(filters, contractId);
 
   const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
   if (rows === null) {
@@ -363,17 +363,18 @@ const getContractResultsById = async (req, res) => {
   logger.debug(`getContractResultsById returning ${rows.length} entries`);
 
   const response = {
-    contracts: rows.map((row) => new ContractResultViewModel(row)),
+    results: rows.map((row) => new ContractResultViewModel(row)),
     links: {},
   };
+  logger.debug(`getContractResultsById returning ${response}`);
 
-  const lastRow = _.last(response.contracts);
-  const lastContractId = lastRow !== undefined ? lastRow.contract_id : null;
+  const lastRow = _.last(response.results);
+  const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
   response.links.next = utils.getPaginationLink(
     req,
-    response.contracts.length !== limit,
-    constants.filterKeys.CONTRACT_ID,
-    lastContractId,
+    response.results.length !== limit,
+    constants.filterKeys.TIMESTAMP,
+    lastContractResultTimestamp,
     order
   );
 
@@ -402,13 +403,14 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.FROM:
-        if (filter.operator === utils.opsMap.eq) {
-          // aggregate '=' conditions and use the sql 'in' operator
-          contractResultFromInValues.push(filter.value);
-        } else {
-          params.push(filter.value);
-          conditions.push(`${contractResultFromFullName}${filter.operator}$${params.length}`);
-        }
+        // handle repeated values
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractResultFromInValues,
+          params,
+          conditions,
+          contractResultFromFullName
+        );
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -417,38 +419,23 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
         order = filter.value;
         break;
       case constants.filterKeys.TIMESTAMP:
-        if (filter.operator === utils.opsMap.eq) {
-          // aggregate '=' conditions and use the sql 'in' operator
-          contractResultTimestampInValues.push(filter.value);
-        } else {
-          params.push(filter.value);
-          conditions.push(`${contractResultTimestampFullName}${filter.operator}$${params.length}`);
-        }
+        // handle repeated values
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractResultTimestampInValues,
+          params,
+          conditions,
+          contractResultTimestampFullName
+        );
         break;
       default:
         break;
     }
   }
 
-  if (contractResultFromInValues.length !== 0) {
-    // add the condition 'c.id in ()'
-    const start = params.length + 1; // start is the next positional index
-    params.push(...contractResultFromInValues);
-    const positions = _.range(contractResultFromInValues.length)
-      .map((position) => position + start)
-      .map((position) => `$${position}`);
-    conditions.push(`${contractResultFromFullName} in (${positions})`);
-  }
-
-  if (contractResultTimestampInValues.length !== 0) {
-    // add the condition 'c.id in ()'
-    const start = params.length + 1; // start is the next positional index
-    params.push(...contractResultTimestampInValues);
-    const positions = _.range(contractResultTimestampInValues.length)
-      .map((position) => position + start)
-      .map((position) => `$${position}`);
-    conditions.push(`${contractResultTimestampFullName} in (${positions})`);
-  }
+  // update query with repeated values
+  updateQueryFiltersWithInValues(params, conditions, contractResultFromInValues, contractResultFromFullName);
+  updateQueryFiltersWithInValues(params, conditions, contractResultTimestampInValues, contractResultTimestampFullName);
 
   return {
     conditions: conditions,
@@ -456,6 +443,28 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
     order: order,
     limit: limit,
   };
+};
+
+const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
+  if (filter.operator === utils.opsMap.eq) {
+    // aggregate '=' conditions and use the sql 'in' operator
+    invalues.push(filter.value);
+  } else {
+    existingParams.push(filter.value);
+    existingConditions.push(`${fullName}${filter.operator}$${existingParams.length}`);
+  }
+};
+
+const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
+  if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
+    // add the condition 'c.id in ()'
+    const start = existingParams.length + 1; // start is the next positional index
+    existingParams.push(...invalues);
+    const positions = _.range(invalues.length)
+      .map((position) => position + start)
+      .map((position) => `$${position}`);
+    existingConditions.push(`${fullName} in (${positions})`);
+  }
 };
 
 module.exports = {

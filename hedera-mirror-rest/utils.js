@@ -179,6 +179,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ENTITY_PUBLICKEY:
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.FROM:
+      ret = EntityId.isValidEntityId(val);
+      break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
       break;
@@ -846,6 +849,9 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
+        break;
+      case constants.filterKeys.FROM:
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.LIMIT:
         comparator.value = Number(comparator.value);

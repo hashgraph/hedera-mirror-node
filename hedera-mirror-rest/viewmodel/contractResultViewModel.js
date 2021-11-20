@@ -40,17 +40,17 @@ class ContractResultViewModel {
       child_transactions: null,
       created_contract_ids: contractResult.createdContractIds,
       error_message: contractResult.errorMessage,
-      from: EntityId.parse(contractResult.from).toString(),
+      from: EntityId.parse(contractResult.payerAccountId).toSolidityAddress(),
       function_parameters: utils.toHexString(contractResult.functionParameters, true),
       gas_limit: contractResult.gasLimit,
       gas_used: contractResult.gasUsed,
       hash: transactionModel ? transactionModel.transactionHash : null,
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
-      to: EntityId.parse(contractResult.to, true).toString(),
+      to: EntityId.parse(contractResult.to, true).toSolidityAddress(),
     });
 
     // format created contract ids
-    if (contractResult.createdContractIdsassessedCustomFee.effectivePayerAccountIds != null) {
+    if (contractResult.createdContractIds != null) {
       this.created_contract_ids = contractResult.createdContractIds.map((id) => EntityId.parse(id).toString());
     } else {
       this.created_contract_ids = [];

@@ -33,13 +33,6 @@ class ContractResult {
       this,
       _.mapKeys(contractResult, (v, k) => _.camelCase(k))
     );
-
-    this.amount = _.isNil(this.amount) ? null : BigInt(this.amount);
-    this.contractId = _.isNil(this.contractId) ? null : BigInt(this.contractId);
-    this.gasLimit = _.isNil(this.gasLimit) ? null : BigInt(this.gasLimit);
-    this.gasUsed = _.isNil(this.gasUsed) ? null : BigInt(this.gasUsed);
-    this.functionParameters = utils.encodeBase64(this.functionParameters);
-    this.functionResult = utils.encodeBase64(this.functionResult);
   }
 
   static tableAlias = 'cr';

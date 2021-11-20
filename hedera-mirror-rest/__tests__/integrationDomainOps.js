@@ -42,7 +42,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
-  // await loadContractResultss(testDataJson.contractResults);
+  await loadContractResults(testDataJson.contractresults);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -610,8 +610,6 @@ const addContractResult = async (contractResult) => {
     payer_account_id: 101,
     ...contractResult,
   };
-
-  contractResult.created_contract_ids.push(contractResult.contract_id + 1000);
 
   await sqlConnection.query(
     `insert into contract_result (${insertFields.join(',')}) values (${positions})`,

@@ -104,12 +104,15 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
 
     const expectedContractResult = [
       new ContractResult({
+        amount: '10',
         contract_id: '2',
         consensus_timestamp: '1',
-        function_parameters: 'DQ==',
-        amount: '10',
-        gas_limit: 1000,
-        gas_used: 10,
+        function_parameters: {
+          data: [13],
+          type: 'Buffer',
+        },
+        gas_limit: '1000',
+        gas_used: '10',
       }),
     ];
     const response = await ContractService.getContractResultsByIdAndFilters();
@@ -135,12 +138,15 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
 
     const expectedContractResult = [
       new ContractResult({
+        amount: '10',
         contract_id: '2',
         consensus_timestamp: '2',
-        function_parameters: 'DQ==',
-        amount: '10',
-        gas_limit: 1000,
-        gas_used: 10,
+        function_parameters: {
+          data: [13],
+          type: 'Buffer',
+        },
+        gas_limit: '1000',
+        gas_used: '10',
         payer_account_id: '123',
       }),
     ];
@@ -192,21 +198,27 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
 
     const expectedContractResult = [
       new ContractResult({
+        amount: '10',
         contract_id: '3',
         consensus_timestamp: '3',
-        function_parameters: 'DQ==',
-        amount: '10',
-        gas_limit: 1000,
-        gas_used: 10,
+        function_parameters: {
+          data: [13],
+          type: 'Buffer',
+        },
+        gas_limit: '1000',
+        gas_used: '10',
         payer_account_id: '124',
       }),
       new ContractResult({
+        amount: '10',
         contract_id: '3',
         consensus_timestamp: '4',
-        function_parameters: 'DQ==',
-        amount: '10',
-        gas_limit: 1000,
-        gas_used: 10,
+        function_parameters: {
+          data: [13],
+          type: 'Buffer',
+        },
+        gas_limit: '1000',
+        gas_used: '10',
         payer_account_id: '124',
       }),
     ];
