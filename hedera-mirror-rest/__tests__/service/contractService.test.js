@@ -51,8 +51,8 @@ beforeEach(async () => {
   await integrationDbOps.cleanUp(dbProps.sqlConnection);
 });
 
-describe('DB integration test - ContractService.getContractResultsByIdAndFiltersQuery', () => {
-  test('DB integration test -  ContractService.getContractResultsByIdAndFiltersQuery - Verify simple query', async () => {
+describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
+  test('ContractService.getContractResultsByIdAndFiltersQuery - Verify simple query', async () => {
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       ['cr.contract_id = $1'],
       [2],
@@ -69,7 +69,7 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
     expect(params).toEqual([2, 5]);
   });
 
-  test('DB integration test -  ContractService.getContractResultsByIdAndFiltersQuery - Verify additional conditions', async () => {
+  test('ContractService.getContractResultsByIdAndFiltersQuery - Verify additional conditions', async () => {
     const additionalConditions = ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.payer_account_id = $3'];
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       additionalConditions,
@@ -88,13 +88,13 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
   });
 });
 
-describe('DB integration test - ContractService.getContractResultsByIdAndFilters', () => {
-  test('DB integration test -  ContractService.getContractResultsByIdAndFilters - No match', async () => {
+describe('ContractService.getContractResultsByIdAndFilters tests', () => {
+  test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
     const response = await ContractService.getContractResultsByIdAndFilters();
     expect(response).toEqual(null);
   });
 
-  test('DB integration test -  ContractService.getContractResultsByIdAndFilters - Row match', async () => {
+  test('ContractService.getContractResultsByIdAndFilters - Row match', async () => {
     await integrationDomainOps.addContractResult({
       contract_id: 2,
       consensus_timestamp: 1,
@@ -119,7 +119,7 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
     expect(response).toMatchObject(expectedContractResult);
   });
 
-  test('DB integration test -  ContractService.getContractResultsByTimestamp - Id match', async () => {
+  test('ContractService.getContractResultsByTimestamp - Id match', async () => {
     await integrationDomainOps.addContractResult({
       contract_id: 1,
       consensus_timestamp: 1,
@@ -155,7 +155,7 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
     expect(response).toMatchObject(expectedContractResult);
   });
 
-  test('DB integration test -  ContractService.getContractResultsByIdAndFilters - All params match', async () => {
+  test('ContractService.getContractResultsByIdAndFilters - All params match', async () => {
     await integrationDomainOps.addContractResult({
       contract_id: 2,
       consensus_timestamp: 1,
@@ -197,30 +197,16 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
     });
 
     const expectedContractResult = [
-      new ContractResult({
-        amount: '10',
-        contract_id: '3',
-        consensus_timestamp: '3',
-        function_parameters: {
-          data: [13],
-          type: 'Buffer',
-        },
-        gas_limit: '1000',
-        gas_used: '10',
-        payer_account_id: '124',
-      }),
-      new ContractResult({
-        amount: '10',
-        contract_id: '3',
-        consensus_timestamp: '4',
-        function_parameters: {
-          data: [13],
-          type: 'Buffer',
-        },
-        gas_limit: '1000',
-        gas_used: '10',
-        payer_account_id: '124',
-      }),
+      {
+        contractId: '3',
+        consensusTimestamp: '3',
+        payerAccountId: '124',
+      },
+      {
+        contractId: '3',
+        consensusTimestamp: '4',
+        payerAccountId: '124',
+      },
     ];
 
     const response = await ContractService.getContractResultsByIdAndFilters(
@@ -229,6 +215,7 @@ describe('DB integration test - ContractService.getContractResultsByIdAndFilters
       'asc',
       2
     );
+
     expect(response).toMatchObject(expectedContractResult);
   });
 });
