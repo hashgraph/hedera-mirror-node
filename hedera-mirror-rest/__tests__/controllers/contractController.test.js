@@ -52,7 +52,7 @@ const assertSqlQueryEqual = (actual, expected) => {
 };
 
 const emptyFilterString = 'empty filters';
-const contractIdFilter = 'cr.contract_id = $1';
+const primaryContractFilter = 'cr.contract_id = $1';
 
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
@@ -347,7 +347,7 @@ describe('getContractsQuery', () => {
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
-    conditions: [contractIdFilter],
+    conditions: [primaryContractFilter],
     params: [defaultContractId],
     order: constants.orderFilterValues.ASC,
     limit: defaultLimit,
@@ -417,7 +417,7 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['cr.contract_id = $1', 'cr.payer_account_id > $2', 'cr.payer_account_id in ($3,$4)'],
+        conditions: [primaryContractFilter, 'cr.payer_account_id > $2', 'cr.payer_account_id in ($3,$4)'],
         params: [defaultContractId, '1000', '1001', '1002'],
       },
     },
@@ -445,7 +445,7 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.consensus_timestamp in ($3,$4)'],
+        conditions: [primaryContractFilter, 'cr.consensus_timestamp > $2', 'cr.consensus_timestamp in ($3,$4)'],
         params: [defaultContractId, '1000', '1001', '1002'],
       },
     },
