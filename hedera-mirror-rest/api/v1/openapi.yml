@@ -571,6 +571,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Nft'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -673,7 +675,7 @@ components:
       type: object
       properties:
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         balances:
           type: array
           items:
@@ -728,7 +730,7 @@ components:
       type: object
       properties:
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         balances:
           $ref: '#/components/schemas/TokenDistribution'
         links:
@@ -764,7 +766,6 @@ components:
       type: object
       required:
         - account
-        - balance
         - expiry_timestamp
         - auto_renew_period
         - key
@@ -870,9 +871,10 @@ components:
         - tokens
       properties:
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         balance:
           type: number
+          nullable: true
         tokens:
           type: array
           items:
@@ -912,9 +914,9 @@ components:
           example: contract memo
           type: string
         obtainer_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         proxy_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         solidity_address:
           $ref: '#/components/schemas/SolidityAddress'
         timestamp:
@@ -945,6 +947,12 @@ components:
       description: "Network entity ID in the format of `shard.realm.num`"
       pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
       example: "0.1.2"
+    EntityIdNullable:
+      type: string
+      description: "Network entity ID in the format of `shard.realm.num`"
+      pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
+      example: "0.1.2"
+      nullable: true
     EntityIdQuery:
       type: string
       pattern: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
@@ -970,7 +978,7 @@ components:
         collector_account_id:
           $ref: '#/components/schemas/EntityId'
         denominating_token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
     FractionalFee:
       type: object
       properties:
@@ -986,7 +994,7 @@ components:
         collector_account_id:
           $ref: '#/components/schemas/EntityId'
         denominating_token_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         maximum:
           type: number
           nullable: true
@@ -1018,7 +1026,7 @@ components:
               type: number
               example: 100
             denominating_token_id:
-              $ref: '#/components/schemas/EntityId'
+              $ref: '#/components/schemas/EntityIdNullable'
     Key:
       type: object
       nullable: true
@@ -1040,7 +1048,7 @@ components:
       type: object
       properties:
         account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         created_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         deleted:
@@ -1065,9 +1073,14 @@ components:
         serial_number: 124
         token_id: "0.0.222"
     Nfts:
-      type: array
-      items:
-        $ref: '#/components/schemas/Nft'
+      type: object
+      properties:
+        nfts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Nft'
+        links:
+          $ref: '#/components/schemas/Links'
     NftTransactionTransfer:
       type: object
       properties:
@@ -1076,9 +1089,9 @@ components:
         transaction_id:
           type: string
         receiver_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         sender_account_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         type:
           $ref: '#/components/schemas/TransactionTypes'
         token_id:
@@ -1091,9 +1104,14 @@ components:
         type: "CRYPTOTRANSFER"
         token_id: "0.0.1000"
     NftTransactionHistory:
-      type: array
-      items:
-        $ref: '#/components/schemas/NftTransactionTransfer'
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NftTransactionTransfer'
+        links:
+          $ref: '#/components/schemas/Links'
     Schedule:
       type: object
       properties:
@@ -1186,11 +1204,12 @@ components:
     Timestamp:
       type: string
       example: "1586567700.453054000"
-      pattern: '/^\d{1,10}(\.\d{1,9})?$'
+      pattern: '^\d{1,10}(\.\d{1,9})?$'
     TimestampNullable:
-      allOf:
-        - $ref: '#/components/schemas/Timestamp'
-        - nullable: true
+      type: string
+      example: "1586567700.453054000"
+      pattern: '^\d{1,10}(\.\d{1,9})?$'
+      nullable: true
     TimestampRange:
       type: object
       description: A timestamp range an entity is valid for
@@ -1258,7 +1277,7 @@ components:
         admin_key:
           $ref: '#/components/schemas/Key'
         auto_renew_account:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         auto_renew_period:
           example: null
           nullable: true
@@ -1270,6 +1289,7 @@ components:
         deleted:
           type: boolean
           example: true
+          nullable: true
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         fee_schedule_key:
@@ -1381,7 +1401,6 @@ components:
           $ref: '#/components/schemas/EntityId'
         message:
           type: string
-          format: byte
         running_hash:
           type: string
           format: byte
@@ -1413,10 +1432,11 @@ components:
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         entity_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         bytes:
           type: string
           format: byte
+          nullable: true
         transaction_hash:
           type: string
           format: byte
@@ -1436,9 +1456,9 @@ components:
             type: object
             properties:
               receiver_account_id:
-                $ref: '#/components/schemas/EntityId'
+                $ref: '#/components/schemas/EntityIdNullable'
               sender_account_id:
-                $ref: '#/components/schemas/EntityId'
+                $ref: '#/components/schemas/EntityIdNullable'
               serial_number:
                 type: number
               token_id:
@@ -1451,7 +1471,7 @@ components:
         valid_duration_seconds:
           type: string
         node:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         scheduled:
           type: boolean
         transaction_id:
@@ -1497,7 +1517,7 @@ components:
                 items:
                   $ref: '#/components/schemas/EntityId'
               token_id:
-                $ref: '#/components/schemas/EntityId'
+                $ref: '#/components/schemas/EntityIdNullable'
       example:
         consensus_timestamp: "1234567890.000000007"
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
