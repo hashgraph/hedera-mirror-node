@@ -60,9 +60,10 @@ describe('extractSqlFromContractFilters', () => {
     limitQuery: 'limit $1',
   };
 
+  const emptyFilterString = 'empty filters';
   const specs = [
     {
-      name: 'empty filters',
+      name: emptyFilterString,
       input: [],
       expected: defaultExpected,
     },
@@ -343,8 +344,9 @@ describe('getContractsQuery', () => {
 
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
+  const contractIdWhereClause = 'cr.contract_id = $1';
   const defaultExpected = {
-    conditions: ['cr.contract_id = $1'],
+    conditions: [contractIdWhereClause],
     params: [defaultContractId],
     order: constants.orderFilterValues.ASC,
     limit: defaultLimit,

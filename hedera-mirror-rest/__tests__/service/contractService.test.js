@@ -103,18 +103,15 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     });
 
     const expectedContractResult = [
-      new ContractResult({
+      {
         amount: '10',
-        contract_id: '2',
-        consensus_timestamp: '1',
-        function_parameters: {
-          data: [13],
-          type: 'Buffer',
-        },
-        gas_limit: '1000',
-        gas_used: '10',
-      }),
+        contractId: '2',
+        consensusTimestamp: '1',
+        gasLimit: '1000',
+        gasUsed: '10',
+      },
     ];
+
     const response = await ContractService.getContractResultsByIdAndFilters();
     expect(response).toMatchObject(expectedContractResult);
   });
@@ -137,18 +134,14 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     });
 
     const expectedContractResult = [
-      new ContractResult({
+      {
         amount: '10',
-        contract_id: '2',
-        consensus_timestamp: '2',
-        function_parameters: {
-          data: [13],
-          type: 'Buffer',
-        },
-        gas_limit: '1000',
-        gas_used: '10',
-        payer_account_id: '123',
-      }),
+        contractId: '2',
+        consensusTimestamp: '2',
+        gasLimit: '1000',
+        gasUsed: '10',
+        payerAccountId: '123',
+      },
     ];
 
     const response = await ContractService.getContractResultsByIdAndFilters(['contract_id = $1'], [2], 'asc', 1);

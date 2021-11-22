@@ -46,7 +46,7 @@ class ContractService extends BaseService {
   }
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
-    let params = whereParams;
+    const params = whereParams;
     const query = [
       ContractService.contractResultsByIdQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',

@@ -26,8 +26,6 @@ const _ = require('lodash');
  * Base service class that other services should inherit from for their retrieval business logic
  */
 class BaseService {
-  constructor() {}
-
   getOrderByQuery(column, order) {
     return `order by ${column} ${order}`;
   }
