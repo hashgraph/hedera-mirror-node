@@ -51,6 +51,9 @@ const assertSqlQueryEqual = (actual, expected) => {
   expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
 };
 
+const emptyFilterString = 'empty filters';
+const contractIdFilter = 'cr.contract_id = $1';
+
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
     filterQuery: '',
@@ -60,7 +63,6 @@ describe('extractSqlFromContractFilters', () => {
     limitQuery: 'limit $1',
   };
 
-  const emptyFilterString = 'empty filters';
   const specs = [
     {
       name: emptyFilterString,
@@ -136,7 +138,7 @@ describe('extractTimestampConditionsFromContractFilters', () => {
   const timestampColumn = Contract.getFullName(Contract.TIMESTAMP_RANGE);
   const specs = [
     {
-      name: 'empty filters',
+      name: emptyFilterString,
       input: [],
       expected: {
         conditions: [],
@@ -344,9 +346,8 @@ describe('getContractsQuery', () => {
 
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
-  const contractIdWhereClause = 'cr.contract_id = $1';
   const defaultExpected = {
-    conditions: [contractIdWhereClause],
+    conditions: [contractIdFilter],
     params: [defaultContractId],
     order: constants.orderFilterValues.ASC,
     limit: defaultLimit,
@@ -354,7 +355,7 @@ describe('extractContractResultsByIdQuery', () => {
 
   const specs = [
     {
-      name: 'empty filters',
+      name: emptyFilterString,
       input: {filter: [], contractId: defaultContractId},
       expected: defaultExpected,
     },
