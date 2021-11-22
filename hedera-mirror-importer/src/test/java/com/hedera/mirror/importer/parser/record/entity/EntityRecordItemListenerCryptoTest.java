@@ -173,7 +173,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 // transaction body inputs
                 () -> assertEquals(cryptoUpdateTransactionBody.getAutoRenewPeriod().getSeconds(),
                         dbAccountEntity.getAutoRenewPeriod()),
-                () -> assertEquals(Utility.convertSimpleKeyToHex(
+                () -> assertEquals(Utility.getPublicKey(
                         cryptoUpdateTransactionBody.getKey().toByteArray()), dbAccountEntity.getPublicKey()),
                 () -> assertEquals(EntityId.of(cryptoUpdateTransactionBody.getProxyAccountID()),
                         dbAccountEntity.getProxyAccountId()),
@@ -519,7 +519,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(0, actualAccount.getMaxAutomaticTokenAssociations()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
                 () -> assertEquals(timestamp, actualAccount.getModifiedTimestamp()),
-                () -> assertEquals(Utility.convertSimpleKeyToHex(expected.getKey().toByteArray()),
+                () -> assertEquals(Utility.getPublicKey(expected.getKey().toByteArray()),
                         actualAccount.getPublicKey()),
                 () -> assertEquals(EntityId.of(expected.getProxyAccountID()), actualAccount.getProxyAccountId()),
                 () -> assertEquals(expected.getReceiverSigRequired(), actualAccount.getReceiverSigRequired())

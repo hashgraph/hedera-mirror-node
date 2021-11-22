@@ -306,31 +306,26 @@ comment on table schedule is 'Schedule entity entries';
 -- token
 create table if not exists token
 (
-    created_timestamp            bigint                 not null,
-    decimals                     bigint                 not null,
-    fee_schedule_key             bytea,
-    fee_schedule_key_ed25519_hex varchar                null,
-    freeze_default               boolean                not null default false,
-    freeze_key                   bytea,
-    freeze_key_ed25519_hex       varchar                null,
-    initial_supply               bigint                 not null,
-    kyc_key                      bytea,
-    kyc_key_ed25519_hex          varchar                null,
-    max_supply                   bigint                 not null default 9223372036854775807, -- max long
-    modified_timestamp           bigint                 not null,
-    name                         character varying(100) not null,
-    pause_key                    bytea                  null,
-    pause_status                 token_pause_status     not null default 'NOT_APPLICABLE',
-    supply_key                   bytea,
-    supply_key_ed25519_hex       varchar                null,
-    supply_type                  token_supply_type      not null default 'INFINITE',
-    symbol                       character varying(100) not null,
-    token_id                     bigint,
-    total_supply                 bigint                 not null default 0,
-    treasury_account_id          bigint                 not null,
-    type                         token_type             not null default 'FUNGIBLE_COMMON',
-    wipe_key                     bytea,
-    wipe_key_ed25519_hex         varchar                null
+    created_timestamp   bigint                 not null,
+    decimals            bigint                 not null,
+    fee_schedule_key    bytea,
+    freeze_default      boolean                not null default false,
+    freeze_key          bytea,
+    initial_supply      bigint                 not null,
+    kyc_key             bytea,
+    max_supply          bigint                 not null default 9223372036854775807, -- max long
+    modified_timestamp  bigint                 not null,
+    name                character varying(100) not null,
+    pause_key           bytea                  null,
+    pause_status        token_pause_status     not null default 'NOT_APPLICABLE',
+    supply_key          bytea,
+    supply_type         token_supply_type      not null default 'INFINITE',
+    symbol              character varying(100) not null,
+    token_id            bigint,
+    total_supply        bigint                 not null default 0,
+    treasury_account_id bigint                 not null,
+    type                token_type             not null default 'FUNGIBLE_COMMON',
+    wipe_key            bytea
 );
 comment on table token is 'Token entity';
 
@@ -412,6 +407,7 @@ create table if not exists transaction_signature
     consensus_timestamp bigint not null,
     entity_id           bigint null,
     public_key_prefix   bytea  not null,
-    signature           bytea  not null
+    signature           bytea  not null,
+    type                smallint
 );
 comment on table transaction_signature is 'Transaction signatories';

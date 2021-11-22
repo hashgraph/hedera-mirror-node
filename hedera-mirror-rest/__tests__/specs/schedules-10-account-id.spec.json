@@ -57,31 +57,36 @@
         "consensus_timestamp": "1234567890000010001",
         "public_key_prefix": [1, 1, 1],
         "entity_id": "0.0.2000",
-        "signature": [2, 2, 2]
+        "signature": [2, 2, 2],
+        "type": 3
       },
       {
         "consensus_timestamp": "1234567890000010010",
         "public_key_prefix": [3, 3, 3],
         "entity_id": "0.0.2000",
-        "signature": [4, 4, 4]
+        "signature": [4, 4, 4],
+        "type": 3
       },
       {
         "consensus_timestamp": "1234567890000020001",
         "public_key_prefix": [5, 5, 5],
         "entity_id": "0.0.3000",
-        "signature": [6, 6, 6]
+        "signature": [6, 6, 6],
+        "type": 3
       },
       {
         "consensus_timestamp": "1234567890000020010",
         "public_key_prefix": [7, 7, 7],
         "entity_id": "0.0.3000",
-        "signature": [8, 8, 8]
+        "signature": [8, 8, 8],
+        "type": 3
       },
       {
         "consensus_timestamp": "1234567890000030001",
         "public_key_prefix": [9, 9, 9],
         "entity_id": "0.0.4000",
-        "signature": [9, 9, 9]
+        "signature": [9, 9, 9],
+        "type": 3
       }
     ]
   },
@@ -105,12 +110,14 @@
           {
             "consensus_timestamp": "1234567890.000010001",
             "public_key_prefix": "AQEB",
-            "signature": "AgIC"
+            "signature": "AgIC",
+            "type": "ED25519"
           },
           {
             "consensus_timestamp": "1234567890.000010010",
             "public_key_prefix": "AwMD",
-            "signature": "BAQE"
+            "signature": "BAQE",
+            "type": "ED25519"
           }
         ],
         "transaction_body": "AQECAgMD"
@@ -131,7 +138,8 @@
           {
             "consensus_timestamp": "1234567890.000030001",
             "public_key_prefix": "CQkJ",
-            "signature": "CQkJ"
+            "signature": "CQkJ",
+            "type": "ED25519"
           }
         ],
         "transaction_body": "AQECAgMD"

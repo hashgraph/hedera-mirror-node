@@ -26,14 +26,11 @@ const {proto} = require('@hashgraph/proto/lib/proto');
 const {TransactionResult} = require('../../model');
 
 describe('transactionResult constants are up to date', () => {
-  test('transactionResult constants are up to date', () => {
-    for (const responseCode in proto.ResponseCodeEnum) {
-      if (isNaN(Number(responseCode))) {
-        expect(TransactionResult.getProtoId(responseCode)).toBeTruthy();
-      } else {
-        expect(TransactionResult.getName(responseCode)).toBeTruthy();
-      }
-    }
+  test('Proto ID to name', () => {
+    Object.keys(proto.ResponseCodeEnum).forEach((id) => expect(TransactionResult.getProtoId(id)).toBeTruthy());
+  });
+  test('Name to Proto ID', () => {
+    Object.values(proto.ResponseCodeEnum).forEach((name) => expect(TransactionResult.getName(name)).toBeTruthy());
   });
 });
 
@@ -46,7 +43,7 @@ describe('transactionResults getters work as expected', () => {
     expect(TransactionResult.getProtoId('XYZ')).toBeFalsy();
   });
 
-  test('getProtoId handles unknown', () => {
+  test('getSuccessProtoId', () => {
     expect(TransactionResult.getSuccessProtoId()).toEqual('22');
   });
 });

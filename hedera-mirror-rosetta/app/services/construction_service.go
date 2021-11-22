@@ -70,6 +70,10 @@ func (c *constructionAPIService) ConstructionCombine(
 	}
 
 	for _, signature := range request.Signatures {
+		if signature.SignatureType != rTypes.Ed25519 {
+			return nil, errors.ErrInvalidSignatureType
+		}
+
 		pubKey, err := hedera.PublicKeyFromBytes(signature.PublicKey.Bytes)
 		if err != nil {
 			return nil, errors.ErrInvalidPublicKey

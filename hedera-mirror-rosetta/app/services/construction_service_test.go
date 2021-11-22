@@ -302,9 +302,22 @@ func TestConstructionCombineThrowsWithNoSignature(t *testing.T) {
 	res, e := service.ConstructionCombine(nil, request)
 
 	// then
-	assert.NotNil(t, e)
 	assert.Nil(t, res)
+	assert.Equal(t, errors.ErrNoSignature, e)
+}
 
+func TestConstructionCombineThrowsWithInvalidSignatureType(t *testing.T) {
+	// given
+	request := dummyConstructionCombineRequest()
+	request.Signatures[0].SignatureType = types.Schnorr1
+	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+
+	// when
+	res, e := service.ConstructionCombine(nil, request)
+
+	// then
+	assert.Nil(t, res)
+	assert.Equal(t, errors.ErrInvalidSignatureType, e)
 }
 
 func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {

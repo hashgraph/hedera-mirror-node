@@ -20,20 +20,14 @@
 
 'use strict';
 
-module.exports = {
-  AssessedCustomFee: require('./assessedCustomFee'),
-  Contract: require('./contract'),
-  CryptoTransfer: require('./cryptoTransfer'),
-  CustomFee: require('./customFee'),
-  FileData: require('./fileData'),
-  Nft: require('./nft'),
-  NftTransfer: require('./nftTransfer'),
-  SignatureType: require('./signatureType'),
-  Token: require('./token'),
-  TokenFreezeStatus: require('./tokenFreezeStatus'),
-  TokenKycStatus: require('./tokenKycStatus'),
-  TokenTransfer: require('./tokenTransfer'),
-  Transaction: require('./transaction'),
-  TransactionResult: require('./transactionResult'),
-  TransactionType: require('./transactionType'),
-};
+const {SignatureType} = require('../../model');
+
+describe('getName', () => {
+  test('Valid', () => {
+    expect(SignatureType.getName(3)).toEqual('ED25519');
+  });
+
+  test('Unknown', () => {
+    expect(SignatureType.getName(9999999)).toEqual('UNKNOWN');
+  });
+});

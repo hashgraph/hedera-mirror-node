@@ -22,10 +22,12 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnknownFieldSet;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -204,17 +206,6 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
-    void scheduleSignNonEd25519Signature() {
-        SignatureMap signatureMap = getSigMap(2, false);
-        assertThrows(InvalidDatasetException.class,
-                () -> insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID));
-
-        // verify lack of schedule data and transaction
-        assertThat(transactionSignatureRepository.count()).isZero();
-        assertThat(transactionRepository.count()).isZero();
-    }
-
-    @Test
     void scheduleSignDuplicateEd25519Signatures() {
         SignatureMap signatureMap = getSigMap(3, true);
         SignaturePair first = signatureMap.getSigPair(0);
@@ -232,6 +223,55 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     @Test
+    void unknownSignatureType() {
+        int unknownType = 999;
+        ByteString sig = ByteString.copyFromUtf8("123");
+        UnknownFieldSet.Field unknownField = UnknownFieldSet.Field.newBuilder().addLengthDelimited(sig).build();
+
+        SignatureMap.Builder signatureMap = SignatureMap.newBuilder()
+                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setContract(sig).build())
+                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setECDSA384(sig).build())
+                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setECDSASecp256K1(sig).build())
+                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setEd25519(sig).build())
+                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8)).setRSA3072(sig).build())
+                .addSigPair(SignaturePair.newBuilder().setPubKeyPrefix(byteString(8))
+                        .setUnknownFields(UnknownFieldSet.newBuilder().addField(unknownType, unknownField).build())
+                        .build());
+
+        insertScheduleSign(SIGN_TIMESTAMP, signatureMap.build(), SCHEDULE_ID);
+
+        // verify
+        assertThat(transactionRepository.count()).isEqualTo(1);
+        assertThat(transactionSignatureRepository.findAll())
+                .isNotNull()
+                .hasSize(signatureMap.getSigPairCount())
+                .allSatisfy(t -> assertThat(t)
+                        .returns(sig.toByteArray(), TransactionSignature::getSignature)
+                        .extracting(TransactionSignature::getPublicKeyPrefix)
+                        .isNotNull())
+                .extracting(TransactionSignature::getType)
+                .containsExactlyInAnyOrder(
+                        SignaturePair.SignatureCase.CONTRACT.getNumber(),
+                        SignaturePair.SignatureCase.ECDSA_384.getNumber(),
+                        SignaturePair.SignatureCase.ECDSA_SECP256K1.getNumber(),
+                        SignaturePair.SignatureCase.ED25519.getNumber(),
+                        SignaturePair.SignatureCase.RSA_3072.getNumber(),
+                        unknownType);
+    }
+
+    @Test
+    void unsupportedSignature() {
+        SignatureMap signatureMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
+        assertThatThrownBy(() -> insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID))
+                .isInstanceOf(InvalidDatasetException.class)
+                .hasMessageContaining("Unsupported signature");
+
+        // verify
+        assertThat(transactionRepository.count()).isEqualTo(0L);
+        assertThat(transactionSignatureRepository.count()).isEqualTo(0L);
+    }
+
+    @Test
     void scheduleExecuteOnSuccess() {
         scheduleExecute(SUCCESS);
     }
@@ -239,6 +279,10 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     @Test
     void scheduleExecuteOnFailure() {
         scheduleExecute(ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID);
+    }
+
+    private ByteString byteString(int length) {
+        return ByteString.copyFrom(domainBuilder.bytes(length));
     }
 
     void scheduleExecute(ResponseCodeEnum responseCodeEnum) {
@@ -390,9 +434,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     }
 
     private void assertTransactionSignatureInRepository(List<TransactionSignature> expected) {
-        Iterable<TransactionSignature> scheduleSignatures = transactionSignatureRepository.findAll();
-        assertThat(scheduleSignatures).isNotNull();
-        assertThat(scheduleSignatures).hasSameElementsAs(expected);
+        assertThat(transactionSignatureRepository.findAll()).isNotNull().hasSameElementsAs(expected);
     }
 
     private void assertTransactionInRepository(long consensusTimestamp, boolean scheduled,
@@ -408,12 +450,11 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 .stream()
                 .map(pair -> {
                     TransactionSignature transactionSignature = new TransactionSignature();
-                    transactionSignature.setId(new TransactionSignature.Id(
-                            timestamp,
-                            pair.getPubKeyPrefix().toByteArray())
-                    );
+                    transactionSignature.setConsensusTimestamp(timestamp);
                     transactionSignature.setEntityId(EntityId.of(scheduleId));
+                    transactionSignature.setPublicKeyPrefix(pair.getPubKeyPrefix().toByteArray());
                     transactionSignature.setSignature(pair.getEd25519().toByteArray());
+                    transactionSignature.setType(SignaturePair.SignatureCase.ED25519.getNumber());
                     return transactionSignature;
                 })
                 .collect(Collectors.toUnmodifiableList());

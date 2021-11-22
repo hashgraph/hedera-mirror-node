@@ -153,18 +153,14 @@ To support the goals the following database schema changes should be made
     -   `decimals`
     -   `freeze_default`
     -   `freeze_key`
-    -   `freeze_key_ed25519_hex` (ed25519 public key of freeze key)
     -   `initial_supply`
     -   `kyc_key`
-    -   `kyc_key_ed25519_hex` (ed25519 public key of kyc key)
     -   `modified_timestamp`
     -   `name`
     -   `supply_key`
-    -   `supply_key_ed25519_hex` (ed25519 public key of supply key)
     -   `symbol`
     -   `treasury_account_id`
     -   `wipe_key`
-    -   `wipe_key_ed25519_hex` (ed25519 public key of wipe key)
 
 ## Importer
 

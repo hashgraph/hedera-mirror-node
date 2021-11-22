@@ -35,6 +35,8 @@ const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const {TransactionType} = require('./model');
+const {keyTypes} = require('./constants');
+
 const responseLimit = config.response.limit;
 
 const TRANSACTION_RESULT_SUCCESS = 22;
@@ -84,8 +86,10 @@ const isValidOperatorQuery = (query) => {
   return /^(gte?|lte?|eq|ne)$/.test(query);
 };
 
+// Ed25519 has 64, ECDSA(secp256k1) has 66, and ED25519 DER encoded has 88 characters
+const publicKeyPattern = /^(0x)?([0-9a-fA-F]{64}|[0-9a-fA-F]{66}|[0-9a-fA-F]{88})$/;
 const isValidPublicKeyQuery = (query) => {
-  return /^[0-9a-fA-F]{64}$/.test(query) || /^[0-9a-fA-F]{88}$/.test(query);
+  return publicKeyPattern.test(query);
 };
 
 const isValidUtf8Encoding = (query) => {
@@ -156,7 +160,6 @@ const filterValidityChecks = (param, op, val) => {
       ret = EntityId.isValidEntityId(val);
       break;
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
-      // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.BALANCE:
@@ -174,7 +177,6 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidEncoding(val.toLowerCase());
       break;
     case constants.filterKeys.ENTITY_PUBLICKEY:
-      // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.LIMIT:
@@ -399,17 +401,17 @@ const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
   );
 };
 
+const parsePublicKey = (publicKey) => {
+  const publicKeyNoPrefix = publicKey ? publicKey.replace('0x', '').toLowerCase() : publicKey;
+  const decodedKey = ed25519.derToEd25519(publicKeyNoPrefix);
+  return decodedKey == null ? publicKeyNoPrefix : decodedKey;
+};
+
 const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY],
     (value) => {
-      let key = value.toLowerCase();
-      // If the supplied key is DER encoded, decode it
-      const decodedKey = ed25519.derToEd25519(key);
-      if (decodedKey != null) {
-        key = decodedKey;
-      }
-      return key;
+      return parsePublicKey(value);
     },
     (op, value) => [`${columnName}${op}?`, [value]],
     false
@@ -649,33 +651,42 @@ const toHexString = (byteArray, addPrefix = false) => {
   return addPrefix ? `0x${encoded}` : encoded;
 };
 
+// These match protobuf encoded hex strings. The prefixes listed check if it's a primitive key, a key list with one
+// primitive key, or a 1/1 threshold key, respectively.
+const PATTERN_ECDSA = /^(3a20|32240a223a20|2a28080112240a223a20)([A-Fa-f0-9]+)$/;
+const PATTERN_ED25519 = /^(1220|32240a221220|2a28080112240a221220)([A-Fa-f0-9]+)$/;
+
 /**
  * Converts a key for returning in JSON output
  * @param {Array} key Byte array representing the key
- * @return {Object} Key object - with type decoration for ED25519, if detected
+ * @return {Object} Key object - with type decoration for primitive keys, if detected
  */
 const encodeKey = (key) => {
-  let ret;
-
   if (key === null) {
     return null;
   }
 
-  const hs = toHexString(key);
-  const pattern = /^1220([A-Fa-f0-9]*)$/;
-  const replacement = '$1';
-  if (pattern.test(hs)) {
-    ret = {
-      _type: 'ED25519',
-      key: hs.replace(pattern, replacement),
-    };
-  } else {
-    ret = {
-      _type: 'ProtobufEncoded',
-      key: hs,
+  const keyHex = toHexString(key);
+  const ed25519Key = keyHex.match(PATTERN_ED25519);
+  if (ed25519Key) {
+    return {
+      _type: keyTypes.ED25519,
+      key: ed25519Key[2],
     };
   }
-  return ret;
+
+  const ecdsa = keyHex.match(PATTERN_ECDSA);
+  if (ecdsa) {
+    return {
+      _type: keyTypes.ECDSA_SECP256K1,
+      key: ecdsa[2],
+    };
+  }
+
+  return {
+    _type: keyTypes.PROTOBUF,
+    key: keyHex,
+  };
 };
 
 /**
@@ -828,14 +839,12 @@ const formatComparator = (comparator) => {
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
-        // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.CONTRACT_ID:
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
-        // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.LIMIT:
@@ -892,11 +901,6 @@ const parseTokenBalances = (tokenBalances) => {
         balance,
       };
     });
-};
-
-const parsePublicKey = (publicKey) => {
-  const decodedKey = ed25519.derToEd25519(publicKey);
-  return decodedKey == null ? publicKey : decodedKey;
 };
 
 const parseTransactionTypeParam = (parsedQueryParams) => {

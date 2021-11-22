@@ -1004,8 +1004,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         EntityId entityId1 = EntityId.of("0.0.100", EntityType.SCHEDULE);
         EntityId entityId2 = EntityId.of("0.0.200", EntityType.SCHEDULE);
 
-        Schedule schedule1 = getSchedule(1, entityId1.entityIdToString());
-        Schedule schedule2 = getSchedule(2, entityId2.entityIdToString());
+        Schedule schedule1 = domainBuilder.schedule().get();
+        Schedule schedule2 = domainBuilder.schedule().get();
 
         // when
         sqlEntityListener.onSchedule(schedule1);
@@ -1018,19 +1018,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onScheduleSignature() {
-        EntityId entityId1 = EntityId.of("0.0.100", EntityType.SCHEDULE);
-        EntityId entityId2 = EntityId.of("0.0.200", EntityType.SCHEDULE);
-        EntityId entityId3 = EntityId.of("0.0.300", EntityType.SCHEDULE);
-        byte[] pubKeyPrefix1 = "pubKeyPrefix1".getBytes();
-        byte[] pubKeyPrefix2 = "pubKeyPrefix2".getBytes();
-        byte[] pubKeyPrefix3 = "pubKeyPrefix3".getBytes();
-
-        TransactionSignature transactionSignature1 = getTransactionSignature(1, entityId1
-                .entityIdToString(), pubKeyPrefix1);
-        TransactionSignature transactionSignature2 = getTransactionSignature(2, entityId2
-                .entityIdToString(), pubKeyPrefix2);
-        TransactionSignature transactionSignature3 = getTransactionSignature(3, entityId3
-                .entityIdToString(), pubKeyPrefix3);
+        TransactionSignature transactionSignature1 = domainBuilder.transactionSignature().get();
+        TransactionSignature transactionSignature2 = domainBuilder.transactionSignature().get();
+        TransactionSignature transactionSignature3 = domainBuilder.transactionSignature().get();
 
         // when
         sqlEntityListener.onTransactionSignature(transactionSignature1);
@@ -1045,14 +1035,11 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onScheduleMerge() {
-        String scheduleId = "0.0.100";
-        EntityId entityId = EntityId.of(scheduleId, EntityType.SCHEDULE);
-
-        Schedule schedule = getSchedule(1, entityId.entityIdToString());
+        Schedule schedule = domainBuilder.schedule().get();
         sqlEntityListener.onSchedule(schedule);
 
         Schedule scheduleUpdated = new Schedule();
-        scheduleUpdated.setScheduleId(EntityId.of(scheduleId, EntityType.SCHEDULE));
+        scheduleUpdated.setScheduleId(schedule.getScheduleId());
         scheduleUpdated.setExecutedTimestamp(5L);
         sqlEntityListener.onSchedule(scheduleUpdated);
 
@@ -1060,9 +1047,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        Schedule scheduleMerged = getSchedule(1, entityId.entityIdToString());
-        scheduleMerged.setExecutedTimestamp(5L);
-        assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(scheduleMerged);
+        schedule.setExecutedTimestamp(5L);
+        assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule);
     }
 
     private void completeFileAndCommit() {
@@ -1224,44 +1210,14 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAccount.setFreezeStatus(freezeStatus);
         tokenAccount.setKycStatus(kycStatus);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
-
         return tokenAccount;
     }
 
     private TokenTransfer getTokenTransfer(long amount, long consensusTimestamp, EntityId tokenId, EntityId accountId) {
         TokenTransfer tokenTransfer = new TokenTransfer();
         tokenTransfer.setAmount(amount);
-        tokenTransfer
-                .setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
+        tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
         tokenTransfer.setPayerAccountId(TRANSACTION_PAYER);
-
         return tokenTransfer;
-    }
-
-    private Schedule getSchedule(long consensusTimestamp, String scheduleId) {
-        Schedule schedule = new Schedule();
-        schedule.setScheduleId(EntityId.of(scheduleId, EntityType.SCHEDULE));
-        schedule.setConsensusTimestamp(consensusTimestamp);
-        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityType.ACCOUNT));
-        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityType.ACCOUNT));
-        schedule.setTransactionBody("transaction body".getBytes());
-        return schedule;
-    }
-
-    private TransactionSignature getTransactionSignature(long consensusTimestamp, String scheduleId,
-                                                         byte[] pubKeyPrefix) {
-        TransactionSignature transactionSignature = new TransactionSignature();
-        transactionSignature.setId(new TransactionSignature.Id(
-                consensusTimestamp,
-                pubKeyPrefix));
-        transactionSignature.setEntityId(EntityId.of(scheduleId, EntityType.SCHEDULE));
-        transactionSignature.setSignature("scheduled transaction signature".getBytes());
-        return transactionSignature;
-    }
-
-    protected Entity getEntityWithDefaultMemo(EntityId entityId) {
-        Entity entity = entityId.toEntity();
-        entity.setMemo("");
-        return entity;
     }
 }

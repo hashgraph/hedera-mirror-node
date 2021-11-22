@@ -114,7 +114,7 @@ public abstract class AbstractEntity {
 
     public void setKey(byte[] key) {
         this.key = key;
-        publicKey = Utility.convertSimpleKeyToHex(key);
+        publicKey = Utility.getPublicKey(key);
     }
 
     public void setMemo(String memo) {
@@ -129,7 +129,7 @@ public abstract class AbstractEntity {
     public abstract static class AbstractEntityBuilder<C, B extends AbstractEntityBuilder> {
         public B key(byte[] key) {
             this.key = key;
-            this.publicKey = Utility.convertSimpleKeyToHex(key);
+            this.publicKey = Utility.getPublicKey(key);
             return (B) this;
         }
 

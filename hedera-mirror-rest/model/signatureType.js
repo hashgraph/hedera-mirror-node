@@ -20,20 +20,20 @@
 
 'use strict';
 
+const protoToName = {
+  2: 'CONTRACT',
+  3: 'ED25519',
+  4: 'RSA_3072',
+  5: 'ECDSA_384',
+  6: 'ECDSA_SECP256K1',
+};
+
+const UNKNOWN = 'UNKNOWN';
+
+const getName = (protoId) => {
+  return protoToName[protoId] || UNKNOWN;
+};
+
 module.exports = {
-  AssessedCustomFee: require('./assessedCustomFee'),
-  Contract: require('./contract'),
-  CryptoTransfer: require('./cryptoTransfer'),
-  CustomFee: require('./customFee'),
-  FileData: require('./fileData'),
-  Nft: require('./nft'),
-  NftTransfer: require('./nftTransfer'),
-  SignatureType: require('./signatureType'),
-  Token: require('./token'),
-  TokenFreezeStatus: require('./tokenFreezeStatus'),
-  TokenKycStatus: require('./tokenKycStatus'),
-  TokenTransfer: require('./tokenTransfer'),
-  Transaction: require('./transaction'),
-  TransactionResult: require('./transactionResult'),
-  TransactionType: require('./transactionType'),
+  getName,
 };
