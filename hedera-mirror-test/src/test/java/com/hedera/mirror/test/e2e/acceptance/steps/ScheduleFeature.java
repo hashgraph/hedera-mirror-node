@@ -151,7 +151,7 @@ public class ScheduleFeature {
                         Hbar.fromTinybars(DEFAULT_TINY_HBAR),
                         false,
                         publicKeyList,
-                        "scheduled crypto transfer");
+                        "scheduled transfer");
 
         scheduledTransaction = accountClient
                 .getCryptoTransferTransaction(
