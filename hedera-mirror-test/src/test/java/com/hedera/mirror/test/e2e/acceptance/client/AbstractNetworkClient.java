@@ -140,6 +140,7 @@ public abstract class AbstractNetworkClient {
     }
 
     protected String getMemo(String message) {
-        return String.format("Hedera Mirror Node acceptance test: %s %s", message, Instant.now());
+        // Try to keep short due to 100 byte entity memo limit
+        return String.format("Mirror Node acceptance test: %s %s", message, Instant.now());
     }
 }
