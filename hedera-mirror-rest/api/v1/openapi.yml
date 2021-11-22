@@ -945,6 +945,12 @@ components:
       description: "Network entity ID in the format of `shard.realm.num`"
       pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
       example: "0.1.2"
+    EntityIdNullable:
+      type: string
+      description: "Network entity ID in the format of `shard.realm.num`"
+      pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
+      example: "0.1.2"
+      nullable: true
     EntityIdQuery:
       type: string
       pattern: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
@@ -1186,11 +1192,12 @@ components:
     Timestamp:
       type: string
       example: "1586567700.453054000"
-      pattern: '/^\d{1,10}(\.\d{1,9})?$'
+      pattern: '^\d{1,10}(\.\d{1,9})?$'
     TimestampNullable:
-      allOf:
-        - $ref: '#/components/schemas/Timestamp'
-        - nullable: true
+      type: string
+      example: "1586567700.453054000"
+      pattern: '^\d{1,10}(\.\d{1,9})?$'
+      nullable: true
     TimestampRange:
       type: object
       description: A timestamp range an entity is valid for
@@ -1413,10 +1420,11 @@ components:
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         entity_id:
-          $ref: '#/components/schemas/EntityId'
+          $ref: '#/components/schemas/EntityIdNullable'
         bytes:
           type: string
           format: byte
+          nullable: true
         transaction_hash:
           type: string
           format: byte
