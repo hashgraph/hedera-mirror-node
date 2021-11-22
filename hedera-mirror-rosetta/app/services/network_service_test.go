@@ -161,6 +161,7 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 		errors.ErrInvalidTransaction,
 		errors.ErrInvalidCurrency,
 		errors.ErrInternalServerError,
+		errors.ErrInvalidSignatureType,
 	}
 
 	expectedResult := &rTypes.NetworkOptionsResponse{

@@ -212,20 +212,16 @@ public class AccountBalance implements Persistable<AccountBalance.Id> {
     -   `decimals`
     -   `freezeDefault`
     -   `freezeKey`
-    -   `freezeKeyEd25519Hex`
     -   `initialSupply`
     -   `kycKey`
-    -   `kycKeyEd25519Hex`
     -   `modifiedTimestamp`
     -   `name`
     -   `supplyKey`
-    -   `supplyKeyEd25519Hex`
     -   `symbol`
     -   `tokenId`
     -   `totalSupply`
     -   `treasuryAccountId`
     -   `wipeKey`
-    -   `wipeKeyEd25519Hex`
 
 #### TokenAccount
 -   Add `TokenAccount` class with the following class members

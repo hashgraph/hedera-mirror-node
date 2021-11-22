@@ -138,7 +138,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertEntity(expected);
 
         // verify schedule
-        assertThat(scheduleRepository.count()).isEqualTo(1L);
+        assertThat(scheduleRepository.count()).isOne();
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, PAYER, null);
 
         // verify transaction
@@ -157,7 +157,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertEquals(1, entityRepository.count());
 
         // verify schedule
-        assertThat(scheduleRepository.count()).isEqualTo(1L);
+        assertThat(scheduleRepository.count()).isOne();
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, PAYER, null);
 
         // verify schedule signatures
@@ -198,7 +198,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         assertEntity(expected);
 
         // verify schedule
-        assertThat(scheduleRepository.count()).isEqualTo(1L);
+        assertThat(scheduleRepository.count()).isOne();
         assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, PAYER, null);
 
         // verify transaction
@@ -267,8 +267,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
                 .hasMessageContaining("Unsupported signature");
 
         // verify
-        assertThat(transactionRepository.count()).isEqualTo(0L);
-        assertThat(transactionSignatureRepository.count()).isEqualTo(0L);
+        assertThat(transactionRepository.count()).isZero();
+        assertThat(transactionSignatureRepository.count()).isZero();
     }
 
     @Test
