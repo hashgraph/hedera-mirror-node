@@ -21,7 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import javax.inject.Named;
 import lombok.SneakyThrows;
@@ -326,7 +325,6 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private TransferTransaction getTransferTransaction() {
-        Instant refInstant = Instant.now();
         return new TransferTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo(getMemo("Transfer token"));
