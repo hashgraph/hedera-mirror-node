@@ -57,14 +57,14 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setScheduled(true);
         transaction.setTransactionId(transactionId);
 
-        String memo = "Create schedule";
+        String memo = getMemo("Create schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setPayerAccountId(payerAccountId.getAccountId())
-                .setScheduleMemo(getMemo(memo))
+                .setScheduleMemo(memo)
                 .setTransactionId(transactionId.setScheduled(false))
-                .setTransactionMemo(getMemo(memo));
+                .setTransactionMemo(memo);
 
         if (signatureKeyList != null) {
             scheduleCreateTransaction.setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()));

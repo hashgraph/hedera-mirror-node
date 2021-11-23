@@ -128,15 +128,15 @@ public class AccountClient extends AbstractNetworkClient {
 
     public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,
                                                                 boolean receiverSigRequired, String customMemo) {
-        String memo = String.format("%s %s ", "Create Crypto Account", customMemo);
+        String memo = getMemo(String.format("%s %s ", "Create Crypto Account", customMemo));
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
                 .setKey(publicKeys)
-                .setAccountMemo(getMemo(memo))
+                .setAccountMemo(memo)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setReceiverSignatureRequired(receiverSigRequired)
-                .setTransactionMemo(getMemo(memo));
+                .setTransactionMemo(memo);
     }
 
     public ExpandedAccountId createNewAccount(long initialBalance) {

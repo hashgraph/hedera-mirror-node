@@ -48,14 +48,14 @@ public class ContractClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse createContract(FileId fileId, long gas, Hbar payableAmount,
                                                      ContractFunctionParameters contractFunctionParameters) {
-        String memo = "Create contract";
-        log.debug(memo);
+        log.debug("Create new contract");
+        String memo = getMemo("Create contract");
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
                 .setAdminKey(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setBytecodeFileId(fileId)
-                .setContractMemo(getMemo(memo))
+                .setContractMemo(memo)
                 .setGas(gas)
-                .setTransactionMemo(getMemo(memo));
+                .setTransactionMemo(memo);
 
         if (contractFunctionParameters != null) {
             contractCreateTransaction.setConstructorParameters(contractFunctionParameters);
@@ -77,12 +77,12 @@ public class ContractClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateContract(ContractId contractId) {
-        String memo = "Update contract";
-        log.debug("{} {}", memo, contractId);
+        log.debug("Update contract {}", contractId);
+        String memo = getMemo("Update contract");
         ContractUpdateTransaction contractUpdateTransaction = new ContractUpdateTransaction()
                 .setContractId(contractId)
-                .setContractMemo(getMemo(memo))
-                .setTransactionMemo(getMemo(memo));
+                .setContractMemo(memo)
+                .setTransactionMemo(memo);
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(contractUpdateTransaction);
@@ -93,11 +93,11 @@ public class ContractClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse deleteContract(ContractId contractId, AccountId transferAccountId,
                                                      ContractId transferContractId) {
-        String memo = "Delete contract";
-        log.debug("{} {}", memo, contractId);
+        log.debug("Delete contract {}", contractId);
+        String memo = getMemo("Delete contract");
         ContractDeleteTransaction contractDeleteTransaction = new ContractDeleteTransaction()
                 .setContractId(contractId)
-                .setTransactionMemo(getMemo(memo));
+                .setTransactionMemo(memo);
 
         // either AccountId or ContractId, not both
         if (transferAccountId != null) {
@@ -119,11 +119,10 @@ public class ContractClient extends AbstractNetworkClient {
                                                       ContractFunctionParameters parameters, Hbar payableAmount) {
         log.debug("Call contract {}'s function {}", contractId, functionName);
 
-        String memo = "Execute contract";
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(gas)
-                .setTransactionMemo(getMemo(memo))
+                .setTransactionMemo(getMemo("Execute contract"))
                 .setMaxTransactionFee(Hbar.from(100));
 
         if (parameters == null) {

@@ -45,13 +45,13 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createFile(byte[] content) {
-        String memo = "Create file";
-        log.debug(memo);
+        log.debug("Create new file");
+        String memo = getMemo("Create file");
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
                 .setKeys(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setContents(content)
-                .setFileMemo(getMemo(memo))
-                .setTransactionMemo(getMemo(memo));
+                .setFileMemo(memo)
+                .setTransactionMemo(memo);
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 fileCreateTransaction,
@@ -63,12 +63,12 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateFile(FileId fileId, byte[] byteCode) {
-        String memo = "Update file";
-        log.debug(memo);
+        log.debug("Update file");
+        String memo = getMemo("Update file");
         FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
                 .setFileId(fileId)
-                .setFileMemo(getMemo(memo))
-                .setTransactionMemo(getMemo(memo));
+                .setFileMemo(memo)
+                .setTransactionMemo(memo);
 
         if (byteCode != null) {
             fileUpdateTransaction.setContents(byteCode);

@@ -87,19 +87,19 @@ public class TokenClient extends AbstractNetworkClient {
                                                              ExpandedAccountId treasuryAccount, TokenType tokenType,
                                                              TokenSupplyType tokenSupplyType, long maxSupply,
                                                              List<CustomFee> customFees) {
-        String memo = "Create token";
+        String memo = getMemo("Create token");
         PublicKey adminKey = expandedAccountId.getPublicKey();
         TokenCreateTransaction transaction = new TokenCreateTransaction()
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
                 .setAutoRenewPeriod(Duration.ofSeconds(6_999_999L))
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTokenMemo(getMemo(memo))
+                .setTokenMemo(memo)
                 .setTokenName(symbol + "_name")
                 .setSupplyType(tokenSupplyType)
                 .setTokenSymbol(symbol)
                 .setTokenType(tokenType)
                 .setTreasuryAccountId(treasuryAccount.getAccountId())
-                .setTransactionMemo(getMemo(memo));
+                .setTransactionMemo(memo);
 
         if (tokenSupplyType == TokenSupplyType.FINITE) {
             transaction.setMaxSupply(maxSupply);
@@ -349,17 +349,17 @@ public class TokenClient extends AbstractNetworkClient {
     public NetworkTransactionResponse updateToken(TokenId tokenId, ExpandedAccountId expandedAccountId) {
         PublicKey publicKey = expandedAccountId.getPublicKey();
         String newSymbol = RandomStringUtils.randomAlphabetic(4).toUpperCase();
-        String memo = "Update token";
+        String memo = getMemo("Update token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAdminKey(publicKey)
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
                 .setAutoRenewPeriod(Duration.ofSeconds(8_000_001L))
                 .setTokenName(newSymbol + "_name")
                 .setSupplyKey(publicKey)
-                .setTokenMemo(getMemo(memo))
+                .setTokenMemo(memo)
                 .setTokenSymbol(newSymbol)
                 .setTokenId(tokenId)
-                .setTransactionMemo(getMemo(memo))
+                .setTransactionMemo(memo)
                 .setTreasuryAccountId(client.getOperatorAccountId())
                 .setWipeKey(publicKey)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee());
@@ -374,12 +374,12 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse updateTokenTreasury(TokenId tokenId, ExpandedAccountId newTreasuryId) {
         AccountId treasuryAccountId = newTreasuryId.getAccountId();
-        String memo = "Update token";
+        String memo = getMemo("Update token");
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setTokenId(tokenId)
-                .setTokenMemo(getMemo(memo))
+                .setTokenMemo(memo)
                 .setTreasuryAccountId(treasuryAccountId)
-                .setTransactionMemo(getMemo(memo));
+                .setTransactionMemo(memo);
 
         KeyList keyList = KeyList.of(newTreasuryId.getPrivateKey());
         NetworkTransactionResponse networkTransactionResponse =
