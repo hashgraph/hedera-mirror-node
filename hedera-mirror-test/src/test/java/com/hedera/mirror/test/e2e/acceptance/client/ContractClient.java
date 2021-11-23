@@ -53,9 +53,9 @@ public class ContractClient extends AbstractNetworkClient {
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
                 .setAdminKey(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setBytecodeFileId(fileId)
-                .setContractMemo(getEntityMemo(memo))
+                .setContractMemo(getMemo(memo))
                 .setGas(gas)
-                .setTransactionMemo(getTransactionMemo(memo));
+                .setTransactionMemo(getMemo(memo));
 
         if (contractFunctionParameters != null) {
             contractCreateTransaction.setConstructorParameters(contractFunctionParameters);
@@ -81,8 +81,8 @@ public class ContractClient extends AbstractNetworkClient {
         log.debug("{} {}", memo, contractId);
         ContractUpdateTransaction contractUpdateTransaction = new ContractUpdateTransaction()
                 .setContractId(contractId)
-                .setContractMemo(getEntityMemo(memo))
-                .setTransactionMemo(getTransactionMemo(memo));
+                .setContractMemo(getMemo(memo))
+                .setTransactionMemo(getMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(contractUpdateTransaction);
@@ -97,7 +97,7 @@ public class ContractClient extends AbstractNetworkClient {
         log.debug("{} {}", memo, contractId);
         ContractDeleteTransaction contractDeleteTransaction = new ContractDeleteTransaction()
                 .setContractId(contractId)
-                .setTransactionMemo(getTransactionMemo(memo));
+                .setTransactionMemo(getMemo(memo));
 
         // either AccountId or ContractId, not both
         if (transferAccountId != null) {
@@ -123,7 +123,7 @@ public class ContractClient extends AbstractNetworkClient {
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(gas)
-                .setTransactionMemo(getTransactionMemo(memo))
+                .setTransactionMemo(getMemo(memo))
                 .setMaxTransactionFee(Hbar.from(100));
 
         if (parameters == null) {

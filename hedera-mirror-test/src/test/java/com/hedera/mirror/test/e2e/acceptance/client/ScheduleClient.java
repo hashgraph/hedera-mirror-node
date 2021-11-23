@@ -62,9 +62,9 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setPayerAccountId(payerAccountId.getAccountId())
-                .setScheduleMemo(getEntityMemo(memo))
+                .setScheduleMemo(getMemo(memo))
                 .setTransactionId(transactionId.setScheduled(false))
-                .setTransactionMemo(getTransactionMemo(memo));
+                .setTransactionMemo(getMemo(memo));
 
         if (signatureKeyList != null) {
             scheduleCreateTransaction.setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()));
@@ -93,7 +93,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId)
-                .setTransactionMemo(getTransactionMemo("Sign schedule"));
+                .setTransactionMemo(getMemo("Sign schedule"));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 scheduleSignTransaction,
@@ -110,7 +110,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId)
-                .setTransactionMemo(getTransactionMemo("Delete schedule"));
+                .setTransactionMemo(getMemo("Delete schedule"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);

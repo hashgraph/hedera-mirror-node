@@ -42,7 +42,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 
 @Data
 public abstract class AbstractNetworkClient {
-    private static final int ENTITY_MEMO_BYTES_MAX_LENGTH = 100;
+    private static final int MEMO_BYTES_MAX_LENGTH = 100;
     protected final Client client;
     protected final Logger log = LogManager.getLogger(getClass());
     protected final SDKClient sdkClient;
@@ -140,14 +140,10 @@ public abstract class AbstractNetworkClient {
                 .toTinybars();
     }
 
-    protected String getEntityMemo(String message) {
-        // Entity memos are capped at 100 bytes
-        int endIndex = ENTITY_MEMO_BYTES_MAX_LENGTH <= message.length() ?
-                ENTITY_MEMO_BYTES_MAX_LENGTH : message.length();
-        return String.format("Mirror Node acceptance test: %s %s", Instant.now(), message).substring(0, endIndex);
-    }
-
-    protected String getTransactionMemo(String message) {
-        return String.format("Mirror Node acceptance test: %s %s", Instant.now(), message);
+    protected String getMemo(String message) {
+        String memo = String.format("Mirror Node acceptance test: %s %s", Instant.now(), message);
+        // Memos are capped at 100 bytes
+        int endIndex = MEMO_BYTES_MAX_LENGTH <= memo.length() ? MEMO_BYTES_MAX_LENGTH : memo.length();
+        return memo.substring(0, endIndex);
     }
 }

@@ -50,8 +50,8 @@ public class FileClient extends AbstractNetworkClient {
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
                 .setKeys(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setContents(content)
-                .setFileMemo(getEntityMemo(memo))
-                .setTransactionMemo(getTransactionMemo(memo));
+                .setFileMemo(getMemo(memo))
+                .setTransactionMemo(getMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 fileCreateTransaction,
@@ -67,8 +67,8 @@ public class FileClient extends AbstractNetworkClient {
         log.debug(memo);
         FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
                 .setFileId(fileId)
-                .setFileMemo(getEntityMemo(memo))
-                .setTransactionMemo(getTransactionMemo(memo));
+                .setFileMemo(getMemo(memo))
+                .setTransactionMemo(getMemo(memo));
 
         if (byteCode != null) {
             fileUpdateTransaction.setContents(byteCode);
@@ -87,7 +87,7 @@ public class FileClient extends AbstractNetworkClient {
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
                 .setContents(byteCode)
-                .setTransactionMemo(getTransactionMemo("Append file"));
+                .setTransactionMemo(getMemo("Append file"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileAppendTransaction);
@@ -101,7 +101,7 @@ public class FileClient extends AbstractNetworkClient {
         log.debug(memo);
         FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
                 .setFileId(fileId)
-                .setTransactionMemo(getTransactionMemo(memo));
+                .setTransactionMemo(getMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
