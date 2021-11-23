@@ -54,6 +54,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 @Log4j2
 @Cucumber
 public class ContractFeature extends AbstractFeature {
+    private final static long maxFunctionGas = 1_000_000;
     private final ObjectMapper mapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -148,7 +149,7 @@ public class ContractFeature extends AbstractFeature {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
-                80000,
+                maxFunctionGas,
                 initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
                 null);
 
@@ -193,7 +194,7 @@ public class ContractFeature extends AbstractFeature {
     private void executeCreateChildTransaction(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                70000,
+                maxFunctionGas,
                 "createChild",
                 new ContractFunctionParameters()
                         .addUint256(BigInteger.valueOf(transferAmount)),
