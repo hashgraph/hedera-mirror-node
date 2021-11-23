@@ -840,9 +840,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         signaturePairList.forEach(signaturePair -> {
             ByteString prefix = signaturePair.getPubKeyPrefix();
             ByteString signature = null;
-            int type = signaturePair.getSignatureCase().getNumber();
+            var signatureCase = signaturePair.getSignatureCase();
+            int type = signatureCase.getNumber();
 
-            switch (signaturePair.getSignatureCase()) {
+            switch (signatureCase) {
                 case CONTRACT:
                     signature = signaturePair.getContract();
                     break;
@@ -861,6 +862,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                 case SIGNATURE_NOT_SET:
                     Map<Integer, UnknownFieldSet.Field> unknownFields = signaturePair.getUnknownFields().asMap();
 
+                    // If we encounter a signature that our version of the protobuf does not yet support, it will
+                    // return SIGNATURE_NOT_SET. Hence we should look in the unknown fields for the new signature.
+                    // ByteStrings are stored as length-delimited on the wire, so we search the unknown fields for a
+                    // field that has exactly one length-delimited value and assume it's our new signature bytes.
                     for (Map.Entry<Integer, UnknownFieldSet.Field> entry : unknownFields.entrySet()) {
                         UnknownFieldSet.Field field = entry.getValue();
                         if (field.getLengthDelimitedList().size() == 1) {
