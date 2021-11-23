@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/coinbase/rosetta-sdk-go v0.7.1
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/hashgraph/hedera-sdk-go/v2 v2.4.0
+	github.com/hashgraph/hedera-sdk-go/v2 v2.5.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.9.0
 	github.com/lib/pq v1.10.4
