@@ -70,6 +70,9 @@ public class ContractClient extends AbstractNetworkClient {
         ContractId contractId = networkTransactionResponse.getReceipt().contractId;
         log.debug("Created new contract {}", contractId);
 
+        TransactionRecord transactionRecord = getTransactionRecord(networkTransactionResponse.getTransactionId());
+        logContractFunctionResult("constructor", transactionRecord.contractFunctionResult);
+
         return networkTransactionResponse;
     }
 
@@ -116,11 +119,10 @@ public class ContractClient extends AbstractNetworkClient {
                                                       ContractFunctionParameters parameters, Hbar payableAmount) {
         log.debug("Call contract {}'s function {}", contractId, functionName);
 
-        String memo = getMemo("Execute contract");
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(gas)
-                .setTransactionMemo(memo)
+                .setTransactionMemo(getMemo("Execute contract"))
                 .setMaxTransactionFee(Hbar.from(100));
 
         if (parameters == null) {
@@ -143,6 +145,10 @@ public class ContractClient extends AbstractNetworkClient {
     }
 
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
+        if (contractFunctionResult == null) {
+            return;
+        }
+
         log.trace("ContractFunctionResult for function {}, contractId: {}, gasUsed: {}, logCount: {}",
                 functionName,
                 contractFunctionResult.contractId,
