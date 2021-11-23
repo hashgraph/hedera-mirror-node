@@ -64,13 +64,13 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) {
-        String memo = getMemo("Create Topic");
+        String memo = "Create Topic";
         TopicCreateTransaction consensusTopicCreateTransaction = new TopicCreateTransaction()
                 .setAdminKey(adminAccount.getPublicKey())
                 .setAutoRenewAccountId(sdkClient.getExpandedOperatorAccountId().getAccountId())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTopicMemo(memo)
-                .setTransactionMemo(memo)
+                .setTopicMemo(getEntityMemo(memo))
+                .setTransactionMemo(getTransactionMemo(memo))
                 .setAutoRenewPeriod(autoRenewPeriod); // INSUFFICIENT_TX_FEE, also unsupported
 
         if (submitKey != null) {
@@ -87,17 +87,16 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateTopic(TopicId topicId) {
-        String memo = getMemo("Update Topic");
+        String memo = "Update Topic";
         TopicUpdateTransaction consensusTopicUpdateTransaction = new TopicUpdateTransaction()
                 .setTopicId(topicId)
-                .setTopicMemo(memo)
+                .setTopicMemo(getEntityMemo(memo))
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .clearAdminKey()
                 .clearSubmitKey()
-                .clearTopicMemo()
                 .clearAutoRenewAccountId()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
-                .setTransactionMemo(memo);
+                .setTransactionMemo(getTransactionMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(consensusTopicUpdateTransaction);
@@ -110,7 +109,7 @@ public class TopicClient extends AbstractNetworkClient {
         TopicDeleteTransaction consensusTopicDeleteTransaction = new TopicDeleteTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTopicId(topicId)
-                .setTransactionMemo(getMemo("Delete Topic"));
+                .setTransactionMemo(getTransactionMemo("Delete Topic"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
@@ -165,7 +164,7 @@ public class TopicClient extends AbstractNetworkClient {
         TopicMessageSubmitTransaction consensusMessageSubmitTransaction = new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage(message)
-                .setTransactionMemo(getMemo("Publish topic message"));
+                .setTransactionMemo(getTransactionMemo("Publish topic message"));
 
         TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKeys);
 

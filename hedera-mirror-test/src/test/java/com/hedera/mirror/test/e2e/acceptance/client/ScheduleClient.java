@@ -57,14 +57,14 @@ public class ScheduleClient extends AbstractNetworkClient {
                 .setScheduled(true);
         transaction.setTransactionId(transactionId);
 
-        String memo = getMemo("Create schedule");
+        String memo = "Create schedule";
         ScheduleCreateTransaction scheduleCreateTransaction = transaction.schedule()
                 .setAdminKey(payerAccountId.getPublicKey())
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setPayerAccountId(payerAccountId.getAccountId())
-                .setScheduleMemo(memo)
+                .setScheduleMemo(getEntityMemo(memo))
                 .setTransactionId(transactionId.setScheduled(false))
-                .setTransactionMemo(memo);
+                .setTransactionMemo(getTransactionMemo(memo));
 
         if (signatureKeyList != null) {
             scheduleCreateTransaction.setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()));
@@ -93,7 +93,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId)
-                .setTransactionMemo(getMemo("Sign schedule"));
+                .setTransactionMemo(getTransactionMemo("Sign schedule"));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 scheduleSignTransaction,
@@ -110,7 +110,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId)
-                .setTransactionMemo(getMemo("Delete schedule"));
+                .setTransactionMemo(getTransactionMemo("Delete schedule"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);

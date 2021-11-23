@@ -45,13 +45,13 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createFile(byte[] content) {
-        log.debug("Create new file");
-        String memo = getMemo("Create file");
+        String memo = "Create file";
+        log.debug(memo);
         FileCreateTransaction fileCreateTransaction = new FileCreateTransaction()
                 .setKeys(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setContents(content)
-                .setFileMemo(memo)
-                .setTransactionMemo(memo);
+                .setFileMemo(getEntityMemo(memo))
+                .setTransactionMemo(getTransactionMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
                 fileCreateTransaction,
@@ -63,12 +63,12 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse updateFile(FileId fileId, byte[] byteCode) {
-        log.debug("Update file");
-        String memo = getMemo("Update file");
+        String memo = "Update file";
+        log.debug(memo);
         FileUpdateTransaction fileUpdateTransaction = new FileUpdateTransaction()
                 .setFileId(fileId)
-                .setFileMemo(memo)
-                .setTransactionMemo(memo);
+                .setFileMemo(getEntityMemo(memo))
+                .setTransactionMemo(getTransactionMemo(memo));
 
         if (byteCode != null) {
             fileUpdateTransaction.setContents(byteCode);
@@ -82,11 +82,12 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse appendFile(FileId fileId, byte[] byteCode) {
-        log.debug("Append file");
+        String memo = "Append file";
+        log.debug(memo);
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
                 .setContents(byteCode)
-                .setTransactionMemo(getMemo("Append file"));
+                .setTransactionMemo(getTransactionMemo("Append file"));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileAppendTransaction);
@@ -96,11 +97,11 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse deleteFile(FileId fileId) {
-        log.debug("Delete file");
-        String memo = getMemo("Delete file");
+        String memo = "Delete file";
+        log.debug(memo);
         FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
                 .setFileId(fileId)
-                .setTransactionMemo(memo);
+                .setTransactionMemo(getTransactionMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileUpdateTransaction);

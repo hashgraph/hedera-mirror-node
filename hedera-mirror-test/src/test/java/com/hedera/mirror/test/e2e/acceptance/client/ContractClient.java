@@ -48,14 +48,14 @@ public class ContractClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse createContract(FileId fileId, long gas, Hbar payableAmount,
                                                      ContractFunctionParameters contractFunctionParameters) {
-        log.debug("Create new contract");
-        String memo = getMemo("Create contract");
+        String memo = "Create contract";
+        log.debug(memo);
         ContractCreateTransaction contractCreateTransaction = new ContractCreateTransaction()
                 .setAdminKey(sdkClient.getExpandedOperatorAccountId().getPublicKey())
                 .setBytecodeFileId(fileId)
-                .setContractMemo(memo)
+                .setContractMemo(getEntityMemo(memo))
                 .setGas(gas)
-                .setTransactionMemo(memo);
+                .setTransactionMemo(getTransactionMemo(memo));
 
         if (contractFunctionParameters != null) {
             contractCreateTransaction.setConstructorParameters(contractFunctionParameters);
@@ -70,16 +70,19 @@ public class ContractClient extends AbstractNetworkClient {
         ContractId contractId = networkTransactionResponse.getReceipt().contractId;
         log.debug("Created new contract {}", contractId);
 
+        TransactionRecord transactionRecord = getTransactionRecord(networkTransactionResponse.getTransactionId());
+        logContractFunctionResult("constructor", transactionRecord.contractFunctionResult);
+
         return networkTransactionResponse;
     }
 
     public NetworkTransactionResponse updateContract(ContractId contractId) {
-        log.debug("Update contract {}", contractId);
-        String memo = getMemo("Update contract");
+        String memo = "Update contract";
+        log.debug("{} {}", memo, contractId);
         ContractUpdateTransaction contractUpdateTransaction = new ContractUpdateTransaction()
                 .setContractId(contractId)
-                .setContractMemo(memo)
-                .setTransactionMemo(memo);
+                .setContractMemo(getEntityMemo(memo))
+                .setTransactionMemo(getTransactionMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(contractUpdateTransaction);
@@ -90,11 +93,11 @@ public class ContractClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse deleteContract(ContractId contractId, AccountId transferAccountId,
                                                      ContractId transferContractId) {
-        log.debug("Delete contract {}", contractId);
-        String memo = getMemo("Delete contract");
+        String memo = "Delete contract";
+        log.debug("{} {}", memo, contractId);
         ContractDeleteTransaction contractDeleteTransaction = new ContractDeleteTransaction()
                 .setContractId(contractId)
-                .setTransactionMemo(memo);
+                .setTransactionMemo(getTransactionMemo(memo));
 
         // either AccountId or ContractId, not both
         if (transferAccountId != null) {
@@ -116,11 +119,11 @@ public class ContractClient extends AbstractNetworkClient {
                                                       ContractFunctionParameters parameters, Hbar payableAmount) {
         log.debug("Call contract {}'s function {}", contractId, functionName);
 
-        String memo = getMemo("Execute contract");
+        String memo = "Execute contract";
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(gas)
-                .setTransactionMemo(memo)
+                .setTransactionMemo(getTransactionMemo(memo))
                 .setMaxTransactionFee(Hbar.from(100));
 
         if (parameters == null) {
@@ -143,6 +146,10 @@ public class ContractClient extends AbstractNetworkClient {
     }
 
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
+        if (contractFunctionResult == null) {
+            return;
+        }
+
         log.trace("ContractFunctionResult for function {}, contractId: {}, gasUsed: {}, logCount: {}",
                 functionName,
                 contractFunctionResult.contractId,

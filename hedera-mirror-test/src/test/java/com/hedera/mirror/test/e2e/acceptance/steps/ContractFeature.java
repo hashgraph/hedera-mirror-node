@@ -148,7 +148,7 @@ public class ContractFeature extends AbstractFeature {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
-                750000,
+                80000,
                 initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
                 null);
 
@@ -193,7 +193,7 @@ public class ContractFeature extends AbstractFeature {
     private void executeCreateChildTransaction(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                67000,
+                70000,
                 "createChild",
                 new ContractFunctionParameters()
                         .addUint256(BigInteger.valueOf(transferAmount)),
