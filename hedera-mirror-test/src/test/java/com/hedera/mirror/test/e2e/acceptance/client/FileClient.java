@@ -87,7 +87,7 @@ public class FileClient extends AbstractNetworkClient {
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
                 .setContents(byteCode)
-                .setTransactionMemo(getMemo("Append file"));
+                .setTransactionMemo(getMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileAppendTransaction);
