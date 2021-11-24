@@ -220,6 +220,8 @@ public class DomainBuilder {
                 .kycKey(key())
                 .modifiedTimestamp(timestamp)
                 .name("Hbars")
+                .pauseKey(key())
+                .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
                 .supplyKey(key())
                 .symbol("HBAR")
                 .tokenId(new TokenId(entityId(TOKEN)))

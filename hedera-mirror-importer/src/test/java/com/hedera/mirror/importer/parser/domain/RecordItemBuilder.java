@@ -206,12 +206,12 @@ public class RecordItemBuilder {
         }
 
         private TransactionBody.Builder defaultTransactionBody() {
-            TransactionBody.Builder transactionBody = TransactionBody.newBuilder();
-            transactionBody.setMemo(type.name());
-            transactionBody.setNodeAccountID(NODE);
-            transactionBody.setTransactionFee(100L);
-            transactionBody.setTransactionID(Utility.getTransactionId(payerAccountId));
-            transactionBody.setTransactionValidDuration(duration(120));
+            TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
+                    .setMemo(type.name())
+                    .setNodeAccountID(NODE)
+                    .setTransactionFee(100L)
+                    .setTransactionID(Utility.getTransactionId(payerAccountId))
+                    .setTransactionValidDuration(duration(120));
 
             var field = transactionBody.getDescriptorForType().findFieldByNumber(type.getProtoId());
             transactionBody.setField(field, this.transactionBody.build());
