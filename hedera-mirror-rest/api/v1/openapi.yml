@@ -114,6 +114,28 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
+  /api/v1/contracts/{contractId}/results:
+    get:
+      summary: List contract results from a contract on the network
+      description: Returns a list of all contract results for a contracts function executions.
+      operationId: listContractResultss
+      parameters:
+        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/fromQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -700,6 +722,13 @@ components:
           $ref: '#/components/schemas/Contracts'
         links:
           $ref: '#/components/schemas/Links'
+    ContractResultsResponse:
+      type: object
+      properties:
+        contracts:
+          $ref: '#/components/schemas/ContractResults'
+        links:
+          $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
       type: object
       properties:
@@ -927,6 +956,54 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Contract'
+    ContractResult:
+      type: object
+      properties:
+        amount:
+          description: The
+          example: 10
+          type: number
+        bloom:
+          description: The
+          example: "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398"
+          type: string
+        call_result:
+          description: The result returned by the function
+          example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
+          type: string
+        created_contract_ids:
+          description: The network's released supply of hbars in tinybars
+          example:
+            - "0.0.1003"
+          type: array
+          items:
+            type: string
+        error_message:
+          description: The message when an error occurs during smart contract execution
+          example: "3999999999999999949"
+          type: string
+        from:
+          $ref: '#/components/schemas/SolidityAddress'
+        function_parameters:
+          description: The parameters passed to the function
+          example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
+          type: string
+        gas_limit:
+          description: The maximum units of gas allowed for contract execution
+          example: 100000
+          type: integer
+        gas_used:
+          description: The units of gas used to execute contract
+          example: 1000
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        to:
+          $ref: '#/components/schemas/SolidityAddress'
+    ContractResults:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContractResult'
     CustomFees:
       type: object
       properties:
@@ -966,6 +1043,23 @@ components:
                 properties:
                   message:
                     type: string
+    EvmAccount:
+      type: string
+      description: "EVM entity ID in the format of `shard.realm.num` or address in 20-byte solidity address form in hex with '0x' prefix"
+      pattern: '^(0x\[A-Fa-f0-9]*)+(\d{1,5}\.){1,2}\d{1,10}$'
+      examples:
+        fullEntityId:
+          value: "0.1.2"
+          summary: "Hedera entityId, includes shard, realm and num"
+        partialEntityId:
+          value: "1.2"
+          summary: "Hedera entityId, includes realm and num, assumes zero value shard."
+        encodedEntityId:
+          value: "23"
+          summary: "Hedera entityId, encoded value of shard, realm and num"
+        address:
+          value: "0x0000000000000000000000000000000000001f41"
+          summary: "EVM contract address"
     FixedFee:
       type: object
       properties:
@@ -1772,6 +1866,12 @@ components:
       description: Contract entity id
       schema:
         $ref: '#/components/schemas/EntityId'
+    fromQueryParam:
+      name: contractId
+      in: query
+      description: Contract entity id or address
+      schema:
+        $ref: '#/components/schemas/EvmAccount'
     limitQueryParam:
       name: limit
       in: query

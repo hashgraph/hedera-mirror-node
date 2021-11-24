@@ -39,9 +39,7 @@ class ContractService extends BaseService {
 
   async getContractResultsByIdAndFilters(whereConditions = [], whereParams = [], order = 'desc', limit = defaultLimit) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
-    logger.trace(`getContractResultsByIdAndFilters query: ${query}, params: ${params}`);
-    const rows = await super.getRows(query, params);
-    logger.trace(`getContractResultsByIdAndFilters returning ${rows.length} entries`);
+    const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
     return _.isEmpty(rows) ? null : rows.map((cr) => new ContractResult(cr));
   }
 

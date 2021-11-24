@@ -96,11 +96,8 @@ create table if not exists contract_result
   primary key (consensus_timestamp)
 );
 
-create index if not exists contract_result__id_payer
-  on contract_result (contract_id, payer_account_id);
-
-create index if not exists contract_result__timestamp_id
-  on contract_result (consensus_timestamp, contract_id);
+create index if not exists contract_result__id_payer_timestamp
+  on contract_result (contract_id, payer_account_id, consensus_timestamp);
 ```
 
 #### Contract Log

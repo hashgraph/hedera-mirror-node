@@ -24,7 +24,7 @@ const EntityId = require('../entityId');
 const utils = require('../utils');
 
 /**
- * Contract view model
+ * Contract results view model
  */
 class ContractResultViewModel {
   /**
@@ -32,21 +32,20 @@ class ContractResultViewModel {
    *
    * @param {ContractResult} contract
    */
-  constructor(contractResult, transactionModel, displayAdditionalInfo = false) {
+  constructor(contractResult, transactionModel) {
     Object.assign(this, {
-      amount: contractResult.amount,
+      amount: Number(contractResult.amount),
       bloom: utils.toHexString(contractResult.bloom, true),
       call_result: utils.toHexString(contractResult.callResult, true),
-      child_transactions: null,
       created_contract_ids: contractResult.createdContractIds,
       error_message: contractResult.errorMessage,
       from: EntityId.parse(contractResult.payerAccountId).toSolidityAddress(),
       function_parameters: utils.toHexString(contractResult.functionParameters, true),
-      gas_limit: contractResult.gasLimit,
-      gas_used: contractResult.gasUsed,
+      gas_limit: Number(contractResult.gasLimit),
+      gas_used: Number(contractResult.gasUsed),
       hash: transactionModel ? transactionModel.transactionHash : null,
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
-      to: EntityId.parse(contractResult.to, true).toSolidityAddress(),
+      to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
     });
 
     // format created contract ids
@@ -54,16 +53,6 @@ class ContractResultViewModel {
       this.created_contract_ids = contractResult.createdContractIds.map((id) => EntityId.parse(id).toString());
     } else {
       this.created_contract_ids = [];
-    }
-
-    if (displayAdditionalInfo) {
-      this.access_list = null;
-      this.block_hash = null;
-      this.block_number = null;
-      this.child_transactions = null;
-      this.evm_internal_transactions = null;
-      this.logs = null;
-      this.state_changes = null;
     }
   }
 }

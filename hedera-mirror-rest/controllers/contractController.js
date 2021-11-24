@@ -356,27 +356,26 @@ const getContractResultsById = async (req, res) => {
   const {conditions, params, order, limit} = extractContractResultsByIdQuery(filters, contractId);
 
   const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
-  if (rows === null) {
-    throw new NotFoundError();
-  }
-
-  logger.debug(`getContractResultsById returning ${rows.length} entries`);
-
   const response = {
-    results: rows.map((row) => new ContractResultViewModel(row)),
-    links: {},
+    results: [],
+    links: {
+      next: null,
+    },
   };
-  logger.debug(`getContractResultsById returning ${response}`);
 
-  const lastRow = _.last(response.results);
-  const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
-  response.links.next = utils.getPaginationLink(
-    req,
-    response.results.length !== limit,
-    constants.filterKeys.TIMESTAMP,
-    lastContractResultTimestamp,
-    order
-  );
+  if (!_.isNil(rows)) {
+    response.results = rows.map((row) => new ContractResultViewModel(row));
+
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      lastContractResultTimestamp,
+      order
+    );
+  }
 
   res.locals[constants.responseDataLabel] = response;
 };
@@ -390,7 +389,7 @@ const getContractResultsById = async (req, res) => {
  */
 const extractContractResultsByIdQuery = (filters, contractId) => {
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.ASC;
+  let order = constants.orderFilterValues.DESC;
   const conditions = [`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`];
   const params = [contractId];
 

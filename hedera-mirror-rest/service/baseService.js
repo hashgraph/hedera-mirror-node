@@ -34,8 +34,10 @@ class BaseService {
     return `limit $${limitParamCount}`;
   }
 
-  async getRows(query, params) {
+  async getRows(query, params, functionName = '') {
+    logger.trace(`${functionName} query: ${query}, params: ${params}`);
     const {rows} = await pool.queryQuietly(query, params);
+    logger.trace(`${functionName} ${rows.length} entries`);
     return rows;
   }
 }

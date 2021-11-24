@@ -213,7 +213,7 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
 };
 
 /**
- * Handler function for /schedules/:id API
+ * Handler function for /schedules API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}

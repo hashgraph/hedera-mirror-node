@@ -603,7 +603,7 @@ const addContractResult = async (contractResult) => {
     contract_id: 0,
     created_contract_ids: [],
     error_message: '',
-    function_parameters: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    function_parameters: Buffer.from([1, 1, 2, 2, 3, 3]),
     function_result: null,
     gas_limit: 1000,
     gas_used: 10,

@@ -22,8 +22,6 @@
 
 const _ = require('lodash');
 
-const utils = require('../utils');
-
 class ContractResult {
   /**
    * Parses contract_result table columns into object
