@@ -313,6 +313,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.db.pool.statementTimeout`            | 20000                   | The number of milliseconds to wait before timing out a query statement                         |
 | `hedera.mirror.rest.db.port`                             | 5432                    | The port used to connect to the database                                                       |
 | `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rest.db.sslMode`                          | DISABLE                 | The ssl level of protection against Eavesdropping, Man-in-the-middle (MITM) and Impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA oe VERIFY_FULL. |
 | `hedera.mirror.rest.db.tls.ca`                           | ""                      | The path to the certificate authority used by the database for secure connections              |
 | `hedera.mirror.rest.db.tls.cert`                         | ""                      | The path to the public key the client should use to securely connect to the database           |
 | `hedera.mirror.rest.db.tls.enabled`                      | false                   | Whether TLS should be used for the database connection                                         |

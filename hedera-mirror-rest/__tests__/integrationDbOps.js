@@ -68,13 +68,16 @@ const v2SchemaConfigs = {
 const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
 const getConnection = () => {
-  logger.info(`sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`);
+  logger.info(
+    `sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}?sslmode=${dbConfig.sslMode}`
+  );
   sqlConnection = new Pool({
     user: dbAdminUser,
     host: dbConfig.host,
     database: dbConfig.name,
     password: dbAdminPassword,
     port: dbConfig.port,
+    sslmode: dbConfig.sslMode,
   });
 
   // Until "server", "pool" and everything else is made non-static...
@@ -138,7 +141,7 @@ const flywayMigrate = () => {
     "placeholders.db-user": "${dbAdminUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
     "target": "latest",
-    "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}",
+    "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}?sslmode=${dbConfig.sslMode}",
     "user": "${dbAdminUser}"
   },
   "version": "7.7.3",

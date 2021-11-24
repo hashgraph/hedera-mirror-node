@@ -24,7 +24,12 @@ const _ = require('lodash');
 
 const BaseService = require('./baseService');
 const {ContractResult} = require('../model');
-const {defaultLimit} = require('../config');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('../config');
+const {orderFilterValues} = require('../constants');
 
 /**
  * Contract retrieval business logic
@@ -37,7 +42,12 @@ class ContractService extends BaseService {
   static contractResultsByIdQuery = `select *
     from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
-  async getContractResultsByIdAndFilters(whereConditions = [], whereParams = [], order = 'desc', limit = defaultLimit) {
+  async getContractResultsByIdAndFilters(
+    whereConditions = [],
+    whereParams = [],
+    order = orderFilterValues.DESC,
+    limit = defaultLimit
+  ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
     const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
     return _.isEmpty(rows) ? null : rows.map((cr) => new ContractResult(cr));
