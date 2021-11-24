@@ -32,7 +32,7 @@ class ContractResultViewModel {
    *
    * @param {ContractResult} contract
    */
-  constructor(contractResult, transactionModel) {
+  constructor(contractResult) {
     Object.assign(this, {
       amount: Number(contractResult.amount),
       bloom: utils.toHexString(contractResult.bloom, true),
@@ -43,7 +43,6 @@ class ContractResultViewModel {
       function_parameters: utils.toHexString(contractResult.functionParameters, true),
       gas_limit: Number(contractResult.gasLimit),
       gas_used: Number(contractResult.gasUsed),
-      hash: transactionModel ? transactionModel.transactionHash : null,
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
       to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
     });

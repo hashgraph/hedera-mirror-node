@@ -576,7 +576,7 @@ const addContract = async (contract) => {
   );
 };
 
-const addContractResult = async (contractResult) => {
+const addContractResult = async (contractResultInput) => {
   const insertFields = [
     'amount',
     'bloom',
@@ -595,7 +595,7 @@ const addContractResult = async (contractResult) => {
     .map((position) => `$${position}`)
     .join(',');
 
-  contractResult = {
+  const contractResult = {
     amount: 0,
     bloom: null,
     call_result: null,
@@ -608,8 +608,21 @@ const addContractResult = async (contractResult) => {
     gas_limit: 1000,
     gas_used: 10,
     payer_account_id: 101,
-    ...contractResult,
+    ...contractResultInput,
   };
+
+  contractResult.bloom =
+    contractResultInput.bloom != null ? Buffer.from(contractResultInput.bloom) : contractResult.bloom;
+  contractResult.call_result =
+    contractResultInput.call_result != null ? Buffer.from(contractResultInput.call_result) : contractResult.call_result;
+  contractResult.function_parameters =
+    contractResultInput.function_parameters != null
+      ? Buffer.from(contractResultInput.function_parameters)
+      : contractResult.function_parameters;
+  contractResult.function_result =
+    contractResultInput.function_result != null
+      ? Buffer.from(contractResultInput.function_result)
+      : contractResult.function_result;
 
   await sqlConnection.query(
     `insert into contract_result (${insertFields.join(',')}) values (${positions})`,

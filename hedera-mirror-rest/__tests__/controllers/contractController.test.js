@@ -349,7 +349,7 @@ describe('extractContractResultsByIdQuery', () => {
   const defaultExpected = {
     conditions: [primaryContractFilter],
     params: [defaultContractId],
-    order: constants.orderFilterValues.ASC,
+    order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
 
@@ -383,14 +383,14 @@ describe('extractContractResultsByIdQuery', () => {
           {
             key: constants.filterKeys.ORDER,
             operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.DESC,
+            value: constants.orderFilterValues.ASC,
           },
         ],
         contractId: defaultContractId,
       },
       expected: {
         ...defaultExpected,
-        order: constants.orderFilterValues.DESC,
+        order: constants.orderFilterValues.ASC,
       },
     },
     {
