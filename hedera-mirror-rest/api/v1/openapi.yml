@@ -1046,20 +1046,8 @@ components:
     EvmAccount:
       type: string
       description: "EVM entity ID in the format of `shard.realm.num` or address in 20-byte solidity address form in hex with '0x' prefix"
-      pattern: '^(0x\[A-Fa-f0-9]*)+(\d{1,5}\.){1,2}\d{1,10}$'
-      examples:
-        fullEntityId:
-          value: "0.1.2"
-          summary: "Hedera entityId, includes shard, realm and num"
-        partialEntityId:
-          value: "1.2"
-          summary: "Hedera entityId, includes realm and num, assumes zero value shard."
-        encodedEntityId:
-          value: "23"
-          summary: "Hedera entityId, encoded value of shard, realm and num"
-        address:
-          value: "0x0000000000000000000000000000000000001f41"
-          summary: "EVM contract address"
+      pattern: '^0x[A-Fa-f0-9]{40}+|(\d{1,5}\.){0,2}\d{1,10}$'
+      example: "0x0000000000000000000000000000000000001f41"
     FixedFee:
       type: object
       properties:
