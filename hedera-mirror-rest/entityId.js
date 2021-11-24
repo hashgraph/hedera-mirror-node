@@ -83,9 +83,19 @@ class EntityId {
   }
 }
 
+const isValidSolidityAddress = (address) => {
+  // Accepted forms: shard.realm.num, realm.num, or encodedId
+  return typeof address === 'string' && /^0x[A-Fa-f0-9]{40}$/.test(address);
+};
+
 const isValidEntityId = (entityId) => {
   // Accepted forms: shard.realm.num, realm.num, or encodedId
   return (typeof entityId === 'string' && /^(\d{1,5}\.){1,2}\d{1,10}$/.test(entityId)) || /^\d{1,19}$/.test(entityId);
+};
+
+const isValidContractAccount = (account) => {
+  // Accepted forms: shard.realm.num, realm.num, encodedId or 0x??
+  return isValidEntityId(account) || isValidSolidityAddress(account);
 };
 
 /**
@@ -142,6 +152,23 @@ const parseFromEncodedId = (id, error) => {
 };
 
 /**
+ * Parses shard, realm, num from solidity address string.
+ * @param {string} address
+ * @param {Function} error
+ * @return {bigint[3]}
+ */
+const parseFromSolidityAddress = (account) => {
+  // extract shard from index 2->9, realm from 10->25, num from 26->42 and parse from hex to decimal
+  const parts = [
+    Number.parseInt(account.slice(2, 10), 8), // shard
+    Number.parseInt(account.slice(10, 26), 16), // realm
+    Number.parseInt(account.slice(26, 42), 16), // num
+  ];
+
+  return parts.map((part) => BigInt(part));
+};
+
+/**
  * Parses shard, realm, num from entity ID string, can be shard.realm.num or realm.num.
  * @param {string} id
  * @return {bigint[3]}
@@ -171,11 +198,17 @@ const parseMemoized = mem(
    * @return {EntityId}
    */
   (id, error) => {
-    if (!isValidEntityId(id)) {
-      throw error();
+    let [shard, realm, num] = [0, 0, 0];
+    if (isValidSolidityAddress(id)) {
+      [shard, realm, num] = parseFromSolidityAddress(id);
+    } else {
+      if (!isValidEntityId(id)) {
+        throw error();
+      }
+
+      [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
     }
 
-    const [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
     if (num > maxNum || realm > maxRealm || shard > maxShard) {
       throw error();
     }
@@ -216,6 +249,7 @@ const parse = (id, ...rest) => {
 };
 
 module.exports = {
+  isValidContractAccount,
   isValidEntityId,
   of,
   parse,

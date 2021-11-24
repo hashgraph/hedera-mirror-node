@@ -180,7 +180,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.FROM:
-      ret = EntityId.isValidEntityId(val);
+      ret = EntityId.isValidContractAccount(val);
       break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);

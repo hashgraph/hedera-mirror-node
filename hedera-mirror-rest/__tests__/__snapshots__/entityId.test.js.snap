@@ -12,6 +12,12 @@ Array [
 ]
 `;
 
+exports[`EntityId parse from entityId string 0x 1`] = `"Invalid entity ID \\"0x\\""`;
+
+exports[`EntityId parse from entityId string 0x00000001000000000000000200000000000000034 1`] = `"Invalid entity ID \\"0x00000001000000000000000200000000000000034\\""`;
+
+exports[`EntityId parse from entityId string 0x010203 1`] = `"Invalid entity ID \\"0x010203\\""`;
+
 exports[`EntityId parse from entityId string a 1`] = `"Invalid entity ID \\"a\\""`;
 
 exports[`EntityId parse from entityId string a.b.c 1`] = `"Invalid entity ID \\"a.b.c\\""`;

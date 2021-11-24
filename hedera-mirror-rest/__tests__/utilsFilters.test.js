@@ -383,6 +383,7 @@ describe('utils validateAndParseFilters entity key tests', () => {
     constants.filterKeys.ACCOUNT_ID,
     constants.filterKeys.TOKEN_ID,
     constants.filterKeys.SCHEDULE_ID,
+    constants.filterKeys.FROM,
   ];
   booleanFilterKeys.forEach((key) => {
     const invalidFilters = [
@@ -517,4 +518,22 @@ describe('utils validateAndParseFilters crypto key tests', () => {
 
     verifyValidAndInvalidFilters(invalidFilters, filters);
   });
+});
+
+describe('utils validateAndParseFilters FROM key tests', () => {
+  const key = constants.filterKeys.FROM;
+  const invalidFilters = [
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
+    // invalid format
+    utils.buildComparatorFilter(key, '0x'),
+    utils.buildComparatorFilter(key, '0x00000000000000000000000000000000000000012'),
+  ];
+
+  const filters = [
+    utils.buildComparatorFilter(key, '0x0000000000000000000000000000000000000001'),
+    utils.buildComparatorFilter(key, '0x0000000100000000000000020000000000000003'),
+  ];
+
+  verifyValidAndInvalidFilters(invalidFilters, filters);
 });
