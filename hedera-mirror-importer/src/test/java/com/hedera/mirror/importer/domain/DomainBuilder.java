@@ -54,6 +54,9 @@ import com.hedera.mirror.importer.util.Utility;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
 
+    public static final int KEY_LENGTH_ECDSA = 33;
+    public static final int KEY_LENGTH_ED25519 = 32;
+
     private final AtomicLong id = new AtomicLong(0L);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
@@ -267,9 +270,11 @@ public class DomainBuilder {
 
     public byte[] key() {
         if (id.get() % 2 == 0) {
-            return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(bytes(33))).build().toByteArray();
+            ByteString bytes = ByteString.copyFrom(bytes(KEY_LENGTH_ECDSA));
+            return Key.newBuilder().setECDSASecp256K1(bytes).build().toByteArray();
         } else {
-            return Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(32))).build().toByteArray();
+            ByteString bytes = ByteString.copyFrom(bytes(KEY_LENGTH_ED25519));
+            return Key.newBuilder().setEd25519(bytes).build().toByteArray();
         }
     }
 

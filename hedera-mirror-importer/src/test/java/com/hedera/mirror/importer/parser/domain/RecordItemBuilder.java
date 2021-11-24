@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.DomainBuilder.KEY_LENGTH_ECDSA;
+import static com.hedera.mirror.importer.domain.DomainBuilder.KEY_LENGTH_ED25519;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -63,8 +66,8 @@ import com.hedera.mirror.importer.util.Utility;
 public class RecordItemBuilder {
 
     private static final AccountID NODE = AccountID.newBuilder().setAccountNum(3).build();
-    private static final RealmID REALM_ID = RealmID.newBuilder().setShardNum(0).setRealmNum(0).build();
-    private static final ShardID SHARD_ID = ShardID.newBuilder().setShardNum(0).build();
+    private static final RealmID REALM_ID = RealmID.getDefaultInstance();
+    private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
     private final AtomicLong id = new AtomicLong(1000L);
@@ -142,7 +145,11 @@ public class RecordItemBuilder {
     }
 
     private Key key() {
-        return Key.newBuilder().setEd25519(bytes(64)).build();
+        if (id.get() % 2 == 0) {
+            return Key.newBuilder().setECDSASecp256K1(bytes(KEY_LENGTH_ECDSA)).build();
+        } else {
+            return Key.newBuilder().setEd25519(bytes(KEY_LENGTH_ED25519)).build();
+        }
     }
 
     public String text(int characters) {
