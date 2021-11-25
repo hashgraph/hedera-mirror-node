@@ -28,7 +28,7 @@ insert into t_transaction_types (proto_id, name, entity_type) values (45, 'TOKEN
 
 - Update `t_transaction_results` with new response codes
 
-- Add new columns `fee_schedule_key` and `fee_schedule_key_ed25519_hex` to table `token`
+- Add new columns `fee_schedule_key` to table `token`
 
 - Add a new `custom_fee` table
 

@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnknownFieldSet;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -53,6 +54,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -834,24 +836,61 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
                                              List<SignaturePair> signaturePairList) {
-        HashSet<ByteString> publicKeyPrefixes = new HashSet<>();
+        Set<ByteString> publicKeyPrefixes = new HashSet<>();
         signaturePairList.forEach(signaturePair -> {
-            // currently only Ed25519 signature is supported
-            SignaturePair.SignatureCase signatureCase = signaturePair.getSignatureCase();
-            if (signatureCase != SignaturePair.SignatureCase.ED25519) {
-                throw new InvalidDatasetException("Unsupported signature case encountered: " + signatureCase);
+            ByteString prefix = signaturePair.getPubKeyPrefix();
+            ByteString signature = null;
+            var signatureCase = signaturePair.getSignatureCase();
+            int type = signatureCase.getNumber();
+
+            switch (signatureCase) {
+                case CONTRACT:
+                    signature = signaturePair.getContract();
+                    break;
+                case ECDSA_384:
+                    signature = signaturePair.getECDSA384();
+                    break;
+                case ECDSA_SECP256K1:
+                    signature = signaturePair.getECDSASecp256K1();
+                    break;
+                case ED25519:
+                    signature = signaturePair.getEd25519();
+                    break;
+                case RSA_3072:
+                    signature = signaturePair.getRSA3072();
+                    break;
+                case SIGNATURE_NOT_SET:
+                    Map<Integer, UnknownFieldSet.Field> unknownFields = signaturePair.getUnknownFields().asMap();
+
+                    // If we encounter a signature that our version of the protobuf does not yet support, it will
+                    // return SIGNATURE_NOT_SET. Hence we should look in the unknown fields for the new signature.
+                    // ByteStrings are stored as length-delimited on the wire, so we search the unknown fields for a
+                    // field that has exactly one length-delimited value and assume it's our new signature bytes.
+                    for (Map.Entry<Integer, UnknownFieldSet.Field> entry : unknownFields.entrySet()) {
+                        UnknownFieldSet.Field field = entry.getValue();
+                        if (field.getLengthDelimitedList().size() == 1) {
+                            signature = field.getLengthDelimitedList().get(0);
+                            type = entry.getKey();
+                            break;
+                        }
+                    }
+
+                    if (signature == null) {
+                        throw new InvalidDatasetException("Unsupported signature: " + unknownFields);
+                    }
+                    break;
+                default:
+                    throw new InvalidDatasetException("Unsupported signature: " + signaturePair.getSignatureCase());
             }
 
-            // handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
-            ByteString prefix = signaturePair.getPubKeyPrefix();
+            // Handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
             if (publicKeyPrefixes.add(prefix)) {
                 TransactionSignature transactionSignature = new TransactionSignature();
-                transactionSignature.setId(new TransactionSignature.Id(
-                        consensusTimestamp,
-                        Utility.toBytes(prefix)));
+                transactionSignature.setConsensusTimestamp(consensusTimestamp);
                 transactionSignature.setEntityId(entityId);
-                transactionSignature.setSignature(Utility.toBytes(signaturePair.getEd25519()));
-
+                transactionSignature.setPublicKeyPrefix(Utility.toBytes(prefix));
+                transactionSignature.setSignature(Utility.toBytes(signature));
+                transactionSignature.setType(type);
                 entityListener.onTransactionSignature(transactionSignature);
             }
         });

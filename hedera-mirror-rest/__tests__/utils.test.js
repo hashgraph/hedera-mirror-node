@@ -27,7 +27,11 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
 const {TransactionType} = require('../model');
 const {getLimitParamValue} = require('../utils');
+const {keyTypes} = require('../constants');
 
+const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
+const ed25519Key = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
+const ed25519Der = `302a300506032b6570032100${ed25519Key}`;
 const responseLimit = config.response.limit;
 
 describe('Utils getNullableNumber tests', () => {
@@ -112,6 +116,75 @@ describe('Utils createTransactionId tests', () => {
   test('Verify nsToSecNs returns correct result for 0 inputs', () => {
     expect(utils.createTransactionId('0.0.0', 0)).toEqual('0.0.0-0-000000000');
   });
+});
+
+describe('Utils encodeKey', () => {
+  test('Null', () => expect(utils.encodeKey(null)).toBe(null));
+  [
+    {
+      name: 'Empty',
+      input: '',
+      output: '',
+      signatureType: keyTypes.PROTOBUF,
+    },
+    {
+      name: 'Protobuf',
+      input: 'abcdef',
+      output: 'abcdef',
+      signatureType: keyTypes.PROTOBUF,
+    },
+    {
+      name: 'ECDSA(secp256k1) primitive',
+      input: `3a20${ecdsaKey}`,
+      output: ecdsaKey,
+      signatureType: keyTypes.ECDSA_SECP256K1,
+    },
+    {
+      name: 'ECDSA(secp256k1) keylist',
+      input: `32240a223a20${ecdsaKey}`,
+      output: ecdsaKey,
+      signatureType: keyTypes.ECDSA_SECP256K1,
+    },
+    {
+      name: 'ECDSA(secp256k1) threshold',
+      input: `2a28080112240a223a20${ecdsaKey}`,
+      output: ecdsaKey,
+      signatureType: keyTypes.ECDSA_SECP256K1,
+    },
+    {
+      name: 'ED25519 primitive',
+      input: `1220${ed25519Key}`,
+      output: ed25519Key,
+      signatureType: keyTypes.ED25519,
+    },
+    {
+      name: 'ED25519 keylist',
+      input: `32240a221220${ed25519Key}`,
+      output: ed25519Key,
+      signatureType: keyTypes.ED25519,
+    },
+    {
+      name: 'ED25519 threshold',
+      input: `2a28080112240a221220${ed25519Key}`,
+      output: ed25519Key,
+      signatureType: keyTypes.ED25519,
+    },
+  ].forEach((spec) => {
+    const buffer = Buffer.from(spec.input, 'hex');
+    const bytes = [...buffer];
+    test(spec.name, () => expect(utils.encodeKey(bytes)).toStrictEqual({_type: spec.signatureType, key: spec.output}));
+  });
+});
+
+describe('Utils isValidPublicKeyQuery', () => {
+  test('Null', () => expect(utils.isValidPublicKeyQuery(null)).toBe(false));
+  test('Empty', () => expect(utils.isValidPublicKeyQuery('')).toBe(false));
+  test('Valid ECDSA(secp256k1)', () => expect(utils.isValidPublicKeyQuery(ecdsaKey)).toBe(true));
+  test('Valid ED25519', () => expect(utils.isValidPublicKeyQuery(ed25519Key)).toBe(true));
+  test('Valid ED25519 DER', () => expect(utils.isValidPublicKeyQuery(ed25519Der)).toBe(true));
+  test('0x ECDSA', () => expect(utils.isValidPublicKeyQuery(`0x${ed25519Key}`)).toBe(true));
+  test('0x ED25519', () => expect(utils.isValidPublicKeyQuery(`0x${ecdsaKey}`)).toBe(true));
+  test('Invalid', () => expect(utils.isValidPublicKeyQuery(`${ed25519Key}F`)).toBe(false));
 });
 
 describe('Utils isValidTimestampParam tests', () => {
@@ -492,15 +565,21 @@ describe('utils parsePublicKey tests', () => {
     expect(utils.parsePublicKey(null)).toBe(null);
   });
 
+  test(`Verify parsePublicKey on hex prefix`, () => {
+    expect(utils.parsePublicKey(`0x${ed25519Key}`)).toBe(ed25519Key);
+  });
+
+  test(`Verify parsePublicKey on ECDSA secp256k1`, () => {
+    expect(utils.parsePublicKey(ecdsaKey)).toBe(ecdsaKey);
+  });
+
   test(`Verify parsePublicKey on invalid decode publickey`, () => {
     const key = '2b60955bcbf0cf5e9ea880b52e5b63f664b08edf6ed15e301049517438d61864;';
     expect(utils.parsePublicKey(key)).toBe(key);
   });
 
   test(`Verify parsePublicKey on valid decode publickey`, () => {
-    const validDer = '302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
-    const validDecoded = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
-    expect(utils.parsePublicKey(validDer)).toBe(validDecoded);
+    expect(utils.parsePublicKey(ed25519Der)).toBe(ed25519Key);
   });
 });
 
@@ -663,7 +742,6 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
   const testSpecs = [
     {
       name: singleParamTestName,
-      // DER borrowed from ed25519.test.js
       parsedQueryParams: {'account.publickey': 'gte:key'},
       expectedClause: 'account.publickey >= ?',
       expectedValues: ['key'],
@@ -705,11 +783,18 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
     {
       name: 'Single parameter DER encoded',
       parsedQueryParams: {
-        'account.publickey':
-          'gte:302a300506032b65700321007a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc',
+        'account.publickey': `gte:${ed25519Der}`,
       },
       expectedClause: 'account.publickey >= ?',
-      expectedValues: ['7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc'],
+      expectedValues: [ed25519Key],
+    },
+    {
+      name: 'Single parameter ECDSA(secp256k1) encoded',
+      parsedQueryParams: {
+        'account.publickey': `gte:${ecdsaKey}`,
+      },
+      expectedClause: 'account.publickey >= ?',
+      expectedValues: [ecdsaKey],
     },
   ];
   parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) =>
@@ -721,14 +806,12 @@ describe('Utils parseCreditDebitParams tests', () => {
   const testSpecs = [
     {
       name: 'Single parameter credit',
-      // DER borrowed from ed25519.test.js
       parsedQueryParams: {type: 'credit'},
       expectedClause: 'type > ?',
       expectedValues: [0],
     },
     {
       name: 'Single parameter debit',
-      // DER borrowed from ed25519.type.js
       parsedQueryParams: {type: 'debit'},
       expectedClause: 'type < ?',
       expectedValues: [0],

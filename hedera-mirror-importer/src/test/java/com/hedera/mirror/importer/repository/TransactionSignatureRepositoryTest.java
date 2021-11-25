@@ -23,31 +23,20 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.EntityType;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 
 class TransactionSignatureRepositoryTest extends AbstractRepositoryTest {
+
     @Resource
     private TransactionSignatureRepository transactionSignatureRepository;
 
     @Test
     void save() {
-        TransactionSignature transactionSignature = transactionSignatureRepository.save(transactionSignature(1));
+        TransactionSignature transactionSignature = domainBuilder.transactionSignature().persist();
         assertThat(transactionSignatureRepository.findById(transactionSignature.getId()))
-                .get().isEqualTo(transactionSignature);
-    }
-
-    private TransactionSignature transactionSignature(long consensusTimestamp) {
-        TransactionSignature transactionSignature = new TransactionSignature();
-        transactionSignature.setId(new TransactionSignature.Id(
-                consensusTimestamp,
-                "signatory public key prefix".getBytes()));
-        transactionSignature.setEntityId(EntityId.of("0.0.789", EntityType.UNKNOWN));
-        transactionSignature.setSignature("scheduled transaction signature".getBytes());
-        return transactionSignature;
+                .get()
+                .isEqualTo(transactionSignature);
     }
 }

@@ -44,68 +44,96 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class UtilityTest {
 
-    private static final String ED25519 = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
+    private static final String KEY = "c83755a935e442f18f12fbb9ecb5bc416417059ddb3c15aac32c1702e7da6734";
 
     @Test
-    void convertSimpleKeyToHexWhenNull() {
-        assertThat(Utility.convertSimpleKeyToHex(null)).isNull();
+    void getPublicKeyWhenNull() {
+        assertThat(Utility.getPublicKey(null)).isNull();
     }
 
     @Test
-    void convertSimpleKeyToHexWhenError() {
-        assertThat(Utility.convertSimpleKeyToHex(new byte[] {0, 1, 2})).isNull();
+    void getPublicKeyWhenError() {
+        assertThat(Utility.getPublicKey(new byte[] {0, 1, 2})).isNull();
     }
 
     @Test
-    void convertSimpleKeyToHexWhenEd25519() throws Exception {
-        var bytes = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build().toByteArray();
-        assertThat(Utility.convertSimpleKeyToHex(bytes)).isEqualTo(ED25519);
+    void getPublicKeyWhenEd25519() throws Exception {
+        var bytes = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
+        assertThat(Utility.getPublicKey(bytes)).isEqualTo(KEY);
     }
 
     @Test
-    void convertDefaultInstanceKeyToHex() {
+    void getPublicKeyWhenECDSASecp256K1() throws Exception {
+        var bytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
+        assertThat(Utility.getPublicKey(bytes)).isEqualTo(KEY);
+    }
+
+    @Test
+    void getPublicKeyWhenECDSA384() throws Exception {
+        var bytes = Key.newBuilder().setECDSA384(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
+        assertThat(Utility.getPublicKey(bytes)).isEqualTo(KEY);
+    }
+
+    @Test
+    void getPublicKeyWhenRSA3072() throws Exception {
+        var bytes = Key.newBuilder().setRSA3072(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
+        assertThat(Utility.getPublicKey(bytes)).isEqualTo(KEY);
+    }
+
+    @Test
+    void getPublicKeyWhenDefaultInstance() {
         byte[] keyBytes = Key.getDefaultInstance().toByteArray();
-        assertThat(Utility.convertSimpleKeyToHex(keyBytes)).isEmpty();
+        assertThat(Utility.getPublicKey(keyBytes)).isEmpty();
     }
 
     @Test
-    void convertEmptyKeyToHex() {
+    void getPublicKeyWhenEmpty() {
         byte[] keyBytes = Key.newBuilder().setEd25519(ByteString.EMPTY).build().toByteArray();
-        assertThat(Utility.convertSimpleKeyToHex(keyBytes)).isEmpty();
+        assertThat(Utility.getPublicKey(keyBytes)).isEmpty();
     }
 
     @Test
-    void convertSimpleKeyToHexWhenSimpleKeyList() throws Exception {
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
+    void getPublicKeyWhenSimpleKeyList() throws Exception {
+        var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).build();
         var bytes = Key.newBuilder().setKeyList(keyList).build().toByteArray();
-        assertThat(Utility.convertSimpleKeyToHex(bytes)).isEqualTo(ED25519);
+        assertThat(Utility.getPublicKey(bytes)).isEqualTo(KEY);
     }
 
     @Test
-    void convertSimpleKeyToHexWhenKeyList() throws Exception {
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
+    void getPublicKeyWhenMaxDepth() throws Exception {
+        var primitiveKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
+        var keyList2 = KeyList.newBuilder().addKeys(primitiveKey).build();
+        var key2 = Key.newBuilder().setKeyList(keyList2).build();
+        var keyList1 = KeyList.newBuilder().addKeys(key2).build();
+        var bytes = Key.newBuilder().setKeyList(keyList1).build().toByteArray();
+        assertThat(Utility.getPublicKey(bytes)).isNull();
+    }
+
+    @Test
+    void getPublicKeyWhenKeyList() throws Exception {
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).addKeys(key).build();
         var bytes = Key.newBuilder().setKeyList(keyList).build().toByteArray();
-        assertThat(Utility.convertSimpleKeyToHex(bytes)).isNull();
+        assertThat(Utility.getPublicKey(bytes)).isNull();
     }
 
     @Test
-    void convertSimpleKeyToHexWhenSimpleThreshHoldKey() throws Exception {
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
+    void getPublicKeyWhenSimpleThreshHoldKey() throws Exception {
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).build();
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
         var bytes = Key.newBuilder().setThresholdKey(tk).build().toByteArray();
-        assertThat(Utility.convertSimpleKeyToHex(bytes)).isEqualTo(ED25519);
+        assertThat(Utility.getPublicKey(bytes)).isEqualTo(KEY);
     }
 
     @Test
-    void convertSimpleKeyToHexWhenThreshHoldKey() throws Exception {
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519))).build();
+    void getPublicKeyWhenThreshHoldKey() throws Exception {
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).addKeys(key).build();
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
         var bytes = Key.newBuilder().setThresholdKey(tk).build().toByteArray();
-        assertThat(Utility.convertSimpleKeyToHex(bytes)).isNull();
+        assertThat(Utility.getPublicKey(bytes)).isNull();
     }
 
     @Test

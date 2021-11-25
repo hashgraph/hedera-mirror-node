@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
-import static com.hederahashgraph.api.proto.java.Key.KeyCase.ED25519;
-
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
@@ -93,13 +91,14 @@ public class Utility {
     }
 
     /**
-     * If the protobuf encoding of a Key is a single ED25519 key or a complex key with exactly one ED25519 key within
-     * it, return the key as a String with lowercase hex encoding.
+     * A key can either be a complex key (e.g. key list or threshold key) or a primitive key (e.g. ED25519 or
+     * ECDSA_SECP256K1). If the protobuf encoding of a Key is a single primitive key or a complex key with exactly one
+     * primitive key within it, return the key as a String with lowercase hex encoding.
      *
      * @param protobufKey
-     * @return ED25519 public key as a String in hex encoding, or null
+     * @return public key as a string in hex encoding, or null
      */
-    public static String convertSimpleKeyToHex(@Nullable byte[] protobufKey) {
+    public static String getPublicKey(@Nullable byte[] protobufKey) {
         try {
             if (protobufKey == null) {
                 return null;
@@ -110,32 +109,42 @@ public class Utility {
             }
 
             Key key = Key.parseFrom(protobufKey);
-            byte[] ed25519 = null;
-
-            switch (key.getKeyCase()) {
-                case THRESHOLDKEY:
-                    ed25519 = getSimpleKey(key.getThresholdKey().getKeys());
-                    break;
-                case KEYLIST:
-                    ed25519 = getSimpleKey(key.getKeyList());
-                    break;
-                case ED25519:
-                    ed25519 = key.getEd25519().toByteArray();
-                    break;
-                default:
-            }
-
-            return bytesToHex(ed25519);
+            byte[] primitiveKey = getPublicKey(key, 1);
+            return bytesToHex(primitiveKey);
         } catch (Exception e) {
             log.error("Unable to parse protobuf Key", e);
             return null;
         }
     }
 
-    private static byte[] getSimpleKey(KeyList keyList) {
+    private static byte[] getPublicKey(Key key, int depth) {
+        // We don't support searching for primitive keys at multiple levels since the REST API matches by hex prefix
+        if (depth > 2) {
+            return null;
+        }
+
+        switch (key.getKeyCase()) {
+            case ECDSA_384:
+                return toBytes(key.getECDSA384());
+            case ECDSA_SECP256K1:
+                return toBytes(key.getECDSASecp256K1());
+            case ED25519:
+                return toBytes(key.getEd25519());
+            case KEYLIST:
+                return getPublicKey(key.getKeyList(), depth);
+            case RSA_3072:
+                return toBytes(key.getRSA3072());
+            case THRESHOLDKEY:
+                return getPublicKey(key.getThresholdKey().getKeys(), depth);
+            default:
+                return null;
+        }
+    }
+
+    private static byte[] getPublicKey(KeyList keyList, int depth) {
         List<Key> keys = keyList.getKeysList();
-        if (keys.size() == 1 && keys.get(0).getKeyCase() == ED25519) {
-            return keys.get(0).getEd25519().toByteArray();
+        if (keys.size() == 1) {
+            return getPublicKey(keys.get(0), depth + 1);
         }
         return null;
     }

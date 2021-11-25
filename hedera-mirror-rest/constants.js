@@ -56,6 +56,12 @@ const entityTypes = {
   SCHEDULE: 'SCHEDULE',
 };
 
+const keyTypes = {
+  ECDSA_SECP256K1: 'ECDSA_SECP256K1',
+  ED25519: 'ED25519',
+  PROTOBUF: 'ProtobufEncoded',
+};
+
 const transactionColumns = {
   TYPE: 'type',
 };
@@ -155,6 +161,7 @@ module.exports = {
   entityTypes,
   filterKeys,
   httpStatusCodes,
+  keyTypes,
   networks,
   orderFilterValues,
   recordStreamPrefix,

@@ -23,53 +23,21 @@ package com.hedera.mirror.importer.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.importer.util.EntityIdEndec;
 
 class TokenTest {
 
-    private static final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityType.TOKEN);
-    private static final String KEY = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
-    private static final EntityId TREASURY = EntityId.of("0.0.102", EntityType.ACCOUNT);
+    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Test
-    void createValidToken() throws DecoderException {
-        Token token = token(1);
-        assertAll(
-                () -> assertNotNull(token.getFeeScheduleKeyEd25519Hex()),
-                () -> assertNotNull(token.getFreezeKeyEd25519Hex()),
-                () -> assertNotNull(token.getKycKeyEd25519Hex()),
-                () -> assertNotNull(token.getSupplyKeyEd25519Hex()),
-                () -> assertNotNull(token.getWipeKeyEd25519Hex()),
-                () -> assertNotEquals(0, token.getTotalSupply())
-        );
-    }
-
-    @Test
-    void createTokenWithBadKeys() {
-        Token token = new Token();
-        byte[] badBytes = "badkey".getBytes();
-        token.setFeeScheduleKey(badBytes);
-        token.setFreezeKey(badBytes);
-        token.setKycKey(badBytes);
-        token.setSupplyKey(badBytes);
-        token.setWipeKey(badBytes);
-
-        assertNull(token.getFeeScheduleKeyEd25519Hex());
-        assertNull(token.getFreezeKeyEd25519Hex());
-        assertNull(token.getKycKeyEd25519Hex());
-        assertNull(token.getSupplyKeyEd25519Hex());
-        assertNull(token.getWipeKeyEd25519Hex());
+    void createValidToken() {
+        Token token = domainBuilder.token().get();
+        assertNotEquals(0, token.getTotalSupply());
     }
 
     @Test
     void nullCharacters() {
-        Token token = new Token();
+        Token token = domainBuilder.token().get();
         token.setName("abc" + (char) 0);
         token.setSymbol("abc" + (char) 0);
         assertThat(token.getName()).isEqualTo("abc�");
@@ -78,32 +46,9 @@ class TokenTest {
 
     @Test
     void of() {
-        EntityId tokenId = EntityIdEndec.decode(1057, EntityType.TOKEN);
-        Token expected = new Token();
-        expected.setTokenId(new TokenId(tokenId));
-
-        Token actual = Token.of(tokenId);
-
-        assertThat(actual).isEqualTo(expected);
-    }
-
-    private Token token(long consensusTimestamp) throws DecoderException {
-        var hexKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
-        Token token = new Token();
-        token.setCreatedTimestamp(consensusTimestamp);
-        token.setDecimals(1000);
-        token.setFeeScheduleKey(hexKey);
-        token.setFreezeDefault(false);
-        token.setFreezeKey(hexKey);
-        token.setInitialSupply(1_000_000_000L);
-        token.setKycKey(hexKey);
-        token.setModifiedTimestamp(3L);
-        token.setName("FOO COIN TOKEN");
-        token.setSupplyKey(hexKey);
-        token.setSymbol("FOOTOK");
-        token.setTokenId(new TokenId(FOO_COIN_ID));
-        token.setTreasuryAccountId(TREASURY);
-        token.setWipeKey(hexKey);
-        return token;
+        Token token = domainBuilder.token().get();
+        TokenId tokenId = token.getTokenId();
+        Token actual = Token.of(tokenId.getTokenId());
+        assertThat(actual).isNotSameAs(token).extracting(Token::getTokenId).isEqualTo(tokenId);
     }
 }

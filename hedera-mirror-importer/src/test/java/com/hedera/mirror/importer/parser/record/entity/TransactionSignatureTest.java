@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -49,7 +48,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -64,7 +62,6 @@ import com.hedera.mirror.importer.domain.EntityId;
 import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.TransactionSignature;
 import com.hedera.mirror.importer.domain.TransactionType;
-import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
@@ -123,12 +120,11 @@ class TransactionSignatureTest {
                 .stream()
                 .map(pair -> {
                     TransactionSignature transactionSignature = new TransactionSignature();
-                    transactionSignature.setId(new TransactionSignature.Id(
-                            CONSENSUS_TIMESTAMP,
-                            pair.getPubKeyPrefix().toByteArray())
-                    );
+                    transactionSignature.setConsensusTimestamp(CONSENSUS_TIMESTAMP);
                     transactionSignature.setEntityId(ENTITY_ID);
+                    transactionSignature.setPublicKeyPrefix(pair.getPubKeyPrefix().toByteArray());
                     transactionSignature.setSignature(pair.getEd25519().toByteArray());
+                    transactionSignature.setType(SignaturePair.SignatureCase.ED25519.getNumber());
                     return transactionSignature;
                 })
                 .collect(Collectors.toList());
@@ -136,21 +132,6 @@ class TransactionSignatureTest {
 
         doReturn(ENTITY_ID).when(transactionHandler).getEntity(any(RecordItem.class));
         doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
-    }
-
-    @Test
-    void nonEd25519Signature() {
-        transactionSignatures.add(TransactionType.CONSENSUSSUBMITMESSAGE);
-
-        SignatureMap signatureMap = defaultSignatureMap
-                .addSigPair(SignaturePair.newBuilder()
-                        .setPubKeyPrefix(ByteString.copyFromUtf8("RSA3072PubKey"))
-                        .setRSA3072(ByteString.copyFromUtf8("RSA3072Signature"))
-                        .build())
-                .build();
-        RecordItem recordItem = getRecordItem(TransactionType.CONSENSUSSUBMITMESSAGE, SUCCESS, signatureMap);
-
-        assertThrows(ImporterException.class, () -> entityRecordItemListener.onItem(recordItem));
     }
 
     @ParameterizedTest

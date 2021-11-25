@@ -22,12 +22,14 @@ package com.hedera.mirror.importer.domain;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
-import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -37,6 +39,8 @@ import org.hibernate.annotations.TypeDef;
 import com.hedera.mirror.importer.converter.AccountIdConverter;
 import com.hedera.mirror.importer.util.Utility;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
@@ -44,9 +48,6 @@ import com.hedera.mirror.importer.util.Utility;
         name = "pgsql_enum",
         typeClass = PostgreSQLEnumType.class
 )
-@ToString(exclude = {"feeScheduleKey", "feeScheduleKeyEd25519Hex", "freezeKey", "freezeKeyEd25519Hex",
-        "kycKey", "kycKeyEd25519Hex", "pauseKey", "supplyKey", "supplyKeyEd25519Hex", "wipeKey",
-        "wipeKeyEd25519Hex"})
 @Upsertable
 public class Token {
     @EmbeddedId
@@ -57,29 +58,24 @@ public class Token {
 
     private Integer decimals;
 
+    @ToString.Exclude
     private byte[] feeScheduleKey;
-
-    @Column(name = "fee_schedule_key_ed25519_hex")
-    private String feeScheduleKeyEd25519Hex;
 
     private Boolean freezeDefault;
 
+    @ToString.Exclude
     private byte[] freezeKey;
-
-    @Column(name = "freeze_key_ed25519_hex")
-    private String freezeKeyEd25519Hex;
 
     private Long initialSupply;
 
+    @ToString.Exclude
     private byte[] kycKey;
-
-    @Column(name = "kyc_key_ed25519_hex")
-    private String kycKeyEd25519Hex;
 
     private long maxSupply;
 
     private long modifiedTimestamp;
 
+    @ToString.Exclude
     private byte[] pauseKey;
 
     @Enumerated(EnumType.STRING)
@@ -88,10 +84,8 @@ public class Token {
 
     private String name;
 
+    @ToString.Exclude
     private byte[] supplyKey;
-
-    @Column(name = "supply_key_ed25519_hex")
-    private String supplyKeyEd25519Hex;
 
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
@@ -108,10 +102,8 @@ public class Token {
     @Type(type = "pgsql_enum")
     private TokenTypeEnum type;
 
+    @ToString.Exclude
     private byte[] wipeKey;
-
-    @Column(name = "wipe_key_ed25519_hex")
-    private String wipeKeyEd25519Hex;
 
     public static Token of(EntityId tokenId) {
         Token token = new Token();
@@ -124,31 +116,6 @@ public class Token {
 
         // default totalSupply to initial supply
         totalSupply = initialSupply;
-    }
-
-    public void setFeeScheduleKey(byte[] key) {
-        feeScheduleKey = key;
-        feeScheduleKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
-    }
-
-    public void setFreezeKey(byte[] key) {
-        freezeKey = key;
-        freezeKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
-    }
-
-    public void setKycKey(byte[] key) {
-        kycKey = key;
-        kycKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
-    }
-
-    public void setSupplyKey(byte[] key) {
-        supplyKey = key;
-        supplyKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
-    }
-
-    public void setWipeKey(byte[] key) {
-        wipeKey = key;
-        wipeKeyEd25519Hex = Utility.convertSimpleKeyToHex(key);
     }
 
     public void setName(String name) {

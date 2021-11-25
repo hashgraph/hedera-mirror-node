@@ -284,6 +284,7 @@ var TransactionResults = map[int32]string{
 	276: "FREEZE_UPGRADE_IN_PROGRESS",
 	277: "UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED",
 	278: "UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED",
+	279: "CONSENSUS_GAS_EXHAUSTED",
 }
 
 var TransactionTypes = map[int32]string{

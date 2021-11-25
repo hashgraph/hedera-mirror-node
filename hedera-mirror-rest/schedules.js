@@ -27,6 +27,7 @@ const {
 } = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
+const {SignatureType} = require('./model');
 const utils = require('./utils');
 const {NotFoundError} = require('./errors/notFoundError');
 
@@ -45,7 +46,8 @@ const scheduleSelectFields = [
       json_build_object(
         'consensus_timestamp', ts.consensus_timestamp::text,
         'public_key_prefix', encode(ts.public_key_prefix, 'base64'),
-        'signature', encode(ts.signature, 'base64')
+        'signature', encode(ts.signature, 'base64'),
+        'type', ts.type
       ) order by ts.consensus_timestamp
     )
     from transaction_signature ts
@@ -97,6 +99,7 @@ const formatScheduleRow = (row) => {
           consensus_timestamp: utils.nsToSecNs(signature.consensus_timestamp),
           public_key_prefix: signature.public_key_prefix,
           signature: signature.signature,
+          type: SignatureType.getName(signature.type),
         };
       })
     : [];

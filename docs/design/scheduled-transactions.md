@@ -106,7 +106,7 @@ Add a `ScheduleIdConverter`.
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
   - Set `entityId` to the `scheduleID` in the transaction receipt.
-  - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
+  - Set `signature` to the `sigPair.signature` `oneof` field.
 
 #### Schedule Sign
 
@@ -116,7 +116,7 @@ Add a `ScheduleIdConverter`.
   - Set `consensusTimestamp` to the `consensusTimestamp` in the transaction record.
   - Set `publicKeyPrefix` to the `sigPair.pubKeyPrefix`.
   - Set `entityId` to the `scheduleID` in the transaction receipt.
-  - Set `signature` to the `sigPair.signature` `oneof` field. Only ed25519 is supported.
+  - Set `signature` to the `sigPair.signature` `oneof` field.
 
 #### Scheduled Transaction
 
@@ -137,8 +137,7 @@ Add an optional boolean `scheduled` parameter to `/api/v1/transactions/:id`. Als
 transaction APIs JSON response:
 
 - If true, return only the inner scheduled transaction
-- If false, return all non-scheduled transactions matching `id` including the `ScheduleCreate` transaction
-  if exists
+- If false, return all non-scheduled transactions matching `id` including the `ScheduleCreate` transaction if exists
 - If not present, return all transactions matching `id`
 
 ```json
