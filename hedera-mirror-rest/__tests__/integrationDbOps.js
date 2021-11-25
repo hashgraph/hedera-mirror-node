@@ -117,6 +117,9 @@ const instantiateDatabase = async () => {
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
 const flywayMigrate = () => {
+  logger.info(
+    `flywayMigrate will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}?sslmode=${dbConfig.sslMode}`
+  );
   logger.info('Using flyway CLI to construct schema');
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
@@ -153,7 +156,15 @@ const flywayMigrate = () => {
 
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
-
+  logger.info(`*** flywayDataPath: ${flywayDataPath}`);
+  logger.info(`*** flywayConfigPath: ${flywayConfigPath}`);
+  logger.info(`*** node ${exePath} -c ${flywayConfigPath} clean`);
+  logger.info(`*** node ${exePath} -c ${flywayConfigPath} migrate`);
+  logger.info(`*** pwd`);
+  execSync(`pwd`, {stdio: 'inherit'});
+  execSync(`ls .node-flywaydb`, {stdio: 'inherit'});
+  execSync(`ls .node-flywaydb/flyway-commandline-7.7.3`, {stdio: 'inherit'});
+  execSync(`ls .node-flywaydb/flyway-commandline-7.7.3/flyway-7.7.3`, {stdio: 'inherit'});
   execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
