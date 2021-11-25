@@ -263,6 +263,7 @@ Optional filters
       "amount": 10,
       "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
       "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
+      "contract_id": "0.0.1002",
       "created_contract_ids": [
         "0.0.1003"
       ],
@@ -316,6 +317,7 @@ Optional filters
   "block_number": 50,
   "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
   "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
+  "contract_id": "0.0.1002",
   "child_transactions": 0,
   "created_contract_ids": [
     "0.0.1003"

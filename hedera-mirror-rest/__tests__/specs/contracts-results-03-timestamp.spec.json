@@ -17,8 +17,10 @@
   },
   "urls": [
     "/api/v1/contracts/0.0.5001/results?timestamp=987654.000123456",
-    "/api/v1/contracts/0.5001/results?timestamp=987654.000123456",
-    "/api/v1/contracts/5001/results?timestamp=987654.000123456"
+    "/api/v1/contracts/0.0.5001/results?timestamp=eq:987654.000123456",
+    "/api/v1/contracts/0.0.5001/results?timestamp=gt:200000.000123456&timestamp=lt:999999.000123456",
+    "/api/v1/contracts/0.0.5001/results?timestamp=gte:987654.000123456&timestamp=lte:987654.000123456",
+    "/api/v1/contracts/0.0.5001/results?timestamp=ne:187654.000123456"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -27,6 +29,7 @@
         "amount": 30,
         "bloom": null,
         "call_result": null,
+        "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
         "error_message": "",
         "from": "0x0000000000000000000000000000000000000065",

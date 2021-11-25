@@ -17,11 +17,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.5001/results?from=0.0.9001",
-    "/api/v1/contracts/0.5001/results?from=0.9001",
-    "/api/v1/contracts/5001/results?from=9001"
-  ],
+  "url": "/api/v1/contracts/0.0.5001/results?from=0.0.9001",
   "responseStatus": 200,
   "responseJson": {
     "results": [
@@ -29,6 +25,7 @@
         "amount": 30,
         "bloom": null,
         "call_result": null,
+        "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
         "error_message": "",
         "from": "0x0000000000000000000000000000000000002329",

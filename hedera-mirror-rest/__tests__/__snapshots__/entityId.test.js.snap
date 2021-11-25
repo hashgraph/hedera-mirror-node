@@ -18,6 +18,10 @@ exports[`EntityId parse from entityId string 0x000000010000000000000002000000000
 
 exports[`EntityId parse from entityId string 0x010203 1`] = `"Invalid entity ID \\"0x010203\\""`;
 
+exports[`EntityId parse from entityId string 0x2540be3f6001fffffffffffff001fffffffffffff 1`] = `"Invalid entity ID \\"0x2540be3f6001fffffffffffff001fffffffffffff\\""`;
+
+exports[`EntityId parse from entityId string 0x10000000000000000000000000000000000000000 1`] = `"Invalid entity ID \\"0x10000000000000000000000000000000000000000\\""`;
+
 exports[`EntityId parse from entityId string a 1`] = `"Invalid entity ID \\"a\\""`;
 
 exports[`EntityId parse from entityId string a.b.c 1`] = `"Invalid entity ID \\"a.b.c\\""`;

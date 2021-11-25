@@ -30,7 +30,7 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc"],
+  "url": "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc",
   "responseStatus": 200,
   "responseJson": {
     "results": [
@@ -38,6 +38,7 @@
         "amount": 30,
         "bloom": null,
         "call_result": null,
+        "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
         "error_message": "",
         "from": "0x0000000000000000000000000000000000001f41",
@@ -51,6 +52,7 @@
         "amount": 40,
         "bloom": null,
         "call_result": null,
+        "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7002"],
         "error_message": "",
         "from": "0x0000000000000000000000000000000000001f41",

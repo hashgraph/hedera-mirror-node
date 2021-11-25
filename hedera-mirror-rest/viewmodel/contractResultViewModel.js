@@ -20,6 +20,8 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 const EntityId = require('../entityId');
 const utils = require('../utils');
 
@@ -37,7 +39,8 @@ class ContractResultViewModel {
       amount: Number(contractResult.amount),
       bloom: utils.toHexString(contractResult.bloom, true),
       call_result: utils.toHexString(contractResult.callResult, true),
-      created_contract_ids: contractResult.createdContractIds,
+      contract_id: EntityId.parse(contractResult.contractId).toString(),
+      created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),
       error_message: contractResult.errorMessage,
       from: EntityId.parse(contractResult.payerAccountId).toSolidityAddress(),
       function_parameters: utils.toHexString(contractResult.functionParameters, true),
@@ -46,13 +49,6 @@ class ContractResultViewModel {
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
       to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
     });
-
-    // format created contract ids
-    if (contractResult.createdContractIds != null) {
-      this.created_contract_ids = contractResult.createdContractIds.map((id) => EntityId.parse(id).toString());
-    } else {
-      this.created_contract_ids = [];
-    }
   }
 }
 

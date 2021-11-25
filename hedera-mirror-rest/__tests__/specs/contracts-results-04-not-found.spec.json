@@ -5,8 +5,8 @@
   },
   "urls": [
     "/api/v1/contracts/0.0.5001/results",
-    "/api/v1/contracts/0.5001/results?from=987654",
-    "/api/v1/contracts/5001/results?timestamp=987654.000123456"
+    "/api/v1/contracts/0.0.5001/results?from=987654",
+    "/api/v1/contracts/0.0.5001/results?timestamp=987654.000123456"
   ],
   "responseStatus": 200,
   "responseJson": {

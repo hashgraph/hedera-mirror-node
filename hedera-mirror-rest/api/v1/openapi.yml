@@ -960,41 +960,49 @@ components:
       type: object
       properties:
         amount:
-          description: The
+          description: The number of tinybars sent to the function
           example: 10
-          type: number
+          format: int64
+          nullable: true
+          type: integer
         bloom:
-          description: The
+          description: The hex encoded bloom filter for the record
           example: "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398"
+          nullable: true
           type: string
         call_result:
-          description: The result returned by the function
+          description: The hex encoded result returned by the function
           example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
+          nullable: true
           type: string
         created_contract_ids:
           description: The network's released supply of hbars in tinybars
           example:
             - "0.0.1003"
-          type: array
           items:
             type: string
+          nullable: true
+          type: array
         error_message:
           description: The message when an error occurs during smart contract execution
-          example: "3999999999999999949"
+          example: "Out of gas"
+          nullable: true
           type: string
         from:
           $ref: '#/components/schemas/SolidityAddress'
         function_parameters:
-          description: The parameters passed to the function
+          description: The hex encoded parameters passed to the function
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
           type: string
         gas_limit:
           description: The maximum units of gas allowed for contract execution
           example: 100000
+          format: int64
           type: integer
         gas_used:
           description: The units of gas used to execute contract
           example: 1000
+          format: int64
           type: integer
         timestamp:
           $ref: '#/components/schemas/Timestamp'
@@ -1247,6 +1255,7 @@ components:
       format: binary
       minLength: 42
       maxLength: 42
+      pattern: '^0x[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     StateProofFiles:
       type: object
@@ -1859,7 +1868,9 @@ components:
       in: query
       description: Contract entity id or address
       schema:
-        $ref: '#/components/schemas/EvmAccount'
+        oneOf:
+          - $ref: '#/components/schemas/EntityId'
+          - $ref: '#/components/schemas/SolidityAddress'
     limitQueryParam:
       name: limit
       in: query
