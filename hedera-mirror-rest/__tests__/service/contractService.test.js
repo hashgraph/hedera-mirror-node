@@ -22,7 +22,6 @@
 
 const log4js = require('log4js');
 
-const {ContractResult} = require('../../model');
 const {ContractService} = require('../../service');
 const {formatSqlQueryString} = require('../testutils');
 
@@ -31,24 +30,29 @@ const integrationDomainOps = require('../integrationDomainOps');
 
 jest.setTimeout(40000);
 
-let dbProps;
+let dbConfig;
 
 // set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
 const defaultBeforeAllTimeoutMillis = 240 * 1000;
 
 beforeAll(async () => {
-  dbProps = await integrationDbOps.instantiateDatabase();
-  await integrationDomainOps.setUp({}, dbProps);
-  global.pool = dbProps;
+  dbConfig = await integrationDbOps.instantiateDatabase();
+  await integrationDomainOps.setUp({}, dbConfig.sqlConnection);
+  global.pool = dbConfig.sqlConnection;
   global.logger = log4js.getLogger();
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
-  await integrationDbOps.closeConnection(dbProps);
+  await integrationDbOps.closeConnection(dbConfig.sqlConnection, dbConfig.dockerContainer);
 });
 
 beforeEach(async () => {
-  await integrationDbOps.cleanUp(dbProps.sqlConnection);
+  if (!dbConfig.sqlConnection) {
+    logger.warn(`sqlConnection undefined, acquire new connection`);
+    sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
+  }
+
+  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
 });
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
@@ -60,11 +64,11 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select * 
-      from contract_result cr
-      where cr.contract_id = $1
-      order by cr.consensus_timestamp asc
-      limit $2`)
+      formatSqlQueryString(`select *
+                            from contract_result cr
+                            where cr.contract_id = $1
+                            order by cr.consensus_timestamp asc
+                            limit $2`)
     );
     expect(params).toEqual([2, 5]);
   });
@@ -78,11 +82,13 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select * 
-      from contract_result cr
-      where cr.contract_id = $1 and cr.consensus_timestamp > $2 and cr.payer_account_id = $3
-      order by cr.consensus_timestamp asc
-      limit $4`)
+      formatSqlQueryString(`select *
+                            from contract_result cr
+                            where cr.contract_id = $1
+                              and cr.consensus_timestamp > $2
+                              and cr.payer_account_id = $3
+                            order by cr.consensus_timestamp asc
+                            limit $4`)
     );
     expect(params).toEqual([2, 10, 20, 5]);
   });

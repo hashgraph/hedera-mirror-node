@@ -36,8 +36,6 @@ const Pool = getPoolClass();
 loadPgRange();
 
 let oldPool;
-let dockerDb;
-let sqlConnection;
 
 dbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
 const dbAdminUser = process.env.POSTGRES_USER || `${dbConfig.username}_admin`;
@@ -67,17 +65,14 @@ const v2SchemaConfigs = {
 // if v2 schema is set in env use it, else default to v1
 const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
-const getConnection = () => {
-  logger.info(
-    `sqlConnection will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}?sslmode=${dbConfig.sslMode}`
-  );
-  sqlConnection = new Pool({
+const getConnection = (dbSessionConfig) => {
+  const sqlConnection = new Pool({
     user: dbAdminUser,
-    host: dbConfig.host,
-    database: dbConfig.name,
+    host: dbSessionConfig.host,
+    database: dbSessionConfig.name,
     password: dbAdminPassword,
-    port: dbConfig.port,
-    sslmode: dbConfig.sslMode,
+    port: dbSessionConfig.port,
+    sslmode: dbSessionConfig.sslMode,
   });
 
   // Until "server", "pool" and everything else is made non-static...
@@ -90,6 +85,8 @@ const getConnection = () => {
 /**
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
  * testContainers/dockerized postgresql instance.
+ * Returns a dbConfig object for db state orchestration by test classes
+ * @return {Object} {dbSessionConfig, dockerContainer, sqlConnection} Db session details, dockerContainerInstance and sql connection
  */
 const instantiateDatabase = async () => {
   if (!(await isDockerInstalled())) {
@@ -98,32 +95,37 @@ const instantiateDatabase = async () => {
 
   const image = `${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`;
   logger.info(`Starting PostgreSQL docker container with image ${image}`);
-  dockerDb = await new GenericContainer(image)
-    .withEnv('POSTGRES_DB', dbConfig.name)
+  const dbSessionConfig = {...dbConfig};
+  const dockerDb = await new GenericContainer(image)
+    .withEnv('POSTGRES_DB', dbSessionConfig.name)
     .withEnv('POSTGRES_USER', dbAdminUser)
     .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
-    .withExposedPorts(dbConfig.port)
+    .withExposedPorts(dbSessionConfig.port)
     .start();
-  dbConfig.port = dockerDb.getMappedPort(dbConfig.port);
-  dbConfig.host = dockerDb.getHost();
+  dbSessionConfig.port = dockerDb.getMappedPort(dbConfig.port);
+  dbSessionConfig.host = dockerDb.getHost();
   logger.info('Started dockerized PostgreSQL');
 
-  flywayMigrate();
+  flywayMigrate(dbSessionConfig);
 
-  return getConnection();
+  return {
+    dbSessionConfig: dbSessionConfig,
+    dockerContainer: dockerDb,
+    sqlConnection: getConnection(dbSessionConfig),
+  };
 };
 
 /**
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
-const flywayMigrate = () => {
+const flywayMigrate = (dbSessionConfig) => {
   logger.info(
-    `flywayMigrate will use postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}?sslmode=${dbConfig.sslMode}`
+    `flywayMigrate will use postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}`
   );
   logger.info('Using flyway CLI to construct schema');
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
-  const flywayConfigPath = path.join(flywayDataPath, 'config.json');
+  const flywayConfigPath = path.join(flywayDataPath, `config_${dbSessionConfig.port}.json`);
   const locations = path.join('..', schemaConfigs.flyway.locations);
   const flywayConfig = `
 {
@@ -131,8 +133,8 @@ const flywayMigrate = () => {
     "baselineVersion": "${schemaConfigs.flyway.baselineVersion}",
     "locations": "filesystem:${locations}",
     "password": "${dbAdminPassword}",
-    "placeholders.api-password": "${dbConfig.password}",
-    "placeholders.api-user": "${dbConfig.username}",
+    "placeholders.api-password": "${dbSessionConfig.password}",
+    "placeholders.api-user": "${dbSessionConfig.username}",
     "placeholders.autovacuumFreezeMaxAgeInsertOnly": 100000,
     "placeholders.autovacuumVacuumInsertThresholdCryptoTransfer": 18000000,
     "placeholders.autovacuumVacuumInsertThresholdTokenTransfer": 2000,
@@ -140,14 +142,14 @@ const flywayMigrate = () => {
     "placeholders.chunkIdInterval": 10000,
     "placeholders.chunkTimeInterval": 604800000000000,
     "placeholders.compressionAge": 9007199254740991,
-    "placeholders.db-name": "${dbConfig.name}",
+    "placeholders.db-name": "${dbSessionConfig.name}",
     "placeholders.db-user": "${dbAdminUser}",
     "placeholders.topicRunningHashV2AddedTimestamp": 0,
     "target": "latest",
-    "url": "jdbc:postgresql://${dbConfig.host}:${dbConfig.port}/${dbConfig.name}?sslmode=${dbConfig.sslMode}",
+    "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
     "user": "${dbAdminUser}"
   },
-  "version": "7.7.3",
+  "version": "8.1.0",
   "downloads": {
     "storageDirectory": "${flywayDataPath}"
   }
@@ -156,27 +158,18 @@ const flywayMigrate = () => {
 
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
-  logger.info(`*** flywayDataPath: ${flywayDataPath}`);
-  logger.info(`*** flywayConfigPath: ${flywayConfigPath}`);
-  logger.info(`*** node ${exePath} -c ${flywayConfigPath} clean`);
-  logger.info(`*** node ${exePath} -c ${flywayConfigPath} migrate`);
-  logger.info(`*** pwd`);
-  execSync(`pwd`, {stdio: 'inherit'});
   execSync(`ls .node-flywaydb`, {stdio: 'inherit'});
-  execSync(`ls .node-flywaydb/flyway-commandline-7.7.3`, {stdio: 'inherit'});
-  execSync(`ls .node-flywaydb/flyway-commandline-7.7.3/flyway-7.7.3`, {stdio: 'inherit'});
   execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
 
-const closeConnection = async () => {
+const closeConnection = async (sqlConnection, dockerContainer) => {
   if (sqlConnection) {
     await sqlConnection.end();
     sqlConnection = null;
   }
-  if (dockerDb) {
-    await dockerDb.stop();
-    dockerDb = null;
+  if (dockerContainer) {
+    await dockerContainer.stop();
   }
   if (oldPool) {
     global.pool = oldPool;
@@ -200,13 +193,13 @@ const cleanupSql = fs.readFileSync(
   'utf8'
 );
 
-const cleanUp = async () => {
+const cleanUp = async (sqlConnection) => {
   if (sqlConnection) {
     await sqlConnection.query(cleanupSql);
   }
 };
 
-const runSqlQuery = async (query, params) => {
+const runSqlQuery = async (sqlConnection, query, params) => {
   return sqlConnection.query(query, params);
 };
 

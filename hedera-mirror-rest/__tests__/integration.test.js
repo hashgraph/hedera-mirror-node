@@ -60,27 +60,27 @@ const transactions = require('../transactions');
 
 jest.setTimeout(40000);
 
-let sqlConnection;
+let dbConfig;
 
 // set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
 // it's 12 minutes for CI to workaround possible DockerHub rate limit.
 const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 * 1000;
 
 beforeAll(async () => {
-  sqlConnection = await integrationDbOps.instantiateDatabase();
+  dbConfig = await integrationDbOps.instantiateDatabase();
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
-  await integrationDbOps.closeConnection();
+  await integrationDbOps.closeConnection(dbConfig.sqlConnection, dbConfig.dockerContainer);
 });
 
 beforeEach(async () => {
-  if (!sqlConnection) {
+  if (!dbConfig.sqlConnection) {
     logger.warn(`sqlConnection undefined, acquire new connection`);
-    sqlConnection = integrationDbOps.getConnection();
+    sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
   }
 
-  await integrationDbOps.cleanUp();
+  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
   await setupData();
 });
 
@@ -100,7 +100,7 @@ const setupData = async () => {
   const testData = fs.readFileSync(testDataPath);
   const testDataJson = JSON.parse(testData);
 
-  await integrationDomainOps.setUp(testDataJson.setup, sqlConnection);
+  await integrationDomainOps.setUp(testDataJson.setup, dbConfig.sqlConnection);
 
   logger.info('Finished initializing DB data');
 };
@@ -217,19 +217,19 @@ const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) =
 
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
   const sql = transactions.reqToSql({query: {}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
   expect(mapTransactionResults(res.rows)).toEqual(expectedTransactionRowsDesc);
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
   const sql = transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
   expect(mapTransactionResults(res.rows)).toEqual([expectedTransactionRowsMap['1052']]);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
   const sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
   expect(res.rowCount).toEqual(0);
 });
 
@@ -239,7 +239,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
   const sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows)).toEqual(['null, null', 'null, 777', '5, null']);
 });
 
@@ -273,7 +273,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   ];
 
   const sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
-  const res = await integrationDbOps.runSqlQuery(sql.query, sql.params);
+  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
 
   // 2 transactions, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
   // recipient and fee to bank. Note bank is out of desired range but is expected in query result
@@ -379,7 +379,7 @@ describe('DB integration test - spec based', () => {
       const sqlScriptPath = path.join(__dirname, pathPrefix || '', sqlScript);
       const script = fs.readFileSync(sqlScriptPath, 'utf8');
       logger.debug(`loading sql script ${sqlScript}`);
-      await integrationDbOps.runSqlQuery(script);
+      await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, script);
     }
   };
 
@@ -413,8 +413,8 @@ describe('DB integration test - spec based', () => {
   };
 
   const specSetupSteps = async (spec) => {
-    await integrationDbOps.cleanUp();
-    await integrationDomainOps.setUp(spec, sqlConnection);
+    await integrationDbOps.cleanUp(dbConfig.sqlConnection);
+    await integrationDomainOps.setUp(spec, dbConfig.sqlConnection);
     if (spec.sql) {
       await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
       await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
@@ -454,6 +454,10 @@ describe('DB integration test - spec based', () => {
 
   const specPath = path.join(__dirname, 'specs');
   fs.readdirSync(specPath).forEach((file) => {
+    if (file.indexOf('.spec') < 0) {
+      return;
+    }
+
     const p = path.join(specPath, file);
     const specText = fs.readFileSync(p, 'utf8');
     const spec = JSON.parse(specText);
