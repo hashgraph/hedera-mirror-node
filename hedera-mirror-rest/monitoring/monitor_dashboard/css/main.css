@@ -18,42 +18,55 @@
  * ‍
  */
 
+body {
+  font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+.btn:focus {
+  box-shadow: none;
+  outline: none;
+  text-decoration: none;
+}
+
+.btn:hover {
+  text-decoration: none;
+}
+
+.btn-link {
+  color: black;
+  text-decoration: none;
+}
+
+.card {
+  margin: 10px 30px 10px 30px !important;
+  box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.25);
+}
+
+.card:hover {
+  box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.4);
+}
+
+.centered {
+  text-align: center;
+}
+
+.date {
+  min-width: 14em;
+}
+
 .dot {
   height: 20px;
   width: 20px;
   border-radius: 50%;
   display: inline-block;
-  margin-right: 10px;
   align-self: center;
 }
 
-.my-card {
-  margin: 10px 30px 10px 30px !important;
-  background-color: #f0f0f0;
+#passed {
+  margin: auto;
+  text-align: right;
 }
 
-.card-title {
-  font-size: 2em;
-  display: inline-block;
-}
-
-.base-url {
-  font-size: 1.5em;
-  color: grey;
-  display: inline-block;
-  margin-bottom: 10px;
-}
-
-.card-arrow {
-  position: absolute;
-  top: 50px;
-  right: 30px;
-}
-
-.results {
-  display: inline-block;
-}
-
-.modal-content {
-  width: 700px;
+.table td {
+  vertical-align: middle;
 }

@@ -22,24 +22,6 @@
 
 let monitorAddress = 'localhost:3000';
 
-/**
- * Initializer - fetches the status of tests from the server
- * @param {} None
- * @return {} None
- */
-const init = () => {
-  const app = document.getElementById('root');
-
-  app.innerHTML = '';
-
-  const container = document.createElement('div');
-  container.setAttribute('class', 'container');
-  container.id = 'rootcontainer';
-  app.appendChild(container);
-
-  fetchAndDisplay();
-};
-
 const loadConfig = async () => {
   return fetch('/config.json', {mode: 'no-cors'})
     .then((response) => response.json())
@@ -49,7 +31,7 @@ const loadConfig = async () => {
         monitorAddress = config.monitorAddress;
       }
     })
-    .catch((error) => console.log('Unable to load config.json. Using default config.'));
+    .catch((error) => console.log(`Unable to load config.json. Using default config: ${error}`));
 };
 
 /**
@@ -58,36 +40,43 @@ const loadConfig = async () => {
  * @param {Object} server The server under test
  * @return {HTML} HTML for the table
  */
-const makeTable = (data, server) => {
-  if (data.results.testResults === undefined) {
+const makeTable = (data) => {
+  const results = data.results.testResults;
+  if (results === undefined) {
     return 'No result yet to display';
   }
 
   let h = `
-        <table border="1px">
+        <table class="table table-sm table-hover">
+          <thead>
             <tr>
-                <th>Result</th>
-                <th>At</th>
-                <th>Message & Url</th>
-        </tr>`;
+              <th scope="col">Result</th>
+              <th scope="col">Time</th>
+              <th scope="col">Resource</th>
+              <th scope="col">Message</th>
+            </tr>
+          </thead>
+          <tbody`;
 
-  data.results.testResults.forEach((result) => {
+  results.sort((a, b) => a.resource.localeCompare(b.resource) || a.url.localeCompare(b.url));
+  results.forEach((result) => {
     // Skip the 'Skipped tests' that are marked as pending in jest json output
     if (result.result === 'pending') {
       return;
     }
     const failureMsg =
-      result.failureMessages == undefined ? '' : result.failureMessages.join('<br>,').replaceAll('\n', '<br>');
-    const color = result.result === 'passed' ? 'green' : 'red';
+      result.failureMessages === undefined ? '' : result.failureMessages.join('<br>,').replaceAll('\n', '<br>');
+    const color = result.result === 'passed' ? '#93c79f' : '#d73a4a';
 
     h += `
       <tr>
-        <td><span class="dot" style="background-color:${color}"></span></td>
-        <td>${new Date(Number(result.at)).toLocaleString()}</td>
+        <td class="centered"><span class="dot" style="background-color:${color}"></span></td>
+        <td class="date">${new Date(Number(result.at)).toISOString()}</td>
+        <td>${result.resource}</td>
         <td><a = href="${result.url}">${result.message}${failureMsg}<a/></td>
       </tr>`;
   });
-  h += '</table>\n';
+  h += '</tbody></table>\n';
   return h;
 };
 
@@ -97,45 +86,48 @@ const makeTable = (data, server) => {
  * @param {Object} server The server under test
  * @return {HTML} HTML for the card for the given server
  */
-const makeCard = (data, server) => {
+const makeCard = (data) => {
   if (!('results' in data)) {
-    return 'No data received yet for at least one of the servers in your list ...';
+    return 'No data received yet for at least one of the servers in the list';
   }
 
-  const dotcolor = data.results.success ? 'green' : 'red';
-  const startTime = data.results.startTime ? data.results.startTime : 0;
-  const endTime = data.results.endTime ? data.results.endTime : 0;
+  const server = data.name;
+  const statusColor = data.results.success ? 'alert-success' : 'alert-danger';
 
   return `
-        <div class="card my-card">
-          <div class="card-body" data-toggle="modal" data-target="#modal-${server}">
-            <div class="card-title">${server}</div>
-            <div class="base-url"> (${data.baseUrl})</div>
-            <div class="card-text">
-               <div class="results">
-                 <span class="dot" style="background-color: ${dotcolor}"></span>
-                 ${data.results.numPassedTests} / ${data.results.testResults.length} Passed
-	         at ${new Date(Number(endTime)).toISOString()}
-               </div>
-               <div class="card-arrow">&#x25B6</div>
-            </div>
+        <div class="card rounded-lg">
+          <div class="${statusColor}" id="result-${server}">
+            <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
+                      data-target="#collapse-${server}" aria-expanded="false" aria-controls="#collapse-${server}">
+              <div class="container card-text">
+                <div class="row">
+                  <div class="col">
+                    <h5 class="mb-0">${server}</h5 class="mb-0">
+                    <span>${data.baseUrl}</span>
+                  </div>
+                  <div id="passed" class="col">
+                    <span>${data.results.numPassedTests} / ${data.results.testResults.length}</span>
+                  </div>
+                </div>
+              </div>
+            </button>
           </div>
-        </div>
-        <div class="modal fade" id="modal-${server}">
-          <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h4 class="modal-title">Network: ${server}</h4>
-                  <button type="button" class="close" data-dismiss="modal">&times;</button>
-              </div>
-              <div class="modal-body">
-                  ${makeTable(data, server)}
-              </div>
-              <div class="modal-footer">
-              </div>
+          <div class="collapse" id="collapse-${server}" aria-labelledby="result-${server}" data-parent="#results">
+            <div class="card-body">
+              ${makeTable(data)}
             </div>
           </div>
         </div>`;
+};
+
+const alertBanner = (url, error) => {
+  console.log(`Error: ${error}`);
+  return `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span>Error fetching <a href="${url}">${url}</a>: ${error}</span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>`;
 };
 
 /**
@@ -143,35 +135,34 @@ const makeCard = (data, server) => {
  * @param {} None
  * @return {} None
  */
-const fetchAndDisplay = async () => {
-  const container = document.getElementById('rootcontainer');
+const init = async () => {
+  const container = document.getElementById('root');
   if (container === null) {
     console.log('No container found!');
     return;
   }
 
   await loadConfig();
-  console.log(`Fetching ${monitorAddress}`);
+  const url = `http://${monitorAddress}/api/v1/status`;
+  console.log(`Fetching ${url}`);
+  let html = `<h2 class="centered">Hedera Mirror Node Status</h2>`;
 
-  fetch(`http://${monitorAddress}/api/v1/status`)
-    .then(function (response) {
+  await fetch(url)
+    .then((response) => {
       return response.json();
     })
-    .then(function (data) {
+    .then((data) => {
       console.log(data);
-      let html;
       if (data.length === 0) {
-        html = `No data received.
-            <p />
-            If you have started the backend server recently,
-            please wait for a couple of minutes and refresh this page
-            <p />`;
+        const message = `No data received. Please wait a few minutes and refresh the page.`;
+        html += alertBanner(url, message);
       } else {
-        html = `
-                <h2 style="text-align:center">Hedera Mirror Node Status</h2>
-                ${data.map((result) => `<div class="card-deck">${makeCard(result, result.name)}</div>`).join('')}
-            `;
+        html += `<div class="accordion" id="results">${data.map((result) => makeCard(result)).join('')}</div>`;
       }
-      container.innerHTML = html;
+    })
+    .catch((e) => {
+      html += alertBanner(url, e);
     });
+
+  container.innerHTML = html;
 };
