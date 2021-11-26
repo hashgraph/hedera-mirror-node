@@ -107,6 +107,8 @@ public class AddressBookServiceImpl implements AddressBookService {
             return;
         }
 
+        log.info("Received an address book update: {}", fileData);
+
         // ensure address_book table is populated with latest addressBook prior to additions
         validateAndCompleteAddressBookList(fileData);
 
