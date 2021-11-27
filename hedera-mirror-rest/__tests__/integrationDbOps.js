@@ -65,7 +65,12 @@ const v2SchemaConfigs = {
 // if v2 schema is set in env use it, else default to v1
 const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
+const flywayDataPath = '.node-flywaydb';
+
 const getConnection = (dbSessionConfig) => {
+  logger.info(
+    `sqlConnection will use postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}?sslmode=${dbSessionConfig.sslMode}`
+  );
   const sqlConnection = new Pool({
     user: dbAdminUser,
     host: dbSessionConfig.host,
@@ -104,7 +109,7 @@ const instantiateDatabase = async () => {
     .start();
   dbSessionConfig.port = dockerDb.getMappedPort(dbConfig.port);
   dbSessionConfig.host = dockerDb.getHost();
-  logger.info('Started dockerized PostgreSQL');
+  logger.info(`Started dockerized PostgreSQL at ${dbSessionConfig.host}:${dbSessionConfig.port}`);
 
   flywayMigrate(dbSessionConfig);
 
@@ -124,52 +129,58 @@ const flywayMigrate = (dbSessionConfig) => {
   );
   logger.info('Using flyway CLI to construct schema');
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-  const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(flywayDataPath, `config_${dbSessionConfig.port}.json`);
   const locations = path.join('..', schemaConfigs.flyway.locations);
-  const flywayConfig = `
-{
-  "flywayArgs": {
-    "baselineVersion": "${schemaConfigs.flyway.baselineVersion}",
-    "locations": "filesystem:${locations}",
-    "password": "${dbAdminPassword}",
-    "placeholders.api-password": "${dbSessionConfig.password}",
-    "placeholders.api-user": "${dbSessionConfig.username}",
-    "placeholders.autovacuumFreezeMaxAgeInsertOnly": 100000,
-    "placeholders.autovacuumVacuumInsertThresholdCryptoTransfer": 18000000,
-    "placeholders.autovacuumVacuumInsertThresholdTokenTransfer": 2000,
-    "placeholders.autovacuumVacuumInsertThresholdTransaction": 6000000,
-    "placeholders.chunkIdInterval": 10000,
-    "placeholders.chunkTimeInterval": 604800000000000,
-    "placeholders.compressionAge": 9007199254740991,
-    "placeholders.db-name": "${dbSessionConfig.name}",
-    "placeholders.db-user": "${dbAdminUser}",
-    "placeholders.topicRunningHashV2AddedTimestamp": 0,
-    "target": "latest",
-    "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
-    "user": "${dbAdminUser}"
-  },
-  "version": "8.1.0",
-  "downloads": {
-    "storageDirectory": "${flywayDataPath}"
-  }
-}
-`;
+  const flywayConfig = `{
+    "flywayArgs": {
+      "baselineVersion": "${schemaConfigs.flyway.baselineVersion}",
+      "locations": "filesystem:${locations}",
+      "password": "${dbAdminPassword}",
+      "placeholders.api-password": "${dbSessionConfig.password}",
+      "placeholders.api-user": "${dbSessionConfig.username}",
+      "placeholders.autovacuumFreezeMaxAgeInsertOnly": 100000,
+      "placeholders.autovacuumVacuumInsertThresholdCryptoTransfer": 18000000,
+      "placeholders.autovacuumVacuumInsertThresholdTokenTransfer": 2000,
+      "placeholders.autovacuumVacuumInsertThresholdTransaction": 6000000,
+      "placeholders.chunkIdInterval": 10000,
+      "placeholders.chunkTimeInterval": 604800000000000,
+      "placeholders.compressionAge": 9007199254740991,
+      "placeholders.db-name": "${dbSessionConfig.name}",
+      "placeholders.db-user": "${dbAdminUser}",
+      "placeholders.topicRunningHashV2AddedTimestamp": 0,
+      "target": "latest",
+      "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
+      "user": "${dbAdminUser}"
+    },
+    "version": "8.1.0",
+    "downloads": {
+      "storageDirectory": "${flywayDataPath}"
+    }
+  }`;
 
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
-  execSync(`ls .node-flywaydb`, {stdio: 'inherit'});
+  logger.info(`Added ${flywayConfigPath} to file system for flyway CLI`);
   execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
 
-const closeConnection = async (sqlConnection, dockerContainer) => {
-  if (sqlConnection) {
-    await sqlConnection.end();
-    sqlConnection = null;
+const closeConnection = async (dbConfig) => {
+  if (dbConfig.sqlConnection) {
+    await dbConfig.sqlConnection.end();
   }
-  if (dockerContainer) {
-    await dockerContainer.stop();
+  if (dbConfig.dockerContainer) {
+    await dbConfig.dockerContainer.stop();
+
+    // remove config file
+    const flywayConfigPath = path.join(flywayDataPath, `config_${dbConfig.dbSessionConfig.port}.json`);
+    fs.unlink(flywayConfigPath, (err) => {
+      if (err) {
+        logger.warn(`Error removing ${flywayConfigPath} from file system`);
+      }
+
+      logger.info(`Removed ${flywayConfigPath} from file system`);
+    });
   }
   if (oldPool) {
     global.pool = oldPool;

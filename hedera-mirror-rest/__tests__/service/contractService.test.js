@@ -20,8 +20,6 @@
 
 'use strict';
 
-const log4js = require('log4js');
-
 const {ContractService} = require('../../service');
 const {formatSqlQueryString} = require('../testutils');
 
@@ -39,11 +37,10 @@ beforeAll(async () => {
   dbConfig = await integrationDbOps.instantiateDatabase();
   await integrationDomainOps.setUp({}, dbConfig.sqlConnection);
   global.pool = dbConfig.sqlConnection;
-  global.logger = log4js.getLogger();
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig.sqlConnection, dbConfig.dockerContainer);
+  await integrationDbOps.closeConnection(dbConfig);
 });
 
 beforeEach(async () => {

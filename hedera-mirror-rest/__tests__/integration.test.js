@@ -71,13 +71,13 @@ beforeAll(async () => {
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig.sqlConnection, dbConfig.dockerContainer);
+  await integrationDbOps.closeConnection(dbConfig);
 });
 
 beforeEach(async () => {
   if (!dbConfig.sqlConnection) {
     logger.warn(`sqlConnection undefined, acquire new connection`);
-    sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
+    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
   }
 
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
@@ -392,7 +392,7 @@ describe('DB integration test - spec based', () => {
       // path.join returns normalized path, the sqlFunc is a local js file so add './'
       const func = require(`./${path.join(pathPrefix || '', sqlFunc)}`);
       logger.debug(`running sql func in ${sqlFunc}`);
-      await func.apply(null, [sqlConnection]);
+      await func.apply(null, [dbConfig.sqlConnection]);
     }
   };
 
