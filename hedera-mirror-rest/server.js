@@ -29,6 +29,7 @@ const cors = require('cors');
 const httpContext = require('express-http-context');
 const log4js = require('log4js');
 const compression = require('compression');
+const OpenApiValidator = require('express-openapi-validator');
 
 // local files
 const accounts = require('./accounts');
@@ -46,7 +47,7 @@ const transactions = require('./transactions');
 const {getPoolClass, isTestEnv, loadPgRange} = require('./utils');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
-const {serveSwaggerDocs} = require('./middleware/openapiHandler');
+const {serveSwaggerDocs, validateSwaggerDocs} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 const fs = require('fs');
@@ -118,6 +119,9 @@ app.set('port', port);
 app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
+if (isTestEnv()) {
+  validateSwaggerDocs(app);
+}
 
 // middleware functions, Prior to v0.5 define after sets
 app.use(
@@ -141,6 +145,9 @@ app.useAsync(requestLogger);
 if (config.metrics.enabled) {
   app.use(metricsHandler());
 }
+// validation
+// if (isTestEnv()) {
+// }
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
