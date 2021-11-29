@@ -866,7 +866,6 @@ components:
           $ref: '#/components/schemas/Links'
     Balance:
       type: object
-      nullable: true
       required:
         - timestamp
         - balance
@@ -886,6 +885,7 @@ components:
                 $ref: '#/components/schemas/EntityId'
               balance:
                 type: number
+      nullable: true
       example:
         timestamp: "0.000002345"
         balance: 80
@@ -916,9 +916,9 @@ components:
           example: contract memo
           type: string
         obtainer_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         proxy_account_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         solidity_address:
           $ref: '#/components/schemas/SolidityAddress'
         timestamp:
@@ -949,11 +949,6 @@ components:
       description: "Network entity ID in the format of `shard.realm.num`"
       pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
       example: "0.1.2"
-    EntityIdNullable:
-      type: string
-      description: "Network entity ID in the format of `shard.realm.num`"
-      pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
-      example: "0.1.2"
       nullable: true
     EntityIdQuery:
       type: string
@@ -980,7 +975,7 @@ components:
         collector_account_id:
           $ref: '#/components/schemas/EntityId'
         denominating_token_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
     FractionalFee:
       type: object
       properties:
@@ -996,7 +991,7 @@ components:
         collector_account_id:
           $ref: '#/components/schemas/EntityId'
         denominating_token_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         maximum:
           type: number
           nullable: true
@@ -1028,7 +1023,7 @@ components:
               type: number
               example: 100
             denominating_token_id:
-              $ref: '#/components/schemas/EntityIdNullable'
+              $ref: '#/components/schemas/EntityId'
     Key:
       type: object
       nullable: true
@@ -1050,7 +1045,7 @@ components:
       type: object
       properties:
         account_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         created_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         deleted:
@@ -1091,9 +1086,9 @@ components:
         transaction_id:
           type: string
         receiver_account_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         sender_account_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         type:
           $ref: '#/components/schemas/TransactionTypes'
         token_id:
@@ -1283,7 +1278,7 @@ components:
         admin_key:
           $ref: '#/components/schemas/Key'
         auto_renew_account:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         auto_renew_period:
           example: null
           nullable: true
@@ -1438,7 +1433,7 @@ components:
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         entity_id:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         bytes:
           type: string
           format: byte
@@ -1462,9 +1457,9 @@ components:
             type: object
             properties:
               receiver_account_id:
-                $ref: '#/components/schemas/EntityIdNullable'
+                $ref: '#/components/schemas/EntityId'
               sender_account_id:
-                $ref: '#/components/schemas/EntityIdNullable'
+                $ref: '#/components/schemas/EntityId'
               serial_number:
                 type: number
               token_id:
@@ -1477,7 +1472,7 @@ components:
         valid_duration_seconds:
           type: string
         node:
-          $ref: '#/components/schemas/EntityIdNullable'
+          $ref: '#/components/schemas/EntityId'
         scheduled:
           type: boolean
         transaction_id:
@@ -1523,7 +1518,7 @@ components:
                 items:
                   $ref: '#/components/schemas/EntityId'
               token_id:
-                $ref: '#/components/schemas/EntityIdNullable'
+                $ref: '#/components/schemas/EntityId'
       example:
         consensus_timestamp: "1234567890.000000007"
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
