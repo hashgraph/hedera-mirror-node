@@ -92,7 +92,7 @@ const serveSwaggerDocs = (app) => {
   app.use(`/api/v1/${config.openapi.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getV1OpenApiObject(), options));
 };
 
-const validateSwaggerDocs = (app) => {
+const openApiValidator = (app) => {
   app.use(
     OpenApiValidator.middleware({
       apiSpec: path.resolve(process.cwd(), getSpecPath(1)),
@@ -106,5 +106,5 @@ const validateSwaggerDocs = (app) => {
 module.exports = {
   getV1OpenApiObject,
   serveSwaggerDocs,
-  validateSwaggerDocs,
+  openApiValidator,
 };

@@ -46,7 +46,7 @@ const transactions = require('./transactions');
 const {getPoolClass, isTestEnv, loadPgRange} = require('./utils');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
-const {serveSwaggerDocs, validateSwaggerDocs} = require('./middleware/openapiHandler');
+const {serveSwaggerDocs, openApiValidator} = require('./middleware/openapiHandler');
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 const fs = require('fs');
@@ -119,7 +119,7 @@ app.set('query parser', requestQueryParser);
 
 serveSwaggerDocs(app);
 if (isTestEnv()) {
-  validateSwaggerDocs(app);
+  openApiValidator(app);
 }
 
 // middleware functions, Prior to v0.5 define after sets
