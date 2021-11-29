@@ -161,6 +161,7 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 		errors.ErrInvalidTransaction,
 		errors.ErrInvalidCurrency,
 		errors.ErrInternalServerError,
+		errors.ErrInvalidSignatureType,
 	}
 
 	expectedResult := &rTypes.NetworkOptionsResponse{
@@ -199,18 +200,6 @@ func (suite *networkServiceSuite) TestNetworkOptions() {
 	assert.ElementsMatch(suite.T(), expectedResult.Allow.OperationTypes, res.Allow.OperationTypes)
 	assert.ElementsMatch(suite.T(), expectedResult.Allow.Errors, res.Allow.Errors)
 	assert.Nil(suite.T(), e)
-}
-
-func (suite *networkServiceSuite) TestNetworkOptionsThrowsWhenTypesAsArrayFails() {
-	var NilTypesAsArray []string = nil
-	suite.mockTransactionRepo.On("TypesAsArray").Return(NilTypesAsArray, &rTypes.Error{})
-
-	// when:
-	res, e := suite.networkService.NetworkOptions(nil, nil)
-
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
-	suite.mockTransactionRepo.AssertNotCalled(suite.T(), "Results")
 }
 
 func (suite *networkServiceSuite) TestNetworkStatus() {

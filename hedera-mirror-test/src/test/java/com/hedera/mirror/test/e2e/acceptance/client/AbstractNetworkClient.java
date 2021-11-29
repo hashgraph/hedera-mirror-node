@@ -23,6 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.time.Instant;
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.retry.support.RetryTemplate;
@@ -42,6 +43,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 
 @Data
 public abstract class AbstractNetworkClient {
+    private static final int MEMO_BYTES_MAX_LENGTH = 100;
     protected final Client client;
     protected final Logger log = LogManager.getLogger(getClass());
     protected final SDKClient sdkClient;
@@ -140,6 +142,8 @@ public abstract class AbstractNetworkClient {
     }
 
     protected String getMemo(String message) {
-        return String.format("Hedera Mirror Node acceptance test: %s %s", message, Instant.now());
+        String memo = String.format("Mirror Node acceptance test: %s %s", Instant.now(), message);
+        // Memos are capped at 100 bytes
+        return StringUtils.truncate(memo, MEMO_BYTES_MAX_LENGTH);
     }
 }

@@ -635,7 +635,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.45.0-SNAPSHOT
+  version: 0.46.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1033,7 +1033,7 @@ components:
       properties:
         _type:
           type: string
-          enum: [ ED25519, ProtobufEncoded ]
+          enum: [ ECDSA_SECP256K1, ED25519, ProtobufEncoded ]
           example: ProtobufEncoded
         key:
           type: string
@@ -1158,6 +1158,10 @@ components:
           type: string
           format: byte
           example: "3q2+7wABAQMLqgMMwQ=="
+        type:
+          type: string
+          enum: [ CONTRACT, ED25519, RSA_3072, ECDSA_384, ECDSA_SECP256K1, UNKNOWN ]
+          example: "ED25519"
     SolidityAddress:
       type: string
       description: A network entity encoded as a solidity address in hex
@@ -1703,7 +1707,7 @@ components:
     accountPublicKeyQueryParam:
       name: account.publickey
       in: query
-      description: The ED25519 account publickey to compare against
+      description: The account's public key to compare against
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
       schema:
         type: string
@@ -1792,7 +1796,7 @@ components:
     publicKeyQueryParam:
       name: publickey
       in: query
-      description: The ED25519 publickey to compare against
+      description: The public key to compare against
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
       schema:
         type: string

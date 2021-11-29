@@ -443,6 +443,7 @@ func assertCryptoTransferTransaction(
 	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.TransferTransaction{}, actual)
+	assert.True(t, actual.IsFrozen())
 
 	expectedTransfers := make([]string, 0, len(operations))
 	for _, operation := range operations {
@@ -453,6 +454,7 @@ func assertCryptoTransferTransaction(
 	}
 
 	tx, _ := actual.(*hedera.TransferTransaction)
+
 	actualHbarTransfers := tx.GetHbarTransfers()
 	actualTokenTransfers := tx.GetTokenTransfers()
 	actualNftTransfers := tx.GetNftTransfers()

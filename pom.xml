@@ -64,7 +64,7 @@
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.42.1</grpc.version>
         <guava.version>31.0.1-jre</guava.version>
-        <hedera-protobuf.version>0.19.0</hedera-protobuf.version>
+        <hedera-protobuf.version>0.21.0-SNAPSHOT</hedera-protobuf.version>
         <hedera-sdk.version>2.2.0-beta.2</hedera-sdk.version>
         <hibernate-types.version>2.14.0</hibernate-types.version>
         <jacoco.version>0.8.7</jacoco.version>
@@ -74,8 +74,8 @@
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.0</msgpack.version>
         <protobuf.version>3.19.1</protobuf.version>
-        <release.version>0.45.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.32.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.46.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.33.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -123,6 +123,19 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <repositories>
+        <repository>
+            <id>ossrh-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>

@@ -89,6 +89,6 @@ func (c *BaseService) FindBetween(ctx context.Context, start int64, end int64) (
 	return c.transactionRepo.FindBetween(ctx, start, end)
 }
 
-func (c *BaseService) TypesAsArray(ctx context.Context) ([]string, *rTypes.Error) {
-	return c.transactionRepo.TypesAsArray(ctx)
+func (c *BaseService) TypesAsArray() []string {
+	return c.transactionRepo.TypesAsArray()
 }

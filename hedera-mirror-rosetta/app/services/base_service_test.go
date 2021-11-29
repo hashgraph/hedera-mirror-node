@@ -319,23 +319,9 @@ func (suite *baseServiceSuite) TestTypesAsArray() {
 	suite.mockTransactionRepo.On("TypesAsArray").Return(exampleTypesArray, mocks.NilError)
 
 	// when:
-	res, e := suite.baseService.TypesAsArray(defaultContext)
+	res := suite.baseService.TypesAsArray()
 
 	// then:
-	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), exampleTypesArray, res)
-	suite.mockBlockRepo.AssertExpectations(suite.T())
-}
-
-func (suite *baseServiceSuite) TestTypesAsArrayThrows() {
-	// given:
-	suite.mockTransactionRepo.On("TypesAsArray").Return(nilArray, &rTypes.Error{})
-
-	// when:
-	res, e := suite.baseService.TypesAsArray(defaultContext)
-
-	// then:
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }

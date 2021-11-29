@@ -356,6 +356,7 @@ func assertTokenFreezeUnfreezeTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
+	assert.True(t, actual.IsFrozen())
 	if operation.Type == types.OperationTypeTokenFreeze {
 		assert.IsType(t, &hedera.TokenFreezeTransaction{}, actual)
 	} else {

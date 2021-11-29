@@ -23,7 +23,7 @@
 const _ = require('lodash');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
-const transactionTypeProtoToName = {
+const protoToName = {
   7: 'CONTRACTCALL',
   8: 'CONTRACTCREATEINSTANCE',
   9: 'CONTRACTUPDATEINSTANCE',
@@ -66,31 +66,31 @@ const transactionTypeProtoToName = {
   47: 'TOKENUNPAUSE',
 };
 
-const UKNOWN = 'UNKNOWN';
+const UNKNOWN = 'UNKNOWN';
 
-const transactionTypeNameToProto = _.invert(transactionTypeProtoToName);
+const nameToProto = _.invert(protoToName);
 
 const getName = (protoId) => {
-  return transactionTypeProtoToName.hasOwnProperty(protoId) ? transactionTypeProtoToName[protoId] : UKNOWN;
+  return protoToName[protoId] || UNKNOWN;
 };
 
-const getProtoId = (transactionTypeName) => {
-  if (!_.isString(transactionTypeName)) {
-    throw new InvalidArgumentError(`Invalid argument ${transactionTypeName} is not a string`);
+const getProtoId = (name) => {
+  if (!_.isString(name)) {
+    throw new InvalidArgumentError(`Invalid argument ${name} is not a string`);
   }
 
-  const type = transactionTypeNameToProto[transactionTypeName.toUpperCase()];
-  if (type === undefined) {
-    throw new InvalidArgumentError(`Invalid transaction type ${transactionTypeName.toUpperCase()}`);
+  const type = nameToProto[name.toUpperCase()];
+  if (!type) {
+    throw new InvalidArgumentError(`Invalid transaction type ${name.toUpperCase()}`);
   }
   return type;
 };
 
-const isValid = (transactionTypeName) => {
-  if (!_.isString(transactionTypeName)) {
+const isValid = (name) => {
+  if (!_.isString(name)) {
     return false;
   }
-  return transactionTypeNameToProto.hasOwnProperty(transactionTypeName.toUpperCase());
+  return nameToProto[name.toUpperCase()] !== undefined;
 };
 
 module.exports = {

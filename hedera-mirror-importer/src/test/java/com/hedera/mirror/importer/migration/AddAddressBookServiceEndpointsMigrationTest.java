@@ -79,6 +79,9 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
     @BeforeEach
     void before() {
         revertToPreV_1_37();
+        jdbcOperations
+                .execute("alter table address_book_entry drop constraint if exists " +
+                        "address_book_entry_consensus_timestamp_fkey");
         // previous address_book_entry had
         addressBookEntryIdCounter = 1;
     }

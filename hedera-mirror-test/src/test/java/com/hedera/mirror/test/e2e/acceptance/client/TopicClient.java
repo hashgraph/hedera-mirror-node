@@ -94,7 +94,6 @@ public class TopicClient extends AbstractNetworkClient {
                 .setAutoRenewPeriod(autoRenewPeriod)
                 .clearAdminKey()
                 .clearSubmitKey()
-                .clearTopicMemo()
                 .clearAutoRenewAccountId()
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo(memo);

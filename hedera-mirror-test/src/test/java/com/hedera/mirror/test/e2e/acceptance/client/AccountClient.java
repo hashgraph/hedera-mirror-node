@@ -71,7 +71,7 @@ public class AccountClient extends AbstractNetworkClient {
                     try {
                         return createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum);
                     } catch (Exception e) {
-                        log.trace("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
+                        log.debug("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
                         return null;
                     }
                 });
@@ -128,7 +128,7 @@ public class AccountClient extends AbstractNetworkClient {
 
     public AccountCreateTransaction getAccountCreateTransaction(Hbar initialBalance, KeyList publicKeys,
                                                                 boolean receiverSigRequired, String customMemo) {
-        String memo = getMemo("Create Crypto Account" + customMemo);
+        String memo = getMemo(String.format("%s %s ", "Create Crypto Account", customMemo));
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
@@ -148,7 +148,7 @@ public class AccountClient extends AbstractNetworkClient {
                 Hbar.fromTinybars(initialBalance),
                 accountNameEnum.receiverSigRequired,
                 null,
-                accountNameEnum.toString());
+                null);
     }
 
     public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired, KeyList keyList,

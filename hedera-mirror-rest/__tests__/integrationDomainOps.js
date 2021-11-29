@@ -559,7 +559,8 @@ const addContract = async (contract) => {
   // use 'contract' table if the range is open-ended, otherwise use 'contract_history'
   const table = contract.timestamp_range.endsWith(',)') ? 'contract' : 'contract_history';
   await sqlConnection.query(
-    `insert into ${table} (${insertFields.join(',')}) values (${positions})`,
+    `insert into ${table} (${insertFields.join(',')})
+     values (${positions})`,
     insertFields.map((name) => contract[name])
   );
 };
@@ -640,13 +641,15 @@ const addTransactionSignature = async (transactionSignature) => {
     `INSERT INTO transaction_signature (consensus_timestamp,
                                         public_key_prefix,
                                         entity_id,
-                                        signature)
-     VALUES ($1, $2, $3, $4)`,
+                                        signature,
+                                        type)
+     VALUES ($1, $2, $3, $4, $5)`,
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
       EntityId.parse(transactionSignature.entity_id, '', true).getEncodedId().toString(),
       Buffer.from(transactionSignature.signature),
+      transactionSignature.type,
     ]
   );
 };
@@ -658,24 +661,19 @@ const addToken = async (token) => {
     created_timestamp: 0,
     decimals: 1000,
     fee_schedule_key: null,
-    fee_schedule_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     freeze_default: false,
-    freeze_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     initial_supply: 1000000,
     kyc_key: null,
-    kyc_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
     name: 'Token name',
     pause_key: null,
     pause_status: 'NOT_APPLICABLE',
     supply_key: null,
-    supply_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     supply_type: 'INFINITE',
     symbol: 'YBTJBOAZ',
     total_supply: 1000000,
     treasury_account_id: '0.0.98',
     wipe_key: null,
-    wipe_key_ed25519_hex: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     ...token,
   };
 
@@ -693,53 +691,42 @@ const addToken = async (token) => {
                         created_timestamp,
                         decimals,
                         fee_schedule_key,
-                        fee_schedule_key_ed25519_hex,
                         freeze_default,
-                        freeze_key_ed25519_hex,
                         initial_supply,
                         kyc_key,
-                        kyc_key_ed25519_hex,
                         max_supply,
                         modified_timestamp,
                         name,
                         pause_key,
                         pause_status,
                         supply_key,
-                        supply_key_ed25519_hex,
                         supply_type,
                         symbol,
                         total_supply,
                         treasury_account_id,
                         type,
-                        wipe_key,
-                        wipe_key_ed25519_hex)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23,
-             $24);`,
+                        wipe_key)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`,
     [
       EntityId.parse(token.token_id).getEncodedId(),
       token.created_timestamp,
       token.decimals,
       token.fee_schedule_key,
-      token.fee_schedule_key_ed25519_hex,
       token.freeze_default,
-      token.freeze_key_ed25519_hex,
       token.initial_supply,
       token.kyc_key,
-      token.kyc_key_ed25519_hex,
       token.max_supply,
       token.modified_timestamp,
       token.name,
       token.pause_key,
       token.pause_status,
       token.supply_key,
-      token.supply_key_ed25519_hex,
       token.supply_type,
       token.symbol,
       token.total_supply,
       EntityId.parse(token.treasury_account_id).getEncodedId(),
       token.type,
       token.wipe_key,
-      token.wipe_key_ed25519_hex,
     ]
   );
 

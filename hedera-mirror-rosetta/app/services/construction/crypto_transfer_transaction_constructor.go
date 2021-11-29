@@ -155,7 +155,6 @@ func (c *cryptoTransferTransactionConstructor) Parse(ctx context.Context, transa
 	senderMap := senderMap{}
 
 	for accountId, hbarAmount := range hbarTransferMap {
-
 		operations = c.addOperation(accountId, &types.HbarAmount{Value: hbarAmount.AsTinybar()}, operations, senderMap)
 	}
 

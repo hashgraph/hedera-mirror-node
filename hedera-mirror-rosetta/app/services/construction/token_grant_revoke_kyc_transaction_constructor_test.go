@@ -422,6 +422,7 @@ func assertTokenGrantRevokeKycTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
+	assert.True(t, actual.IsFrozen())
 	if operations[0].Type == types.OperationTypeTokenGrantKyc {
 		assert.IsType(t, &hedera.TokenGrantKycTransaction{}, actual)
 	} else {

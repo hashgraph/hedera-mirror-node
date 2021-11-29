@@ -307,6 +307,7 @@ func assertTokenWipeTransaction(
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
 ) {
+	assert.True(t, actual.IsFrozen())
 	assert.IsType(t, &hedera.TokenWipeTransaction{}, actual)
 
 	tx, _ := actual.(*hedera.TokenWipeTransaction)

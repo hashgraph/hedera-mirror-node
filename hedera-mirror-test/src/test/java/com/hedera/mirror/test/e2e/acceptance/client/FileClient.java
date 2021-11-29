@@ -82,11 +82,12 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse appendFile(FileId fileId, byte[] byteCode) {
-        log.debug("Append file");
+        String memo = "Append file";
+        log.debug(memo);
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
                 .setContents(byteCode)
-                .setTransactionMemo(getMemo("Append file"));
+                .setTransactionMemo(getMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileAppendTransaction);
@@ -96,11 +97,11 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse deleteFile(FileId fileId) {
-        log.debug("Delete file");
-        String memo = getMemo("Delete file");
+        String memo = "Delete file";
+        log.debug(memo);
         FileDeleteTransaction fileUpdateTransaction = new FileDeleteTransaction()
                 .setFileId(fileId)
-                .setTransactionMemo(memo);
+                .setTransactionMemo(getMemo(memo));
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(fileUpdateTransaction);

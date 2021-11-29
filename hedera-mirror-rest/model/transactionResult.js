@@ -22,7 +22,7 @@
 
 const _ = require('lodash');
 
-const transactionResultProtoToName = {
+const protoToName = {
   0: 'OK',
   1: 'INVALID_TRANSACTION',
   2: 'PAYER_ACCOUNT_NOT_FOUND',
@@ -260,28 +260,27 @@ const transactionResultProtoToName = {
   276: 'FREEZE_UPGRADE_IN_PROGRESS',
   277: 'UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED',
   278: 'UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED',
+  279: 'CONSENSUS_GAS_EXHAUSTED',
 };
 
+const nameToProto = _.invert(protoToName);
+const SUCCESS = 'SUCCESS';
 const UNKNOWN = 'UNKNOWN';
 
-const successTransactionResult = 'SUCCESS';
-
-const transactionResultNameToProto = _.invert(transactionResultProtoToName);
-
 const getName = (protoId) => {
-  return transactionResultProtoToName.hasOwnProperty(protoId) ? transactionResultProtoToName[protoId] : UNKNOWN;
+  return protoToName[protoId] || UNKNOWN;
 };
 
-const getProtoId = (resultName) => {
-  return transactionResultNameToProto[resultName];
+const getProtoId = (name) => {
+  return nameToProto[name];
 };
 
 const getSuccessProtoId = () => {
-  return getProtoId(successTransactionResult);
+  return getProtoId(SUCCESS);
 };
 
 module.exports = {
-  getSuccessProtoId,
   getName,
   getProtoId,
+  getSuccessProtoId,
 };

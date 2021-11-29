@@ -57,8 +57,9 @@ public class AccountBalance implements Persistable<AccountBalance.Id>, StreamIte
     @JsonIgnore
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
     @JoinColumns({
-            @JoinColumn(name = "accountId"),
-            @JoinColumn(name = "consensusTimestamp")
+            // set updatable = false to prevent additional hibernate query
+            @JoinColumn(name = "accountId", updatable = false),
+            @JoinColumn(name = "consensusTimestamp", updatable = false)
     })
     private List<TokenBalance> tokenBalances = new ArrayList<>();
 

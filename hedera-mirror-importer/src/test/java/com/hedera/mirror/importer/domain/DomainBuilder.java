@@ -23,11 +23,13 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
 import static com.hedera.mirror.importer.domain.EntityType.CONTRACT;
 import static com.hedera.mirror.importer.domain.EntityType.FILE;
+import static com.hedera.mirror.importer.domain.EntityType.SCHEDULE;
 import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Collection;
@@ -51,6 +53,9 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
+
+    public static final int KEY_LENGTH_ECDSA = 33;
+    public static final int KEY_LENGTH_ED25519 = 32;
 
     private final AtomicLong id = new AtomicLong(0L);
     private final Instant now = Instant.now();
@@ -196,6 +201,38 @@ public class DomainBuilder {
         return new DomainPersister<>(getRepository(RecordFile.class), builder, builder::build);
     }
 
+    public DomainPersister<Schedule, Schedule.ScheduleBuilder> schedule() {
+        Schedule.ScheduleBuilder builder = Schedule.builder()
+                .consensusTimestamp(timestamp())
+                .creatorAccountId(entityId(ACCOUNT))
+                .payerAccountId(entityId(ACCOUNT))
+                .scheduleId(entityId(SCHEDULE).getId())
+                .transactionBody(bytes(64));
+        return new DomainPersister<>(getRepository(Schedule.class), builder, builder::build);
+    }
+
+    public DomainPersister<Token, Token.TokenBuilder> token() {
+        long timestamp = timestamp();
+        Token.TokenBuilder builder = Token.builder()
+                .createdTimestamp(timestamp)
+                .decimals(1000)
+                .feeScheduleKey(key())
+                .freezeDefault(false)
+                .freezeKey(key())
+                .initialSupply(1_000_000_000L)
+                .kycKey(key())
+                .modifiedTimestamp(timestamp)
+                .name("Hbars")
+                .pauseKey(key())
+                .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
+                .supplyKey(key())
+                .symbol("HBAR")
+                .tokenId(new TokenId(entityId(TOKEN)))
+                .treasuryAccountId(entityId(ACCOUNT))
+                .wipeKey(key());
+        return new DomainPersister<>(getRepository(Token.class), builder, builder::build);
+    }
+
     public DomainPersister<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
         TokenTransfer.TokenTransferBuilder builder = TokenTransfer.builder()
                 .amount(100L)
@@ -204,6 +241,16 @@ public class DomainBuilder {
                 .tokenDissociate(false);
 
         return new DomainPersister<>(getRepository(TokenTransfer.class), builder, builder::build);
+    }
+
+    public DomainPersister<TransactionSignature, TransactionSignature.TransactionSignatureBuilder> transactionSignature() {
+        TransactionSignature.TransactionSignatureBuilder builder = TransactionSignature.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(entityId(ACCOUNT))
+                .publicKeyPrefix(bytes(16))
+                .signature(bytes(32))
+                .type(SignaturePair.SignatureCase.ED25519.getNumber());
+        return new DomainPersister<>(getRepository(TransactionSignature.class), builder, builder::build);
     }
 
     // Helper methods
@@ -222,7 +269,13 @@ public class DomainBuilder {
     }
 
     public byte[] key() {
-        return Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(32))).build().toByteArray();
+        if (id.get() % 2 == 0) {
+            ByteString bytes = ByteString.copyFrom(bytes(KEY_LENGTH_ECDSA));
+            return Key.newBuilder().setECDSASecp256K1(bytes).build().toByteArray();
+        } else {
+            ByteString bytes = ByteString.copyFrom(bytes(KEY_LENGTH_ED25519));
+            return Key.newBuilder().setEd25519(bytes).build().toByteArray();
+        }
     }
 
     public String text(int characters) {

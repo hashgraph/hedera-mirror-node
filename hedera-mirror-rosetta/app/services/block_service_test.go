@@ -26,9 +26,17 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+)
+
+var (
+	account, _    = types.NewAccountFromEncodedID(500)
+	entityId      = domain.MustDecodeEntityId(600)
+	hbarAmount    = types.HbarAmount{Value: 300}
+	statusSuccess = types.TransactionResults[22]
 )
 
 func block() *types.Block {
@@ -43,7 +51,7 @@ func block() *types.Block {
 	}
 }
 
-func exampleBlockRequest() *rTypes.BlockRequest {
+func blockRequest() *rTypes.BlockRequest {
 	index := int64(100)
 	hash := "somehashh"
 
@@ -60,7 +68,7 @@ func exampleBlockRequest() *rTypes.BlockRequest {
 	}
 }
 
-func exampleBlockResponse() *rTypes.BlockResponse {
+func expectedBlockResponse(transactions ...*rTypes.Transaction) *rTypes.BlockResponse {
 	return &rTypes.BlockResponse{
 		Block: &rTypes.Block{
 			BlockIdentifier: &rTypes.BlockIdentifier{
@@ -71,29 +79,47 @@ func exampleBlockResponse() *rTypes.BlockResponse {
 				Index: 2,
 				Hash:  "0xparenthash",
 			},
-			Timestamp: 1,
-			Transactions: []*rTypes.Transaction{
-				{
-					TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: "123"},
-					Operations:            []*rTypes.Operation{},
-					Metadata:              nil,
-				},
-				{
-					TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: "246"},
-					Operations:            []*rTypes.Operation{},
-					Metadata:              nil,
-				},
-			},
-			Metadata: nil,
+			Timestamp:    1,
+			Transactions: transactions,
+			Metadata:     nil,
 		},
 		OtherTransactions: nil,
 	}
 }
 
-func dummyTransaction(hash string) *types.Transaction {
+func expectedTransaction(entityId *domain.EntityId, hash string) *rTypes.Transaction {
+	response := &rTypes.Transaction{
+		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: hash},
+		Operations: []*rTypes.Operation{
+			{
+				OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
+				Type:                types.TransactionTypes[14],
+				Status:              &statusSuccess,
+				Account:             account.ToRosetta(),
+				Amount:              hbarAmount.ToRosetta(),
+			},
+		},
+	}
+	if entityId != nil {
+		response.Metadata = map[string]interface{}{"entity_id": entityId.String()}
+	}
+
+	return response
+}
+
+func makeTransaction(entityId *domain.EntityId, hash string) *types.Transaction {
 	return &types.Transaction{
-		Hash:       hash,
-		Operations: nil,
+		EntityId: entityId,
+		Hash:     hash,
+		Operations: []*types.Operation{
+			{
+				Index:   0,
+				Type:    types.TransactionTypes[14],
+				Status:  statusSuccess,
+				Account: account,
+				Amount:  &hbarAmount,
+			},
+		},
 	}
 }
 
@@ -144,19 +170,22 @@ func (suite *blockServiceSuite) TestNewBlockAPIService() {
 func (suite *blockServiceSuite) TestBlock() {
 	// given:
 	exampleTransactions := []*types.Transaction{
-		dummyTransaction("123"),
-		dummyTransaction("246"),
+		makeTransaction(nil, "123"),
+		makeTransaction(&entityId, "246"),
 	}
-
+	expected := expectedBlockResponse(
+		expectedTransaction(nil, "123"),
+		expectedTransaction(&entityId, "246"),
+	)
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
 
 	// when:
-	res, e := suite.blockService.Block(nil, exampleBlockRequest())
+	actual, e := suite.blockService.Block(nil, blockRequest())
 
 	// then:
 	assert.Nil(suite.T(), e)
-	assert.Equal(suite.T(), exampleBlockResponse(), res)
+	assert.Equal(suite.T(), expected, actual)
 }
 
 func (suite *blockServiceSuite) TestBlockThrowsWhenFindByIdentifierFails() {
@@ -167,48 +196,40 @@ func (suite *blockServiceSuite) TestBlockThrowsWhenFindByIdentifierFails() {
 	)
 
 	// when:
-	res, e := suite.blockService.Block(nil, exampleBlockRequest())
+	actual, err := suite.blockService.Block(nil, blockRequest())
 
 	// then:
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
+	assert.Nil(suite.T(), actual)
+	assert.NotNil(suite.T(), err)
 }
 
 func (suite *blockServiceSuite) TestBlockThrowsWhenFindBetweenFails() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
-	suite.mockTransactionRepo.On("FindBetween").Return(
-		[]*types.Transaction{},
-		&rTypes.Error{},
-	)
+	suite.mockTransactionRepo.On("FindBetween").Return([]*types.Transaction{}, &rTypes.Error{})
 
 	// when:
-	res, e := suite.blockService.Block(nil, exampleBlockRequest())
+	actual, err := suite.blockService.Block(nil, blockRequest())
 
 	// then:
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
+	assert.Nil(suite.T(), actual)
+	assert.NotNil(suite.T(), err)
 }
 
 func (suite *blockServiceSuite) TestBlockTransaction() {
 	// given:
-	exampleTransaction := dummyTransaction("somehash")
-
-	expectedResult := &rTypes.BlockTransactionResponse{Transaction: &rTypes.Transaction{
-		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: "somehash"},
-		Operations:            []*rTypes.Operation{},
-		Metadata:              nil,
-	}}
+	exampleTransaction := makeTransaction(nil, "somehash")
+	expected := &rTypes.BlockTransactionResponse{Transaction: expectedTransaction(nil, "somehash")}
 
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockTransactionRepo.On("FindByHashInBlock").Return(exampleTransaction, mocks.NilError)
 
 	// when:
-	res, e := suite.blockService.BlockTransaction(nil, transactionRequest())
+	actual, err := suite.blockService.BlockTransaction(nil, transactionRequest())
 
 	// then:
-	assert.Equal(suite.T(), expectedResult, res)
-	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), expected, actual)
+	assert.Nil(suite.T(), err)
 }
 
 func (suite *blockServiceSuite) TestBlockTransactionThrowsWhenFindByIdentifierFails() {
@@ -216,11 +237,11 @@ func (suite *blockServiceSuite) TestBlockTransactionThrowsWhenFindByIdentifierFa
 	suite.mockBlockRepo.On("FindByIdentifier").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	res, e := suite.blockService.BlockTransaction(nil, transactionRequest())
+	actual, err := suite.blockService.BlockTransaction(nil, transactionRequest())
 
 	// then:
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
+	assert.Nil(suite.T(), actual)
+	assert.NotNil(suite.T(), err)
 }
 
 func (suite *blockServiceSuite) TestBlockTransactionThrowsWhenFindByHashInBlockFails() {
@@ -229,9 +250,9 @@ func (suite *blockServiceSuite) TestBlockTransactionThrowsWhenFindByHashInBlockF
 	suite.mockTransactionRepo.On("FindByHashInBlock").Return(mocks.NilTransaction, &rTypes.Error{})
 
 	// when:
-	res, e := suite.blockService.BlockTransaction(nil, transactionRequest())
+	actual, err := suite.blockService.BlockTransaction(nil, transactionRequest())
 
 	// then:
-	assert.Nil(suite.T(), res)
-	assert.NotNil(suite.T(), e)
+	assert.Nil(suite.T(), actual)
+	assert.NotNil(suite.T(), err)
 }

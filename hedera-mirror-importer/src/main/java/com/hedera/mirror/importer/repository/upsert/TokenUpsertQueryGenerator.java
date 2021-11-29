@@ -35,15 +35,9 @@ import com.hedera.mirror.importer.domain.Token_;
 public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Token_> {
     public static final String TABLE = "token";
     public final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> v1ConflictIdColumns = List.of(TokenId_.TOKEN_ID);
-    // createdTimestamp is needed for v2 schema compliance as it's used in index
-    private final List<String> v2ConflictIdColumns = List.of(TokenId_.TOKEN_ID, Token_.CREATED_TIMESTAMP);
-    private final Set<String> nullableColumns = Set.of(Token_.FEE_SCHEDULE_KEY, Token_.FEE_SCHEDULE_KEY_ED25519_HEX,
-            Token_.FREEZE_KEY, Token_.FREEZE_KEY_ED25519_HEX,
-            Token_.KYC_KEY, Token_.KYC_KEY_ED25519_HEX,
-            Token_.PAUSE_KEY, Token_.PAUSE_STATUS,
-            Token_.SUPPLY_KEY, Token_.SUPPLY_KEY_ED25519_HEX,
-            Token_.WIPE_KEY, Token_.WIPE_KEY_ED25519_HEX);
+    private final List<String> conflictIdColumns = List.of(TokenId_.TOKEN_ID);
+    private final Set<String> nullableColumns = Set.of(Token_.FEE_SCHEDULE_KEY, Token_.FREEZE_KEY, Token_.KYC_KEY,
+            Token_.PAUSE_KEY, Token_.PAUSE_STATUS, Token_.SUPPLY_KEY, Token_.WIPE_KEY);
     private final Set<String> nonUpdatableColumns = Set.of(Token_.CREATED_TIMESTAMP, Token_.DECIMALS,
             Token_.FREEZE_DEFAULT, Token_.INITIAL_SUPPLY, Token_.MAX_SUPPLY, Token_.SUPPLY_TYPE, Token_.TOKEN_ID,
             Token_.TYPE);
@@ -51,11 +45,11 @@ public class TokenUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Toke
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
     private final Set<SingularAttribute> selectableColumns = Set.of(Token_.createdTimestamp, Token_.decimals,
-            Token_.feeScheduleKey, Token_.feeScheduleKeyEd25519Hex, Token_.freezeDefault, Token_.freezeKey,
-            Token_.freezeKeyEd25519Hex, Token_.initialSupply, Token_.kycKey, Token_.kycKeyEd25519Hex, Token_.maxSupply,
+            Token_.feeScheduleKey, Token_.freezeDefault, Token_.freezeKey,
+            Token_.initialSupply, Token_.kycKey, Token_.maxSupply,
             Token_.modifiedTimestamp, Token_.name, Token_.pauseKey, Token_.pauseStatus,
-            Token_.supplyKey, Token_.supplyKeyEd25519Hex, Token_.supplyType, Token_.symbol, Token_.tokenId,
-            Token_.totalSupply, Token_.treasuryAccountId, Token_.type, Token_.wipeKey, Token_.wipeKeyEd25519Hex);
+            Token_.supplyKey, Token_.supplyType, Token_.symbol, Token_.tokenId,
+            Token_.totalSupply, Token_.treasuryAccountId, Token_.type, Token_.wipeKey);
 
     @Override
     protected String getAttributeUpdateQuery(String attributeName) {

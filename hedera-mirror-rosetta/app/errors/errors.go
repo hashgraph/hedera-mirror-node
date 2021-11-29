@@ -34,6 +34,7 @@ const (
 	InvalidOperationsAmount        string = "Invalid Operations amount provided"
 	InvalidOperationsTotalAmount   string = "Operations total amount must be 0"
 	InvalidPublicKey               string = "Invalid Public Key provided"
+	InvalidSignatureType           string = "Unsupported signature type"
 	InvalidSignatureVerification   string = "Invalid signature verification"
 	InvalidTransactionIdentifier   string = "Invalid Transaction Identifier provided"
 	MultipleOperationTypesPresent  string = "Only one Operation Type must be present"
@@ -100,6 +101,7 @@ var (
 	ErrTokenNotFound                  = newError(TokenNotFound, 132, false)
 	ErrInvalidTransaction             = newError(InvalidTransaction, 133, false)
 	ErrInvalidCurrency                = newError(InvalidCurrency, 134, false)
+	ErrInvalidSignatureType           = newError(InvalidSignatureType, 135, false)
 	ErrInternalServerError            = newError(InternalServerError, 500, true)
 
 	Errors = make([]*types.Error, 0)
