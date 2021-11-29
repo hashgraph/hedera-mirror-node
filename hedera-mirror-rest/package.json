@@ -53,6 +53,7 @@
     "cors",
     "express",
     "express-http-context",
+    "express-openapi-validator",
     "extend",
     "ip-anonymize",
     "@godaddy/terminus",
