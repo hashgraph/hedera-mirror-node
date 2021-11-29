@@ -208,14 +208,14 @@ const parseMemoized = mem(
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-      validateBigIntSize(num, maxNum, error);
-      validateBigIntSize(realm, maxRealm, error);
-      validateBigIntSize(shard, maxShard, error);
+      if (num > maxNum || realm > maxRealm || shard > maxShard) {
+        throw error();
+      }
     } else if (isValidSolidityAddress(id)) {
       [shard, realm, num] = parseFromSolidityAddress(id);
-      validateBigIntSize(num, maxSolidityRealmNum, error);
-      validateBigIntSize(realm, maxSolidityRealmNum, error);
-      validateBigIntSize(shard, maxSolidityShard, error);
+      if (num > maxSolidityRealmNum || realm > maxSolidityRealmNum || shard > maxSolidityShard) {
+        throw error();
+      }
     } else {
       throw error();
     }
@@ -224,26 +224,6 @@ const parseMemoized = mem(
   },
   entityIdCacheOptions
 );
-
-/**
- * Validate num is a bigint under the provided the given threshold. Throw an error otherwise.
- * @param {bigint} num
- * @param {bigint} threshold
- * @param {error} error
- * @return {boolean}
- */
-const validateBigIntSize = (num, threshold, error) => {
-  if (typeof num !== 'bigint' || typeof threshold !== 'bigint') {
-    throw error();
-  }
-
-  // cast to appease sonar code smell
-  if (BigInt(num) > BigInt(threshold)) {
-    throw error();
-  }
-
-  return true;
-};
 
 /**
  * Parses entity ID string. The entity ID string can be shard.realm.num, realm.num, or the encoded entity ID string.
