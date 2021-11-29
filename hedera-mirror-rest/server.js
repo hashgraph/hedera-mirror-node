@@ -145,9 +145,6 @@ app.useAsync(requestLogger);
 if (config.metrics.enabled) {
   app.use(metricsHandler());
 }
-// validation
-// if (isTestEnv()) {
-// }
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
