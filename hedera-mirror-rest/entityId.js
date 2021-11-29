@@ -242,7 +242,7 @@ const parseMemoized = mem(
  * @return {boolean}
  */
 const isBigIntGreaterThan = (num, threshold) => {
-  return typeof num === 'bigint' && num > threshold;
+  return typeof num === 'bigint' && typeof threshold === 'bigint' && num > threshold;
 };
 
 /**
