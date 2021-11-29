@@ -111,7 +111,7 @@ const instantiateDatabase = async () => {
   dbSessionConfig.host = dockerDb.getHost();
   logger.info(`Started dockerized PostgreSQL at ${dbSessionConfig.host}:${dbSessionConfig.port}`);
 
-  flywayMigrate(dbSessionConfig);
+  await flywayMigrate(dbSessionConfig);
 
   return {
     dbSessionConfig: dbSessionConfig,
@@ -123,7 +123,7 @@ const instantiateDatabase = async () => {
 /**
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
-const flywayMigrate = (dbSessionConfig) => {
+const flywayMigrate = async (dbSessionConfig) => {
   logger.info(
     `flywayMigrate will use postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}`
   );
@@ -161,7 +161,24 @@ const flywayMigrate = (dbSessionConfig) => {
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
   logger.info(`Added ${flywayConfigPath} to file system for flyway CLI`);
-  execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
+
+  // retry logic on flyway info to ensure flyway is downloaded
+  let retries = 3;
+  let retryMsDelay = 2000;
+  while (retries-- > 0) {
+    try {
+      execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
+    } catch (e) {
+      if (e.toString().indexOf('no such file or directory') < 0) {
+        logger.trace(`Error running flyway cleanup, error: ${e}.`);
+        throw e;
+      }
+
+      logger.debug(`Error running flyway cleanup, error: ${e}. Retries left ${retries}. Waiting 2s before retrying.`);
+      await new Promise((resolve) => setTimeout(resolve, retryMsDelay));
+    }
+  }
+
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
 
