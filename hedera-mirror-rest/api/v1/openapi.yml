@@ -766,6 +766,7 @@ components:
       type: object
       required:
         - account
+        - balance
         - expiry_timestamp
         - auto_renew_period
         - key
@@ -865,6 +866,7 @@ components:
           $ref: '#/components/schemas/Links'
     Balance:
       type: object
+      nullable: true
       required:
         - timestamp
         - balance

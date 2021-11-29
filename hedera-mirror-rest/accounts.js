@@ -36,7 +36,7 @@ const {DbError} = require('./errors/dbError');
 const processRow = (row) => {
   const balance =
     row.account_balance === undefined
-      ? undefined
+      ? null
       : {
           balance: row.account_balance === null ? null : Number(row.account_balance),
           timestamp: utils.nsToSecNs(row.consensus_timestamp),
