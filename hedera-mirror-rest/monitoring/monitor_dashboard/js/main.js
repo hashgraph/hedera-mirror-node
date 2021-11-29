@@ -66,11 +66,11 @@ const makeTable = (data) => {
     }
     const failureMsg =
       result.failureMessages === undefined ? '' : result.failureMessages.join('<br>,').replaceAll('\n', '<br>');
-    const color = result.result === 'passed' ? '#93c79f' : '#d73a4a';
+    const status = result.result === 'passed' ? 'success' : 'failure';
 
     h += `
       <tr>
-        <td class="centered"><span class="dot" style="background-color:${color}"></span></td>
+        <td class="centered"><span class="dot ${status}"></span></td>
         <td class="date">${new Date(Number(result.at)).toISOString()}</td>
         <td>${result.resource}</td>
         <td><a = href="${result.url}">${result.message}${failureMsg}<a/></td>
@@ -92,11 +92,11 @@ const makeCard = (data) => {
   }
 
   const server = data.name;
-  const statusColor = data.results.success ? 'alert-success' : 'alert-danger';
+  const status = data.results.success ? 'success' : 'failure';
 
   return `
         <div class="card rounded-lg">
-          <div class="${statusColor}" id="result-${server}">
+          <div class="${status}" id="result-${server}">
             <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
                       data-target="#collapse-${server}" aria-expanded="false" aria-controls="#collapse-${server}">
               <div class="container card-text">
@@ -105,7 +105,7 @@ const makeCard = (data) => {
                     <h5 class="mb-0">${server}</h5 class="mb-0">
                     <span>${data.baseUrl}</span>
                   </div>
-                  <div id="passed" class="col">
+                  <div id="numTests" class="col">
                     <span>${data.results.numPassedTests} / ${data.results.testResults.length}</span>
                   </div>
                 </div>
@@ -145,7 +145,7 @@ const init = async () => {
   await loadConfig();
   const url = `http://${monitorAddress}/api/v1/status`;
   console.log(`Fetching ${url}`);
-  let html = `<h2 class="centered">Hedera Mirror Node Status</h2>`;
+  let html = `<h2 class="centered">Hedera Mirror Node REST API Monitor</h2>`;
 
   await fetch(url)
     .then((response) => {

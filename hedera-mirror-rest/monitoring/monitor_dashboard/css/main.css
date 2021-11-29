@@ -62,9 +62,17 @@ body {
   align-self: center;
 }
 
-#passed {
+.failure {
+  background-color: #e66360;
+}
+
+#numTests {
   margin: auto;
   text-align: right;
+}
+
+.success {
+  background-color: #6fd06f;
 }
 
 .table td {
