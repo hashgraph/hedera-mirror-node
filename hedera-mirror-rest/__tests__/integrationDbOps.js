@@ -111,13 +111,13 @@ const instantiateDatabase = async () => {
   dbSessionConfig.host = dockerDb.getHost();
   logger.info(`Started dockerized PostgreSQL at ${dbSessionConfig.host}:${dbSessionConfig.port}`);
 
-  await flywayMigrate(dbSessionConfig);
-
-  return {
-    dbSessionConfig: dbSessionConfig,
-    dockerContainer: dockerDb,
-    sqlConnection: getConnection(dbSessionConfig),
-  };
+  return await flywayMigrate(dbSessionConfig).then(() => {
+    return {
+      dbSessionConfig: dbSessionConfig,
+      dockerContainer: dockerDb,
+      sqlConnection: getConnection(dbSessionConfig),
+    };
+  });
 };
 
 /**
@@ -169,11 +169,6 @@ const flywayMigrate = async (dbSessionConfig) => {
     try {
       execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
     } catch (e) {
-      if (e.toString().indexOf('no such file or directory') < 0) {
-        logger.trace(`Error running flyway cleanup, error: ${e}.`);
-        throw e;
-      }
-
       logger.debug(`Error running flyway cleanup, error: ${e}. Retries left ${retries}. Waiting 2s before retrying.`);
       await new Promise((resolve) => setTimeout(resolve, retryMsDelay));
     }
