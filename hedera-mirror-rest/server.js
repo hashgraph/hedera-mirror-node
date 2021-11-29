@@ -29,7 +29,6 @@ const cors = require('cors');
 const httpContext = require('express-http-context');
 const log4js = require('log4js');
 const compression = require('compression');
-const OpenApiValidator = require('express-openapi-validator');
 
 // local files
 const accounts = require('./accounts');
